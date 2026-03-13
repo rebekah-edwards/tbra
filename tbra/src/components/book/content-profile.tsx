@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 interface Rating {
   categoryKey: string;
@@ -129,11 +130,16 @@ export function ContentProfile({ ratings }: ContentProfileProps) {
   if (ratings.length === 0) {
     return (
       <section className="mt-8">
-        <h2 className="text-lg font-semibold">Content Profile</h2>
+        <div className="flex items-baseline justify-between">
+        <h2 className="text-lg font-semibold">What&apos;s Inside</h2>
+        <Link href="/methodology" className="text-xs text-muted hover:text-primary transition-colors">
+          How we rate
+        </Link>
+      </div>
         <div className="mt-4 rounded-lg border border-border bg-surface p-6 text-center">
-          <p className="text-sm text-muted">No content profile yet.</p>
+          <p className="text-sm text-muted">No content details yet.</p>
           <p className="mt-1 text-xs text-muted">
-            Content ratings are added editorially and will appear here once
+            Content details are added editorially and will appear here once
             available.
           </p>
         </div>
@@ -150,7 +156,12 @@ export function ContentProfile({ ratings }: ContentProfileProps) {
 
   return (
     <section className="mt-8">
-      <h2 className="text-lg font-semibold">Content Profile</h2>
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-lg font-semibold">What&apos;s Inside</h2>
+        <Link href="/methodology" className="text-xs text-muted hover:text-primary transition-colors">
+          How we rate
+        </Link>
+      </div>
 
       <div className="relative mt-4">
         {/* Blurred overlay when not revealed */}
