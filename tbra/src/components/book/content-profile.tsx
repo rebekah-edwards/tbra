@@ -14,6 +14,21 @@ interface ContentProfileProps {
   ratings: Rating[];
 }
 
+// Display order for categories
+const CATEGORY_ORDER = [
+  "sexual_content",
+  "violence_gore",
+  "profanity_language",
+  "substance_use",
+  "lgbtqia_representation",
+  "religious_content",
+  "witchcraft_occult",
+  "political_ideological",
+  "self_harm_suicide",
+  "sexual_assault_coercion",
+  "child_harm",
+];
+
 const intensityColors = [
   "bg-intensity-0",
   "bg-intensity-1",
@@ -60,6 +75,45 @@ function ExpandableNote({ text }: { text: string }) {
   );
 }
 
+function RatingCard({ rating }: { rating: Rating }) {
+  const badge = evidenceBadge[rating.evidenceLevel];
+  const isVerified = rating.evidenceLevel === "human_verified";
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium">{rating.categoryName}</span>
+        {badge && (
+          <span
+            className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${badge.className}`}
+          >
+            {badge.label}
+          </span>
+        )}
+      </div>
+      <div className="mt-1 flex gap-0.5">
+        {[0, 1, 2, 3].map((segment) => (
+          <div
+            key={segment}
+            className={`h-1.5 flex-1 rounded-full ${
+              segment < rating.intensity
+                ? intensityColors[rating.intensity]
+                : "bg-surface-alt"
+            }`}
+          />
+        ))}
+      </div>
+      {rating.notes && (
+        isVerified ? (
+          <ExpandableNote text={rating.notes} />
+        ) : (
+          <p className="mt-1 text-xs text-muted">{rating.notes}</p>
+        )
+      )}
+    </div>
+  );
+}
+
 export function ContentProfile({ ratings }: ContentProfileProps) {
   const [revealed, setRevealed] = useState(false);
 
@@ -77,6 +131,13 @@ export function ContentProfile({ ratings }: ContentProfileProps) {
       </section>
     );
   }
+
+  // Sort ratings by display order
+  const sortedRatings = [...ratings].sort((a, b) => {
+    const aIdx = CATEGORY_ORDER.indexOf(a.categoryKey);
+    const bIdx = CATEGORY_ORDER.indexOf(b.categoryKey);
+    return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
+  });
 
   return (
     <section className="mt-8">
@@ -96,54 +157,13 @@ export function ContentProfile({ ratings }: ContentProfileProps) {
           </div>
         )}
 
-        {/* Ratings list — blurred when not revealed */}
+        {/* Ratings grid — blurred when not revealed */}
         <div
-          className={`space-y-3 ${!revealed ? "blur-md select-none pointer-events-none" : ""} transition-[filter] duration-300`}
+          className={`grid grid-cols-2 gap-x-6 gap-y-3 ${!revealed ? "blur-md select-none pointer-events-none" : ""} transition-[filter] duration-300`}
         >
-          {ratings.map((rating) => {
-            const badge = evidenceBadge[rating.evidenceLevel];
-            const isVerified = rating.evidenceLevel === "human_verified";
-            return (
-              <div key={rating.categoryKey}>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    {rating.categoryName}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {badge && (
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${badge.className}`}
-                      >
-                        {badge.label}
-                      </span>
-                    )}
-                    <span className="text-xs text-muted">
-                      {rating.intensity}/4
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-1 flex gap-1">
-                  {[0, 1, 2, 3].map((segment) => (
-                    <div
-                      key={segment}
-                      className={`h-2 flex-1 rounded-full ${
-                        segment < rating.intensity
-                          ? intensityColors[rating.intensity]
-                          : "bg-surface-alt"
-                      }`}
-                    />
-                  ))}
-                </div>
-                {rating.notes && (
-                  isVerified ? (
-                    <ExpandableNote text={rating.notes} />
-                  ) : (
-                    <p className="mt-1 text-xs text-muted">{rating.notes}</p>
-                  )
-                )}
-              </div>
-            );
-          })}
+          {sortedRatings.map((rating) => (
+            <RatingCard key={rating.categoryKey} rating={rating} />
+          ))}
         </div>
       </div>
     </section>

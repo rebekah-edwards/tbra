@@ -32,12 +32,16 @@
   --color-intensity-2: var(--intensity-2);
   --color-intensity-3: var(--intensity-3);
   --color-intensity-4: var(--intensity-4);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-young-serif);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-heading), serif;
 }

@@ -91,9 +91,10 @@ export async function importFromOpenLibrary(result: OLSearchResult) {
 
   // Fetch work details for description + cover + subjects
   const work = await fetchOpenLibraryWork(result.key);
+  // Prefer work cover (usually canonical hardcover) over search cover (often audiobook)
   const coverUrl =
-    buildCoverUrl(result.cover_i, "L") ??
-    buildCoverUrl(work.coverId, "L");
+    buildCoverUrl(work.coverId, "L") ??
+    buildCoverUrl(result.cover_i, "L");
 
   // Insert book
   const [book] = await db

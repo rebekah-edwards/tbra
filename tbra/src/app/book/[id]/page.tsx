@@ -39,7 +39,7 @@ export default async function BookPage({
       />
 
       {book.summary && (
-        <p className="mt-6 text-base leading-relaxed text-foreground">
+        <p className="mt-8 text-center text-lg italic leading-relaxed text-foreground/80">
           {book.summary}
         </p>
       )}

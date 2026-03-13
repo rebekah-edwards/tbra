@@ -19,7 +19,7 @@ export function BookSeries({ name, books, currentBookId }: BookSeriesProps) {
 
   return (
     <section className="mt-8">
-      <h2 className="text-lg font-semibold">Books in the {name} Series</h2>
+      <h2 className="text-lg font-semibold">More in this series</h2>
       <div className="mt-4 flex gap-4 overflow-x-auto pb-2">
         {books.map((book) => {
           const isCurrent = book.id === currentBookId;

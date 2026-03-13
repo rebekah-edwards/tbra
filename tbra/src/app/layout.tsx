@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
+import { Young_Serif } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const youngSerif = Young_Serif({
+  variable: "--font-young-serif",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -26,11 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+        className={`${inter.variable} ${youngSerif.variable} antialiased bg-background text-foreground`}
       >
         <nav className="border-b border-border bg-surface">
           <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-            <Link href="/" className="text-lg font-semibold tracking-tight text-primary-dark">
+            <Link href="/" className="font-heading text-xl tracking-tight text-primary-dark">
               tbr(a)
             </Link>
             <Link
