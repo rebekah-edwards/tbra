@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tbr(a) Competitor Research Dashboard</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface-2: #242424;
+    --surface-3: #2e2e2e;
+    --border: #333;
+    --text: #e5e5e5;
+    --text-muted: #999;
+    --text-dim: #666;
+    --accent: #6d9fff;
+    --accent-2: #ff7eb3;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --orange: #fb923c;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .header h1 span { color: var(--accent); }
+  .header p {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+  .tabs {
+    display: flex;
+    gap: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: inherit;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .content { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--accent);
+  }
+  .card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 16px 0 8px;
+    color: var(--text);
+  }
+  .card p, .card li {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+  .card ul { padding-left: 18px; }
+  .card li { margin-bottom: 4px; }
+
+  /* Brand card */
+  .brand-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .brand-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .brand-meta h2 { margin-bottom: 2px; }
+  .brand-meta p { font-size: 12px; }
+
+  /* Color swatches */
+  .swatches { display: flex; gap: 8px; margin: 8px 0; }
+  .swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    position: relative;
+    cursor: default;
+  }
+  .swatch::after {
+    content: attr(data-label);
+    position: absolute;
+    top: 36px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .tabs { padding: 0 16px; }
+    .content { padding: 16px; }
+  }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    margin: 2px 4px 2px 0;
+  }
+  .tag-green { background: rgba(74,222,128,0.15); color: var(--green); }
+  .tag-yellow { background: rgba(251,191,36,0.15); color: var(--yellow); }
+  .tag-red { background: rgba(248,113,113,0.15); color: var(--red); }
+  .tag-blue { background: rgba(109,159,255,0.15); color: var(--accent); }
+  .tag-orange { background: rgba(251,146,60,0.15); color: var(--orange); }
+
+  /* Book page wireframe */
+  .wireframe {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+    color: var(--text-muted);
+  }
+  .wireframe .section {
+    border-left: 2px solid var(--border);
+    padding-left: 12px;
+    margin: 8px 0;
+  }
+  .wireframe .section-label {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .wireframe .field {
+    color: var(--text-dim);
+  }
+  .wireframe .highlight {
+    color: var(--accent-2);
+  }
+
+  /* Comparison table */
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .comparison-table th {
+    text-align: left;
+    padding: 10px 12px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: sticky;
+    top: 0;
+  }
+  .comparison-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    vertical-align: top;
+  }
+  .comparison-table tr:hover td { background: var(--surface-2); }
+  .comparison-table .app-name {
+    color: var(--text);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Strength/Weakness */
+  .sw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .sw-list { list-style: none; padding: 0; }
+  .sw-list li {
+    padding: 6px 0;
+    font-size: 13px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .sw-list li::before { flex-shrink: 0; font-size: 12px; }
+  .strength li::before { content: "+"; color: var(--green); font-weight: 700; }
+  .weakness li::before { content: "-"; color: var(--red); font-weight: 700; }
+
+  /* Taxonomy comparison */
+  .tax-grid {
+    display: grid;
+    grid-template-columns: 200px repeat(5, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 11px;
+  }
+  .tax-cell {
+    padding: 10px 12px;
+    background: var(--surface);
+  }
+  .tax-header {
+    background: var(--surface-2);
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 10px;
+  }
+  .tax-category {
+    font-weight: 500;
+    color: var(--text);
+  }
+  .tax-yes { color: var(--green); }
+  .tax-partial { color: var(--yellow); }
+  .tax-no { color: var(--text-dim); }
+
+  /* Scroll hint */
+  .scroll-hint {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: right;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>tbr(a)</span> Competitor Research Dashboard</h1>
+  <p>Last updated: March 2026 | Research by Spine</p>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-panel="overview">Overview</button>
+  <button class="tab" data-panel="goodreads">Goodreads</button>
+  <button class="tab" data-panel="storygraph">StoryGraph</button>
+  <button class="tab" data-panel="fable">Fable</button>
+  <button class="tab" data-panel="bookmory">Bookmory</button>
+  <button class="tab" data-panel="bookly">Bookly</button>
+  <button class="tab" data-panel="taxonomy">Taxonomy Comparison</button>
+</div>
+
+<!-- ============ OVERVIEW ============ -->
+<div class="content">
+<div class="panel active" id="overview">
+
+  <div class="card">
+    <h2>Competitive Landscape Summary</h2>
+    <p>tbr(a) enters a market where no existing app provides structured, intensity-scaled content classification with political/cultural/religious categories. The gap is total and consistent across all five primary competitors analyzed.</p>
+    <div style="overflow-x:auto; margin-top:16px;">
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Platform</th>
+          <th>Type</th>
+          <th>Tracking</th>
+          <th>Content Warnings</th>
+          <th>Intensity Scales</th>
+          <th>Political/Cultural Flags</th>
+          <th>Evidence Levels</th>
+          <th>Catalog Scale</th>
+          <th>Pricing</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="app-name">Goodreads</td>
+          <td>Social + tracking</td>
+          <td><span class="tag tag-green">Excellent</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-green">Best</span></td>
+          <td>Free</td>
+        </tr>
+        <tr>
+          <td class="app-name">StoryGraph</td>
+          <td>Analytics + tracking</td>
+          <td><span class="tag tag-green">Excellent</span></td>
+          <td><span class="tag tag-yellow">Binary only</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-green">Good</span></td>
+          <td>Freemium ($4.99/mo)</td>
+        </tr>
+        <tr>
+          <td class="app-name">Fable</td>
+          <td>Social reading</td>
+          <td><span class="tag tag-green">Good</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-yellow">Medium</span></td>
+          <td>Free + ebook purchases</td>
+        </tr>
+        <tr>
+          <td class="app-name">Bookmory</td>
+          <td>Personal tracker</td>
+          <td><span class="tag tag-green">Good</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-yellow">Medium</span></td>
+          <td>Freemium ($3.49/mo)</td>
+        </tr>
+        <tr>
+          <td class="app-name">Bookly</td>
+          <td>Habit tracker</td>
+          <td><span class="tag tag-green">Good</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-red">None</span></td>
+          <td><span class="tag tag-yellow">Medium</span></td>
+          <td>Freemium ($4.99/mo)</td>
+        </tr>
+        <tr style="background: rgba(109,159,255,0.05);">
+          <td class="app-name" style="color:var(--accent);">tbr(a) target</td>
+          <td>Content profiles</td>
+          <td><span class="tag tag-orange">Later</span></td>
+          <td><span class="tag tag-green">Structured</span></td>
+          <td><span class="tag tag-green">0-4 scales</span></td>
+          <td><span class="tag tag-green">Core feature</span></td>
+          <td><span class="tag tag-green">AI + Human</span></td>
+          <td><span class="tag tag-orange">Scale up</span></td>
+          <td>TBD</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>The Gap Nobody Is Filling</h2>
+    <p>Every competitor fails in exactly the same place: <strong style="color:var(--accent)">no political, cultural, or values-based content classification</strong>. Not one platform will tell you "this book has progressive gender themes" or "this book portrays traditional religious values favorably."</p>
+    <ul style="margin-top:12px;">
+      <li>Goodreads and Fable have <strong>zero</strong> content information systems</li>
+      <li>StoryGraph has binary-only content warnings with no intensity and no political/cultural categories</li>
+      <li>Bookmory and Bookly are personal habit trackers — they don't even attempt content classification</li>
+      <li>No app provides evidence levels (AI vs cited vs human verified) for content claims</li>
+    </ul>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>What to Borrow</h2>
+      <ul>
+        <li><strong>StoryGraph:</strong> mood/pace/focus metadata for discovery</li>
+        <li><strong>Bookmory:</strong> clean, minimal UI that doesn't overwhelm</li>
+        <li><strong>Bookly:</strong> gamification elements (streaks, badges) for engagement</li>
+        <li><strong>Fable:</strong> social reading and book club mechanics (later phases)</li>
+        <li><strong>Goodreads:</strong> catalog scale ambition and import/export for migration</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>What to Avoid</h2>
+      <ul>
+        <li><strong>Goodreads:</strong> stale UI, noisy reviews, no innovation</li>
+        <li><strong>StoryGraph:</strong> ideological framing baked into diversity tracking</li>
+        <li><strong>Fable:</strong> ebook purchase friction, AI controversy</li>
+        <li><strong>Bookmory/Bookly:</strong> walled-garden mobile-only with no web presence</li>
+        <li><strong>All:</strong> treating content info as optional rather than core</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============ GOODREADS ============ -->
+<div class="panel" id="goodreads">
+
+  <div class="card">
+    <div class="brand-header">
+      <div class="brand-logo" style="background: linear-gradient(135deg, #553B08, #38220A);">Gr</div>
+      <div class="brand-meta">
+        <h2 style="color:var(--text);">Goodreads</h2>
+        <p>goodreads.com | Amazon-owned | ~150M users | Founded 2007</p>
+      </div>
+    </div>
+    <p>The default destination for readers globally. Book tracking, star ratings, text reviews, reading challenges, and community features. Acquired by Amazon in 2013 and has seen minimal innovation since.</p>
+
+    <h3>Brand Identity</h3>
+    <div class="swatches">
+      <div class="swatch" style="background:#553B08;" data-label="Brown"></div>
+      <div class="swatch" style="background:#382110;" data-label="Dark"></div>
+      <div class="swatch" style="background:#F4F1EA;" data-label="Cream"></div>
+      <div class="swatch" style="background:#00635D;" data-label="Teal"></div>
+      <div class="swatch" style="background:#E87400;" data-label="Orange"></div>
+    </div>
+    <p style="margin-top:20px;"><strong>Typography:</strong> Merriweather (serif) for headings, Lato (sans-serif) for body. Classic, slightly dated book-club feel.</p>
+    <p><strong>Brand vibe:</strong> Legacy, institutional, slightly creaky. Looks like a mid-2000s social network. The emotional promise is "keep track of what you've read" — functional, not aspirational.</p>
+    <p><strong>Platforms:</strong> Web (primary), iOS, Android</p>
+    <p><strong>Pricing:</strong> Free (ad-supported)</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Book Page Structure</h2>
+      <div class="wireframe">
+        <div class="section">
+          <span class="section-label">HEADER</span><br>
+          <span class="field">Cover image (left)</span><br>
+          <span class="field">Title + Author (linked)</span><br>
+          <span class="field">Star rating (avg) + rating count</span><br>
+          <span class="field">"Want to Read" button + shelving dropdown</span>
+        </div>
+        <div class="section">
+          <span class="section-label">DESCRIPTION</span><br>
+          <span class="field">Publisher blurb / synopsis</span><br>
+          <span class="field">"Show more" expandable</span>
+        </div>
+        <div class="section">
+          <span class="section-label">GENRE TAGS</span><br>
+          <span class="field">Community-shelved genres (clickable)</span><br>
+          <span class="field">e.g. "fiction", "fantasy", "classics"</span>
+        </div>
+        <div class="section">
+          <span class="section-label">DETAILS</span><br>
+          <span class="field">Page count, format, publisher</span><br>
+          <span class="field">Publication date, language</span><br>
+          <span class="field">ISBN-10, ISBN-13</span><br>
+          <span class="field">Edition language, literary awards</span>
+        </div>
+        <div class="section">
+          <span class="section-label">COMMUNITY</span><br>
+          <span class="field">Rating distribution bar chart</span><br>
+          <span class="field">Community reviews (sort by recency/popularity)</span><br>
+          <span class="field">"Readers also enjoyed" carousel</span><br>
+          <span class="field">Quotes (user-contributed)</span><br>
+          <span class="field">Lists the book appears on</span><br>
+          <span class="field">Q&A with author (some titles)</span>
+        </div>
+        <div class="section">
+          <span class="highlight">CONTENT INFO: NONE</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Complete Feature List</h2>
+      <h3>Core</h3>
+      <ul>
+        <li>Book tracking (Want to Read / Reading / Read)</li>
+        <li>5-star rating system</li>
+        <li>Text reviews</li>
+        <li>Personal bookshelves (custom)</li>
+        <li>Book search + catalog browsing</li>
+      </ul>
+      <h3>Social</h3>
+      <ul>
+        <li>Friend network + activity feed</li>
+        <li>Follow authors</li>
+        <li>Community groups / discussion boards</li>
+        <li>Author Q&A (select titles)</li>
+        <li>Recommendations to friends</li>
+      </ul>
+      <h3>Discovery</h3>
+      <ul>
+        <li>"Readers also enjoyed" recommendations</li>
+        <li>Listopia (community-curated lists)</li>
+        <li>Goodreads Choice Awards (annual)</li>
+        <li>Genre/shelf browsing</li>
+        <li>Giveaways (publisher-sponsored)</li>
+      </ul>
+      <h3>Tracking</h3>
+      <ul>
+        <li>Annual reading challenge (goal tracking)</li>
+        <li>Reading progress updates</li>
+        <li>Year in Books summary</li>
+      </ul>
+      <h3>Content</h3>
+      <ul>
+        <li>Quotes database (searchable, user-submitted)</li>
+        <li>Author profiles + bibliography</li>
+        <li>Book editions tracking</li>
+        <li>Kindle integration (Amazon)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Strengths & Weaknesses vs tbr(a)</h2>
+    <div class="sw-grid">
+      <div>
+        <h3 style="color:var(--green);">Strengths</h3>
+        <ul class="sw-list strength">
+          <li>Unmatched catalog depth — almost any book is there</li>
+          <li>Massive social proof — millions of ratings per popular title</li>
+          <li>Goodreads Choice Awards carry cultural weight</li>
+          <li>Author presence — part of book launch strategy</li>
+          <li>Inertia — everyone's library is already there</li>
+          <li>Kindle integration (Amazon ecosystem)</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="color:var(--red);">Weaknesses</h3>
+        <ul class="sw-list weakness">
+          <li>Zero content information — total gap</li>
+          <li>Stale UI/UX — unchanged in 10+ years</li>
+          <li>Recommendation quality is poor (genre-proximity only)</li>
+          <li>Reviews buried under spam and bot noise</li>
+          <li>No reading analytics beyond basic counts</li>
+          <li>Community tools feel abandoned</li>
+          <li>No mobile-first design consideration</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STORYGRAPH ============ -->
+<div class="panel" id="storygraph">
+
+  <div class="card">
+    <div class="brand-header">
+      <div class="brand-logo" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">SG</div>
+      <div class="brand-meta">
+        <h2 style="color:var(--text);">StoryGraph</h2>
+        <p>thestorygraph.com | Independent | Founded 2019 by Nadia Odunayo</p>
+      </div>
+    </div>
+    <p>The primary Goodreads alternative. Book tracking with analytics, reading mood/pace matching, diverse author tracking, and community-submitted content warnings. Marketed as "smarter" than Goodreads.</p>
+
+    <h3>Brand Identity</h3>
+    <div class="swatches">
+      <div class="swatch" style="background:#6366f1;" data-label="Indigo"></div>
+      <div class="swatch" style="background:#8b5cf6;" data-label="Purple"></div>
+      <div class="swatch" style="background:#1e1e2e;" data-label="Dark"></div>
+      <div class="swatch" style="background:#f5f5f5;" data-label="Light"></div>
+      <div class="swatch" style="background:#22c55e;" data-label="Green"></div>
+    </div>
+    <p style="margin-top:20px;"><strong>Typography:</strong> Modern sans-serif (system fonts), clean and readable. Dark mode-first.</p>
+    <p><strong>Brand vibe:</strong> Modern, thoughtful, progressive, intentional. Heavy emphasis on diversity and inclusion. Feels like a product built by someone who reads a lot and was annoyed by Goodreads.</p>
+    <p><strong>Platforms:</strong> Web (primary, responsive), iOS, Android</p>
+    <p><strong>Pricing:</strong> Free tier + Plus ($4.99/mo or $49.99/yr for advanced stats, reading insights, and premium features)</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Book Page Structure</h2>
+      <div class="wireframe">
+        <div class="section">
+          <span class="section-label">HEADER</span><br>
+          <span class="field">Cover image + Title + Author</span><br>
+          <span class="field">Star rating (community average)</span><br>
+          <span class="field">Page count + Publication date</span>
+        </div>
+        <div class="section">
+          <span class="section-label">MOOD / PACE / FOCUS</span><br>
+          <span class="field">Moods: Adventurous / Dark / Emotional / Funny...</span><br>
+          <span class="field">Pace: Fast / Medium / Slow</span><br>
+          <span class="field">Focus: % Plot-driven vs Character-driven</span>
+        </div>
+        <div class="section">
+          <span class="section-label">DESCRIPTION</span><br>
+          <span class="field">Publisher synopsis with expand</span>
+        </div>
+        <div class="section">
+          <span class="section-label">GENRES / SUBGENRES</span><br>
+          <span class="field">More granular than Goodreads</span>
+        </div>
+        <div class="section">
+          <span class="section-label">CONTENT WARNINGS</span><br>
+          <span class="field">Community-submitted, collapsible</span><br>
+          <span class="field">Binary flags: "abuse", "addiction", "death"...</span><br>
+          <span class="highlight">No intensity. No specificity. No evidence.</span>
+        </div>
+        <div class="section">
+          <span class="section-label">REVIEWS + STATS</span><br>
+          <span class="field">Star ratings + text reviews</span><br>
+          <span class="field">Reading stats from tracked users</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Complete Feature List</h2>
+      <h3>Core</h3>
+      <ul>
+        <li>Book tracking (TBR / Reading / Read / DNF)</li>
+        <li>Star ratings + text reviews</li>
+        <li>Custom shelves and tags</li>
+        <li>Import from Goodreads (CSV)</li>
+      </ul>
+      <h3>Analytics (Key Differentiator)</h3>
+      <ul>
+        <li>Reading stats: by genre, mood, pace</li>
+        <li>Diversity stats: % by authors of color, women, etc.</li>
+        <li>Pages read over time charts</li>
+        <li>Monthly/yearly reading reports</li>
+        <li>Reading journal / log entries</li>
+      </ul>
+      <h3>Discovery</h3>
+      <ul>
+        <li>"Find your next read" with mood/pace/genre filters</li>
+        <li>"Not in the mood for" negative filter</li>
+        <li>Series tracker (where you are in a series)</li>
+        <li>Recommendations based on reading history</li>
+      </ul>
+      <h3>Social</h3>
+      <ul>
+        <li>Book clubs (create/join)</li>
+        <li>Reading challenges (custom + community)</li>
+        <li>Friend activity feed</li>
+        <li>Author diversity tracker</li>
+      </ul>
+      <h3>Content Info</h3>
+      <ul>
+        <li>Community content warnings (binary yes/no)</li>
+        <li>Mood tags (community-voted)</li>
+        <li>Pace rating (community-voted)</li>
+        <li>No intensity, no political/cultural, no evidence levels</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Strengths & Weaknesses vs tbr(a)</h2>
+    <div class="sw-grid">
+      <div>
+        <h3 style="color:var(--green);">Strengths</h3>
+        <ul class="sw-list strength">
+          <li>Reading analytics are genuinely excellent and differentiated</li>
+          <li>Mood/pace/focus metadata is clever UX for discovery</li>
+          <li>Recommendation filters are more useful than Goodreads</li>
+          <li>Content warnings exist at all — proves market demand</li>
+          <li>Engaged, authentic community</li>
+          <li>Modern, clean, responsive design</li>
+          <li>DNF tracking with reason (unique)</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="color:var(--red);">Weaknesses</h3>
+        <ul class="sw-list weakness">
+          <li>Content warnings are binary, unstructured, inconsistent</li>
+          <li>No political/cultural content classification at all</li>
+          <li>Editorial bias baked into diversity tracking</li>
+          <li>Smaller catalog than Goodreads</li>
+          <li>No evidence level for content data</li>
+          <li>Coverage depends entirely on community participation</li>
+          <li>Popular books have data; obscure books have nothing</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FABLE ============ -->
+<div class="panel" id="fable">
+
+  <div class="card">
+    <div class="brand-header">
+      <div class="brand-logo" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Fb</div>
+      <div class="brand-meta">
+        <h2 style="color:var(--text);">Fable</h2>
+        <p>fable.co | VC-backed | Founded 2019 | "Stories for everyone"</p>
+      </div>
+    </div>
+    <p>Social reading platform centered on book clubs and in-app ebook reading. Recently expanded to include TV show tracking. Positioned as a social experience for younger readers (18-35, BookTok-adjacent). Faced controversy in 2025 over AI-generated content features.</p>
+
+    <h3>Brand Identity</h3>
+    <div class="swatches">
+      <div class="swatch" style="background:#f59e0b;" data-label="Amber"></div>
+      <div class="swatch" style="background:#1a1a2e;" data-label="Navy"></div>
+      <div class="swatch" style="background:#ffffff;" data-label="White"></div>
+      <div class="swatch" style="background:#e5e7eb;" data-label="Gray"></div>
+      <div class="swatch" style="background:#6366f1;" data-label="Indigo"></div>
+    </div>
+    <p style="margin-top:20px;"><strong>Typography:</strong> Modern sans-serif, warm and approachable. Clean with generous whitespace.</p>
+    <p><strong>Brand vibe:</strong> Warm, social, community-first. "Reading is better together." Feels like a startup trying to make books as social as Instagram. Younger, trendier energy than Goodreads.</p>
+    <p><strong>Platforms:</strong> iOS, Android, Web</p>
+    <p><strong>Pricing:</strong> Free app + ebook purchases for in-app reading</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Book Page Structure</h2>
+      <div class="wireframe">
+        <div class="section">
+          <span class="section-label">HEADER</span><br>
+          <span class="field">Cover image + Title + Author</span><br>
+          <span class="field">Average rating (community)</span><br>
+          <span class="field">"Add to List" / "Want to Read" action</span>
+        </div>
+        <div class="section">
+          <span class="section-label">DESCRIPTION</span><br>
+          <span class="field">Synopsis / publisher blurb</span>
+        </div>
+        <div class="section">
+          <span class="section-label">SOCIAL READING</span><br>
+          <span class="field">Book clubs featuring this book</span><br>
+          <span class="field">Highlights and notes from friends</span><br>
+          <span class="field">"Read with friends" CTA</span>
+        </div>
+        <div class="section">
+          <span class="section-label">DETAILS</span><br>
+          <span class="field">Page count, format</span><br>
+          <span class="field">Publisher, publication date</span><br>
+          <span class="field">Genre tags</span>
+        </div>
+        <div class="section">
+          <span class="section-label">REVIEWS</span><br>
+          <span class="field">Community reviews / ratings</span>
+        </div>
+        <div class="section">
+          <span class="highlight">CONTENT INFO: NONE</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Complete Feature List</h2>
+      <h3>Core</h3>
+      <ul>
+        <li>Book tracking (TBR, Reading, Read)</li>
+        <li>TV show tracking (recent addition)</li>
+        <li>Reading progress tracking</li>
+        <li>Goal setting (2026 goals supported)</li>
+        <li>Reading streaks</li>
+      </ul>
+      <h3>Social Reading (Key Differentiator)</h3>
+      <ul>
+        <li>Interactive ebook reader (1M+ books)</li>
+        <li>Inline highlights, reactions, comments, tabs, notes</li>
+        <li>Book clubs with spoiler-free chapter rooms</li>
+        <li>TV clubs with episode rooms</li>
+        <li>Celebrity/influencer-led clubs (BookTok, YouTube)</li>
+        <li>Buddy reads with friends</li>
+      </ul>
+      <h3>Discovery</h3>
+      <ul>
+        <li>Personalized recommendations</li>
+        <li>Mood quizzes</li>
+        <li>Editorial team picks</li>
+        <li>Import from Goodreads and Kindle</li>
+      </ul>
+      <h3>Content Info</h3>
+      <ul>
+        <li style="color:var(--red);">No content warnings</li>
+        <li style="color:var(--red);">No content classification</li>
+        <li style="color:var(--red);">No political/cultural flags</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Strengths & Weaknesses vs tbr(a)</h2>
+    <div class="sw-grid">
+      <div>
+        <h3 style="color:var(--green);">Strengths</h3>
+        <ul class="sw-list strength">
+          <li>Book club UX is genuinely thoughtful</li>
+          <li>In-app ebook reader with social annotations</li>
+          <li>Spoiler-free chapter rooms are smart</li>
+          <li>Clean, modern design</li>
+          <li>TV show tracking broadens appeal</li>
+          <li>Import from Goodreads + Kindle</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="color:var(--red);">Weaknesses</h3>
+        <ul class="sw-list weakness">
+          <li>Zero content information of any kind</li>
+          <li>Requires ebook purchase for full social features</li>
+          <li>AI controversy (2025) damaged trust</li>
+          <li>Content is ephemeral-social, not reference</li>
+          <li>Technical instability (user-reported crashes)</li>
+          <li>Search functionality is poor</li>
+          <li>Books with multiple versions; some uncataloged</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ BOOKMORY ============ -->
+<div class="panel" id="bookmory">
+
+  <div class="card">
+    <div class="brand-header">
+      <div class="brand-logo" style="background: linear-gradient(135deg, #10b981, #059669);">Bm</div>
+      <div class="brand-meta">
+        <h2 style="color:var(--text);">Bookmory</h2>
+        <p>bookmory.com | Independent | 4.9 on Google Play, 4.8 on App Store</p>
+      </div>
+    </div>
+    <p>Personal book tracking and reading habit app. Reading log, reading journal, reading timer, and reading goal tracker — all in one app. Positioned as a beautiful, minimal Goodreads alternative focused on personal reading habits rather than social features.</p>
+
+    <h3>Brand Identity</h3>
+    <div class="swatches">
+      <div class="swatch" style="background:#10b981;" data-label="Emerald"></div>
+      <div class="swatch" style="background:#065f46;" data-label="Dark Green"></div>
+      <div class="swatch" style="background:#f0fdf4;" data-label="Mint"></div>
+      <div class="swatch" style="background:#1f2937;" data-label="Dark"></div>
+      <div class="swatch" style="background:#ffffff;" data-label="White"></div>
+    </div>
+    <p style="margin-top:20px;"><strong>Typography:</strong> Clean sans-serif, modern, generous spacing. Customizable theme colors in-app.</p>
+    <p><strong>Brand vibe:</strong> Minimal, polished, personal-first. Not a social network — it's about your reading life. Habit-focused, like a fitness app for books. Indie/solo-developer feel.</p>
+    <p><strong>Platforms:</strong> iOS, Android (mobile-only, no web app)</p>
+    <p><strong>Pricing:</strong> Freemium — free with ads + Premium at $3.49/mo or $30.99/yr (removes ads, unlimited stats, themes, OCR text extraction)</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Book Page Structure</h2>
+      <div class="wireframe">
+        <div class="section">
+          <span class="section-label">HEADER</span><br>
+          <span class="field">Cover image</span><br>
+          <span class="field">Title + Author</span><br>
+          <span class="field">Your status (Want to Read / Reading / Read)</span>
+        </div>
+        <div class="section">
+          <span class="section-label">DESCRIPTION</span><br>
+          <span class="field">Synopsis / description</span>
+        </div>
+        <div class="section">
+          <span class="section-label">METADATA</span><br>
+          <span class="field">Page count</span><br>
+          <span class="field">Publication date</span><br>
+          <span class="field">Publisher</span><br>
+          <span class="field">ISBN</span><br>
+          <span class="field">Genre / categories</span>
+        </div>
+        <div class="section">
+          <span class="section-label">YOUR DATA</span><br>
+          <span class="field">Your rating (personal)</span><br>
+          <span class="field">Your notes / quotes</span><br>
+          <span class="field">Reading progress (pages / %)</span><br>
+          <span class="field">Reading sessions log (dates + pages)</span>
+        </div>
+        <div class="section">
+          <span class="highlight">CONTENT INFO: NONE</span><br>
+          <span class="highlight">No community ratings or reviews</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Complete Feature List</h2>
+      <h3>Tracking</h3>
+      <ul>
+        <li>Book tracking (Want to Read / Reading / Read)</li>
+        <li>Reading sessions with page logging</li>
+        <li>Built-in reading timer</li>
+        <li>Reading progress (pages / percentage)</li>
+        <li>Collections and series management</li>
+        <li>Custom tags</li>
+        <li>Book search + barcode scanner</li>
+      </ul>
+      <h3>Habit Building</h3>
+      <ul>
+        <li>Daily and yearly reading goals</li>
+        <li>Reading streak counter</li>
+        <li>Reminder notifications</li>
+        <li>Borrowed book return reminders</li>
+      </ul>
+      <h3>Journal & Notes</h3>
+      <ul>
+        <li>Reading notes with rich text editor</li>
+        <li>Quote highlights</li>
+        <li>OCR text extraction from photos (Premium)</li>
+        <li>Note decoration / background themes</li>
+      </ul>
+      <h3>Statistics</h3>
+      <ul>
+        <li>Books read per year/month charts</li>
+        <li>Pages read over time</li>
+        <li>Reading time analytics</li>
+        <li>Calendar view of reading activity</li>
+      </ul>
+      <h3>Other</h3>
+      <ul>
+        <li>iOS home screen widgets</li>
+        <li>Dark mode + theme customization</li>
+        <li>App lock</li>
+        <li>Goodreads CSV import</li>
+        <li>Data export (CSV)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Strengths & Weaknesses vs tbr(a)</h2>
+    <div class="sw-grid">
+      <div>
+        <h3 style="color:var(--green);">Strengths</h3>
+        <ul class="sw-list strength">
+          <li>Beautiful, minimal UI — very high app store ratings</li>
+          <li>Reading timer and session logging are well-executed</li>
+          <li>Reading habit gamification (streaks, goals)</li>
+          <li>OCR text extraction is a nice differentiator</li>
+          <li>Barcode scanner for quick book adding</li>
+          <li>Customizable themes and note editor</li>
+          <li>Privacy-first (personal, not social)</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="color:var(--red);">Weaknesses</h3>
+        <ul class="sw-list weakness">
+          <li>Zero content information</li>
+          <li>No community data (no shared reviews/ratings)</li>
+          <li>Mobile-only — no web app at all</li>
+          <li>No discovery or recommendation features</li>
+          <li>No social features whatsoever</li>
+          <li>Small catalog compared to Goodreads</li>
+          <li>No political/cultural/content classification</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ BOOKLY ============ -->
+<div class="panel" id="bookly">
+
+  <div class="card">
+    <div class="brand-header">
+      <div class="brand-logo" style="background: linear-gradient(135deg, #0c4da2, #1e40af);">Bk</div>
+      <div class="brand-meta">
+        <h2 style="color:var(--text);">Bookly</h2>
+        <p>getbookly.com | Independent | "Track it in real time!"</p>
+      </div>
+    </div>
+    <p>Reading habit tracker with a strong focus on gamification. Real-time reading timer, milestones, badges, ambient sounds, and "readathon" community events. Treats reading like a workout — track it, measure it, build the habit.</p>
+
+    <h3>Brand Identity</h3>
+    <div class="swatches">
+      <div class="swatch" style="background:#0c4da2;" data-label="Blue"></div>
+      <div class="swatch" style="background:#1e40af;" data-label="Dark Blue"></div>
+      <div class="swatch" style="background:#ffffff;" data-label="White"></div>
+      <div class="swatch" style="background:#f3f4f6;" data-label="Light Gray"></div>
+      <div class="swatch" style="background:#f59e0b;" data-label="Amber"></div>
+    </div>
+    <p style="margin-top:20px;"><strong>Typography:</strong> NTR font family, light weight (300), sans-serif. Clean and minimal.</p>
+    <p><strong>Brand vibe:</strong> Motivational, gamified, community-focused. "Reading as a daily workout." Emphasizes progress visualization, achievement unlocking, and habit building.</p>
+    <p><strong>Platforms:</strong> iOS, Android (mobile-only, no web app)</p>
+    <p><strong>Pricing:</strong> Freemium — free tier limited to 10 books. Pro: $4.99/mo, $19.99/6mo, or $29.99/yr (7-day free trial). Pro unlocks unlimited books, global stats, cloud sync, ambient sounds, image quotes, collections, no ads.</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Book Page Structure</h2>
+      <div class="wireframe">
+        <div class="section">
+          <span class="section-label">HEADER</span><br>
+          <span class="field">Cover image</span><br>
+          <span class="field">Title + Author</span><br>
+          <span class="field">Your reading status</span>
+        </div>
+        <div class="section">
+          <span class="section-label">PROGRESS</span><br>
+          <span class="field">Reading progress bar</span><br>
+          <span class="field">Pages read / total pages</span><br>
+          <span class="field">Estimated time to finish</span><br>
+          <span class="field">Reading speed (pages/hour)</span>
+        </div>
+        <div class="section">
+          <span class="section-label">YOUR RATINGS</span><br>
+          <span class="field">Classic 5-star rating</span><br>
+          <span class="field">Custom ratings: inspiration, heartfelt,</span><br>
+          <span class="field">love, spice, humor, etc.</span>
+        </div>
+        <div class="section">
+          <span class="section-label">METADATA</span><br>
+          <span class="field">Page count, format</span><br>
+          <span class="field">Publisher, date</span><br>
+          <span class="field">Genre / category</span>
+        </div>
+        <div class="section">
+          <span class="section-label">NOTES</span><br>
+          <span class="field">Quotes and annotations</span><br>
+          <span class="field">Image quotes (Pro)</span>
+        </div>
+        <div class="section">
+          <span class="highlight">CONTENT INFO: NONE</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Complete Feature List</h2>
+      <h3>Reading Timer (Key Differentiator)</h3>
+      <ul>
+        <li>Real-time reading timer</li>
+        <li>Reading speed calculation (pages/hour)</li>
+        <li>Estimated time to finish</li>
+        <li>Session history with time + pages</li>
+        <li>Ambient sounds while reading (Pro)</li>
+      </ul>
+      <h3>Gamification</h3>
+      <ul>
+        <li>Milestones and badges</li>
+        <li>"Bookly Readathons" — community reading events</li>
+        <li>Reading streaks</li>
+        <li>Achievement system</li>
+        <li>Progress visualization</li>
+      </ul>
+      <h3>Tracking</h3>
+      <ul>
+        <li>Book library (add via scan or search)</li>
+        <li>Books, ebooks, and audiobooks</li>
+        <li>Daily, monthly, yearly reading goals</li>
+        <li>Weekly/monthly/yearly progress reports</li>
+        <li>Collections (Pro)</li>
+        <li>Cloud sync (Pro)</li>
+      </ul>
+      <h3>Ratings</h3>
+      <ul>
+        <li>5-star classic rating</li>
+        <li>Custom rating categories (spice, humor, love, inspiration, heartfelt, etc.)</li>
+      </ul>
+      <h3>Notes & Quotes</h3>
+      <ul>
+        <li>Text quotes and annotations</li>
+        <li>Voice notes (via dictation)</li>
+        <li>Photo notes</li>
+        <li>Image quotes (shareable, Pro)</li>
+      </ul>
+      <h3>Other</h3>
+      <ul>
+        <li>Personal reading assistant (Pro)</li>
+        <li>Reminders / notifications</li>
+        <li>Global reading stats (Pro)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Strengths & Weaknesses vs tbr(a)</h2>
+    <div class="sw-grid">
+      <div>
+        <h3 style="color:var(--green);">Strengths</h3>
+        <ul class="sw-list strength">
+          <li>Best-in-class reading timer UX</li>
+          <li>Gamification drives habit formation</li>
+          <li>Custom rating categories (spice, humor, etc.) are clever</li>
+          <li>Readathon community events build engagement</li>
+          <li>Ambient sounds is a unique, charming feature</li>
+          <li>Audiobook + ebook tracking alongside physical</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="color:var(--red);">Weaknesses</h3>
+        <ul class="sw-list weakness">
+          <li>Zero content information</li>
+          <li>Free tier limited to only 10 books (aggressive paywall)</li>
+          <li>Mobile-only — no web app</li>
+          <li>No community reviews or social features</li>
+          <li>No discovery or recommendation engine</li>
+          <li>No content classification of any kind</li>
+          <li>Custom ratings are personal, not standardized</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAXONOMY COMPARISON ============ -->
+<div class="panel" id="taxonomy">
+
+  <div class="card">
+    <h2>tbr(a) Taxonomy v0 vs Competitors</h2>
+    <p>How each competitor's content classification maps to our 11 taxonomy categories. This makes the gap visible.</p>
+  </div>
+
+  <div class="card" style="overflow-x:auto;">
+    <div class="scroll-hint">Scroll horizontally on mobile &rarr;</div>
+    <div class="tax-grid" style="min-width:800px;">
+      <div class="tax-cell tax-header">tbr(a) Category</div>
+      <div class="tax-cell tax-header">Goodreads</div>
+      <div class="tax-cell tax-header">StoryGraph</div>
+      <div class="tax-cell tax-header">Fable</div>
+      <div class="tax-cell tax-header">Bookmory</div>
+      <div class="tax-cell tax-header">Bookly</div>
+
+      <div class="tax-cell tax-category">LGBTQIA+ representation</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">Binary CW only</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+
+      <div class="tax-cell tax-category">Religious content</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+
+      <div class="tax-cell tax-category">Witchcraft / occult</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+
+      <div class="tax-cell tax-category">Sexual content</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">Binary CW only</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">Personal "spice" rating</div>
+
+      <div class="tax-cell tax-category">Violence & gore</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">Binary CW only</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+
+      <div class="tax-cell tax-category">Political & ideological</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+
+      <div class="tax-cell tax-category">Profanity / language</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">Binary CW only</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+
+      <div class="tax-cell tax-category">Substance use</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">Binary CW only</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+
+      <div class="tax-cell tax-category">Self-harm / suicide</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">Binary CW only</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+
+      <div class="tax-cell tax-category">Sexual assault / coercion</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">Binary CW only</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+
+      <div class="tax-cell tax-category">Child harm</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">Binary CW only</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-no">None</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>tbr(a) Advantages</h2>
+      <ul>
+        <li><strong>Intensity scales (0-4)</strong> — only tbr(a) provides graduated intensity, not binary flags</li>
+        <li><strong>Political & ideological content</strong> — no competitor covers this at all</li>
+        <li><strong>Religious content</strong> — no competitor covers this at all</li>
+        <li><strong>Witchcraft / occult</strong> — no competitor covers this at all</li>
+        <li><strong>Evidence levels</strong> — AI Inferred / Cited / Human Verified is unique</li>
+        <li><strong>Descriptive notes</strong> — required at intensity &ge;2 provides context</li>
+        <li><strong>"Why we think this"</strong> — citation transparency is unmatched</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Key Insight</h2>
+      <p>StoryGraph is the <em>only</em> competitor with any form of content classification, and it covers only 6 of our 11 categories — all as binary flags with no intensity, no notes, and no evidence level.</p>
+      <p style="margin-top:12px;">The three categories that make tbr(a) uniquely positioned — <strong>Political & ideological</strong>, <strong>Religious content</strong>, and <strong>Witchcraft / occult</strong> — have <strong>zero coverage across all five competitors</strong>. This is the structural differentiation.</p>
+      <p style="margin-top:12px;">Bookly's custom "spice" rating is interesting but personal (not standardized) and only covers one dimension. It's a nod toward content info but not a system.</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .content -->
+
+<div style="text-align:center; padding:32px; color:var(--text-dim); font-size:11px;">
+  tbr(a) Competitor Research Dashboard | Built by Spine | March 2026
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.panel');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.panel).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
