@@ -1,4 +1,4 @@
-# Current Task: Phase 1 — Book data + search
+# Current Task: Phase 2 — TBD
 
 ## What was completed
 
@@ -11,21 +11,26 @@
 
 ### Competitor Research Dashboard (completed 2026-03-13)
 - [x] HTML dashboard with tabbed navigation covering Goodreads, StoryGraph, Fable, Bookmory, Bookly
-- [x] Book page structure breakdowns per app
-- [x] Branding teardowns with color palettes
-- [x] Complete feature lists per app
-- [x] Strengths/weaknesses vs tbr(a)
-- [x] Taxonomy comparison (our 11 categories vs all competitors)
 - [x] Deployed to GitHub Pages: https://rebekah-edwards.github.io/tbra/
-- [x] Repo made public to support GitHub Pages
 
-## What to do next (Phase 1)
-1. Integrate Open Library API for book metadata (title, author, ISBN, description, cover)
-2. Build search: full-text search across title + author + description
-3. Manual book entry form (for books not in Open Library)
-4. Seed 10-20 books for testing
+### Phase 1 — Book Data + Search + Visual Design (completed 2026-03-13)
+- [x] Design system: teal primary + warm stone neutrals, light mode only
+- [x] Schema: added `coverImageUrl` and `openLibraryKey` to books table
+- [x] Open Library client (`src/lib/openlibrary.ts`): search, fetch work, build cover URLs
+- [x] API route: `GET /api/openlibrary/search?q=...` proxy for client-side search
+- [x] Server actions: `importFromOpenLibrary`, `createBookManually`
+- [x] Book queries: `getBookWithDetails` joins books + authors + genres + ratings + links
+- [x] Search page with debounced Open Library search + "Add to Library" import
+- [x] Book detail page: cover, authors, expandable description, content profile bars
+- [x] Manual entry form at `/search/add`
+- [x] Content profile component: 4-segment intensity bars with evidence badges
+- [x] Seeded 15 books (6 with sample taxonomy ratings) via `npm run db:seed-books`
+
+## What to do next (Phase 2)
+- TBD — awaiting assignment
 
 ## Context
 - Repo: https://github.com/rebekah-edwards/tbra (now public)
 - Dashboard: https://rebekah-edwards.github.io/tbra/
 - Stack: Next.js + SQLite + Drizzle ORM locally
+- Routes: `/`, `/search`, `/search/add`, `/book/[id]`, `/api/openlibrary/search`
