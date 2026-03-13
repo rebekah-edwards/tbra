@@ -12,3 +12,10 @@ Short, dated decisions log. Keep entries crisp: *decision → why → implicatio
 - Tech stack: Next.js + SQLite locally for development; swap to PostgreSQL at deploy time. Zero hosting cost until launch.
 - Spine defaults to Sonnet 4.6 for cron runs. Escalates to Opus for complex architectural tasks (multi-file refactors, deep design decisions).
 - Overnight schedule: Tue/Thu 3 AM ET. Interleaved with Lore (Mon/Wed/Fri 3 AM).
+
+## 2026-03-13
+- Phase 0 scaffold complete: Next.js 16 + Drizzle ORM + SQLite. Schema matches schema-sketch-postgres.md. 11 taxonomy categories seeded.
+- Repo made public to support GitHub Pages. No secrets in the codebase — safe for now.
+- Competitor dashboard deployed to GitHub Pages (gh-pages branch). Covers Goodreads, StoryGraph, Fable, Bookmory, Bookly.
+- Bookmory and Bookly added to competitor analysis. Both are personal habit trackers with zero content classification — reinforce our differentiation.
+- Fable faced AI controversy in early 2025 — cautionary note for our AI-assisted classification messaging.
