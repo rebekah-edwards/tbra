@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getBookWithDetails } from "@/lib/queries/books";
 import { BookHeader } from "@/components/book/book-header";
+import { BookEditions } from "@/components/book/book-editions";
 import { BookDescription } from "@/components/book/book-description";
+import { BookSeries } from "@/components/book/book-series";
 import { ContentProfile } from "@/components/book/content-profile";
 
 export default async function BookPage({
@@ -37,7 +39,11 @@ export default async function BookPage({
         pages={book.pages}
       />
 
+      <BookEditions />
+
       <BookDescription description={book.description} />
+
+      <BookSeries />
 
       <ContentProfile ratings={book.ratings} />
     </div>
