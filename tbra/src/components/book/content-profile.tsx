@@ -29,6 +29,14 @@ const CATEGORY_ORDER = [
   "child_harm",
 ];
 
+// Short display names for mobile-friendly single-line rendering
+const SHORT_NAMES: Record<string, string> = {
+  "lgbtqia_representation": "LGBTQIA+",
+  "profanity_language": "Profanity",
+  "political_ideological": "Political content",
+  "sexual_assault_coercion": "Sexual assault",
+};
+
 const intensityColors = [
   "bg-intensity-0",
   "bg-intensity-1",
@@ -78,11 +86,12 @@ function ExpandableNote({ text }: { text: string }) {
 function RatingCard({ rating }: { rating: Rating }) {
   const badge = evidenceBadge[rating.evidenceLevel];
   const isVerified = rating.evidenceLevel === "human_verified";
+  const displayName = SHORT_NAMES[rating.categoryKey] ?? rating.categoryName;
 
   return (
     <div>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium">{rating.categoryName}</span>
+        <span className="text-xs font-medium">{displayName}</span>
         {badge && (
           <span
             className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${badge.className}`}
