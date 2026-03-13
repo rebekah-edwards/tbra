@@ -349,11 +349,11 @@
           <td class="app-name">Fable</td>
           <td>Social reading</td>
           <td><span class="tag tag-green">Good</span></td>
+          <td><span class="tag tag-yellow">Binary tags (23)</span></td>
+          <td><span class="tag tag-yellow">Spice slider</span></td>
           <td><span class="tag tag-red">None</span></td>
           <td><span class="tag tag-red">None</span></td>
-          <td><span class="tag tag-red">None</span></td>
-          <td><span class="tag tag-red">None</span></td>
-          <td><span class="tag tag-yellow">Medium</span></td>
+          <td><span class="tag tag-green">9M+ books</span></td>
           <td>Free + ebook purchases</td>
         </tr>
         <tr>
@@ -398,8 +398,8 @@
     <h2>The Gap Nobody Is Filling</h2>
     <p>Every competitor fails in exactly the same place: <strong style="color:var(--accent)">no political, cultural, or values-based content classification</strong>. Not one platform will tell you "this book has progressive gender themes" or "this book portrays traditional religious values favorably."</p>
     <ul style="margin-top:12px;">
-      <li>Goodreads and Fable have <strong>zero</strong> content information systems</li>
-      <li>StoryGraph has binary-only content warnings with no intensity and no political/cultural categories</li>
+      <li>Goodreads has <strong>zero</strong> content information systems</li>
+      <li>Fable and StoryGraph have binary-only content warnings with no intensity and no political/cultural categories</li>
       <li>Bookmory and Bookly are personal habit trackers — they don't even attempt content classification</li>
       <li>No app provides evidence levels (AI vs cited vs human verified) for content claims</li>
     </ul>
@@ -713,26 +713,26 @@
 
   <div class="card">
     <div class="brand-header">
-      <div class="brand-logo" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Fb</div>
+      <div class="brand-logo" style="background: linear-gradient(135deg, #3a5a40, #588157);">Fb</div>
       <div class="brand-meta">
         <h2 style="color:var(--text);">Fable</h2>
-        <p>fable.co | VC-backed | Founded 2019 | "Stories for everyone"</p>
+        <p>fable.co | VC-backed | Founded 2019 | 9M+ book catalog</p>
       </div>
     </div>
-    <p>Social reading platform centered on book clubs and in-app ebook reading. Recently expanded to include TV show tracking. Positioned as a social experience for younger readers (18-35, BookTok-adjacent). Faced controversy in 2025 over AI-generated content features.</p>
+    <p>Social reading platform centered on book clubs, in-app ebook reading, and community-driven content classification. Includes TV/show tracking. Features a structured 5-step review flow with content warnings, mood ratings, spice meters, and descriptor tags. Faced controversy in early 2025 over AI-generated content features.</p>
 
     <h3>Brand Identity</h3>
     <div class="swatches">
-      <div class="swatch" style="background:#f59e0b;" data-label="Amber"></div>
-      <div class="swatch" style="background:#1a1a2e;" data-label="Navy"></div>
-      <div class="swatch" style="background:#ffffff;" data-label="White"></div>
-      <div class="swatch" style="background:#e5e7eb;" data-label="Gray"></div>
-      <div class="swatch" style="background:#6366f1;" data-label="Indigo"></div>
+      <div class="swatch" style="background:#3a5a40;" data-label="Forest"></div>
+      <div class="swatch" style="background:#588157;" data-label="Sage"></div>
+      <div class="swatch" style="background:#f5f0e8;" data-label="Cream"></div>
+      <div class="swatch" style="background:#f0968a;" data-label="Coral"></div>
+      <div class="swatch" style="background:#e8e3db;" data-label="Beige"></div>
     </div>
-    <p style="margin-top:20px;"><strong>Typography:</strong> Modern sans-serif, warm and approachable. Clean with generous whitespace.</p>
-    <p><strong>Brand vibe:</strong> Warm, social, community-first. "Reading is better together." Feels like a startup trying to make books as social as Instagram. Younger, trendier energy than Goodreads.</p>
+    <p style="margin-top:20px;"><strong>Typography:</strong> Modern sans-serif, warm and approachable. Clean with generous whitespace. Cream/beige backgrounds throughout.</p>
+    <p><strong>Brand vibe:</strong> Earthy, warm, community-first. Cream/beige backgrounds with forest green accents. Profile stats use pink/coral gradients with cute flower illustrations. Feels organic and inviting — more "cozy reading nook" than tech startup. Bottom nav: Home, Clubs, Search, Library, Profile.</p>
     <p><strong>Platforms:</strong> iOS, Android, Web</p>
-    <p><strong>Pricing:</strong> Free app + ebook purchases for in-app reading</p>
+    <p><strong>Pricing:</strong> Free app + ebook purchases ($11.99 per title observed) + free classics library</p>
   </div>
 
   <div class="grid-2">
@@ -741,32 +741,35 @@
       <div class="wireframe">
         <div class="section">
           <span class="section-label">HEADER</span><br>
-          <span class="field">Cover image + Title + Author</span><br>
-          <span class="field">Average rating (community)</span><br>
-          <span class="field">"Add to List" / "Want to Read" action</span>
+          <span class="field">Cover image with rating badge overlay (e.g. 3.91)</span><br>
+          <span class="field">Title + Author</span><br>
+          <span class="field">"Preview this title" link</span><br>
+          <span class="field">Genre chip (e.g. "Romance")</span><br>
+          <span class="field">"Want to Read" CTA button</span><br>
+          <span class="field">Price + purchase option ($11.99)</span>
         </div>
         <div class="section">
-          <span class="section-label">DESCRIPTION</span><br>
-          <span class="field">Synopsis / publisher blurb</span>
+          <span class="section-label">TABBED CONTENT</span><br>
+          <span class="field">About | Reviews | Posts | Clubs | Similar</span>
         </div>
         <div class="section">
-          <span class="section-label">SOCIAL READING</span><br>
-          <span class="field">Book clubs featuring this book</span><br>
-          <span class="field">Highlights and notes from friends</span><br>
-          <span class="field">"Read with friends" CTA</span>
+          <span class="section-label">5-STEP REVIEW FLOW</span><br>
+          <span class="field">Step 1: Overall star rating + DNF checkbox</span><br>
+          <span class="field">Step 2: "How did this book make you feel?" (emoji slider)</span><br>
+          <span class="field">Step 3: Spice meter slider (genre-aware, e.g. romance)</span><br>
+          <span class="field">Step 4: Descriptor tags across 5 sub-tabs:</span><br>
+          <span class="field">&nbsp;&nbsp;Characters | Plot | Setting | Writing Style | Content Warnings</span><br>
+          <span class="field">Step 5: Written review</span>
         </div>
         <div class="section">
-          <span class="section-label">DETAILS</span><br>
-          <span class="field">Page count, format</span><br>
-          <span class="field">Publisher, publication date</span><br>
-          <span class="field">Genre tags</span>
-        </div>
-        <div class="section">
-          <span class="section-label">REVIEWS</span><br>
-          <span class="field">Community reviews / ratings</span>
-        </div>
-        <div class="section">
-          <span class="highlight">CONTENT INFO: NONE</span>
+          <span class="section-label">CONTENT WARNINGS (Step 4 tab)</span><br>
+          <span class="field">Binary tags: ableism, abuse, animal abuse, bigotry,</span><br>
+          <span class="field">child abuse, child loss, death, domestic violence,</span><br>
+          <span class="field">eating disorders, explicit sexual content, fat phobia,</span><br>
+          <span class="field">grief, homophobia, misogyny, murder, racism,</span><br>
+          <span class="field">religious intolerance, self-harm, sexual assault,</span><br>
+          <span class="field">substance abuse, transphobia, violence, war violence</span><br>
+          <span class="highlight">Binary tags only — no intensity scale, no evidence level</span>
         </div>
       </div>
     </div>
@@ -775,33 +778,43 @@
       <h2>Complete Feature List</h2>
       <h3>Core</h3>
       <ul>
-        <li>Book tracking (TBR, Reading, Read)</li>
-        <li>TV show tracking (recent addition)</li>
-        <li>Reading progress tracking</li>
-        <li>Goal setting (2026 goals supported)</li>
+        <li>Book tracking (Want to Read / Currently Reading / Finished / DNF)</li>
+        <li>TV show & watch list tracking</li>
+        <li>Reading goals (yearly, monthly, weekly) with illustrated progress</li>
         <li>Reading streaks</li>
+        <li>9M+ book catalog</li>
       </ul>
       <h3>Social Reading (Key Differentiator)</h3>
       <ul>
-        <li>Interactive ebook reader (1M+ books)</li>
-        <li>Inline highlights, reactions, comments, tabs, notes</li>
-        <li>Book clubs with spoiler-free chapter rooms</li>
+        <li>"For you" home feed with social posts</li>
+        <li>Book clubs with chat rooms and milestones</li>
         <li>TV clubs with episode rooms</li>
-        <li>Celebrity/influencer-led clubs (BookTok, YouTube)</li>
+        <li>Celebrity/influencer-led clubs</li>
         <li>Buddy reads with friends</li>
+        <li>In-app ebook reader + free classics</li>
+      </ul>
+      <h3>Content Classification (5-Step Review)</h3>
+      <ul>
+        <li>Star rating (drag-to-select) + DNF option</li>
+        <li>Mood/feeling emoji slider (e.g. "Inspired")</li>
+        <li>Spice meter slider (genre-aware, "No Spice" to max)</li>
+        <li>Descriptor tags: Characters, Plot, Setting, Writing Style</li>
+        <li>Content warning tags (23 categories, binary)</li>
+      </ul>
+      <h3>Profile & Analytics</h3>
+      <ul>
+        <li>Reader Summary (BETA) — AI-generated reading personality</li>
+        <li>Stats: books read, streak, average rating</li>
+        <li>Most read genres pie chart</li>
+        <li>Average rating bar chart</li>
+        <li>Tabs: Stats / Lists / Clubs / Reviews / Posts / Likes</li>
       </ul>
       <h3>Discovery</h3>
       <ul>
+        <li>"Search 9M+ books" with Books/TV Shows tabs</li>
         <li>Personalized recommendations</li>
-        <li>Mood quizzes</li>
-        <li>Editorial team picks</li>
+        <li>Free classics library</li>
         <li>Import from Goodreads and Kindle</li>
-      </ul>
-      <h3>Content Info</h3>
-      <ul>
-        <li style="color:var(--red);">No content warnings</li>
-        <li style="color:var(--red);">No content classification</li>
-        <li style="color:var(--red);">No political/cultural flags</li>
       </ul>
     </div>
   </div>
@@ -812,24 +825,28 @@
       <div>
         <h3 style="color:var(--green);">Strengths</h3>
         <ul class="sw-list strength">
-          <li>Book club UX is genuinely thoughtful</li>
-          <li>In-app ebook reader with social annotations</li>
-          <li>Spoiler-free chapter rooms are smart</li>
-          <li>Clean, modern design</li>
-          <li>TV show tracking broadens appeal</li>
-          <li>Import from Goodreads + Kindle</li>
+          <li>5-step structured review flow is the most sophisticated in market</li>
+          <li>23 content warning tags — most extensive CW system among competitors</li>
+          <li>Spice meter and mood slider add dimensionality beyond binary</li>
+          <li>Descriptor tags (Characters, Plot, Setting, Writing Style) are detailed</li>
+          <li>Book club UX with chat rooms and milestones is genuinely thoughtful</li>
+          <li>9M+ catalog — largest among non-Amazon competitors</li>
+          <li>Beautiful, warm brand design with illustrated elements</li>
+          <li>Reader Summary (BETA) AI feature shows ambition</li>
         </ul>
       </div>
       <div>
         <h3 style="color:var(--red);">Weaknesses</h3>
         <ul class="sw-list weakness">
-          <li>Zero content information of any kind</li>
-          <li>Requires ebook purchase for full social features</li>
-          <li>AI controversy (2025) damaged trust</li>
-          <li>Content is ephemeral-social, not reference</li>
-          <li>Technical instability (user-reported crashes)</li>
-          <li>Search functionality is poor</li>
-          <li>Books with multiple versions; some uncataloged</li>
+          <li>Content warnings are binary tags — no intensity scale (0-4)</li>
+          <li>No political/ideological content flags</li>
+          <li>No religious content classification</li>
+          <li>No witchcraft/occult classification</li>
+          <li>No evidence levels (AI vs cited vs human verified)</li>
+          <li>Content data lives inside review flow only — not surfaced on book page</li>
+          <li>AI controversy (2025) damaged community trust</li>
+          <li>Ebook purchase required for full social reading features</li>
+          <li>CW coverage depends entirely on user participation</li>
         </ul>
       </div>
     </div>
@@ -1140,14 +1157,14 @@
       <div class="tax-cell tax-category">LGBTQIA+ representation</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-partial">Binary CW only</div>
-      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">Via "homophobia" / "transphobia" tags</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-no">None</div>
 
       <div class="tax-cell tax-category">Religious content</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-no">None</div>
-      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">"Religious intolerance" tag</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-no">None</div>
 
@@ -1161,21 +1178,21 @@
       <div class="tax-cell tax-category">Sexual content</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-partial">Binary CW only</div>
-      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">Spice slider + "explicit sexual content" tag</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-partial">Personal "spice" rating</div>
 
       <div class="tax-cell tax-category">Violence & gore</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-partial">Binary CW only</div>
-      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">"Violence" / "war violence" / "murder" tags</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-no">None</div>
 
       <div class="tax-cell tax-category">Political & ideological</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-no">None</div>
-      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">"Bigotry" / "racism" / "misogyny" tags (adjacent)</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-no">None</div>
 
@@ -1189,28 +1206,28 @@
       <div class="tax-cell tax-category">Substance use</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-partial">Binary CW only</div>
-      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">"Substance abuse" tag</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-no">None</div>
 
       <div class="tax-cell tax-category">Self-harm / suicide</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-partial">Binary CW only</div>
-      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">"Self-harm" tag</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-no">None</div>
 
       <div class="tax-cell tax-category">Sexual assault / coercion</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-partial">Binary CW only</div>
-      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">"Sexual assault" tag</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-no">None</div>
 
       <div class="tax-cell tax-category">Child harm</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-partial">Binary CW only</div>
-      <div class="tax-cell tax-no">None</div>
+      <div class="tax-cell tax-partial">"Child abuse" / "child loss" tags</div>
       <div class="tax-cell tax-no">None</div>
       <div class="tax-cell tax-no">None</div>
     </div>
@@ -1231,9 +1248,9 @@
     </div>
     <div class="card">
       <h2>Key Insight</h2>
-      <p>StoryGraph is the <em>only</em> competitor with any form of content classification, and it covers only 6 of our 11 categories — all as binary flags with no intensity, no notes, and no evidence level.</p>
-      <p style="margin-top:12px;">The three categories that make tbr(a) uniquely positioned — <strong>Political & ideological</strong>, <strong>Religious content</strong>, and <strong>Witchcraft / occult</strong> — have <strong>zero coverage across all five competitors</strong>. This is the structural differentiation.</p>
-      <p style="margin-top:12px;">Bookly's custom "spice" rating is interesting but personal (not standardized) and only covers one dimension. It's a nod toward content info but not a system.</p>
+      <p>StoryGraph and Fable are the only competitors with content classification systems. StoryGraph covers 6 of our 11 categories as binary flags. Fable covers 9 of our 11 categories via 23 binary content warning tags in its review flow — the most extensive system in market.</p>
+      <p style="margin-top:12px;">However, both remain <strong>binary only</strong> — no intensity scales, no descriptive notes, no evidence levels. And <strong>Witchcraft / occult</strong> has <strong>zero coverage across all five competitors</strong>. Fable's "religious intolerance" and "bigotry" tags touch <em>adjacent</em> territory to our Religious and Political categories but don't actually classify the content's nature — only flag negative portrayals.</p>
+      <p style="margin-top:12px;">Fable's spice meter (slider) and mood slider add dimensionality beyond binary, but are limited to romance/feelings — not a general content classification system. tbr(a)'s 0-4 intensity scales across all 11 categories remain structurally unique.</p>
     </div>
   </div>
 </div>
