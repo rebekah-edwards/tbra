@@ -26,6 +26,7 @@ export const authors = sqliteTable("authors", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
   bio: text("bio"),
+  openLibraryKey: text("open_library_key"),
 });
 
 export const bookAuthors = sqliteTable("book_authors", {

@@ -6,6 +6,7 @@ export interface OLSearchResult {
   key: string; // e.g. "/works/OL12345W"
   title: string;
   author_name?: string[];
+  author_key?: string[]; // e.g. ["/authors/OL12345A"]
   first_publish_year?: number;
   cover_i?: number;
   isbn?: string[];
@@ -38,7 +39,7 @@ export async function searchOpenLibrary(
   const params = new URLSearchParams({
     q: query,
     limit: String(limit),
-    fields: "key,title,author_name,first_publish_year,cover_i,isbn,number_of_pages_median",
+    fields: "key,title,author_name,author_key,first_publish_year,cover_i,isbn,number_of_pages_median",
   });
   const res = await olFetch(`${BASE_URL}/search.json?${params}`);
   if (!res.ok) return [];
@@ -169,4 +170,25 @@ export function buildCoverUrl(
 ): string | null {
   if (!coverId) return null;
   return `${COVERS_URL}/b/id/${coverId}-${size}.jpg`;
+}
+
+export interface OLAuthorWork {
+  key: string; // e.g. "/works/OL12345W"
+  title: string;
+  covers?: number[];
+}
+
+interface OLAuthorWorksResponse {
+  entries: OLAuthorWork[];
+}
+
+export async function fetchAuthorWorks(
+  authorKey: string
+): Promise<OLAuthorWork[]> {
+  const res = await olFetch(
+    `${BASE_URL}/authors/${authorKey}/works.json?limit=50`
+  );
+  if (!res.ok) return [];
+  const data: OLAuthorWorksResponse = await res.json();
+  return data.entries ?? [];
 }

@@ -6,10 +6,79 @@ import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import {
   fetchOpenLibraryWork,
+  fetchAuthorWorks,
   buildCoverUrl,
   normalizeGenres,
   type OLSearchResult,
 } from "@/lib/openlibrary";
+
+async function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function findOrCreateAuthor(
+  name: string,
+  olKey?: string
+): Promise<string> {
+  let author = await db.query.authors.findFirst({
+    where: eq(authors.name, name),
+  });
+  if (author) {
+    // Update OL key if we have one and author doesn't
+    if (olKey && !author.openLibraryKey) {
+      await db
+        .update(authors)
+        .set({ openLibraryKey: olKey })
+        .where(eq(authors.id, author.id));
+    }
+    return author.id;
+  }
+  const [created] = await db
+    .insert(authors)
+    .values({ name, openLibraryKey: olKey ?? null })
+    .returning();
+  return created.id;
+}
+
+async function importCascadeBooks(authorOlKeys: string[]) {
+  for (const authorKey of authorOlKeys) {
+    await delay(350);
+    const works = await fetchAuthorWorks(authorKey);
+
+    for (const work of works) {
+      // Skip if already imported
+      const workKey = work.key; // e.g. "/works/OL12345W"
+      const existing = await db.query.books.findFirst({
+        where: eq(books.openLibraryKey, workKey),
+      });
+      if (existing) continue;
+
+      // Import with minimal metadata (title + cover only)
+      const coverUrl = buildCoverUrl(work.covers?.[0], "L");
+
+      await delay(350);
+      const [newBook] = await db
+        .insert(books)
+        .values({
+          title: work.title,
+          coverImageUrl: coverUrl,
+          openLibraryKey: workKey,
+        })
+        .returning();
+
+      // Link to the author
+      const author = await db.query.authors.findFirst({
+        where: eq(authors.openLibraryKey, authorKey),
+      });
+      if (author) {
+        await db
+          .insert(bookAuthors)
+          .values({ bookId: newBook.id, authorId: author.id })
+          .onConflictDoNothing();
+      }
+    }
+  }
+}
 
 export async function importFromOpenLibrary(result: OLSearchResult) {
   // Check if already imported
@@ -20,7 +89,7 @@ export async function importFromOpenLibrary(result: OLSearchResult) {
     redirect(`/book/${existing.id}`);
   }
 
-  // Fetch work details for description + cover
+  // Fetch work details for description + cover + subjects
   const work = await fetchOpenLibraryWork(result.key);
   const coverUrl =
     buildCoverUrl(result.cover_i, "L") ??
@@ -41,19 +110,17 @@ export async function importFromOpenLibrary(result: OLSearchResult) {
     })
     .returning();
 
-  // Insert authors
+  // Insert authors (with OL keys)
+  const authorOlKeys: string[] = [];
   if (result.author_name?.length) {
-    for (const name of result.author_name) {
-      // Find or create author
-      let author = await db.query.authors.findFirst({
-        where: eq(authors.name, name),
-      });
-      if (!author) {
-        [author] = await db.insert(authors).values({ name }).returning();
-      }
+    for (let i = 0; i < result.author_name.length; i++) {
+      const name = result.author_name[i];
+      const olKey = result.author_key?.[i];
+      const authorId = await findOrCreateAuthor(name, olKey);
       await db
         .insert(bookAuthors)
-        .values({ bookId: book.id, authorId: author.id });
+        .values({ bookId: book.id, authorId });
+      if (olKey) authorOlKeys.push(olKey);
     }
   }
 
@@ -69,6 +136,13 @@ export async function importFromOpenLibrary(result: OLSearchResult) {
     await db
       .insert(bookGenres)
       .values({ bookId: book.id, genreId: genre.id });
+  }
+
+  // Cascade: import other books by these authors (non-blocking)
+  if (authorOlKeys.length > 0) {
+    importCascadeBooks(authorOlKeys).catch((err) => {
+      console.error("Cascade import error:", err);
+    });
   }
 
   redirect(`/book/${book.id}`);
@@ -100,18 +174,10 @@ export async function createBookManually(formData: FormData) {
     .returning();
 
   if (authorName?.trim()) {
-    let author = await db.query.authors.findFirst({
-      where: eq(authors.name, authorName.trim()),
-    });
-    if (!author) {
-      [author] = await db
-        .insert(authors)
-        .values({ name: authorName.trim() })
-        .returning();
-    }
+    const authorId = await findOrCreateAuthor(authorName.trim());
     await db
       .insert(bookAuthors)
-      .values({ bookId: book.id, authorId: author.id });
+      .values({ bookId: book.id, authorId });
   }
 
   redirect(`/book/${book.id}`);
