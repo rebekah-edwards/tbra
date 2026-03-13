@@ -1,12 +1,13 @@
 "use server";
 
 import { db } from "@/db";
-import { books, authors, bookAuthors } from "@/db/schema";
+import { books, authors, bookAuthors, genres, bookGenres } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import {
   fetchOpenLibraryWork,
   buildCoverUrl,
+  normalizeGenres,
   type OLSearchResult,
 } from "@/lib/openlibrary";
 
@@ -54,6 +55,20 @@ export async function importFromOpenLibrary(result: OLSearchResult) {
         .insert(bookAuthors)
         .values({ bookId: book.id, authorId: author.id });
     }
+  }
+
+  // Insert genres from OL subjects
+  const genreNames = normalizeGenres(work.subjects);
+  for (const genreName of genreNames) {
+    let genre = await db.query.genres.findFirst({
+      where: eq(genres.name, genreName),
+    });
+    if (!genre) {
+      [genre] = await db.insert(genres).values({ name: genreName }).returning();
+    }
+    await db
+      .insert(bookGenres)
+      .values({ bookId: book.id, genreId: genre.id });
   }
 
   redirect(`/book/${book.id}`);

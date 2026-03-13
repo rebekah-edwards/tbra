@@ -7,6 +7,8 @@ import {
   bookAuthors,
   bookCategoryRatings,
   taxonomyCategories,
+  genres,
+  bookGenres,
 } from "./schema";
 import path from "path";
 import fs from "fs";
@@ -22,7 +24,7 @@ sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
 
 const db = drizzle(sqlite, {
-  schema: { books, authors, bookAuthors, bookCategoryRatings, taxonomyCategories },
+  schema: { books, authors, bookAuthors, bookCategoryRatings, taxonomyCategories, genres, bookGenres },
 });
 
 const OL_BASE = "https://openlibrary.org";
@@ -48,43 +50,226 @@ const SEED_QUERIES = [
   "The House in the Cerulean Sea TJ Klune",
 ];
 
-// Sample taxonomy ratings for 6 books (keyed by search query prefix)
-const SAMPLE_RATINGS: Record<
-  string,
-  { categoryKey: string; intensity: number; notes: string; evidence: string }[]
-> = {
+// Genre mapping per book (keyed by query prefix)
+const BOOK_GENRES: Record<string, string[]> = {
+  "Beloved": ["Literary Fiction", "Historical Fiction", "Gothic"],
+  "The Great Gatsby": ["Literary Fiction", "Classics"],
+  "The Hunger Games": ["Young Adult", "Dystopia", "Sci-Fi"],
+  "Dune": ["Sci-Fi", "Epic Fantasy", "Adventure"],
+  "Pride and Prejudice": ["Romance", "Classics", "Literary Fiction"],
+  "The Fault in Our Stars": ["Young Adult", "Romance", "Contemporary"],
+  "Circe": ["Fantasy", "Mythology", "Literary Fiction"],
+  "The Road": ["Literary Fiction", "Dystopia", "Survival"],
+  "Brave New World": ["Sci-Fi", "Dystopia", "Classics"],
+  "Slaughterhouse-Five": ["Sci-Fi", "Satire", "War"],
+  "Jane Eyre": ["Gothic", "Romance", "Classics"],
+  "Kindred": ["Sci-Fi", "Historical Fiction", "Afrofuturism"],
+  "Mexican Gothic": ["Horror", "Gothic", "Historical Fiction"],
+  "An American Marriage": ["Literary Fiction", "Contemporary", "Romance"],
+  "The House in the Cerulean Sea": ["Fantasy", "Romance", "Contemporary"],
+};
+
+// All 11 categories for all 15 books
+// Keys: lgbtqia_representation, religious_content, witchcraft_occult, sexual_content,
+//       violence_gore, political_ideological, profanity_language, substance_use,
+//       self_harm_suicide, sexual_assault_coercion, child_harm
+type R = { categoryKey: string; intensity: number; notes: string; evidence: string };
+
+const SAMPLE_RATINGS: Record<string, R[]> = {
   "Beloved": [
-    { categoryKey: "violence_gore", intensity: 4, notes: "Graphic depictions of slavery violence", evidence: "cited" },
-    { categoryKey: "sexual_assault_coercion", intensity: 3, notes: "Sexual violence under slavery", evidence: "cited" },
-    { categoryKey: "child_harm", intensity: 4, notes: "Central to the plot", evidence: "human_verified" },
-    { categoryKey: "profanity_language", intensity: 2, notes: "Moderate strong language", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 1, notes: "Spiritual themes, baby ghost/haunting with religious undertones", evidence: "ai_inferred" },
+    { categoryKey: "witchcraft_occult", intensity: 2, notes: "Supernatural haunting, ghost possession central to plot", evidence: "cited" },
+    { categoryKey: "sexual_content", intensity: 1, notes: "Some sexual content, mostly implied", evidence: "ai_inferred" },
+    { categoryKey: "violence_gore", intensity: 4, notes: "Graphic depictions of slavery violence including whipping, beating, and murder", evidence: "cited" },
+    { categoryKey: "political_ideological", intensity: 3, notes: "Deep exploration of slavery's legacy, racial trauma, and dehumanization", evidence: "human_verified" },
+    { categoryKey: "profanity_language", intensity: 2, notes: "Moderate strong language, racial slurs in historical context", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 0, notes: "No significant substance use", evidence: "ai_inferred" },
+    { categoryKey: "self_harm_suicide", intensity: 3, notes: "Infanticide as an act of mercy/desperation is central to the plot", evidence: "human_verified" },
+    { categoryKey: "sexual_assault_coercion", intensity: 3, notes: "Sexual violence under slavery depicted and discussed", evidence: "cited" },
+    { categoryKey: "child_harm", intensity: 4, notes: "Infanticide is central to the plot; children suffer under slavery", evidence: "human_verified" },
+  ],
+  "The Great Gatsby": [
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No explicit LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 0, notes: "No religious content", evidence: "ai_inferred" },
+    { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
+    { categoryKey: "sexual_content", intensity: 1, notes: "Implied affairs, nothing explicit", evidence: "ai_inferred" },
+    { categoryKey: "violence_gore", intensity: 2, notes: "Hit-and-run death, shooting, not graphically described", evidence: "cited" },
+    { categoryKey: "political_ideological", intensity: 2, notes: "Critique of American Dream and class inequality", evidence: "ai_inferred" },
+    { categoryKey: "profanity_language", intensity: 1, notes: "Mild language for the era", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 3, notes: "Heavy alcohol consumption throughout; Prohibition-era parties", evidence: "human_verified" },
+    { categoryKey: "self_harm_suicide", intensity: 1, notes: "One character's death has suicidal undertones", evidence: "ai_inferred" },
+    { categoryKey: "sexual_assault_coercion", intensity: 1, notes: "Tom's controlling behavior, implied domestic abuse", evidence: "ai_inferred" },
+    { categoryKey: "child_harm", intensity: 0, notes: "No child harm", evidence: "ai_inferred" },
   ],
   "The Hunger Games": [
-    { categoryKey: "violence_gore", intensity: 3, notes: "Arena combat, child-on-child violence", evidence: "cited" },
-    { categoryKey: "child_harm", intensity: 3, notes: "Children forced to fight to the death", evidence: "human_verified" },
-    { categoryKey: "political_ideological", intensity: 2, notes: "Dystopian government critique", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 0, notes: "No religious content", evidence: "ai_inferred" },
+    { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
+    { categoryKey: "sexual_content", intensity: 0, notes: "Kissing only, no sexual content", evidence: "ai_inferred" },
+    { categoryKey: "violence_gore", intensity: 3, notes: "Arena combat, child-on-child violence, tracker jacker attacks, burns", evidence: "cited" },
+    { categoryKey: "political_ideological", intensity: 2, notes: "Dystopian government critique, class warfare, media manipulation", evidence: "ai_inferred" },
+    { categoryKey: "profanity_language", intensity: 0, notes: "No profanity", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 1, notes: "Haymitch's alcoholism is a character trait", evidence: "ai_inferred" },
+    { categoryKey: "self_harm_suicide", intensity: 1, notes: "Brief suicidal ideation during the games", evidence: "ai_inferred" },
+    { categoryKey: "sexual_assault_coercion", intensity: 0, notes: "No sexual assault", evidence: "ai_inferred" },
+    { categoryKey: "child_harm", intensity: 3, notes: "Children forced to fight to the death; young tributes killed on-page", evidence: "human_verified" },
   ],
-  "The Road": [
-    { categoryKey: "violence_gore", intensity: 4, notes: "Post-apocalyptic brutality, cannibalism", evidence: "cited" },
-    { categoryKey: "child_harm", intensity: 2, notes: "Child in constant danger but not directly harmed", evidence: "ai_inferred" },
-    { categoryKey: "self_harm_suicide", intensity: 2, notes: "Suicidal ideation as a theme", evidence: "ai_inferred" },
-    { categoryKey: "profanity_language", intensity: 1, notes: "Sparse language overall", evidence: "ai_inferred" },
+  "Dune": [
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 3, notes: "Messianic prophecy, religious manipulation, Bene Gesserit as quasi-religious order", evidence: "human_verified" },
+    { categoryKey: "witchcraft_occult", intensity: 2, notes: "Prescience, Voice, Bene Gesserit abilities border on mystical", evidence: "ai_inferred" },
+    { categoryKey: "sexual_content", intensity: 1, notes: "Implied sexual relationships, concubinage, nothing explicit", evidence: "ai_inferred" },
+    { categoryKey: "violence_gore", intensity: 3, notes: "Knife fights, war battles, political assassinations", evidence: "cited" },
+    { categoryKey: "political_ideological", intensity: 3, notes: "Complex political intrigue, colonialism, resource exploitation themes", evidence: "human_verified" },
+    { categoryKey: "profanity_language", intensity: 1, notes: "Mild language", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 3, notes: "Spice melange is a drug central to the universe — addictive, mind-altering", evidence: "human_verified" },
+    { categoryKey: "self_harm_suicide", intensity: 1, notes: "Some characters face death willingly", evidence: "ai_inferred" },
+    { categoryKey: "sexual_assault_coercion", intensity: 1, notes: "Bene Gesserit breeding program involves coercive reproduction", evidence: "ai_inferred" },
+    { categoryKey: "child_harm", intensity: 1, notes: "Paul is 15 and faces mortal danger throughout", evidence: "ai_inferred" },
   ],
-  "Brave New World": [
-    { categoryKey: "sexual_content", intensity: 3, notes: "Casual sex is a societal norm, discussed openly", evidence: "cited" },
-    { categoryKey: "substance_use", intensity: 3, notes: "Soma use is central to the plot", evidence: "human_verified" },
-    { categoryKey: "political_ideological", intensity: 3, notes: "Heavy dystopian social commentary", evidence: "cited" },
+  "Pride and Prejudice": [
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 1, notes: "Mr. Collins is a clergyman; church attendance is part of social life", evidence: "ai_inferred" },
+    { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
+    { categoryKey: "sexual_content", intensity: 0, notes: "No sexual content; Lydia's elopement is the scandal", evidence: "ai_inferred" },
+    { categoryKey: "violence_gore", intensity: 0, notes: "No violence", evidence: "ai_inferred" },
+    { categoryKey: "political_ideological", intensity: 1, notes: "Class consciousness and gender roles explored through social comedy", evidence: "ai_inferred" },
+    { categoryKey: "profanity_language", intensity: 0, notes: "No profanity", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 0, notes: "Social drinking only", evidence: "ai_inferred" },
+    { categoryKey: "self_harm_suicide", intensity: 0, notes: "No self-harm themes", evidence: "ai_inferred" },
+    { categoryKey: "sexual_assault_coercion", intensity: 1, notes: "Wickham's seduction of 15-year-old Lydia, predatory behavior", evidence: "cited" },
+    { categoryKey: "child_harm", intensity: 0, notes: "No child harm", evidence: "ai_inferred" },
+  ],
+  "The Fault in Our Stars": [
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 1, notes: "Characters discuss God and meaning of suffering", evidence: "ai_inferred" },
+    { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
+    { categoryKey: "sexual_content", intensity: 2, notes: "One sex scene, tastefully written but present", evidence: "cited" },
+    { categoryKey: "violence_gore", intensity: 0, notes: "No violence", evidence: "ai_inferred" },
+    { categoryKey: "political_ideological", intensity: 0, notes: "No political content", evidence: "ai_inferred" },
+    { categoryKey: "profanity_language", intensity: 2, notes: "Moderate profanity, teenagers swearing naturally", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 1, notes: "Brief cigarette metaphor, some social drinking", evidence: "ai_inferred" },
+    { categoryKey: "self_harm_suicide", intensity: 0, notes: "No self-harm; focuses on terminal illness rather than self-inflicted harm", evidence: "ai_inferred" },
+    { categoryKey: "sexual_assault_coercion", intensity: 0, notes: "No sexual assault", evidence: "ai_inferred" },
+    { categoryKey: "child_harm", intensity: 2, notes: "Teenagers dying of cancer; emotionally intense depiction of youth suffering", evidence: "human_verified" },
   ],
   "Circe": [
-    { categoryKey: "sexual_content", intensity: 2, notes: "Some romantic/sexual scenes, not explicit", evidence: "ai_inferred" },
-    { categoryKey: "sexual_assault_coercion", intensity: 2, notes: "Sexual assault occurs, not graphic", evidence: "cited" },
-    { categoryKey: "violence_gore", intensity: 2, notes: "Mythological violence", evidence: "ai_inferred" },
-    { categoryKey: "witchcraft_occult", intensity: 3, notes: "Witchcraft is central — Circe is a witch", evidence: "human_verified" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 1, notes: "Greek gods are characters, but treated as mythology not devotion", evidence: "ai_inferred" },
+    { categoryKey: "witchcraft_occult", intensity: 3, notes: "Witchcraft is central — Circe is a witch who practices pharmakeia", evidence: "human_verified" },
+    { categoryKey: "sexual_content", intensity: 2, notes: "Some romantic/sexual scenes, not highly explicit", evidence: "ai_inferred" },
+    { categoryKey: "violence_gore", intensity: 2, notes: "Mythological violence — monsters, battles, transformations", evidence: "ai_inferred" },
+    { categoryKey: "political_ideological", intensity: 1, notes: "Feminist retelling of mythology, themes of female autonomy", evidence: "ai_inferred" },
+    { categoryKey: "profanity_language", intensity: 1, notes: "Minimal profanity", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 1, notes: "Wine drinking as part of ancient Greek culture", evidence: "ai_inferred" },
+    { categoryKey: "self_harm_suicide", intensity: 0, notes: "No self-harm themes", evidence: "ai_inferred" },
+    { categoryKey: "sexual_assault_coercion", intensity: 2, notes: "Sexual assault occurs; Circe is raped, motivating her to transform men into pigs", evidence: "cited" },
+    { categoryKey: "child_harm", intensity: 1, notes: "Circe's son faces danger; mythological children sometimes threatened", evidence: "ai_inferred" },
+  ],
+  "The Road": [
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 1, notes: "Subtle spiritual themes — the boy as a symbol of hope/goodness", evidence: "ai_inferred" },
+    { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
+    { categoryKey: "sexual_content", intensity: 0, notes: "No sexual content", evidence: "ai_inferred" },
+    { categoryKey: "violence_gore", intensity: 4, notes: "Post-apocalyptic brutality, cannibalism, corpses described in detail", evidence: "cited" },
+    { categoryKey: "political_ideological", intensity: 1, notes: "Subtle environmental/civilizational collapse themes", evidence: "ai_inferred" },
+    { categoryKey: "profanity_language", intensity: 1, notes: "Sparse language overall, minimal dialogue", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 0, notes: "No substance use", evidence: "ai_inferred" },
+    { categoryKey: "self_harm_suicide", intensity: 2, notes: "Father contemplates killing himself and his son as mercy; suicidal ideation is a theme", evidence: "ai_inferred" },
+    { categoryKey: "sexual_assault_coercion", intensity: 1, notes: "Implied threats in the lawless world", evidence: "ai_inferred" },
+    { categoryKey: "child_harm", intensity: 2, notes: "Child in constant danger but not directly harmed on-page", evidence: "ai_inferred" },
+  ],
+  "Brave New World": [
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 2, notes: "Ford as deity replacement; organized religion abolished in-world", evidence: "cited" },
+    { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
+    { categoryKey: "sexual_content", intensity: 3, notes: "Casual sex is a societal norm, discussed openly and frequently", evidence: "cited" },
+    { categoryKey: "violence_gore", intensity: 1, notes: "Minimal violence; John's self-flagellation", evidence: "ai_inferred" },
+    { categoryKey: "political_ideological", intensity: 3, notes: "Heavy dystopian social commentary on consumerism, conformity, and freedom", evidence: "cited" },
+    { categoryKey: "profanity_language", intensity: 1, notes: "Mild language", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 3, notes: "Soma use is central to the plot — state-issued drug for happiness", evidence: "human_verified" },
+    { categoryKey: "self_harm_suicide", intensity: 2, notes: "Character commits suicide at the end", evidence: "cited" },
+    { categoryKey: "sexual_assault_coercion", intensity: 1, notes: "Social pressure to be sexually available, conditioning of children", evidence: "ai_inferred" },
+    { categoryKey: "child_harm", intensity: 2, notes: "Children conditioned/programmed from birth; sexual play among children normalized in-world", evidence: "cited" },
+  ],
+  "Slaughterhouse-Five": [
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 1, notes: "Brief religious references, prayer", evidence: "ai_inferred" },
+    { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content (alien abduction is sci-fi)", evidence: "ai_inferred" },
+    { categoryKey: "sexual_content", intensity: 2, notes: "Some sexual scenes including alien zoo scenario", evidence: "cited" },
+    { categoryKey: "violence_gore", intensity: 3, notes: "Firebombing of Dresden, war atrocities, death described with dark humor", evidence: "human_verified" },
+    { categoryKey: "political_ideological", intensity: 3, notes: "Strong anti-war message; critique of American exceptionalism", evidence: "human_verified" },
+    { categoryKey: "profanity_language", intensity: 2, notes: "Moderate profanity throughout", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 1, notes: "Some drinking", evidence: "ai_inferred" },
+    { categoryKey: "self_harm_suicide", intensity: 1, notes: "Fatalistic attitude toward death, 'So it goes'", evidence: "ai_inferred" },
+    { categoryKey: "sexual_assault_coercion", intensity: 0, notes: "No sexual assault", evidence: "ai_inferred" },
+    { categoryKey: "child_harm", intensity: 1, notes: "Young soldiers, barely adults, in wartime", evidence: "ai_inferred" },
+  ],
+  "Jane Eyre": [
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 2, notes: "St. John Rivers' missionary zeal; Jane's personal faith; Brocklehurst's hypocrisy", evidence: "cited" },
+    { categoryKey: "witchcraft_occult", intensity: 1, notes: "Gothic atmosphere, mysterious voices, but no actual occult", evidence: "ai_inferred" },
+    { categoryKey: "sexual_content", intensity: 1, notes: "Passionate but restrained; Victorian sensibility", evidence: "ai_inferred" },
+    { categoryKey: "violence_gore", intensity: 1, notes: "Bertha's attacks, the fire; not graphically described", evidence: "ai_inferred" },
+    { categoryKey: "political_ideological", intensity: 2, notes: "Class inequality, women's independence, colonialism (Bertha's background)", evidence: "ai_inferred" },
+    { categoryKey: "profanity_language", intensity: 0, notes: "No profanity", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 0, notes: "No substance use", evidence: "ai_inferred" },
+    { categoryKey: "self_harm_suicide", intensity: 0, notes: "No self-harm", evidence: "ai_inferred" },
+    { categoryKey: "sexual_assault_coercion", intensity: 1, notes: "Rochester's attempted bigamy is a form of deception/coercion", evidence: "ai_inferred" },
+    { categoryKey: "child_harm", intensity: 2, notes: "Jane abused as a child at Gateshead and Lowood; Helen Burns dies young", evidence: "human_verified" },
+  ],
+  "Kindred": [
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 0, notes: "No significant religious content", evidence: "ai_inferred" },
+    { categoryKey: "witchcraft_occult", intensity: 0, notes: "Time travel is unexplained but not occult", evidence: "ai_inferred" },
+    { categoryKey: "sexual_content", intensity: 1, notes: "Interracial marriage discussed; some implied sexuality", evidence: "ai_inferred" },
+    { categoryKey: "violence_gore", intensity: 4, notes: "Whipping, beating, slavery violence depicted graphically and unflinchingly", evidence: "human_verified" },
+    { categoryKey: "political_ideological", intensity: 3, notes: "Slavery, racial dynamics, complicity, and survival explored in depth", evidence: "human_verified" },
+    { categoryKey: "profanity_language", intensity: 2, notes: "Racial slurs in historical context, moderate profanity", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 0, notes: "No significant substance use", evidence: "ai_inferred" },
+    { categoryKey: "self_harm_suicide", intensity: 1, notes: "Characters consider death preferable to slavery", evidence: "ai_inferred" },
+    { categoryKey: "sexual_assault_coercion", intensity: 3, notes: "Sexual coercion of enslaved women is a major theme; Rufus assaults Alice", evidence: "cited" },
+    { categoryKey: "child_harm", intensity: 2, notes: "Children born into slavery; protagonist protects a child slaveholder", evidence: "ai_inferred" },
+  ],
+  "Mexican Gothic": [
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 1, notes: "Catholic references in Mexican setting", evidence: "ai_inferred" },
+    { categoryKey: "witchcraft_occult", intensity: 3, notes: "Mycological horror, mind control, eugenics rituals, supernatural possession", evidence: "human_verified" },
+    { categoryKey: "sexual_content", intensity: 2, notes: "Some sexual content and disturbing sexual imagery in hallucinations", evidence: "cited" },
+    { categoryKey: "violence_gore", intensity: 3, notes: "Body horror, murder, decomposition, fungal infections described vividly", evidence: "human_verified" },
+    { categoryKey: "political_ideological", intensity: 2, notes: "Colonialism, eugenics, racism of English family toward Mexican protagonist", evidence: "cited" },
+    { categoryKey: "profanity_language", intensity: 1, notes: "Mild language", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 2, notes: "Drugged food/drink used to control protagonist", evidence: "cited" },
+    { categoryKey: "self_harm_suicide", intensity: 1, notes: "Character driven to despair, implied suicidal thoughts", evidence: "ai_inferred" },
+    { categoryKey: "sexual_assault_coercion", intensity: 2, notes: "Coercive marriage, non-consensual drugging, attempted forced breeding", evidence: "cited" },
+    { categoryKey: "child_harm", intensity: 1, notes: "References to children in eugenics context", evidence: "ai_inferred" },
+  ],
+  "An American Marriage": [
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "religious_content", intensity: 1, notes: "Southern church culture referenced", evidence: "ai_inferred" },
+    { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
+    { categoryKey: "sexual_content", intensity: 2, notes: "Sexual scenes between married and extramarital partners", evidence: "cited" },
+    { categoryKey: "violence_gore", intensity: 1, notes: "Implied violence in prison; not graphically depicted", evidence: "ai_inferred" },
+    { categoryKey: "political_ideological", intensity: 3, notes: "Wrongful incarceration of Black man, systemic racism, criminal justice critique", evidence: "human_verified" },
+    { categoryKey: "profanity_language", intensity: 2, notes: "Moderate profanity", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 1, notes: "Social drinking", evidence: "ai_inferred" },
+    { categoryKey: "self_harm_suicide", intensity: 0, notes: "No self-harm", evidence: "ai_inferred" },
+    { categoryKey: "sexual_assault_coercion", intensity: 2, notes: "Rape accusation is central to plot; prison sexual violence implied", evidence: "cited" },
+    { categoryKey: "child_harm", intensity: 0, notes: "No child harm", evidence: "ai_inferred" },
   ],
   "The House in the Cerulean Sea": [
-    { categoryKey: "lgbtqia_representation", intensity: 3, notes: "Gay romance central to the story", evidence: "human_verified" },
+    { categoryKey: "lgbtqia_representation", intensity: 3, notes: "Gay romance central to the story; positive, affirming portrayal", evidence: "human_verified" },
+    { categoryKey: "religious_content", intensity: 0, notes: "No religious content", evidence: "ai_inferred" },
+    { categoryKey: "witchcraft_occult", intensity: 1, notes: "Magical children with powers; one child is literally the Antichrist (played for warmth)", evidence: "ai_inferred" },
+    { categoryKey: "sexual_content", intensity: 0, notes: "Romantic but chaste; no sexual scenes", evidence: "ai_inferred" },
     { categoryKey: "violence_gore", intensity: 0, notes: "Cozy, no violence", evidence: "ai_inferred" },
+    { categoryKey: "political_ideological", intensity: 2, notes: "Allegory for discrimination, bureaucracy, found family vs institutional control", evidence: "human_verified" },
     { categoryKey: "profanity_language", intensity: 0, notes: "Clean language throughout", evidence: "ai_inferred" },
+    { categoryKey: "substance_use", intensity: 0, notes: "Tea drinking only", evidence: "ai_inferred" },
+    { categoryKey: "self_harm_suicide", intensity: 0, notes: "No self-harm themes", evidence: "ai_inferred" },
+    { categoryKey: "sexual_assault_coercion", intensity: 0, notes: "No sexual assault", evidence: "ai_inferred" },
+    { categoryKey: "child_harm", intensity: 1, notes: "Children face institutional prejudice and fear; emotionally affecting but not violent", evidence: "ai_inferred" },
   ],
 };
 
@@ -111,8 +296,22 @@ async function findOrCreateAuthor(name: string): Promise<string> {
   return created.id;
 }
 
+async function findOrCreateGenre(name: string): Promise<string> {
+  const existing = db
+    .select()
+    .from(genres)
+    .where(eq(genres.name, name))
+    .get();
+  if (existing) return existing.id;
+  const [created] = await db.insert(genres).values({ name }).returning();
+  return created.id;
+}
+
 async function seed() {
   console.log("Seeding 15 books from Open Library...\n");
+
+  // First pass: collect all book IDs (import books that don't exist yet)
+  const bookIds: Record<string, string> = {}; // ratingKey -> bookId
 
   for (const query of SEED_QUERIES) {
     // Search OL for this book
@@ -131,6 +330,11 @@ async function seed() {
 
     const key: string = hit.key;
 
+    // Match to rating key
+    const ratingKey = Object.keys(SAMPLE_RATINGS).find((k) =>
+      query.startsWith(k)
+    );
+
     // Check if already imported
     const existing = db
       .select()
@@ -139,6 +343,7 @@ async function seed() {
       .get();
     if (existing) {
       console.log(`  Already exists: ${existing.title}`);
+      if (ratingKey) bookIds[ratingKey] = existing.id;
       continue;
     }
 
@@ -194,30 +399,67 @@ async function seed() {
       `  Added: ${book.title}${authorNames.length ? ` by ${authorNames.join(", ")}` : ""}`
     );
 
-    // Add taxonomy ratings if we have sample data (match by first word(s) of query)
-    const ratingKey = Object.keys(SAMPLE_RATINGS).find((k) =>
-      query.startsWith(k)
-    );
-    if (ratingKey) {
-      const sampleRatings = SAMPLE_RATINGS[ratingKey];
-      for (const rating of sampleRatings) {
-        const category = db
-          .select()
-          .from(taxonomyCategories)
-          .where(eq(taxonomyCategories.key, rating.categoryKey))
-          .get();
-        if (category) {
-          await db.insert(bookCategoryRatings).values({
-            bookId: book.id,
-            categoryId: category.id,
-            intensity: rating.intensity,
-            notes: rating.notes,
-            evidenceLevel: rating.evidence,
-          });
-        }
-      }
-      console.log(`    + ${sampleRatings.length} content ratings`);
+    if (ratingKey) bookIds[ratingKey] = book.id;
+  }
+
+  // Second pass: seed genres for all books
+  console.log("\nSeeding genres...");
+  for (const [ratingKey, bookId] of Object.entries(bookIds)) {
+    const genreKey = Object.keys(BOOK_GENRES).find((k) => ratingKey.startsWith(k)) ?? ratingKey;
+    const genreNames = BOOK_GENRES[genreKey];
+    if (!genreNames) continue;
+
+    // Check if genres already assigned
+    const existingGenres = db
+      .select()
+      .from(bookGenres)
+      .where(eq(bookGenres.bookId, bookId))
+      .all();
+    if (existingGenres.length > 0) {
+      console.log(`  Genres already set for ${ratingKey}`);
+      continue;
     }
+
+    for (const genreName of genreNames) {
+      const genreId = await findOrCreateGenre(genreName);
+      await db
+        .insert(bookGenres)
+        .values({ bookId, genreId })
+        .onConflictDoNothing();
+    }
+    console.log(`  + ${genreNames.length} genres for ${ratingKey}`);
+  }
+
+  // Third pass: seed ratings (clear existing and re-insert for complete coverage)
+  console.log("\nSeeding content ratings (all 11 categories per book)...");
+  for (const [ratingKey, bookId] of Object.entries(bookIds)) {
+    const sampleRatings = SAMPLE_RATINGS[ratingKey];
+    if (!sampleRatings) continue;
+
+    // Clear existing ratings for this book to ensure complete re-seed
+    db.delete(bookCategoryRatings)
+      .where(eq(bookCategoryRatings.bookId, bookId))
+      .run();
+
+    let count = 0;
+    for (const rating of sampleRatings) {
+      const category = db
+        .select()
+        .from(taxonomyCategories)
+        .where(eq(taxonomyCategories.key, rating.categoryKey))
+        .get();
+      if (category) {
+        await db.insert(bookCategoryRatings).values({
+          bookId,
+          categoryId: category.id,
+          intensity: rating.intensity,
+          notes: rating.notes,
+          evidenceLevel: rating.evidence,
+        });
+        count++;
+      }
+    }
+    console.log(`  + ${count} ratings for ${ratingKey}`);
   }
 
   console.log("\nDone!");
