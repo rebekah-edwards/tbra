@@ -7,6 +7,7 @@ export const books = sqliteTable("books", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   title: text("title").notNull(),
   description: text("description"),
+  summary: text("summary"),
   publicationYear: integer("publication_year"),
   isbn10: text("isbn_10"),
   isbn13: text("isbn_13"),
@@ -53,6 +54,17 @@ export const genres = sqliteTable("genres", {
 export const bookGenres = sqliteTable("book_genres", {
   bookId: text("book_id").notNull().references(() => books.id),
   genreId: text("genre_id").notNull().references(() => genres.id),
+});
+
+export const series = sqliteTable("series", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name").notNull(),
+});
+
+export const bookSeries = sqliteTable("book_series", {
+  bookId: text("book_id").notNull().references(() => books.id),
+  seriesId: text("series_id").notNull().references(() => series.id),
+  positionInSeries: integer("position_in_series"),
 });
 
 export const links = sqliteTable("links", {
