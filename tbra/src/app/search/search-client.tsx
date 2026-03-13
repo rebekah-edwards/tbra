@@ -119,7 +119,7 @@ export default function SearchClient() {
                     disabled={isImporting}
                     className="mt-2 self-start rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark disabled:opacity-50 transition-colors"
                   >
-                    {isImporting ? "Adding..." : "Add to Library"}
+                    {isImporting ? "Importing..." : "Import Book"}
                   </button>
                 </div>
               </div>

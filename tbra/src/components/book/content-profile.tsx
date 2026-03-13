@@ -24,8 +24,8 @@ const evidenceBadge: Record<string, { label: string; className: string }> = {
     className: "bg-surface-alt text-muted",
   },
   cited: {
-    label: "Cited",
-    className: "bg-primary-light/20 text-primary-dark",
+    label: "AI",
+    className: "bg-surface-alt text-muted",
   },
   human_verified: {
     label: "Verified",
