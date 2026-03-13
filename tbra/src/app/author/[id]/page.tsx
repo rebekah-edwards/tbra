@@ -50,10 +50,10 @@ export default async function AuthorPage({
                       alt={`Cover of ${book.title}`}
                       width={160}
                       height={240}
-                      className="h-[200px] w-full rounded-lg object-cover shadow-sm transition-transform group-hover:scale-105"
+                      className="aspect-[2/3] h-auto w-full rounded-lg object-cover shadow-sm transition-transform group-hover:scale-105"
                     />
                   ) : (
-                    <div className="flex h-[200px] w-full items-center justify-center rounded-lg bg-surface-alt text-sm text-muted shadow-sm">
+                    <div className="flex aspect-[2/3] h-auto w-full items-center justify-center rounded-lg bg-surface-alt text-sm text-muted shadow-sm">
                       No cover
                     </div>
                   )}

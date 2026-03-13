@@ -85,24 +85,36 @@ export default function SearchClient() {
                 key={result.key}
                 className="flex gap-4 rounded-lg border border-border bg-surface p-4"
               >
-                {coverUrl ? (
-                  <Image
-                    src={coverUrl}
-                    alt={`Cover of ${result.title}`}
-                    width={60}
-                    height={90}
-                    className="h-[90px] w-[60px] rounded object-cover"
-                  />
-                ) : (
-                  <div className="flex h-[90px] w-[60px] items-center justify-center rounded bg-surface-alt text-xs text-muted">
-                    No cover
-                  </div>
-                )}
+                <button
+                  onClick={() => handleImport(result)}
+                  disabled={isImporting}
+                  className="flex-shrink-0 cursor-pointer disabled:opacity-50"
+                >
+                  {coverUrl ? (
+                    <Image
+                      src={coverUrl}
+                      alt={`Cover of ${result.title}`}
+                      width={60}
+                      height={90}
+                      className="h-[90px] w-[60px] rounded object-cover hover:opacity-80 transition-opacity"
+                    />
+                  ) : (
+                    <div className="flex h-[90px] w-[60px] items-center justify-center rounded bg-surface-alt text-xs text-muted hover:bg-surface-alt/80 transition-colors">
+                      No cover
+                    </div>
+                  )}
+                </button>
                 <div className="flex flex-1 flex-col justify-between">
                   <div>
-                    <h3 className="font-medium leading-tight">
-                      {result.title}
-                    </h3>
+                    <button
+                      onClick={() => handleImport(result)}
+                      disabled={isImporting}
+                      className="text-left cursor-pointer disabled:opacity-50"
+                    >
+                      <h3 className="font-medium leading-tight hover:text-primary transition-colors">
+                        {result.title}
+                      </h3>
+                    </button>
                     {result.author_name && (
                       <p className="mt-0.5 text-sm text-muted">
                         {result.author_name.join(", ")}
@@ -119,7 +131,7 @@ export default function SearchClient() {
                     disabled={isImporting}
                     className="mt-2 self-start rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark disabled:opacity-50 transition-colors"
                   >
-                    {isImporting ? "Importing..." : "Import Book"}
+                    {isImporting ? "Importing..." : "Import to tbr(a)"}
                   </button>
                 </div>
               </div>
