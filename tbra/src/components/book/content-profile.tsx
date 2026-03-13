@@ -31,7 +31,7 @@ const CATEGORY_ORDER = [
 
 // Short display names for mobile-friendly single-line rendering
 const SHORT_NAMES: Record<string, string> = {
-  "lgbtqia_representation": "LGBT+ Representation",
+  "lgbtqia_representation": "LGBT+ Rep.",
   "profanity_language": "Profanity",
   "political_ideological": "Political content",
   "sexual_assault_coercion": "Sexual assault",
