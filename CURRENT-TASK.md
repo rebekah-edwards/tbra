@@ -42,13 +42,27 @@
 - [x] Author cascade import: importing a book auto-imports other works by same author
 - [x] `openLibraryKey` added to authors table for OL linking
 
-## What to do next (Phase 3)
-- TBD — awaiting assignment
+### Phase 2.5 — Book Page Redesign + Series + UX (completed 2026-03-13)
+- [x] Blurred cover hero card: each book's cover blurred as dynamic background, white text overlay
+- [x] Genre tags as semi-transparent pills on hero card
+- [x] "View editions" moved into hero as subtle unlinked text
+- [x] 1-3 sentence summaries for all books (above description)
+- [x] Description retitled to "From the Author/Publisher:"
+- [x] Spoiler wall redesign: full blur with bright teal "Reveal Content Details" button
+- [x] Search: "Import to tbr(a)" button, clickable cover and title
+- [x] Author page: full-height cover images (aspect-[2/3])
+- [x] Series schema: `series` and `bookSeries` tables
+- [x] DCC books 1-6 seeded with series linkage, ratings, genres, summaries
+- [x] Functional horizontal-scroll series component with position labels
+- [x] Summary column added to books table
 
-## Deferred from Phase 2
-- **Methodology page** — collaborative content task, needs user review
-- **Auto-research pipeline** — AI integration, needs separate planning session
-- **Dungeon Crawler Carl test data** — user will provide content warnings
+## What to do next
+Priority order:
+1. **Methodology page** — collaborative content, quick win
+2. **In-app editions page** — build `/book/[id]/editions` from OL API
+3. **Auto-research pipeline** — AI content classification
+4. **Series auto-detection** — detect series from OL during import
+5. **User auth + reading state** — TBR/reading/completed tracking
 
 ## Context
 - Repo: https://github.com/rebekah-edwards/tbra (now public)

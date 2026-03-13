@@ -37,3 +37,12 @@ Short, dated decisions log. Keep entries crisp: *decision → why → implicatio
 - `openLibraryKey` on authors table: enables linking back to OL for author bibliographies.
 - Editions and series sections are UI shells only — no schema yet. Avoids premature complexity.
 - Auto-research pipeline deferred: needs AI integration planning, not a quick add. Will build as separate phase.
+
+## 2026-03-13 (Phase 2.5)
+- Book page redesign: blurred cover as dynamic background (Spotify/Fable style). Pure CSS, no color extraction library needed — the cover itself is the palette.
+- Hero card contains cover, title, author, metadata, genres, editions — single visual unit replacing the sparse layout.
+- Summaries are AI-written (by Spine) 1-3 sentences, stored in `summary` column. Separate from OL description which is often too long.
+- Spoiler wall redesign: entire content profile blurred behind a bright button, not just notes. Clearer visual signal, Fable-inspired.
+- Series data: `series` + `bookSeries` tables. DCC is the first series populated (books 1-6, book 7 not yet on OL).
+- DCC Book 7 ("The Cage of Dark Hours") not found on Open Library — may need manual entry later.
+- Next priorities: methodology page → in-app editions → AI research pipeline → series auto-detection → auth.
