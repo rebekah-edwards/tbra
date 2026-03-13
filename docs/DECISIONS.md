@@ -27,3 +27,13 @@ Short, dated decisions log. Keep entries crisp: *decision → why → implicatio
 - Cover storage: URL string only (no file storage). Open Library CDN is reliable.
 - Empty content profile shows "No profile yet" — ratings are editorial, never auto-generated.
 - Server actions for mutations, 1 API route for OL search proxy (search needs client-side debounce).
+
+## 2026-03-13 (Phase 2)
+- Evidence badges simplified: merged "AI" + "Cited" into single "AI" badge. Only two visual states: "AI" and "Verified". Reduces cognitive load.
+- Spoiler wall: category names + intensity bars always visible, descriptive notes hidden behind opt-in banner. Single toggle reveals all.
+- Genre normalization: map OL subjects to curated genre tags (cap at 6 per book). Filter noise like "Accessible book" or "NYT bestseller".
+- Author cascade import: when importing a book, non-blocking fetch of all works by same author. Title + cover only — no content research on cascade imports.
+- Rate limiting OL API: 350ms delay between calls during cascade import. Respectful use of public API.
+- `openLibraryKey` on authors table: enables linking back to OL for author bibliographies.
+- Editions and series sections are UI shells only — no schema yet. Avoids premature complexity.
+- Auto-research pipeline deferred: needs AI integration planning, not a quick add. Will build as separate phase.
