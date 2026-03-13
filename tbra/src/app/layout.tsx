@@ -32,7 +32,7 @@ export default function RootLayout({
       >
         <nav className="border-b border-border bg-surface">
           <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-            <Link href="/" className="font-heading text-xl tracking-tight text-primary-dark">
+            <Link href="/" className="text-xl tracking-tight text-primary-dark" style={{ fontFamily: "var(--font-young-serif), Georgia, serif" }}>
               tbr(a)
             </Link>
             <Link

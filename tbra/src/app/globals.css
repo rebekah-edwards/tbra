@@ -39,9 +39,9 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
 }
 
 h1, h2, h3 {
-  font-family: var(--font-heading), serif;
+  font-family: var(--font-young-serif), Georgia, serif;
 }
