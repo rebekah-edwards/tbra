@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 interface Rating {
   categoryKey: string;
   categoryName: string;
@@ -33,7 +37,33 @@ const evidenceBadge: Record<string, { label: string; className: string }> = {
   },
 };
 
+function ExpandableNote({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > 120;
+
+  if (!isLong) {
+    return <p className="mt-1 text-xs text-muted">{text}</p>;
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-xs text-muted">
+        {expanded ? text : text.slice(0, 120) + "..."}
+      </p>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="text-xs text-primary hover:text-primary-dark"
+      >
+        {expanded ? "Show less" : "Read more"}
+      </button>
+    </div>
+  );
+}
+
 export function ContentProfile({ ratings }: ContentProfileProps) {
+  const [spoilerRevealed, setSpoilerRevealed] = useState(false);
+  const hasNotes = ratings.some((r) => r.notes);
+
   if (ratings.length === 0) {
     return (
       <section className="mt-8">
@@ -55,6 +85,7 @@ export function ContentProfile({ ratings }: ContentProfileProps) {
       <div className="mt-4 space-y-3">
         {ratings.map((rating) => {
           const badge = evidenceBadge[rating.evidenceLevel];
+          const isVerified = rating.evidenceLevel === "human_verified";
           return (
             <div key={rating.categoryKey}>
               <div className="flex items-center justify-between">
@@ -86,13 +117,26 @@ export function ContentProfile({ ratings }: ContentProfileProps) {
                   />
                 ))}
               </div>
-              {rating.notes && (
-                <p className="mt-1 text-xs text-muted">{rating.notes}</p>
+              {rating.notes && spoilerRevealed && (
+                isVerified ? (
+                  <ExpandableNote text={rating.notes} />
+                ) : (
+                  <p className="mt-1 text-xs text-muted">{rating.notes}</p>
+                )
               )}
             </div>
           );
         })}
       </div>
+
+      {hasNotes && !spoilerRevealed && (
+        <button
+          onClick={() => setSpoilerRevealed(true)}
+          className="mt-4 w-full rounded-lg border border-border bg-surface-alt/50 px-4 py-3 text-center text-sm text-muted backdrop-blur-sm transition-colors hover:bg-surface-alt"
+        >
+          May contain spoilers — tap to reveal notes
+        </button>
+      )}
     </section>
   );
 }
