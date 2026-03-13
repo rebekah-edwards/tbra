@@ -13,10 +13,13 @@ export const books = sqliteTable("books", {
   pages: integer("pages"),
   words: integer("words"),
   audioLengthMinutes: integer("audio_length_minutes"),
+  coverImageUrl: text("cover_image_url"),
+  openLibraryKey: text("open_library_key"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   uniqueIndex("books_isbn13_unique").on(table.isbn13),
+  uniqueIndex("books_ol_key_unique").on(table.openLibraryKey),
 ]);
 
 export const authors = sqliteTable("authors", {
