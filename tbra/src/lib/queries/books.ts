@@ -19,7 +19,7 @@ export async function getBookWithDetails(bookId: string) {
 
   // Get authors
   const bookAuthorRows = await db
-    .select({ name: authors.name, role: bookAuthors.role })
+    .select({ id: authors.id, name: authors.name, role: bookAuthors.role })
     .from(bookAuthors)
     .innerJoin(authors, eq(bookAuthors.authorId, authors.id))
     .where(eq(bookAuthors.bookId, bookId));

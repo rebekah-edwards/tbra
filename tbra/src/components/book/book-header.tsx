@@ -1,9 +1,10 @@
 import Image from "next/image";
+import Link from "next/link";
 
 interface BookHeaderProps {
   title: string;
   coverImageUrl: string | null;
-  authors: { name: string; role: string }[];
+  authors: { id: string; name: string; role: string }[];
   genres: string[];
   publicationYear: number | null;
   pages: number | null;
@@ -36,7 +37,17 @@ export function BookHeader({
         <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
         {authors.length > 0 && (
           <p className="mt-1 text-muted">
-            {authors.map((a) => a.name).join(", ")}
+            {authors.map((a, i) => (
+              <span key={a.id}>
+                {i > 0 && ", "}
+                <Link
+                  href={`/author/${a.id}`}
+                  className="hover:text-primary transition-colors"
+                >
+                  {a.name}
+                </Link>
+              </span>
+            ))}
           </p>
         )}
         <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted">
