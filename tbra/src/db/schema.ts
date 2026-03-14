@@ -207,6 +207,15 @@ export const reviewDescriptorTags = sqliteTable("review_descriptor_tags", {
   uniqueIndex("descriptor_tags_unique").on(table.reviewId, table.dimension, table.tag),
 ]);
 
+export const reviewHelpfulVotes = sqliteTable("review_helpful_votes", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  reviewId: text("review_id").notNull().references(() => userBookReviews.id),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("helpful_votes_unique").on(table.userId, table.reviewId),
+]);
+
 // ─── Report corrections ───
 
 export const reportCorrections = sqliteTable("report_corrections", {

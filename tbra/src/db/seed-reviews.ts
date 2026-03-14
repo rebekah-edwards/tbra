@@ -32,6 +32,7 @@ const DUMMY_USERS = [
   { id: "seed-reviewer-003", email: "anon@example.com", displayName: null },
   { id: "seed-reviewer-004", email: "priya@example.com", displayName: "Priya Nair" },
   { id: "seed-reviewer-005", email: "sam@example.com", displayName: "Sam Torres" },
+  { id: "seed-reviewer-006", email: "alex@example.com", displayName: "Alex Chen" },
 ];
 
 function daysAgo(days: number): string {
@@ -189,6 +190,22 @@ async function seed() {
         { dimension: "prose", tag: "Humorous" },
         { dimension: "prose", tag: "Simple" },
         { dimension: "setting", tag: "Contemporary/modern" },
+      ],
+    },
+    {
+      userId: DUMMY_USERS[5].id, // Alex Chen — rating only, no text
+      overallRating: 4.0,
+      mood: "contemplative",
+      didNotFinish: false,
+      dnfPercentComplete: null,
+      reviewText: null,
+      createdAt: daysAgo(3),
+      dimensions: [
+        { dimension: "characters", rating: 4.0 },
+        { dimension: "plot", rating: 3.5 },
+      ],
+      tags: [
+        { dimension: "characters", tag: "Relatable" },
       ],
     },
   ];

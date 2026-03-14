@@ -18,7 +18,7 @@ export default async function ReviewsPage({
     notFound();
   }
 
-  const reviews = await getBookReviews(id);
+  const reviews = await getBookReviews(id, user?.userId);
 
   return (
     <div className="min-h-screen">
@@ -55,7 +55,7 @@ export default async function ReviewsPage({
 
       {/* Review list */}
       <div className="px-4 py-4">
-        <ReviewListClient reviews={reviews} />
+        <ReviewListClient reviews={reviews} bookId={id} />
       </div>
     </div>
   );

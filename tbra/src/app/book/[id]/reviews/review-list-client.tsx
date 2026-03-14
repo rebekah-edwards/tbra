@@ -6,11 +6,14 @@ import type { BookReviewEntry } from "@/lib/queries/review";
 
 interface ReviewListClientProps {
   reviews: BookReviewEntry[];
+  bookId: string;
+  sortBy?: "latest" | "helpful";
 }
 
-export function ReviewListClient({ reviews }: ReviewListClientProps) {
+export function ReviewListClient({ reviews, bookId }: ReviewListClientProps) {
   const [hideNoText, setHideNoText] = useState(false);
   const [dnfOnly, setDnfOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<"latest" | "helpful">("latest");
 
   const filtered = useMemo(() => {
     let result = reviews;
@@ -20,8 +23,11 @@ export function ReviewListClient({ reviews }: ReviewListClientProps) {
     if (dnfOnly) {
       result = result.filter((r) => r.didNotFinish);
     }
+    if (sortBy === "helpful") {
+      result = [...result].sort((a, b) => b.helpfulCount - a.helpfulCount);
+    }
     return result;
-  }, [reviews, hideNoText, dnfOnly]);
+  }, [reviews, hideNoText, dnfOnly, sortBy]);
 
   if (reviews.length === 0) {
     return (
@@ -41,33 +47,61 @@ export function ReviewListClient({ reviews }: ReviewListClientProps) {
 
   return (
     <div className="space-y-3">
-      {/* Filters */}
-      {(hasDnf || hasTextless) && (
-        <div className="flex flex-wrap gap-3 pb-1">
-          {hasTextless && (
-            <label className="flex items-center gap-2 text-xs text-muted cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={hideNoText}
-                onChange={(e) => setHideNoText(e.target.checked)}
-                className="accent-primary w-3.5 h-3.5 rounded"
-              />
-              Written reviews only
-            </label>
-          )}
-          {hasDnf && (
-            <label className="flex items-center gap-2 text-xs text-muted cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={dnfOnly}
-                onChange={(e) => setDnfOnly(e.target.checked)}
-                className="accent-primary w-3.5 h-3.5 rounded"
-              />
-              DNF only
-            </label>
-          )}
+      {/* Sort + Filters */}
+      <div className="flex flex-wrap items-center gap-3 pb-1">
+        {/* Sort toggle */}
+        <div className="flex items-center gap-1 text-xs">
+          <button
+            type="button"
+            onClick={() => setSortBy("latest")}
+            className={`px-2 py-1 rounded-full transition-colors ${
+              sortBy === "latest"
+                ? "bg-primary/15 text-primary font-medium"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            Latest
+          </button>
+          <button
+            type="button"
+            onClick={() => setSortBy("helpful")}
+            className={`px-2 py-1 rounded-full transition-colors ${
+              sortBy === "helpful"
+                ? "bg-primary/15 text-primary font-medium"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            Most Helpful
+          </button>
         </div>
-      )}
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Filter checkboxes */}
+        {hasTextless && (
+          <label className="flex items-center gap-2 text-xs text-muted cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={hideNoText}
+              onChange={(e) => setHideNoText(e.target.checked)}
+              className="accent-primary w-3.5 h-3.5 rounded"
+            />
+            Written only
+          </label>
+        )}
+        {hasDnf && (
+          <label className="flex items-center gap-2 text-xs text-muted cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={dnfOnly}
+              onChange={(e) => setDnfOnly(e.target.checked)}
+              className="accent-primary w-3.5 h-3.5 rounded"
+            />
+            DNF only
+          </label>
+        )}
+      </div>
 
       {/* Results */}
       {filtered.length === 0 ? (
@@ -78,7 +112,7 @@ export function ReviewListClient({ reviews }: ReviewListClientProps) {
         </div>
       ) : (
         filtered.map((review) => (
-          <ReviewCard key={review.id} review={review} />
+          <ReviewCard key={review.id} review={review} bookId={bookId} />
         ))
       )}
     </div>

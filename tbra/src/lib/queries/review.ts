@@ -3,9 +3,10 @@ import {
   userBookReviews,
   userBookDimensionRatings,
   reviewDescriptorTags,
+  reviewHelpfulVotes,
   users,
 } from "@/db/schema";
-import { eq, and, inArray, desc } from "drizzle-orm";
+import { eq, and, inArray, desc, sql, count } from "drizzle-orm";
 
 export interface UserReview {
   id: string;
@@ -96,9 +97,11 @@ export interface BookReviewEntry {
   createdAt: string;
   dimensionRatings: Record<string, number | null>;
   dimensionTags: Record<string, string[]>;
+  helpfulCount: number;
+  currentUserVoted: boolean;
 }
 
-export async function getBookReviews(bookId: string): Promise<BookReviewEntry[]> {
+export async function getBookReviews(bookId: string, currentUserId?: string | null): Promise<BookReviewEntry[]> {
   // Fetch all reviews for this book joined with user info
   const rows = await db
     .select({
@@ -146,6 +149,40 @@ export async function getBookReviews(bookId: string): Promise<BookReviewEntry[]>
     .where(inArray(reviewDescriptorTags.reviewId, reviewIds))
     .all();
 
+  // Batch-fetch helpful vote counts
+  const helpfulRows = await db
+    .select({
+      reviewId: reviewHelpfulVotes.reviewId,
+      count: count(),
+    })
+    .from(reviewHelpfulVotes)
+    .where(inArray(reviewHelpfulVotes.reviewId, reviewIds))
+    .groupBy(reviewHelpfulVotes.reviewId)
+    .all();
+
+  const helpfulMap = new Map<string, number>();
+  for (const row of helpfulRows) {
+    helpfulMap.set(row.reviewId, row.count);
+  }
+
+  // Check which reviews the current user has voted on
+  const userVotedSet = new Set<string>();
+  if (currentUserId) {
+    const userVotes = await db
+      .select({ reviewId: reviewHelpfulVotes.reviewId })
+      .from(reviewHelpfulVotes)
+      .where(
+        and(
+          eq(reviewHelpfulVotes.userId, currentUserId),
+          inArray(reviewHelpfulVotes.reviewId, reviewIds)
+        )
+      )
+      .all();
+    for (const v of userVotes) {
+      userVotedSet.add(v.reviewId);
+    }
+  }
+
   // Index by reviewId
   const dimMap = new Map<string, Record<string, number | null>>();
   for (const row of dimRows) {
@@ -175,5 +212,7 @@ export async function getBookReviews(bookId: string): Promise<BookReviewEntry[]>
     createdAt: row.createdAt,
     dimensionRatings: dimMap.get(row.id) ?? {},
     dimensionTags: tagMap.get(row.id) ?? {},
+    helpfulCount: helpfulMap.get(row.id) ?? 0,
+    currentUserVoted: userVotedSet.has(row.id),
   }));
 }
