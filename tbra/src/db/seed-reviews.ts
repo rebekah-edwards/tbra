@@ -100,6 +100,8 @@ async function seed() {
         { dimension: "plot", tag: "Page turner" },
         { dimension: "plot", tag: "Satisfying" },
         { dimension: "prose", tag: "Descriptive" },
+        { dimension: "content_details", tag: "Death" },
+        { dimension: "content_details", tag: "Grief" },
       ],
     },
     {
@@ -138,6 +140,7 @@ async function seed() {
         { dimension: "prose", tag: "Clunky" },
         { dimension: "plot", tag: "Predictable" },
         { dimension: "plot", tag: "Unsatisfying" },
+        { dimension: "content_details", tag: "Violence/gore" },
       ],
     },
     {
@@ -162,6 +165,9 @@ async function seed() {
         { dimension: "plot", tag: "Shocking" },
         { dimension: "setting", tag: "Fantastical" },
         { dimension: "setting", tag: "Expansive" },
+        { dimension: "content_details", tag: "Death" },
+        { dimension: "content_details", tag: "Parent loss" },
+        { dimension: "content_details", tag: "Grief" },
       ],
     },
     {

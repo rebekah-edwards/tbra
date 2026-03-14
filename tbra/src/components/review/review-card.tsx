@@ -39,12 +39,11 @@ export function ReviewCard({ review }: { review: BookReviewEntry }) {
 
   const mood = MOODS.find((m) => m.key === review.mood);
 
-  // Collect rated dimensions with their tags (excluding content_details)
+  // Collect dimensions that have ratings or tags
   const dimensionsWithData = DIMENSION_SECTIONS.filter(
     (d) =>
-      d.key !== "content_details" &&
-      (review.dimensionRatings[d.key] != null ||
-        (review.dimensionTags[d.key] && review.dimensionTags[d.key].length > 0))
+      review.dimensionRatings[d.key] != null ||
+      (review.dimensionTags[d.key] && review.dimensionTags[d.key].length > 0)
   );
 
   const hasDetails = dimensionsWithData.length > 0;

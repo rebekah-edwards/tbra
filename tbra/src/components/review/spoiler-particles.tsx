@@ -177,12 +177,21 @@ export function SpoilerParticles({
     });
     resizeObserver.observe(container);
 
-    // Watch for reveal clicks — re-check which spoilers are still hidden
+    // Watch for reveal/un-reveal clicks
     const mutationObserver = new MutationObserver(() => {
       // Remove particles for revealed spoilers
       particlesRef.current.forEach((_, el) => {
         if (el.classList.contains("revealed")) {
           particlesRef.current.delete(el);
+        }
+      });
+      // Re-create particles for un-revealed spoilers
+      const spoilers = container!.querySelectorAll(
+        ".spoiler-tag:not(.revealed)"
+      );
+      spoilers.forEach((el) => {
+        if (!particlesRef.current.has(el)) {
+          particlesRef.current.set(el, createParticlesForElement(el));
         }
       });
     });
