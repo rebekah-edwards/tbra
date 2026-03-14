@@ -1,10 +1,15 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { getBookWithDetails } from "@/lib/queries/books";
-import { BookHeader } from "@/components/book/book-header";
+import { getUserBookState } from "@/lib/queries/reading-state";
+import { getUserOwnedEditions } from "@/lib/queries/editions";
+import { getBookAggregateRating } from "@/lib/queries/rating";
+import { getUserReview } from "@/lib/queries/review";
+import { getCurrentUser } from "@/lib/auth";
 import { BookDescription } from "@/components/book/book-description";
 import { BookSeries } from "@/components/book/book-series";
 import { ContentProfile } from "@/components/book/content-profile";
+import { BackLink } from "@/components/book/back-link";
+import { BookPageClient } from "./book-page-client";
 
 export default async function BookPage({
   params,
@@ -12,30 +17,50 @@ export default async function BookPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const book = await getBookWithDetails(id);
+  const user = await getCurrentUser();
+  const book = await getBookWithDetails(id, user?.userId);
 
   if (!book) {
     notFound();
   }
+  const userState = user ? await getUserBookState(user.userId, id) : null;
+  const editionSelections = user
+    ? (await getUserOwnedEditions(user.userId, id)).map((e) => ({
+        editionId: e.editionId,
+        format: e.format,
+        openLibraryKey: e.openLibraryKey,
+        coverId: e.coverId ?? null,
+      }))
+    : [];
+  const userReview = user ? await getUserReview(user.userId, id) : null;
+  const aggregate = await getBookAggregateRating(id);
 
   return (
-    <div>
-      <div className="mb-6">
-        <Link
-          href="/search"
-          className="text-sm text-primary hover:text-primary-dark"
-        >
-          &larr; Back to search
-        </Link>
-      </div>
+    <div className="-mt-4">
+      <BackLink />
 
-      <BookHeader
-        title={book.title}
-        coverImageUrl={book.coverImageUrl}
-        authors={book.authors}
-        genres={book.genres}
-        publicationYear={book.publicationYear}
-        pages={book.pages}
+      <BookPageClient
+        book={{
+          id: book.id,
+          title: book.title,
+          coverImageUrl: book.coverImageUrl,
+          authors: book.authors,
+          genres: book.genres,
+          publicationYear: book.publicationYear,
+          pages: book.pages,
+          audioLengthMinutes: book.audioLengthMinutes,
+          openLibraryKey: book.openLibraryKey,
+          isFiction: book.isFiction ?? null,
+        }}
+        userState={{
+          state: userState?.state ?? null,
+          ownedFormats: userState?.ownedFormats ?? [],
+          activeFormats: userState?.activeFormats ?? [],
+        }}
+        isLoggedIn={!!user}
+        editionSelections={editionSelections}
+        userReview={userReview}
+        aggregate={aggregate}
       />
 
       {book.summary && (
@@ -48,6 +73,7 @@ export default async function BookPage({
 
       {book.seriesInfo && (
         <BookSeries
+          seriesId={book.seriesInfo.id}
           name={book.seriesInfo.name}
           books={book.seriesInfo.books}
           currentBookId={book.id}

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 // ─── Core tables ───
@@ -16,6 +16,7 @@ export const books = sqliteTable("books", {
   audioLengthMinutes: integer("audio_length_minutes"),
   coverImageUrl: text("cover_image_url"),
   openLibraryKey: text("open_library_key"),
+  isFiction: integer("is_fiction", { mode: "boolean" }).default(true),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
@@ -117,15 +118,96 @@ export const users = sqliteTable("users", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash"),
+  displayName: text("display_name"),
+  avatarUrl: text("avatar_url"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 
 export const userBookState = sqliteTable("user_book_state", {
   userId: text("user_id").notNull().references(() => users.id),
   bookId: text("book_id").notNull().references(() => books.id),
-  state: text("state").notNull(), // 'tbr' | 'owned' | 'currently_reading' | 'completed' | 'paused' | 'dnf'
+  state: text("state"), // 'tbr' | 'currently_reading' | 'completed' | 'paused' | 'dnf' | null
+  ownedFormats: text("owned_formats"), // JSON array: ["hardcover","paperback","ebook","audiobook"] | null
+  activeFormats: text("active_formats"), // JSON array: ["hardcover","audiobook"] | null
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("user_book_state_unique").on(table.userId, table.bookId),
+]);
+
+export const userBookRatings = sqliteTable("user_book_ratings", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  bookId: text("book_id").notNull().references(() => books.id),
+  rating: real("rating").notNull(), // 0.25 to 5.0 in 0.25 increments
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("user_book_ratings_unique").on(table.userId, table.bookId),
+]);
+
+// ─── Editions ───
+
+export const editions = sqliteTable("editions", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  openLibraryKey: text("open_library_key").notNull().unique(),
+  bookId: text("book_id").notNull().references(() => books.id),
+  title: text("title"),
+  publishDate: text("publish_date"),
+  publishers: text("publishers"), // JSON array
+  isbn13: text("isbn_13"),
+  isbn10: text("isbn_10"),
+  pages: integer("pages"),
+  coverId: integer("cover_id"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
+
+export const userOwnedEditions = sqliteTable("user_owned_editions", {
+  userId: text("user_id").notNull().references(() => users.id),
+  bookId: text("book_id").notNull().references(() => books.id),
+  editionId: text("edition_id").notNull().references(() => editions.id),
+  format: text("format").notNull(), // "hardcover" | "paperback" | "ebook" | "audiobook"
+}, (table) => [
+  uniqueIndex("user_owned_editions_unique").on(table.userId, table.bookId, table.editionId, table.format),
+]);
+
+// ─── Reviews ───
+
+export const userBookReviews = sqliteTable("user_book_reviews", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  bookId: text("book_id").notNull().references(() => books.id),
+  overallRating: real("overall_rating"), // 0.25–5.0, nullable
+  mood: text("mood"), // "lighthearted" | "warm" | "touched" | "emotional" | "devastated"
+  moodIntensity: real("mood_intensity"), // 0.0–1.0 raw slider position
+  reviewText: text("review_text"),
+  didNotFinish: integer("did_not_finish", { mode: "boolean" }).notNull().default(false),
+  dnfPercentComplete: integer("dnf_percent_complete"), // 0-100
+  finishedMonth: integer("finished_month"), // 1-12
+  finishedYear: integer("finished_year"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("user_book_reviews_unique").on(table.userId, table.bookId),
+]);
+
+export const userBookDimensionRatings = sqliteTable("user_book_dimension_ratings", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  reviewId: text("review_id").notNull().references(() => userBookReviews.id),
+  dimension: text("dimension").notNull(), // 'characters' | 'plot' | 'setting' | 'writing_style'
+  rating: real("rating").notNull(), // 0.25–5.0
+}, (table) => [
+  uniqueIndex("dimension_ratings_unique").on(table.reviewId, table.dimension),
+]);
+
+export const reviewDescriptorTags = sqliteTable("review_descriptor_tags", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  reviewId: text("review_id").notNull().references(() => userBookReviews.id),
+  dimension: text("dimension").notNull(), // 'characters' | 'plot' | 'setting' | 'writing_style' | 'content_warnings'
+  tag: text("tag").notNull(),
+}, (table) => [
+  uniqueIndex("descriptor_tags_unique").on(table.reviewId, table.dimension, table.tag),
+]);
+
+// ─── Report corrections ───
 
 export const reportCorrections = sqliteTable("report_corrections", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
