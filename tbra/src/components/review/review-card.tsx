@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { StarRow } from "./rounded-star";
+import { SpoilerParticles } from "./spoiler-particles";
 import { MOODS, DIMENSION_SECTIONS } from "@/lib/review-constants";
 import { timeAgo } from "@/lib/date-utils";
 import type { BookReviewEntry } from "@/lib/queries/review";
@@ -18,7 +19,9 @@ function getInitials(name: string | null): string {
 
 export function ReviewCard({ review }: { review: BookReviewEntry }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const hasSpoilers = review.reviewText?.includes("spoiler-tag") ?? false;
 
   // Spoiler tag reveal on tap
   useEffect(() => {
@@ -102,10 +105,13 @@ export function ReviewCard({ review }: { review: BookReviewEntry }) {
 
       {/* Review text — right after stars/mood */}
       {review.reviewText && (
-        <div
-          className="text-sm text-foreground/90 leading-relaxed [&_b]:font-semibold [&_i]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
-          dangerouslySetInnerHTML={{ __html: review.reviewText }}
-        />
+        <div ref={textRef} className="relative">
+          <div
+            className="text-sm text-foreground/90 leading-relaxed [&_b]:font-semibold [&_i]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+            dangerouslySetInnerHTML={{ __html: review.reviewText }}
+          />
+          {hasSpoilers && <SpoilerParticles containerRef={textRef} />}
+        </div>
       )}
 
       {/* Collapsible dimension details */}
