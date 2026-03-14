@@ -26,14 +26,14 @@ export default async function AuthorPage({
         </Link>
       </div>
 
-      <h1 className="text-2xl font-bold tracking-tight">{author.name}</h1>
+      <h1 className="neon-heading text-2xl font-bold tracking-tight">{author.name}</h1>
       {author.bio && (
         <p className="mt-2 text-sm leading-relaxed text-muted">{author.bio}</p>
       )}
 
       {author.books.length > 0 && (
         <section className="mt-8">
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-lg font-semibold text-neon-blue">
             Books ({author.books.length})
           </h2>
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
@@ -43,7 +43,7 @@ export default async function AuthorPage({
                 href={`/book/${book.id}`}
                 className="group"
               >
-                <div className="overflow-hidden rounded-lg">
+                <div className="relative overflow-hidden rounded-lg">
                   {book.coverImageUrl ? (
                     <Image
                       src={book.coverImageUrl}
@@ -56,6 +56,15 @@ export default async function AuthorPage({
                     <div className="flex aspect-[2/3] h-auto w-full items-center justify-center rounded-lg bg-surface-alt text-sm text-muted shadow-sm">
                       No cover
                     </div>
+                  )}
+                  {book.isFiction != null && (
+                    <span className={`absolute top-1.5 left-1.5 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide backdrop-blur-sm ${
+                      book.isFiction
+                        ? "bg-primary/80 text-background"
+                        : "bg-neon-blue/80 text-white"
+                    }`}>
+                      {book.isFiction ? "Fiction" : "Nonfiction"}
+                    </span>
                   )}
                 </div>
                 <p className="mt-2 text-sm font-medium leading-tight group-hover:text-primary">

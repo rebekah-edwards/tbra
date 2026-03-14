@@ -1,12 +1,12 @@
 "use client";
 
-import { useReducer, useCallback, useTransition, useEffect, useState } from "react";
+import { useReducer, useCallback, useTransition, useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { StepOverallRating } from "./steps/step-overall-rating";
 import { StepMood } from "./steps/step-mood";
 import { StepDimensions } from "./steps/step-dimensions";
 import { StepReviewText } from "./steps/step-review-text";
-import { saveReview } from "@/lib/actions/review";
+import { saveReview, deleteReview } from "@/lib/actions/review";
 
 const TOTAL_STEPS = 4;
 
@@ -14,6 +14,7 @@ interface ReviewState {
   overallRating: number | null;
   didNotFinish: boolean;
   dnfPercentComplete: number | null;
+  dnfMode: "percent" | "pages";
   reviewText: string | null;
   mood: string | null;
   dimensionRatings: Record<string, number | null>;
@@ -24,10 +25,12 @@ type ReviewAction =
   | { type: "SET_RATING"; rating: number | null }
   | { type: "SET_DNF"; dnf: boolean }
   | { type: "SET_DNF_PERCENT"; percent: number | null }
+  | { type: "SET_DNF_MODE"; mode: "percent" | "pages" }
   | { type: "SET_REVIEW_TEXT"; text: string | null }
   | { type: "SET_MOOD"; mood: string | null }
   | { type: "SET_DIMENSION_RATING"; dimension: string; rating: number | null }
-  | { type: "TOGGLE_DIMENSION_TAG"; dimension: string; tag: string };
+  | { type: "TOGGLE_DIMENSION_TAG"; dimension: string; tag: string }
+  | { type: "RESET"; state: ReviewState };
 
 function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
   switch (action.type) {
@@ -37,6 +40,8 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
       return { ...state, didNotFinish: action.dnf, overallRating: action.dnf ? null : state.overallRating };
     case "SET_DNF_PERCENT":
       return { ...state, dnfPercentComplete: action.percent };
+    case "SET_DNF_MODE":
+      return { ...state, dnfMode: action.mode };
     case "SET_REVIEW_TEXT":
       return { ...state, reviewText: action.text };
     case "SET_MOOD":
@@ -59,6 +64,8 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
         },
       };
     }
+    case "RESET":
+      return action.state;
     default:
       return state;
   }
@@ -79,6 +86,7 @@ function makeInitialState(existing?: {
       overallRating: existing.overallRating,
       didNotFinish: existing.didNotFinish,
       dnfPercentComplete: existing.dnfPercentComplete ?? null,
+      dnfMode: "percent",
       reviewText: existing.reviewText ?? null,
       mood: existing.mood,
       dimensionRatings: existing.dimensionRatings,
@@ -89,6 +97,7 @@ function makeInitialState(existing?: {
     overallRating: null,
     didNotFinish: false,
     dnfPercentComplete: null,
+    dnfMode: "percent",
     reviewText: null,
     mood: null,
     dimensionRatings: {},
@@ -96,10 +105,24 @@ function makeInitialState(existing?: {
   };
 }
 
+function statesEqual(a: ReviewState, b: ReviewState): boolean {
+  return (
+    a.overallRating === b.overallRating &&
+    a.didNotFinish === b.didNotFinish &&
+    a.dnfPercentComplete === b.dnfPercentComplete &&
+    a.reviewText === b.reviewText &&
+    a.mood === b.mood &&
+    JSON.stringify(a.dimensionRatings) === JSON.stringify(b.dimensionRatings) &&
+    JSON.stringify(a.dimensionTags) === JSON.stringify(b.dimensionTags)
+  );
+}
+
 interface ReviewWizardProps {
   bookId: string;
+  bookPages?: number | null;
   open: boolean;
   onClose: () => void;
+  isExisting: boolean;
   existingReview?: {
     overallRating: number | null;
     didNotFinish: boolean;
@@ -112,20 +135,29 @@ interface ReviewWizardProps {
   } | null;
 }
 
-export function ReviewWizard({ bookId, open, onClose, existingReview }: ReviewWizardProps) {
+export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, existingReview }: ReviewWizardProps) {
   const [step, setStep] = useReducer(
     (_: number, next: number) => Math.max(0, Math.min(TOTAL_STEPS - 1, next)),
     0
   );
   const [state, dispatch] = useReducer(reviewReducer, existingReview, makeInitialState);
   const [isPending, startTransition] = useTransition();
+  const [isDeletePending, startDeleteTransition] = useTransition();
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const initialStateRef = useRef<ReviewState>(makeInitialState(existingReview));
 
-  // Animate in/out
+  // Animate in/out — reset state each time wizard opens
   useEffect(() => {
     if (open) {
       setVisible(true);
+      const fresh = makeInitialState(existingReview);
+      initialStateRef.current = fresh;
+      dispatch({ type: "RESET", state: fresh });
+      setShowDeleteConfirm(false);
+      setShowExitConfirm(false);
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setAnimating(true));
       });
@@ -135,7 +167,7 @@ export function ReviewWizard({ bookId, open, onClose, existingReview }: ReviewWi
       const timer = setTimeout(() => setVisible(false), 300);
       return () => clearTimeout(timer);
     }
-  }, [open]);
+  }, [open, existingReview]);
 
   // Lock body scroll
   useEffect(() => {
@@ -161,8 +193,24 @@ export function ReviewWizard({ bookId, open, onClose, existingReview }: ReviewWi
     });
   }, [bookId, state, onClose]);
 
+  const handleDelete = useCallback(() => {
+    startDeleteTransition(async () => {
+      await deleteReview(bookId);
+      setShowDeleteConfirm(false);
+      onClose();
+    });
+  }, [bookId, onClose]);
+
+  const handleCloseAttempt = useCallback(() => {
+    const isDirty = !statesEqual(state, initialStateRef.current);
+    if (isDirty) {
+      setShowExitConfirm(true);
+    } else {
+      onClose();
+    }
+  }, [state, onClose]);
+
   const isLastStep = step === TOTAL_STEPS - 1;
-  // Steps 0-1 are centered, step 2 (dimensions) and step 3 (text) need full height
   const isScrollStep = step >= 2;
 
   if (!visible) return null;
@@ -175,22 +223,20 @@ export function ReviewWizard({ bookId, open, onClose, existingReview }: ReviewWi
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
-        <button
-          type="button"
-          onClick={() => (step > 0 ? setStep(step - 1) : onClose())}
-          className="p-2 -m-2 text-foreground/60 hover:text-foreground transition-colors"
-          aria-label={step > 0 ? "Back" : "Close"}
-        >
-          {step > 0 ? (
+        {step > 0 ? (
+          <button
+            type="button"
+            onClick={() => setStep(step - 1)}
+            className="p-2 -m-2 text-foreground/60 hover:text-foreground transition-colors"
+            aria-label="Back"
+          >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 18l-6-6 6-6" />
             </svg>
-          ) : (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          )}
-        </button>
+          </button>
+        ) : (
+          <div className="w-10" />
+        )}
 
         <span className="text-xs font-medium text-muted uppercase tracking-wide">
           Step {step + 1} of {TOTAL_STEPS}
@@ -198,7 +244,7 @@ export function ReviewWizard({ bookId, open, onClose, existingReview }: ReviewWi
 
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleCloseAttempt}
           className="p-2 -m-2 text-foreground/60 hover:text-foreground transition-colors"
           aria-label="Close"
         >
@@ -225,16 +271,19 @@ export function ReviewWizard({ bookId, open, onClose, existingReview }: ReviewWi
       </div>
 
       {/* Step content */}
-      <div className={`flex-1 ${isScrollStep ? "overflow-hidden" : "overflow-y-auto px-4 flex items-center"}`}>
+      <div className={`flex-1 min-h-0 ${isScrollStep ? "overflow-hidden" : "overflow-y-auto px-4 flex items-center"}`}>
         <div className={`w-full ${isScrollStep ? "h-full" : "-mt-12"}`}>
           {step === 0 && (
             <StepOverallRating
               rating={state.overallRating}
               didNotFinish={state.didNotFinish}
               dnfPercentComplete={state.dnfPercentComplete}
+              dnfMode={state.dnfMode}
+              bookPages={bookPages ?? null}
               onRatingChange={(r) => dispatch({ type: "SET_RATING", rating: r })}
               onDnfChange={(d) => dispatch({ type: "SET_DNF", dnf: d })}
               onDnfPercentChange={(p) => dispatch({ type: "SET_DNF_PERCENT", percent: p })}
+              onDnfModeChange={(m) => dispatch({ type: "SET_DNF_MODE", mode: m })}
             />
           )}
           {step === 1 && (
@@ -265,25 +314,91 @@ export function ReviewWizard({ bookId, open, onClose, existingReview }: ReviewWi
       </div>
 
       {/* Footer */}
-      <div className="flex gap-3 px-4 py-4 pb-8 border-t border-surface-alt">
-        <button
-          type="button"
-          onClick={() => (isLastStep ? handleSave() : setStep(step + 1))}
-          className="flex-1 text-sm text-muted hover:text-foreground py-3 transition-colors"
-        >
-          Skip
-        </button>
-        <button
-          type="button"
-          onClick={() => (isLastStep ? handleSave() : setStep(step + 1))}
-          disabled={isPending}
-          className={`flex-[2] py-3 rounded-xl font-medium text-background transition-all ${
-            isPending ? "bg-primary/50" : "bg-foreground hover:bg-foreground/90 active:scale-[0.98]"
-          }`}
-        >
-          {isPending ? "Saving..." : isLastStep ? "Save Review" : "Next"}
-        </button>
+      <div className="px-4 py-4 pb-8 border-t border-surface-alt space-y-3">
+        {isExisting && !showDeleteConfirm && (
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="w-full py-2.5 rounded-xl text-sm font-medium border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors"
+          >
+            Delete Review
+          </button>
+        )}
+
+        {showDeleteConfirm && (
+          <div className="flex items-center justify-center gap-3 py-2.5 px-3 rounded-xl bg-destructive/10 border border-destructive/30">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeletePending}
+              className="text-sm text-destructive font-semibold hover:text-destructive/80 transition-colors"
+            >
+              {isDeletePending ? "Deleting..." : "Yes, delete my review"}
+            </button>
+            <span className="text-muted">&middot;</span>
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(false)}
+              className="text-sm text-muted hover:text-foreground transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => (isLastStep ? handleSave() : setStep(step + 1))}
+            className="flex-1 text-sm text-muted hover:text-foreground py-3 transition-colors"
+          >
+            Skip
+          </button>
+          <button
+            type="button"
+            onClick={() => (isLastStep ? handleSave() : setStep(step + 1))}
+            disabled={isPending}
+            className={`flex-[2] py-3 rounded-xl font-medium text-background transition-all ${
+              isPending ? "bg-primary/50" : "bg-foreground hover:bg-foreground/90 active:scale-[0.98]"
+            }`}
+          >
+            {isPending ? "Posting..." : isLastStep ? "Post Review" : "Next"}
+          </button>
+        </div>
       </div>
+
+      {/* Exit confirmation dialog */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-6">
+          <div className="w-full max-w-xs rounded-2xl bg-surface border border-border p-5 shadow-2xl">
+            <h3 className="text-base font-bold text-foreground text-center mb-2">
+              Discard changes?
+            </h3>
+            <p className="text-sm text-muted text-center mb-5">
+              Your review progress will be lost if you exit now.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowExitConfirm(false);
+                  onClose();
+                }}
+                className="w-full py-2.5 rounded-xl text-sm font-semibold bg-destructive text-white hover:bg-destructive/90 transition-colors"
+              >
+                Discard
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowExitConfirm(false)}
+                className="w-full py-2.5 rounded-xl text-sm font-medium text-muted hover:text-foreground transition-colors"
+              >
+                Keep editing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );

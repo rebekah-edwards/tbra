@@ -46,3 +46,20 @@ Short, dated decisions log. Keep entries crisp: *decision → why → implicatio
 - Series data: `series` + `bookSeries` tables. DCC is the first series populated (books 1-6, book 7 not yet on OL).
 - DCC Book 7 ("The Cage of Dark Hours") not found on Open Library — may need manual entry later.
 - Next priorities: methodology page → in-app editions → AI research pipeline → series auto-detection → auth.
+
+## 2026-03-13 (Phase 3 — Auth + Editions + UX)
+- Auth: bcrypt password hashing (cost 12) + JWT sessions via jose. 7-day HTTP-only cookies. No email verification or password reset for MVP.
+- Reading states expanded beyond original spec: TBR, Currently Reading, Completed, Paused, DNF. Split button with dropdown on book pages and search results.
+- Format tracking: 4 formats (Hardcover, Paperback, eBook, Audiobook) with active format concept. Auto-prompts format selection when entering "currently_reading".
+- Edition picker: bottom sheet UI fetches editions from OL on demand, caches locally in `editions` table. Per-edition per-format ownership tracking via `user_owned_editions`.
+- Book page shows audio length when audiobook is active format, page count otherwise.
+- Reading state button on search results auto-imports unimported books on first interaction — zero-friction onboarding.
+- Dark/light theme: full dual-theme CSS variable system (16 semantic colors each). Dark theme is primary design (neon/cyberpunk). `next-themes` with animated pill toggle.
+- Avatar storage: local filesystem at `public/uploads/avatars/`. Known limitation — won't survive serverless deploy. Acceptable for dev/MVP.
+- Methodology page renamed from "Content Profile" to "What's Inside". Static content explaining philosophy, scale, categories, evidence levels.
+- Home page: auth-gated personalized view with Currently Reading (horizontal scroll), TBR (grid), Recently Completed (horizontal scroll, capped at 5).
+
+## 2026-03-13 (Phase 4 — Series Auto-Detection)
+- Series auto-detection working via OL cascade import. Licanius Trilogy auto-detected.
+- DB now at 86 books, 26 authors, 1 series (DCC with 6 books linked).
+- Next priorities: AI content pipeline → report corrections UI → catalog expansion → deploy.

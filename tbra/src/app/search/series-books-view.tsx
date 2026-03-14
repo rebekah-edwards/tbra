@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ReadingStateButton } from "@/components/reading-state-button";
+import { CompactOwnedButton } from "@/components/compact-owned-button";
 import { StarRow } from "@/components/review/rounded-star";
 import { useState } from "react";
 
@@ -14,6 +15,7 @@ interface SeriesBook {
   authors: string[];
   userRating: number | null;
   currentState: string | null;
+  ownedFormats: string[];
 }
 
 interface SeriesBooksViewProps {
@@ -25,6 +27,9 @@ interface SeriesBooksViewProps {
 export function SeriesBooksView({ seriesName, books, isLoggedIn }: SeriesBooksViewProps) {
   const [bookStates, setBookStates] = useState<Record<string, string | null>>(
     () => Object.fromEntries(books.map((b) => [b.id, b.currentState]))
+  );
+  const [bookOwnedFormats, setBookOwnedFormats] = useState<Record<string, string[]>>(
+    () => Object.fromEntries(books.map((b) => [b.id, b.ownedFormats]))
   );
 
   return (
@@ -82,7 +87,7 @@ export function SeriesBooksView({ seriesName, books, isLoggedIn }: SeriesBooksVi
                   </div>
                 )}
               </div>
-              <div className="mt-2">
+              <div className="mt-2 flex items-center gap-2">
                 <ReadingStateButton
                   bookId={book.id}
                   currentState={bookStates[book.id] ?? null}
@@ -90,6 +95,14 @@ export function SeriesBooksView({ seriesName, books, isLoggedIn }: SeriesBooksVi
                   compact
                   onStateChange={(newState) => {
                     setBookStates((prev) => ({ ...prev, [book.id]: newState }));
+                  }}
+                />
+                <CompactOwnedButton
+                  bookId={book.id}
+                  currentFormats={bookOwnedFormats[book.id] ?? []}
+                  isLoggedIn={isLoggedIn}
+                  onFormatsChange={(formats) => {
+                    setBookOwnedFormats((prev) => ({ ...prev, [book.id]: formats }));
                   }}
                 />
               </div>

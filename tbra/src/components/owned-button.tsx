@@ -108,10 +108,10 @@ export function OwnedButton({
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          {/* Bookshelf: three books + shelf */}
-          <rect x="3" y="4" width="4" height="14" rx="0.5" fill={isOwned ? "currentColor" : "none"} />
-          <rect x="9" y="2" width="4" height="16" rx="0.5" fill={isOwned ? "currentColor" : "none"} />
-          <rect x="15" y="5" width="4" height="13" rx="0.5" fill={isOwned ? "currentColor" : "none"} />
+          {/* Bookshelf: three books + shelf — outline when owned (purple bg bleeds through), filled when not */}
+          <rect x="3" y="4" width="4" height="14" rx="0.5" fill={isOwned ? "none" : "currentColor"} />
+          <rect x="9" y="2" width="4" height="16" rx="0.5" fill={isOwned ? "none" : "currentColor"} />
+          <rect x="15" y="5" width="4" height="13" rx="0.5" fill={isOwned ? "none" : "currentColor"} />
           <line x1="2" y1="20" x2="22" y2="20" />
         </svg>
         {isOwned

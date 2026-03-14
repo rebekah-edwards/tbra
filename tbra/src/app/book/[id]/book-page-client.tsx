@@ -134,6 +134,7 @@ export function BookPageClient({
 
       <ReviewTrigger
         bookId={book.id}
+        bookPages={book.pages}
         userReview={userReview}
         aggregate={aggregate}
         isLoggedIn={isLoggedIn}

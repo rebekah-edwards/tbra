@@ -3,8 +3,9 @@ import {
   userBookReviews,
   userBookDimensionRatings,
   reviewDescriptorTags,
+  users,
 } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray, desc } from "drizzle-orm";
 
 export interface UserReview {
   id: string;
@@ -77,4 +78,102 @@ export async function getUserReview(
     dimensionRatings,
     dimensionTags,
   };
+}
+
+// ─── All reviews for a book ───
+
+export interface BookReviewEntry {
+  id: string;
+  userId: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  overallRating: number | null;
+  mood: string | null;
+  moodIntensity: number | null;
+  reviewText: string | null;
+  didNotFinish: boolean;
+  dnfPercentComplete: number | null;
+  createdAt: string;
+  dimensionRatings: Record<string, number | null>;
+  dimensionTags: Record<string, string[]>;
+}
+
+export async function getBookReviews(bookId: string): Promise<BookReviewEntry[]> {
+  // Fetch all reviews for this book joined with user info
+  const rows = await db
+    .select({
+      id: userBookReviews.id,
+      userId: userBookReviews.userId,
+      displayName: users.displayName,
+      avatarUrl: users.avatarUrl,
+      overallRating: userBookReviews.overallRating,
+      mood: userBookReviews.mood,
+      moodIntensity: userBookReviews.moodIntensity,
+      reviewText: userBookReviews.reviewText,
+      didNotFinish: userBookReviews.didNotFinish,
+      dnfPercentComplete: userBookReviews.dnfPercentComplete,
+      createdAt: userBookReviews.createdAt,
+    })
+    .from(userBookReviews)
+    .innerJoin(users, eq(userBookReviews.userId, users.id))
+    .where(eq(userBookReviews.bookId, bookId))
+    .orderBy(desc(userBookReviews.createdAt))
+    .all();
+
+  if (rows.length === 0) return [];
+
+  const reviewIds = rows.map((r) => r.id);
+
+  // Batch-fetch dimension ratings
+  const dimRows = await db
+    .select({
+      reviewId: userBookDimensionRatings.reviewId,
+      dimension: userBookDimensionRatings.dimension,
+      rating: userBookDimensionRatings.rating,
+    })
+    .from(userBookDimensionRatings)
+    .where(inArray(userBookDimensionRatings.reviewId, reviewIds))
+    .all();
+
+  // Batch-fetch tags
+  const tagRows = await db
+    .select({
+      reviewId: reviewDescriptorTags.reviewId,
+      dimension: reviewDescriptorTags.dimension,
+      tag: reviewDescriptorTags.tag,
+    })
+    .from(reviewDescriptorTags)
+    .where(inArray(reviewDescriptorTags.reviewId, reviewIds))
+    .all();
+
+  // Index by reviewId
+  const dimMap = new Map<string, Record<string, number | null>>();
+  for (const row of dimRows) {
+    if (!dimMap.has(row.reviewId)) dimMap.set(row.reviewId, {});
+    dimMap.get(row.reviewId)![row.dimension] = row.rating;
+  }
+
+  const tagMap = new Map<string, Record<string, string[]>>();
+  for (const row of tagRows) {
+    if (!tagMap.has(row.reviewId)) tagMap.set(row.reviewId, {});
+    const dims = tagMap.get(row.reviewId)!;
+    if (!dims[row.dimension]) dims[row.dimension] = [];
+    dims[row.dimension].push(row.tag);
+  }
+
+  return rows.map((row) => ({
+    id: row.id,
+    userId: row.userId,
+    displayName: row.displayName,
+    avatarUrl: row.avatarUrl,
+    overallRating: row.overallRating,
+    mood: row.mood,
+    moodIntensity: row.moodIntensity,
+    reviewText: row.reviewText ?? null,
+    didNotFinish: row.didNotFinish,
+    dnfPercentComplete: row.dnfPercentComplete ?? null,
+    createdAt: row.createdAt,
+    dimensionRatings: dimMap.get(row.id) ?? {},
+    dimensionTags: tagMap.get(row.id) ?? {},
+  }));
 }

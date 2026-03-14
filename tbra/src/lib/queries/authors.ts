@@ -14,6 +14,7 @@ export async function getAuthorWithBooks(authorId: string) {
       title: books.title,
       coverImageUrl: books.coverImageUrl,
       publicationYear: books.publicationYear,
+      isFiction: books.isFiction,
     })
     .from(bookAuthors)
     .innerJoin(books, eq(bookAuthors.bookId, books.id))

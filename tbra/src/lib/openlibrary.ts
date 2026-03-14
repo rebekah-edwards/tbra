@@ -36,8 +36,11 @@ export async function searchOpenLibrary(
   query: string,
   limit = 10
 ): Promise<OLSearchResult[]> {
+  // Append wildcard to last word for partial/prefix matching
+  const trimmed = query.trim();
+  const q = trimmed.endsWith("*") ? trimmed : trimmed + "*";
   const params = new URLSearchParams({
-    q: query,
+    q,
     limit: String(limit),
     fields: "key,title,author_name,author_key,first_publish_year,cover_i,isbn,number_of_pages_median",
   });
@@ -62,7 +65,6 @@ export async function fetchOpenLibraryWork(
 
 // Normalize Open Library subjects into clean genre tags
 const GENRE_MAP: Record<string, string> = {
-  "fiction": "Fiction",
   "literary fiction": "Literary Fiction",
   "science fiction": "Sci-Fi",
   "fantasy": "Fantasy",
@@ -143,6 +145,7 @@ const NOISE_SUBJECTS = new Set([
   "british literature",
   "american fiction",
   "english fiction",
+  "fiction",
 ]);
 
 export function normalizeGenres(subjects: string[]): string[] {
@@ -170,6 +173,61 @@ export function buildCoverUrl(
 ): string | null {
   if (!coverId) return null;
   return `${COVERS_URL}/b/id/${coverId}-${size}.jpg`;
+}
+
+// ─── Edition Format Classification ───
+
+const FORMAT_KEYWORDS: Record<string, string[]> = {
+  hardcover: ["hardcover", "hardback", "hard cover", "grand format", "gebunden"],
+  paperback: ["paperback", "softcover", "perfect paperback", "mass market paperback", "trade paperback"],
+  ebook: ["ebook", "e-book", "kindle", "electronic"],
+  audiobook: ["audiobook", "audio", "audible", "cd", "mp3"],
+};
+
+/** Map an Open Library `physical_format` string to one of our four format keys, or null if unknown. */
+export function classifyEditionFormat(physicalFormat?: string): string | null {
+  if (!physicalFormat) return null;
+  const lower = physicalFormat.toLowerCase().trim();
+  for (const [format, keywords] of Object.entries(FORMAT_KEYWORDS)) {
+    if (keywords.some((kw) => lower.includes(kw))) return format;
+  }
+  return null;
+}
+
+// ─── Editions ───
+
+export interface OLEdition {
+  key: string; // e.g. "/books/OL7353617M"
+  title: string;
+  publish_date?: string;
+  publishers?: string[];
+  isbn_13?: string[];
+  isbn_10?: string[];
+  covers?: number[];
+  number_of_pages?: number;
+  physical_format?: string;
+  languages?: { key: string }[];
+}
+
+interface OLEditionsResponse {
+  entries: OLEdition[];
+  size: number;
+}
+
+export async function fetchWorkEditions(
+  workKey: string,
+  limit = 50,
+  offset = 0
+): Promise<{ entries: OLEdition[]; size: number }> {
+  const res = await olFetch(
+    `${BASE_URL}${workKey}/editions.json?limit=${limit}&offset=${offset}`
+  );
+  if (!res.ok) return { entries: [], size: 0 };
+  const data: OLEditionsResponse = await res.json();
+  return {
+    entries: data.entries ?? [],
+    size: data.size ?? 0,
+  };
 }
 
 export interface OLAuthorWork {

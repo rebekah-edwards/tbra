@@ -187,6 +187,7 @@ export async function getSeriesBooks(seriesId: string, userId: string | null) {
 
     let userRating: number | null = null;
     let currentState: string | null = null;
+    let ownedFormats: string[] = [];
     let effectiveCover = sb.coverImageUrl;
 
     if (userId) {
@@ -197,12 +198,13 @@ export async function getSeriesBooks(seriesId: string, userId: string | null) {
         .get();
       userRating = rating?.rating ?? null;
 
-      const state = await db
-        .select({ state: userBookState.state })
+      const stateRow = await db
+        .select({ state: userBookState.state, ownedFormats: userBookState.ownedFormats })
         .from(userBookState)
         .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, sb.id)))
         .get();
-      currentState = state?.state ?? null;
+      currentState = stateRow?.state ?? null;
+      ownedFormats = stateRow?.ownedFormats ? JSON.parse(stateRow.ownedFormats) as string[] : [];
 
       const editionRows = await db
         .select({ coverId: editions.coverId })
@@ -230,6 +232,7 @@ export async function getSeriesBooks(seriesId: string, userId: string | null) {
       authors: bookAuthorRows.map((a) => a.name),
       userRating,
       currentState,
+      ownedFormats,
     });
   }
 

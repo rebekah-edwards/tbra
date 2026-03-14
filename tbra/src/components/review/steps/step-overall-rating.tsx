@@ -5,7 +5,7 @@ import { useCallback, useRef, useId } from "react";
 const STAR_PATH =
   "M12 1.5c.4 0 .8.2 1 .6l2.5 5.2 5.7.8c.4.06.7.3.9.7.1.3.0.7-.2 1l-4.1 4 1 5.7c.06.4-.1.8-.4 1-.3.2-.7.3-1.1.1L12 18.1l-5.1 2.7c-.4.2-.8.1-1.1-.1-.3-.2-.5-.6-.4-1l1-5.7-4.1-4c-.3-.3-.4-.7-.2-1 .1-.3.5-.6.9-.7l5.7-.8L11 2.1c.2-.4.6-.6 1-.6z";
 
-function LargeStar({ fill, index }: { fill: number; index: number }) {
+function LargeStar({ fill }: { fill: number }) {
   const clipId = useId();
 
   return (
@@ -38,18 +38,24 @@ interface StepOverallRatingProps {
   rating: number | null;
   didNotFinish: boolean;
   dnfPercentComplete: number | null;
+  dnfMode: "percent" | "pages";
+  bookPages: number | null;
   onRatingChange: (rating: number | null) => void;
   onDnfChange: (dnf: boolean) => void;
   onDnfPercentChange: (percent: number | null) => void;
+  onDnfModeChange: (mode: "percent" | "pages") => void;
 }
 
 export function StepOverallRating({
   rating,
   didNotFinish,
   dnfPercentComplete,
+  dnfMode,
+  bookPages,
   onRatingChange,
   onDnfChange,
   onDnfPercentChange,
+  onDnfModeChange,
 }: StepOverallRatingProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -92,7 +98,39 @@ export function StepOverallRating({
     dragging.current = false;
   }, []);
 
+  // Convert between pages and percent
+  const pagesFromPercent = (pct: number | null): number => {
+    if (pct === null || !bookPages) return 0;
+    return Math.round((pct / 100) * bookPages);
+  };
+
+  const percentFromPages = (pages: number): number | null => {
+    if (!bookPages || bookPages === 0) return null;
+    return Math.round((pages / bookPages) * 100);
+  };
+
+  const handleModeSwitch = (mode: "percent" | "pages") => {
+    onDnfModeChange(mode);
+    // Values stay synced through dnfPercentComplete (always stored as %)
+  };
+
+  const handlePagesChange = (pages: number) => {
+    const clamped = bookPages ? Math.min(pages, bookPages) : pages;
+    const pct = bookPages ? percentFromPages(clamped) : null;
+    onDnfPercentChange(pct);
+  };
+
+  const handlePercentSliderChange = (pct: number) => {
+    onDnfPercentChange(pct || null);
+  };
+
+  const handlePagesSliderChange = (pages: number) => {
+    const pct = percentFromPages(pages);
+    onDnfPercentChange(pct);
+  };
+
   const displayRating = rating ?? 0;
+  const currentPages = pagesFromPercent(dnfPercentComplete);
 
   return (
     <div className="flex flex-col items-center gap-6">
@@ -110,7 +148,7 @@ export function StepOverallRating({
       >
         {[0, 1, 2, 3, 4].map((i) => {
           const starFill = Math.min(1, Math.max(0, displayRating - i));
-          return <LargeStar key={i} fill={starFill} index={i} />;
+          return <LargeStar key={i} fill={starFill} />;
         })}
       </div>
 
@@ -144,20 +182,84 @@ export function StepOverallRating({
       {didNotFinish && (
         <div className="flex flex-col items-center gap-3 w-full max-w-xs">
           <p className="text-sm text-muted">How far did you get?</p>
-          <div className="flex items-center gap-3 w-full">
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={5}
-              value={dnfPercentComplete ?? 0}
-              onChange={(e) => onDnfPercentChange(Number(e.target.value) || null)}
-              className="flex-1 accent-primary"
-            />
-            <span className="text-sm font-medium text-foreground w-12 text-right">
-              {dnfPercentComplete ?? 0}%
-            </span>
+
+          {/* Mode toggle */}
+          <div className="flex rounded-lg bg-surface-alt p-0.5 gap-0.5">
+            <button
+              type="button"
+              onClick={() => handleModeSwitch("percent")}
+              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${
+                dnfMode === "percent"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              %
+            </button>
+            <button
+              type="button"
+              onClick={() => handleModeSwitch("pages")}
+              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${
+                dnfMode === "pages"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              Pages
+            </button>
           </div>
+
+          {dnfMode === "percent" ? (
+            /* Percent mode: slider 0-100 */
+            <div className="flex items-center gap-3 w-full">
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={dnfPercentComplete ?? 0}
+                onChange={(e) => handlePercentSliderChange(Number(e.target.value))}
+                className="flex-1 accent-primary"
+              />
+              <span className="text-sm font-medium text-foreground w-12 text-right">
+                {dnfPercentComplete ?? 0}%
+              </span>
+            </div>
+          ) : bookPages ? (
+            /* Pages mode with known page count: slider 0-totalPages */
+            <div className="flex items-center gap-3 w-full">
+              <input
+                type="range"
+                min={0}
+                max={bookPages}
+                step={1}
+                value={currentPages}
+                onChange={(e) => handlePagesSliderChange(Number(e.target.value))}
+                className="flex-1 accent-primary"
+              />
+              <span className="text-sm font-medium text-foreground w-24 text-right">
+                {currentPages} / {bookPages}
+              </span>
+            </div>
+          ) : (
+            /* Pages mode without page count: number input */
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                placeholder="0"
+                value={currentPages || ""}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  // Without bookPages, store raw page count in dnfPercentComplete
+                  onDnfPercentChange(val || null);
+                }}
+                className="w-20 px-3 py-2 text-sm text-center rounded-lg bg-surface-alt border border-border text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <span className="text-sm text-muted">pages</span>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { StarRow } from "./rounded-star";
 import { ReviewWizard } from "./review-wizard";
-import { deleteReview } from "@/lib/actions/review";
 import type { UserReview } from "@/lib/queries/review";
 
 interface ReviewTriggerProps {
   bookId: string;
+  bookPages?: number | null;
   userReview: UserReview | null;
   aggregate: { average: number; count: number } | null;
   isLoggedIn: boolean;
@@ -17,14 +18,13 @@ interface ReviewTriggerProps {
 
 export function ReviewTrigger({
   bookId,
+  bookPages,
   userReview,
   aggregate,
   isLoggedIn,
   autoOpen = false,
 }: ReviewTriggerProps) {
   const [wizardOpen, setWizardOpen] = useState(autoOpen);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isDeleting, startDeleteTransition] = useTransition();
   const router = useRouter();
 
   const handleOpen = () => {
@@ -33,13 +33,6 @@ export function ReviewTrigger({
       return;
     }
     setWizardOpen(true);
-  };
-
-  const handleDelete = () => {
-    startDeleteTransition(async () => {
-      await deleteReview(bookId);
-      setShowDeleteConfirm(false);
-    });
   };
 
   const displayRating = userReview?.overallRating ?? 0;
@@ -75,39 +68,6 @@ export function ReviewTrigger({
             : "Log in to review"}
       </button>
 
-      {/* Delete option — only shown for existing reviews */}
-      {userReview && !showDeleteConfirm && (
-        <button
-          type="button"
-          onClick={() => setShowDeleteConfirm(true)}
-          className="text-xs text-muted hover:text-destructive transition-colors mt-1"
-        >
-          Delete review
-        </button>
-      )}
-
-      {/* Delete confirmation */}
-      {showDeleteConfirm && (
-        <div className="flex items-center gap-2 mt-1">
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="text-xs text-destructive font-medium hover:text-destructive/80 transition-colors"
-          >
-            {isDeleting ? "Deleting..." : "Confirm delete"}
-          </button>
-          <span className="text-xs text-muted">·</span>
-          <button
-            type="button"
-            onClick={() => setShowDeleteConfirm(false)}
-            className="text-xs text-muted hover:text-foreground transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-
       {/* Aggregate */}
       {aggregate && (
         <p className="text-xs text-muted">
@@ -116,11 +76,23 @@ export function ReviewTrigger({
         </p>
       )}
 
+      {/* View all reviews link */}
+      {aggregate && aggregate.count > 0 && (
+        <Link
+          href={`/book/${bookId}/reviews`}
+          className="text-xs text-primary hover:text-primary/80 font-medium"
+        >
+          View all reviews &rarr;
+        </Link>
+      )}
+
       {/* Wizard modal */}
       <ReviewWizard
         bookId={bookId}
+        bookPages={bookPages}
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}
+        isExisting={!!userReview}
         existingReview={userReview}
       />
     </div>

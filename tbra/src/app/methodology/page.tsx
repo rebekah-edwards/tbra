@@ -50,8 +50,12 @@ const CATEGORIES = [
     description: "Threat, coercion, assault, and aftermath.",
   },
   {
-    name: "Child harm",
-    description: "Threat vs depiction of harm to children, on-page vs implied.",
+    name: "Abuse & suffering",
+    description: "Child abuse, domestic violence, animal abuse, slavery, and other forms of cruelty or systemic suffering.",
+  },
+  {
+    name: "User-added \u26A0\uFE0F",
+    description: "Additional content warnings submitted by users that don't fit neatly into other categories.",
   },
 ];
 
@@ -67,7 +71,7 @@ export default function MethodologyPage() {
         </Link>
       </div>
 
-      <h1 className="text-2xl font-bold sm:text-3xl">How We Rate Books</h1>
+      <h1 className="neon-heading text-2xl font-bold sm:text-3xl">How We Rate Books</h1>
       <p className="mt-4 text-base leading-relaxed text-foreground/80">
         tbr(a) provides detailed, structured content information for books — not
         star ratings, not subjective reviews. We tell you exactly what&apos;s in
@@ -76,7 +80,7 @@ export default function MethodologyPage() {
 
       {/* Philosophy */}
       <section className="mt-10">
-        <h2 className="text-xl font-semibold">Our Approach</h2>
+        <h2 className="text-xl font-semibold text-primary">Our Approach</h2>
         <div className="mt-4 space-y-3 text-sm leading-relaxed text-foreground/80">
           <p>
             <strong className="text-foreground">Descriptive, not prescriptive.</strong>{" "}
@@ -102,7 +106,7 @@ export default function MethodologyPage() {
 
       {/* Intensity Scale */}
       <section className="mt-10">
-        <h2 className="text-xl font-semibold">Intensity Scale</h2>
+        <h2 className="text-xl font-semibold text-neon-blue">Intensity Scale</h2>
         <p className="mt-2 text-sm text-foreground/80">
           Each category is rated on a 0&ndash;4 scale. Descriptive notes are
           required for any rating of 2 or higher.
@@ -131,9 +135,9 @@ export default function MethodologyPage() {
 
       {/* Categories */}
       <section className="mt-10">
-        <h2 className="text-xl font-semibold">What We Track</h2>
+        <h2 className="text-xl font-semibold text-neon-purple">What We Track</h2>
         <p className="mt-2 text-sm text-foreground/80">
-          Every book is evaluated across 11 content categories.
+          Every book is evaluated across 12 content categories.
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {CATEGORIES.map((cat) => (
@@ -141,7 +145,7 @@ export default function MethodologyPage() {
               key={cat.name}
               className="rounded-lg border border-border bg-surface p-4"
             >
-              <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}>
+              <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-body), system-ui, sans-serif" }}>
                 {cat.name}
               </h3>
               <p className="mt-1 text-xs leading-relaxed text-muted">
@@ -154,7 +158,7 @@ export default function MethodologyPage() {
 
       {/* Evidence Levels */}
       <section className="mt-10">
-        <h2 className="text-xl font-semibold">Evidence Levels</h2>
+        <h2 className="text-xl font-semibold text-primary">Evidence Levels</h2>
         <p className="mt-2 text-sm text-foreground/80">
           Every content claim is tagged with how we know it.
         </p>
@@ -188,7 +192,7 @@ export default function MethodologyPage() {
 
       {/* Spoiler Policy */}
       <section className="mt-10">
-        <h2 className="text-xl font-semibold">Spoiler Policy</h2>
+        <h2 className="text-xl font-semibold text-neon-blue">Spoiler Policy</h2>
         <p className="mt-2 text-sm leading-relaxed text-foreground/80">
           Content details are hidden behind a spoiler wall by default. Category
           names and intensity bars are visible, but descriptive notes — which

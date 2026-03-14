@@ -93,14 +93,14 @@ export function StepDimensions({
   };
 
   return (
-    <div className="flex flex-col gap-0 -mx-4 h-full">
-      <h2 className="font-heading text-2xl font-bold text-center px-4 pb-3">
+    <div className="flex flex-col gap-0 h-full overflow-hidden">
+      <h2 className="font-heading text-2xl font-bold text-center pb-3 px-4">
         How would you describe this book?
       </h2>
 
       <div
         ref={navRef}
-        className="flex overflow-x-auto gap-1 border-b border-surface-alt px-4 sticky top-0 bg-background z-10 no-scrollbar"
+        className="flex overflow-x-auto gap-1 border-b border-surface-alt px-2 sticky top-0 bg-background z-10 no-scrollbar"
       >
         {DIMENSION_SECTIONS.map((section, i) => (
           <button

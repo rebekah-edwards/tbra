@@ -34,6 +34,8 @@ You are Spine, the development agent for tbr(a) (The Based Reader App). You work
 
 ## Tech Stack
 
-- Next.js (App Router) + TypeScript + Tailwind CSS
+- Next.js 16 (App Router) + TypeScript + Tailwind CSS v4
 - SQLite + Drizzle ORM (local dev, Postgres at deploy)
-- No auth yet. No external API integrations yet. MVP focus.
+- Auth: bcrypt + JWT (jose) with HTTP-only cookie sessions
+- Open Library API for book metadata, covers, and editions
+- next-themes for dark/light mode

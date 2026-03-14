@@ -8,7 +8,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { BookDescription } from "@/components/book/book-description";
 import { BookSeries } from "@/components/book/book-series";
 import { ContentProfile } from "@/components/book/content-profile";
-import { BackLink } from "@/components/book/back-link";
 import { BookPageClient } from "./book-page-client";
 
 export default async function BookPage({
@@ -36,8 +35,7 @@ export default async function BookPage({
   const aggregate = await getBookAggregateRating(id);
 
   return (
-    <div className="-mt-4">
-      <BackLink />
+    <div>
 
       <BookPageClient
         book={{

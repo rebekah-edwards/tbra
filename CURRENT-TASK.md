@@ -1,4 +1,4 @@
-# Current Task: Phase 3 — TBD
+# Current Task: Phase 5 — Deploy Prep + Content Pipeline
 
 ## What was completed
 
@@ -35,8 +35,6 @@
 - [x] Genre normalization: OL subjects mapped to clean tags on import
 - [x] All 15 seeded books now have all 11 category ratings (165 total)
 - [x] All 15 seeded books now have genre tags
-- [x] Editions section placeholder ("View editions" link)
-- [x] Series section placeholder ("Series information coming soon")
 - [x] Author pages: `/author/[id]` with name + book grid
 - [x] Clickable author names on book pages link to author pages
 - [x] Author cascade import: importing a book auto-imports other works by same author
@@ -56,16 +54,49 @@
 - [x] Functional horizontal-scroll series component with position labels
 - [x] Summary column added to books table
 
+### Phase 3 — Auth + User State + Editions (completed 2026-03-13)
+- [x] User auth: signup, login, logout with bcrypt + JWT sessions (7-day HTTP-only cookies)
+- [x] Reading state: TBR / Currently Reading / Completed / Paused / DNF per book
+- [x] Format tracking: Hardcover / Paperback / eBook / Audiobook with active format selector
+- [x] Edition picker: browse OL editions in a bottom sheet, link specific editions to owned formats
+- [x] Edition data cached locally in `editions` table on first browse
+- [x] Home page: personalized Currently Reading / TBR / Recently Completed sections (auth-gated)
+- [x] Profile page: avatar, display name, stats grid, book sections by state
+- [x] Profile edit: display name + avatar upload (local filesystem storage)
+- [x] Reading state button on search results: auto-imports book on first interaction
+- [x] Mobile nav: avatar dropdown with profile link, theme toggle, sign out
+- [x] Dark/light theme: full dual-theme CSS variable system with animated toggle
+- [x] Methodology page: explains content rating philosophy, 0-4 scale, all 11 categories, evidence levels
+- [x] "What's Inside" rename (was "Content Profile")
+- [x] LGBTQ+ Rep. category label updates
+- [x] Book page shows audio length when audiobook format is active
+
+### Phase 4 — Series Auto-Detection (completed 2026-03-13)
+- [x] Books imported via OL cascade include series data (Licanius Trilogy detected with 86 books now in DB)
+- [x] Series component displays on book pages with position labels
+
 ## What to do next
+
 Priority order:
-1. **Methodology page** — collaborative content, quick win
-2. **In-app editions page** — build `/book/[id]/editions` from OL API
-3. **Auto-research pipeline** — AI content classification
-4. **Series auto-detection** — detect series from OL during import
-5. **User auth + reading state** — TBR/reading/completed tracking
+1. **Auto-research pipeline** — AI-assisted content classification for imported books without ratings
+2. **Report corrections UI** — schema exists (`report_corrections` table), needs frontend form + admin triage view
+3. **Catalog expansion** — seed/import target of 100 books with content profiles
+4. **Deploy prep** — swap SQLite → PostgreSQL, move avatar storage off local filesystem, deploy to Vercel + Railway/Render
+5. **Polish & hardening** — sanitize markdown renderer (XSS risk), fix N+1 in `getUserBooks`, add author bios
+
+## Known issues
+- `dangerouslySetInnerHTML` in book description markdown renderer — needs sanitization
+- N+1 query in `getUserBooks` (author lookup per book in a loop)
+- Avatar storage is local filesystem (`public/uploads/`) — won't survive serverless deploy
+- Several schema tables unused: `narrators`, `book_narrators`, `citations`, `rating_citations`, `links` (queried but not rendered)
+- No tests
+- No email verification or password reset flow
+- CLAUDE.md still says "No auth yet" — outdated
 
 ## Context
-- Repo: https://github.com/rebekah-edwards/tbra (now public)
+- Repo: https://github.com/rebekah-edwards/tbra (public)
 - Dashboard: https://rebekah-edwards.github.io/tbra/
-- Stack: Next.js + SQLite + Drizzle ORM locally
-- Routes: `/`, `/search`, `/search/add`, `/book/[id]`, `/author/[id]`, `/api/openlibrary/search`
+- Stack: Next.js 16 + SQLite + Drizzle ORM locally
+- Database: 86 books, 26 authors, 1 user, 1 series (DCC), 0 editions cached yet
+- Routes: `/`, `/search`, `/search/add`, `/book/[id]`, `/author/[id]`, `/methodology`, `/login`, `/signup`, `/profile`, `/profile/edit`
+- API routes: `/api/openlibrary/search`, `/api/openlibrary/editions`, `/api/books/check`, `/api/profile`

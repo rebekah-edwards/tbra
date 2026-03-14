@@ -77,10 +77,16 @@ const categories = [
       "Threat, coercion, assault, aftermath. Notes kept minimal but clear.",
   },
   {
-    key: "child_harm",
-    name: "Child harm",
+    key: "abuse_suffering",
+    name: "Abuse & suffering",
     description:
-      "Threat vs depiction of harm to children, on-page vs implied.",
+      "Child abuse, domestic violence, animal abuse, slavery, and other forms of cruelty or systemic suffering.",
+  },
+  {
+    key: "user_added",
+    name: "User-added \u26A0\uFE0F",
+    description:
+      "Additional content warnings submitted by users that don't fit neatly into other categories.",
   },
 ];
 

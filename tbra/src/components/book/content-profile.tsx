@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 
 interface Rating {
@@ -27,7 +27,8 @@ const CATEGORY_ORDER = [
   "political_ideological",
   "self_harm_suicide",
   "sexual_assault_coercion",
-  "child_harm",
+  "abuse_suffering",
+  "user_added",
 ];
 
 // Short display names for mobile-friendly single-line rendering
@@ -36,6 +37,7 @@ const SHORT_NAMES: Record<string, string> = {
   "profanity_language": "Profanity",
   "political_ideological": "Political content",
   "sexual_assault_coercion": "Sexual assault",
+  "abuse_suffering": "Abuse & suffering",
 };
 
 const intensityColors = [
@@ -63,23 +65,33 @@ const evidenceBadge: Record<string, { label: string; className: string }> = {
 
 function ExpandableNote({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false);
-  const isLong = text.length > 120;
+  const [clamped, setClamped] = useState(false);
+  const textRef = useRef<HTMLParagraphElement>(null);
 
-  if (!isLong) {
-    return <p className="mt-1 text-xs text-muted">{text}</p>;
-  }
+  useEffect(() => {
+    const el = textRef.current;
+    if (el) {
+      // Check if text overflows 5 lines
+      setClamped(el.scrollHeight > el.clientHeight);
+    }
+  }, [text]);
 
   return (
     <div className="mt-1">
-      <p className="text-xs text-muted">
-        {expanded ? text : text.slice(0, 120) + "..."}
-      </p>
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="text-xs text-primary hover:text-primary-dark"
+      <p
+        ref={textRef}
+        className={`text-xs text-muted ${!expanded ? "line-clamp-5" : ""}`}
       >
-        {expanded ? "Show less" : "Read more"}
-      </button>
+        {text}
+      </p>
+      {clamped && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-xs text-primary hover:text-primary-dark"
+        >
+          {expanded ? "Show less" : "Read more"}
+        </button>
+      )}
     </div>
   );
 }
@@ -130,17 +142,16 @@ export function ContentProfile({ ratings }: ContentProfileProps) {
   if (ratings.length === 0) {
     return (
       <section className="mt-8">
-        <div className="flex items-baseline justify-between">
-        <h2 className="text-lg font-semibold">What&apos;s Inside</h2>
-        <Link href="/methodology" className="text-xs text-muted hover:text-primary transition-colors">
-          How we rate
-        </Link>
-      </div>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold uppercase tracking-wide text-neon-blue">What&apos;s Inside</h2>
+          <Link href="/methodology" className="rounded-full border border-neon-blue/30 bg-neon-blue/10 px-3 py-1 text-xs font-medium text-neon-blue hover:bg-neon-blue/20 transition-colors">
+            How we rate
+          </Link>
+        </div>
         <div className="mt-4 rounded-lg border border-border bg-surface p-6 text-center">
           <p className="text-sm text-muted">No content details yet.</p>
-          <p className="mt-1 text-xs text-muted">
-            Content details are added editorially and will appear here once
-            available.
+          <p className="mt-2 text-xs text-muted">
+            Information will be populated soon.
           </p>
         </div>
       </section>
@@ -156,9 +167,9 @@ export function ContentProfile({ ratings }: ContentProfileProps) {
 
   return (
     <section className="mt-8">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-lg font-semibold">What&apos;s Inside</h2>
-        <Link href="/methodology" className="text-xs text-muted hover:text-primary transition-colors">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold uppercase tracking-wide text-neon-blue">What&apos;s Inside</h2>
+        <Link href="/methodology" className="rounded-full border border-neon-blue/30 bg-neon-blue/10 px-3 py-1 text-xs font-medium text-neon-blue hover:bg-neon-blue/20 transition-colors">
           How we rate
         </Link>
       </div>
@@ -169,11 +180,11 @@ export function ContentProfile({ ratings }: ContentProfileProps) {
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-lg">
             <button
               onClick={() => setRevealed(true)}
-              className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-primary-dark"
+              className="lime-glow-box rounded-full border border-primary bg-primary/10 px-6 py-3 text-sm font-semibold text-primary shadow-[0_0_20px_rgba(163,230,53,0.25)] transition-all hover:bg-primary/20 hover:shadow-[0_0_30px_rgba(163,230,53,0.4)]"
             >
               Reveal Content Details
             </button>
-            <p className="mt-2 text-xs text-muted">may contain spoilers</p>
+            <p className="mt-2 text-xs text-muted">will contain mild spoilers</p>
           </div>
         )}
 

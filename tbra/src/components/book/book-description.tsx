@@ -60,7 +60,7 @@ export function BookDescription({ description }: BookDescriptionProps) {
 
   return (
     <section className="mt-8">
-      <h2 className="text-lg font-semibold">From the Author/Publisher:</h2>
+      <h2 className="text-xl font-bold uppercase tracking-wide text-neon-blue">About</h2>
       <div
         className="mt-2 text-sm leading-relaxed text-muted"
         dangerouslySetInnerHTML={{ __html: `<p>${html}</p>` }}
