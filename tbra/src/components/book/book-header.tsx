@@ -80,17 +80,17 @@ export function BookHeader({
         </div>
 
         {/* Side-by-side layout: cover left, info right */}
-        <div className="relative z-10 flex gap-6 p-6">
+        <div className="relative z-10 flex gap-4 sm:gap-6 p-4 sm:p-6">
           <div className="flex-shrink-0 flex items-center">
             {coverImageUrl ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={coverImageUrl}
                 alt={`Cover of ${title}`}
-                className="w-[140px] h-auto rounded-lg object-contain shadow-xl"
+                className="w-[110px] sm:w-[140px] h-auto rounded-lg object-contain shadow-xl"
               />
             ) : (
-              <div className="flex items-center justify-center rounded-lg bg-white/10 text-sm text-white/60 shadow-xl w-[140px] h-[210px]">
+              <div className="flex items-center justify-center rounded-lg bg-white/10 text-sm text-white/60 shadow-xl w-[110px] sm:w-[140px] h-[165px] sm:h-[210px]">
                 No cover
               </div>
             )}
