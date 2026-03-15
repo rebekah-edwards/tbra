@@ -96,7 +96,7 @@ export function BookHeader({
             )}
           </div>
 
-          <div className="flex flex-col justify-center">
+          <div className="flex flex-col justify-center min-w-0">
             <h1 className="text-xl font-bold tracking-tight text-white drop-shadow-sm sm:text-2xl">
               {title}
             </h1>

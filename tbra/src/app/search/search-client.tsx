@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { importFromOpenLibrary } from "@/lib/actions/books";
 import { buildCoverUrl, type OLSearchResult } from "@/lib/openlibrary";
+import { importFromOpenLibrary } from "@/lib/actions/books";
 import { ReadingStateButton } from "@/components/reading-state-button";
 import { CompactOwnedButton } from "@/components/compact-owned-button";
 
@@ -18,7 +18,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
   const [results, setResults] = useState<OLSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [importing, setImporting] = useState<string | null>(null);
+  const [navigating, setNavigating] = useState<string | null>(null);
   const [existingBooks, setExistingBooks] = useState<Record<string, string>>({});
   const [bookStates, setBookStates] = useState<Record<string, string>>({});
   const [bookOwnedFormats, setBookOwnedFormats] = useState<Record<string, string[]>>({});
@@ -71,8 +71,9 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
     };
   }, [query]);
 
-  async function handleImport(result: OLSearchResult) {
-    setImporting(result.key);
+  async function handleNavigateToBook(result: OLSearchResult) {
+    setNavigating(result.key);
+    // importFromOpenLibrary imports then redirects to /book/[id]
     await importFromOpenLibrary(result);
   }
 
@@ -106,7 +107,6 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         <div className="mt-6 space-y-3">
           {results.map((result) => {
             const coverUrl = buildCoverUrl(result.cover_i, "M");
-            const isImporting = importing === result.key;
             const existingId = existingBooks[result.key];
             const currentState = bookStates[result.key] ?? null;
 
@@ -134,19 +134,21 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
                 key={result.key}
                 className="flex gap-4 rounded-lg border border-border bg-surface p-4"
               >
-                {existingId ? (
-                  <Link href={`/book/${existingId}`} className="flex-shrink-0">
-                    {coverElement}
-                  </Link>
-                ) : (
-                  <button
-                    onClick={() => handleImport(result)}
-                    disabled={isImporting}
-                    className="flex-shrink-0 cursor-pointer disabled:opacity-50"
-                  >
-                    {coverElement}
-                  </button>
-                )}
+                <div className="flex-shrink-0">
+                  {existingId ? (
+                    <Link href={`/book/${existingId}`}>
+                      {coverElement}
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => handleNavigateToBook(result)}
+                      disabled={navigating === result.key}
+                      className="cursor-pointer disabled:opacity-50"
+                    >
+                      {coverElement}
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-1 flex-col justify-between">
                   <div>
                     {existingId ? (
@@ -157,8 +159,8 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
                       </Link>
                     ) : (
                       <button
-                        onClick={() => handleImport(result)}
-                        disabled={isImporting}
+                        onClick={() => handleNavigateToBook(result)}
+                        disabled={navigating === result.key}
                         className="text-left cursor-pointer disabled:opacity-50"
                       >
                         <h3 className="font-medium leading-tight hover:text-primary transition-colors">
@@ -196,16 +198,18 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
                         setExistingBooks((prev) => ({ ...prev, [olKey]: newBookId }));
                       }}
                     />
-                    {existingId && (
-                      <CompactOwnedButton
-                        bookId={existingId}
-                        currentFormats={bookOwnedFormats[result.key] ?? []}
-                        isLoggedIn={isLoggedIn}
-                        onFormatsChange={(formats) => {
-                          setBookOwnedFormats((prev) => ({ ...prev, [result.key]: formats }));
-                        }}
-                      />
-                    )}
+                    <CompactOwnedButton
+                      bookId={existingId ?? undefined}
+                      olResult={existingId ? undefined : result}
+                      currentFormats={bookOwnedFormats[result.key] ?? []}
+                      isLoggedIn={isLoggedIn}
+                      onFormatsChange={(formats) => {
+                        setBookOwnedFormats((prev) => ({ ...prev, [result.key]: formats }));
+                      }}
+                      onImported={(olKey, newBookId) => {
+                        setExistingBooks((prev) => ({ ...prev, [olKey]: newBookId }));
+                      }}
+                    />
                   </div>
                 </div>
               </div>
