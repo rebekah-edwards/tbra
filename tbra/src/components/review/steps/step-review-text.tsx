@@ -45,6 +45,7 @@ export function StepReviewText({ text, onChange }: StepReviewTextProps) {
   const mountedRef = useRef(false);
   const [charCount, setCharCount] = useState(0);
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
+  const [focused, setFocused] = useState(false);
 
   // Keep onChange ref current without re-renders
   useEffect(() => {
@@ -146,16 +147,26 @@ export function StepReviewText({ text, onChange }: StepReviewTextProps) {
   );
 
   return (
-    <div className="flex flex-col gap-0 h-full px-4 overflow-y-auto">
-      <h2 className="font-heading text-2xl font-bold text-center pb-2">
-        Share more of your thoughts
-      </h2>
-      <p className="text-sm text-muted text-center pb-1 px-2">
-        Let other readers know how you felt about this book. What did you enjoy? What didn&apos;t you love? How did you feel when reading?
-      </p>
-      <div className="mx-2 mb-4 px-3 py-2.5 rounded-lg bg-surface-alt/60 border border-border/50">
+    <div className="flex flex-col h-full px-4">
+      {/* Heading + copy — hides on focus to give editor more room */}
+      <div className={`transition-all duration-300 ease-out overflow-hidden ${focused ? "max-h-0 opacity-0" : "max-h-[200px] opacity-100"}`}>
+        <div className="flex items-center justify-center gap-2.5 pb-3">
+          <h2 className="font-heading text-2xl font-bold text-center">
+            Share your thoughts
+          </h2>
+          <span className="text-[10px] font-medium uppercase tracking-wide text-muted px-2 py-0.5 rounded-full border border-border/50">
+            optional
+          </span>
+        </div>
+        <p className="text-base text-muted text-center pb-4 px-2 leading-relaxed">
+          Let other readers know how you felt about this book. What did you enjoy? What didn&apos;t you love? How did you feel when reading?
+        </p>
+      </div>
+
+      {/* Spoiler instruction — always visible */}
+      <div className="mx-2 px-3 py-2 rounded-lg bg-surface-alt/60 border border-border/50 mb-3">
         <p className="text-[11px] text-muted text-center leading-relaxed">
-          Please censor any spoilers by highlighting the text and tapping the
+          Hide spoilers by highlighting and tapping the
           <span className="inline-flex items-center mx-1 px-1.5 py-0.5 bg-surface rounded text-[10px] font-mono align-middle border border-border/50">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
           </span>
@@ -222,7 +233,7 @@ export function StepReviewText({ text, onChange }: StepReviewTextProps) {
         />
       </div>
 
-      {/* Editor — uncontrolled after mount to prevent cursor reset */}
+      {/* Editor — flex-1 so it always fills to the bottom */}
       <div
         ref={editorRef}
         contentEditable
@@ -234,12 +245,13 @@ export function StepReviewText({ text, onChange }: StepReviewTextProps) {
         onKeyUp={updateActiveFormats}
         onMouseUp={updateActiveFormats}
         onPaste={handlePaste}
-        className="flex-1 min-h-[200px] w-full rounded-b-xl border border-border bg-surface-alt p-4 text-sm text-foreground resize-none focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary overflow-y-auto review-editor spoiler-editor empty:before:content-[attr(data-placeholder)] empty:before:text-muted"
-        data-placeholder="What did you think? What stood out? How did the book make you feel?"
+        onFocus={() => setFocused(true)}
+        className="w-full flex-1 rounded-b-xl border border-border bg-surface-alt p-4 text-sm text-foreground resize-none focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary overflow-y-auto review-editor spoiler-editor empty:before:content-[attr(data-placeholder)] empty:before:text-muted"
+        data-placeholder="Tap here and start typing."
       />
 
       {/* Character count */}
-      <div className="flex justify-end py-2">
+      <div className="flex justify-end py-1.5">
         <span className={`text-xs ${charCount > MAX_CHARS * 0.9 ? "text-destructive" : "text-muted"}`}>
           {charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()}
         </span>

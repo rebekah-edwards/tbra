@@ -3,10 +3,12 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { userBookState, userOwnedEditions, books, userBookReviews, userBookDimensionRatings, reviewDescriptorTags, userBookRatings } from "@/db/schema";
+import { userBookState, userOwnedEditions, books, userBookReviews, userBookDimensionRatings, reviewDescriptorTags, userBookRatings, readingSessions } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { importFromOpenLibraryAndReturn } from "@/lib/actions/books";
+import { ensureReadingSession, pauseActiveSession } from "@/lib/actions/reading-session";
+import { getActiveSession } from "@/lib/queries/reading-session";
 import type { OLSearchResult } from "@/lib/openlibrary";
 
 export async function setBookState(bookId: string, state: string) {
@@ -59,8 +61,18 @@ export async function setBookState(bookId: string, state: string) {
     });
   }
 
+  // Sync reading session
+  if (state === "currently_reading") {
+    await ensureReadingSession(user.userId, bookId, activeFormats);
+  } else if (state === "paused") {
+    await pauseActiveSession(user.userId, bookId);
+  }
+  // Note: "completed" and "dnf" are handled by setBookStateWithCompletion (called from UI with date info)
+  // "tbr" doesn't need a session
+
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/");
+  revalidatePath("/profile");
 }
 
 export async function removeBookState(bookId: string) {
@@ -293,6 +305,11 @@ export async function removeFromLibrary(bookId: string) {
   await db
     .delete(userOwnedEditions)
     .where(and(eq(userOwnedEditions.userId, user.userId), eq(userOwnedEditions.bookId, bookId)));
+
+  // Delete reading sessions
+  await db
+    .delete(readingSessions)
+    .where(and(eq(readingSessions.userId, user.userId), eq(readingSessions.bookId, bookId)));
 
   // Delete reading state row entirely
   await db

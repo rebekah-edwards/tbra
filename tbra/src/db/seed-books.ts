@@ -127,6 +127,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 3, notes: "Infanticide as an act of mercy/desperation is central to the plot", evidence: "human_verified" },
     { categoryKey: "sexual_assault_coercion", intensity: 3, notes: "Sexual violence under slavery depicted and discussed", evidence: "cited" },
     { categoryKey: "abuse_suffering", intensity: 4, notes: "Infanticide is central to the plot; children suffer under slavery", evidence: "human_verified" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "The Great Gatsby": [
     { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No explicit LGBTQIA+ content", evidence: "ai_inferred" },
@@ -140,6 +141,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 1, notes: "One character's death has suicidal undertones", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 1, notes: "Tom's controlling behavior, implied domestic abuse", evidence: "ai_inferred" },
     { categoryKey: "abuse_suffering", intensity: 0, notes: "No abuse or suffering depicted", evidence: "ai_inferred" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "The Hunger Games": [
     { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
@@ -153,6 +155,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 1, notes: "Brief suicidal ideation during the games", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 0, notes: "No sexual assault", evidence: "ai_inferred" },
     { categoryKey: "abuse_suffering", intensity: 3, notes: "Children forced to fight to the death; young tributes killed on-page", evidence: "human_verified" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Dune": [
     { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
@@ -166,6 +169,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 1, notes: "Some characters face death willingly", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 1, notes: "Bene Gesserit breeding program involves coercive reproduction", evidence: "ai_inferred" },
     { categoryKey: "abuse_suffering", intensity: 1, notes: "Paul is 15 and faces mortal danger throughout", evidence: "ai_inferred" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Pride and Prejudice": [
     { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
@@ -179,6 +183,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 0, notes: "No self-harm themes", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 1, notes: "Wickham's seduction of 15-year-old Lydia, predatory behavior", evidence: "cited" },
     { categoryKey: "abuse_suffering", intensity: 0, notes: "No abuse or suffering depicted", evidence: "ai_inferred" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "The Fault in Our Stars": [
     { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
@@ -192,6 +197,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 0, notes: "No self-harm; focuses on terminal illness rather than self-inflicted harm", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 0, notes: "No sexual assault", evidence: "ai_inferred" },
     { categoryKey: "abuse_suffering", intensity: 2, notes: "Teenagers dying of cancer; emotionally intense depiction of youth suffering", evidence: "human_verified" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Circe": [
     { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
@@ -205,6 +211,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 0, notes: "No self-harm themes", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 2, notes: "Sexual assault occurs; Circe is raped, motivating her to transform men into pigs", evidence: "cited" },
     { categoryKey: "abuse_suffering", intensity: 1, notes: "Circe's son faces danger; mythological children sometimes threatened", evidence: "ai_inferred" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "The Road": [
     { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
@@ -218,6 +225,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 2, notes: "Father contemplates killing himself and his son as mercy; suicidal ideation is a theme", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 1, notes: "Implied threats in the lawless world", evidence: "ai_inferred" },
     { categoryKey: "abuse_suffering", intensity: 2, notes: "Child in constant danger but not directly harmed on-page", evidence: "ai_inferred" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Brave New World": [
     { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
@@ -231,6 +239,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 2, notes: "Character commits suicide at the end", evidence: "cited" },
     { categoryKey: "sexual_assault_coercion", intensity: 1, notes: "Social pressure to be sexually available, conditioning of children", evidence: "ai_inferred" },
     { categoryKey: "abuse_suffering", intensity: 2, notes: "Children conditioned/programmed from birth; sexual play among children normalized in-world", evidence: "cited" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Slaughterhouse-Five": [
     { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
@@ -244,6 +253,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 1, notes: "Fatalistic attitude toward death, 'So it goes'", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 0, notes: "No sexual assault", evidence: "ai_inferred" },
     { categoryKey: "abuse_suffering", intensity: 1, notes: "Young soldiers, barely adults, in wartime", evidence: "ai_inferred" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Jane Eyre": [
     { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
@@ -257,6 +267,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 0, notes: "No self-harm", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 1, notes: "Rochester's attempted bigamy is a form of deception/coercion", evidence: "ai_inferred" },
     { categoryKey: "abuse_suffering", intensity: 2, notes: "Jane abused as a child at Gateshead and Lowood; Helen Burns dies young", evidence: "human_verified" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Kindred": [
     { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
@@ -270,6 +281,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 1, notes: "Characters consider death preferable to slavery", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 3, notes: "Sexual coercion of enslaved women is a major theme; Rufus assaults Alice", evidence: "cited" },
     { categoryKey: "abuse_suffering", intensity: 2, notes: "Children born into slavery; protagonist protects a child slaveholder", evidence: "ai_inferred" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Mexican Gothic": [
     { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
@@ -283,6 +295,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 1, notes: "Character driven to despair, implied suicidal thoughts", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 2, notes: "Coercive marriage, non-consensual drugging, attempted forced breeding", evidence: "cited" },
     { categoryKey: "abuse_suffering", intensity: 1, notes: "References to children in eugenics context", evidence: "ai_inferred" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "An American Marriage": [
     { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
@@ -296,6 +309,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 0, notes: "No self-harm", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 2, notes: "Rape accusation is central to plot; prison sexual violence implied", evidence: "cited" },
     { categoryKey: "abuse_suffering", intensity: 0, notes: "No abuse or suffering depicted", evidence: "ai_inferred" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "The House in the Cerulean Sea": [
     { categoryKey: "lgbtqia_representation", intensity: 3, notes: "Gay romance central to the story; positive, affirming portrayal", evidence: "human_verified" },
@@ -309,6 +323,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 0, notes: "No self-harm themes", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 0, notes: "No sexual assault", evidence: "ai_inferred" },
     { categoryKey: "abuse_suffering", intensity: 1, notes: "Children face institutional prejudice and fear; emotionally affecting but not violent", evidence: "ai_inferred" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Dungeon Crawler Carl": [
     { categoryKey: "lgbtqia_representation", intensity: 1, notes: "Minor LGBTQIA+ side characters", evidence: "ai_inferred" },
@@ -322,6 +337,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "self_harm_suicide", intensity: 1, notes: "Characters face hopeless situations, minor ideation", evidence: "ai_inferred" },
     { categoryKey: "sexual_assault_coercion", intensity: 0, notes: "No sexual assault content", evidence: "ai_inferred" },
     { categoryKey: "abuse_suffering", intensity: 2, notes: "Children are present in the dungeon and face real danger", evidence: "ai_inferred" },
+    { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
 };
 

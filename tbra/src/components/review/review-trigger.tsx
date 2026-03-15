@@ -14,6 +14,7 @@ interface ReviewTriggerProps {
   aggregate: { average: number; count: number } | null;
   isLoggedIn: boolean;
   autoOpen?: boolean;
+  hasCompletedSession?: boolean;
 }
 
 export function ReviewTrigger({
@@ -23,6 +24,7 @@ export function ReviewTrigger({
   aggregate,
   isLoggedIn,
   autoOpen = false,
+  hasCompletedSession = false,
 }: ReviewTriggerProps) {
   const [wizardOpen, setWizardOpen] = useState(autoOpen);
   const router = useRouter();
@@ -35,55 +37,54 @@ export function ReviewTrigger({
     setWizardOpen(true);
   };
 
-  const displayRating = userReview?.overallRating ?? 0;
-
   return (
-    <div className="mt-6 flex flex-col items-center gap-1">
-      {/* Tappable rating display */}
-      <button
-        type="button"
-        onClick={handleOpen}
-        className="flex items-center gap-2 group"
-      >
-        <StarRow rating={displayRating} size={28} />
-        {userReview?.overallRating ? (
-          <span className="text-sm font-medium text-foreground">
-            {userReview.overallRating % 0.25 === 0 && userReview.overallRating % 0.5 !== 0
-              ? userReview.overallRating.toFixed(2)
-              : userReview.overallRating.toFixed(1)}
-          </span>
-        ) : null}
-      </button>
-
-      {/* Label */}
-      <button
-        type="button"
-        onClick={handleOpen}
-        className="text-sm text-primary hover:text-primary/80 font-medium"
-      >
-        {userReview
-          ? "Edit your review"
-          : isLoggedIn
-            ? "Review this book"
-            : "Log in to review"}
-      </button>
-
-      {/* Aggregate */}
+    <div className="mt-6 flex flex-col items-center gap-2">
+      {/* Aggregate rating display — all clickable */}
       {aggregate && (
-        <p className="text-xs text-muted">
-          {aggregate.average.toFixed(1)} avg &middot; {aggregate.count}{" "}
-          {aggregate.count === 1 ? "rating" : "ratings"}
-        </p>
-      )}
-
-      {/* View all reviews link */}
-      {aggregate && aggregate.count > 0 && (
         <Link
           href={`/book/${bookId}/reviews`}
-          className="text-xs text-primary hover:text-primary/80 font-medium"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          View all reviews &rarr;
+          <StarRow rating={aggregate.average} size={22} />
+          <span className="text-sm font-semibold text-foreground/70">
+            {aggregate.average.toFixed(1)} avg.
+          </span>
+          <span className="text-sm text-foreground/50">&middot;</span>
+          <span className="text-sm text-foreground/70 underline underline-offset-2">
+            {aggregate.count} {aggregate.count === 1 ? "review" : "reviews"}
+          </span>
         </Link>
+      )}
+
+      {/* Review CTA */}
+      {userReview ? (
+        <button
+          type="button"
+          onClick={handleOpen}
+          className="text-sm text-primary hover:text-primary/80 font-medium"
+        >
+          Edit your review
+        </button>
+      ) : isLoggedIn && hasCompletedSession ? (
+        <button
+          type="button"
+          onClick={handleOpen}
+          className="text-sm text-primary hover:text-primary/80 font-medium"
+        >
+          Review this book
+        </button>
+      ) : isLoggedIn ? (
+        <span className="text-sm text-muted">
+          Mark as finished to review
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={handleOpen}
+          className="text-sm text-primary hover:text-primary/80 font-medium"
+        >
+          Log in to review
+        </button>
       )}
 
       {/* Wizard modal */}

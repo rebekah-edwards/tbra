@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ReviewCard } from "@/components/review/review-card";
 import type { BookReviewEntry } from "@/lib/queries/review";
 
@@ -14,6 +14,24 @@ export function ReviewListClient({ reviews, bookId }: ReviewListClientProps) {
   const [hideNoText, setHideNoText] = useState(false);
   const [dnfOnly, setDnfOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"latest" | "helpful">("latest");
+
+  // Scroll to a specific review if hash is present
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith("#review-")) {
+      // Small delay to ensure DOM is rendered
+      const timer = setTimeout(() => {
+        const el = document.getElementById(hash.slice(1));
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          // Brief highlight flash
+          el.classList.add("ring-2", "ring-purple-400/50");
+          setTimeout(() => el.classList.remove("ring-2", "ring-purple-400/50"), 2000);
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const filtered = useMemo(() => {
     let result = reviews;
@@ -48,15 +66,15 @@ export function ReviewListClient({ reviews, bookId }: ReviewListClientProps) {
   return (
     <div className="space-y-3">
       {/* Sort + Filters */}
-      <div className="flex flex-wrap items-center gap-3 pb-1">
-        {/* Sort toggle */}
-        <div className="flex items-center gap-1 text-xs">
+      <div className="flex items-center justify-between pb-1">
+        {/* Segmented control for sort */}
+        <div className="inline-flex rounded-lg bg-surface-alt border border-border/50 p-0.5">
           <button
             type="button"
             onClick={() => setSortBy("latest")}
-            className={`px-2 py-1 rounded-full transition-colors ${
+            className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
               sortBy === "latest"
-                ? "bg-primary/15 text-primary font-medium"
+                ? "bg-purple-500/20 text-purple-400 font-medium shadow-sm"
                 : "text-muted hover:text-foreground"
             }`}
           >
@@ -65,41 +83,46 @@ export function ReviewListClient({ reviews, bookId }: ReviewListClientProps) {
           <button
             type="button"
             onClick={() => setSortBy("helpful")}
-            className={`px-2 py-1 rounded-full transition-colors ${
+            className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
               sortBy === "helpful"
-                ? "bg-primary/15 text-primary font-medium"
+                ? "bg-purple-500/20 text-purple-400 font-medium shadow-sm"
                 : "text-muted hover:text-foreground"
             }`}
           >
-            Most Helpful
+            Top
           </button>
         </div>
 
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Filter checkboxes */}
-        {hasTextless && (
-          <label className="flex items-center gap-2 text-xs text-muted cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={hideNoText}
-              onChange={(e) => setHideNoText(e.target.checked)}
-              className="accent-primary w-3.5 h-3.5 rounded"
-            />
-            Written only
-          </label>
-        )}
-        {hasDnf && (
-          <label className="flex items-center gap-2 text-xs text-muted cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={dnfOnly}
-              onChange={(e) => setDnfOnly(e.target.checked)}
-              className="accent-primary w-3.5 h-3.5 rounded"
-            />
-            DNF only
-          </label>
+        {/* Filter buttons — outlined, fill on select */}
+        {(hasTextless || hasDnf) && (
+          <div className="flex items-center gap-2">
+            {hasTextless && (
+              <button
+                type="button"
+                onClick={() => setHideNoText(!hideNoText)}
+                className={`text-xs px-3 py-1.5 rounded-full transition-colors border ${
+                  hideNoText
+                    ? "border-purple-400/50 bg-purple-500/15 text-purple-400 font-medium"
+                    : "border-border/50 text-muted hover:text-foreground hover:border-border"
+                }`}
+              >
+                {hideNoText && <span className="mr-1">✕</span>}Written
+              </button>
+            )}
+            {hasDnf && (
+              <button
+                type="button"
+                onClick={() => setDnfOnly(!dnfOnly)}
+                className={`text-xs px-3 py-1.5 rounded-full transition-colors border ${
+                  dnfOnly
+                    ? "border-purple-400/50 bg-purple-500/15 text-purple-400 font-medium"
+                    : "border-border/50 text-muted hover:text-foreground hover:border-border"
+                }`}
+              >
+                {dnfOnly && <span className="mr-1">✕</span>}DNF only
+              </button>
+            )}
+          </div>
         )}
       </div>
 

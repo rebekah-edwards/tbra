@@ -10,10 +10,11 @@ import { CompactOwnedButton } from "@/components/compact-owned-button";
 
 interface SearchClientProps {
   isLoggedIn: boolean;
+  initialQuery?: string;
 }
 
-export default function SearchClient({ isLoggedIn }: SearchClientProps) {
-  const [query, setQuery] = useState("");
+export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientProps) {
+  const [query, setQuery] = useState(initialQuery ?? "");
   const [results, setResults] = useState<OLSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);

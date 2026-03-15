@@ -3,6 +3,8 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { setBookState, removeBookState, setBookStateWithImport, removeFromLibrary } from "@/lib/actions/reading-state";
+import { setBookStateWithCompletion } from "@/lib/actions/reading-session";
+import { CompletionDatePicker } from "@/components/book/completion-date-picker";
 import type { OLSearchResult } from "@/lib/openlibrary";
 
 const STATES = [
@@ -35,6 +37,8 @@ export function ReadingStateButton({
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [pendingState, setPendingState] = useState<"completed" | "dnf" | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -84,6 +88,14 @@ export function ReadingStateButton({
       return;
     }
     setOpen(false);
+
+    // Intercept completed/dnf to show date picker first
+    if ((state === "completed" || state === "dnf") && currentState !== state && bookId) {
+      setPendingState(state);
+      setDatePickerOpen(true);
+      return;
+    }
+
     startTransition(async () => {
       if (currentState === state) {
         if (bookId) {
@@ -101,6 +113,25 @@ export function ReadingStateButton({
         }
       }
     });
+  }
+
+  function handleDateConfirm(
+    date: string | null,
+    precision: "exact" | "month" | "year" | null
+  ) {
+    setDatePickerOpen(false);
+    if (!pendingState || !bookId) return;
+    const finalState = pendingState;
+    setPendingState(null);
+    startTransition(async () => {
+      await setBookStateWithCompletion(bookId, finalState, date, precision);
+      onStateChange?.(finalState);
+    });
+  }
+
+  function handleDateCancel() {
+    setDatePickerOpen(false);
+    setPendingState(null);
   }
 
   function handleRemove() {
@@ -243,6 +274,14 @@ export function ReadingStateButton({
           </div>
         )}
       </div>
+
+      {/* Completion date picker */}
+      <CompletionDatePicker
+        open={datePickerOpen}
+        onClose={handleDateCancel}
+        onConfirm={handleDateConfirm}
+        label={pendingState === "dnf" ? "When did you stop reading?" : "When did you finish?"}
+      />
 
       {/* Remove from library confirmation dialog */}
       {showRemoveConfirm && (

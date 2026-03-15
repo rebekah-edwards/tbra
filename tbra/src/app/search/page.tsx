@@ -6,11 +6,12 @@ import { SeriesBooksView } from "./series-books-view";
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ series?: string }>;
+  searchParams: Promise<{ series?: string; q?: string }>;
 }) {
   const user = await getCurrentUser();
   const params = await searchParams;
   const seriesId = params.series;
+  const initialQuery = params.q;
 
   // If filtering by series, show series books from our DB
   if (seriesId) {
@@ -35,7 +36,7 @@ export default async function SearchPage({
         Find a book and see what&apos;s inside.
       </p>
       <div className="mt-6">
-        <SearchClient isLoggedIn={!!user} />
+        <SearchClient isLoggedIn={!!user} initialQuery={initialQuery} />
       </div>
     </div>
   );

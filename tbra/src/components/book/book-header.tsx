@@ -36,9 +36,9 @@ export function BookHeader({
 
   return (
     <div className="relative overflow-visible">
-      {/* Full-bleed color spill — escapes px-6 padding, fades at edges */}
+      {/* Full-bleed color spill — escapes container to viewport edges */}
       {coverImageUrl && (
-        <div className="absolute -inset-x-6 -top-20 bottom-0 overflow-hidden">
+        <div className="hero-bleed absolute -top-20 bottom-0 overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={coverImageUrl}

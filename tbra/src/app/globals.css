@@ -68,6 +68,7 @@ body {
   font-family: var(--font-body), system-ui, sans-serif;
   min-height: 100vh;
   position: relative;
+  overflow-x: hidden;
 }
 
 /* Background glow — dramatic on dark, soft wash on light */
@@ -120,6 +121,48 @@ h1, h2, h3 {
 /* Hide scrollbar for nav tabs */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Animated glow block for book summary */
+@keyframes glow-drift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Full-bleed utility — breaks out of max-w container to viewport edges */
+.hero-bleed {
+  left: calc(-50vw + 50%);
+  right: calc(-50vw + 50%);
+}
+
+.summary-glow-block {
+  position: relative;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  padding-left: calc(50vw - 50%);
+  padding-right: calc(50vw - 50%);
+  padding-top: 3.5rem;
+  padding-bottom: 3.5rem;
+  background:
+    linear-gradient(
+      270deg,
+      rgba(168, 85, 247, 0.06),
+      rgba(56, 189, 248, 0.06),
+      rgba(168, 85, 247, 0.1),
+      rgba(56, 189, 248, 0.04),
+      rgba(168, 85, 247, 0.06)
+    );
+  background-size: 300% 100%;
+  animation: glow-drift 8s ease-in-out infinite;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+}
 
 /* Review editor placeholder */
 .review-editor:empty::before {

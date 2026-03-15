@@ -100,13 +100,11 @@ export function EditionPicker({
     setLoadingMore(false);
   }
 
-  function emitSelections(
-    nextSelections: Map<string, string>,
-    nextCoverIds: Map<string, number | null>
-  ) {
+  // Emit selections to parent via useEffect (avoids setState-during-render)
+  const selectionsRef = useCallback(() => {
     if (!onSelectionsChange) return;
     const result: EditionSelection[] = [];
-    for (const [selKey, editionId] of nextSelections) {
+    for (const [selKey, editionId] of selections) {
       const colonIdx = selKey.lastIndexOf(":");
       const olKey = selKey.slice(0, colonIdx);
       const fmt = selKey.slice(colonIdx + 1);
@@ -114,11 +112,19 @@ export function EditionPicker({
         editionId,
         format: fmt,
         openLibraryKey: olKey,
-        coverId: nextCoverIds.get(olKey) ?? null,
+        coverId: coverIds.get(olKey) ?? null,
       });
     }
     onSelectionsChange(result);
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selections, coverIds, onSelectionsChange]);
+
+  // Track whether this is the initial mount to skip the first emit
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => { setHasMounted(true); }, []);
+  useEffect(() => {
+    if (hasMounted) selectionsRef();
+  }, [hasMounted, selectionsRef]);
 
   async function handleToggle(edition: OLEdition) {
     const selKey = `${edition.key}:${format}`;
@@ -133,20 +139,14 @@ export function EditionPicker({
         setSelections((prev) => {
           const next = new Map(prev);
           next.delete(selKey);
-          emitSelections(next, coverIds);
           return next;
         });
       } else {
         const editionId = await importEdition(bookId, edition);
         await setOwnedEdition(bookId, editionId, format);
         const coverId = edition.covers?.[0] ?? null;
-        const nextCoverIds = new Map(coverIds).set(edition.key, coverId);
-        setCoverIds(nextCoverIds);
-        setSelections((prev) => {
-          const next = new Map(prev).set(selKey, editionId);
-          emitSelections(next, nextCoverIds);
-          return next;
-        });
+        setCoverIds((prev) => new Map(prev).set(edition.key, coverId));
+        setSelections((prev) => new Map(prev).set(selKey, editionId));
       }
     } catch {
       // ignore

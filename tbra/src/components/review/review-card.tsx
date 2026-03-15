@@ -54,6 +54,7 @@ export function ReviewCard({ review, bookId }: { review: BookReviewEntry; bookId
 
   return (
     <div
+      id={`review-${review.id}`}
       ref={containerRef}
       className="rounded-xl bg-surface-alt border border-border/50 p-4 space-y-3"
     >
@@ -110,7 +111,7 @@ export function ReviewCard({ review, bookId }: { review: BookReviewEntry; bookId
       {review.reviewText && (
         <div ref={textRef} className="relative">
           <div
-            className="text-sm text-foreground/90 leading-relaxed [&_b]:font-semibold [&_i]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+            className="text-sm text-foreground/90 leading-relaxed [&_p]:mb-2.5 [&_p:last-child]:mb-0 [&_b]:font-semibold [&_i]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
             dangerouslySetInnerHTML={{ __html: review.reviewText }}
           />
           {hasSpoilers && <SpoilerParticles containerRef={textRef} />}
@@ -160,19 +161,17 @@ export function ReviewCard({ review, bookId }: { review: BookReviewEntry; bookId
         </>
       )}
 
-      {/* Helpful vote button */}
-      <div className="flex items-center pt-1">
+      {/* Helpful + Share row */}
+      <div className="flex items-center justify-between pt-1">
         <button
           type="button"
           disabled={isPending}
           onClick={() => {
-            // Optimistic update
             setVoted(!voted);
             setCount(voted ? count - 1 : count + 1);
             startTransition(async () => {
               const result = await toggleHelpfulVote(review.id, bookId);
               if (result.error) {
-                // Revert on error
                 setVoted(voted);
                 setCount(count);
               }
@@ -180,7 +179,7 @@ export function ReviewCard({ review, bookId }: { review: BookReviewEntry; bookId
           }}
           className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full transition-colors ${
             voted
-              ? "bg-primary/15 text-primary"
+              ? "bg-purple-500/15 text-purple-400"
               : "text-muted hover:text-foreground hover:bg-surface-alt"
           }`}
         >
@@ -194,10 +193,44 @@ export function ReviewCard({ review, bookId }: { review: BookReviewEntry; bookId
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M7 10v12" />
-            <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
+            <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3m7-2V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
           </svg>
           {count > 0 ? count : "Helpful"}
+        </button>
+
+        <button
+          type="button"
+          onClick={async () => {
+            const url = `${window.location.origin}/book/${bookId}/reviews`;
+            if (navigator.share) {
+              try {
+                await navigator.share({
+                  title: `Review by ${review.displayName ?? "Anonymous"}`,
+                  url,
+                });
+              } catch {
+                // User cancelled share
+              }
+            } else {
+              await navigator.clipboard.writeText(url);
+            }
+          }}
+          className="flex items-center gap-1 text-xs text-muted hover:text-foreground px-2 py-1 rounded-full hover:bg-surface-alt transition-colors"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+            <polyline points="16 6 12 2 8 6" />
+            <line x1="12" y1="2" x2="12" y2="15" />
+          </svg>
         </button>
       </div>
     </div>

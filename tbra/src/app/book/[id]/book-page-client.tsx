@@ -36,6 +36,7 @@ interface BookPageClientProps {
   editionSelections: EditionSelection[];
   userReview: UserReview | null;
   aggregate: { average: number; count: number } | null;
+  hasCompletedSession: boolean;
 }
 
 export function BookPageClient({
@@ -45,11 +46,13 @@ export function BookPageClient({
   editionSelections: initialEditionSelections,
   userReview,
   aggregate,
+  hasCompletedSession: initialHasCompleted,
 }: BookPageClientProps) {
   const [currentState, setCurrentState] = useState(userState.state);
   const [activeFormats, setActiveFormats] = useState(userState.activeFormats);
   const [editionSelections, setEditionSelections] = useState(initialEditionSelections);
   const [autoOpenReview, setAutoOpenReview] = useState(false);
+  const [hasCompleted, setHasCompleted] = useState(initialHasCompleted);
 
   const isActivelyReading = currentState === "currently_reading" || currentState === "paused";
 
@@ -98,6 +101,10 @@ export function BookPageClient({
     if (newState !== "currently_reading" && newState !== "paused") {
       setActiveFormats([]);
     }
+    // Optimistically mark as completed for review gate
+    if (newState === "completed" || newState === "dnf") {
+      setHasCompleted(true);
+    }
     // Auto-open review wizard when marking as completed
     if (newState === "completed" && !userReview) {
       setAutoOpenReview(true);
@@ -139,6 +146,7 @@ export function BookPageClient({
         aggregate={aggregate}
         isLoggedIn={isLoggedIn}
         autoOpen={autoOpenReview}
+        hasCompletedSession={hasCompleted}
       />
     </>
   );

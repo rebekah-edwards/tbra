@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, uniqueIndex, index } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 // ─── Core tables ───
@@ -132,6 +132,23 @@ export const userBookState = sqliteTable("user_book_state", {
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   uniqueIndex("user_book_state_unique").on(table.userId, table.bookId),
+]);
+
+export const readingSessions = sqliteTable("reading_sessions", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  bookId: text("book_id").notNull().references(() => books.id),
+  readNumber: integer("read_number").notNull(), // 1, 2, 3... for re-reads
+  state: text("state").notNull(), // 'currently_reading' | 'completed' | 'paused' | 'dnf'
+  startedAt: text("started_at").notNull().default(sql`(datetime('now'))`),
+  completionDate: text("completion_date"), // ISO date '2026-03-14' or null
+  completionPrecision: text("completion_precision"), // 'exact' | 'month' | 'year' | null
+  activeFormats: text("active_formats"), // JSON array
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("reading_sessions_user_book_read").on(table.userId, table.bookId, table.readNumber),
+  index("reading_sessions_user_book").on(table.userId, table.bookId),
 ]);
 
 export const userBookRatings = sqliteTable("user_book_ratings", {

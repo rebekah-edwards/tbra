@@ -34,20 +34,31 @@ async function olFetch(url: string): Promise<Response> {
 
 export async function searchOpenLibrary(
   query: string,
-  limit = 10
+  limit = 20
 ): Promise<OLSearchResult[]> {
-  // Append wildcard to last word for partial/prefix matching
   const trimmed = query.trim();
-  const q = trimmed.endsWith("*") ? trimmed : trimmed + "*";
   const params = new URLSearchParams({
-    q,
+    q: trimmed,
     limit: String(limit),
     fields: "key,title,author_name,author_key,first_publish_year,cover_i,isbn,number_of_pages_median",
+    sort: "editions",
   });
   const res = await olFetch(`${BASE_URL}/search.json?${params}`);
   if (!res.ok) return [];
   const data: OLSearchResponse = await res.json();
-  return data.docs;
+
+  // Re-rank: boost exact/near title matches to the top
+  const queryLower = trimmed.toLowerCase();
+  const results = data.docs;
+  results.sort((a, b) => {
+    const aTitle = a.title.toLowerCase();
+    const bTitle = b.title.toLowerCase();
+    const aExact = aTitle === queryLower ? 0 : aTitle.includes(queryLower) ? 1 : 2;
+    const bExact = bTitle === queryLower ? 0 : bTitle.includes(queryLower) ? 1 : 2;
+    return aExact - bExact;
+  });
+
+  return results;
 }
 
 export async function fetchOpenLibraryWork(
