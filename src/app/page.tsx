@@ -6,7 +6,13 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "tbr*a — Know what's in a book before you read it",
-  description: "Detailed content ratings, smart recommendations, and reading tools for readers who care about what they read.",
+  description: "Track your reading, discover books you ACTUALLY want to read, and DNF fewer books with comprehensive content details.",
+  openGraph: {
+    title: "tbr*a — Know what's in a book before you read it",
+    description: "Track your reading, discover books you ACTUALLY want to read, and DNF fewer books with comprehensive content details.",
+    siteName: "tbr*a",
+    type: "website",
+  },
 };
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/db";

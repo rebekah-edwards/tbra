@@ -33,17 +33,17 @@ export default async function Icon() {
       >
         <div
           style={{
-            fontSize: 36,
+            fontSize: 56,
             fontFamily: "Space Grotesk",
             fontWeight: 700,
             lineHeight: 1,
-            background: "linear-gradient(90deg, #a3e635 0%, #38bdf8 50%, #c084fc 100%)",
+            background: "linear-gradient(135deg, #a3e635 0%, #38bdf8 50%, #c084fc 100%)",
             backgroundClip: "text",
             color: "transparent",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            marginTop: -4,
+            marginTop: 14,
           }}
         >
           *

@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
-  title: "Reading Stats | tbr*a",
+  title: "Reading Stats | The Based Reader App",
+  description: "Track detailed statistics to better understand your reading habits on tbr*a.",
   robots: { index: false },
 };
 import { getReadingGoal } from "@/lib/queries/reading-goals";

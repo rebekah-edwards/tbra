@@ -32,17 +32,17 @@ export default async function AppleIcon() {
       >
         <div
           style={{
-            fontSize: 190,
+            fontSize: 310,
             fontFamily: "Space Grotesk",
             fontWeight: 700,
             lineHeight: 1,
-            background: "linear-gradient(90deg, #a3e635 0%, #38bdf8 50%, #c084fc 100%)",
+            background: "linear-gradient(135deg, #a3e635 0%, #38bdf8 50%, #c084fc 100%)",
             backgroundClip: "text",
             color: "transparent",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            marginTop: 0,
+            marginTop: 70,
           }}
         >
           *
