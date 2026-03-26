@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import { unstable_cache } from "next/cache";
 
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -63,35 +64,44 @@ export default async function Home() {
   const user = await getCurrentUser();
 
   if (!user) {
-    // ── Landing Page Configuration ──
-    // Slugs are managed via /admin/landing
-    const [paradeSlugRows, featuredSlugRow] = await Promise.all([
-      db.select({ bookSlug: landingPageBooks.bookSlug })
-        .from(landingPageBooks)
-        .where(eq(landingPageBooks.type, "parade"))
-        .orderBy(landingPageBooks.sortOrder),
-      db.select({ bookSlug: landingPageBooks.bookSlug })
-        .from(landingPageBooks)
-        .where(eq(landingPageBooks.type, "featured"))
-        .limit(1),
-    ]);
+    // ── Landing Page (cached for 5 minutes to avoid re-querying on every request) ──
+    const getLandingData = unstable_cache(
+      async () => {
+        const [paradeSlugRows, featuredSlugRow] = await Promise.all([
+          db.select({ bookSlug: landingPageBooks.bookSlug })
+            .from(landingPageBooks)
+            .where(eq(landingPageBooks.type, "parade"))
+            .orderBy(landingPageBooks.sortOrder),
+          db.select({ bookSlug: landingPageBooks.bookSlug })
+            .from(landingPageBooks)
+            .where(eq(landingPageBooks.type, "featured"))
+            .limit(1),
+        ]);
 
-    const paradeSlugs = paradeSlugRows.map((r) => r.bookSlug);
-    const featuredSlug = featuredSlugRow[0]?.bookSlug ?? null;
+        const paradeSlugs = paradeSlugRows.map((r) => r.bookSlug);
+        const featuredSlug = featuredSlugRow[0]?.bookSlug ?? null;
 
-    const [coverBooksRaw, featuredBookRow, totalCount] = await Promise.all([
-      paradeSlugs.length > 0
-        ? db
-            .select({ id: books.id, title: books.title, coverImageUrl: books.coverImageUrl, slug: books.slug })
-            .from(books)
-            .where(and(inArray(books.slug, paradeSlugs), isNotNull(books.coverImageUrl)))
-            .orderBy(sql`RANDOM()`)
-        : Promise.resolve([]),
-      featuredSlug
-        ? db.query.books.findFirst({ where: eq(books.slug, featuredSlug) })
-        : Promise.resolve(undefined),
-      db.select({ count: sql<number>`COUNT(*)` }).from(books).where(eq(books.visibility, "public")),
-    ]);
+        const [coverBooksRaw, featuredBookRow, totalCount] = await Promise.all([
+          paradeSlugs.length > 0
+            ? db
+                .select({ id: books.id, title: books.title, coverImageUrl: books.coverImageUrl, slug: books.slug })
+                .from(books)
+                .where(and(inArray(books.slug, paradeSlugs), isNotNull(books.coverImageUrl)))
+                .orderBy(sql`RANDOM()`)
+            : Promise.resolve([]),
+          featuredSlug
+            ? db.query.books.findFirst({ where: eq(books.slug, featuredSlug) })
+            : Promise.resolve(undefined),
+          db.select({ count: sql<number>`COUNT(*)` }).from(books).where(eq(books.visibility, "public")),
+        ]);
+
+        return { coverBooksRaw, featuredBookRow, totalCount };
+      },
+      ["landing-page-data"],
+      { revalidate: 300, tags: ["landing-page"] }
+    );
+
+    const { coverBooksRaw, featuredBookRow, totalCount } = await getLandingData();
 
     // Fetch content ratings for featured book
     let featuredBook = null;
