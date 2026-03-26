@@ -11,6 +11,7 @@ import { ReadingPreferencesEditor } from "@/components/settings/reading-preferen
 import { NotificationPreferences } from "@/components/settings/notification-preferences";
 import { HiddenBooksManager } from "@/components/settings/hidden-books-manager";
 import { AccountSettings } from "@/components/settings/account-settings";
+import { ChangePassword } from "@/components/settings/change-password";
 import { TextSizeSelector } from "@/components/settings/text-size-selector";
 import { LocationSettings } from "@/components/settings/location-settings";
 import { getHiddenBooks } from "@/lib/actions/hidden-books";
@@ -63,6 +64,8 @@ export default async function SettingsPage() {
         </p>
         <HiddenBooksManager initialBooks={hiddenBooks} />
       </div>
+
+      <ChangePassword />
 
       <AccountSettings userEmail={user.email} />
     </div>

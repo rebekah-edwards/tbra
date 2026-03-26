@@ -60,6 +60,62 @@ export async function sendVerificationEmail(
   }
 }
 
+/**
+ * Send a password reset link to a user.
+ */
+export async function sendPasswordResetEmail(
+  to: string,
+  token: string
+): Promise<{ success: boolean; error?: string }> {
+  const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+  const resetUrl = `${appUrl}/reset-password?token=${encodeURIComponent(token)}`;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_ADDRESS,
+      to,
+      subject: "Reset your password — tbr*a",
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+          <h1 style="font-size: 24px; font-weight: 700; color: #111; margin-bottom: 8px;">
+            Reset your password
+          </h1>
+          <p style="font-size: 16px; color: #444; line-height: 1.5; margin-bottom: 24px;">
+            Tap the button below to set a new password for your tbr*a account.
+          </p>
+          <a
+            href="${resetUrl}"
+            style="display: inline-block; background: #7c3aed; color: #fff; font-weight: 600; font-size: 16px; padding: 12px 32px; border-radius: 8px; text-decoration: none;"
+          >
+            Reset password
+          </a>
+          <p style="font-size: 13px; color: #888; margin-top: 32px; line-height: 1.4;">
+            If you didn't request a password reset, you can safely ignore this email.
+            This link expires in 1 hour.
+          </p>
+          <p style="font-size: 13px; color: #888; line-height: 1.4;">
+            Or paste this URL into your browser:<br/>
+            <span style="color: #7c3aed; word-break: break-all;">${resetUrl}</span>
+          </p>
+        </div>
+      `,
+    });
+
+    if (error) {
+      console.error("[email] Failed to send password reset:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error("[email] Send error:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to send email",
+    };
+  }
+}
+
 const ADMIN_EMAIL = "rebekah@thebasedreader.app";
 
 /**

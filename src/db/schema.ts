@@ -436,6 +436,27 @@ export const userNotificationPreferences = sqliteTable("user_notification_prefer
 
 // ─── Blocked OpenLibrary keys (prevent re-import of deleted junk) ───
 
+// ─── Landing page curation ───
+
+export const landingPageBooks = sqliteTable("landing_page_books", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  bookSlug: text("book_slug").notNull(),
+  type: text("type").notNull().default("parade"), // 'parade' | 'featured'
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
+// ─── Password reset tokens ───
+
+export const passwordResetTokens = sqliteTable("password_reset_tokens", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  token: text("token").notNull().unique(),
+  expiresAt: text("expires_at").notNull(),
+  used: integer("used", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
 export const blockedOlKeys = sqliteTable("blocked_ol_keys", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   openLibraryKey: text("open_library_key").notNull().unique(),

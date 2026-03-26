@@ -12,6 +12,7 @@ import { db } from "@/db";
 import { books, bookCategoryRatings, taxonomyCategories } from "@/db/schema";
 import { eq, isNotNull, and, sql, inArray } from "drizzle-orm";
 import { LandingPage } from "@/components/landing/landing-page";
+import { landingPageBooks } from "@/db/schema";
 import { getUserBooks } from "@/lib/queries/reading-state";
 import { getUserUpNext } from "@/lib/queries/up-next";
 import { getSmartDiscoveryBooks, getBecauseYouLikedSuggestions } from "@/lib/queries/recommendations";
@@ -63,46 +64,32 @@ export default async function Home() {
 
   if (!user) {
     // ── Landing Page Configuration ──
-    // Featured book for "What's Inside" showcase
-    const FEATURED_BOOK_SLUG = "angels-and-demons-dan-brown";
+    // Slugs are managed via /admin/landing
+    const [paradeSlugRows, featuredSlugRow] = await Promise.all([
+      db.select({ bookSlug: landingPageBooks.bookSlug })
+        .from(landingPageBooks)
+        .where(eq(landingPageBooks.type, "parade"))
+        .orderBy(landingPageBooks.sortOrder),
+      db.select({ bookSlug: landingPageBooks.bookSlug })
+        .from(landingPageBooks)
+        .where(eq(landingPageBooks.type, "featured"))
+        .limit(1),
+    ]);
 
-    // Approved books for hero background and book parade.
-    // These are hand-picked for attractive, recognizable covers.
-    // Add or remove slugs to curate what appears on the landing page.
-    const LANDING_BOOK_SLUGS = [
-      "the-will-of-the-many-james-islington",
-      "the-way-of-kings-brandon-sanderson",
-      "the-final-empire-brandon-sanderson",
-      "red-rising-pierce-brown",
-      "wool-hugh-howey",
-      "the-hitchhikers-guide-to-the-galaxy-douglas-adams",
-      "looking-for-alaska-john-green",
-      "mere-christianity-c-s-lewis",
-      "the-great-divorce-c-s-lewis",
-      "the-black-prism-brent-weeks",
-      "wild-at-heart-john-eldredge",
-      "captivating-john-eldredge",
-      "an-abundance-of-katherines-john-green",
-      "irresistible-andy-stanley",
-      "franny-and-zooey-jd-salinger",
-      "the-cost-of-discipleship-dietrich-bonhoeffer",
-      "the-negotiator-dee-henderson",
-      "loveology-john-mark-comer",
-      "god-has-a-name-john-mark-comer",
-      "garden-city-john-mark-comer",
-      "surprised-by-joy-c-s-lewis",
-      "saga-volume-one-brian-k-vaughan",
-      "players-handbook-richard-baker",
-      "reappearing-church-mark-sayers",
-    ];
+    const paradeSlugs = paradeSlugRows.map((r) => r.bookSlug);
+    const featuredSlug = featuredSlugRow[0]?.bookSlug ?? null;
 
     const [coverBooksRaw, featuredBookRow, totalCount] = await Promise.all([
-      db
-        .select({ id: books.id, title: books.title, coverImageUrl: books.coverImageUrl, slug: books.slug })
-        .from(books)
-        .where(and(inArray(books.slug, LANDING_BOOK_SLUGS), isNotNull(books.coverImageUrl)))
-        .orderBy(sql`RANDOM()`),
-      db.query.books.findFirst({ where: eq(books.slug, FEATURED_BOOK_SLUG) }),
+      paradeSlugs.length > 0
+        ? db
+            .select({ id: books.id, title: books.title, coverImageUrl: books.coverImageUrl, slug: books.slug })
+            .from(books)
+            .where(and(inArray(books.slug, paradeSlugs), isNotNull(books.coverImageUrl)))
+            .orderBy(sql`RANDOM()`)
+        : Promise.resolve([]),
+      featuredSlug
+        ? db.query.books.findFirst({ where: eq(books.slug, featuredSlug) })
+        : Promise.resolve(undefined),
       db.select({ count: sql<number>`COUNT(*)` }).from(books).where(eq(books.visibility, "public")),
     ]);
 
