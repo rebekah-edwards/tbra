@@ -1,0 +1,1005 @@
+
+=== 2026-03-20T04:04:16Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8314 remaining
+=== 2026-03-20T04:06:58Z ===
+Run result: ERROR — curl failed (exit code 28, connection timed out — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T04:07:41.000Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8299 remaining
+=== 2026-03-20T00:00:00.000Z ===
+Run result: ERROR — curl failed (exit code 28, connection timed out — server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T04:13:01Z ===
+Run result: ERROR — curl failed (exit 28: connection timed out), Next.js dev server not running on localhost:3000
+Status: unknown remaining
+ERROR — server not running, stopping overnight enrichment
+=== 2026-03-20T04:00:00.000Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8276 remaining
+=== 2026-03-20T04:33:16Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8233 remaining
+
+
+=== 2026-03-20T04:36:01Z ===
+Run result: ERROR — curl timed out (exit code 28) — enrichment API endpoint unresponsive (server running but /api/enrichment/run and /api/enrichment/status both hang without responding, likely database lock or stuck process)
+Status: unknown remaining
+API UNRESPONSIVE — stopping overnight enrichment
+=== 2026-03-20T04:37:11Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8220 remaining
+=== 2026-03-20T$(date -u +%H:%M:%S)Z ===
+Run result: ERROR — curl failed (exit 28: connection timed out). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T04:38:57Z ===
+Run result: ERROR — curl failed (exit 28: connection timed out). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+
+=== 2026-03-20T04:41:06Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8207 remaining
+
+=== 2026-03-20T04:44:15Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8193 remaining
+
+=== 2026-03-20T04:46:30Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8186 remaining
+
+=== 2026-03-20T04:48:29Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8181 remaining
+=== 2026-03-20T04:50:04Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8176 remaining
+
+
+=== 2026-03-20T04:52:40Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8166 remaining
+=== 2026-03-20T04:54:37.000Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8160 remaining
+
+=== 2026-03-20T04:54:58Z ===
+Run result: ERROR — curl failed (exit code 28, connection timed out — server not running on localhost:3000)
+Status: unknown remaining
+SERVER NOT RUNNING — stopping overnight enrichment
+=== 2026-03-20T00:00:00.000Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8154 remaining
+=== 2026-03-20T04:59:09Z ===
+Run result: ERROR — curl failed (exit code 28, connection timed out). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+
+=== 2026-03-20T05:01:40.000Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8140 remaining
+=== 2026-03-20T05:04:49Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8128 remaining
+=== 2026-03-20T05:06:55Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8122 remaining
+
+
+=== 2026-03-20T05:09:07Z ===
+Run result: ERROR — curl timed out (exit code 28). Next.js dev server not running on localhost:3000.
+Status: N/A — server unavailable
+
+=== 2026-03-20T05:09:23Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8113 remaining
+=== 2026-03-20T05:10:53Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8110 remaining
+
+=== 2026-03-20T05:13:58Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8095 remaining
+=== 2026-03-20T05:15:10Z ===
+Run result: ERROR — curl failed (exit code 28, connection timeout). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T05:18:54Z ===
+Run result: ERROR — curl timed out (exit code 28). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+
+=== 2026-03-20T05:19:07Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8073 remaining
+=== 2026-03-20T05:22:44Z ===
+Run result: ERROR — curl failed (exit code 28, connection timed out). Next.js dev server is not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T07:30:00.000Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8059 remaining
+=== 2026-03-20T05:29:11.000Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"skippedGoogleBooks":true,"note":"Ran as 7 sub-batches (1+5+3+3+3+3+3+4) due to API timeout at limit=25; all succeeded"}
+Status: 8037 remaining
+
+=== 2026-03-20T05:30:04Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8035 remaining
+
+=== 2026-03-20T05:31:11Z ===
+Run result: ERROR — API routes not responding (curl exit code 28, timeout after 30s). Server is running on localhost:3000 (HTML pages respond) but /api/enrichment/run and /api/enrichment/status endpoints hang without returning a response.
+Status: UNKNOWN — status endpoint also timed out
+=== 2026-03-20T05:32:58.000Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8033 remaining
+
+=== 2026-03-20T05:35:54Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8020 remaining
+
+=== 2026-03-20T05:39:08Z ===
+Run result: ERROR — curl failed (exit code 28: connection timed out). Next.js dev server is NOT running on localhost:3000.
+Status: unknown remaining
+
+=== 2026-03-20T05:39:18Z ===
+Run result: ERROR — API routes not responding (curl exit code 28, timeout after 120s). Server is running on localhost:3000 but /api/enrichment/run endpoint hangs without returning a response.
+Status: UNKNOWN — server unresponsive
+=== 2026-03-20T05:41:13Z ===
+Run result: ERROR — API endpoints timing out (server running but all /api/* routes hang, possible stuck DB connection or blocked process)
+Status: unknown remaining
+ENRICHMENT SKIPPED — server API unresponsive, will retry on next scheduled run
+
+
+=== 2026-03-20T05:42:06Z ===
+Run result: {"processed":25,"success":25,"failed":0,"apiExhausted":false,"errors":[],"remaining":0,"skippedGoogleBooks":true}
+Status: 8006 remaining
+=== 2026-03-20T$(date -u +%H:%M:%S)Z ===
+Run result: ERROR — curl timed out (exit code 28). Next.js dev server is not running on localhost:3000.
+Status: unknown (server unreachable)
+
+=== 2026-03-20T05:43:03Z ===
+Run result: ERROR — curl timed out (exit code 28). Next.js dev server is not running on localhost:3000.
+Status: unknown (server unreachable)
+=== 2026-03-20T05:43:58Z ===
+Run result: ERROR — curl failed (exit code 52, server not running on localhost:3000)
+Status: unknown remaining
+NOTE: Next.js dev server is not running — enrichment skipped.
+=== 2026-03-20T05:44:00Z ===
+Run result: ERROR — curl failed with exit code 7 (connection refused, server not running)
+Status: unknown
+ACTION: Stopping overnight enrichment — server unavailable
+=== 2026-03-20T05:44:17Z ===
+Run result: ERROR — curl exit code 52 (empty reply from server) then connection refused. Server was running but returned no response, then became unavailable.
+Status: unknown — server not running
+SERVER NOT RUNNING — skipping overnight enrichment run
+=== 2026-03-20T05:44:29Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T05:46:34Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T05:48:31Z ===
+Run result: ERROR - curl failed with exit code 7 (server not running / connection refused)
+Status: unknown remaining
+=== 2026-03-20T05:50:30Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T05:52:30Z ===
+Run result: CURL_ERROR — server not running (exit code 7)
+Status: unknown
+
+=== 2026-03-20T05:54:35Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: unknown — server unavailable
+=== 2026-03-20T05:56:32Z ===
+Run result: ERROR — curl exit code 7 (server not running / connection refused)
+Status: unknown remaining
+=== 2026-03-20T$(date -u +%H:%M:%S)Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T05:58:32Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T06:00:30Z ===
+Run result: ERROR — curl exit code 7 (server not running / connection refused)
+Status: unknown remaining
+=== 2026-03-20T06:02:29Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T06:04:32Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: N/A — server unavailable
+=== 2026-03-20T06:06:32Z ===
+Run result: ERROR — curl failed (exit code 7, server not running)
+Status: unknown remaining
+
+=== 2026-03-20T00:00:00.000Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T06:10:29Z ===
+Run result: ERROR - curl failed with exit code 7 (server not running / connection refused)
+Status: unknown remaining
+=== 2026-03-20T06:12:34Z ===
+ERROR: curl failed (exit code 7) — server not running on localhost:3000. Stopping task.
+=== 2026-03-20T06:14:31Z ===
+Run result: CURL ERROR — server not running (exit code 7, connection refused)
+Status: unknown remaining
+=== 2026-03-20T06:16:31Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T06:18:44Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: N/A
+=== 2026-03-20T06:20:42Z ===
+Run result: ERROR — curl exit code 7 (server not running / connection refused)
+Status: unknown
+CURL FAILED — Next.js dev server not running on localhost:3000, stopping overnight enrichment
+=== 2026-03-20T06:22:32Z ===
+Run result: ERROR — curl failed with exit code 7 (connection refused, server not running)
+Status: unknown remaining
+NOTE: Task disabled due to server unavailability.
+=== 2026-03-20T06:24:33Z ===
+ERROR: curl failed (exit code 7) — Next.js dev server not running on localhost:3000. Stopping task.
+=== 2026-03-20T06:26:28Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: N/A
+
+=== 2026-03-20T06:28:34Z ===
+ERROR: curl failed (exit code 7) — Next.js dev server not running on localhost:3000. Stopping task.
+=== 2026-03-20T06:30:39Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T06:32:33Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown
+
+=== 2026-03-20T06:34:32Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T06:36:31Z ===
+Run result: curl failed (exit code 7 — server not running)
+Status: unknown
+API EXHAUSTED or server not running — curl failed, stopping overnight enrichment
+=== 2026-03-20T06:38:30Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown (server unavailable)
+
+=== 2026-03-20T06:40:27Z ===
+Run result: ERROR — curl exit code 7 (connection refused, server not running)
+Status: unknown remaining
+
+=== 2026-03-20T06:42:31Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T06:44:33Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T06:46:42Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown
+TASK STOPPED — server unavailable
+=== 2026-03-20T06:48:34Z ===
+Run result: ERROR — curl failed with exit code 7 (server not running on localhost:3000)
+Status: N/A
+
+=== 2026-03-20T06:50:30Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: unknown remaining
+
+=== 2026-03-20T06:52:31Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: unknown remaining
+=== 2026-03-20T06:54:37Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T06:56:29Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: N/A
+=== 2026-03-20T06:58:29Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+
+
+=== 2026-03-20T07:00:27Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: N/A
+=== 2026-03-20T07:02:30Z ===
+Run result: ERROR — curl exit code 7 (server not running)
+Status: unknown
+
+=== 2026-03-20T07:04:30Z ===
+Run result: ERROR — curl exit code 7 (server not running / connection refused)
+Status: N/A
+
+=== 2026-03-20T07:06:29Z ===
+Run result: ERROR — curl failed (exit code 7), server not running on localhost:3000
+Status: unknown remaining
+=== 2026-03-20T07:08:32Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown
+CURL FAILED — stopping overnight enrichment
+=== 2026-03-20T07:10:30Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T07:12:34Z ===
+Run result: ERROR — curl failed (exit code 7): Could not connect to localhost:3000. Server not running.
+Status: unknown remaining
+CURL FAILED — server not running, stopping overnight enrichment
+=== 2026-03-20T07:14:29Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T07:16:34Z ===
+Run result: ERROR — curl failed (exit code 7), server not running on localhost:3000
+Status: unknown remaining
+=== 2026-03-20T07:18:40Z ===
+Run result: ERROR — curl failed (exit code 7), server not running on localhost:3000
+Status: unknown remaining
+=== 2026-03-20T07:20:36Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+ERROR — server not running, stopping overnight enrichment
+=== 2026-03-20T07:22:28Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T07:24:30Z ===
+ERROR: curl failed (exit code 7) — Next.js dev server not running on localhost:3000. Stopping task.
+
+=== 2026-03-20T07:26:27Z ===
+Run result: ERROR — curl exit code 7 (server not running / connection refused)
+Status: unknown remaining
+=== 2026-03-20T07:28:34Z ===
+Run result: ERROR — curl failed (exit code 7: connection refused, server not running on localhost:3000)
+Status: unknown (server unavailable)
+=== 2026-03-20T07:30:42Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T07:32:33Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+API EXHAUSTED — stopping overnight enrichment
+=== 2026-03-20T07:34:35Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running)
+Status: unknown
+
+=== 2026-03-20T07:36:36Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T07:38:33Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T07:40:32Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T07:42:40Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T07:44:29Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running)
+Status: unknown remaining
+=== 2026-03-20T07:46:34Z ===
+Run result: ERROR — curl failed (exit code 7: server not running on localhost:3000)
+Status: unknown (server not running)
+
+=== 2026-03-20T07:48:33Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T07:50:33Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: N/A — server unavailable
+=== 2026-03-20T07:52:34Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T00:00:00.000Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T07:56:32Z ===
+Run result: ERROR — curl exit code 7 (server not running / connection refused)
+Status: unknown remaining
+=== 2026-03-20T07:58:33Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T08:00:34Z ===
+Run result: ERROR — curl exit code 7 (server not running / connection refused)
+Status: unknown remaining
+=== 2026-03-20T08:02:39Z ===
+Run result: ERROR — curl exit code 7 (server not running / connection refused)
+Status: unknown remaining
+CURL FAILED — server not running, stopping overnight enrichment
+=== 2026-03-20T08:04:33Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: N/A — server unavailable
+
+=== 2026-03-20T08:06:40Z ===
+Run result: ERROR — curl failed (exit code 7), Next.js dev server not running on localhost:3000
+Status: unknown (server unavailable)
+
+=== 2026-03-20T08:08:33Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+NOTE: Task disabled due to server unavailability.
+=== 2026-03-20T08:10:38Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running)
+Status: unknown remaining
+=== 2026-03-20T08:12:45Z ===
+Run result: ERROR — curl failed with exit code 7 (server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T08:14:38Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T08:16:33Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown (server unavailable)
+
+SCHEDULED TASK STOPPED: Server not running
+
+=== 2026-03-20T08:18:36Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T08:20:42Z ===
+Run result: ERROR - curl exit code 7 (server not running / connection refused)
+Status: N/A
+=== 2026-03-20T08:22:34Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: N/A
+
+=== 2026-03-20T08:24:40Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: unknown
+=== 2026-03-20T08:26:30Z ===
+Run result: ERROR - curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T08:28:38Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: unknown remaining
+=== 2026-03-20T00:00:00.000Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T08:32:34Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T08:34:42Z ===
+Run result: FAILED — curl exit code 7 (server not running on localhost:3000)
+Status: unknown
+
+=== 2026-03-20T08:36:35Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T08:38:47Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running)
+Status: unknown remaining
+=== 2026-03-20T08:40:43Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+SERVER NOT RUNNING — stopping overnight enrichment
+
+=== 2026-03-20T08:43:00Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T08:44:42Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T08:47:09Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server is not running on localhost:3000.
+Status: unknown remaining
+SERVER NOT RUNNING — stopping overnight enrichment
+
+=== 2026-03-20T08:49:31Z ===
+Run result: curl failed (exit code 7) — server not running on localhost:3000
+Status: N/A
+
+=== 2026-03-20T08:51:49Z ===
+Run result: CURL ERROR — server not running (exit code 7)
+Status: unknown remaining
+
+=== 2026-03-20T08:53:52Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T08:56:07Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T08:57:38Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: N/A
+
+=== 2026-03-20T08:59:58Z ===
+Run result: ERROR — curl failed (exit code 7: server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T09:02:01Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: N/A
+=== 2026-03-20T09:04:25Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: N/A (server unavailable)
+=== 2026-03-20T09:06:20Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown
+=== 2026-03-20T09:08:35Z ===
+Run result: ERROR — curl failed (exit code 7), server not running on localhost:3000
+Status: N/A
+=== 2026-03-20T09:10:31Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: N/A
+
+
+=== 2026-03-20T09:12:38Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T09:14:30Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T09:16:40Z ===
+ERROR: curl failed (exit code 7) — Next.js dev server not running on localhost:3000. Stopping task.
+=== 2026-03-20T09:18:41Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown (server unavailable)
+
+=== 2026-03-20T09:20:37Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T09:22:42Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: N/A — server unavailable
+=== 2026-03-20T09:25:00Z ===
+Run result: ERROR — curl exit code 7 (server not running or connection refused)
+Status: unknown remaining
+=== 2026-03-20T09:26:48Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T09:28:43Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T09:30:44Z ===
+Run result: ERROR - curl exit code 7 (server not running / connection refused)
+Status: unknown remaining
+=== 2026-03-20T09:32:54Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: N/A
+
+=== 2026-03-20T09:34:51Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown
+ERROR — server not running, stopping overnight enrichment
+=== 2026-03-20T09:36:54Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T09:39:10Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T09:41:30Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T09:43:05Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T09:45:12Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T09:47:18Z ===
+Run result: ERROR - curl exit code 7 (server not running / connection refused)
+Status: N/A - server unavailable
+
+=== 2026-03-20T09:49:23Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T09:51:07Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server is not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T09:53:24Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T09:55:17Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown
+ERROR — server not available, stopping overnight enrichment
+=== 2026-03-20T09:57:27Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T09:59:29Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown
+=== 2026-03-20T10:01:27Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: N/A
+
+=== 2026-03-20T10:03:30Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown
+=== 2026-03-20T10:05:28Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T10:07:46Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T10:09:37Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T10:11:58Z ===
+Run result: ERROR — curl exit code 7 (connection refused, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T10:13:46Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T10:15:36Z ===
+Run result: {"error": "curl failed - server not running (exit code 7)"}
+Status: unknown remaining
+=== 2026-03-20T10:17:56Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+SERVER NOT RUNNING — stopping overnight enrichment
+=== 2026-03-20T10:19:51Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T10:22:09Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: N/A
+=== 2026-03-20T10:24:07Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown (server unreachable)
+=== 2026-03-20T10:25:53Z ===
+Run result: ERROR — curl failed (exit code 7: server not running on localhost:3000)
+Status: unknown (server unavailable)
+
+=== 2026-03-20T10:28:18Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server is not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T10:30:13Z ===
+ERROR: curl failed (exit code 7) — Next.js dev server not running on localhost:3000. Stopping task.
+=== 2026-03-20T10:32:12Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T10:34:15Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T10:36:18Z ===
+ERROR: curl failed (exit code 7) — Next.js dev server not running on localhost:3000. Stopping.
+=== 2026-03-20T10:38:30Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T10:40:26Z ===
+Run result: ERROR — curl exit code 7 (server not running / connection refused)
+Status: N/A (server unreachable)
+
+
+=== 2026-03-20T10:42:28Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: unknown (server unavailable)
+=== 2026-03-20T10:44:26Z ===
+ERROR: curl failed (exit code 7) — Next.js dev server not running on localhost:3000. Stopping task.
+=== 2026-03-20T10:46:53Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: N/A
+=== 2026-03-20T10:48:54Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running)
+Status: N/A
+=== 2026-03-20T10:50:35Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running)
+Status: N/A
+
+=== 2026-03-20T10:52:53Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown
+ERROR: Next.js dev server not running — stopping overnight enrichment
+=== 2026-03-20T10:54:49Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T10:57:06Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server is not running on localhost:3000.
+Status: unknown remaining
+
+=== 2026-03-20T10:59:08Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T$(date -u +%H:%M:%S)Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T11:02:26Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T11:03:18Z ===
+Run result: ERROR — curl failed (exit 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown (server not running)
+=== 2026-03-20T11:05:14Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: unknown remaining
+=== SERVER NOT RUNNING — stopping overnight enrichment ===
+
+=== 2026-03-20T11:07:33Z ===
+Run result: ERROR — curl exit code 7 (connection refused, server not running)
+Status: unknown remaining
+=== 2026-03-20T11:09:44Z ===
+Run result: ERROR — curl failed (exit code 7), server not running on localhost:3000
+Status: N/A
+=== 2026-03-20T11:11:36Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T11:13:55Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T11:15:28Z ===
+Run result: ERROR — curl exit code 7 (server not running / connection refused)
+Status: unknown remaining
+API EXHAUSTED or server offline — curl failed, stopping overnight enrichment
+=== 2026-03-20T11:17:39Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T11:19:31Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running)
+Status: unknown remaining
+=== 2026-03-20T11:21:53Z ===
+ERROR: curl failed (exit code 7) — Next.js dev server not running on localhost:3000
+
+=== 2026-03-20T11:23:50Z ===
+Run result: ERROR — curl failed (exit code 7: server not running on localhost:3000)
+Status: unknown
+
+SCHEDULED TASK STOPPING — server not available
+
+
+=== 2026-03-20T11:25:42Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T11:28:03Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T11:29:42Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running)
+Status: unknown remaining
+=== 2026-03-20T11:32:16Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown
+ERROR: Next.js dev server not running — stopping overnight enrichment
+=== 2026-03-20T11:33:47Z ===
+Run result: ERROR - curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown (server unavailable)
+
+=== 2026-03-20T11:36:13Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T11:38:24Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown
+
+=== 2026-03-20T11:40:40Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+ALL STOPPED — Next.js dev server not running, disabling overnight enrichment task
+=== 2026-03-20T11:42:36Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T11:44:44Z ===
+Run result: ERROR — curl failed (exit code 7: connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+
+=== 2026-03-20T11:46:58Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T11:49:04Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: N/A
+=== 2026-03-20T11:50:49Z ===
+Run result: ERROR — curl failed (exit code 7: connection refused, server not running on localhost:3000)
+Status: unknown
+
+=== 2026-03-20T11:53:04Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T11:54:53Z ===
+Run result: ERROR — curl failed with exit code 7 (server not running on localhost:3000)
+Status: N/A
+
+=== 2026-03-20T11:57:09Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T11:59:27Z ===
+ERROR: curl failed (exit code 7) — server not running on localhost:3000. Stopping overnight enrichment.
+=== 2026-03-20T12:01:26Z ===
+ERROR: curl failed (exit code 7) — Next.js dev server not running on localhost:3000. Stopping task.
+=== 2026-03-20T12:03:38Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T12:05:47Z ===
+ERROR: curl failed (exit code 7) — Next.js server not running on localhost:3000. Stopping overnight enrichment.
+=== 2026-03-20T12:08:06Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: N/A
+=== 2026-03-20T12:10:13Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: unknown remaining
+CURL FAILED — server not running, stopping overnight enrichment
+=== 2026-03-20T12:11:59Z ===
+Run result: ERROR — curl failed (exit code 7, server not running)
+Status: unknown
+
+=== 2026-03-20T12:13:48Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T12:16:05Z ===
+Run result: ERROR — curl exit code 7 (connection refused, server not running)
+Status: unknown remaining
+
+API EXHAUSTED or SERVER DOWN — stopping overnight enrichment
+=== 2026-03-20T12:17:58Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown
+ERROR — Server not running, stopping overnight enrichment.
+=== 2026-03-20T12:20:09Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: unknown remaining
+=== 2026-03-20T12:22:31Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T12:23:57Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T12:26:02Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+SERVER NOT RUNNING — stopping overnight enrichment
+
+=== 2026-03-20T12:28:35Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T00:00:00.000Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T12:32:59Z ===
+Run result: ERROR — curl failed (exit 7, server not running on localhost:3000)
+Status: unknown (server unavailable)
+=== 2026-03-20T00:00:00.000Z ===
+Run result: ERROR — curl failed (exit code 7): Could not connect to localhost:3000 — Next.js dev server not running
+Status: unknown remaining
+=== 2026-03-20T12:37:33Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: unknown remaining
+=== 2026-03-20T12:39:28Z ===
+ERROR: curl failed (exit code 7) — Next.js dev server not running on localhost:3000
+=== 2026-03-20T12:41:27Z ===
+Run result: ERROR — curl failed (exit code 7), server not running on localhost:3000
+Status: N/A (server unreachable)
+
+
+=== 2026-03-20T12:43:16Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+CURL FAILED — stopping overnight enrichment
+=== 2026-03-20T12:45:21Z ===
+Run result: ERROR — curl failed (exit code 7: connection refused, server not running on localhost:3000)
+Status: N/A (server unavailable)
+
+=== 2026-03-20T12:47:25Z ===
+ERROR: curl failed (exit code 7) — Next.js server not running on localhost:3000. Stopping task.
+=== 2026-03-20T12:49:47Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T12:51:08Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: unknown remaining
+=== 2026-03-20T12:54:11Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+SERVER NOT RUNNING — stopping overnight enrichment
+=== 2026-03-20T12:55:54Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused). Next.js dev server not running on localhost:3000.
+Status: N/A
+
+=== 2026-03-20T12:57:50Z ===
+Run result: ERROR — curl failed with exit code 7 (connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown
+
+=== 2026-03-20T13:00:30Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown
+=== 2026-03-20T13:02:11Z ===
+ERROR: curl failed (exit code 7) — Next.js dev server not running on localhost:3000. Stopping task.
+=== 2026-03-20T13:04:31Z ===
+Run result: ERROR - curl exit code 7 (server not running)
+Status: N/A
+
+=== 2026-03-20T13:07:01Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T13:08:17Z ===
+Run result: ERROR — curl failed (exit code 7: server not running on localhost:3000)
+Status: N/A
+
+=== 2026-03-20T13:10:49Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T13:13:11Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running)
+Status: unknown remaining
+ALL BOOKS ENRICHED — stopping overnight enrichment
+=== 2026-03-20T13:14:25Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T13:16:22Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running)
+Status: unknown remaining
+=== 2026-03-20T13:18:57Z ===
+Run result: ERROR — curl failed (exit code 7): Could not connect to localhost:3000. Next.js dev server is not running.
+Status: unknown remaining
+=== 2026-03-20T13:20:21Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: unknown — server unavailable
+=== 2026-03-20T13:22:21Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T13:25:27Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T13:25:43Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown
+
+=== 2026-03-20T13:28:17Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown — server unreachable
+=== 2026-03-20T13:30:06Z ===
+Run result: ERROR - curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown (server unavailable)
+
+
+=== 2026-03-20T13:31:52Z ===
+Run result: ERROR - curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T13:32:57Z ===
+ERROR: curl failed (exit code 7) — Next.js dev server not running on localhost:3000
+Run result: N/A
+Status: N/A remaining
+=== 2026-03-20T13:35:05Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running)
+Status: unknown remaining
+
+=== 2026-03-20T13:38:00Z ===
+Run result: ERROR — curl failed (exit code 7, server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T13:40:11Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T13:42:28Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining
+=== 2026-03-20T13:44:49Z ===
+Run result: ERROR — curl failed (exit code 7): server not running on localhost:3000
+Status: unknown
+API EXHAUSTED or server down — stopping overnight enrichment
+
+=== 2026-03-20T13:46:02Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown (server unavailable)
+=== 2026-03-20T13:48:49Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js dev server not running on localhost:3000)
+Status: unknown remaining
+ERROR — server not running, stopping overnight enrichment
+=== 2026-03-20T13:50:44Z ===
+ERROR: curl failed (exit code 7) — Next.js dev server not running on localhost:3000. Stopping task.
+
+=== 2026-03-20T13:52:16Z ===
+Run result: ERROR — curl failed (exit code 7), server not running on localhost:3000
+Status: unknown remaining
+=== 2026-03-20T13:55:39Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — server not running on localhost:3000)
+Status: unknown remaining
+SERVER NOT RUNNING — stopping overnight enrichment
+=== 2026-03-20T13:57:28Z ===
+Run result: ERROR — curl failed (exit code 7): Could not connect to localhost:3000. Next.js dev server is not running.
+Status: unknown remaining
+
+=== 2026-03-20T13:59:27Z ===
+SERVER NOT RUNNING — curl failed (connection refused). Task disable attempted.
+=== 2026-03-20T13:59:27Z ===
+Server not running — stopping task (attempted to disable overnight-enrichment scheduled task)
+=== 2026-03-20T14:03:50Z ===
+Run result: ERROR — curl failed (exit code 7, connection refused — Next.js server not running on localhost:3000)
+Status: unknown remaining

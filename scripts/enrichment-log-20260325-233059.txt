@@ -1,0 +1,23 @@
+[23:30:59] Starting overnight enrichment. Books needing enrichment: 4344
+[23:30:59] Google Books: SKIPPED. Batch size: 25. Delay: 30s
+[23:30:59] ---
+[23:30:59] === PHASE 1: Initial enrichment (no summary, no ratings) ===
+[23:31:00] Batch 1: 0 ok, 0 failed (total: 0 ok, 0 failed)
+[23:31:00] Phase 1 complete — no more books need initial enrichment.
+[23:31:00] 
+[23:31:00] === PHASE 2: Heal pass (titles, descriptions, genres, pub dates) ===
+[23:31:00] Heal batch 1: 0 books processed, 0 fixes applied
+[23:31:00] Phase 2 complete — no more books need healing.
+[23:31:00] 
+[23:31:00] === PHASE 3: Re-enrich (summaries, descriptions, covers — no Google Books) ===
+[23:31:00] Re-enrich batch 1: 0 ok, 0 failed
+[23:31:00] Phase 3 complete.
+[23:31:00] 
+[23:31:00] === PHASE 4: Generating Google Books backlog ===
+1789 missing covers, 3398 missing descriptions, 6496 missing publisher
+[23:31:01] Google Books backlog saved to: scripts/google-books-backlog-20260325.txt
+[23:31:01] 
+[23:31:01] === DONE ===
+[23:31:01] Total: 0 enriched, 0 failed. Still needing enrichment: 4344
+[23:31:01] Full log: scripts/enrichment-log-20260325-233059.txt
+[23:31:01] Google Books backlog: scripts/google-books-backlog-20260325.txt

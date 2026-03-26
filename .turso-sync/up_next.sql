@@ -1,0 +1,6 @@
+INSERT INTO up_next (id, user_id, book_id, position, added_at) VALUES ('f687e97f-5543-4504-92fb-a41d08614b9a', '012605dd-177d-48c6-9717-490e7ef05b30', '83c7c591-02d7-49cc-ac3f-a516434c0a09', 2, '2026-03-15 19:12:25');
+INSERT INTO up_next (id, user_id, book_id, position, added_at) VALUES ('e03372a0-4b22-4ce0-b760-9cae31e3f788', '012605dd-177d-48c6-9717-490e7ef05b30', '409df3da-893b-4ccb-99ef-847ab90bd491', 1, '2026-03-15 22:08:07');
+INSERT INTO up_next (id, user_id, book_id, position, added_at) VALUES ('7ef42455-3131-4ae1-a953-9a075c47fbaf', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'da688255-21f8-4940-9d73-96f469a19cd6', 1, '2026-03-18 03:43:08');
+INSERT INTO up_next (id, user_id, book_id, position, added_at) VALUES ('bd946d43-6fd1-44f5-bbfa-a4e3850fbab8', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'b2232779-1ee0-462d-a203-1ef9057f8944', 2, '2026-03-18 03:47:48');
+INSERT INTO up_next (id, user_id, book_id, position, added_at) VALUES ('95887f9d-a7b3-45af-97b5-75c093cf6551', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'bd87eb98-d5c7-455f-8663-d18a48ac10c2', 3, '2026-03-18 03:47:55');
+INSERT INTO up_next (id, user_id, book_id, position, added_at) VALUES ('573ba67f-9b7d-4a37-a56d-1fcf5ceb2b7d', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '30923d0d-9a3b-4d5d-9813-c60792c552b7', 4, '2026-03-18 03:48:03');

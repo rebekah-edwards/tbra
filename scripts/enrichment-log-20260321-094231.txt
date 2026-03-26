@@ -1,0 +1,4 @@
+[09:43:42] Starting enrichment (watchdog). Books remaining: 
+[09:43:42] Google Books: SKIPPED. Batch size: 25. Delay: 30s
+[09:43:42] ---
+[09:43:42] === PHASE 1: Initial enrichment ===

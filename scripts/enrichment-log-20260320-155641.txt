@@ -1,0 +1,91 @@
+[15:57:49] Starting enrichment (watchdog). Books remaining: 
+[15:57:49] Google Books: SKIPPED. Batch size: 25. Delay: 30s
+[15:57:49] ---
+[15:57:49] === PHASE 1: Initial enrichment ===
+[16:03:12] Phase1 batch 1: 25 ok, 0 fail (total: 25 ok, 0 fail)
+[16:03:12] Sleeping 30s...
+[16:08:10] Phase1 batch 2: 25 ok, 0 fail (total: 50 ok, 0 fail)
+[16:08:10] Sleeping 30s...
+[16:13:18] Phase1 batch 3: 25 ok, 0 fail (total: 75 ok, 0 fail)
+[16:13:18] Sleeping 30s...
+[16:18:53] Phase1 batch 4: 25 ok, 0 fail (total: 100 ok, 0 fail)
+[16:18:53] Sleeping 30s...
+[16:24:31] Phase1 batch 5: 25 ok, 0 fail (total: 125 ok, 0 fail)
+[16:24:31] Sleeping 30s...
+[16:31:05] Phase1 batch 6: 25 ok, 0 fail (total: 150 ok, 0 fail)
+[16:31:05] Sleeping 30s...
+[16:37:03] Phase1 batch 7: 25 ok, 0 fail (total: 175 ok, 0 fail)
+[16:37:03] Sleeping 30s...
+[16:43:40] Phase1 batch 9: 25 ok, 0 fail (total: 200 ok, 0 fail)
+[16:43:40] Sleeping 30s...
+[16:48:39] Phase1 batch 10: 25 ok, 0 fail (total: 225 ok, 0 fail)
+[16:48:39] Sleeping 30s...
+[16:53:27] Phase1 batch 11: 25 ok, 0 fail (total: 250 ok, 0 fail)
+[16:53:27] Sleeping 30s...
+[16:58:11] Phase1 batch 12: 25 ok, 0 fail (total: 275 ok, 0 fail)
+[16:58:11] Sleeping 30s...
+[17:03:16] Phase1 batch 13: 25 ok, 0 fail (total: 300 ok, 0 fail)
+[17:03:16] Sleeping 30s...
+[17:07:45] Phase1 batch 14: 25 ok, 0 fail (total: 325 ok, 0 fail)
+[17:07:45] Sleeping 30s...
+[17:12:23] Phase1 batch 15: 25 ok, 0 fail (total: 350 ok, 0 fail)
+[17:12:23] Sleeping 30s...
+[17:16:57] Phase1 batch 16: 25 ok, 0 fail (total: 375 ok, 0 fail)
+[17:16:58] Sleeping 30s...
+[17:21:16] Phase1 batch 17: 25 ok, 0 fail (total: 400 ok, 0 fail)
+[17:21:16] Sleeping 30s...
+[17:25:26] Phase1 batch 18: 25 ok, 0 fail (total: 425 ok, 0 fail)
+[17:25:26] Sleeping 30s...
+[17:29:39] Phase1 batch 19: 25 ok, 0 fail (total: 450 ok, 0 fail)
+[17:29:39] Sleeping 30s...
+[17:34:11] Phase1 batch 20: 25 ok, 0 fail (total: 475 ok, 0 fail)
+[17:34:11] Sleeping 30s...
+[17:38:32] Phase1 batch 21: 25 ok, 0 fail (total: 500 ok, 0 fail)
+[17:38:32] Sleeping 30s...
+[17:43:16] Phase1 batch 22: 25 ok, 0 fail (total: 525 ok, 0 fail)
+[17:43:16] Sleeping 30s...
+[17:47:35] Phase1 batch 23: 25 ok, 0 fail (total: 550 ok, 0 fail)
+[17:47:35] Sleeping 30s...
+[17:51:29] Phase1 batch 24: 25 ok, 0 fail (total: 575 ok, 0 fail)
+[17:51:29] Sleeping 30s...
+[17:55:36] Phase1 batch 25: 25 ok, 0 fail (total: 600 ok, 0 fail)
+[17:55:36] Sleeping 30s...
+[17:58:25] Phase1 batch 26: 18 ok, 0 fail (total: 618 ok, 0 fail)
+  ERROR: Mannen van staal: Grok API exhausted (429)
+[17:58:25] API exhausted — stopping Phase 1.
+[17:58:25] 
+[17:58:25] === PHASE 2: Heal pass ===
+[18:03:48] Heal batch 1: 100 books, 393 fixes
+[18:08:55] Heal batch 2: 100 books, 318 fixes
+[18:14:04] Heal batch 3: 100 books, 294 fixes
+[18:19:21] Heal batch 4: 100 books, 261 fixes
+[18:24:32] Heal batch 5: 100 books, 258 fixes
+[18:29:38] Heal batch 6: 100 books, 259 fixes
+[18:34:35] Heal batch 7: 100 books, 238 fixes
+[18:39:37] Heal batch 8: 100 books, 221 fixes
+[18:44:23] Heal batch 9: 100 books, 215 fixes
+[18:49:06] Heal batch 10: 100 books, 204 fixes
+[18:53:19] Heal batch 11: 100 books, 202 fixes
+[18:57:50] Heal batch 12: 100 books, 202 fixes
+[19:02:13] Heal batch 13: 100 books, 200 fixes
+[19:06:49] Heal batch 14: 100 books, 200 fixes
+[19:11:05] Heal batch 15: 100 books, 200 fixes
+[19:15:33] Heal batch 16: 100 books, 200 fixes
+[19:19:52] Heal batch 17: 100 books, 200 fixes
+[19:24:27] Heal batch 18: 100 books, 200 fixes
+[19:28:42] Heal batch 19: 100 books, 200 fixes
+[19:33:08] Heal batch 20: 100 books, 200 fixes
+[19:33:13] 
+[19:33:13] === PHASE 3: Re-enrich ===
+[19:34:58] Phase3 batch 27: 0 ok, 0 fail (total: 618 ok, 0 fail)
+  ERROR: The Unusual Second Life of Thomas Weaver: Grok API exhausted (429)
+[19:34:58] API exhausted — stopping Phase 3.
+[19:34:58] 
+[19:34:58] === PHASE 4: Google Books backlog ===
+1933 missing covers, 4522 missing descriptions, 6971 missing publisher
+[19:34:58] Backlog saved to: scripts/google-books-backlog-20260320.txt
+[19:34:58] 
+[19:34:58] === DONE ===
+[19:35:48] Total: 618 enriched, 0 failed. Remaining: 
+[19:35:48] Enrichment log: scripts/enrichment-log-20260320-155641.txt
+[19:35:48] Watchdog log: scripts/watchdog-20260320-155641.log

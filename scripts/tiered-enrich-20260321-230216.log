@@ -1,0 +1,5 @@
+[23:02:16] Starting tiered enrichment (DB: /Users/clankeredwards/.openclaw/workspace-spine/tbra/data/tbra.db)
+[23:02:16] === TIER 1: Open Library (free) ===
+[23:02:16] Found 9184 books with OL keys needing data
+[23:03:53]   Progress: 100/9184 | pages:0 desc:0 year:0 cover:0 genres:0
+[23:05:35]   Progress: 200/9184 | pages:19 desc:4 year:21 cover:0 genres:1

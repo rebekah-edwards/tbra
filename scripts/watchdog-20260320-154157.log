@@ -1,0 +1,11 @@
+[2026-03-20 15:41:57] [watchdog] === Enrichment watchdog starting ===
+[2026-03-20 15:41:57] [watchdog] Batch size: 25 | Sleep: 30s | Max restarts: 10
+[2026-03-20 15:42:02] [watchdog] Server is DOWN — attempting restart (1/10)
+[2026-03-20 15:42:02] [watchdog] Starting dev server...
+[2026-03-20 15:42:02] [watchdog] Killing stale processes on port 3000: 1888
+3253
+13195
+17209
+[2026-03-20 15:42:04] [watchdog] Dev server launched (PID: 17421)
+[2026-03-20 15:44:39] [watchdog] ERROR: Dev server failed to start after 60s
+[2026-03-20 15:44:39] [watchdog] FATAL: Cannot start dev server. Exiting.

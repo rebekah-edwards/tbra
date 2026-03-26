@@ -1,0 +1,21 @@
+
+> tbra@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.0.0.89:3000
+- Environments: .env.local
+- Experiments (use with caution):
+  · staleTimes
+
+✓ Starting...
+✓ Ready in 540ms
+ GET /search?q=boxed%20set 200 in 717ms (compile: 556ms, render: 161ms)
+ GET /api/authors/search?q=boxed%20set 200 in 68ms (compile: 56ms, render: 12ms)
+ GET /api/series/search?q=boxed%20set 200 in 109ms (compile: 107ms, render: 3ms)
+ GET /api/openlibrary/search?q=boxed%20set 200 in 146ms (compile: 81ms, render: 65ms)
+ GET /api/enrichment/status 200 in 51s (compile: 18ms, render: 51s)
+ GET /api/enrichment/status 200 in 50s (compile: 1806µs, render: 50s)
+ GET /api/enrichment/status 200 in 53s (compile: 1260µs, render: 53s)
+ GET /api/enrichment/status 200 in 52s (compile: 1490µs, render: 52s)

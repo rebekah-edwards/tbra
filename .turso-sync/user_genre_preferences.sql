@@ -1,0 +1,17 @@
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Thriller', 'love');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Suspense', 'love');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Horror', 'love');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Fantasy', 'love');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Sci-Fi', 'love');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'LitRPG', 'love');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Speculative Fiction', 'love');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Action/Adventure', 'love');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Christian Fiction', 'love');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Magical Realism', 'love');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Romance', 'dislike');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Amish Fiction', 'dislike');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Historical Fiction', 'dislike');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Anthology', 'dislike');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Poetry', 'dislike');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Graphic Novel', 'dislike');
+INSERT INTO user_genre_preferences (user_id, genre_name, preference) VALUES ('c2f3eb27-139f-4605-9566-8ded8d9e1336', 'Dystopian', 'love');

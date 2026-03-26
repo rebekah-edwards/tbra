@@ -1,0 +1,777 @@
+[22:08:33] === PHASE 1: Books explicitly marked as non-English ===
+[22:08:33]   DELETED: Harry Potter i el calze de foc — Language: Catalan
+[22:08:33]   DELETED: L'holocaust de la Terra — Language: Catalan
+[22:08:33]   DELETED: Fen qi zhe — Language: Chinese
+[22:08:33]   DELETED: ThePhantomTollbooth a miraculous the toll booths illusion of paradise. Norton Gu Site. the original English edition. Illustrated](Chinese Edition) — Language: Chinese
+[22:08:33]   DELETED: Rode maan — Language: Dutch
+[22:08:33]   DELETED: Verlaten — Language: Dutch
+[22:08:33]   DELETED: Pool maailma — Language: Estonian
+[22:08:33]   DELETED: Enchantement — Language: French
+[22:08:33]   DELETED: Fenetre Magique — Language: French
+[22:08:33]   DELETED: Nous — Language: French
+[22:08:33]   DELETED: Pays Rouge (édition reliée) — Language: French
+[22:08:33]   DELETED: Premier sang — Language: French
+[22:08:33]   DELETED: Rick & Morty présentent — Language: French
+[22:08:33]   DELETED: Sous la Banniere Etoilee — Language: French
+[22:08:33]   DELETED: Diabolus — Language: German
+[22:08:33]   DELETED: Echte Biester — Language: German
+[22:08:33]   DELETED: Große Tiere — Language: German
+[22:08:34]   DELETED: Hinter Dornenhecken und Zauberspiegeln — Language: German
+[22:08:34]   DELETED: Kind in seinen Armen. Gott als Vater erfahren — Language: German
+[22:08:34]   DELETED: Mr. White treibt auf der reißenden Liffey nach Dublin. Ein Überlebensroman — Language: German
+[22:08:34]   DELETED: Schloss Malplaquet — Language: German
+[22:08:34]   DELETED: Serafina Black und der schwarze Umhang, Band 01 — Language: German
+[22:08:34]   DELETED: Serafina Black und die Tiere der Nacht, Band 02 — Language: German
+[22:08:34]   DELETED: Spiegelreisende Band 1 - Die Verlobten des Winters — Language: German
+[22:08:34]   DELETED: Sternenkrone 09. Ins Land der Greife — Language: German
+[22:08:34]   DELETED: Verderben — Language: German
+[22:08:34]   DELETED: Vergeltung — Language: German
+[22:08:34]   DELETED: Verwegenes Vertrauen — Language: German
+[22:08:34]   DELETED: Weil uns Gott unendlich liebt. — Language: German
+[22:08:34]   DELETED: Mapot ba-marʾah — Language: Hebrew
+[22:08:34]   DELETED: Sipurim she-lo nishlemu — Language: Hebrew
+[22:08:34]   DELETED: ha-Silmarliyon — Language: Hebrew
+[22:08:34]   DELETED: ברן ולותין — Language: Hebrew
+[22:08:34]   DELETED: ההוביט — Language: Hebrew
+[22:08:34]   DELETED: הילדה שזכרה הכל — Language: Hebrew
+[22:08:34]   DELETED: זרה מוחלטת — Language: Hebrew
+[22:08:34]   DELETED: חלון השלום והלהתראות — Language: Hebrew
+[22:08:34]   DELETED: ילדת טבע — Language: Hebrew
+[22:08:34]   DELETED: סרינה והגלימה השחורה — Language: Hebrew
+[22:08:34]   DELETED: סרינה ומטה העוצמה — Language: Hebrew
+[22:08:34]   DELETED: צופן דה וינצ'י — Language: Hebrew
+[22:08:34]   DELETED: קווידיץ' בראי הדורות — Language: Hebrew
+[22:08:34]   DELETED: שחקן מספר אחת — Language: Hebrew
+[22:08:34]   DELETED: Ḥaye ḳesem — Language: Hebrew
+[22:08:34]   DELETED: Echi in tempesta. L'Attraversaspecchi. Vol. 4 — Language: Italian
+[22:08:34]   DELETED: Fidanzati dell'inverno. L'Attraversaspecchi. Vol. 1 — Language: Italian
+[22:08:34]   DELETED: Gli scomparsi di Chiardiluna. L'Attraversaspecchi. Vol. 2 — Language: Italian
+[22:08:34]   DELETED: I misteri. Wayward Pines. Vol. 1 — Language: Italian
+[22:08:34]   DELETED: Il bosco. Wayward Pines. Vol. 2 — Language: Italian
+[22:08:34]   DELETED: In questo piccolo mondo — Language: Italian
+[22:08:34]   DELETED: L' ultima città. Wayward Pines. Vol. 3 — Language: Italian
+[22:08:34]   DELETED: Recursion. Falsa memoria — Language: Italian
+[22:08:34]   DELETED: Trading Online 2 Libri In 1 — Language: Italian
+[22:08:34]   DELETED: Demon of fire and Castle 1 Wizard Howl Howl's Moving (Tokuma Novel) — Language: Japanese
+[22:08:34]   DELETED: The Da Vinci Code [In Japanese Language] — Language: Japanese
+[22:08:34]   DELETED: Oazė: Žaidimas prasideda — Language: Lithuanian
+[22:08:34]   DELETED: Kod Leonarda da Vinci — Language: Polish
+[22:08:34]   DELETED: Nim zawisna — Language: Polish
+[22:08:34]   DELETED: Serafina i rozdzielone serce — Language: Polish
+[22:08:35]   DELETED: Serafina i siedem gwiazd — Language: Polish
+[22:08:35]   DELETED: Sigma Force. Tom 6. Klucz zaglady — Language: Polish
+[22:08:35]   DELETED: Willa, dziewczyna z lasu — Language: Polish
+[22:08:35]   DELETED: Zemsta najlepiej smakuje na zimno — Language: Polish
+[22:08:35]   DELETED: Łowcy mobów — Language: Polish
+[22:08:35]   DELETED: Histórias de Robôs - Volume 2 — Language: Portuguese
+[22:08:35]   DELETED: Matéria escura — Language: Portuguese
+[22:08:35]   DELETED: O Poder da Espada — Language: Portuguese
+[22:08:35]   DELETED: O Senhor dos Anéis — Language: Portuguese
+[22:08:35]   DELETED: O Senhor dos Anéis - A Sociedade do Anel — Language: Portuguese
+[22:08:35]   DELETED: Willa, a garota da floresta — Language: Portuguese
+[22:08:35]   DELETED: Jumatate de lume — Language: Romanian
+[22:08:35]   DELETED: Fear Has Big Eyes — Language: Russian
+[22:08:35]   DELETED: Li︠u︠bovnit︠s︡y amerikanskikh prezidentov — Language: Russian
+[22:08:35]   DELETED: Destellos de Jesus — Language: Spanish
+[22:08:35]   DELETED: Evangelio de Los Andrajosos — Language: Spanish
+[22:08:35]   DELETED: Filos mortales — Language: Spanish
+[22:08:35]   DELETED: Fricción — Language: Spanish
+[22:08:35]   DELETED: Guía literaria del amor — Language: Spanish
+[22:08:35]   DELETED: Letra Escarlata — Language: Spanish
+[22:08:35]   DELETED: Lexicón — Language: Spanish
+[22:08:35]   DELETED: Lotería solar — Language: Spanish
+[22:08:35]   DELETED: Marvel action spiderman. mala suerte — Language: Spanish
+[22:08:35]   DELETED: Marvel action spiderman. veneno 4 — Language: Spanish
+[22:08:35]   DELETED: Media guerra — Language: Spanish
+[22:08:35]   DELETED: Nightbane (Spanish Edition) — Language: Spanish
+[22:08:35]   DELETED: Nyxia liberada — Language: Spanish
+[22:08:35]   DELETED: Nyxia sublevada — Language: Spanish
+[22:08:35]   DELETED: Otro Lado de la Medianoche — Language: Spanish
+[22:08:35]   DELETED: Pack Regalo La chica de la tormenta — Language: Spanish
+[22:08:35]   DELETED: Pack Thiller psicológico — Language: Spanish
+[22:08:35]   DELETED: Podemos fabricarte — Language: Spanish
+[22:08:35]   DELETED: Querido Evan Hansen — Language: Spanish
+[22:08:35]   DELETED: Recta y el Punto — Language: Spanish
+[22:08:36]   DELETED: Recursión — Language: Spanish
+[22:08:36]   DELETED: Sabiduría en la Ternura de Jesús — Language: Spanish
+[22:08:36]   DELETED: Serafina y la capa negra — Language: Spanish
+[22:08:36]   DELETED: Serie la Tríada de Nyxia — Language: Spanish
+[22:08:36]   DELETED: Star Wars Episodio VIII Phasma — Language: Spanish
+[22:08:36]   DELETED: Star Wars Episodio VIII Phasma — Language: Spanish
+[22:08:36]   DELETED: Tiempo de Marte — Language: Spanish
+[22:08:36]   DELETED: Tierras Rojas — Language: Spanish
+[22:08:36]   DELETED: Un nuevo comienzo — Language: Spanish
+[22:08:36]   DELETED: Universo Sandman - Los libros de la magia vol. 02 — Language: Spanish
+[22:08:36]   DELETED: Universo Sandman - Los libros de la magia vol. 1 - Tipo móvil — Language: Spanish
+[22:08:36]   DELETED: Vigilantes del pasado — Language: Spanish
+[22:08:36]   DELETED: Willa de los bosques — Language: Spanish
+[22:08:36]   DELETED: Willa de los bosques 2 — Language: Spanish
+[22:08:36]   DELETED: último Invitado — Language: Spanish
+[22:08:36]   DELETED: Strindbergs första hustru — Language: Swedish
+[22:08:36]   DELETED: Vi for upp med mor — Language: Swedish
+[22:08:36]   DELETED: Dracula Gunlukleri — Language: Turkish
+[22:08:36]   DELETED: Hayalet Gise - Milo'nun Akil Almaz Seruveni — Language: Turkish
+[22:08:36]   DELETED: John Sonunda Oluyor — Language: Turkish
+[22:08:36]   DELETED: Kayip Kizlar — Language: Turkish
+[22:08:36]   DELETED: Kirilma — Language: Turkish
+[22:08:36]   DELETED: Krallarin Son Çaresi — Language: Turkish
+[22:08:36]   DELETED: Masaldan Öte Melete — Language: Turkish
+[22:08:36]   DELETED: Nokta Ile Cizgi; Romantik Bir Temel Matematik Hikayesi — Language: Turkish
+[22:08:36]   DELETED: Serafina ve Siyah Pelerin — Language: Turkish
+[22:08:36]   DELETED: Siddetin Tohumu — Language: Turkish
+[22:08:36]   DELETED: Pecyn Cyfres Yr Hudlath Ar Haearn — Language: Welsh
+[22:08:36] Phase 1 complete.
+[22:08:36] 
+[22:08:36] === PHASE 2: Non-ASCII titles (likely foreign) ===
+[22:08:36]   DELETED: "fear Agent T.4 ; Entreprise de Démolition" — Non-ASCII title (likely foreign)
+[22:08:36]   DELETED: 144 קומות — Non-ASCII title (likely foreign)
+[22:08:36]   DELETED: 20 Ans de Légendes — Non-ASCII title (likely foreign)
+[22:08:36]   DELETED: ?Y ahora qué? — Non-ASCII title (likely foreign)
+[22:08:36]   DELETED: A Escolha dos Três — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: A Sisters Hope — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: English — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: A la deriva en el mar de las Lluvias y otros relatos (Nova fantástica) — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: A shṭif ḳind bay der Ṿaysl — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: ANTIC LLINATGE [Próxima aparición] — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Adiós a Las Armas — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Adulto (Edición Ilustrada) / the Grownup (Ilustrated Edition) — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Ai Confini Dell'oscurità — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Aladdín. Un giro inesperado — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: An taqtula ṭāʼiran barīʼan — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Anastasia pregunta-ho al psicoanàlisi — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Anatèm, Tome 1 — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Animales. Coloree Según los Números — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Antología de la literatura fantástica — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Antología de relatos de terror — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Aprenda Italiano Com Um Clássico — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Ar lan y môr y mae-- — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Aristócrata Solterón — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Arisu Wōkā tanpenshū — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Au-delà des ombres — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Avengers Ultron'un Öfkesi — Non-ASCII title (likely foreign)
+[22:08:37]   DELETED: Aves. Coloree Según los Números — Non-ASCII title (likely foreign)
+[22:08:38]   DELETED: Bad Girls of the Bible — Non-ASCII title (likely foreign)
+[22:08:38]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:38]   DELETED: English — Non-ASCII title (likely foreign)
+[22:08:38]   DELETED: Ben Húr, eða, Messíasar-tíðin — Non-ASCII title (likely foreign)
+[22:08:38]   DELETED: Beriʼat ha-ʻolam ṿe-ʻasaḳim aḥerim — Non-ASCII title (likely foreign)
+[22:08:38]   DELETED: Betrayed Fiancée — Non-ASCII title (likely foreign)
+[22:08:38]   DELETED: Britt-Marie è stata qui — Non-ASCII title (likely foreign)
+[22:08:38]   DELETED: Brumes et tempêtes — Non-ASCII title (likely foreign)
+[22:08:38]   DELETED: Buscaré el océano — Non-ASCII title (likely foreign)
+[22:08:38]   DELETED: CInder y el príncipe de la medianoche — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Cabina Mágica — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Canción de Navidad — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Carnicero y el Pájaro — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Catorce Días — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Cautivado por la Alegría — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Caída Del Leviatán / Leviathan Falls — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Celebración profética — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Ciencia Del éxito/ Naponeon Hill's Master Course. the Original Science of Success — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Cinder i el Príncep de Mitjanit — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Cinder y el Príncipe de Medianoche — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Ciudad Nómada y otros relatos — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Clifford Aide le Père Noël — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Cold Storage Almacenamiento en Frío (Spainsh Edition) — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Condición artificial — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Confesión Encontrada en una Prisión de la época de Carlos II — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Conspiración — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Constance o las Prácticas Solitarias — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Copperhead. Las Crónicas de Starbuck Ii — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Cregyn Mân y Môr — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Crepúsculo. décimo Aniversario. Vida y Muerte / Twilight Tenth Anniversary. Life and Death (Dual Edition) — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Cuando Las Mujeres le Dicen Sí a Dios — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Cuentos Clásicos Infantiles Volumen 1 — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Cuentos Fantásticos — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Cómo Adorar Al Rey — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Cómo Sobrevivir un Divorcio No Deseado — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Cómo Vender una Casa Embrujada / How to Sell a Haunted House — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Cómo vender una casa encantada — Non-ASCII title (likely foreign)
+[22:08:39]   DELETED: Dans la lumière — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Demain et le jour d'après — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Destins croisés — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Divergente - tome 3 Au-delà du mur — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Diário Do Ano Da Peste — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Dom obezʹ︠i︡an — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Double hélice (French Edition) — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Dressez haut la poutre maîtresse, charpentiers ; suivi de — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Dràcula — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Drácula — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Drácula 1897 — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: DziewiÄÄ opowiadaĹ  - J.D. Salinger [KSIÄĹťKA] — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Dz︠h︡en Ei︠r︡ — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Déracinée (Fantasy et imaginaire) (French Edition) — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Els homes que no estimaven les dones - edició mid price — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: En Sus Pasos  In His Footsteps — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: En Sus Pasos, ¿Qué haría Jesús? — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Ens hem venut l'ànima — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Epîtres — Non-ASCII title (likely foreign)
+[22:08:40]   DELETED: Eragon's guide to Alagaësia — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: Erased — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: English — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: Espíritos Rebeldes — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: Eu sei o que vocês fizeram no verão passado — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: Evolution géologique de l'Afrique — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: Farm der Tiere / Rebelión en la Granja — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: Farma zvířat — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: Fatāh ʻādīyah — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: Fleurs Animées — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: Fleurs Animées - Tome 1 — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: Forbidden — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: English — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: Fábulas de Samaniego — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: Gabriel García Márquez in retrospect — Non-ASCII title (likely foreign)
+[22:08:41]   DELETED: García Márquez — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Ghostbusters Volume 2 — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: English — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Gonzo Lubitsch ou l'incroyable odyssée — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Grillon à la Maison — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Guerra de Calibán — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Guía Rápida de Las 48 Leyes Del Poder — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Guía del club de lectura para matar vampiros — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Guía para Lograr Tus Metas de Napoleon Hill — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Gʾeni — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Hagadá de Pésaj — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Halcón Maltés — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: HalfBlood — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: English — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Histoire d'un crime--déposition d'un témoin — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Histórias de Amor — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Huracán — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Huérfanos de la Tierra — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Hyperión — Non-ASCII title (likely foreign)
+[22:08:42]   DELETED: Hypérion - L'Intégrale — Non-ASCII title (likely foreign)
+[22:08:43]   DELETED: Ici brûle ma chandelle T1 — Non-ASCII title (likely foreign)
+[22:08:43]   DELETED: Ilias (Großdruck) — Non-ASCII title (likely foreign)
+[22:08:43]   DELETED: Indécence manifeste (Actes noirs) (French Edition) — Non-ASCII title (likely foreign)
+[22:08:43]   DELETED: Jonathan Strange ve Bay Norrell 1 - Ciltli Özel Kutulu — Non-ASCII title (likely foreign)
+[22:08:43]   DELETED: Jonathan Strange ve Bay Norrell 2 - Ciltli Özel Kutulu — Non-ASCII title (likely foreign)
+[22:08:43]   DELETED: Jonathan Strange ve Bay Norrell 3 - Ciltli Özel Kutulu — Non-ASCII title (likely foreign)
+[22:08:43]   DELETED: Journal D'un Assasynth:#1 Défaillances systèmes — Non-ASCII title (likely foreign)
+[22:08:43]   DELETED: Khozi︠a︡ĭka — Non-ASCII title (likely foreign)
+[22:08:43]   DELETED: Khyālī nhaṅʻʹ thūʺ chanʻʺ so khyokalakʻ cakʻ ruṃ krīʺ — Non-ASCII title (likely foreign)
+[22:08:43]   DELETED: L'Avant-scène — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: L'Odyssée — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: L'art d'être grand-père — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: L'héritage Ballantyne 01 — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: L'héritage Ballantyne 03 — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: L'Île Au Trésor (illustré) — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: L'épreuve - tome 1 Le Labyrinthe — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: L'épreuve - tome 2 La Terre brûlée — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: L'épreuve - tome 3 Le Remède mortel — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: L'équation amoureuse — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: L'éternel Mari — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: L'éveil de l'amour — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: Lady Roxana Ou l'Heureuse Maîtresse — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: Lo que no te mata te hace más fuerte — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: Lâchez les bombes! — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: Ma grand-mère vous passe le bonjour — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: Mago E Vidro - Série Torre Negra. Volume 4 — Non-ASCII title (likely foreign)
+[22:08:44]   DELETED: Manifiesto de Josías — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Marvel must have los nuevos vengadores 9. invasión secreta — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Maḥboʾim — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Memórias Esquecidas (Portuguese Edition) — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Millénium 2 - La fille qui rêvait d'un bidon d'essence et d'une allumette — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Mirdinî dêwereyek — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Misión Damasco — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Misterio Del Shemitá — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Monsieur o el príncipe de las tinieblas — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Monsieur tigre se déchaîine — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Muerte y Cía — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Murmullo de Las Abejas (Edición Aniversario) / the Murmur of Bees — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Más allá de las Sombras — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Narodziny Królowej — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: No Te Olvidaré / Reminders of Him (Spanish Edition) — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Návrat do Sighetu — Non-ASCII title (likely foreign)
+[22:08:45]   DELETED: Não pisque — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: O Críquete Doméstico — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: O vampiro antes de Drácula — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: OEuvres Complètes de P. J. de Béranger — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: Oceà Àfrica — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: Odyssée (illustré) — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: Oeuvres complètes — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: Olympos / Όλυμπος — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: Operaciòn Teheràn — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: Operación Teherán — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: Opresión y resistencia — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: Otan Skotonoun Ta Kotsyfia / Όταν Σκοτώνουν Τα Κοτσύφια — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: Panique à l'aquarium — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: Parábolas de vida — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: Pensez et Devenez Riche (résumé) — Non-ASCII title (likely foreign)
+[22:08:46]   DELETED: Plus Grands Romans d'épouvante de la Littérature Classique — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Pokémon Primers — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Por siempre ¿felices? — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Poèmes étrangers — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Poésie — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Premières aventures de Robinson Cruso\'e — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Profecía Del Dragón — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Prophète de Gibran, Khalil Gibran — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Pépites d'or — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Quelques minutes après minuit — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Raison et Sensibilité — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Rebelde. Crónicas de Starbuck I — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Rebelión en la Granja — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Revolución (el Juego Infinito 2) / the Rule of Thoughts (the Mortality Doctrine, Book Two) — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Riverdale présente Archie - Tome 01 — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Robinson Crusoé — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Robinson Crusoé - Tome 1 — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Robinson Crusoé - Tome I — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Robinson Crusoé - Tome I Annoté — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Robinson Crusoé - Tome I Translated — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Robinson Crusoé - Tome II — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Robinson Crusoé - Tome II Annoté — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Robinson Crusoé Tome 2 — Non-ASCII title (likely foreign)
+[22:08:47]   DELETED: Romans éternels - Jane Austen — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: RÃ?Â©vÃ?Â©lation — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Révolte des Neuf — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Sa Majesté-des-Mouches — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Saga Crepúsculo — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Sans parler du chien ou comment nous retrouvâmes enfin la potiche de l'évêque — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Schémas Artificiels — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Scooby-Doo! L'affreuse sorcière — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Scènes de la Vie Privée et Publique des Animaux — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Scènes de la Vie Privée et Publique des Animaux. Vignettes Par Grandville. Études de Moeurs Contemporaines Par de Balzac [et Al. ] [Publiées Sous la Direction de P. J. Stahl] — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Search for Wondla — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: English — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Semillas mágicas para el éxito — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Sentido y Sensibilidad (Ediciones Icónicas) / Sense and Sensibility — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Silo générations (Exofictions) (French Edition) — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Son Ötesi — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Sur la route d'Aldébaran — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Szósta ofiara — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Sígueme Uno — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Sílas. Výnimoční biblickí muži — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Sīyāḥat-i masīḥī az īn jihān bi-jihān-i āyandah — Non-ASCII title (likely foreign)
+[22:08:48]   DELETED: Sŭp'indŭllŏ — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED: Ta, ktĂlra musi umrzeÄ. Millennium (Tom 6) - David Lagercrantz [KSIÄĹťKA] — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED: Tempos Difíceis — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED: Terminus les étoiles — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED: The ArabIsraeli Conflict — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED: English — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED: The Blade of Shattered Hope — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED: English — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED: The Death Penalty — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED: English — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED: The Escapement — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:49]   DELETED: English — Non-ASCII title (likely foreign)
+[22:08:50]   DELETED: The Search for Wondla Book 1 — Non-ASCII title (likely foreign)
+[22:08:50]   DELETED:  — Non-ASCII title (likely foreign)
+[22:08:50]   DELETED: English — Non-ASCII title (likely foreign)
+[22:08:50]   DELETED: The court of flora = Les fleurs animées — Non-ASCII title (likely foreign)
+[22:08:50]   DELETED: Théâtre ... — Non-ASCII title (likely foreign)
+[22:08:50]   DELETED: Théâtre II — Non-ASCII title (likely foreign)
+[22:08:50]   DELETED: Toate fluviile curg în mare — Non-ASCII title (likely foreign)
+[22:08:50]   DELETED: Tokyo Ghost. Edición de lujo — Non-ASCII title (likely foreign)
+[22:08:50]   DELETED: Trainer's Notebook (Pokémon) — Non-ASCII title (likely foreign)
+[22:08:50]   DELETED: Trilogía Nacidos de la bruma [Mistborn]  (Nacidos de la bruma ... de fantasía épica que ha conquistado el mundo — Non-ASCII title (likely foreign)
+[22:08:50]   DELETED: Trésor de la Caverne D'Arcueil — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Twilight Dixième Anniversaire/la vie et la mort. Double édition — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Twisted Tale Disney Histoire éternelle — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Téméraire, Tome 3 — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Un Roman de Noël Victorien - une Guirlande de Noël — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Un camí memorable — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Un été pour mourir — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Una historia insólita de la neurología — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Une île sous le vent — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: VIE PRIVÉe et PUBLIQUE des ANIMAUX (illustré) — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Vai e Põe uma Sentinela — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Verde : El Círculo Libro Cero — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Versione italiana del poema di Pope sul Tempio della fama, dedicata all' eminente virtù della donzella sue nozze con Sig. Carlo Evangelista — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Vie Privée et Publique des Animaux — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Vie et les Aventures Surprenantes de Robinson Crusoé de York, Marin -1719 — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Vieux, râleur et suicidaire — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Wybór poezyi — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Yalde Slaṿḳov — Non-ASCII title (likely foreign)
+[22:08:51]   DELETED: Yeux dans les arbres n° 331 (ne) (Les) (PETITE BIBLIOTHEQUE RIVAGES) — Non-ASCII title (likely foreign)
+[22:08:52]   DELETED: al-Zaman al-ʻaṣīb — Non-ASCII title (likely foreign)
+[22:08:52]   DELETED: ha-Eḳdoḥan — Non-ASCII title (likely foreign)
+[22:08:52]   DELETED: ¿Por Qué el Nacimiento de Jesús? (Spanish Edition) — Non-ASCII title (likely foreign)
+[22:08:52]   DELETED: Ángeles Caídos II — Non-ASCII title (likely foreign)
+[22:08:52]   DELETED: Änglarna i Åmsele — Non-ASCII title (likely foreign)
+[22:08:52]   DELETED: Éducation meurtrière — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: Überredung — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: épine Dans le Cur — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: última vida del príncipe Alastor (Prosper Redding 2) — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: Łotr — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: Śeḥiyah be-ʻerom — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: ʻAlilot spaiderṿiḳ — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: ʻArisat ḥatul — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: אדם האחרון — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: אוקיינוס בקצה המשעול — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: איליום — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: אל תיגע בזמיר — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: אלקטרז נגד ספרני הרשע — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: אמה — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: אנסטסיה — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: אנסטסיה אחראית על הבית — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: בן חור — Non-ASCII title (likely foreign)
+[22:08:53]   DELETED: בן־חור — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: בעידן האהבה והשוקולד — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: בעל זבוב — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: בריט־מארי היתה כאן — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: ג׳ונתן סטריינג׳ & מר נורל — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: ג׳ין אייר — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: דיוקנו של האמן כאיש קשיש — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: דני מטורטיה פלט — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: הבית ההולנדי — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: הזמיר — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: החיים השניים הקצרים של ברי טאנר — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: הכפית הנעלמת — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: המבוך הבוער — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: המכון — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: המלחמה הקדושה — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: המעון של מיס פרגרין לילדים משונים — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: העמק הגדול — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: הרפתקאה בפוסידון — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: הרץ במבוך — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: התחתונים המפחידים שלי — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: זיהוי תבניות — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: חלום האנדרואיד — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: יורשת האש — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: יפהפיות נמות — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: כולם היו בני — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: כל המשפחות המאושרות — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: לבד על מאדים — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: לפני שאפול — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: מבחני הכווייה — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: מורדים — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: מותו של סוכן [תכניה] — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: מזרן האבן — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: מחפשי האוצר — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: מים לפילים — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: מפת הימים — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: מר טיגריס מתפרע — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: מרד בזמן — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: משחקי הסוף — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: מתח על המים — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: נוירומנסר — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: ניצב כל הלילות — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: נלחמים כאחד — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: נפילה חופשית — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: סוד כתב החרטומים — Non-ASCII title (likely foreign)
+[22:08:54]   DELETED: סודות המותגים — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: סיבות להישאר בחיים — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: סנדמן — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: ספר שתי הדרכים — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: עין התודעה — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: עיר הדובים — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: עלטה — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: עלייתו של מספר 9 — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: עלילות ספיידרוויק — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: צופן המגפה — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: ציד המכשפות — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: קריאת הינשוף — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: רובוטית על אי  בודד — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: רובינזון קרוזו — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: רשימות מן המאדים — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: שיחות עם חברים — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: שירת הנחלילית — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: שירת סרטני הנהר — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: שישה עורבים — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: سد هارثا — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: विश्व कविता संचयन — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: Ḥashov ṿe-hitʻasher — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: Ḥikam al-Nabī Muḥammad ; naqalahu ilá al-ʻArabīyah ʻan al-Rūsīyah Salīm Qabʻīn — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: へッセ詩集 — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: らせん — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: ジェラルドのゲーム (文春文庫) — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: 人鼠之間 — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: 天路歷程 — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: 奧威尔文集 — Non-ASCII title (likely foreign)
+[22:08:55]   DELETED: 孝女耐兒傳 — Non-ASCII title (likely foreign)
+[22:08:56]   DELETED: 寓話 — Non-ASCII title (likely foreign)
+[22:08:56]   DELETED: 巴黎圣母院 — Non-ASCII title (likely foreign)
+[22:08:56]   DELETED: 拉丁學生 — Non-ASCII title (likely foreign)
+[22:08:56]   DELETED: 斯坦培克中短篇小说选 — Non-ASCII title (likely foreign)
+[22:08:56]   DELETED: 紫顔色 — Non-ASCII title (likely foreign)
+[22:08:56]   DELETED: 荒野之狼 — Non-ASCII title (likely foreign)
+[22:08:56]   DELETED: 论文学 — Non-ASCII title (likely foreign)
+[22:08:56]   DELETED: 還鄉記 — Non-ASCII title (likely foreign)
+[22:08:56]   DELETED: 阿瑟・密勒剧作选 — Non-ASCII title (likely foreign)
+[22:08:56]   DELETED: 雨果诗选 — Non-ASCII title (likely foreign)
+[22:08:56]   DELETED: 鲁滨孙飘流记 — Non-ASCII title (likely foreign)
+[22:08:56]   DELETED: 데미안 ; 향수 — Non-ASCII title (likely foreign)
+[22:08:56] Phase 2 complete.
+[22:08:56] 
+[22:08:56] === PHASE 3: Foreign-language title patterns ===
+[22:08:56]   DELETED: Abstraktion Und Einfuhlung — German title pattern
+[22:08:56]   DELETED: Auf der Asche der Welt — German title pattern
+[22:08:56]   DELETED: Auf der Jagd Nach Dunkelheit — German title pattern
+[22:08:56]   DELETED: Auf der Spur de Hoffnung — German title pattern
+[22:08:56]   DELETED: Auf der Suche Nach Licht — German title pattern
+[22:08:56]   DELETED: Bauern, Bonzen und Bomben — German title pattern
+[22:08:56]   DELETED: Bibliotheek der zielen — German title pattern
+[22:08:56]   DELETED: Denke Nach und Werde Reich Arbeitsbuch — German title pattern
+[22:08:56]   DELETED: Ein verzehrendes Geheimnis — German title pattern
+[22:08:57]   DELETED: Eine Bibliothek der Weltliteratur — German title pattern
+[22:08:57]   DELETED: Einfluss des HMG-CoA-Reduktase-Hemmers Lovastatin auf die Zusammensetzung der Lipoproteine — German title pattern
+[22:08:57]   DELETED: Farm der Tiere — German title pattern
+[22:08:57]   DELETED: Farm der Tiere / &#1060;&#1077;&#1088;&#1084;&#1072;&#1090;&#1072; &#1085;&#1072; &#1078;&#1080;&#1074;&#1086;&#1090;&#1085;&#1080;&#1090;&#1077; — German title pattern
+[22:08:57]   DELETED: Farm der Tiere / &#1605;&#1586;&#1585;&#1593;&#1607; &#1581;&#1740;&#1608;&#1575;&#1606;&#1575;&#1578; — German title pattern
+[22:08:57]   DELETED: Farm der Tiere / &#21160;&#29289;&#24196;&#22253; — German title pattern
+[22:08:57]   DELETED: Farm der Tiere / de Boerderij de Dieren — German title pattern
+[22:08:57]   DELETED: Finale. Die letzten Tage der Erde 12. Der Triumph — German title pattern
+[22:08:57]   DELETED: Fluss der Wunder — German title pattern
+[22:08:57]   DELETED: Frans Masereel, Illustrator der Werbegabe "Die Revolte der Maschinen" — German title pattern
+[22:08:57]   DELETED: Herr der Fliegen — German title pattern
+[22:08:57]   DELETED: Herz der Finsternis / Jugend / Das Ende vom Lied — German title pattern
+[22:08:57]   DELETED: Ich und die Menschen — German title pattern
+[22:08:57]   DELETED: In der Schwebe — German title pattern
+[22:08:57]   DELETED: Meister der Stimmen — German title pattern
+[22:08:57]   DELETED: Neun Tage und ein Jahr — German title pattern
+[22:08:57]   DELETED: Romeo und Julia — German title pattern
+[22:08:57]   DELETED: Sand and Foam : Ramal Wazabad, Sand und Schaum — German title pattern
+[22:08:57]   DELETED: Stad der Liederen — German title pattern
+[22:08:57]   DELETED: Steen Der Wijzen — German title pattern
+[22:08:57]   DELETED: Taal der Engelen — German title pattern
+[22:08:58]   DELETED: Wieviel Erde Braucht der Mensch? — German title pattern
+[22:08:58]   DELETED: Une porte sur l'hiver. — French title pattern
+[22:08:58]   DELETED: Une seconde chance (French Edition) — French title pattern
+[22:08:58]   DELETED: De klauwen van het woud — Dutch title pattern
+[22:08:58]   DELETED: De man die zijn schaduw zocht - Millennium 5 — Dutch title pattern
+[22:08:58]   DELETED: De moed van imperfectie — Dutch title pattern
+[22:08:58]   DELETED: De sangre y cenizas — Dutch title pattern
+[22:08:58]   DELETED: De smaak van droef en zoet — Dutch title pattern
+[22:08:58]   DELETED: De tijd van loslaten — Dutch title pattern
+[22:08:58]   DELETED: De verzamelde werken van A.J. Fikry, boekhandelaar — Dutch title pattern
+[22:08:59]   DELETED: De vrouw des huizes — Dutch title pattern
+[22:08:59]   DELETED: De vrouw die met vuur speelde — Dutch title pattern
+[22:08:59]   DELETED: De vrouw van de keukengod — Dutch title pattern
+[22:08:59]   DELETED: De zeven echtgenoten van Evelyn Hugo — Dutch title pattern
+[22:08:59] Phase 3 complete.
+[22:08:59] 
+[22:08:59] === PHASE 4: Junk entries ===
+[22:08:59]   DELETED: A Madness So Discreet Lib/E — Junk/placeholder entry
+[22:08:59]   DELETED: A Mencken Chrestomathy Lib/E — Junk/placeholder entry
+[22:08:59]   DELETED: After the Eclipse Lib/E — Junk/placeholder entry
+[22:08:59]   DELETED: All of Us Lib/E — Junk/placeholder entry
+[22:08:59]   DELETED: Allora Lib/E — Junk/placeholder entry
+[22:08:59]   DELETED: Angels & Demons [1/2] — Junk/placeholder entry
+[22:08:59]   DELETED: Assortment Amy Tan Backlist — Junk/placeholder entry
+[22:08:59]   DELETED: Belle Lib/E — Junk/placeholder entry
+[22:08:59]   DELETED: Best Fiction Sampler Ever 2015 - Howard Books — Junk/placeholder entry
+[22:08:59]   DELETED: Carolina Coast Collection : Beach Haven / Driftwood Dreams / Sea Glass Castle / Sampler of under the MagnoliasThe Carolina Coast Collection — Junk/placeholder entry
+[22:08:59]   DELETED: Cathedrals of Glass Lib/E — Junk/placeholder entry
+[22:08:59]   DELETED: Chaos and Cosmos Sampler, Part 1 — Junk/placeholder entry
+[22:08:59]   DELETED: Chaos and Cosmos Sampler, Part II — Junk/placeholder entry
+[22:08:59]   DELETED: Class Acts Kids' Ebook Sampler — Junk/placeholder entry
+[22:08:59]   DELETED: Crank Palace Lib/E — Junk/placeholder entry
+[22:08:59]   DELETED: Cressida Cowell Assortment Costco Canada — Junk/placeholder entry
+[22:08:59]   DELETED: Cressida Cowell Assortment Costco Canada 2 — Junk/placeholder entry
+[22:08:59]   DELETED: Crystal Clear Lib/E — Junk/placeholder entry
+[22:08:59]   DELETED: Daniel Berrigan Lib/E — Junk/placeholder entry
+[22:08:59]   DELETED: Death at Sea Lib/E — Junk/placeholder entry
+[22:08:59]   DELETED: Deception Point [1/2] — Junk/placeholder entry
+[22:08:59]   DELETED: Disney Before the Story : Mulan, Pocohontas & Snow White Lib/E — Junk/placeholder entry
+[22:08:59]   DELETED: Eight Stories From Rest of the Robots (First Law / Galley Slave / Lenny / Let's Get Together / Risk / Robot AL-76 Goes Astray / Satisfaction Guaranteed / Victory Unintentional) — Junk/placeholder entry
+[22:08:59]   DELETED: Endgame : Rules of the Game Lib/E — Junk/placeholder entry
+[22:08:59]   DELETED: Endgame Sampler — Junk/placeholder entry
+[22:08:59]   DELETED: Epicenter Sampler — Junk/placeholder entry
+[22:08:59]   DELETED: Every Arc Bends Its Radian — Junk/placeholder entry
+[22:08:59]   DELETED: Fearless Women Sampler — Junk/placeholder entry
+[22:08:59]   DELETED: Fierce Reads Chapter Sampler — Junk/placeholder entry
+[22:08:59]   DELETED: Gabrielle Zevin EBook Sampler — Junk/placeholder entry
+[22:09:00]   DELETED: Great Classic Science Fiction Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: I Am Still Alive Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: In a Handful of Dust Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: International Socialism 110 Spring 2006 — Junk/placeholder entry
+[22:09:00]   DELETED: International Socialism Summer 2001 — Junk/placeholder entry
+[22:09:00]   DELETED: John Dies at the End Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Just Look Up Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Kitchen Chinese Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Mahimata Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Marc Joseph — Junk/placeholder entry
+[22:09:00]   DELETED: Masterwork Learner Guide Fall 2012 — Junk/placeholder entry
+[22:09:00]   DELETED: Minotaur Sampler, Volume 14 — Junk/placeholder entry
+[22:09:00]   DELETED: Must-Read Teen Novel Sampler : For the Teen in All of Us — Junk/placeholder entry
+[22:09:00]   DELETED: News of the World Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: No Man's Land Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Outrun the Moon Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Penric's Fox Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Please Don't Tell My Parents You Believe Her Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Renegades Chapter Sampler — Junk/placeholder entry
+[22:09:00]   DELETED: Shards of Earth Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Shingles Audio Collection Volume 1 Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Simon the Fiddler Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Sol Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Something She's Not Telling Us Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Sophia of Silicon Valley Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Spin Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Spring 2023 Christopher Paolini 12-Copy Mixed Floor Display — Junk/placeholder entry
+[22:09:00]   DELETED: Stay with Me Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: Strange Dogs Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: That Summer in Maine Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: The Bird and the Blade Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: The Bone Shard Emperor Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: The Courtesan Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: The Fall of Babel Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: The Female of the Species Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: The Freeze-Frame Revolution Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: The Gatekeepers Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: The Girl with a Clock for a Heart Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: The Heavens May Fall Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: The Hod King Lib/E — Junk/placeholder entry
+[22:09:00]   DELETED: The Hundred-Year Walk Lib/E — Junk/placeholder entry
+[22:09:01]   DELETED: The Memory House Lib/E — Junk/placeholder entry
+[22:09:01]   DELETED: The Nesting Dolls Lib/E — Junk/placeholder entry
+[22:09:01]   DELETED: The Poison Study Short Story Collection Lib/E — Junk/placeholder entry
+[22:09:01]   DELETED: The Queen of Sorrow Lib/E — Junk/placeholder entry
+[22:09:01]   DELETED: The Remains of the Corps, Vol. 1 Lib/E — Junk/placeholder entry
+[22:09:01]   DELETED: The Silent Dead Lib/E — Junk/placeholder entry
+[22:09:01]   DELETED: The Unredeemed Captive Lib/E — Junk/placeholder entry
+[22:09:01]   DELETED: The Wise Man’s Fear [1/2] — Junk/placeholder entry
+[22:09:01]   DELETED: The Wise Man’s Fear [2/2] — Junk/placeholder entry
+[22:09:01]   DELETED: The last galley — Junk/placeholder entry
+[22:09:01]   DELETED: This Darkness Mine Lib/E — Junk/placeholder entry
+[22:09:01]   DELETED: Tor. com Publishing Fall 2015 Sampler — Junk/placeholder entry
+[22:09:01]   DELETED: Tor. com Publishing's Summer of Space Opera Sampler — Junk/placeholder entry
+[22:09:01]   DELETED: Tropic of Orange Lib/E — Junk/placeholder entry
+[22:09:01]   DELETED: Turning Points Lib/E — Junk/placeholder entry
+[22:09:01]   DELETED: Tyndale Biblical Fiction Sampler — Junk/placeholder entry
+[22:09:01]   DELETED: Undeading Bells Lib/E — Junk/placeholder entry
+[22:09:01]   DELETED: Vinium Lib/E — Junk/placeholder entry
+[22:09:01] Phase 4 complete.
+[22:09:01] 
+[22:09:01] === PHASE 5: Verbose/catalog-style titles ===
+[22:09:01]   DELETED: 1. Submarine Valleys on the Pacific Coast of the United States. 2. Standard Geodetic Data. 3. Early Spanish Voyages of Discovery on the Coast of California — Excessively long title (catalog entry)
+[22:09:01]   DELETED: A Notable Discouery of Coosnage, The Second Part of Conny-Catching, The Thirde and Last Parte of Conny-Catching, A Dispvtation Betweene a Hee and Shee Conny-Catcher — Excessively long title (catalog entry)
+[22:09:01]   DELETED: A Succinct View of the Rule in Shelley's Case; Exhibiting by Negative and Affirmative Propositions, the Instances in Which Several Limitations, ... do ... to the Ancestor. By Richard Preston, — Excessively long title (catalog entry)
+[22:09:01]   DELETED: A dissertation on the venereal disease. Wherein the opinions of the antient writers, about the use of mercurial frictions, are examined; ... Part II. By John Douglas, Surgeon, F.R.S. — Excessively long title (catalog entry)
+[22:09:01]   DELETED: A sermon, delivered in the Middle Church, New Haven, Con. Set. 12, 1822, at the ordination of the Rev. Messrs. William Goodwell, William Richards, and Artemas Bishop, as evangelists and missionaries to the heathen — Excessively long title (catalog entry)
+[22:09:01]   DELETED: An Essay in a Course of Lectures on Abstracts of Title to Facilitate the Study, and the Application of the First Principles and General Rules of the L — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Becoming More Than A Good Bible Study Girl Participants Guide Six Sessions On Living The Faith After The Bible Class Is Over — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Best of Twain (Adventures of Huckleberry Finn / Adventures of Tom Sawyer / Connecticut Yankee in King Arthur's Court / Innocents Abroad / Life on the Mississippi / Puddinhead Wilson / Roughing It / Tramp Abroad) — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Bloodsworn Trilogy Series, Set of 3 Collection Books. the Shadow of the Gods, the Hunger of the Gods, the Fury of the Gods by John Gwynne — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Brandon Sanderson's Fantasy Firsts : (the Way of Kings, Mistborn: the Final Empire, Rithmatist, Alcatraz vs. the Evil Librarians) — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Brief Retrospect of the Eighteenth Century. Part First in Two Volumes, Containing a Sketch of the Revolutions and Improvements in Science, Arts, and Literature During That Period. ; Volume 1 — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Bundle : ASE Test Preparation - A1 Engine Repair, 5th + NATEF Standards Job Sheets Area A1, 4th + MindTap Automotive Trades, 4 Terms  Printed Access Card for Hadfield's Today's Technician — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Bundle : Today's Technician : Automotive Suspension and Steering Classroom Manual and Shop Manual, 6th + Today's Technician — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Bundle : Today's Technician : Basic Automotive Service and Systems, Classroom Manual and Shop Manual, 5th + MindTap Automotive, 4 Terms  Printed Access Card + Online ASE Technician Test Preparation 2. 0 — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Christian Weapons Not Carnal but Spiritual - a Sermon Delivered in the Second Presbyterian Church in the City of Baltimore October 13, 1826 at the Ins — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Cixin Liu Bestselling Collecting Books Series, Set of 4 Books. the Three-Body Problem, the Wandering Earth, the Dark Forest and Death's End — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Danger in the Shadows/The Negotiator/True Devotion (Prequel and Book 1 in The O'Malley Series and Book 1 in the Uncommon Heroes Series) — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Essay in a Course of Lectures on Abstracts of Title - to Facilitate the Study, and the Application of the First Principles, and General Rules of Th — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Every Man's Bible NIV, Deluxe Heritage Edition, TuTone  – Study Bible for Men with Study Notes, Book Introductions, and 44 Charts — Excessively long title (catalog entry)
+[22:09:01]   DELETED: For Whom the Bell Tolls; The Snows of Kilimanjaro; Fiesta; The Short Happy Life of Francis Macomber; Across the River and Into the Trees; The Old Man and the Sea — Excessively long title (catalog entry)
+[22:09:01]   DELETED: General Index-Index of Names, Special Lists of Plants, Animals, Etc., Thieves' Vocabulary, Occasional Notes and Illustrations — Excessively long title (catalog entry)
+[22:09:01]   DELETED: George's Marvelous Medicine / The BFG / Matilda / Esio Trot / Fantastic Mr. Fox / Charlie and the Chocolate Factory / Charlie and the Great Glass Elevator / Danny the Champion of the World / The Magic Finger / The Twits — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Grace abounding to the chief of sinners, Heart's ease in heart trouble, The world to come, or Visions of heaven and hell, and The barren fig-tree — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Groats-vvorth of Witte, Bought With a Million of Repentance. The Repentance of Robert Greene, 1592. Edited by G.B. Harrison — Excessively long title (catalog entry)
+[22:09:01]   DELETED: Heart's ease in heart-trouble, or, A soverign remedy against all trouble of heart that Christ's disciples are subject to .. — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Hitchhiker's Trilogy (Hitch Hiker's Guide to the Galaxy / Restaurant at the End of the Universe / Life, the Universe, and Everything) — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Holy Bible Authorized or King James Version Old and New Testaments Translated Out of the original Tongues and with all Former Translations Diligently Compared and Revised Red Letter Edition — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Inheritance Games 4-Book Set by Jennifer Lynn Barnes (the Inheritance Games, the Hawthorne Legacy, the Final Gambit, the Brothers Hawthorne) — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Kahlil Gibran the Collection Vol. 1 (5 Books) Spirits Rebellious, the Broken Wings, a Tear and a Smile, the Madman, the Forerunner — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Kristin Hannah Collection 12 Books Set (the Women, the Nightingale, the Four Winds, the Great Alone, Winter Garden, Home Front, Wild and More) — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Kurt Vonnegut, Jr.; A Checklist Compiled by Betty Lenhardt Hudgens, Introduction by Vance Bourjaily; A Bruccoli-Clark Book — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Laws Relating to the Land Tax : Its Assessment, Collection, Redemption, and Sale; with a Statement of the Rights and Remedies of Persons Unequally Assessed; and an Appendix Containing All the Statutes in Force — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Lewis Carroll collection [of] 80 signed autograph letters, [all addressed to Miss E.G. Thomson, the artist, who illustrated his "Three sunsets"] with other interesting items connected with him — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Luftkastelletderblevsprngt stir up a hornets' nest of girl. Shi Dige Larsen. the Danish original. hardcover](Chinese Edition) — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Military Memoirs of the Great Civil War, Being the Military Memoirs of J. G.; And an Account of the Earl of Glencairn's Expedition, as General of His — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Nightbane (the Lightlark Saga Book 2) 12-Copy Indie Exclusive AUTOGRAPHED Collector's Edition Solid Floor Display with Limited Edition Page Overlay LIMITED QUANTITY — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Objections, submitted to the Governing Body of Christchurch, Oxford, against certain proposed alterations in the Great Quadrangle, May 16, 1873 — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Old Man's War Series: (Old Man's War, The Ghost Brigades, The Last Colony, Zoe's Tale, The Human Division, The End of All Things) — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Reasons why a party, among us and also among the confederates are obstinately bent against a treaty of peace with the French at this time — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Remarks on the speeches of William Paul, clerk, and John Hall of Otterburn, Esq., executed at Tyburn for rebellion, the 13th of July, 1716 ... — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Report of the case of the Queen against the commissioners of land tax for the division of Bradley Haverstoe, in the county of Lincoln — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Roald Dahl Collection (BFG / Boy / Charlie and the Chocolate Factory / Charlie and the Great Glass Elevator / Danny the Champion of the World / Esio Trot / Fantastic Mr Fox / George's Marvellous Medicine / Giraffe and the Pelly and Me / Going Solo James and the Giant Peach / Magic Finger / Matilda / Twits / Witches) — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Sherlock Holmes (Adventures of Sherlock Holmes / Memoirs of Sherlock Holmes [11 stories] / Sign of Four /  Study in Scarlet) — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Summerhill Secrets, Vol. 2 (House of Secrets / Echoes in the Wind / Hide Behind the Moon / Windows on the Hill / Shadows Beyond the Gate) — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Taith Christiana ai phlant, o Ddinas Dystryw, tua'r Ganaan Nefol, ar ol ei phriod: yn dangos am y blinderau mawrion a gyfarfu a hwynt ar y ffordd, a'u dyfodiad dyogel o'r diwedd pr wlad ddymunol — Excessively long title (catalog entry)
+[22:09:02]   DELETED: The Best of Roald Dahl (BFG / Charlie and the Chocolate Factory / Charlie and the Great Glass Elevator / James and the Giant Peach / Matilda  / Witches) — Excessively long title (catalog entry)
+[22:09:02]   DELETED: The Complete Adventures of Charlie and Willy Wonka (Charlie and the Chocolate Factory / Charlie and the Great Glass Elevator) — Excessively long title (catalog entry)
+[22:09:02]   DELETED: The Cornutor of Seventy-five. Being a Genuine Narrative of the Life, Adventures, and Amours, of Don Ricardo Honeywater, ... Written Originally, in Spanish, by the Author of Don Quixot — Excessively long title (catalog entry)
+[22:09:02]   DELETED: The Door in the Dragon's Throat / Escape from the Island of Aquarius / The Tombs of Anak / Trapped at the Bottom of the Sea — Excessively long title (catalog entry)
+[22:09:02]   DELETED: The History of the Life of the Late Mr. Jonathan Wild the Great, to Which is Added the Life and Actions of Jonathan Wild by Daniel Defoe — Excessively long title (catalog entry)
+[22:09:02]   DELETED: The Red Pyramid / The Throne of Fire / The Serpent's Shadow / Sword of Summer / Hammer of Thor / Ship of the Dead / Hidden Oracle / Dark Prophecy / Burning Maze / Tyrant’s Tomb — Excessively long title (catalog entry)
+[22:09:02]   DELETED: The holy war, made by King Shaddai upon Diabolus, for the regaining of the metropolis of the world, or, The losing and taking again of the town of Mansoul — Excessively long title (catalog entry)
+[22:09:02]   DELETED: The present status of the management training and development activities for the nonpromotable middle managers in the major American companies — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Tracts on I. the Definition and Nature of Cross Remainder, Ii. Fines and Recoveries by Tenant in Tail, Iii. Difference Between Merger, Remitter and Extinguishment, Iv. Estates Executed, Executory, Vested and Contingent, V. Contingencies with a Double Aspe — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Typee, a Romance of the South Seas. by : Herman Melville, Introduction by : Sterling Andrus Leonard : Sterling Andrus Leonard,Born : 1888 Died — Excessively long title (catalog entry)
+[22:09:02]   DELETED: Y rhyfel ysbrydol a wnaethpwyd gan Shaddai ar Biabolus er ennill yn ol fam-ddinas byd ; neu, golli ac ennill drachefn dref Man-soul — Excessively long title (catalog entry)
+[22:09:02]   DELETED: `Collection 3 Books of This Woven Kingdom Series. This Woven Kingdom and These Infinite Threads and All This Twisted Glory by Tahereh Mafi — Excessively long title (catalog entry)
+[22:09:02] Phase 5 complete.
+[22:09:02] 
+[22:09:02] === PHASE 6: Language tags in titles ===
+[22:09:02]   DELETED: Actitud Mental Positiva (Spanish Edition) — Foreign edition tag in title
+[22:09:02]   DELETED: Bloodsong - La Dame des Corbeaux & autres nouvelles (BRA.IMAGINAIRE) (French Edition) — Foreign edition tag in title
+[22:09:02]   DELETED: Britt-Marie Was Here Britt-Marie Estuvo Aquí (Spanish Edition) — Foreign edition tag in title
+[22:09:02]   DELETED: Ciencia Oscura Edición de Lujo 3. un Breve Instante de Claridad — Foreign edition tag in title
+[22:09:02]   DELETED: Cobra. Sonderausgabe — Foreign edition tag in title
+[22:09:02]   DELETED: Como Superar el Fracaso y Obtener el Exito (Spanish Edition) — Foreign edition tag in title
+[22:09:02]   DELETED: Con el Asesino Enfrente (the Killer Across the Table - Spanish Edition) — Foreign edition tag in title
+[22:09:02]   DELETED: Coups de feu dans la nuit (French Edition) — Foreign edition tag in title
+[22:09:02]   DELETED: Deus in machina (S F ET FANTASTIQUE) (French Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Drood (in French) (French Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Fria Revancha / Hard Freeze (Spanish Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Historia cero (Spanish Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Homme Demoli (Folio Science Fiction) (English and French Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: HÃ©sitation (French Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Korean Edition of The Violinist’s Thumb — Foreign edition tag in title
+[22:09:03]   DELETED: L'ASSASSIN ROYAL T.13 ; ADIEUX ET RETROUVAILLES (French Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: L'ange de la nuit, Tome 1 (French Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Luftslottet SOM Sprangdes [The Girl Who Kicked the Hornet's Nest] (Korean Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Man SOM Hatar Kvinnor [The Girl with the Dragon Tattoo] (Korean Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Millenium 1 (Paperback) Les Hommes Qui N'Aimaient Pas Les Femmes (French Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Monstruo viene a verme / A Monster Calls (Spanish Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: My Grandmother Asked Me to Tell You She's Sorry (Spanish Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Orgullo y prejuicio (Buque de letras) (Spanish Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Os Homens Que Odeiam as Mulheres (French Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Panic (HR +15 ANS +15E) (French Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Piense y Hagase Rico (Spanish Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Rebelion en la Granja (Spanish Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Rebelion en la Granja. Spanish Edition — Foreign edition tag in title
+[22:09:03]   DELETED: Temps Des D'Racin's(le) (French Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Twilight, Tome 1 (French Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Us Against You Nosotros Contra Ti (Spanish Edition) — Foreign edition tag in title
+[22:09:03]   DELETED: Winners, the Los Ganadores (Spanish Edition) — Foreign edition tag in title
+[22:09:03] Phase 6 complete.
+[22:09:03] 
+[22:09:03] === PHASE 7: Foreign suffix patterns ===
+[22:09:03]   DELETED: Avant Le labyrinthe - tome 4 L'ordre de tuer — Foreign suffix pattern
+[22:09:03]   DELETED: Batman white knight Tome 0 — Foreign suffix pattern
+[22:09:03]   DELETED: Blitz tome 1 blackout — Foreign suffix pattern
+[22:09:03]   DELETED: Christine T. Buchanan Read — Foreign suffix pattern
+[22:09:03]   DELETED: David Copperfield - Tome 2 — Foreign suffix pattern
+[22:09:03]   DELETED: David Copperfield - Tome I — Foreign suffix pattern
+[22:09:03]   DELETED: Delirium - Tome 2 - Pandemonium — Foreign suffix pattern
+[22:09:03]   DELETED: Fear Agent, Tome 2 — Foreign suffix pattern
+[22:09:03]   DELETED: Gnomon - tome 1 — Foreign suffix pattern
+[22:09:03]   DELETED: Gods of the Game, Tome 1 — Foreign suffix pattern
+[22:09:03]   DELETED: Idiot Tome 1 — Foreign suffix pattern
+[22:09:03]   DELETED: L'Assassin royal, tome IV — Foreign suffix pattern
+[22:09:03]   DELETED: Lily et po - Tome 2 - Fuites et poursuites — Foreign suffix pattern
+[22:09:03]   DELETED: Miss Peregrine, Tome 01 — Foreign suffix pattern
+[22:09:03]   DELETED: Miss Peregrine, Tome 03 — Foreign suffix pattern
+[22:09:03]   DELETED: Miss Peregrine, Tome 06 — Foreign suffix pattern
+[22:09:03]   DELETED: Ninja Kaplumbagalar Cilt 1 - Surekli Degisim — Foreign suffix pattern
+[22:09:03]   DELETED: O Livro Do Juizo Final — Foreign suffix pattern
+[22:09:04]   DELETED: SAGA - Tome 1 — Foreign suffix pattern
+[22:09:04]   DELETED: SAGA - Tome 3 — Foreign suffix pattern
+[22:09:04]   DELETED: SAGA - Tome 4 — Foreign suffix pattern
+[22:09:04]   DELETED: SAGA - Tome 6 — Foreign suffix pattern
+[22:09:04]   DELETED: Shades of Magic - tome 1 — Foreign suffix pattern
+[22:09:04]   DELETED: Temeraire -Par Les Chemins De La Soie tome 3 — Foreign suffix pattern
+[22:09:04] Phase 7 complete.
+[22:09:04] 
+[22:09:04] 
+[22:09:04] =============================================
+[22:09:04] CLEANUP COMPLETE
+[22:09:04]   Deleted: 0
+[22:09:04]   Skipped (has users): 0
+[22:09:04]   Total books remaining: 11958
+[22:09:04] =============================================
+[22:09:04] 
+[22:09:04] Log saved to: scripts/cleanup-log-20260321-220833.txt

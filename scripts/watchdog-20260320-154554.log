@@ -1,0 +1,7 @@
+[2026-03-20 15:45:54] [watchdog] === Enrichment watchdog starting ===
+[2026-03-20 15:45:54] [watchdog] Batch size: 25 | Sleep: 30s | Max restarts: 10
+[2026-03-20 15:45:59] [watchdog] Server is DOWN — attempting restart (1/10)
+[2026-03-20 15:45:59] [watchdog] Starting dev server...
+[2026-03-20 15:45:59] [watchdog] Killing stale processes on port 3000: 17412
+17443
+[2026-03-20 15:46:01] [watchdog] Dev server launched (PID: 17904)

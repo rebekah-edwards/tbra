@@ -1,0 +1,500 @@
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('3e6d7ab7-b3c2-4220-9b0d-2f5dd5c3d8b4', '012605dd-177d-48c6-9717-490e7ef05b30', '0b1718b8-d5c0-40b5-8c62-6d826434ce45', 5.0, 'inspired', NULL, 0, NULL, NULL, '2026-03-14 03:20:42', '2026-03-14T03:39:41.008Z', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('seed-review-seed-reviewer-001', 'seed-reviewer-001', 'da1b3889-6a00-44a4-b643-ea4625b4fbcf', 4.5, 'inspired', NULL, 0, NULL, NULL, '2026-03-13 13:46:06', '2026-03-13 13:46:06', '<p>Absolutely <b>loved</b> this book. The characters felt so real and the writing pulled me in from the first page.</p><p>I couldn''t put it down — stayed up way too late finishing it. The ending was <span class="spoiler-tag" data-spoiler="true">completely unexpected and left me in tears, especially when the main character finally confronted the truth about their past</span>.</p><p>Highly recommend for anyone who loves <i>emotionally rich</i> storytelling.</p>', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('seed-review-seed-reviewer-002', 'seed-reviewer-002', 'da1b3889-6a00-44a4-b643-ea4625b4fbcf', 3.0, 'contemplative', NULL, 0, NULL, NULL, '2026-03-09 13:46:06', '2026-03-09 13:46:06', '<p>It was fine. The prose was solid but the pacing dragged in the middle third. I kept waiting for something to happen and it didn''t really pick up until the last fifty pages.</p><p>That said, it gave me a lot to think about afterward. Sometimes the slow ones stick with you.</p>', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('seed-review-seed-reviewer-003', 'seed-reviewer-003', 'da1b3889-6a00-44a4-b643-ea4625b4fbcf', 2.5, 'angry', NULL, 1, NULL, NULL, '2026-02-28 14:46:06', '2026-02-28 14:46:06', '<p>I really wanted to like this but I couldn''t get past the halfway point. The writing felt clunky and the plot went nowhere.</p><p>Maybe it gets better but life is too short for books that don''t grab you.</p>', 45, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('seed-review-seed-reviewer-004', 'seed-reviewer-004', 'da1b3889-6a00-44a4-b643-ea4625b4fbcf', 5.0, 'devastated', NULL, 0, NULL, NULL, '2026-02-12 14:46:06', '2026-02-12 14:46:06', '<p>I am <b>wrecked</b>. This book destroyed me in the best possible way.</p><p>The way the author builds up to <span class="spoiler-tag" data-spoiler="true">the sacrifice at the end — when you realize the whole story was leading to this one impossible choice</span> is just masterful storytelling.</p><p>I ugly-cried on public transit. <i>No regrets.</i></p><ul><li>Characters: perfection</li><li>Plot: devastating</li><li>Would I read again? In a heartbeat</li></ul>', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('seed-review-seed-reviewer-005', 'seed-reviewer-005', 'da1b3889-6a00-44a4-b643-ea4625b4fbcf', 3.75, 'lighthearted', NULL, 0, NULL, NULL, '2025-12-14 14:46:06', '2025-12-14 14:46:06', '<p>Fun, breezy read. Not going to change your life but it doesn''t need to. Sometimes you just want a book that makes you smile and this delivers.</p><p>The humor lands more often than it misses and the characters are charming even when they''re being ridiculous.</p>', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('seed-review-seed-reviewer-006', 'seed-reviewer-006', 'da1b3889-6a00-44a4-b643-ea4625b4fbcf', 4.0, 'contemplative', NULL, 0, NULL, NULL, '2026-03-11 14:42:31', '2026-03-11 14:42:31', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('55aab934-ad04-4af7-a551-e7e5955d469b', '012605dd-177d-48c6-9717-490e7ef05b30', 'da1b3889-6a00-44a4-b643-ea4625b4fbcf', 3.5, 'devastated', NULL, 0, NULL, NULL, '2026-03-15 01:38:13', '2026-03-15 01:38:13', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('d20267e8-e140-4854-af1d-e29ff639702e', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '83c7c591-02d7-49cc-ac3f-a516434c0a09', 4.0, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-20T02:36:33.005Z', 'I loved the expansive worldbuilding and the presence of romance without it being a central theme of the entire plot.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('2c7727f2-0318-49f2-b3fa-8a9e713a9c29', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'db514228-8092-4813-80be-07b825b12fb7', 4.75, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-20T02:36:33.023Z', 'The Hunger Games was the series that got me back into reading as a 20-something, and I''m really grateful it did! I''ve re-read and re-listened to it countless times, and I find myself wanting to see Katniss'' success more more and more every time I read it. I enjoy that it stays dark and serious, yet still manages to inspire me to support the rebels of 12 (even before they know they''re rebels). I also adore both Peeta and Gale, and I think the way the potential love interests were developed was really well-done.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('e771f0b7-39c8-4e6a-aa6a-36d0ee697c51', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'b1554002-560e-49e5-8608-d913431cadc0', 4.25, NULL, NULL, 0, 4, 2025, '2025-04-21T12:00:00.000Z', '2026-03-20T02:36:38.725Z', 'I enjoyed this one so much! There’s a lot that would normally make me not love it — slower pacing, not super high stakes, etc. — but Jobson somehow drew me in and made me look forward to turning on this audiobook as often as I could.
+
+The MC and supporting characters are all distinctive, interesting, and people I wanted to know more about. He unfolded the world and the stakes of the plot in a way that left me craving more but that was never too fast or slow.
+
+It’s absolutely a cozy read, so if you’re looking for something with high stakes and filled with action, this one probably isn’t a read for right now. But it definitely scratches the itch for something both interesting and enjoyable without being overwhelming. Another LitRPG win!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('0260a237-270e-459d-9838-92c7b004b7a9', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'd8cda49e-f3c6-44a1-bdf6-3af0e9f420d6', 4.0, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-17 14:14:05', 'I''ve been a huge Potterhead since around my junior year of high school! While the first book in the series is very childlike and not the best of the bunch, I''m so grateful for the immersive universe and incredibly relatable and charming characters.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('7a5285aa-e800-4856-8eae-69270c6833e6', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '41e92797-3468-4ea8-96d8-98dc24d80151', NULL, NULL, NULL, 1, NULL, NULL, '2026-03-17 14:14:05', '2026-03-17 14:14:05', 'Lots of sexual content. Commentary about how the “real world” is so terrible because “insert leftist ideology.” So much swearing it’s hard to read. I just didn’t care about the story and I’d finished over 20%.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('2432cefe-e1bc-4bf5-b26b-d1f1c98ded21', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'a8d411c6-5b8d-41ff-8ec7-0ddd36eb2030', 4.5, NULL, NULL, 0, 5, 2025, '2025-05-04T12:00:00.000Z', '2026-03-18T20:10:24.906Z', 'It’s a different type of book for me, but I really liked this one! The pacing was fast, the humor was spot-on, and the book didn’t try to take itself too seriously.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('c9a6b262-4564-441f-97fb-d2240a2c49f1', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '338af347-9cfc-495f-8c8e-6d35766c5f1f', 4.75, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-18T20:10:25.327Z', 'This was my favorite standalone book for many years! It was the first adult novel that got me interested in reading more than just what I was assigned for school. The dark, brooding nature of the antagonist contrasts really beautifully against the hopeful innocence of the protagonist and his family. It''s one book I''d love to own a signed copy of one day because of its significance in my life!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('3b5312f4-d06b-4628-9a0c-032461614b8b', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '93971173-94a6-46d6-b814-76dee8924aa0', 5.0, NULL, NULL, 0, 9, 2025, '2025-09-03T12:00:00.000Z', '2026-03-18T20:10:26.342Z', 'One of the best books I have ever read! Action-packed from the first page, and I could not put it down. (And I just finished book 7 about 3 weeks after starting the first — I literally couldn’t wait to turn every page!)', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('f2f53b92-db16-4dc6-b368-6bc083e51269', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '925b5f7a-b845-4a90-9d14-55b33544f0a2', 4.5, NULL, NULL, 0, 3, 2025, '2025-03-01T12:00:00.000Z', '2026-03-18T20:10:28.578Z', 'I loved the semi-unserious attitude the main character speaks with. I also really enjoy reading books adapted for film. The relationships were really interesting in this book, and the cliffhanger ending left me wanting more.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('d9726721-f01b-4e13-93f3-730506bccdd5', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '2594f76d-3278-4b3d-9253-c16b8bcb0293', 1.5, NULL, NULL, 0, 9, 2025, '2025-09-03T12:00:00.000Z', '2026-03-18T20:10:30.613Z', 'I wanted a cozy, weird, dystopian read. Instead, I was treated to a cacophony of leftism barely disguised as a fun story about robots.
+
+I love this book cover. The concept of robots running a noodle shop in post-war San Francisco is, on its face, a fun conceit. And the book length makes it an easy read between longer books.
+
+But despite the fact that I *already* spend more time than the average person to try reading only books I’ll enjoy, the lack of proper labeling (IMO) meant that I didn’t know what I was getting into was a very politically charged portrayal of how it feels to be transgender in 2025 and why Donald Trump and MAGA are bad.
+
+Write that if it’s what you want. But why is it masquerading as a cozy read? It’s… not. I want to read content that doesn’t feel like Twitter-fueled rage.
+
+The prose is well-done, but the story falls apart because it’s not really about the story. It’s about a “message,” and if you’re tired of hearing that “message” lately, I would steer clear of this.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('de9ff70e-d39e-482c-a838-2276c40fb625', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '69089ed2-46a2-4b34-9801-6d31a77a79fd', NULL, NULL, NULL, 1, NULL, NULL, '2026-03-17 14:14:05', '2026-03-17 14:14:05', 'I hated the overkill of erotica. I thought the story was interesting, but it was way too much like just reading porn.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('ba1cbb0f-e950-4ae9-9250-b8ccecf5a657', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '303d53f0-26bb-48de-87c1-10e05f271f17', 4.5, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-18T20:10:37.813Z', 'Another win from this author for me! It’s less expansive, plot wise, than the first series in the DFZ by Rachel Aaron, but I still enjoyed the slow burn and fantastic world building.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('8bd56410-a48d-4f9a-a624-8cedc3e74f29', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'cf8a7374-1c6f-465e-92b9-ff358c4782ac', 3.0, NULL, NULL, 0, 3, 2025, '2025-03-27T12:00:00.000Z', '2026-03-18T20:10:37.872Z', 'It’s incredibly well-written, but the depressing gore, random open-door sex scene, and sad ending make this book not one for me.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('fe81f530-3375-439b-a525-cf869574248a', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '362433ea-52c6-4435-a7e3-9e02af7cdfcd', 4.0, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-18T20:10:45.507Z', 'I''ve re-listened to this audiobook many times. I love the characters, the development Ender experiences during his learning, and the twisted way the main plot concludes.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('970b75b4-ab94-4b78-b770-cb97fd3ddd62', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '7ef3bc1d-513e-4e30-b2c5-098a8fad7f87', 2.25, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-18T20:10:46.964Z', 'Ready Player One was a favorite of mine, but I found this sequel to be obnoxious to the point that I doubt I’ll re-read it again. The main character’s growth, albeit minimal, in the first story, is entirely undone in the opening few chapters of Ready Player Two. There is pandering to an LGBTQ+ audience that was entirely absent from the first book, and it feels like it was inserted to meet some sort of quota, rather than to be a meaningful representation of underrepresented classes. The story itself is much less interesting than the first book, too — it is essentially a repeat, in many ways, of the first story’s plot, but without the broad scale. The book ends with a deux ex machina that solves the entire problem of the book, and the plot device used has nothing to do with the main character. It just felt like the author got lazy and inserted easy ‘wins’ rather than making the plot interesting and allowing the characters to grow to pay off earlier topics.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('2a0f56d4-0edd-4992-ab3d-62c96e441156', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '8bc74c00-0882-43d8-a123-9e8e2db74c65', 5.0, NULL, NULL, 0, 8, 2024, '2025-04-25T12:00:00.000Z', '2026-03-18T20:11:11.864Z', 'One of my favorite reads in a long time! It kept me guessing the whole time, and I was quickly drawn to every character as they were introduced. Fantastic development. I also appreciated that the book was rather clean and sparingly used even profanity, completely skipping over the sexual content for which there was certainly opportunity.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('61efc12c-8412-4015-88e5-86df5701fe5e', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'a98a80ed-b283-4427-b45b-f4ac9bff28ee', 3.5, NULL, NULL, 0, 8, 2025, '2025-08-17T12:00:00.000Z', '2026-03-18T20:10:49.018Z', 'Prose: 0.75/1
+Development: 1.25/2
+Preference: 1.25/2
+
+I love some LitRPG, but this one was hard for me. The pacing was super slow, and it didn’t really feel like there was a clear direction for the plot until the very end. I wanted to like it more, but won’t be continuing the series.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('9591b5db-b2f9-4f3f-a968-663fbebd0eee', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'a053d40d-00be-4c7e-8e81-76d9c0beb26c', 2.5, NULL, NULL, 0, 4, 2025, '2025-04-19T12:00:00.000Z', '2026-03-18T20:10:49.415Z', 'The world building was really roughly developed and difficult to immerse myself in, and the FMC’s constant, paralyzing fear of an attempted SA in her past was confusing at best.
+
+In some ways, this book just wasn’t a good fit for me — the slow burn romance was absolutely the central plot point, and that’s not really the kind of thing I enjoy reading.
+
+I appreciated that it did stay clean, as marketed, and I do think there were a lot of good bones to the story. The author nailed the twist ending. But it could have really benefited from a more thorough developmental edit.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('f94eb36a-9362-43c6-8c0c-188d9afaf6a2', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '94b31229-6d32-4f1e-ba74-ee9425ee3824', 4.5, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-18T20:10:50.407Z', 'I read non-fiction maybe once a year, but this one was worthwhile (and I''ve read it twice over the last several years). It was a very inspiring experience, especially as I read it after being laid off from a ''dream job'' and not knowing how to begin dreaming again.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('eebf8486-5e51-47b3-9483-3b776fbc9924', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '50ab0939-81f6-4c27-8590-240e57e6c06b', 3.0, NULL, NULL, 0, 7, 2024, '2024-07-07T12:00:00.000Z', '2026-03-18T20:10:56.146Z', 'This was a book I WANTED to love more than I ACTUALLY loved it. The premise is intriguing — every 4 years, the remaining members of humanity have their memories wiped clean. This is thought to prevent war, hatred, and all manner of vile human behavior.
+
+However, the story''s scale felt somehow very limited because of the self-imposed design of the story. This might be due to the fact that it''s the first of a series, but it felt like there was very little monumental payoff for the price offered by the main characters.
+
+Overall, it was an okay read, but I wasn''t overly impressed enough to consider re-reading it anytime soon.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('ff1724d4-fcd2-43d3-9ba7-f233cdd7b95d', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'b6c9c39a-4c60-4cad-b2f0-d0ee808d40d1', 4.5, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-18T20:10:57.781Z', 'I love The Reckoners series! The worldbuilding felt unique and engaging, and the story kept me hooked from the beginning. I enjoyed the fast pace, and I thought the unfolding of the plot twists was done really well.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('772a1630-9a05-473e-b927-cd6cb65ba749', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '79e9ad14-f708-4001-8c78-8d1f66bd78b7', 4.75, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-18T20:10:58.818Z', 'The audiobook for this is a consistent re-listener for me. I love Mark Watney''s scientific genius delivered with biting, sarcastic humor. I was brought to tears by the emotional reunion he experiences as the book closes, and it was absolutely a book I never wanted to put down!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('276e3d89-586b-48a1-a466-f8b140f76e3d', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '0b1718b8-d5c0-40b5-8c62-6d826434ce45', 5.0, NULL, NULL, 0, 8, 2024, '2024-08-09T12:00:00.000Z', '2026-03-18T20:10:59.132Z', 'This is one of my favorite books of all time! It''s interesting from page one, and the twists and turns make it even better. It''s great for science nerds like me, but the story and characters are incredibly engaging regardless of how much you enjoy geeking out.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('37eb6044-14f3-491b-a57f-96ea8b86659e', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '77a9946d-e973-4b4a-90dc-73b207a7bc84', 1.0, NULL, NULL, 0, 6, 2025, '2025-06-01T12:00:00.000Z', '2026-03-18T20:10:59.535Z', 'This book should have been such an easy 5-star read for me — funny, fast, and about kaijus on another planet.
+
+Instead, it’s 2/3 progressive politics — for some reason?! — and 1/3 poorly written monster lore. It takes until the final ~50 pages of the book to get to a legitimate plot, and I couldn’t tell you anything about what the kaijus look like except “big” and “with parasites”
+
+Genuinely, I wanted to DNF this book in the first chapter based solely on the wildly unnecessary political commentary (and everyone loves to think about COVID, right?!). I only kept going because a) it was so short and b) I was convinced he couldn’t CONTINUE with that commentary and c) I wanted to write a legitimate review.
+
+I understand if you’re not into conservative politics. But if that’s what you want to talk about, just be honest about it and WRITE ABOUT THAT; don’t create a thinly veiled YouTube rant disguised as a monster “pop song.”', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('f32a836f-2879-417c-a7b1-0d7ccd437df8', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'bc062c13-d5e6-4a57-a969-f3e9761864dc', 5.0, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-18T20:10:59.570Z', 'The original Red Rising trilogy is absolutely tied one other series as an all-time favorite! I love the characters, the absolutely unexpected twists and turns, and the political intrigue that doesn''t become so broad it''s impossible to follow. I can''t say enough good about this book!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('9f07f134-1306-44e8-b1e6-db4b669172d8', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '6a5c90d7-e607-427b-afef-8e8c0471cb6c', 5.0, NULL, NULL, 0, 6, 2025, '2025-06-05T12:00:00.000Z', '2026-03-21T02:05:43.847Z', 'Literally, how does this book get away with being so good?! Red Rising vibes, but somehow a completely separate sort of story. I love the MC for <span class="spoiler-tag" data-spoiler="true">being not another “omg I never knew I was perfect at everything” repeat.</span> The story hooked me. It was absolutely impossible to put down. And the ENDING! Holyyyyy cow. Out of nowhere. 
+
+I can’t say enough good. Absolute banger.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('d6776f0b-00c5-44c6-8e45-6e94461112e7', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '4943ecb0-529a-4653-928e-c1e1fe9c9448', 4.25, NULL, NULL, 0, 7, 2025, '2025-07-06T12:00:00.000Z', '2026-03-18T20:11:05.192Z', 'This is one of my favorite re-readers! I love the focus on nerdy lore, from D&D to video games and everything in between. The only reason I didn’t rate it higher is because the character tends to be very whiny and self-centered, and he doesn’t grow much as a person throughout the book. The experience was positive in spite of the main character, rather than because of him.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('394a712c-49fa-4ab1-b9e6-7fdbf58a9740', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '243ec99b-0051-4701-940d-c15e86eba9f4', 4.25, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-18T20:11:08.918Z', 'I loved learning more about President Snow''s origins, and I found myself constantly intrigued by the next thing Lucy Gray Baird would say or do. The development of the Hunger Games themselves was a fascinating take on a follow-up to such a beloved trilogy. I found myself fascinated by the morally grey mindset of Coriolanus Snow, and even as his evil nature was exposed, a big part of me wanted to see some sort of satisfying ending to his and Lucy Gray''s bizarre love story. I liked the unanswered questions of the ending, too.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('7b51242f-2a66-4ea0-b473-2784323dc4b2', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '6f3cb7f0-0d2f-4af9-87c5-7e000f92c931', 4.0, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-18T20:11:10.431Z', 'This was a great read! I adore the math and physics side of this nerdy sci-fi, and I enjoyed it enough to read it in a single sitting. My only complaint was that the final 10-15% of this book moved too quickly compared to the rest, making the ending feel somewhat rushed compared to the way the rest of the plot was laid out.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('25b5a610-2c16-42a4-a28f-374ad07a0259', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '2806006f-c855-4c5f-a7ab-1c6ae5e63883', 3.75, NULL, NULL, 0, 3, 2025, '2025-03-01T12:00:00.000Z', '2026-03-18T20:11:10.440Z', 'I adore all of the books in Panem, but this one was my least favorite of the five. As much as I was engaged with Haymitch''s story in a way I didn''t want to put the book down, I found there to be two things that genuinely bugged me that made me rate this lower than I would rate the other books in this world. One, an important plot point <spoiler>(Haymitch''s quick and almost completely unexplained interest in joining a rebellion led by Plutarch)</spoiler>felt way too easy rather than a well-developed storyline. Two, the appearance of so many characters we knew from the original trilogy of Songbirds and Snakes started to get really heavy-handed and, honestly, felt more like lazy fan fiction than the creation of new and complex characters that I''m accustomed to getting from Collins. By the time she introduced <spoiler>Effie Trinket</spoiler>, I was genuinely frustrated and wanted to meet new and different characters.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('5de636bc-0d12-4a76-ac39-ed71135773e8', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '5b39369d-e7dd-40d5-9f4a-bde8df20aeed', 3.0, NULL, NULL, 0, 8, 2025, '2025-08-31T12:00:00.000Z', '2026-03-18T20:11:10.441Z', 'This book had some good bones as a silly fantasy read — it’s funny, the MC is an absolute goober, and the concept is unique.
+
+However, the story was all over the place, there were several very unclear events/plot points, and the main conflict was introduced at 71% of the way through the book (resolved at ~97%).
+
+It’s a fast read, and the writing is simple enough that it’s not difficult to finish. But I think a heavier hand in editing could have really made it a blast to read, rather than something I finished because it wasn’t very long.
+
+DISCLAIMER: I was given a free eARC copy of this book in exchange for an honest review.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('926739aa-1545-49d1-ad43-37272fdd917f', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '1f8dac82-35e9-41f9-84f1-eb4ed3ea2474', 4.25, NULL, NULL, 0, 3, 2026, '2026-03-08T12:00:00.000Z', '2026-03-18T20:11:13.945Z', 'I get nervous about self-published works, but this absolutely stands out. There were some editing problems (about 3x where scenes repeated with different versions), but I still really enjoyed the read! It’s based in a real scientific problem, not woke ideology masked as a story, and it’s well-written.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('9b6b2b0a-5cb2-488a-b291-db64987c9315', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '5c91301d-7495-4930-a18c-78da7035abe4', 5.0, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-17 14:14:05', 'This is my FAVORITE of the entire Harry Potter series! The development of Voldemort''s early life through memories is the strongest part of the plot for me, but in general, I loved the way the author was able to unfold shocks and surprises despite the familiarity of the characters by this point in their Hogwarts education. The antagonist was really interesting (especially the very morally grey way he operates), and the book felt more mature than its "middle-grade" tag, which I appreciated since it felt like these books grew with their main characters.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('3d586b82-1313-4702-98fc-52d48083d915', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'c7a32044-f108-48cf-ae9a-06b68fc7b573', 4.0, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:14:05', '2026-03-18T20:11:15.049Z', 'The massive stakes of this plot dragged me in from the first page. It was slower-paced, which can be hit or miss for me, but I loved the way the story progressed through so much plot as well as time. I also really enjoyed the nerdy science angle of this one with so much description of how the book''s opening scene would be handled using contemporary science, astronomy, and space travel tech.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('970f097a-4925-42f5-9e49-3d6660f7619e', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'dbec0eab-3a90-48ab-89db-b4d78b64eb1e', NULL, NULL, NULL, 1, NULL, NULL, '2026-03-17 14:14:05', '2026-03-17 14:14:05', 'The writing was very clunky and so many plot points were introduced at once in a way that felt overwhelming and confusing. I didn''t see myself feeling connected in any way to the MC, and I didn''t think I''d be able to connect to the story for those reasons.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('97d0f063-4ed6-40d4-ae6f-f84c857a3d2e', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'c0eda33e-01fd-4610-b21f-b7b28c99f9ab', 3.0, NULL, NULL, 0, 6, 2025, '2025-06-01T12:00:00.000Z', '2026-03-18T20:11:16.693Z', 'I was very bought into the concept, but the execution left something to be desired. I think the story could have benefited from fewer main characters or a bit more development of the story.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('eb99c30b-2654-4ea8-a47a-24659a2f1a91', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '115da456-c530-457e-b9fb-6ec4aa1753e7', 4.0, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:40:51', '2026-03-17 14:40:51', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('7f1807b8-7bd4-46bc-a6f9-e9a1a6ca4cab', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '2b22fc3f-0ebe-4070-8275-f2aa4d677744', 3.5, NULL, NULL, 0, NULL, NULL, '2026-01-14T12:00:00.000Z', '2026-03-18T20:10:44.217Z', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('a902a624-dac6-4fbd-bce5-2f1b032f8e89', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '2e47d2a2-b903-4026-82e6-fca9eeafe416', 4.5, NULL, NULL, 0, NULL, NULL, '2025-01-01T12:00:00.000Z', '2026-03-18T20:10:50.727Z', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('d72896d6-38d3-43c8-acb9-66aafe1a2cea', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '312072fb-ed9a-4162-839e-5b906736ec46', 4.5, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:40:51', '2026-03-18T20:10:41.168Z', 'This fantasy read scratched the itch of wanting a creative magic system with some — but not excessive — romance. The pacing was satisfying, and its broody tone was great for the mood I was in!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('30472ac7-680c-4113-a5d8-e31853c5ac87', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '409df3da-893b-4ccb-99ef-847ab90bd491', 4.0, 'mind-blown', NULL, 0, NULL, NULL, '2026-02-27T12:00:00.000Z', '2026-03-19T00:25:48.014Z', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('1e5df87a-3cdd-4f93-805c-359aa264ce56', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '4c6aaeef-5b1f-4fe7-af7f-7e62d9f9abd3', 4.5, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:40:51', '2026-03-17 14:40:51', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('d173d461-1636-4a3c-a773-2c59b3857e5e', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '5d581f78-6a02-4151-8af6-50589168532e', 4.5, NULL, NULL, 0, NULL, NULL, '2026-02-28T12:00:00.000Z', '2026-03-18T20:10:45.558Z', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('5c6c2ff9-e320-4ecc-950e-82dbd89e65ae', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '5ddfa059-5c54-4888-a0d7-565ede82795b', 2.0, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:40:51', '2026-03-17 14:40:51', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('f9cf287f-4e2e-43d9-84ab-6e243effcd69', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '6f55fa92-6688-4f09-8dda-e3bc027d798a', 4.5, NULL, NULL, 0, NULL, NULL, '2024-07-07T12:00:00.000Z', '2026-03-17 14:40:51', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('bc8aa609-ce46-4005-b54d-1385a4d53de5', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '7befbf9a-ff45-4aaa-8720-5e2f75147216', 3.25, NULL, NULL, 0, NULL, NULL, '2026-03-02T12:00:00.000Z', '2026-03-18T20:10:53.065Z', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('af4fab0d-5596-46c5-a517-5cb044bf22a8', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '9317eaed-2e64-431b-b3f8-9c0cb08b667f', 3.75, NULL, NULL, 0, NULL, NULL, '2026-03-09T12:00:00.000Z', '2026-03-18T20:10:50.747Z', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('774967a4-a03b-4c39-a8bc-ff23c3a45211', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '9e6891d8-55ad-4aef-aafa-df7210fa4ec2', 3.75, NULL, NULL, 0, NULL, NULL, '2026-02-24T12:00:00.000Z', '2026-03-18T20:10:27.895Z', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('104fe0f0-b5bd-49a9-9108-d4b5b0b6c31d', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'a6745cee-a91f-4a43-a23d-0ed2234c1ed7', 4.0, NULL, NULL, 0, NULL, NULL, '2026-02-14T12:00:00.000Z', '2026-03-18T20:10:58.168Z', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('ee8ea933-43a3-4e36-a26f-c4a6ed5d4cbc', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'cbb4d435-1b8b-4900-b7a3-01c9f46f68fe', 3.5, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:40:51', '2026-03-17 14:40:51', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('39bdfc33-d796-446d-a139-908cbfad3eae', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'dd17436c-c6b1-4e93-807a-87029694e82d', 4.75, NULL, NULL, 0, NULL, NULL, '2026-03-17 14:40:51', '2026-03-18T20:10:28.231Z', 'This is a major re-reader for me! I adore the characters, I deeply appreciate the well-developed magic system, and I think it’s an interesting take on societal systems without feeling political or preachy.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('67fe3ddc-8879-4a57-b4fd-09d2c2e7c7f9', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 'e53e17b1-bc6a-4615-8049-4a25b37211c7', 3.5, NULL, NULL, 0, NULL, NULL, '2025-03-01T12:00:00.000Z', '2026-03-17 14:40:51', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('bebacb00-a546-452e-9215-64c20e5b8d0a', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'f8d4122f-2d57-4a02-900b-ada7d355729b', 4.0, NULL, NULL, 0, 12, 2021, '2021-12-09T12:00:00.000Z', '2026-03-17 23:30:21', 'I cannot remember if I had ever read this book as a kid or not, so I’m going to treat it like a first time read. 
+
+I do, however, remember my freshly-turned 12-year-old self seeing it in the theatres on Christmas Day 2005 & being absolutely blown away. 
+
+Between the many rewatches of the movie & the countless Sunday school lessons mentioning it, I have pretty much every step of the story memorized. So I was a less than surprised by the twists & turns. 
+
+I can’t review the storyline as much for that reason, but I can say one thing: if children’s theology was a genre, this book would be the definitive title. 
+
+Lewis’ ability to break down theology (Mere Christianity) on a doctorate level is only matched by his ability to explain it allegorically in a way that children can understand. 
+
+Some lines of this story (“‘Course he isn’t safe. But he’s good.” for example) will stick with me for a long time. 
+
+It’s a quick, easy read, but it’s written in a way that becomes more complex as you chew on it. Classic fantasy isn’t everyone’s cup of tea, but Lewis did something here that may never be redone. 
+
+I’m very excited to dive into the next six books, which I do not remember nearly as well.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('55db2c1c-a5d4-4598-9359-b9daed32e9d8', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '0b1718b8-d5c0-40b5-8c62-6d826434ce45', 5.0, NULL, NULL, 0, 2, 2026, '2026-02-26T12:00:00.000Z', '2026-03-20T00:52:48.486Z', 'This book is exactly what sci-fi should be. 
+
+Doesn’t have much readability for me? No. However, it made me feel too much to give it anything less than five stars. 
+
+That is genuinely all I can say without giving spoilers. 
+
+This is also the first time I’ve ever read a book exclusively on audiobook. I can’t believe I was actually able to pay attention to an audiobook. Wild!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('8a6f881c-f18b-463a-88ab-2f828841c3d8', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '6fd605bc-66e3-4479-a539-6b6aef575f8e', NULL, NULL, NULL, 0, 2, 2026, '2026-02-25T12:00:00.000Z', '2026-03-17 23:30:21', 'Alternate title: Gavin & the Terrible, Horrible, No Good, Very Bad Day. 
+
+This one was a roller coaster. Not in quality but in emotion. 
+
+The growth in Kip was so fun to witness little by little. He’s becoming the hero Gavin was but also never could be. 
+
+Cruxer will make my all time character list. He had a few more moments in this book that had me cheering. 
+
+Also, Teia, Karris, The White. And all the twists at the end that I genuinely didn’t even see coming! 
+
+The hardest part of this is waiting until I get home tog ran book 4! 
+
+Can’t decide if it’s my favorite or second favorite so far. I’ll need some time to process it.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('18f17276-e4b1-496f-a28f-9ec3e7a519d2', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '83a9ade3-360a-4e4f-b070-9e0040ca9d6f', 5.0, NULL, NULL, 0, 1, 2026, '2026-01-13T12:00:00.000Z', '2026-03-20T00:52:48.518Z', 'This ending has me wigging out! 
+
+I do think this book was a slight improvement on book 1, even though they were both easy five star reads. 
+
+Liv went from one of my favorite POVs to the chapters I dreaded the least. 
+
+Any chapter taking place around The Color Prince had me counting the pages, but that probably just says something about how little I care for villains. 
+
+Kip’s growth through this book was such an incredible experience that I was nearly jumping out of my seat for the last six chapters. He’s becoming an all-timer for me. 
+
+The plot twists at the end had my jaw dropping. I can’t think of an author that has done that so successfully in nearly every book he’s written. From all four Night Angel novel to both Lightbringer books I’ve read thus far, he’s really had me enthralled. 
+
+Ironfist & Teia both became very dear to me within these pages & I look forward to spending more time with the for three more books. I’m genuinely dreading the day that I will have nothing new from this world to read.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('c2916e93-04ed-44e8-b5b2-ec50d74da959', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '72fce70b-416d-449b-acd5-4e28ecf467de', 5.0, NULL, NULL, 0, 12, 2025, '2025-12-03T12:00:00.000Z', '2026-03-20T00:52:48.527Z', 'What an experience! I couldn’t put it down! Spent the second half of NaNoWriMo struggling to write my own while obsessing over this one. 
+
+It’s been a while since I’ve read a book where I genuinely enjoyed every character. Flawed as they are, I rooted for them all. Kip. Live. Gavin. Karris. Corbin. Ironfist. 
+
+This book made me laugh & cry & drop my jaw. The amount of bombs in the last 25 pages had aching to pick up the second one. 
+
+This was an easy five stars & it will slip into my all time list. We’ll see as I finish the whole series how many fall among the top for me.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('ec40e53d-d3ad-403b-ac4a-814e17954660', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'e7995c7b-79c5-4cf7-b09e-87094939bede', 4.0, NULL, NULL, 0, 11, 2025, '2025-11-15T12:00:00.000Z', '2026-03-20T00:52:48.528Z', '[SPOILER]
+Issue 150 hit me so hard. The culmination of years of my life wrapped into one beautifully bittersweet conclusion. 
+
+It was the longest volume by far & I still finished the whole thing in just over 24 hours. I had to know how it ended! 
+
+There were two things that keeps this from retuning to the five star form of the Tom Waltz run:
+
+1. Oddly enough—and I can’t believe I’m saying it—the Waltz issues were the worst part of this entry. 
+
+The Armageddon Game was teased for a couple dozen issues as this grand chess game with multiple villains & it ended up being a one-issue long battle. I found it disappointing. 
+
+2. After the incredible issue that ended the main storyline, I was left with a five issue mini series. It wasn’t bad, but it lessened the emotional impact of seeing the story end the way 150 closed it all up. 
+
+The final 13 issues of the main run were with the ride of admission. This is still the definitive version of the Teenage Mutant Ninja Turtles.
+[/SPOILER]', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('a772e544-7061-4f6b-b0f2-cba78b826e61', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'a8db900d-3b76-4228-b58a-ec9f9f0741c8', 3.0, NULL, NULL, 0, 11, 2025, '2025-11-13T12:00:00.000Z', '2026-03-20T00:52:48.528Z', 'The fantasy equivalent of pulp science fiction. 
+
+I had as much fun with this book for the first two acts as I had with all of Streams of Silver, but the final third felt fairly exhausting. 
+
+The relationships between the characters are forced & rushed. I found myself confused at every interaction that Catti-Brie had with both Drizzt & Wulfgar. But then again, am I reading Forgotten Realms books for romance? 
+
+The adventure was fun. The creatures they encountered were bizarre. The action was solid. It was a fun book about Drizzt & I really have no complaints. I also doubt I’ll ever read it again though. 
+
+All in all, the final two entries of this trilogy served their purpose: fun ‘90s fantasy that put a smile on my face.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('df78469b-67b7-486d-9423-04c77aaf3067', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'dff989bf-0efb-47c8-9271-e20dcbba6db9', 3.0, NULL, NULL, 0, 10, 2025, '2025-10-30T12:00:00.000Z', '2026-03-20T00:52:48.530Z', 'I read this book very slowly, a few chapters here & there with my quiet time in the mornings. I wanted to slowly digest it & dwell on it alongside scripture. 
+
+Given the time in which it was written, the translation required, & the subject matter at hand, it was a struggle for much of it. 
+
+But the parts that jumped out to me were incredible. 
+
+“Whatever lacked this name, no matter how learned and polished and veracious it was, could not wholly capture me.” 
+book 3, chapter 4 (Cicero’s Incluence)
+
+I appreciate how much Confessions changed Latin literature. It is truly one of the most influential pieces of writing in not just the Church but the world. Anyone giving blatantly bad reviews simply cannot see beyond the surface. It wasn’t a fun read, but it was an important one that I’m glad to have completed.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('a99ef2a8-5692-4f78-a0e3-c000f590faa6', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'e01cf599-a511-4974-b062-43eb5d7bc18a', 4.0, NULL, NULL, 0, 10, 2025, '2025-10-29T12:00:00.000Z', '2026-03-20T00:52:48.531Z', 'I’m really torn between 4 & 5 stars for this one. 
+
+I’ve never had my enjoyment jump quite this drastically between the first & second installment of a series. 
+
+While I struggled to get through The Crystal Shard, I had to convince myself to put Streams of Silver down. I had a few very late nights with this one in my hands. 
+
+I wouldn’t say the quality changed all that much. It is still very clearly a 1980s fantasy novel. 
+
+I took a sizable gap between the two books, so I can’t dissect my contrast between my levels of enjoyment too much, but there were a few aspects that jumped out to me. 
+
+1. Adding Catti-Brie’s POV to the villain chapters helped make those less of a slog. I cared so little about Akar Kessell in The Crystal Shard that devoting entire chapters to him almost ruined the book alone. And while Artemis Entreri is more interesting, Catti-Brie still helped that pacing issue for me. 
+2. The party stayed together. Seeing the dynamics of the main four characters really drove him the personalities & arcs at work. I wasn’t in love with any characters before this book. Now I can say that I love all of our mainstays. You could truly feel the found family element this time around. 
+3. I’ve never seen a movie contain the word, copse, this much.
+
+It was a roller coaster from beginning to end. It truly felt like a DnD campaign. Why more could I ask for from Salvatore? It was a blast!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('a9ccc79b-460d-40c3-a9ac-0a3812524cbb', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '24674cb3-b14c-4f83-9fbe-26ec9d758c30', 4.0, NULL, NULL, 0, 10, 2025, '2025-10-20T12:00:00.000Z', '2026-03-20T00:52:48.532Z', 'This is the most I’ve enjoyed a volume since Tom Waltz left. 
+
+It did feel more like a setup to the last part of the IDW story. A lot of exposition & splitting up the party to bring them all back together for a big battle. 
+
+One volume away from the end & I’m very excited to pick in up!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('8e82728b-4088-4bec-a98d-352dfc3f2b89', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'b2c45f9f-d771-48b8-b988-a3eb3255eff8', 2.0, NULL, NULL, 0, 10, 2025, '2025-10-08T12:00:00.000Z', '2026-03-20T00:52:48.558Z', 'This is not a good book. 
+
+The prose felt at a third grade reading level. 
+
+Every character was just so intolerable. 
+
+It got slightly intriguing for a few chapters before changing POVs & getting even worse than before. 
+
+This twist was so ridiculously stupid that I was waiting to find out it was a dream. I can’t believe that would have been an improvement. 
+
+Judging by the average rating, is this really good for contemporary fiction? Are they all this bad? 
+
+Maybe I’m just not the target demographic. 
+
+Anyway, back to epic fantasy for me!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('e2e6ab98-406b-49a3-8be3-01f17c3d17a8', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'a68842cc-c9a0-4489-a8c3-c57b01961461', 4.0, NULL, NULL, 0, 10, 2025, '2025-10-04T12:00:00.000Z', '2026-03-20T00:52:48.569Z', 'Three opinions about Night Angel Nemesis:
+
+1. I hate first person narrations, especially when it’s gimmicky like this. 
+2. This book was 200-300 pages longer than it needed to be. 
+3. I love Brent Weeks enough that the first two points don’t matter.
+
+It’s been so long since I’ve gasped at the end of a book. Masterful work here. 
+
+I missed all the characters from The Night Angel Trilogy so much, especially Logan & Vi. I do wish we’d seen more of them both, but the major players all stayed true to themselves & it was like revisiting old friends. The new character fit right in as well! 
+
+The villain truly upped the stakes from the last books & I was glued to the page from start to finish not I hadn’t gotten married two weeks after starting it, I would’ve flown through it just like the other Weeks books!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('f8a3c958-c50e-45c4-8c6b-43744b713e21', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '429bb0cc-13f7-441a-be3e-836c77cbd2c8', 4.0, NULL, NULL, 0, 8, 2025, '2025-08-31T12:00:00.000Z', '2026-03-20T00:52:48.581Z', 'Let’s put aside the fact that this was the most physically beautiful book I’ve ever read. 
+
+Isles of the Emberdark really grew on me.
+
+Part one was a bit of a chore. The flashbacks really threw off the pacing for me, but I’m not sure if there was a better way to have done it, except maybe just including Sixth of the Dusk in the beginning separately. 
+
+I found the world interesting but a little boring compared to most Cosmere works. But once Starling & her crew showed up, I was fully on board. It was like the Cosmere’s very own Firefly crew & I was eating it up! 
+
+The message was uplifting, the characters were a mixed bag but most fun, & the villain was delightfully hatable. 
+
+An intriguing look into the future of the Cosmere while being a really great time on its own! Solid four star read!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('f72e7e0e-5574-465a-991d-2a44c7a9772f', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'badf4d52-2a5c-41e2-a8a4-7ff659d7c078', 4.0, NULL, NULL, 0, 8, 2025, '2025-08-23T12:00:00.000Z', '2026-03-20T00:52:48.594Z', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('af68e421-bc39-49eb-b304-3a9d75f851c2', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'd188604b-d03f-43ba-ac6c-9e1c4b59a8b2', 4.0, NULL, NULL, 0, 8, 2025, '2025-08-23T12:00:00.000Z', '2026-03-20T00:52:48.606Z', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('bbc13586-8cd2-47e3-bddc-ca85763cd5d5', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'cb183ae7-0f4d-404b-88e2-7ff9efd04826', 4.0, NULL, NULL, 0, 5, 2022, '2022-05-21T12:00:00.000Z', '2026-03-20T00:52:48.618Z', 'This is the most blown away I’ve ever been by the end of a series! Sanderson definitely had every aspect of this story planned out from page one of book one. Things I never expected to play a significant part coming out of left field in ways that made me feel stupid for not expecting it. If I’m honest, I was confused as to how he could’ve even continued this series after the first book was so brilliant on its own, but I happily stand corrected! 
+
+This is definitely the best book of the series. Not my personal favorite, but definitely the most impressive on a technical level. 
+
+The most impressive part of this book is his ability to take characters I didn’t really care about in significant ways (Spook, TenSoon) & make them my favorites. I would look ahead to see which chapters were going to be about them. Not that characters like Vin & Elend weren’t exciting as well.
+
+All around, this book a page turner. Over 2200 pages in the trilogy & every word was worth making it to this end. The amount of times I was left with my jaw dropped while reading it is enough for me to recommend it & leave this five star review with no reservations!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('316f25e9-ab97-4b49-bf3b-7d5c1ebd0ca4', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'e5713fac-7f78-4239-b322-e46b0a4535e9', 4.0, NULL, NULL, 0, 9, 2022, '2022-09-19T12:00:00.000Z', '2026-03-20T00:52:48.628Z', 'Going into Warbreaker, the back of the book felt a little reminiscent of Elantris. A princess being sent to marry into another nation’s royal family, a man becoming an immortal without knowing why, & religious beliefs on the brink of war. 
+
+I found out quickly how wrong I was though! 
+
+This is my favorite Cosmere book since Mistborn era 1. (I’m reading Stormlight next though!) 
+
+There wasn’t a single character that was a weak link. They were all three dimensional. I felt like inreallungot to know them, but all the twists with them felt shocking yet organic. 
+
+The worldbuilding was top-notch as always. It all just came across as real. That’s what I’ve been appreciating most about Sanderson on my trek through the Cosmere! 
+
+The biggest twist was spoiled for me because I googled a character to see the appearance better. But it was still such a satisfying ending! 
+
+I definitely still have my fervor to continue this journey!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('37cfbafd-f200-4674-99dd-07d4b36fb4e1', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'b382f13b-8626-447d-b8a1-55711f680d85', 3.0, NULL, NULL, 0, 8, 2022, '2022-08-25T12:00:00.000Z', '2026-03-20T00:52:48.643Z', 'The best word to describe this one: fun! 
+
+I’m sure I would feel very different if I’d gone straight to this one from era 1, but after a little break from Scadrial, it was so nice to revisit these magic systems! The updates in technology over the 300 years made for such an interesting revelation for the metal-based abilities that I was intrigued by every move they made. 
+
+I don’t think I’ve ever laughed out loud at a book as much as this one as well. Wax & Wayne have a great chemistry & Marasi’s inability to reply to most of Wayne’s comments made for great comedic timing. I don’t really feel that attached to the characters yet, but that process has begun. 
+
+Was it perfect? No. Was it Sanderson’s best work? Not even close. Was it a fun ride that has me excited for the sequel? Absolutely!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('3705c863-fe13-49c0-b213-110b1dc1b8f8', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '582ea620-c8b7-44a8-8071-5f84f2a9781c', 4.0, NULL, NULL, 0, 9, 2022, '2022-09-06T12:00:00.000Z', '2026-03-20T00:52:48.657Z', 'I really wish I’d held off on reading era 2 until The Lost Metal was released. That ending! 
+
+I can officially say I’m in love with these characters. Now, most of them are very static characters. Honestly, all of them probably are. An argument could be made for Marasi being dynamic, but she doesn’t really change as much as just achieves goals. 
+
+It was nice to see the whole gang together for an adventure in this one. Wax, Wayne, Marasi, & Steris (along with some characters that may be spoilers for the first two books). But once again, the shining beacon of this book was Wayne; he feels like fantasy’s version of Holden Caulfield & I’m completely down for it! His little adventure when he’s on his own feel like short stories in & of themselves, almost in the vein of Tales of Ba Sing Se (for my ATLA fans out there). 
+
+I can’t say much without spoiling it, but this one was quite a wild ride & it has me so excited for book 4!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('fcdf0c14-aabc-402c-b9b0-fa026b3c82ae', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '32b3d408-8093-4f25-8d2b-3d2f0731d276', 5.0, NULL, NULL, 0, 2, 2023, '2023-02-18T12:00:00.000Z', '2026-03-20T00:52:48.673Z', 'I thought Dawnshard was a big improvement over Edgedance, but not for the reason most people do. 
+
+I like Lift, contrary to popular opinion. However, Rysn is probably my favorite interlude character in the main series. I was pretty excited to see her get a novella of her own. 
+
+Thaylen culture is one of the more interesting on Roshar, so I definitely loved the little bit of extra worldbuilding here. I also loved the entirely new culture (which reminded me of Mistborn’s Kandra) they introduced. 
+
+Rysn & The Lopen we’re fantastic characters to explore & the plot of this one was engaging yet simple. It was everything I want from Stormlight novellas & it leaves me fully prepared to jump into Rhythm of War!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('67857f4b-9fd0-4463-b70b-9637f6db911b', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '1eb6be8c-1e98-435f-8f33-839da2dadcef', 4.0, NULL, NULL, 0, 12, 2023, '2023-12-14T12:00:00.000Z', '2026-03-20T00:52:48.686Z', 'This book will fit snuggly into the #4 spot in my Cosmere rankings. I wasn’t aware how much I needed a fantasy Mad Max story! 
+
+It was a pretty slow start, but once it took off, it really took off! 
+
+The Stormlight adjacent aspects had my internally squealing & I’m more than ready to see the effects of this book in Stormlight 5 next year! 
+
+The side characters weren’t anything genre-breaking, but I was genuinely rooting for them. The villain, however, was interesting in that his goal was pretty cliché, but his skillset did not match it. It made for such a satisfying ending in most ways. And the unsatisfying parts were exactly what they were meant to be. 
+
+Easy five stars!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('1b535034-da77-4dd5-b552-ed446ad4b814', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '6418e03b-9441-4efc-8950-0d3bd4922a3a', 4.0, NULL, NULL, 0, 12, 2023, '2023-12-28T12:00:00.000Z', '2026-03-20T00:52:48.701Z', 'It had been a little over a year since I’d read Bands of Mourning. Man, I’d forgotten how much I loved these characters. Wax, Wayne, Marasi, Steris. 
+
+Wayne is one of my favorite Cosmere characters & this book really showcased his character for me. 
+
+The expansion of the worldbuilding continued through these last two books was brilliant. And the expansion of the Cosmere as a whole. (I don’t want to give spoilers, so I’ll just say you should read at least the first three Stormlight books before this one.)
+
+The stakes were bigger than ever, but they also got even more personal for the entire crew. All four of them had to figure out who they really were & what they really wanted. It was emotional & satisfying, like watching my friends finally start chasing their dreams. 
+
+I’m so curious as to what Brando Sando has in store for era 3!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('da8f6c4c-420b-42ca-aa6d-bcaad5fab30a', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '1ac6fe55-369f-40c9-946d-bd0962caddf5', 5.0, NULL, NULL, 0, 5, 2024, '2024-05-13T12:00:00.000Z', '2026-03-20T00:52:48.715Z', 'As far as the story goes, I would give this book a 3/5. It doesn’t really feel like anything happens. And then it just kind of ends. I wouldn’t say it was unsatisfying, but it just wasn’t memorable. 
+
+The characterizations, however, are an easy 5/5. The things that were teased through the first two books come to fruition here in near perfection. The psyche of Lock Lamora is explored in a fresh way that feels so natural. It was another entry of a book series that just feels like I’m hanging out with my friends. And that will always be what Lynch does best. 
+
+After Red Seas Under Red Skies, it was nice to have a return to quality flashbacks. I actually preferred them to the main story in this entry. 
+
+I’m not sure how I feel about the twist, but we’ll see how that all plays out in future installments (if they ever come).
+
+The lackluster story mixed with the incredible characters evens this book out to a 4/5 for me. And you can bet I’ll have The Thorn of Emberlain preordered as soon as I can!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('9b1c0e7a-eb65-4314-8ed4-42de35c4a954', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '39ef1cb5-a199-4695-b008-cdb0daed7ad1', 4.0, NULL, NULL, 0, 8, 2024, '2024-08-21T12:00:00.000Z', '2026-03-17 23:30:34', 'The recommendations of this book were correct; this is the best prose I’ve ever read. There were moments where a single line made my heart drop. I cannot give enough praise to Rothfuss on his ability to keep a reader engaged. 
+
+The pacing of the story varied, but it was obviously intended. The slow parts came together to make sense in the end. The small story arcs that seemed inconsequential became major plot points later on. I felt like I was putting together I wonderful puzzle by reading this book. It took everything in me to keep from cheering for the last 75 pages! 
+
+I didn’t care for the third person sections of Kvothe telling the story to the Chronicler, but they were so short that I didn’t have to push past them very often. 
+
+This was certainly just a part of an origin story & I’m eager to pick up A Wise Man’s Fear. This is certainly going to slip its way into my all time top ten list of books.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('7c5e73c5-8238-47fb-9257-596ba555912b', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '4c277765-81ae-419c-add1-254dcc48dbfe', 4.0, NULL, NULL, 0, 3, 2025, '2025-03-17T12:00:00.000Z', '2026-03-17 23:30:34', 'I got about five chapters into this one & was already annoyed at the fact that I was going to have to update my all time favorite books list. 
+
+My only regret is that I put this series so far down on my TBR. 
+
+There were a few flaws: the similar or hard-to-pronounce names & the romantic interactions. But they were hardly noticed among the plethora of positives: the characters, the worldbuilding, the epic scale, the history, the magic system. 
+
+I’m about the open up The Great Hunt now to pick up right where I left off. 
+
+For the record, my favorite characters right now are Rand, Egwene, Mat, & Loial. We’ll see how consistent that remains over the next 13 books.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('abdfa21b-2e70-45f7-9e50-f38dfb605c88', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '0897c86c-42be-4630-945d-f3baf6ea7c6a', 4.0, NULL, NULL, 0, 4, 2025, '2025-04-04T12:00:00.000Z', '2026-03-17 23:30:34', 'Once again, I couldn’t put it down & I’m going to try to appreciate that until I get to The Slog. 
+
+The worldbuilding is so top notch here. Every place they go genuinely feels new & fresh. I see how nearly every modern fantasy book I love stemmed from this style of storytelling. There were a few towns they visited in this one that had me so intrigued & disappointed when they left for the next one. 
+
+The characters are all fleshing out. Even the ones I didn’t like are coming together in such wonderful ways. 
+
+The romance, however, is exactly what I’ve always heard. Every single couple is a woman randomly fighting off undying love for a man with which she’s never had a private conversation. 
+
+But that one flaw aside, I flew through The Great Hunt & I already have The Dragon Reborn in my backpack ready to start today!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('987b600c-bdd2-47e6-b107-359f2634652e', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'ff6c1210-4274-40fd-889a-50fc37f417c6', 4.0, NULL, NULL, 0, 4, 2025, '2025-04-16T12:00:00.000Z', '2026-03-17 23:30:34', 'I’ve been reading these books so quickly that they’re beginning to run together. 
+
+I appreciated really seeing Mat get to shine with some POVs this time around. 
+
+The ending felt like a true turning point in the series as well. 
+
+I spent most of my time listening to the audiobook on this one, which makes me feel disconnected to the story in a way I don’t like. I can hopefully find more time to sit down with the next one. 
+
+Rankings so far:
+1. The Great Hunt
+2. The Dragon Reborn*
+3. The Eye of the World', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('74bce0f1-494e-4a21-ab08-5ba4d9390dbd', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '42d48717-df0f-49f0-adeb-2597da42f215', 4.0, NULL, NULL, 0, 6, 2025, '2025-06-02T12:00:00.000Z', '2026-03-17 23:30:34', 'Perrin, Man. 
+
+This book very nearly lived up to the hype, which is that it’s one of the greatest fantasy books ever read. 
+
+I struggled to get through the Elayne/Nynaeve/Egwene scenes because I just wanted to see Perrin/Mat/Rand so badly! 
+
+The prose isn’t great, but these characters are so real—frustratingly so at times—that I just want to spend more & more time with them. Everyone has flaws & redeeming qualities that makes them so well-realized. 
+
+I’m going to take a little break from WoT because they’re all running together so far. But I am so excited to be back soon!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('63354b2c-b88d-4438-aa24-aa7d6e92684b', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '2360b0aa-b67d-4ae1-92e5-4e3c8d94fb38', 4.0, NULL, NULL, 0, 6, 2025, '2025-06-20T12:00:00.000Z', '2026-03-17 23:30:34', 'I was stuck between four or five stars. I’m going with five for one major reason: the side characters were so good. I actually liked every single character. I’m not sure if I’ve ever been able to say that. 
+
+Weeks didn’t waste any time in showing what kind of book this would be. Dark, gruesome, merciless, exhilarating. Within just the first few chapters, he wrote some of the most horrific acts I’ve ever read in any book. 
+
+There were at least three plot twists that made my jaw drop. Literally. 
+
+The prose wasn’t beautiful & poetic except when it needed to be, which is my personal preference. 
+
+I’m more of an epic guy, so this pacing felt so quick until we got to the climax, then it slowed way down. It wasn’t too jarring for me, but I could see how this would throw some people off. 
+
+Overall, this book may slip into my all time list. I need to chew on it a little longer. In the meantime, I guess I’ll just read the sequel.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('b975dd7f-51ec-4808-8dfb-724cfe158dfa', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'd1da0000-680e-4baa-bbef-f8e3b3ab5c07', 4.0, NULL, NULL, 0, 8, 2025, '2025-08-22T12:00:00.000Z', '2026-03-17 23:30:34', 'A satisfying, bittersweet ending to what will go down as one of my favorite series of all time. 
+
+It didn’t contain as many big moments as Shadow’s Edge, but it had my heart pumping as I learned the outcome of some of my favorite characters in all of media (Logan & Vi most of all). 
+
+It wasn’t perfect. The prose was often clunky & the plot connected loosely, but I can overlook those things when I love the characters. And Weeks did that better than I could have hoped. 
+
+After three books in this world, I’m excited to read the prequel & the sequel, so that shows just how-well created it truly is.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('dcccbc83-c811-4986-afa3-cdcba07cab01', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'abb62b81-38d3-402d-9f10-0a6160306ae6', 5.0, NULL, NULL, 0, 8, 2025, '2025-08-06T12:00:00.000Z', '2026-03-17 23:30:34', 'I just read an all-time favorite book for the first time. 
+
+The prose was hit or miss, but that was really my only complaint at all. This story took me through the entire scope of my emotional range. The Christian allegory may have been heavy handed to some, but I found it beautifully moving. 
+
+I genuinely love every character, even the side ones. 
+
+Logan’s arc in this book is one of the best I’ve seen in any form of media. He really stole the show & had nearly every one of the big moments. 
+
+Vi’s arc was a roller coaster & is probably the most enticing thing about starting book 3 later today. 
+
+Brent Weeks is an absolute genius, nearly unrivaled in some of his skillset. At this point, I doubt I take a break through his entire bibliography.
+
+Also, this is how I picture the people complaining about virginity in the books:
+
+https://www.threads.com/@ernest_bigboy/post/DNBVjZRoZ_c?xmt=AQF0y1MrmO90vwMhK-GKsyR_-2-I8hx4ubTEe3jEuAtl5w
+
+It’s like they didn’t read Vi’s arc at all.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('e3f57dad-5a50-4012-b4ed-545cfd2fa9c4', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '5ddfa059-5c54-4888-a0d7-565ede82795b', 2.0, NULL, NULL, 0, 3, 2025, '2025-03-08T12:00:00.000Z', '2026-03-17 23:30:34', 'I really don’t have much to say about this one. 
+
+It was a cool idea with an interesting format, but I just could not latch on to any of the characters. They weren’t even fun to hate, just bland. That’s so out of the ordinary for Sanderson, given that he’s written the majority of my favorite characters in all of media. 
+
+I’ll probably forget most of this story in a few months & simply remember it as something that didn’t affect me at all. 
+
+The plot was well-done & the ending was satisfying enough. I just didn’t care enough by that point to feel much.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('44776a90-dba8-47a8-85c3-59425c0e19a1', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'c2e27fab-7b8c-4a30-bf29-8750a62918f1', 3.0, NULL, NULL, 0, 3, 2025, '2025-03-05T12:00:00.000Z', '2026-03-17 23:30:35', 'The best definition of a mixed bag I could ever remember. 
+
+I’ve had it on my list to read some RA Salvatore for years. Coming off a long, emotional conclusion to a series, I thought this would be the perfect pallet cleanser. 
+
+And you know what? I was right. 
+
+The prose was a complete mess. The pacing was all over the place. The plot was confusing. The villain was boring. But man, it was fun. And the main cast of characters really gripped you. I have full intention of completing this trilogy in time when I need to go back to a fun, simple read. 
+
+Drizzt, Wulfgar, Bruenor, Regis, & Carrie-Brie would be worth a second visit at least.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('da7d86b8-2be4-4cd7-829e-af58ea00ebfb', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '04ba7da3-114c-4029-8835-ad3abe2051f2', 4.0, NULL, NULL, 0, 2, 2025, '2025-02-06T12:00:00.000Z', '2026-03-17 23:30:35', 'I need to take some time to process this one. 
+
+For the fourth book straight, Adolin Kholin stole the show for me. 
+
+I was honestly worried through the first half of this book. A lot of things felt off to me. The therapy talk was really corny. A few characters—Kaladin & Szeth for example—felt as though their voices had completely changed. There were so many callbacks to scenes in previous books that it seemed this book wasn’t even trying to stand on its own. 
+
+But the ending. Oh, the ending. The redemption. The sacrifice. The growth. 
+
+Not a single character ended up where I thought they be or even completely where I had hoped, as is life. 
+
+Four years of online theories & I never saw any of them come to fruition, but I was satisfied. It made sense. That is where this story was heading this entire time. 
+
+I love these characters. I’ve spent so much time with them. I am genuinely mourning them & I’ll think so much over the next few week—perhaps months or even years—about their stories. 
+
+I’ll need to re-visit Roshar soon, to get to know my friends all over again. In the meantime, I may take a little break from reading to let this one settle. 
+
+After all, journey before destination, right?', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('ba2e5fb4-67b1-48ee-939c-eb2542ab5621', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'a012d7db-2bc7-4fd0-ab47-71574dd310bb', 4.0, NULL, NULL, 0, 12, 2024, '2024-12-12T12:00:00.000Z', '2026-03-17 23:30:37', 'Bast was by far my least favorite character in The Kingkiller Chronicles, so I was surprised by how much I enjoyed this novella. 
+
+It was enjoyable to get a bigger glimpse into the world of the interludes & see what life was like in the town surrounding the Waystone Inn. 
+
+I don’t have much to say on the matter. The prose contained its typical beauty, the banter was humorous, & there were some heartstrings being played by the end. 
+
+I can now impatiently await book three with everyone else!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('2db3512f-bd27-493a-91b9-965ef16ce714', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '3e121687-0ddf-4a52-8d1a-e0257354ce0e', 3.0, NULL, NULL, 0, 12, 2024, '2024-12-11T12:00:00.000Z', '2026-03-17 23:30:37', 'This book was objectively good, but it was a struggle for me. 
+
+Auri such a fun character to view through Kvothe’s eyes, but 150 pages from her perspective was exhausting, as much as I hate to say it. 
+
+The prose was wonderful & I enjoyed it more when I switched to audiobook. 
+
+If you love The Kingkiller Chronicle, this one is worth your time. If you’re a casual fan, maybe not.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('1f7dadf8-8721-4a98-bb40-d3fbb7cb6503', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '75a10606-d526-40b5-8789-e883f9c798c8', 4.0, NULL, NULL, 0, 12, 2024, '2024-12-10T12:00:00.000Z', '2026-03-17 23:30:38', 'My absolute favorite kind of book is a slow building fantasy epic. That being said, this one could probably trim off 300 pages. 
+
+I feel so attached to these characters, especially Kvothe, but there were a few sections—one in particular—that was a real slog. 
+
+That the only thing that keeps this from being a five star book for me. 
+
+The magic system is wonderfully intricate. The world building is top notch. The prose is some of the best in the history of literature. 
+
+The best part about a slow build is that the resolution will typically knock your socks off. This book & its predecessor didn’t do that. I’m assuming the reason is that the third book will satisfy that need for me. Since it’s all one big story, I have no issue with that at all. I look forward to hopefully experiencing that climax one day! 
+
+However, if The Doors of Stone never gets released, I’m satisfied with the enjoyment I’ve gotten from Rothfuss’ world. It feels like I’m getting to experience a modern fairy tale & that makes the journey that much more enjoyable.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('c1a181d2-f4f5-490f-8e08-87a01732e192', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '50673ab1-52c8-4a80-aa92-716679583d3c', 5.0, NULL, NULL, 0, 12, 2020, '2020-12-17T12:00:00.000Z', '2026-03-17 23:30:40', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('30cf3e94-3e01-44cc-b162-5b9163e3a159', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '426c44db-165d-436f-91e0-6b7732120a25', 5.0, NULL, NULL, 0, 7, 2019, '2019-07-07T12:00:00.000Z', '2026-03-17 23:30:45', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('18466e25-e41a-43e4-8cff-eaaf58a9c9b4', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '420ef077-ac79-484f-842f-e8f513ae1642', 4.0, NULL, NULL, 0, 6, 2024, '2024-06-12T12:00:00.000Z', '2026-03-17 23:30:48', 'This book had some nostalgia for me. I first discovered Comer by seeing him speak at Catalyst Leadership Conference in Atlanta in 2018, where he spoke on this very subject in what felt like the infancy of what would become Practicing the Way, both the book & the organization. Since then, he has become one of the most influential secondary voices in my life. 
+
+Would this book be considered his masterpiece? No. The Ruthless Elimination of Hurry & God Has a Name both still exist. 
+
+Comer has a writing style that I’ve always really appreciated. He has an ability to take really complex topics & content, then package them in a really accessible way. He has an extraordinary gift of teaching/preaching that is a breath of fresh air. An incredibly intelligent man that feels no need to prove that fact to anyway. It’s hard to find both of those qualities in the modern western church. 
+
+So given the sermons & podcasts I’ve already consumed from Comer, I didn’t find much new information in the book, but the organization of it all into one place did feel fresh. 
+
+Comer has a way of bringing quotes from other ministers that are always just poignant enough to really drive his points home. 
+
+The practical steps reinvigorated my heart for a disciplined life & to learn to live the lifestyle of Jesus. 
+
+I’ll chew on this one for the next few weeks & try to take account of my soul. 
+
+This book was a nice little pallet cleanse after four straight Tolkien novels. I’m thankful for this book.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('8fd32448-c1ab-4786-8639-7344f6cbf1e3', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '6850a9ad-d513-438a-aa33-49b4ae3946d4', 4.0, NULL, NULL, 0, 6, 2024, '2024-06-07T12:00:00.000Z', '2026-03-17 23:30:48', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('e35099b0-4346-415f-8ed9-790bcf9bb006', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '6042f0ed-0ac5-419c-a8eb-8da45b3e83ee', 4.0, NULL, NULL, 0, 6, 2024, '2024-06-03T12:00:00.000Z', '2026-03-17 23:30:48', 'This is definitely the book from which the movies diverged the most. 
+
+It was nice to see more of the story after the war ended, with the Hobbits going back to the shire for multiple chapters. It felt a little jarring as far as pace and stakes are concerned, but I enjoyed that extra time with them. 
+
+Now that the story is concluded, I found that the characters of the Hobbits & Gandalf were brilliantly done, but it felt as though Legolas, Gimli, & Aragorn were pretty one dimensional. 
+
+Without getting into spoilers, I also appreciated seeing the end to some of these characters that weren’t shown in the movies. 
+
+Overall, I’m very glad I finally marked this trilogy off my TBR. I really loved these books overall & it’s an experience everyone should have in their lifetimes.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('31be34e4-f82c-4eff-a302-0789c3d676cb', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '06648fea-70a1-4bc3-945b-1af7f3e071c6', 4.0, NULL, NULL, 0, 5, 2024, '2024-05-31T12:00:00.000Z', '2026-03-17 23:30:48', 'I’m not sure this review will look much different from my review of The Fellowship of the Ring. 
+
+Rob Inglis nailed it again. I was really interested to see how he would perform Gollum and I really loved it. This was recorded before the Peter Jackson films, so I was curious how similar it would be to Andy Serkis’ performance. 
+
+The plot points don’t hit exactly the same as the movie, so I found myself extremely invested and on the edge of my seat. 
+
+Sam is still my favorite character, just for the record. 
+
+Gimli’s & Legolas’ friendship is almost as endearing as the movie’s interpretation. 
+
+Onto book 3!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('35c9d6e9-97a1-4a72-8528-0b6f66fc2d9b', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '73bb5357-0067-4d84-8075-bba6f289cebf', 4.0, NULL, NULL, 0, 5, 2024, '2024-05-27T12:00:00.000Z', '2026-03-17 23:30:48', 'I have seen the movies many times & I have finally gotten myself to start reading the books. 
+
+I’ve always heard that it takes a while to get used to Tolkien’s prose. That wasn’t the case for me. There are definitely some patches that are very dry (I’m looking at you, Council of Elrond), but I actually found this a relatively easy read. The memories of the movies may have helped the characters come to life, but that doesn’t take away from how richly Tolkien penned them. 
+
+It is definitely a victim of the faults of classic fantasy, but it doesn’t lose a star for that. We wouldn’t have modern fantasy without the original one. I can deal with the overreaction of settings & the characters telling flashbacks in their own voices. It just helps me appreciate the new guys from a different perspective. 
+
+Things then first time I’ve ever paired a book with the audiobook, since I’m trying to finish it by a certain time. Rob Inglis’ narration was absolutely brilliant & actually helped me pay attention, something that has always been a struggle for me with audiobooks. 
+
+Tom Bombadil was also way too fun of a character to have been cut from the movies. 

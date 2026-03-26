@@ -1,0 +1,19 @@
+
+> tbra@0.1.0 dev
+> next dev
+
+⚠ Port 3000 is in use by process 34979, using available port 3001 instead.
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://10.0.0.89:3001
+- Environments: .env.local
+✓ Ready in 242ms
+⨯ Another next dev server is already running.
+
+- Local:        http://localhost:3000
+- PID:          34979
+- Dir:          /Users/clankeredwards/.openclaw/workspace-spine/tbra
+- Log:          .next/dev/logs/next-development.log
+
+Run kill 34979 to stop it.
+[?25h

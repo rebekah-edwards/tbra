@@ -1,0 +1,32 @@
+
+> tbra@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.0.0.89:3000
+- Environments: .env.local
+✓ Ready in 212ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+- Experiments (use with caution):
+  · staleTimes
+
+ GET /find 200 in 623ms (next.js: 407ms, proxy.ts: 47ms, application-code: 169ms)
+ GET /book/3e63b483-5416-49d5-893d-22c563d3a53c 200 in 1586ms (next.js: 689ms, proxy.ts: 5ms, application-code: 892ms)
+ GET /u/rebekah_creates 200 in 1632ms (next.js: 675ms, proxy.ts: 46ms, application-code: 912ms)
+ GET /api/books/similar?bookId=3e63b483-5416-49d5-893d-22c563d3a53c 200 in 150ms (next.js: 73ms, proxy.ts: 7ms, application-code: 70ms)
+ GET /api/openlibrary/editions?workKey=%2Fworks%2FOL27423352W&limit=100 200 in 26ms (next.js: 14ms, proxy.ts: 1643µs, application-code: 10ms)
+ GET /api/enrichment/status 200 in 41ms (next.js: 14ms, proxy.ts: 4ms, application-code: 24ms)
+[enrichment] Starting enrichment for book 4fcc11d1-225a-4e37-b9d8-6e428efb02db
+[enrichment] Box set detected: "Untitled Collection" — cover-only enrichment
+[enrichment] No cover found across all tiers for "Untitled Collection"
+ POST /book/3e63b483-5416-49d5-893d-22c563d3a53c 200 in 62ms (next.js: 6ms, proxy.ts: 4ms, application-code: 51ms)
+  └─ ƒ setBookCover("3e63b483-5416-49d5-893d-22c563d3a53c", null) in 4ms src/lib/actions/books.ts
+[enrichment] Starting enrichment for book 0fbb4b6b-0266-452b-ae44-300b64656e4c
+[enrichment] Box set detected: "Tor.com Collection" — cover-only enrichment
+ GET /api/openlibrary/editions?workKey=%2Fworks%2FOL27423352W&limit=100 200 in 8ms (next.js: 3ms, proxy.ts: 3ms, application-code: 3ms)
+[enrichment] Starting enrichment for book 06d029de-eef2-412e-992a-be4d5716d2ab
+[enrichment] Box set detected: "Left hand of darkness/Winter's king/Coming of Age in Karhide" — cover-only enrichment
+[enrichment] No cover found across all tiers for "Left hand of darkness/Winter's king/Coming of Age in Karhide"
+ POST /book/3e63b483-5416-49d5-893d-22c563d3a53c 200 in 28ms (next.js: 3ms, proxy.ts: 1602µs, application-code: 23ms)
+  └─ ƒ setBookCover("3e63b483-5416-49d5-893d-22c563d3a53c", "https://m.media-amazon.com/images/I/71qCTic6OAL._SL1500_.jpg") in 3ms src/lib/actions/books.ts

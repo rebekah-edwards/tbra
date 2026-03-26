@@ -1,0 +1,13 @@
+
+> tbra@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.0.0.89:3000
+- Environments: .env.local
+- Experiments (use with caution):
+  · staleTimes
+
+✓ Starting...
+✓ Ready in 432ms

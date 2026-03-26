@@ -1,0 +1,87 @@
+[23:06:05] Starting tiered enrichment (DB: /Users/clankeredwards/.openclaw/workspace-spine/tbra/data/tbra.db)
+[23:06:05] === TIER 1: Open Library (free) ===
+[23:06:05] Found 9170 books with OL keys needing data
+[23:07:39]   Progress: 100/9170 | pages:0 desc:0 year:0 cover:0 genres:0
+[23:09:16]   Progress: 200/9170 | pages:4 desc:0 year:4 cover:0 genres:0
+[23:11:09]   Progress: 300/9170 | pages:42 desc:16 year:46 cover:3 genres:14
+[23:13:02]   Progress: 400/9170 | pages:79 desc:30 year:89 cover:3 genres:31
+[23:14:53]   Progress: 500/9170 | pages:122 desc:40 year:145 cover:3 genres:34
+[23:16:44]   Progress: 600/9170 | pages:157 desc:53 year:184 cover:3 genres:44
+[23:18:36]   Progress: 700/9170 | pages:192 desc:67 year:227 cover:3 genres:55
+[23:20:24]   Progress: 800/9170 | pages:227 desc:81 year:274 cover:4 genres:59
+[23:22:14]   Progress: 900/9170 | pages:263 desc:95 year:319 cover:5 genres:70
+[23:24:03]   Progress: 1000/9170 | pages:305 desc:112 year:368 cover:7 genres:84
+[23:25:50]   Progress: 1100/9170 | pages:346 desc:130 year:416 cover:7 genres:100
+[23:27:41]   Progress: 1200/9170 | pages:383 desc:144 year:466 cover:7 genres:110
+[23:29:30]   Progress: 1300/9170 | pages:420 desc:155 year:511 cover:9 genres:119
+[23:31:21]   Progress: 1400/9170 | pages:451 desc:167 year:556 cover:9 genres:129
+[23:33:11]   Progress: 1500/9170 | pages:492 desc:183 year:604 cover:10 genres:143
+[23:35:02]   Progress: 1600/9170 | pages:525 desc:199 year:645 cover:10 genres:153
+[23:36:53]   Progress: 1700/9170 | pages:564 desc:214 year:692 cover:11 genres:164
+[23:38:42]   Progress: 1800/9170 | pages:604 desc:233 year:736 cover:11 genres:182
+[23:40:32]   Progress: 1900/9170 | pages:638 desc:244 year:776 cover:12 genres:190
+[23:42:21]   Progress: 2000/9170 | pages:681 desc:259 year:828 cover:12 genres:201
+[23:44:10]   Progress: 2100/9170 | pages:719 desc:270 year:869 cover:14 genres:212
+[23:45:58]   Progress: 2200/9170 | pages:756 desc:280 year:918 cover:14 genres:223
+[23:47:48]   Progress: 2300/9170 | pages:796 desc:293 year:967 cover:14 genres:232
+[23:49:39]   Progress: 2400/9170 | pages:830 desc:308 year:1011 cover:14 genres:249
+[23:51:28]   Progress: 2500/9170 | pages:864 desc:321 year:1047 cover:15 genres:258
+[23:53:18]   Progress: 2600/9170 | pages:910 desc:332 year:1093 cover:15 genres:270
+[23:55:05]   Progress: 2700/9170 | pages:943 desc:346 year:1134 cover:16 genres:287
+[23:56:54]   Progress: 2800/9170 | pages:983 desc:363 year:1179 cover:16 genres:302
+[23:58:45]   Progress: 2900/9170 | pages:1022 desc:379 year:1222 cover:17 genres:313
+[00:00:35]   Progress: 3000/9170 | pages:1060 desc:397 year:1269 cover:19 genres:328
+[00:02:25]   Progress: 3100/9170 | pages:1104 desc:408 year:1317 cover:19 genres:340
+[00:04:14]   Progress: 3200/9170 | pages:1141 desc:428 year:1362 cover:21 genres:361
+[00:06:02]   Progress: 3300/9170 | pages:1181 desc:439 year:1413 cover:21 genres:375
+[00:07:51]   Progress: 3400/9170 | pages:1225 desc:457 year:1456 cover:21 genres:392
+[00:09:40]   Progress: 3500/9170 | pages:1267 desc:466 year:1500 cover:21 genres:401
+[00:11:28]   Progress: 3600/9170 | pages:1306 desc:480 year:1544 cover:22 genres:405
+[00:13:18]   Progress: 3700/9170 | pages:1345 desc:493 year:1589 cover:22 genres:408
+[00:15:06]   Progress: 3800/9170 | pages:1382 desc:506 year:1638 cover:22 genres:417
+[00:16:55]   Progress: 3900/9170 | pages:1426 desc:516 year:1689 cover:23 genres:425
+[00:18:44]   Progress: 4000/9170 | pages:1466 desc:529 year:1738 cover:25 genres:440
+[00:20:33]   Progress: 4100/9170 | pages:1505 desc:536 year:1783 cover:25 genres:448
+[00:22:25]   Progress: 4200/9170 | pages:1547 desc:555 year:1831 cover:25 genres:461
+[00:24:15]   Progress: 4300/9170 | pages:1584 desc:568 year:1867 cover:26 genres:470
+[00:26:03]   Progress: 4400/9170 | pages:1624 desc:585 year:1921 cover:28 genres:478
+[00:27:53]   Progress: 4500/9170 | pages:1660 desc:602 year:1962 cover:28 genres:489
+[00:29:43]   Progress: 4600/9170 | pages:1702 desc:611 year:2010 cover:29 genres:494
+[00:31:34]   Progress: 4700/9170 | pages:1726 desc:621 year:2048 cover:30 genres:501
+[00:33:25]   Progress: 4800/9170 | pages:1764 desc:631 year:2090 cover:30 genres:509
+[00:35:16]   Progress: 4900/9170 | pages:1799 desc:647 year:2135 cover:30 genres:529
+[00:37:05]   Progress: 5000/9170 | pages:1834 desc:659 year:2175 cover:31 genres:538
+[00:38:55]   Progress: 5100/9170 | pages:1877 desc:680 year:2226 cover:32 genres:549
+[00:40:46]   Progress: 5200/9170 | pages:1913 desc:689 year:2273 cover:33 genres:553
+[00:42:37]   Progress: 5300/9170 | pages:1945 desc:701 year:2313 cover:33 genres:557
+[00:44:27]   Progress: 5400/9170 | pages:1990 desc:712 year:2355 cover:35 genres:565
+[00:46:17]   Progress: 5500/9170 | pages:2024 desc:727 year:2399 cover:37 genres:583
+[00:48:06]   Progress: 5600/9170 | pages:2067 desc:740 year:2446 cover:38 genres:599
+[00:50:00]   Progress: 5700/9170 | pages:2099 desc:750 year:2486 cover:39 genres:604
+[00:51:49]   Progress: 5800/9170 | pages:2138 desc:776 year:2543 cover:40 genres:622
+[00:53:38]   Progress: 5900/9170 | pages:2180 desc:790 year:2593 cover:43 genres:636
+[00:55:29]   Progress: 6000/9170 | pages:2219 desc:805 year:2641 cover:45 genres:650
+[00:57:23]   Progress: 6100/9170 | pages:2254 desc:820 year:2686 cover:46 genres:658
+[00:59:12]   Progress: 6200/9170 | pages:2303 desc:834 year:2735 cover:46 genres:673
+[01:01:03]   Progress: 6300/9170 | pages:2337 desc:841 year:2782 cover:46 genres:683
+[01:02:54]   Progress: 6400/9170 | pages:2372 desc:854 year:2830 cover:47 genres:699
+[01:04:44]   Progress: 6500/9170 | pages:2408 desc:867 year:2870 cover:47 genres:712
+[01:06:34]   Progress: 6600/9170 | pages:2451 desc:882 year:2928 cover:47 genres:728
+[01:08:25]   Progress: 6700/9170 | pages:2491 desc:893 year:2973 cover:47 genres:737
+[01:10:17]   Progress: 6800/9170 | pages:2525 desc:912 year:3016 cover:48 genres:746
+[01:12:07]   Progress: 6900/9170 | pages:2560 desc:922 year:3059 cover:50 genres:755
+[01:13:56]   Progress: 7000/9170 | pages:2596 desc:938 year:3106 cover:50 genres:767
+[01:15:46]   Progress: 7100/9170 | pages:2634 desc:952 year:3148 cover:50 genres:773
+[01:17:37]   Progress: 7200/9170 | pages:2667 desc:962 year:3189 cover:51 genres:774
+[01:19:28]   Progress: 7300/9170 | pages:2706 desc:984 year:3222 cover:55 genres:789
+Traceback (most recent call last):
+  File "/Users/clankeredwards/.openclaw/workspace-spine/tbra/scripts/tiered-enrich.py", line 663, in <module>
+    main()
+    ~~~~^^
+  File "/Users/clankeredwards/.openclaw/workspace-spine/tbra/scripts/tiered-enrich.py", line 639, in main
+    tier1_open_library(conn, args.limit)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/clankeredwards/.openclaw/workspace-spine/tbra/scripts/tiered-enrich.py", line 255, in tier1_open_library
+    conn.execute(f"UPDATE books SET {set_clause}, updated_at = datetime('now') WHERE id = ?", values)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.IntegrityError: UNIQUE constraint failed: books.isbn_13

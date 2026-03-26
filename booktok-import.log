@@ -1,0 +1,1005 @@
+[dotenv@17.3.1] injecting env (9) from .env.local -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[booktok] Starting import — 244 queries, limit 1000 new books
+[booktok] Current book count: 9090
+
+[1/244] Twisted Love Ana Huang
+  Already imported: Twisted Love
+
+[2/244] Twisted Games Ana Huang
+  Already imported: Twisted Games
+
+[3/244] Twisted Hate Ana Huang
+  Already imported: Twisted Hate
+
+[4/244] Twisted Lies Ana Huang
+  Already imported: Twisted Lies
+
+[5/244] King of Wrath Ana Huang
+  Already imported: King of Wrath
+
+[6/244] King of Pride Ana Huang
+[enrichment] Starting enrichment for book 19984524-0026-45de-acd9-4ab274bc60f9
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "King of Pride" Ana Huang
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "King of Pride"
+[enrichment] Set language: null → English
+[enrichment] Added tag: Billionaire Romance
+[enrichment] Added tag: Forbidden Romance
+[enrichment] Added tag: Spicy Romance
+[enrichment] Added to series: Kings of Sin #2
+[series-discovery] Searching for books in series: "Kings of Sin"
+[series-discovery] Brave allowlist too small (2), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Kings of Sin Series, Vol.1-3"
+[series-discovery] Discovered and imported 0 new books for "Kings of Sin"
+[enrichment] Set audiobook length: 11h 18m
+[enrichment] Cover found via OL English edition for "King of Pride"
+[enrichment] Enrichment complete for "King of Pride"
+  ✓ Imported: King of Pride (total new: 14)
+
+[7/244] King of Greed Ana Huang
+  Already imported: King of Greed
+
+[8/244] Haunting Adeline H D Carlton
+  Already imported: Haunting Adeline
+
+[9/244] Hunting Adeline H D Carlton
+  Already imported: Hunting Adeline
+
+[10/244] Den of Vipers K A Knight
+[enrichment] Starting enrichment for book 6747f8fd-30e5-497d-bd3c-36fd40044379
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "Den of Vipers" K. A. Knight
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Den of Vipers"
+[enrichment] Set language: null → English
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Dark Romance
+[enrichment] Added tag: Reverse Harem
+[enrichment] Added tag: Grimdark
+[author-discovery] First book by "K. A. Knight" — discovering bibliography
+[author-discovery] Found 9 candidate works for "K. A. Knight"
+[author-discovery] Imported "Rebel" by "K. A. Knight" (1/30)
+[author-discovery] Imported "Court of Beasts" by "K. A. Knight" (2/30)
+[author-discovery] Imported "Shadowed Heart" by "K. A. Knight" (3/30)
+[author-discovery] Imported "Rage" by "K. A. Knight" (4/30)
+[author-discovery] Imported "Summit" by "K. A. Knight" (5/30)
+[author-discovery] Imported "Forgotten" by "K. A. Knight" (6/30)
+[author-discovery] Imported "Voyage to Ayama" by "K. A. Knight" (7/30)
+[author-discovery] Imported "Hero Complex" by "K. A. Knight" (8/30)
+[author-discovery] Done: imported 8 books for "K. A. Knight"
+[enrichment] No audiobook length found for "Den of Vipers"
+[enrichment] Cover found via OL English edition for "Den of Vipers"
+[enrichment] Enrichment complete for "Den of Vipers"
+  ✓ Imported: Den of Vipers (total new: 15)
+
+[11/244] Butcher and Blackbird Brynne Weaver
+  No results for: Butcher and Blackbird Brynne Weaver
+
+[12/244] Leather and Lark Brynne Weaver
+  Already imported: Leather & Lark
+
+[13/244] The Sweetest Oblivion Danielle Lori
+[enrichment] Starting enrichment for book e7cdf8eb-a610-4212-8e66-bd7ee155137c
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "The Sweetest Oblivion" Danielle Lori
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Sweetest Oblivion"
+[enrichment] Set language: null → English
+[enrichment] Added tag: Dark Romance
+[enrichment] Added tag: Mafia Romance
+[enrichment] Added tag: Forbidden Romance
+[enrichment] Added to series: Made #1
+[series-discovery] Searching for books in series: "Made"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Imported "Made. Tom 3. The Darkest Temptation" into series "Made"
+[series-discovery] Skipping non-English title: "Olvido Más Dulce. Made 1"
+[series-discovery] Discovered and imported 1 new books for "Made"
+[enrichment] Set audiobook length: 13h 34m
+[enrichment] Cover found via OL English edition for "The Sweetest Oblivion"
+[enrichment] Enrichment complete for "The Sweetest Oblivion"
+  ✓ Imported: The Sweetest Oblivion (total new: 22)
+
+[14/244] The Maddest Obsession Danielle Lori
+  Already imported: The Maddest Obsession
+
+[15/244] Things We Never Got Over Lucy Score
+[enrichment] Starting enrichment for book 57f9f465-5667-4b6f-ae6e-ee69538c993f
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "Things We Never Got Over" Lucy Score
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Things We Never Got Over"
+[enrichment] Set language: null → English
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Contemporary Romance
+[enrichment] Added tag: Small Town Romance
+[enrichment] Added tag: Romantic Suspense
+[enrichment] Added to series: Knockemout #1
+[series-discovery] Searching for books in series: "Knockemout"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] No OL results for "Knockemout" — trying Brave fallback
+[author-discovery] First book by "Lucy Score" — discovering bibliography
+[author-discovery] Found 50 candidate works for "Lucy Score"
+[author-discovery] Imported "The Price of Scandal" by "Lucy Score" (1/30)
+[author-discovery] Imported "Blue Moon Book Series 1-6 Books" by "Lucy Score" (2/30)
+[author-discovery] Imported "Benevolence 3 Books Set. Pretend You're Mine, Finally Mine, Protecting What's Mine" by "Lucy Score" (3/30)
+[author-discovery] Imported "Christmas Fix" by "Lucy Score" (4/30)
+[author-discovery] Imported "Corpse in the Closet" by "Lucy Score" (5/30)
+[author-discovery] Imported "Body in the Backyard" by "Lucy Score" (6/30)
+[author-discovery] Imported "Fall into Temptation" by "Lucy Score" (7/30)
+[author-discovery] Imported "Worst Best Man" by "Lucy Score" (8/30)
+[author-discovery] Imported "Blast from the Past" by "Lucy Score" (9/30)
+[author-discovery] Imported "Dead Guy Next Door" by "Lucy Score" (10/30)
+[author-discovery] Imported "No More Secrets" by "Lucy Score" (11/30)
+[author-discovery] Imported "Mr Fixer Upper" by "Lucy Score" (12/30)
+[author-discovery] Imported "Amor Pende de un Hilo / by a Thread" by "Lucy Score" (13/30)
+[author-discovery] Imported "By a Thread" by "Lucy Score" (14/30)
+[author-discovery] Imported "Where It All Began" by "Lucy Score" (15/30)
+[author-discovery] Imported "Holding on to Chaos" by "Lucy Score" (16/30)
+[author-discovery] Imported "Story of My Life" by "Lucy Score" (17/30)
+[author-discovery] Imported "Fine Art of Faking It" by "Lucy Score" (18/30)
+[author-discovery] Imported "Finally Mine" by "Lucy Score" (19/30)
+[author-discovery] Imported "Pretend You're Mine" by "Lucy Score" (20/30)
+[author-discovery] Imported "Forever Never" by "Lucy Score" (21/30)
+[author-discovery] Imported "Things We Left Behind" by "Lucy Score" (22/30)
+[author-discovery] Imported "Heart of Hope" by "Lucy Score" (23/30)
+[author-discovery] Imported "Breaking the Rules" by "Lucy Score" (24/30)
+[author-discovery] Imported "Things We Hide from the Light" by "Lucy Score" (25/30)
+[author-discovery] Skipping "The Blast from the Past" — duplicate of "Blast from the Past"
+[author-discovery] Imported "Grumpy Grump Face" by "Lucy Score" (26/30)
+[author-discovery] Skipping "The Dead Guy Next Door" — duplicate of "Dead Guy Next Door"
+[author-discovery] Imported "Protecting What's Mine" by "Lucy Score" (27/30)
+[author-discovery] Imported "Riley Thorn and the Corpse in the Closet" by "Lucy Score" (28/30)
+[author-discovery] Imported "Whiskey Chaser" by "Lucy Score" (29/30)
+[author-discovery] Imported "Undercover Love" by "Lucy Score" (30/30)
+[author-discovery] Done: imported 30 books for "Lucy Score"
+[enrichment] Set audiobook length: 16h 20m
+[enrichment] Cover found via OL English edition for "Things We Never Got Over"
+[enrichment] Enrichment complete for "Things We Never Got Over"
+  ✓ Imported: Things We Never Got Over (total new: 42)
+
+[16/244] Things We Hide from the Light Lucy Score
+  Already imported: Things We Hide from the Light
+
+[17/244] Things We Left Behind Lucy Score
+  Already imported: Things We Left Behind
+
+[18/244] Punk 57 Penelope Douglas
+[enrichment] Starting enrichment for book 4d489334-2095-4b7e-99e9-e6de3d288443
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "Punk 57" Penelope Douglas
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Punk 57"
+[enrichment] Set language: null → English
+[enrichment] Added tag: Enemies to Lovers
+[enrichment] Added tag: New Adult
+[enrichment] Added tag: Dark Romance
+[author-discovery] First book by "Penelope Douglas" — discovering bibliography
+[author-discovery] Found 35 candidate works for "Penelope Douglas"
+[author-discovery] Imported "Rival" by "Penelope Douglas" (1/30)
+[author-discovery] Imported "Quiet Ones" by "Penelope Douglas" (2/30)
+[author-discovery] Imported "Bully" by "Penelope Douglas" (3/30)
+[author-discovery] Imported "Tryst Six Venom" by "Penelope Douglas" (4/30)
+[author-discovery] Imported "Corrupt" by "Penelope Douglas" (5/30)
+[author-discovery] Imported "Patient safety" by "Penelope Douglas" (6/30)
+[author-discovery] Imported "Fire Night" by "Penelope Douglas" (7/30)
+[author-discovery] Imported "Next to Never" by "Penelope Douglas" (8/30)
+[author-discovery] Imported "Dopoki nie zjawilas sie ty" by "Penelope Douglas" (9/30)
+[author-discovery] Imported "Kurok" by "Penelope Douglas" (10/30)
+[author-discovery] Imported "Aflame" by "Penelope Douglas" (11/30)
+[author-discovery] Imported "Fall Away Series 4 Books Set" by "Penelope Douglas" (12/30)
+[author-discovery] Imported "Five Brothers" by "Penelope Douglas" (13/30)
+[author-discovery] Imported "Pirate Girls" by "Penelope Douglas" (14/30)
+[author-discovery] Imported "Until You" by "Penelope Douglas" (15/30)
+[author-discovery] Imported "Credence" by "Penelope Douglas" (16/30)
+[author-discovery] Imported "Ubezhische" by "Penelope Douglas" (17/30)
+[author-discovery] Imported "Conclave" by "Penelope Douglas" (18/30)
+[author-discovery] Imported "Falls Boys" by "Penelope Douglas" (19/30)
+[author-discovery] Imported "Misconduct" by "Penelope Douglas" (20/30)
+[author-discovery] Imported "So many bridges" by "Penelope Douglas" (21/30)
+[author-discovery] Imported "Falling Away - Entfesselt" by "Penelope Douglas" (22/30)
+[author-discovery] Imported "Next Flame" by "Penelope Douglas" (23/30)
+[author-discovery] Imported "Sen Gittiginden Beri" by "Penelope Douglas" (24/30)
+[author-discovery] Imported "Seni Bulana Kadar" by "Penelope Douglas" (25/30)
+[author-discovery] Imported "Nightfall" by "Penelope Douglas" (26/30)
+[author-discovery] Imported "Untitled Penelope Douglas" by "Penelope Douglas" (27/30)
+[author-discovery] Imported "Kill Switch" by "Penelope Douglas" (28/30)
+[author-discovery] Imported "Falling Away" by "Penelope Douglas" (29/30)
+[author-discovery] Imported "Birthday Girl" by "Penelope Douglas" (30/30)
+[author-discovery] Done: imported 30 books for "Penelope Douglas"
+[enrichment] Set audiobook length: 10h 7m
+[enrichment] Cover found via OL English edition for "Punk 57"
+[enrichment] Enrichment complete for "Punk 57"
+  ✓ Imported: Punk 57 (total new: 47)
+
+[19/244] Credence Penelope Douglas
+  Already imported: Credence
+
+[20/244] Birthday Girl Penelope Douglas
+  Already imported: Birthday Girl
+
+[21/244] Bully Penelope Douglas
+  Already imported: Bully
+
+[22/244] Corrupt Penelope Douglas
+  Already imported: Corrupt
+
+[23/244] Hideaway Penelope Douglas
+  Already imported: Hideaway
+
+[24/244] Kill Switch Penelope Douglas
+  Already imported: Kill Switch
+
+[25/244] Nightfall Penelope Douglas
+  Already imported: Nightfall
+
+[26/244] Icebreaker Hannah Grace
+  Already imported: Icebreaker
+
+[27/244] Wildfire Hannah Grace
+[enrichment] Starting enrichment for book 7b00fbdb-949c-4dd7-9501-f4dbb99fbe6b
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "Wildfire" Hannah Grace
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Wildfire"
+[enrichment] Set language: null → English
+[enrichment] Added tag: New Adult
+[enrichment] Added tag: Romantic Comedy
+[enrichment] Added tag: Forced Proximity
+[enrichment] Added to series: Maple Hills #2
+[series-discovery] Searching for books in series: "Maple Hills"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] No OL results for "Maple Hills" — trying Brave fallback
+[enrichment] Set audiobook length: 11h 16m
+[enrichment] Cover found via OL English edition for "Wildfire"
+[enrichment] Enrichment complete for "Wildfire"
+  [cascade] 50 new books so far...
+  ✓ Imported: Wildfire (total new: 63)
+
+[28/244] Daydream Hannah Grace
+  Already imported: Daydream
+
+[29/244] Better Than the Movies Lynn Painter
+[enrichment] Starting enrichment for book d29a62e4-906c-40f1-bc61-4fe7e3e544b3
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "Better Than the Movies" Lynn Painter
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Better Than the Movies"
+[enrichment] Set language: null → English
+[enrichment] Added tag: Rom-Com
+[enrichment] Added tag: Enemies-to-Lovers
+[enrichment] Added to series: Better Than the Movies #1
+[series-discovery] Searching for books in series: "Better Than the Movies"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Better Than the Movies"
+[series-discovery] Skipping duplicate title: "Better Than the Movies"
+[series-discovery] Discovered and imported 0 new books for "Better Than the Movies"
+[author-discovery] First book by "Lynn Painter" — discovering bibliography
+[author-discovery] Found 18 candidate works for "Lynn Painter"
+[author-discovery] Imported "Better than Before" by "Lynn Painter" (1/30)
+[author-discovery] Imported "Melhor do que nos filmes" by "Lynn Painter" (2/30)
+[author-discovery] Imported "Wish Switch (eBook)" by "Lynn Painter" (3/30)
+[author-discovery] Skipping "Wish Switch" — duplicate of "Wish Switch (eBook)"
+[author-discovery] Imported "Maid for Each Other" by "Lynn Painter" (4/30)
+[author-discovery] Imported "Fake Skating" by "Lynn Painter" (5/30)
+[author-discovery] Imported "Accidentally Amy" by "Lynn Painter" (6/30)
+[author-discovery] Imported "Nothing Like the Movies" by "Lynn Painter" (7/30)
+[author-discovery] Imported "Happily Never After" by "Lynn Painter" (8/30)
+[author-discovery] Imported "Betting on You" by "Lynn Painter" (9/30)
+[author-discovery] Imported "Love Wager" by "Lynn Painter" (10/30)
+[author-discovery] Imported "The Do-Over" by "Lynn Painter" (11/30)
+[author-discovery] Imported "Mr. Wrong Number" by "Lynn Painter" (12/30)
+[author-discovery] Imported "The Poetry of a Speaking Spirit" by "Lynn Painter" (13/30)
+[author-discovery] Done: imported 13 books for "Lynn Painter"
+[enrichment] Set audiobook length: 10h 37m
+[enrichment] Cover found via OL English edition for "Better Than the Movies"
+[enrichment] Enrichment complete for "Better Than the Movies"
+  ✓ Imported: Better Than the Movies (total new: 68)
+
+[30/244] Right on Cue Lynn Painter
+  No results for: Right on Cue Lynn Painter
+
+[31/244] From Blood and Ash Jennifer L Armentrout
+  Already imported: From Blood and Ash
+
+[32/244] A Kingdom of Flesh and Fire Jennifer L Armentrout
+  Already imported: A Kingdom of Flesh and Fire
+
+[33/244] The Crown of Gilded Bones Jennifer L Armentrout
+[enrichment] Starting enrichment for book 404a88ce-6c2c-47df-8f16-b788e9c028ce
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Brave metadata filled: description
+[enrichment] Searching for: "The Crown of Gilded Bones" Jennifer L. Armentrout
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Crown of Gilded Bones"
+[enrichment] Set language: null → English
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Auto-linked parent tag: Fantasy
+[enrichment] Added tag: Adult Fantasy
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Added to series: Blood and Ash #3
+[series-discovery] Searching for books in series: "Blood and Ash"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "From Blood and Ash"
+[series-discovery] Skipping duplicate title: "A Soul of Ash and Blood"
+[series-discovery] Skipping duplicate title: "Born Of Blood And Ash"
+[series-discovery] Imported "Born of Blood and Ash 10-Copy Prepack Indie Signed Edition" into series "Blood and Ash"
+[series-discovery] Discovered and imported 1 new books for "Blood and Ash"
+[enrichment] Set audiobook length: 25h 0m
+[enrichment] Cover found via OL English edition for "The Crown of Gilded Bones"
+[enrichment] Enrichment complete for "The Crown of Gilded Bones"
+  [cascade] 100 new books so far...
+  ✓ Imported: The Crown of Gilded Bones (total new: 102)
+
+[34/244] The War of Two Queens Jennifer L Armentrout
+[enrichment] Starting enrichment for book 545b49eb-ecf3-498b-9b5c-3dd843aba7c5
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "The War of Two Queens" Jennifer L. Armentrout
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The War of Two Queens"
+[enrichment] Set language: null → English
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Auto-linked parent tag: Fantasy
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Added tag: New Adult
+[enrichment] Added to series: Blood and Ash #4
+[series-discovery] Searching for books in series: "Blood and Ash"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "From Blood and Ash"
+[series-discovery] Skipping duplicate title: "A Soul of Ash and Blood"
+[series-discovery] Skipping duplicate title: "Born Of Blood And Ash"
+[series-discovery] Skipping duplicate title: "Born of Blood and Ash 10-Copy Prepack Indie Signed Edition"
+[series-discovery] Discovered and imported 0 new books for "Blood and Ash"
+[enrichment] Set audiobook length: 26h 38m
+[enrichment] Cover found via OL English edition for "The War of Two Queens"
+[enrichment] Enrichment complete for "The War of Two Queens"
+  ✓ Imported: The War of Two Queens (total new: 103)
+
+[35/244] A Soul of Ash and Blood Jennifer L Armentrout
+  Already imported: A Soul of Ash and Blood
+
+[36/244] Born of Blood and Fire Jennifer L Armentrout
+  No results for: Born of Blood and Fire Jennifer L Armentrout
+
+[37/244] Fall of Ruin and Wrath Jennifer L Armentrout
+[enrichment] Starting enrichment for book 20e74de7-7963-422f-8ca7-f91aa3503600
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Brave metadata filled: description
+[enrichment] Searching for: "Fall of Ruin and Wrath" Jennifer L. Armentrout
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Fall of Ruin and Wrath"
+[enrichment] Set language: null → English
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Auto-linked parent tag: Fantasy
+[enrichment] Added tag: Dark Fantasy
+[enrichment] Added to series: Awakening #1
+[series-discovery] Searching for books in series: "Awakening"
+[series-discovery] Brave allowlist too small (0), skipping cross-ref filter
+[series-discovery] No OL results for "Awakening" — trying Brave fallback
+[enrichment] No audiobook length found for "Fall of Ruin and Wrath"
+[enrichment] Cover found via OL English edition for "Fall of Ruin and Wrath"
+[enrichment] Enrichment complete for "Fall of Ruin and Wrath"
+  ✓ Imported: Fall of Ruin and Wrath (total new: 104)
+
+[38/244] The Serpent and the Wings of Night Carissa Broadbent
+[enrichment] Starting enrichment for book e694de78-9dd9-41d1-a14b-87dab5458cec
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "The Serpent & the Wings of Night" Carissa Broadbent
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Serpent & the Wings of Night"
+[enrichment] Set language: null → English
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Dark Fantasy
+[enrichment] Added tag: Enemies-to-Lovers
+[enrichment] Added to series: Crowns of Nyaxia #1
+[series-discovery] Searching for books in series: "Crowns of Nyaxia"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] No OL results for "Crowns of Nyaxia" — trying Brave fallback
+[author-discovery] First book by "Carissa Broadbent" — discovering bibliography
+[author-discovery] Found 11 candidate works for "Carissa Broadbent"
+[author-discovery] Imported "Spring/Summer 2025 Bramble Title to Be Announced" by "Carissa Broadbent" (1/30)
+[author-discovery] Imported "Slaying the Vampire Conqueror" by "Carissa Broadbent" (2/30)
+[author-discovery] Imported "A Crown in Shadows" by "Carissa Broadbent" (3/30)
+[author-discovery] Imported "The Serpent & the Wings of Night/The Ashes & the Star-Cursed King/The Songbird and the Heart of Stone" by "Carissa Broadbent" (4/30)
+[author-discovery] Imported "The Songbird and the Heart of Stone" by "Carissa Broadbent" (5/30)
+[author-discovery] Imported "The Ashes and the Star-Cursed King" by "Carissa Broadbent" (6/30)
+[author-discovery] Imported "Six Scorched Roses" by "Carissa Broadbent" (7/30)
+[author-discovery] Imported "Mother of Death and Dawn" by "Carissa Broadbent" (8/30)
+[author-discovery] Imported "Children of Fallen Gods" by "Carissa Broadbent" (9/30)
+[author-discovery] Imported "Daughter of No Worlds" by "Carissa Broadbent" (10/30)
+[author-discovery] Done: imported 10 books for "Carissa Broadbent"
+[enrichment] No audiobook length found for "The Serpent & the Wings of Night"
+[enrichment] Cover found via OL English edition for "The Serpent & the Wings of Night"
+[enrichment] Enrichment complete for "The Serpent & the Wings of Night"
+  ✓ Imported: The Serpent & the Wings of Night (total new: 105)
+
+[39/244] The Songbird and the Heart of Stone Carissa Broadbent
+  Already imported: The Songbird and the Heart of Stone
+
+[40/244] The Ashes and the Star-Cursed King Carissa Broadbent
+  Already imported: The Ashes and the Star-Cursed King
+
+[41/244] Daughter of No Worlds Carissa Broadbent
+  Already imported: Daughter of No Worlds
+
+[42/244] Powerless Lauren Roberts
+  Already imported: Powerless
+
+[43/244] Reckless Lauren Roberts
+  Already imported: Reckless
+
+[44/244] Fearless Lauren Roberts
+  Already imported: Fearless
+
+[45/244] Ruthless Vows Rebecca Ross
+  Already imported: Ruthless Vows
+
+[46/244] Divine Rivals Rebecca Ross
+  Already imported: Divine Rivals
+
+[47/244] A Fire in the Flesh Jennifer L Armentrout
+  Already imported: Fire and Flesh 3
+
+[48/244] The Primal of Blood and Bone Jennifer L Armentrout
+[enrichment] Starting enrichment for book a991d545-cda6-40a4-9eaf-81dab860e6b4
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "The Primal of Blood and Bone" Jennifer L. Armentrout
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Primal of Blood and Bone"
+[enrichment] Set language: null → English
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Auto-linked parent tag: Fantasy
+[enrichment] Added tag: High Fantasy
+[enrichment] Added tag: New Adult
+[enrichment] Added to series: Blood and Ash #6
+[series-discovery] Searching for books in series: "Blood and Ash"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "From Blood and Ash"
+[series-discovery] Skipping duplicate title: "A Soul of Ash and Blood"
+[series-discovery] Skipping duplicate title: "Born Of Blood And Ash"
+[series-discovery] Skipping duplicate title: "Born of Blood and Ash 10-Copy Prepack Indie Signed Edition"
+[series-discovery] Discovered and imported 0 new books for "Blood and Ash"
+[enrichment] No audiobook length found for "The Primal of Blood and Bone"
+[enrichment] Cover found via OL English edition for "The Primal of Blood and Bone"
+[enrichment] Enrichment complete for "The Primal of Blood and Bone"
+  ✓ Imported: The Primal of Blood and Bone (total new: 106)
+
+[49/244] Lightlark Alex Aster
+  Already imported: Lightlark
+
+[50/244] Nightbane Alex Aster
+  Already imported: Nightbane
+
+[51/244] Skyshade Alex Aster
+  Already imported: Skyshade (the Lightlark Saga Book 3)
+
+[52/244] House of Salt and Sorrows Erin A Craig
+[enrichment] Starting enrichment for book 8b296d86-1776-482b-a806-e6f77d062c2e
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "House of Salt and Sorrows" Erin A. Craig
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "House of Salt and Sorrows"
+[enrichment] Set language: null → English
+[enrichment] Auto-linked parent tag: Fantasy
+[enrichment] Added tag: Gothic Fantasy
+[enrichment] Added tag: Dark Fantasy
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Added to series: Sisters of the Salt #1
+[series-discovery] Searching for books in series: "Sisters of the Salt"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] No OL results for "Sisters of the Salt" — trying Brave fallback
+[author-discovery] First book by "Erin A. Craig" — discovering bibliography
+[author-discovery] Found 15 candidate works for "Erin A. Craig"
+[author-discovery] Imported "Land So Wide" by "Erin A. Craig" (1/30)
+[author-discovery] Imported "Thirteenth Child 9-Copy Floor Display" by "Erin A. Craig" (2/30)
+[author-discovery] Imported "Thirteenth Child" by "Erin A. Craig" (3/30)
+[author-discovery] Imported "House of Roots and Ruin Signed 9-Copy Floor Display" by "Erin A. Craig" (4/30)
+[author-discovery] Imported "House of Roots and Ruin 9-Copy Floor Display" by "Erin A. Craig" (5/30)
+[author-discovery] Imported "House of Roots and Ruin" by "Erin A. Craig" (6/30)
+[author-discovery] Imported "SMALL FAVORS" by "Erin A. Craig" (7/30)
+[author-discovery] Imported "House of Salt and Sorrows 9-Copy Floor Display" by "Erin A. Craig" (8/30)
+[author-discovery] Done: imported 8 books for "Erin A. Craig"
+[enrichment] No audiobook length found for "House of Salt and Sorrows"
+[enrichment] Cover found via OL English edition for "House of Salt and Sorrows"
+[enrichment] Enrichment complete for "House of Salt and Sorrows"
+  ✓ Imported: House of Salt and Sorrows (total new: 113)
+
+[53/244] House of Roots and Ruin Erin A Craig
+  Already imported: House of Roots and Ruin
+
+[54/244] Throne of the Fallen Kerri Maniscalco
+[enrichment] Starting enrichment for book 1ab1e1b7-bf70-4b35-83fa-dff77012259a
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Brave metadata filled: description
+[enrichment] Searching for: "Throne of the Fallen" Kerri Maniscalco
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Throne of the Fallen"
+[enrichment] Set language: null → English
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Grimdark
+[enrichment] Added tag: Paranormal Romance
+[enrichment] Added to series: Prince of Sin #1
+[series-discovery] Searching for books in series: "Prince of Sin"
+[series-discovery] Brave allowlist too small (0), skipping cross-ref filter
+[series-discovery] No OL results for "Prince of Sin" — trying Brave fallback
+[author-discovery] First book by "Kerri Maniscalco" — discovering bibliography
+[author-discovery] Found 4 candidate works for "Kerri Maniscalco"
+[author-discovery] Imported "Escaping from Houdini" by "Kerri Maniscalco" (1/30)
+[author-discovery] Imported "Throne of Secrets" by "Kerri Maniscalco" (2/30)
+[author-discovery] Done: imported 2 books for "Kerri Maniscalco"
+[enrichment] Set audiobook length: 18h 56m
+[enrichment] Cover found via OL English edition for "Throne of the Fallen"
+[enrichment] Enrichment complete for "Throne of the Fallen"
+  ✓ Imported: Throne of the Fallen (total new: 115)
+
+[55/244] Kingdom of the Wicked Kerri Maniscalco
+[enrichment] Starting enrichment for book 3841d711-9dba-4751-8919-252c94ec7523
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Brave metadata filled: description
+[enrichment] Searching for: "Kingdom of the Wicked" Kerri Maniscalco
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Kingdom of the Wicked"
+[enrichment] Set language: null → English
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Auto-linked parent tag: Fantasy
+[enrichment] Added tag: Dark Fantasy
+[enrichment] Auto-linked parent tag: Historical Fiction
+[enrichment] Added tag: Historical Fantasy
+[enrichment] Added to series: Kingdom of the Wicked #1
+[series-discovery] Searching for books in series: "Kingdom of the Wicked"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Kingdom of the Wicked"
+[series-discovery] Imported "Kingdom of the Wicked 5c (B4G1) Solid Prepack - Indies" into series "Kingdom of the Wicked"
+[series-discovery] Discovered and imported 1 new books for "Kingdom of the Wicked"
+[enrichment] Set audiobook length: 12h 6m
+[enrichment] Cover found via OL English edition for "Kingdom of the Wicked"
+[enrichment] Enrichment complete for "Kingdom of the Wicked"
+  ✓ Imported: Kingdom of the Wicked (total new: 146)
+
+[56/244] Kingdom of the Cursed Kerri Maniscalco
+  Already imported: Kingdom of the Cursed
+
+[57/244] Kingdom of the Feared Kerri Maniscalco
+  Already imported: Kingdom of the Feared
+
+[58/244] Assistant to the Villain Hannah Nicole Maehrer
+  Already imported: Assistant to the Villain
+
+[59/244] Apprentice to the Villain Hannah Nicole Maehrer
+  Already imported: Apprentice to the Villain
+
+[60/244] The Love Hypothesis Ali Hazelwood
+  Already imported: The Love Hypothesis
+
+[61/244] Love on the Brain Ali Hazelwood
+  Already imported: Love on the Brain
+
+[62/244] Check and Mate Ali Hazelwood
+  Already imported: Check & Mate
+
+[63/244] Bride Ali Hazelwood
+  Already imported: Bride
+
+[64/244] Love Theoretically Ali Hazelwood
+  Already imported: Love Theoretically
+
+[65/244] Beach Read Emily Henry
+  Already imported: Beach Read
+
+[66/244] People We Meet on Vacation Emily Henry
+  Already imported: People We Meet On Vacation
+
+[67/244] Book Lovers Emily Henry
+  Already imported: Book Lovers
+
+[68/244] Happy Place Emily Henry
+  Already imported: Happy Place
+
+[69/244] Funny Story Emily Henry
+  Already imported: Funny Story
+
+[70/244] Great Big Beautiful Life Emily Henry
+  Already imported: Great Big Beautiful Life
+
+[71/244] The Spanish Love Deception Elena Armas
+[enrichment] Starting enrichment for book 638f69ee-f1ee-4845-84cb-86f585736fe2
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "The Spanish Love Deception" Elena Armas
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Spanish Love Deception"
+[enrichment] Set language: null → English
+[enrichment] Added tag: Rom-Com
+[enrichment] Added tag: Fake Dating
+[enrichment] Added tag: Slow Burn
+[enrichment] Added to series: Love Deception #1
+[series-discovery] Searching for books in series: "Love Deception"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "The Spanish Love Deception"
+[series-discovery] Discovered and imported 0 new books for "Love Deception"
+[author-discovery] First book by "Elena Armas" — discovering bibliography
+[author-discovery] Found 11 candidate works for "Elena Armas"
+[author-discovery] Imported "The Fiance Dilemma" by "Elena Armas" (1/30)
+[author-discovery] Imported "Inmortales" by "Elena Armas" (2/30)
+[author-discovery] Imported "The Fiancé Dilemma" by "Elena Armas" (3/30)
+[author-discovery] Imported "Long Game" by "Elena Armas" (4/30)
+[author-discovery] Imported "Untitled Armas #1" by "Elena Armas" (5/30)
+[author-discovery] Imported "Title" by "Elena Armas" (6/30)
+[author-discovery] Imported "The American roommate experience " by "Elena Armas" (7/30)
+[author-discovery] Imported "The American Roommate Experiment" by "Elena Armas" (8/30)
+[author-discovery] Done: imported 8 books for "Elena Armas"
+[enrichment] Set audiobook length: 14h 41m
+[enrichment] Cover found via OL English edition for "The Spanish Love Deception"
+[enrichment] Enrichment complete for "The Spanish Love Deception"
+  ✓ Imported: The Spanish Love Deception (total new: 149)
+
+[72/244] The American Roommate Experiment Elena Armas
+  Already imported: The American Roommate Experiment
+
+[73/244] Part of Your World Abby Jimenez
+[enrichment] Starting enrichment for book 9d892330-912e-472c-ab39-4c68df2fef1d
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "Part of Your World" Abby Jimenez
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Part of Your World"
+[enrichment] Set language: null → English
+[enrichment] Added tag: Romance
+[enrichment] Added tag: Contemporary Romance
+[enrichment] Added tag: Rom-Com
+[enrichment] Added to series: Part of Your World #1
+[series-discovery] Searching for books in series: "Part of Your World"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Part of Your World"
+[series-discovery] Imported "Parte de Tu Mundo / Part of Your World" into series "Part of Your World"
+[series-discovery] Discovered and imported 1 new books for "Part of Your World"
+[enrichment] Set audiobook length: 10h 5m
+[enrichment] Cover found via OL English edition for "Part of Your World"
+[enrichment] Enrichment complete for "Part of Your World"
+  ✓ Imported: Part of Your World (total new: 165)
+
+[74/244] Yours Truly Abby Jimenez
+  Already imported: Yours Truly
+
+[75/244] Just for the Summer Abby Jimenez
+  Already imported: Just for the Summer
+
+[76/244] The Happy Ever After Playlist Abby Jimenez
+  Already imported: The Happy Ever After Playlist
+
+[77/244] Life's Too Short Abby Jimenez
+  Already imported: Life's Too Short
+
+[78/244] The Friend Zone Abby Jimenez
+  Already imported: The Friend Zone
+
+[79/244] Tessa Bailey It Happened One Summer
+[enrichment] Starting enrichment for book 9d8fb945-6e66-47d5-b26a-84a614ef5b02
+[enrichment] OL metadata filled: publicationDate, publisher
+[enrichment] Searching for: "It Happened One Summer" Tessa Bailey
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "It Happened One Summer"
+[enrichment] Set language: null → English
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Contemporary Romance
+[enrichment] Added tag: Romantic Comedy
+[enrichment] Added tag: Enemies to Lovers
+[enrichment] Added to series: Bellinger Sisters #1
+[series-discovery] Searching for books in series: "Bellinger Sisters"
+[series-discovery] Brave allowlist (4 titles): books, following novels, romantic storylines with a lot of steam and the enemies to lo, two books but can be named standalone friendly
+[series-discovery] No OL results for "Bellinger Sisters" — trying Brave fallback
+[series-discovery] Imported "books" via Brave+GBooks fallback
+[series-discovery] Imported "following novels" via Brave+GBooks fallback
+[series-discovery] Imported "romantic storylines with a lot of steam and the enemies to lo" via Brave+GBooks fallback
+[series-discovery] Imported "two books but can be named standalone friendly" via Brave+GBooks fallback
+[series-discovery] Brave fallback imported 4 books for "Bellinger Sisters"
+[enrichment] Set audiobook length: 75h 0m
+[enrichment] Cover found via OL English edition for "It Happened One Summer"
+[enrichment] Enrichment complete for "It Happened One Summer"
+  [cascade] 200 new books so far...
+  ✓ Imported: It Happened One Summer (total new: 216)
+
+[80/244] Hook Line and Sinker Tessa Bailey
+  ✓ Imported: Hook, Line, and Sinker (total new: 217)
+
+[81/244] Fangirl Rainbow Rowell
+  [cascade] 250 new books so far...
+  ✓ Imported: Fangirl (total new: 267)
+
+[82/244] Eleanor and Park Rainbow Rowell
+  Already imported: Eleanor & Park
+
+[83/244] The Flatshare Beth O'Leary
+  ✓ Imported: The Flatshare (total new: 289)
+
+[84/244] The No-Show Beth O'Leary
+  Already imported: No-Show
+
+[85/244] One Day in December Josie Silver
+  [cascade] 300 new books so far...
+  ✓ Imported: One day in December (total new: 305)
+
+[86/244] In a Holidaze Christina Lauren
+  [cascade] 350 new books so far...
+  ✓ Imported: In a Holidaze (total new: 356)
+
+[87/244] The Unhoneymooners Christina Lauren
+  ✓ Imported: The Unhoneymooners (total new: 357)
+
+[88/244] Something Wilder Christina Lauren
+  Already imported: Something Wilder
+
+[89/244] The Silent Patient Alex Michaelides
+  Already imported: The Silent Patient
+
+[90/244] The Maidens Alex Michaelides
+  Already imported: The Maidens
+
+[91/244] The Maid Nita Prose
+  ✓ Imported: The Maid (total new: 363)
+
+[92/244] The Housemaid Freida McFadden
+  Already imported: The Housemaid
+
+[93/244] The Housemaid's Secret Freida McFadden
+  Already imported: The Housemaid's Secret
+
+[94/244] Never Lie Freida McFadden
+  Already imported: Never Lie
+
+[95/244] The Inmate Freida McFadden
+  ✓ Imported: The Inmate (total new: 392)
+
+[96/244] Do You Remember Freida McFadden
+  Already imported: Do You Remember?
+
+[97/244] Ward D Freida McFadden
+  Already imported: Ward D
+
+[98/244] The Teacher Freida McFadden
+  Already imported: The Teacher
+
+[99/244] One by One Ruth Ware
+  [cascade] 400 new books so far...
+  ✓ Imported: One by One (total new: 441)
+
+[100/244] The Woman in Cabin 10 Ruth Ware
+  Already imported: Woman in Cabin 10
+
+[101/244] In a Dark Dark Wood Ruth Ware
+  Already imported: In a Dark, Dark Wood
+
+[102/244] The It Girl Ruth Ware
+  Already imported: The It Girl
+
+[103/244] The Paris Apartment Lucy Foley
+  [cascade] 450 new books so far...
+  ✓ Imported: The Paris Apartment (total new: 452)
+
+[104/244] The Guest List Lucy Foley
+  Already imported: Guest List
+
+[105/244] The Hunting Party Lucy Foley
+  Already imported: The Hunting Party
+
+[106/244] None of This Is True Lisa Jewell
+  Already imported: None of This Is True
+
+[107/244] Then She Was Gone Lisa Jewell
+  Already imported: Then She Was Gone
+
+[108/244] The Family Upstairs Lisa Jewell
+  ✓ Imported: The Family Upstairs (total new: 482)
+
+[109/244] Rock Paper Scissors Alice Feeney
+  Already imported: Rock Paper Scissors
+
+[110/244] Sometimes I Lie Alice Feeney
+  Already imported: Sometimes I lie
+
+[111/244] Daisy Darker Alice Feeney
+  Already imported: Daisy Darker
+
+[112/244] The Last Thing He Told Me Laura Dave
+  [cascade] 500 new books so far...
+  ✓ Imported: The Last Thing He Told Me (total new: 505)
+
+[113/244] Reminders of Him Colleen Hoover
+  Already imported: Reminders of Him
+
+[114/244] The Song of Achilles Madeline Miller
+  ✓ Imported: The Song of Achilles (total new: 507)
+
+[115/244] Circe Madeline Miller
+  Already imported: Circe
+
+[116/244] Normal People Sally Rooney
+  Already imported: Normal People
+
+[117/244] Beautiful World Where Are You Sally Rooney
+  Already imported: Beautiful World, Where Are You
+
+[118/244] Conversations with Friends Sally Rooney
+  Already imported: Conversations With Friends
+
+[119/244] Intermezzo Sally Rooney
+  Already imported: Intermezzo
+
+[120/244] A Little Life Hanya Yanagihara
+  ✓ Imported: A Little Life (total new: 523)
+
+[121/244] The Goldfinch Donna Tartt
+  [cascade] 550 new books so far...
+  ✓ Imported: The Goldfinch (total new: 556)
+
+[122/244] The Secret History Donna Tartt
+  Already imported: The Secret History
+
+[123/244] The Idiot Elif Batuman
+  ✓ Imported: The Idiot (total new: 561)
+
+[124/244] My Year of Rest and Relaxation Ottessa Moshfegh
+  ✓ Imported: My Year of Rest and Relaxation (total new: 570)
+
+[125/244] Eileen Ottessa Moshfegh
+  Already imported: Eileen
+
+[126/244] Lapvona Ottessa Moshfegh
+  Already imported: Lapvona
+
+[127/244] The Bell Jar Sylvia Plath
+  [cascade] 600 new books so far...
+  ✓ Imported: The Bell Jar (total new: 619)
+
+[128/244] Norwegian Wood Haruki Murakami
+  [cascade] 650 new books so far...
+  ✓ Imported: Norwegian Wood (total new: 668)
+
+[129/244] Kafka on the Shore Haruki Murakami
+  No results for: Kafka on the Shore Haruki Murakami
+
+[130/244] 1Q84 Haruki Murakami
+  Already imported: 1Q84
+
+[131/244] The Wind-Up Bird Chronicle Haruki Murakami
+  ✓ Imported: Haruki Murakami's The Wind-up Bird Chronicle (total new: 670)
+
+[132/244] Never Let Me Go Kazuo Ishiguro
+  [cascade] 700 new books so far...
+  ✓ Imported: Never Let Me Go (total new: 720)
+
+[133/244] Klara and the Sun Kazuo Ishiguro
+  Already imported: Klara and the Sun
+
+[134/244] The Remains of the Day Kazuo Ishiguro
+  ✓ Imported: The Remains of the Day (total new: 721)
+
+[135/244] The Kite Runner Khaled Hosseini
+  [cascade] 750 new books so far...
+  ✓ Imported: The Kite Runner (total new: 765)
+
+[136/244] A Thousand Splendid Suns Khaled Hosseini
+  Already imported: A Thousand Splendid Suns
+
+[137/244] Pachinko Min Jin Lee
+  ✓ Imported: Pachinko (total new: 771)
+
+[138/244] The Vanishing Half Brit Bennett
+  ✓ Imported: The Vanishing Half (total new: 790)
+
+[139/244] The Priory of the Orange Tree Samantha Shannon
+  [cascade] 800 new books so far...
+  [cascade] 850 new books so far...
+  ✓ Imported: The Priory of the Orange Tree (total new: 861)
+
+[140/244] A Day of Fallen Night Samantha Shannon
+  Already imported: A Day of Fallen Night
+
+[141/244] The Bone Season Samantha Shannon
+  Already imported: The Bone Season
+
+[142/244] The Mask of Mirrors M A Carrick
+  ✓ Imported: Mask of Mirrors (total new: 865)
+
+[143/244] The Liar's Knot M A Carrick
+  Already imported: Liar's Knot
+
+[144/244] Labyrinth's Heart M A Carrick
+  Already imported: Labyrinth's Heart
+
+[145/244] Jade City Fonda Lee
+  ✓ Imported: Jade City (total new: 890)
+
+[146/244] Jade War Fonda Lee
+  Already imported: Jade War
+
+[147/244] Jade Legacy Fonda Lee
+  Already imported: Jade Legacy
+
+[148/244] The Jasmine Throne Tasha Suri
+  [cascade] 900 new books so far...
+  ✓ Imported: The Jasmine Throne (total new: 905)
+
+[149/244] The Oleander Sword Tasha Suri
+  Already imported: Oleander Sword
+
+[150/244] The Burning Kingdoms Tasha Suri
+  No results for: The Burning Kingdoms Tasha Suri
+
+[151/244] She Who Became the Sun Shelley Parker-Chan
+  ✓ Imported: She Who Became the Sun (total new: 909)
+
+[152/244] He Who Drowned the World Shelley Parker-Chan
+  Already imported: He Who Drowned the World
+
+[153/244] Black Sun Rebecca Roanhorse
+  ✓ Imported: Black Sun (total new: 933)
+
+[154/244] Fevered Star Rebecca Roanhorse
+  Already imported: Fevered Star
+
+[155/244] Mirrored Heavens Rebecca Roanhorse
+  Already imported: Mirrored Heavens
+
+[156/244] The Goblin Emperor Katherine Addison
+  [cascade] 950 new books so far...
+  ✓ Imported: The Goblin Emperor (total new: 965)
+
+[157/244] The Witness for the Dead Katherine Addison
+  Already imported: The Witness for the Dead
+
+[158/244] The Grief of Stones Katherine Addison
+  Already imported: Grief of Stones
+
+[159/244] Legends and Lattes Travis Baldree
+  Already imported: Legends & Lattes
+
+[160/244] Bookshops and Bonedust Travis Baldree
+  Already imported: Bookshops & Bonedust
+
+[161/244] The Atlas Six Olivie Blake
+  Already imported: The Atlas Six
+
+[162/244] The Atlas Paradox Olivie Blake
+  Already imported: The Atlas Paradox
+
+[163/244] The Atlas Complex Olivie Blake
+  Already imported: The Atlas Complex
+
+[164/244] Project Hail Mary Andy Weir
+  Already imported: Project Hail Mary
+
+[165/244] The Martian Andy Weir
+  Already imported: The Martian
+
+[166/244] Artemis Andy Weir
+  Already imported: Artemis
+
+[167/244] Recursion Blake Crouch
+  Already imported: Recursion
+
+[168/244] Dark Matter Blake Crouch
+  Already imported: Dark Matter
+
+[169/244] Upgrade Blake Crouch
+  ✓ Imported: Upgrade (total new: 986)
+
+[170/244] Klara and the Sun Kazuo Ishiguro
+  Already imported: Klara and the Sun
+
+[171/244] The Long Way to a Small Angry Planet Becky Chambers
+  [cascade] 1000 new books so far...
+  ✓ Imported: The Long Way to a Small, Angry Planet (total new: 1000)
+
+[booktok] Hit 1000 new books limit, stopping
+
+[booktok] ═══════════════════════════════════
+[booktok] Done! Direct imports: 52, Skipped: 119
+[booktok] Total new books (incl. cascade): 1000
+[booktok] Book count: 9090 → 10207 (+1117)
+[booktok] Runtime: 21.0 minutes

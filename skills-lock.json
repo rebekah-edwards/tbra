@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "skills": {
+    "differential-review": {
+      "source": "trailofbits/skills",
+      "sourceType": "github",
+      "computedHash": "5b23eaac1f3a88b6d820bb1e65c2e714afdd4153e55d712fbd102815a3efbd01"
+    },
+    "drizzle-orm-expert": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "f39da7fdfca57ffb67ab1d193254ab8b716d7dd00f031d352dd6ac14b83b5255"
+    },
+    "error-handling-patterns": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "95244b46982753a5eba88bb32044a0e06b446f4ee6ec6c976903e11ecc7af8c4"
+    },
+    "frontend-design": {
+      "source": "anthropics/claude-code",
+      "sourceType": "github",
+      "computedHash": "e8118284a6365753790d44bb2758a6032b3af27fa84696428d9233f2be0f4e78"
+    },
+    "insecure-defaults": {
+      "source": "trailofbits/skills",
+      "sourceType": "github",
+      "computedHash": "b3d5dba6b18379f47ce17994ceb872434550dffc18c775075f60d27864b36d8b"
+    },
+    "progressive-web-app": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "c71f7ec435945879a9bff7c2ac1d2c2e82edbe39761f2416d2ca2095ebbb36d4"
+    },
+    "sharp-edges": {
+      "source": "trailofbits/skills",
+      "sourceType": "github",
+      "computedHash": "22659ba5eac9130ce0fc15ded5699db2847c375e61880aea3e12f3b5d9867bc8"
+    },
+    "sql-optimization-patterns": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "c051e3a17e9aa296123beaa53df4efef828bb979022212d02feb5f2841c4b05b"
+    },
+    "vercel-composition-patterns": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "f98931159fa9c7fed043bcd18a891a46dcf89ababa38df13a4c5b7b30dc0ce07"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "bbc31a48537b473ff4feea6360ef0de3bfdcbef26c14f4967a5deefe8ca801d3"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+    },
+    "zod-validation-expert": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "8fd8eb38d99ba483ff3a17389e4db8ade789599cd6d90fdb1a25e9b6d23e2ed3"
+    }
+  }
+}

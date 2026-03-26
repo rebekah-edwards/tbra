@@ -1,0 +1,1383 @@
+[22:29:17] ============================================================
+[22:29:17] DEEP CLEAN — Zero-cost database cleanup
+[22:29:17] ============================================================
+[22:29:17] Starting book count: 11945
+[22:29:17] 
+[22:29:17] === PHASE 1: Duplicate detection & merging ===
+[22:29:22]   DELETED: Carl's Doomsday Scenario — duplicate of 'Carl’s Doomsday Scenario'
+[22:29:22]   DELETED: Dungeon Anarchist's Cookbook — duplicate of 'The Dungeon Anarchist’s Cookbook'
+[22:29:22]   DELETED: Essay upon Projects — duplicate of 'An essay upon projects'
+[22:29:22]   SKIP (has users): Abaddon's Gate
+[22:29:22]   SKIP (has users): Heaven’s River
+[22:29:22]   DELETED: Omoo : Adventures in the South Seas — duplicate of 'Omoo. Adventures In The South Seas'
+[22:29:22]   DELETED: Untamed Land (Red River of the North Book #1) — duplicate of 'An Untamed Land (Red River of the North #1)'
+[22:29:22]   DELETED: Valley of Dreams (Wild West Wind) — duplicate of 'Valley of Dreams (Wild West Wind Book #1)'
+[22:29:22]   DELETED: Season of Harvest — duplicate of 'Season of Harvest (Leah's Garden Book #4)'
+[22:29:22]   SKIP (has users): Danger in the Shadows
+[22:29:22]   DELETED: The Marriage Wish (Steeple Hill Women's Fiction #13) — duplicate of 'Marriage Wish'
+[22:29:22]   DELETED: The Ezekiel Option (Political Thrillers Series #3) — duplicate of 'Ezekiel Option'
+[22:29:22]   DELETED: Persian Gamble — duplicate of 'The Persian Gamble'
+[22:29:22]   DELETED: The Jerusalem assassin — duplicate of 'The Jerusalem assassin'
+[22:29:22]   DELETED: Without Warning — duplicate of 'Without warning'
+[22:29:22]   DELETED: The twelfth Imam — duplicate of 'The Twelfth Imam'
+[22:29:22]   DELETED: The last days — duplicate of 'The last days'
+[22:29:22]   DELETED: Inside the revolution — duplicate of 'Inside the revolution'
+[22:29:22]   DELETED: Inside the revolution — duplicate of 'Inside the revolution'
+[22:29:22]   DELETED: Epicenter — duplicate of 'Epicenter'
+[22:29:22]   DELETED: Seaside Homecoming — duplicate of 'Seaside Homecoming (on Devonshire Shores Book #3)'
+[22:29:22]   DELETED: Ivy Hill Christmas — duplicate of 'An Ivy Hill Christmas'
+[22:29:22]   DELETED: Shiloh Autumn (Discover the Truth Through Fiction: Thoene Family Classics Historical) — duplicate of 'Shiloh Autumn'
+[22:29:22]   DELETED: The Striker — duplicate of 'Striker'
+[22:29:22]   DELETED: Frankenstein, or The modern Prometheus — duplicate of 'Frankenstein, or the Modern Prometheus (illustrated)'
+[22:29:22]   DELETED: The Shack [sound recording] — duplicate of 'The Shack'
+[22:29:22]   DELETED: Uncommon Woman — duplicate of 'An uncommon woman'
+[22:29:22]   DELETED: Royal Artisan (Queen Esther's Court) — duplicate of 'Royal Artisan'
+[22:29:22]   DELETED: Mr Tiger Goes Wild — duplicate of 'Mr. Tiger Goes Wild'
+[22:29:22]   DELETED: Three Days Before the Shooting ... — duplicate of 'Three days before the shooting--'
+[22:29:22]   DELETED: The Iliad and Odyssey of Homer — duplicate of 'Iliad and Odyssey of Homer'
+[22:29:22]   DELETED: Incomparable 29th and the River Clyde — duplicate of 'Incomparable 29th and the River Clyde (Wwi Centenary Series)'
+[22:29:22]   DELETED: The incomparable 29th and the "River Clyde" — duplicate of 'Incomparable 29th and the River Clyde (Wwi Centenary Series)'
+[22:29:22]   DELETED: Introductory group theory for chemists. — duplicate of 'Introductory group theory for chemists'
+[22:29:22]   DELETED: Poetical works of Alexander Pope — duplicate of 'The poetical works of Alexander Pope'
+[22:29:22]   DELETED: Gabriel García Márquez's One hundred years of solitude — duplicate of 'Gabriel Garcia Marquez's One Hundred Years of Solitude'
+[22:29:22]   DELETED: Catch 22 (Book Club Edition) — duplicate of 'Catch-22'
+[22:29:22]   DELETED: Catch - 22 — duplicate of 'Catch-22'
+[22:29:22]   DELETED: A.D. 33 — duplicate of 'A. D. 33'
+[22:29:22]   DELETED: Tortilla Flat (SparkNotes Literature Guide) — duplicate of 'Tortilla Flat'
+[22:29:22]   DELETED: Wild Rescue — duplicate of 'Wild Rescue'
+[22:29:22]   DELETED: Book of the King — duplicate of 'Book of the King'
+[22:29:22]   DELETED: Double Fault — duplicate of 'Double Fault'
+[22:29:22]   DELETED: Dead End — duplicate of 'Dead End'
+[22:29:22]   DELETED: Grave Shadows — duplicate of 'Grave Shadows'
+[22:29:22]   DELETED: Haunted Waters — duplicate of 'Haunted Waters'
+[22:29:22]   DELETED: Guerra do Velho — duplicate of 'A Guerra do Velho '
+[22:29:22]   DELETED: Life and Public Services of Benjamin Harrison, President of the U. S. — duplicate of 'Life and Public Services of Benjamin Harrison, President of the U.S.'
+[22:29:22]   DELETED: Fair God : Or, the Last of the 'Tzins — duplicate of 'The fair god ; or, The last of the 'Tzins'
+[22:29:22]   DELETED: Ben Hur a Tale of the Christ — duplicate of 'Ben-Hur : a Tale of the Christ'
+[22:29:22]   DELETED: Prince of India (Volume II) Illustrated — duplicate of 'Prince of India (Volume I) Illustrated'
+[22:29:22]   DELETED: Fair God; or, the Last of the 'Tzins; a Tale of the Conquest of Mexico — duplicate of 'The Fair God: Or, The Last of the 'Tzins : a Tale of the Conquest of Mexico'
+[22:29:22]   DELETED: Watchmen on the walls — duplicate of '"Watchmen on the walls"'
+[22:29:22]   DELETED: Mansfield Park (SparkNotes) — duplicate of 'Mansfield Park (SparkNotes Literature Guide)'
+[22:29:22]   DELETED: Quatrevingt-treize — duplicate of 'Quatrevingt Treize'
+[22:29:22]   DELETED: Meridian — duplicate of 'Meridian (SparkNotes Literature Guide)'
+[22:29:22]   DELETED: S.E. Hinton's The Puppy Sister — duplicate of 'S. E. Hinton's The Puppy Sister'
+[22:29:22]   SKIP (has users): The Lion, The Witch and the Wardrobe
+[22:29:22]   DELETED: Lion, the Witch, and the Wardrobe (SparkNotes Literature Guide) — duplicate of 'The Lion, the Witch and the Wardrobe'
+[22:29:22]   DELETED: The Dutch house  — duplicate of 'Dutch House'
+[22:29:22]   DELETED: The Movement -- Documentary of a Struggle for Equality — duplicate of 'The movement; documentary of a struggle for equality.'
+[22:29:22]   DELETED: Man — duplicate of 'Man (Annotated)'
+[22:29:22]   DELETED: Yesterday's Tides — duplicate of 'Yesterdays Tides'
+[22:29:22]   DELETED: Song Unheard — duplicate of 'Song Unheard (Shadows over England Book #2)'
+[22:29:22]   DELETED: Hour Unspent (Shadows over England Book #3) — duplicate of 'An Hour Unspent'
+[22:29:22]   DELETED: To Treasure an Heiress (the Secrets of the Isles Book #2) — duplicate of 'To Treasure an Heiress'
+[22:29:22]   DELETED: Amor Redentor — duplicate of 'Amor Redentor'
+[22:29:22]   DELETED: Unveiled — duplicate of 'Unveiled'
+[22:29:22]   DELETED: Her Mother's Hope — duplicate of 'Her Mother's Hope'
+[22:29:22]   DELETED: Echo in the Darkness — duplicate of 'An Echo in the Darkness'
+[22:29:22]   DELETED: Scarlet Thread — duplicate of 'The Scarlet Thread'
+[22:29:22]   DELETED: Voice in the Wind — duplicate of 'Voice in the Wind'
+[22:29:22]   DELETED: The Priest — duplicate of 'Priest'
+[22:29:22]   DELETED: Final Approach — duplicate of 'Final Approach (Lake City Heroes Book #4)'
+[22:29:22]   DELETED: Nigger of the Narcissus — duplicate of 'The nigger of the Narcissus'
+[22:29:22]   DELETED: Nigger of The 'Narcissus' — duplicate of 'The nigger of the Narcissus'
+[22:29:22]   DELETED: Lord Jim — duplicate of 'Lord Jim (SparkNotes Literature Guide)'
+[22:29:22]   DELETED: Return to Pelican Inn — duplicate of 'Return to Pelican Inn (Larger Print)'
+[22:29:22]   DELETED: Moto shel sokhen — duplicate of 'Moto shel sokhen'
+[22:29:22]   DELETED: The misfits — duplicate of 'The misfits'
+[22:29:22]   DELETED: After the Fall — duplicate of 'After The Fall'
+[22:29:22]   DELETED: After the fall — duplicate of 'After The Fall'
+[22:29:22]   DELETED: The crucible — duplicate of 'The crucible'
+[22:29:22]   DELETED: The Wood at Midwinter — duplicate of 'Wood at Midwinter'
+[22:29:22]   DELETED: To kill a Mocking Bird — duplicate of 'To Kill a Mockingbird'
+[22:29:22]   DELETED: Mansfield Park (Deluxe Edition) — duplicate of 'Mansfield Park'
+[22:29:22]   DELETED: Sense and Sensibility (Annotated) — duplicate of 'Sense and Sensibility'
+[22:29:22]   DELETED: Persuasion (Annotated) — duplicate of 'Persuasion'
+[22:29:22]   DELETED: Hope Chest — duplicate of 'The Hope Chest (Brides of Lancaster County, 4)'
+[22:29:22]   DELETED: Runaway Troll — duplicate of 'The Runaway Troll'
+[22:29:22]   DELETED: An Arrow to the Moon — duplicate of 'Arrow to the Moon'
+[22:29:22]   DELETED: The Golden Fool — duplicate of 'Golden Fool'
+[22:29:22]   DELETED: The Fool's Quest — duplicate of 'The Fool's Quest (Fitz and the Fool)'
+[22:29:22]   DELETED: Fool's Quest — duplicate of 'The Fool's Quest (Fitz and the Fool)'
+[22:29:22]   DELETED: Automatic Wealth : The Secrets of the Millionaire Mind--Including — duplicate of 'Automatic Wealth, the Secrets of the Millionaire Mind-Including'
+[22:29:22]   DELETED: The Girl Who Kicked the Hornet's Nest — duplicate of 'The Girl Who Kicked the Hornet's Nest'
+[22:29:22]   DELETED: Faucon de Malte : (the Maltese Falcon) — duplicate of 'Faucon de Malte'
+[22:29:22]   DELETED: The Fate Of Ten (Turtleback School & Library Binding Edition) (The Lorien Legacies: I Am Number Four) — duplicate of 'The Fate of Ten'
+[22:29:22]   DELETED: Select Editions — duplicate of 'SelectEditions'
+[22:29:22]   SKIP (has users): Power of Six
+[22:29:22]   DELETED: Madman — duplicate of 'The Madman'
+[22:29:22]   DELETED: The palace of glass — duplicate of 'Palace of Glass'
+[22:29:22]   DELETED: The madman, his parables and poems, — duplicate of 'Madman - His Parables and Poems'
+[22:29:22]   DELETED: Wanderer — duplicate of 'The Wanderer'
+[22:29:22]   DELETED: Molly Fyde and the Fight for Peace — duplicate of 'Molly Fyde and the Fight for Peace (Book 4)'
+[22:29:22]   DELETED: Scooby-doo and the Cupcake Caper — duplicate of 'Scooby-Doo! and the cupcake caper'
+[22:29:22]   DELETED: Fire Truck to the Rescue (LEGO City: Scholastic Reader, Level 1) — duplicate of 'Fire Truck To The Rescue! (Turtleback School & Library Binding Edition) (Lego City Adventures)'
+[22:29:22]   DELETED: The Cobra Event — duplicate of 'The Cobra Event'
+[22:29:22]   DELETED: The Demon in the Freezer — duplicate of 'The Demon in the Freezer'
+[22:29:22]   DELETED: The Snow goose. — duplicate of 'The Snow Goose'
+[22:29:22]   DELETED: Wizard of Oz — duplicate of 'The Wizard of Oz'
+[22:29:22]   DELETED: Life and Adventures of Santa Claus (Annotated) — duplicate of 'Life and Adventures of Santa Claus'
+[22:29:22]   DELETED: The Bullet That Missed — duplicate of 'Bullet That Missed : (the Thursday Murder Club 3)'
+[22:29:23]   DELETED: The Land of Oz — duplicate of 'Land of Oz'
+[22:29:23]   DELETED: The Battle of the Labyrinth — duplicate of 'The Battle of the Labyrinth'
+[22:29:23]   DELETED: The Trials of Koli — duplicate of 'Trials of Koli'
+[22:29:23]   DELETED: Loop — duplicate of 'Loop  ('Ring' series, Book 3)'
+[22:29:23]   DELETED: Reader's Digest Condensed Books — duplicate of 'Reader's Digest condensed books.'
+[22:29:23]   DELETED: Beneath the Skin : (First Edition) — duplicate of 'Beneath the Skin'
+[22:29:23]   DELETED: Map of Bones (Sever Haazmaot) — duplicate of 'Map of Bones'
+[22:29:23]   DELETED: Tideborn — duplicate of 'Tideborn : (the Drowned World Duology, Book 2)'
+[22:29:23]   DELETED: The Last Oracle — duplicate of 'The Last Oracle (Sigma Force)'
+[22:29:23]   DELETED: Skink - No Surrender — duplicate of 'Skink--No Surrender'
+[22:29:23]   DELETED: SmackDab in the Middle of Gods Love — duplicate of 'Smack Dab in the Middle of God's Love'
+[22:29:23]   DELETED: A Winter’s Promise — duplicate of 'A winter's promise'
+[22:29:23]   DELETED: Adventures of Sherlock Holmes — duplicate of 'The Adventures of Sherlock Holmes [12 stories]'
+[22:29:23]   DELETED: Dust — duplicate of 'Dust'
+[22:29:23]   DELETED: The Godstone and the Blackymor. — duplicate of 'The Godstone and the Blackymor'
+[22:29:23]   DELETED: Serafina and the Black Cloak — duplicate of 'Serafina and the Black Cloak'
+[22:29:23]   SKIP (has users): Red
+[22:29:23]   DELETED: Abandon — duplicate of 'Abandon'
+[22:29:23]   DELETED: Stark naked — duplicate of 'Stark naked;'
+[22:29:23]   DELETED: Pines : Wayward Pines — duplicate of 'Pines : Wayward Pines'
+[22:29:23]   DELETED: Serial Killers Uncut — duplicate of 'Serial Killers Uncut'
+[22:29:23]   DELETED: The fourfold Gospel — duplicate of 'Fourfold Gospel'
+[22:29:23]   DELETED: Ender's Shadow — duplicate of 'Ender's Shadow'
+[22:29:23]   DELETED: Great Leveller (eBook) — duplicate of 'Great Leveller'
+[22:29:23]   DELETED: REVOLUTION'S SHORE (Highroad Trilogy, No 2) — duplicate of 'Revolution's Shore'
+[22:29:23]   DELETED: Jaran — duplicate of 'Jaran'
+[22:29:23]   DELETED: Traitors Gate - Book Three of Crossroads — duplicate of 'Traitors' Gate: Book Three of Crossroads'
+[22:29:23]   DELETED: The Secret of Secrets — duplicate of 'Secret of Secrets'
+[22:29:23]   SKIP (has users): Forest of Hands and Teeth
+[22:29:23]   DELETED: Today's Technician — duplicate of 'Today's Technician'
+[22:29:23]   SKIP (has users): Dragonsbane (Impervious Book 1)
+[22:29:23]   SKIP (has users): Scorned Prince (Ringdweller Series Book #1)
+[22:29:23]   DELETED: Girl in the Shadows (Cirque American) — duplicate of 'Girl in the Shadows'
+[22:29:23]   DELETED: Fall of man in Wilmslow — duplicate of 'Fall of Man in Wilmslow'
+[22:29:23]   DELETED: Fall of Man in Wilmslow — duplicate of 'Fall of Man in Wilmslow'
+[22:29:23]   DELETED: The Girl in the Spider's Web — duplicate of 'The Girl in the Spider's Web'
+[22:29:23]   DELETED: The girl in the spider's web — duplicate of 'The Girl in the Spider's Web'
+[22:29:23]   DELETED: The Girl Who Takes an Eye for an Eye — duplicate of 'Girl Who Takes an Eye for an Eye'
+[22:29:23]   DELETED: Ultimate high — duplicate of 'Ultimate High'
+[22:29:23]   DELETED: Mireniamu 5. — duplicate of 'Mireniamu 5.'
+[22:29:23]   DELETED: The great shadow — duplicate of 'Great Shadow'
+[22:29:23]   DELETED: Complete Sherlock Holmes — duplicate of 'The Complete Sherlock Holmes [4 novels, 56 stories]'
+[22:29:23]   DELETED: The Hitch Hiker's Guide to the Galaxy — duplicate of 'The Hitchhiker's Guide to the Galaxy'
+[22:29:23]   DELETED: Two of Swords? — duplicate of 'Two of Swords'
+[22:29:23]   DELETED: Midnight Gardens — duplicate of 'Midnight Gardens (deluxe Edition)'
+[22:29:23]   DELETED: TCmedia Guide Project — duplicate of 'TCmedia Guide Project (Collector's Edition)'
+[22:29:23]   DELETED: Fever (The Chemical Garden Trilogy Book 2) — duplicate of 'Fever'
+[22:29:23]   DELETED: Origin — duplicate of 'Origin (Lux - Book Four)'
+[22:29:23]   DELETED: Opal — duplicate of 'Opal (Lux - Book Three)'
+[22:29:23]   DELETED: Heir Apparent — duplicate of 'Heir Apparent (a Novella)'
+[22:29:23]   DELETED: No Intention of Dying — duplicate of 'No Intention of Dying (Novella)'
+[22:29:23]   DELETED: Poison Study [POISON STUDY] — duplicate of 'Poison Study'
+[22:29:23]   DELETED: Magic Study — duplicate of 'Magic Study [A Yelena Zaltana Novel]'
+[22:29:23]   DELETED: An invisible sign of my own — duplicate of 'Invisible Sign of My Own'
+[22:29:23]   DELETED: Green (The Circle, Book 0: The Beginning and the End) — duplicate of 'Green'
+[22:29:23]   DELETED: Strengths finder 2.0 — duplicate of 'StrengthsFinder 2.0'
+[22:29:23]   DELETED: Beyond Ourselves — duplicate of 'Beyond Our Selves'
+[22:29:23]   DELETED: A Man Called Peter The Story of Peter Marshall — duplicate of 'A Man Called Peter; the Story of Peter Marshall'
+[22:29:23]   DELETED: Memoirs of Sherlock Holmes [11 stories] — duplicate of 'Memoirs of Sherlock Holmes [12 stories]'
+[22:29:23]   DELETED: Memoirs of Sherlock Holmes — duplicate of 'Memoirs of Sherlock Holmes [12 stories]'
+[22:29:23]   SKIP (has users): Teenage Mutant Ninja Turtles
+[22:29:23]   SKIP (has users): Teenage Mutant Ninja Turtles
+[22:29:23]   SKIP (has users): Teenage Mutant Ninja Turtles
+[22:29:23]   SKIP (has users): Teenage Mutant Ninja Turtles
+[22:29:23]   SKIP (has users): Teenage Mutant Ninja Turtles
+[22:29:23]   SKIP (has users): Teenage Mutant Ninja Turtles
+[22:29:23]   SKIP (has users): Teenage Mutant Ninja Turtles
+[22:29:23]   SKIP (has users): Teenage Mutant Ninja Turtles
+[22:29:23]   SKIP (has users): Teenage Mutant Ninja Turtles
+[22:29:23]   DELETED: Teenage Mutant Ninja Turtles — duplicate of 'Teenage Mutant Ninja Turtles'
+[22:29:23]   DELETED: Sojourn — duplicate of 'Sojourn'
+[22:29:23]   DELETED: The Mastermind of Mars — duplicate of 'The master mind of Mars'
+[22:29:23]   DELETED: Xi fu hui — duplicate of 'Xi fu hui ='
+[22:29:23]   DELETED: Christmas Books of Charles Dickens — duplicate of 'Christmas Books of Charles Dickens [12 stories]'
+[22:29:23]   DELETED: Pellucidar  — duplicate of 'Pellucidar'
+[22:29:23]   DELETED: The communion of saints; — duplicate of 'Communion of saints'
+[22:29:23]   DELETED: 7-Minute Marriage Solution — duplicate of '7 Minute Marriage Solution'
+[22:29:23]   DELETED: What happened to Christian Canada — duplicate of 'What Happened to Christian Canada?'
+[22:29:23]   DELETED: Ender Saga (Children of the Mind / Ender's Shadow) — duplicate of 'Ender Saga (Children of the Mind / Ender's Game / Speaker for the Dead / Xenocide)'
+[22:29:23] Phase 1 complete: 174 duplicates merged
+[22:29:23] 
+[22:29:23] === PHASE 2: Title cleanup ===
+[22:29:23]   TITLE: 'Billy Budd Foretopman ' → 'Billy Budd Foretopman'
+[22:29:23]   TITLE: 'Clarel ' → 'Clarel'
+[22:29:23]   TITLE: 'Egg and Other Stories, The' → 'The Egg and Other Stories'
+[22:29:23]   TITLE: 'An Untamed Land (Red River of the North #1)' → 'An Untamed Land'
+[22:29:23]   TITLE: 'A New Day Rising (Red River of the North #2)' → 'A New Day Rising'
+[22:29:23]   TITLE: 'Tender Mercies (Red River of the North #5)' → 'Tender Mercies'
+[22:29:23]   TITLE: 'Whispers in the Wind (Wild West Wind Book #2)' → 'Whispers in the Wind'
+[22:29:23]   TITLE: 'A Land to Call Home (Red River of the North #3)' → 'A Land to Call Home'
+[22:29:23]   TITLE: 'The Reapers' Song (Red River of the North #4)' → 'The Reapers' Song'
+[22:29:23]   TITLE: 'Promise of Dawn (under Northern Skies Book #1)' → 'Promise of Dawn'
+[22:29:23]   TITLE: 'Season of Grace (under Northern Skies Book #3)' → 'Season of Grace'
+[22:29:23]   TITLE: 'Valley of Dreams (Wild West Wind Book #1)' → 'Valley of Dreams'
+[22:29:23]   TITLE: 'Amethyst (Dakotah Treasures Book #4)' → 'Amethyst'
+[22:29:23]   TITLE: 'No Distance Too Far (Home to Blessing Book #2)' → 'No Distance Too Far'
+[22:29:23]   TITLE: 'Believing the Dream (Return to Red River Book #2)' → 'Believing the Dream'
+[22:29:23]   TITLE: 'Season of Harvest (Leah's Garden Book #4)' → 'Season of Harvest'
+[22:29:23]   TITLE: 'A Promise For Ellie (Daughter of Blessing #1)' → 'A Promise For Ellie'
+[22:29:23]   TITLE: 'The Long Way Home (A Secret Refuge #3)' → 'The Long Way Home'
+[22:29:23]   TITLE: 'Pearl (Dakotah Treasures #2)' → 'Pearl'
+[22:29:23]   TITLE: 'Loves Enduring Promise (Love Comes Softly, Book 2)' → 'Loves Enduring Promise'
+[22:29:23]   TITLE: 'Love Comes Softly & Love's Enduring Promise (Janette Oke Keepsake Series 2-in-1 Book)' → 'Love Comes Softly & Love's Enduring Promise'
+[22:29:23]   TITLE: 'When Calls the Heart (Canadian West #1)' → 'When Calls the Heart'
+[22:29:23]   TITLE: 'Love Takes Wing/Love Finds a Home (Janette Oke Keepsake Series 7-8)' → 'Love Takes Wing/Love Finds a Home'
+[22:29:23]   TITLE: 'Love's Long Journey (Love Comes Softly Series #3)' → 'Love's Long Journey'
+[22:29:23]   TITLE: 'Love's Unending Legacy (Love Comes Softly Series #5)' → 'Love's Unending Legacy'
+[22:29:23]   TITLE: 'Winter is Not Forever/Spring's Gentle Promise (Seasons of the Heart 3-4) (Janette Oke Keepsake Series)' → 'Winter is Not Forever/Spring's Gentle Promise (Seasons of the Heart 3-4)'
+[22:29:23]   TITLE: 'When Calls the Heart/When Comes the Spring (Canadian West 1-2) (Janette Oke Keepsake Series)' → 'When Calls the Heart/When Comes the Spring (Canadian West 1-2)'
+[22:29:23]   TITLE: 'Janette Oke Love Comes Softly Series Complete Set (Book 1-8)' → 'Janette Oke Love Comes Softly Series Complete Set'
+[22:29:23]   TITLE: 'The Noble Fugitive (Heirs of Acadia #3)' → 'The Noble Fugitive'
+[22:29:23]   TITLE: 'Where Hope Prevails (Return to the Canadian West Book #3)' → 'Where Hope Prevails'
+[22:29:23]   TITLE: 'Sustaining Faith (When Hope Calls Book #2)' → 'Sustaining Faith'
+[22:29:23]   TITLE: 'Unyielding Hope (When Hope Calls Book #1)' → 'Unyielding Hope'
+[22:29:23]   TITLE: 'Lonestar Secrets (Lonestar Series #2) (Crossings Book Club Exclusive)' → 'Lonestar Secrets (Lonestar Series #2)'
+[22:29:23]   TITLE: 'Merchant of Alyss (Legends of the Realm Book #2)' → 'Merchant of Alyss'
+[22:29:23]   TITLE: 'Persian Gamble: a Marcus Ryker Series Political and Military Action Thriller : (Book 2)' → 'Persian Gamble: a Marcus Ryker Series Political and Military Action Thriller :'
+[22:29:23]   TITLE: 'Winner Take Nothing ' → 'Winner Take Nothing'
+[22:29:23]   TITLE: 'Islanders in the Srean ' → 'Islanders in the Srean'
+[22:29:23]   TITLE: 'The essential Hemingway ' → 'The essential Hemingway'
+[22:29:23]   TITLE: 'Last Jihad, The' → 'The Last Jihad'
+[22:29:23]   TITLE: 'Ezekiel Option, The' → 'The Ezekiel Option'
+[22:29:23]   TITLE: 'Last Days, The' → 'The Last Days'
+[22:29:23]   TITLE: 'Jerk Magnet (Life at Kingston High Book #1)' → 'Jerk Magnet'
+[22:29:23]   TITLE: 'Let Them Eat Fruitcake (86 Bloomberg Place Book #2)' → 'Let Them Eat Fruitcake'
+[22:29:23]   TITLE: 'I Heart Bloomberg (86 Bloomberg Place Book #1)' → 'I Heart Bloomberg'
+[22:29:23]   TITLE: 'Spring Broke (86 Bloomberg Place Book #3)' → 'Spring Broke'
+[22:29:23]   TITLE: 'Prom Date (the Dating Games Book #4)' → 'Prom Date'
+[22:29:23]   TITLE: 'Double Date (the Dating Games Book #3)' → 'Double Date'
+[22:29:23]   TITLE: 'Blind Date (the Dating Games Book #2)' → 'Blind Date'
+[22:29:23]   TITLE: 'Prom Queen (Life at Kingston High Book #3)' → 'Prom Queen'
+[22:29:23]   TITLE: 'Best Friend (Life at Kingston High Book #2)' → 'Best Friend'
+[22:29:23]   TITLE: 'All in the Timing (The Tales from Grace Chapel Inn Series #12)' → 'All in the Timing'
+[22:29:23]   TITLE: 'Making the Most of Your Relationships (By Design Series, Book 3)' → 'Making the Most of Your Relationships'
+[22:29:23]   TITLE: 'Seaside Homecoming (on Devonshire Shores Book #3)' → 'Seaside Homecoming'
+[22:29:23]   TITLE: 'Every Hour until Then (Timeless Book #5)' → 'Every Hour until Then'
+[22:29:23]   TITLE: 'Through Each Tomorrow (Timeless Book #6)' → 'Through Each Tomorrow'
+[22:29:23]   TITLE: 'For a Lifetime (Timeless Book #3)' → 'For a Lifetime'
+[22:29:23]   TITLE: 'Harbinger II, The' → 'The Harbinger II'
+[22:29:23]   TITLE: 'Jerusalem Interlude (The Zion Covenant, 4)' → 'Jerusalem Interlude'
+[22:29:23]   TITLE: 'Danzig Passage (The Zion Covenant, 5)' → 'Danzig Passage'
+[22:29:23]   TITLE: 'Warsaw Requiem (The Zion Covenant, 6)' → 'Warsaw Requiem'
+[22:29:23]   TITLE: 'Fourth Dawn (A.D. Chronicles, No. 4)' → 'Fourth Dawn'
+[22:29:23]   TITLE: 'Eighth Shepherd (A. D. Chronicles)' → 'Eighth Shepherd'
+[22:29:23]   TITLE: 'Why a Crown? (The Little Books of Why)' → 'Why a Crown?'
+[22:29:23]   TITLE: 'Jerusalem Vigil (The Zion Legacy Series)' → 'Jerusalem Vigil'
+[22:29:23]   TITLE: 'Winds of the Cumberland (A Novel)' → 'Winds of the Cumberland'
+[22:29:23]   TITLE: 'Persuasion and Frankenstein, or the Modern Prometheus (2 Books Ivy League Schools?)' → 'Persuasion and Frankenstein, or the Modern Prometheus'
+[22:29:23]   TITLE: 'Magasabbra a Tetot Acsok ' → 'Magasabbra a Tetot Acsok'
+[22:29:23]   TITLE: 'Whence Came a Prince (Lowlands of Scotland Series #3)' → 'Whence Came a Prince'
+[22:29:23]   TITLE: 'When Comes the Spring (Canadian West, Book 2)' → 'When Comes the Spring'
+[22:29:23]   TITLE: 'When Breaks the Dawn (Canadian West #3)' → 'When Breaks the Dawn'
+[22:29:23]   TITLE: 'When Hope Springs New (Canadian West #4)' → 'When Hope Springs New'
+[22:29:23]   TITLE: 'When Tomorrow Comes (Canadian West #6)' → 'When Tomorrow Comes'
+[22:29:23]   TITLE: 'The Revelation of John ' → 'The Revelation of John'
+[22:29:23]   TITLE: 'Themes in Greek and Latin Epitaphs (Illini Books)' → 'Themes in Greek and Latin Epitaphs'
+[22:29:23]   TITLE: 'Second Chances (Everyday Angel #2)' → 'Second Chances'
+[22:29:23]   TITLE: 'Last Wishes (Everyday Angel #3)' → 'Last Wishes'
+[22:29:23]   TITLE: 'Animals in That Country, The' → 'The Animals in That Country'
+[22:29:23]   TITLE: 'The Cooper Kids Adventure Series Set (Cooper Kids Adventure Series)' → 'The Cooper Kids Adventure Series Set'
+[22:29:23]   TITLE: 'Longing (the Courtship of Nellie Fisher Book #3)' → 'Longing'
+[22:29:23]   TITLE: 'Incomparable 29th and the River Clyde (Wwi Centenary Series)' → 'Incomparable 29th and the River Clyde'
+[22:29:23]   TITLE: 'Good as Glod ' → 'Good as Glod'
+[22:29:23]   TITLE: 'Catch-2 ' → 'Catch-2'
+[22:29:23]   TITLE: 'Key to Zion (Zion Chronicles, Book 5)' → 'Key to Zion'
+[22:29:23]   TITLE: 'The Gates of Zion (the Zion Chronicles, Book One)' → 'The Gates of Zion'
+[22:29:23]   TITLE: 'Candle in the Darkness  (Refiner's Fire, Book 1)' → 'Candle in the Darkness'
+[22:29:24]   TITLE: 'Candle in the Darkness/Fire by Night/A Light to My Path (Refiner's Fire Series 1-3)' → 'Candle in the Darkness/Fire by Night/A Light to My Path'
+[22:29:24]   TITLE: 'Gods and Kings (Chronicles of the Kings #1)' → 'Gods and Kings'
+[22:29:24]   TITLE: 'A Light to My Path (Refiner's Fire Series #3)' → 'A Light to My Path'
+[22:29:24]   TITLE: '33 D.C.' → '33 D.c.'
+[22:29:24]   TITLE: 'A Guerra do Velho ' → 'A Guerra do Velho'
+[22:29:24]   TITLE: 'Classic Christian Novels (6 Books)' → 'Classic Christian Novels'
+[22:29:24]   TITLE: 'Prince of India (Volume 2)' → 'Prince of India'
+[22:29:24]   TITLE: 'Dreiundneunzig (1793)' → 'Dreiundneunzig'
+[22:29:24]   TITLE: 'A Time to Dance (Women of Faith Fiction #1)' → 'A Time to Dance'
+[22:29:24]   TITLE: 'Stranger at Fellsworth, A' → 'A Stranger at Fellsworth'
+[22:29:24]   TITLE: 'Empress of Bright Moon, The' → 'The Empress of Bright Moon'
+[22:29:24]   TITLE: 'Girl with Ghost Eyes, The' → 'The Girl with Ghost Eyes'
+[22:29:24]   TITLE: 'Border of Paradise, The' → 'The Border of Paradise'
+[22:29:24]   TITLE: 'Song Unheard (Shadows over England Book #2)' → 'Song Unheard'
+[22:29:24]   TITLE: 'Shoe Box (novella)' → 'Shoe Box'
+[22:29:24]   TITLE: 'Serial Burn (Lake City Heroes Book #3)' → 'Serial Burn'
+[22:29:24]   TITLE: 'Final Approach (Lake City Heroes Book #4)' → 'Final Approach'
+[22:29:24]   TITLE: 'Vow of Justice (Blue Justice Book #4)' → 'Vow of Justice'
+[22:29:24]   TITLE: 'Called to Protect (Blue Justice Book #2)' → 'Called to Protect'
+[22:29:24]   TITLE: 'Always Watching (Elite Guardians Book #1)' → 'Always Watching'
+[22:29:24]   TITLE: 'Beach Haven (Carolina Coast #1)' → 'Beach Haven'
+[22:29:24]   TITLE: 'Fire Mountain (Elements of Danger Book #1)' → 'Fire Mountain'
+[22:29:24]   TITLE: 'Jonah's Gourd Vine (a Novel)' → 'Jonah's Gourd Vine'
+[22:29:24]   TITLE: 'The Best American Mystery Stories 2004 (The Best American Series)' → 'The Best American Mystery Stories 2004'
+[22:29:24]   TITLE: 'O'Malley Chronicles, Volume 1 (O'Malley Series)' → 'O'Malley Chronicles, Volume 1'
+[22:29:24]   TITLE: 'O'Malley Chronicles, Volume 2 (O'Malley Series)' → 'O'Malley Chronicles, Volume 2'
+[22:29:24]   TITLE: '... și marea nu se umple' → '... Și Marea Nu Se Umple'
+[22:29:24]   TITLE: 'Contract bridge (Know the game series)' → 'Contract bridge'
+[22:29:24]   TITLE: 'Sagittarius 2015 Horoscopes (2015 Horoscope Books)' → 'Sagittarius 2015 Horoscopes'
+[22:29:24]   TITLE: 'Dovy and the Surprise Guests (Artscroll Middos Book)' → 'Dovy and the Surprise Guests'
+[22:29:24]   TITLE: 'Shooting An Elephant ' → 'Shooting An Elephant'
+[22:29:24]   TITLE: 'Shakespeare Tragedy of Julius Caesar (1898)' → 'Shakespeare Tragedy of Julius Caesar'
+[22:29:24]   TITLE: 'Shakespeare Tragedy of Hamlet (1878)' → 'Shakespeare Tragedy of Hamlet'
+[22:29:24]   TITLE: 'Shakespeare Tragedy of Antony and Cleopatra (1885)' → 'Shakespeare Tragedy of Antony and Cleopatra'
+[22:29:24]   TITLE: 'Shakespeare Tragedy of Macbeth (1898)' → 'Shakespeare Tragedy of Macbeth'
+[22:29:24]   TITLE: 'Fawn in the Wood (1890)' → 'Fawn in the Wood'
+[22:29:24]   TITLE: 'Hard Times Charles Dickens (1854)' → 'Hard Times Charles Dickens'
+[22:29:24]   TITLE: 'Twelve Years a Slave Solomon Northup (1859)' → 'Twelve Years a Slave Solomon Northup'
+[22:29:24]   TITLE: 'Jiu Jitsu (1916)' → 'Jiu Jitsu'
+[22:29:24]   TITLE: 'O Little Town of Bethlehem (1891)' → 'O Little Town of Bethlehem'
+[22:29:24]   TITLE: 'Shakespeare Comedy of Love's Labour's Lost (1898)' → 'Shakespeare Comedy of Love's Labour's Lost'
+[22:29:24]   TITLE: 'Dame Trot and Her Cat (1880)' → 'Dame Trot and Her Cat'
+[22:29:24]   TITLE: 'Gulliver's Travels Jonathan Swift (1900)' → 'Gulliver's Travels Jonathan Swift'
+[22:29:24]   TITLE: 'Masterpieces of Reynolds (1909)' → 'Masterpieces of Reynolds'
+[22:29:24]   TITLE: 'Children of Summer (1888)' → 'Children of Summer'
+[22:29:24]   TITLE: 'Wild Swans Stories Hans Andersen (1922)' → 'Wild Swans Stories Hans Andersen'
+[22:29:24]   TITLE: 'Mother Goose Kate Greenaway (1881)' → 'Mother Goose Kate Greenaway'
+[22:29:24]   TITLE: 'Rip Van Winkle Washington Irving (1921)' → 'Rip Van Winkle Washington Irving'
+[22:29:24]   TITLE: 'Five Weeks in a Balloon Jules Verne (1869)' → 'Five Weeks in a Balloon Jules Verne'
+[22:29:24]   TITLE: 'Journey to the North Pole Jules Verne (1875)' → 'Journey to the North Pole Jules Verne'
+[22:29:24]   TITLE: 'Just As I Am, Without One Plea (1888)' → 'Just As I Am, Without One Plea'
+[22:29:24]   TITLE: 'Pet Show (1944)' → 'Pet Show'
+[22:29:24]   TITLE: 'Boxing and How to Train (1904)' → 'Boxing and How to Train'
+[22:29:24]   TITLE: 'Wild Flowers of New York (1912)' → 'Wild Flowers of New York'
+[22:29:24]   TITLE: 'Shakspere's Songs and Sonnets (1870)' → 'Shakspere's Songs and Sonnets'
+[22:29:24]   TITLE: 'Entertaining History of Tom Thumb (1830)' → 'Entertaining History of Tom Thumb'
+[22:29:24]   TITLE: 'Little Dame Crump and Her White Pig (1888)' → 'Little Dame Crump and Her White Pig'
+[22:29:24]   TITLE: 'Christmas Carol Charles Dickens (1843)' → 'Christmas Carol Charles Dickens'
+[22:29:24]   TITLE: 'What Sami Sings with the Birds Johanna Spyri (1917)' → 'What Sami Sings with the Birds Johanna Spyri'
+[22:29:24]   TITLE: 'Shakespeare Comedy of Errors (1890)' → 'Shakespeare Comedy of Errors'
+[22:29:24]   TITLE: 'Breaking Waves Dashed High (1883)' → 'Breaking Waves Dashed High'
+[22:29:24]   TITLE: 'Taming of the Shrew and Other Stories (1890)' → 'Taming of the Shrew and Other Stories'
+[22:29:24]   TITLE: 'Hark! Hark, My Soul! (1889)' → 'Hark! Hark, My Soul!'
+[22:29:24]   TITLE: 'Little Miss Grasshopper Johanna Spyri (1918)' → 'Little Miss Grasshopper Johanna Spyri'
+[22:29:24]   TITLE: 'Shakespeare Comedy All's Well That Ends Well (1894)' → 'Shakespeare Comedy All's Well That Ends Well'
+[22:29:24]   TITLE: 'Masterpieces of Claude Lorrain (1911)' → 'Masterpieces of Claude Lorrain'
+[22:29:24]   TITLE: 'Crescent Moon Rabindranath Tagore (1916)' → 'Crescent Moon Rabindranath Tagore'
+[22:29:24]   TITLE: 'Pilgrim's Progress Told to the Children (1906)' → 'Pilgrim's Progress Told to the Children'
+[22:29:24]   TITLE: 'Beyond The Chains Of Illusion ' → 'Beyond The Chains Of Illusion'
+[22:29:24]   TITLE: 'The Heart Of Man Its Genius For Good And Evil ' → 'The Heart Of Man Its Genius For Good And Evil'
+[22:29:24]   TITLE: 'The Hope Chest (Brides of Lancaster County, 4)' → 'The Hope Chest'
+[22:29:24]   TITLE: 'Kelly's Chance (Brides of Lehigh Canal, Book One) (Heartsong Presents #575)' → 'Kelly's Chance'
+[22:29:24]   TITLE: 'A Sister's Test (Sisters of Holmes County #2)' → 'A Sister's Test'
+[22:29:24]   TITLE: 'Assassin's Apprentice Volume 1 (Graphic Novel)' → 'Assassin's Apprentice Volume 1'
+[22:29:24]   TITLE: 'The Lake House ' → 'The Lake House'
+[22:29:24]   TITLE: 'Postscripts #10 - World Horror Convention Special Edition [hc] (Issue 10)' → 'Postscripts #10 - World Horror Convention Special Edition [hc]'
+[22:29:24]   TITLE: '25 Alive : (Women's Murder Club 25)' → '25 Alive :'
+[22:29:24]   TITLE: 'Test (Animorphs #43)' → 'Test'
+[22:29:24]   TITLE: 'Unexpected (Animorphs #44)' → 'Unexpected'
+[22:29:24]   TITLE: 'Spirit Thief, The' → 'The Spirit Thief'
+[22:29:24]   TITLE: 'Neuromante / Neuromancer (Sprawl 1)' → 'Neuromante / Neuromancer'
+[22:29:24]   TITLE: 'Familiar (Animorphs #41)' → 'Familiar'
+[22:29:24]   TITLE: 'Agrippa (A Book of the Dead)' → 'Agrippa'
+[22:29:24]   TITLE: 'Mutation (Animorphs #36)' → 'Mutation'
+[22:29:24]   TITLE: 'Arrival (Animorphs #38)' → 'Arrival'
+[22:29:24]   TITLE: 'Weakness (Animorphs #37)' → 'Weakness'
+[22:29:24]   TITLE: 'The master-key to riches (Fawcett Crest book)' → 'The master-key to riches'
+[22:29:24]   TITLE: 'Agua Para Elefantes - Water for Elephants (Book in Potuguese)' → 'Agua Para Elefantes - Water for Elephants'
+[22:29:24]   TITLE: 'Book of Virtue, The' → 'The Book of Virtue'
+[22:29:24]   TITLE: 'Mole, The' → 'The Mole'
+[22:29:24]   TITLE: 'Best of Me (Movie Tie-In Enhanced Ebook)' → 'Best of Me'
+[22:29:24]   TITLE: 'Morgenrood (Twilight, #4)' → 'Morgenrood'
+[22:29:24]   TITLE: 'Isaac Asimov Presents The Great SF Stories #14 (1952)' → 'Isaac Asimov Presents The Great SF Stories #14'
+[22:29:24]   TITLE: 'Isaac Asimov Presents The Great SF Stories 12 (1950)' → 'Isaac Asimov Presents The Great SF Stories 12'
+[22:29:24]   TITLE: 'Quality Assurance and Certification in Ecotourism (Ecotourism Book)' → 'Quality Assurance and Certification in Ecotourism'
+[22:29:24]   TITLE: 'Molly Fyde and the Fight for Peace (Book 4)' → 'Molly Fyde and the Fight for Peace'
+[22:29:24]   TITLE: 'Isaac Asimov Presents the Great SF Stories 15 (1953)' → 'Isaac Asimov Presents the Great SF Stories 15'
+[22:29:24]   TITLE: 'Isaac Asimov Presents The Great SF Stories # 16 (1954)' → 'Isaac Asimov Presents The Great SF Stories # 16'
+[22:29:24]   TITLE: 'Isaac Asimov Presents The Great SF Stories 4 (1942)' → 'Isaac Asimov Presents The Great SF Stories 4'
+[22:29:24]   TITLE: 'Frankenstein the Dead Town, Large Print (Book Five, The final Volume)' → 'Frankenstein the Dead Town, Large Print'
+[22:29:24]   TITLE: 'The Hauntlys' Hairy Surprise (The Bailey City Monsters, 1)' → 'The Hauntlys' Hairy Surprise'
+[22:29:24]   TITLE: 'Matilda by Dahl, Roald Published by Jonathan Cape (2010)' → 'Matilda by Dahl, Roald Published by Jonathan Cape'
+[22:29:24]   TITLE: 'Complete Norse Mythology (Graphic Novel)' → 'Complete Norse Mythology'
+[22:29:24]   TITLE: 'Buried Treasure (Barkely's School for Dogs, 7)' → 'Buried Treasure'
+[22:29:24]   TITLE: 'Knights Don't Teach Piano (Adventures of the Bailey School Kids #29)' → 'Knights Don't Teach Piano'
+[22:29:24]   TITLE: 'Weight of Silence, The' → 'The Weight of Silence'
+[22:29:24]   TITLE: 'Dni Krwi i &#x15A;wiatla Gwiazd (Daughter of Smoke and Bone, #2)' → 'Dni Krwi i &#x15A;wiatla Gwiazd'
+[22:29:24]   TITLE: 'Pasajera (Pasajera 1)' → 'Pasajera'
+[22:29:24]   TITLE: 'Nunca olvidan (Mentes poderosas 2)' → 'Nunca olvidan'
+[22:29:24]   TITLE: 'Luz Incierta (Mentes Poderosas 3)' → 'Luz Incierta'
+[22:29:24]   TITLE: 'Caminante (Pasajera 2)' → 'Caminante'
+[22:29:24]   TITLE: 'Monstruoso Relato de Prosper Redding (Prosper Redding 1)' → 'Monstruoso Relato de Prosper Redding'
+[22:29:24]   TITLE: 'Passenger (Passenger, Book 1)' → 'Passenger'
+[22:29:24]   TITLE: 'Wayfarer (Passenger, Book 2)' → 'Wayfarer'
+[22:29:24]   TITLE: 'Day Jean-Pierre Went Round the World, The' → 'The Day Jean-Pierre Went Round the World'
+[22:29:24]   TITLE: 'Memory Child, The' → 'The Memory Child'
+[22:29:24]   TITLE: 'Edge of the Light, The' → 'The Edge of the Light'
+[22:29:24]   TITLE: 'Lethal Effect, The' → 'The Lethal Effect'
+[22:29:24]   TITLE: 'Overdue Life of Amy Byler, The' → 'The Overdue Life of Amy Byler'
+[22:29:24]   TITLE: 'Devil's in the Details, The' → 'The Devil's in the Details'
+[22:29:24]   TITLE: 'Percy Jackson and the Sea of Monsters (Book 2)' → 'Percy Jackson and the Sea of Monsters'
+[22:29:24]   TITLE: 'Survivor's Guide to Family Happiness, The' → 'The Survivor's Guide to Family Happiness'
+[22:29:24]   TITLE: 'The Road to Oz ' → 'The Road to Oz'
+[22:29:24]   TITLE: 'Ozma Of Oz ' → 'Ozma Of Oz'
+[22:29:24]   TITLE: 'Monster Calls, A' → 'A Monster Calls'
+[22:29:24]   TITLE: 'Loop  ('Ring' series, Book 3)' → 'Loop'
+[22:29:24]   TITLE: 'House of Odd (Odd Thomas Graphic Novel)' → 'House of Odd'
+[22:29:24]   TITLE: 'In Odd We Trust (Odd Thomas Graphic Novel)' → 'In Odd We Trust'
+[22:29:24]   TITLE: 'Odd Is on Our Side (Odd Thomas Graphic Novel)' → 'Odd Is on Our Side'
+[22:29:24]   TITLE: 'Mirror's Edge (Impostors, Book 3) (EBOOK)' → 'Mirror's Edge (Impostors, Book 3)'
+[22:29:24]   TITLE: 'The Secrets of Solace (World of Solace Series)' → 'The Secrets of Solace'
+[22:29:24]   TITLE: 'Art of Innovation, The' → 'The Art of Innovation'
+[22:29:24]   TITLE: 'Starry Skies of Darkaan, The' → 'The Starry Skies of Darkaan'
+[22:29:24]   TITLE: 'Warrior's Penance, A' → 'A Warrior's Penance'
+[22:29:24]   TITLE: 'Seventh Day, The' → 'The Seventh Day'
+[22:29:24]   TITLE: 'Seventh Most Important Thing, The' → 'The Seventh Most Important Thing'
+[22:29:24]   TITLE: 'Blazing Bridge, The' → 'The Blazing Bridge'
+[22:29:24]   TITLE: 'Tideborn : (the Drowned World Duology, Book 2)' → 'Tideborn :'
+[22:29:24]   TITLE: 'Asian Monsters (Fox Spirit Books of Monsters) (Volume 3)' → 'Asian Monsters'
+[22:29:24]   TITLE: 'Skyshade (the Lightlark Saga Book 3)' → 'Skyshade'
+[22:29:24]   TITLE: 'Ironbound : (Ironbound, Book 1)' → 'Ironbound :'
+[22:29:24]   TITLE: 'Serafina (4 Book Series)' → 'Serafina'
+[22:29:24]   TITLE: 'Speculative Science Fiction Classics (16 Books)' → 'Speculative Science Fiction Classics'
+[22:29:24]   TITLE: 'Lost Manuscript (or the Books of the Kings)' → 'Lost Manuscript'
+[22:29:24]   TITLE: 'The Lord of the Rings part two The Two Towers ' → 'The Lord of the Rings part two The Two Towers'
+[22:29:24]   TITLE: 'The Valis Trilogy ' → 'The Valis Trilogy'
+[22:29:24]   TITLE: 'Split the Party (Spells, Swords, & Stealth) (Volume 2)' → 'Split the Party (Spells, Swords, & Stealth)'
+[22:29:24]   TITLE: 'ALIENS Stories (15 book Sci-Fi Collection)' → 'ALIENS Stories'
+[22:29:24]   TITLE: 'Secrets of the Drearcliff Grange School, The' → 'The Secrets of the Drearcliff Grange School'
+[22:29:24]   TITLE: 'Psycho House (Psycho #3)' → 'Psycho House'
+[22:29:24]   TITLE: 'Best New Horror 4 (Mammoth Book  of Best New Horror)' → 'Best New Horror 4'
+[22:29:24]   TITLE: 'English Ghost Story, An' → 'An English Ghost Story'
+[22:29:24]   TITLE: 'PRICE OF RANSOM, THE (Highroad Trilogy, Vol 3)' → 'Price of Ransom, The'
+[22:29:24]   TITLE: 'A Passage of Stars (Highroad Trilogy, Vol 1)' → 'A Passage of Stars'
+[22:29:24]   TITLE: 'Dominion of Blades: A LitRPG Adventure (Volume 1)' → 'Dominion of Blades: A LitRPG Adventure'
+[22:29:24]   TITLE: 'Gates of Paradise ' → 'Gates of Paradise'
+[22:29:24]   TITLE: 'Erased (Altered Book 2)' → 'Erased'
+[22:29:24]   TITLE: 'Edge, The' → 'The Edge'
+[22:29:24]   TITLE: 'Cursed King (Ringdweller Series Book #2)' → 'Cursed King'
+[22:29:24]   TITLE: 'The Shadow Arts (Monstrous Devices #2)' → 'The Shadow Arts'
+[22:29:24]   TITLE: 'Lesser Dead, The' → 'The Lesser Dead'
+[22:29:24]   TITLE: 'The Maze Runner Series (4-Book)' → 'The Maze Runner Series'
+[22:29:24]   TITLE: 'The Confusion, Part II (The Baroque Cycle, Vol. 2, Book 2)' → 'The Confusion, Part II'
+[22:29:24]   TITLE: 'The Blind Geometer/the New Atlantis (Tor Double Novel, No 13)' → 'The Blind Geometer/the New Atlantis'
+[22:29:24]   TITLE: 'Implementing European Union Public Policy (New Horizons in Public Policy Series)' → 'Implementing European Union Public Policy'
+[22:29:24]   TITLE: 'Eternal Flame, The' → 'The Eternal Flame'
+[22:29:24]   TITLE: 'The Year's Top Hard Science Fiction Stories (Volume 1)' → 'The Year's Top Hard Science Fiction Stories'
+[22:29:24]   TITLE: 'Lightspeed Magazine, September 2018 (Issue 100) (Volume 100)' → 'Lightspeed Magazine, September 2018 (Issue 100)'
+[22:29:24]   TITLE: 'Heir Apparent (a Novella)' → 'Heir Apparent'
+[22:29:24]   TITLE: 'No Intention of Dying (Novella)' → 'No Intention of Dying'
+[22:29:24]   TITLE: 'Wild's End #3 (2023)' → 'Wild's End #3'
+[22:29:24]   TITLE: 'Wild's End #4 (2023)' → 'Wild's End #4'
+[22:29:24]   TITLE: 'Foundling (Monster Blood Tattoo, Book 1)' → 'Foundling'
+[22:29:24]   TITLE: 'Pariah: Ravenor vs Eisenhorn (The Bequin Trilogy: Warhammer 40,000)' → 'Pariah: Ravenor vs Eisenhorn'
+[22:29:24]   TITLE: 'Hereticus (The Eisenhorn Trilogy, Book 3)' → 'Hereticus'
+[22:29:24]   TITLE: 'Xenos (The Eisenhorn Trilogy, Book 1)' → 'Xenos'
+[22:29:24]   TITLE: 'Malleus (The Eisenhorn Trilogy, Book 2)' → 'Malleus'
+[22:29:24]   TITLE: 'Brian's return (Brian's Saga #4)' → 'Brian's return'
+[22:29:24]   TITLE: 'Ghostwater (Cradle) (Volume 5)' → 'Ghostwater (Cradle)'
+[22:29:24]   TITLE: 'Soulsmith (Cradle) (Volume 2)' → 'Soulsmith (Cradle)'
+[22:29:24]   TITLE: 'Skysworn (Cradle) (Volume 4)' → 'Skysworn (Cradle)'
+[22:29:24]   TITLE: 'The Blade of Shattered Hope (The 13th Reality Series)' → 'The Blade of Shattered Hope'
+[22:29:24]   TITLE: 'The Void of Mist and Thunder (The 13th Reality Series)' → 'The Void of Mist and Thunder'
+[22:29:24]   TITLE: 'The Calling of Emily Evans (Women of the West #1)' → 'The Calling of Emily Evans'
+[22:29:24]   TITLE: 'Drums of Change (Women of the West #12)' → 'Drums of Change'
+[22:29:24]   TITLE: 'The Bluebird and the Sparrow (Women of the West #10)' → 'The Bluebird and the Sparrow'
+[22:29:24]   TITLE: 'The Measure of a Heart (Women of the West #6)' → 'The Measure of a Heart'
+[22:29:24]   TITLE: 'Too Long a Stranger (Women of the West #9)' → 'Too Long a Stranger'
+[22:29:24]   TITLE: 'Bride for Donnigan (Women of the West Book #7)' → 'Bride for Donnigan'
+[22:29:24]   TITLE: 'Sequoia Scout (Saga of the Sierras)' → 'Sequoia Scout'
+[22:29:24]   TITLE: 'Flames on the Barbary Coast (Saga of the Sierras)' → 'Flames on the Barbary Coast'
+[22:29:24]   TITLE: 'Photo Perfect (Girls Only!, Book 7)' → 'Photo Perfect'
+[22:29:24]   TITLE: 'A Touch of Grace (Daughters of Blessing #3)' → 'A Touch of Grace'
+[22:29:24]   TITLE: 'Breath of Hope (under Northern Skies Book #2)' → 'Breath of Hope'
+[22:29:24]   TITLE: 'Tehanu (The Earthsea Cycle, Book 4)' → 'Tehanu'
+[22:29:24]   TITLE: 'Works (Tanglewood Tales / Wonder-Book for Girls and Boys)' → 'Works'
+[22:29:24]   TITLE: 'Take Three (Above the Line Series #3)' → 'Take Three'
+[22:29:24]   TITLE: 'Red Moon and Black Mountain (Ballantine Adult Fantasy Series)' → 'Red Moon and Black Mountain'
+[22:29:24]   TITLE: 'Llana of Gathol (Mars #10)' → 'Llana of Gathol'
+[22:29:24]   TITLE: 'The Other Persuasion ' → 'The Other Persuasion'
+[22:29:24]   TITLE: 'Heavy Metal F.A.K.K.2. (IBooks)' → 'Heavy Metal F.A.K.K.2.'
+[22:29:24]   TITLE: 'Teenage Mutant Ninja Turtles TMNT Enter Shredde! (children's book)' → 'Teenage Mutant Ninja Turtles TMNT Enter Shredde!'
+[22:29:24]   TITLE: 'Teenage Mutant Ninja Turtles III (First Graphic Novel)' → 'Teenage Mutant Ninja Turtles III'
+[22:29:24]   TITLE: 'Back Home Again (The Tales from Grace Chapel Inn Series #1)' → 'Back Home Again'
+[22:29:24]   TITLE: 'Hidden History (Tales from Grace Chapel Inn #3)' → 'Hidden History'
+[22:29:24]   TITLE: 'Ready to Wed (The Tales from Grace Chapel Inn Series #4)' → 'Ready to Wed'
+[22:29:24]   TITLE: 'Winter Wonders (The Tales From Grace Chapel Inn Series #6)' → 'Winter Wonders'
+[22:29:24]   TITLE: 'Lonestar Sanctuary (Lonestar #1)' → 'Lonestar Sanctuary'
+[22:29:24]   TITLE: 'Opal (Dakotah Treasures #3)' → 'Opal'
+[22:29:24]   TITLE: 'Vagabond (The Grail Quest #2)' → 'Vagabond'
+[22:29:24]   TITLE: 'Heretic (The Grail Quest, Book 3)' → 'Heretic'
+[22:29:24]   TITLE: 'Back to School (Rachel Yoder: Always Trouble Somewhere Series #2)' → 'Back to School'
+[22:29:24]   TITLE: 'Out of Control (Rachel Yoder: Always Trouble Somewhere Series #3)' → 'Out of Control'
+[22:29:24]   TITLE: 'School's Out (Rachel Yoder: Always Trouble Somewhere Series #1)' → 'School's Out'
+[22:29:24]   TITLE: 'Midnight Mystery (Cul-De-Sac Kids Book #24)' → 'Midnight Mystery'
+[22:29:24]   TITLE: 'Granny Game (Cul-De-Sac Kids Book #20)' → 'Granny Game'
+[22:29:24]   TITLE: 'Double Dabble Surprise (Cul-De-Sac Kids Book #1)' → 'Double Dabble Surprise'
+[22:29:24]   TITLE: 'Mudhole Mystery (Cul-De-Sac Kids Book #10)' → 'Mudhole Mystery'
+[22:29:24]   TITLE: 'Great TV Turn-Off (Cul-de-Sac Kids Book #18)' → 'Great TV Turn-Off'
+[22:29:24]   TITLE: 'Crazy Christmas Angel Mystery (Cul-De-Sac Kids Book #3)' → 'Crazy Christmas Angel Mystery'
+[22:29:24]   TITLE: 'Rebel / Copperhead (the Starbuck Chronicles)' → 'Rebel / Copperhead'
+[22:29:24]   TITLE: 'The Works of Charles Dickens (AMERICAN NOTES / CHRISTMAS BOOKS / PICTURES FROM ITALY)' → 'The Works of Charles Dickens'
+[22:29:24]   TITLE: 'Kremlin Conspiracy: a Marcus Ryker Series Political and Military Action Thriller : (Book 1)' → 'Kremlin Conspiracy: a Marcus Ryker Series Political and Military Action Thriller :'
+[22:29:24]   TITLE: 'A Dream to Follow (Return to Red River #1)' → 'A Dream to Follow'
+[22:29:24]   TITLE: 'More Than a Dream (Return to Red River #3)' → 'More Than a Dream'
+[22:29:24]   TITLE: 'The Quilter's Daughter (Daughters of Lancaster County #2)' → 'The Quilter's Daughter'
+[22:29:24]   TITLE: 'Rise of the Mystics (Beyond the Circle Book #2)' → 'Rise of the Mystics'
+[22:29:24]   TITLE: 'Distant Echoes (Aloha Reef Series #1)' → 'Distant Echoes'
+[22:29:24]   TITLE: 'Midnight Sea (Aloha Reef, Book 4)' → 'Midnight Sea'
+[22:29:24]   TITLE: 'Stories of the Raksura: The Falling World & The Tale of Indigo and Cloud (The Books of the Raksura)' → 'Stories of the Raksura: The Falling World & The Tale of Indigo and Cloud'
+[22:29:24]   TITLE: 'Midnight Rescue/The Proposal/Christy's Choice (The Christy Juvenile Series)' → 'Midnight Rescue/The Proposal/Christy's Choice'
+[22:29:24]   TITLE: 'The Princess Club/Family Secrets/Mountain Madness (The Christy Juvenile Series)' → 'The Princess Club/Family Secrets/Mountain Madness'
+[22:29:24]   TITLE: 'Bridge to Cutter Gap/Silent Superstitions/The Angry Intruder (The Christy Juvenile Series)' → 'Bridge to Cutter Gap/Silent Superstitions/The Angry Intruder'
+[22:29:24]   TITLE: 'Drowned Ammet (Dalemark Quartet, Book 2)' → 'Drowned Ammet'
+[22:29:24]   TITLE: 'Torn (A Wicked Trilogy Book 2)' → 'Torn'
+[22:29:24]   TITLE: 'The Chronicles of Chrestomanci, Volume III (Chronicles of Chrestomanci)' → 'The Chronicles of Chrestomanci, Volume III'
+[22:29:24]   TITLE: 'Stinky Sneakers Mystery (Cul-De-Sac Kids Book #7)' → 'Stinky Sneakers Mystery'
+[22:29:24]   TITLE: 'Big Bad Beans (Cul-De-Sac Kids Book #22)' → 'Big Bad Beans'
+[22:29:24]   TITLE: 'Green Gravy (Cul-De-Sac Kids Book #14)' → 'Green Gravy'
+[22:29:24]   TITLE: 'Creepy Sleep-Over (Cul-de-Sac Kids Book #17)' → 'Creepy Sleep-Over'
+[22:29:24]   TITLE: 'Child of Flame (Crown of Stars, Book 4)' → 'Child of Flame'
+[22:29:24]   TITLE: 'A Ring of Endless Light (Austin Family Chronicles #4)' → 'A Ring of Endless Light'
+[22:29:24]   TITLE: 'The Twenty-Four Days Before Christmas (Austin Family Chronicles #0.5)' → 'The Twenty-Four Days Before Christmas'
+[22:29:24]   TITLE: 'Prelude (Katherine Forrester Vigneras series)' → 'Prelude'
+[22:29:24]   TITLE: 'The Arm of the Starfish (O'Keefe Family #1)' → 'The Arm of the Starfish'
+[22:29:24]   TITLE: 'A House Like a Lotus (O'Keefe Family #3)' → 'A House Like a Lotus'
+[22:29:24]   TITLE: 'A Live Coal in the Sea (Camilla #2)' → 'A Live Coal in the Sea'
+[22:29:24]   TITLE: 'Surrender Bay (Nantucket Love Story Series #1)' → 'Surrender Bay'
+[22:29:24]   TITLE: 'Second Touch (A.D. Chronicles, No. 2)' → 'Second Touch'
+[22:29:24]   TITLE: 'The Waking Fire (The Draconis Memoria Book 1)' → 'The Waking Fire'
+[22:29:24]   TITLE: 'The Flame Bearer (The Last Kingdom Series)' → 'The Flame Bearer'
+[22:29:24]   TITLE: 'War Lord (the Last Kingdom Series, Book 13)' → 'War Lord'
+[22:29:24]   TITLE: 'Last Kingdom Series (the Last Kingdom Series)' → 'Last Kingdom Series'
+[22:29:24]   TITLE: 'The Narrow Road Between Desires (The Kingkiller Chronicle, #0.6)' → 'The Narrow Road Between Desires'
+[22:29:24]   TITLE: 'The Wise Man's Fear (The Kingkiller Chronicle, #2)' → 'The Wise Man's Fear'
+[22:29:24]   TITLE: 'Red Seas Under Red Skies (Gentleman Bastard, #2)' → 'Red Seas Under Red Skies'
+[22:29:24]   TITLE: 'Mistborn: The Final Empire (Mistborn, #1)' → 'Mistborn: The Final Empire'
+[22:29:24]   TITLE: 'Suki, Alone (Avatar: The Last Airbender, #0.6)' → 'Suki, Alone'
+[22:29:25]   TITLE: 'Imbalance (Avatar: The Last Airbender, #6)' → 'Imbalance'
+[22:29:25]   TITLE: 'Katara and the Pirate's Silver (Avatar: The Last Airbender, #0.5)' → 'Katara and the Pirate's Silver'
+[22:29:25]   TITLE: 'The Magician’s Nephew (Chronicles of Narnia, #6)' → 'The Magician’s Nephew'
+[22:29:25]   TITLE: 'Romero and Juliet; The taming of the shrew; The Comedy of Errors (3 BOOKS)' → 'Romero and Juliet; The taming of the shrew; The Comedy of Errors'
+[22:29:25]   TITLE: 'The Master Mind of Mars (Barsoom #6)' → 'The Master Mind of Mars'
+[22:29:25]   TITLE: 'The Warlord of Mars (Barsoom, #3)' → 'The Warlord of Mars'
+[22:29:25]   TITLE: 'The Gods of Mars (Barsoom #2)' → 'The Gods of Mars'
+[22:29:25]   TITLE: 'To Sleep in a Sea of Stars (Fractalverse, #1)' → 'To Sleep in a Sea of Stars'
+[22:29:25]   TITLE: 'The Land That Time Forgot ' → 'The Land That Time Forgot'
+[22:29:25]   TITLE: 'Tarzan Lord of the Jungle ' → 'Tarzan Lord of the Jungle'
+[22:29:25]   TITLE: 'The Moon Men ' → 'The Moon Men'
+[22:29:25]   TITLE: 'Being God's Man by Claiming Your Freedom (The Every Man Series)' → 'Being God's Man by Claiming Your Freedom'
+[22:29:25]   TITLE: 'Being God's Man by Understanding a Woman's Heart (The Every Man Series)' → 'Being God's Man by Understanding a Woman's Heart'
+[22:29:25]   TITLE: 'Being God's Man by Walking a New Path (The Every Man Series)' → 'Being God's Man by Walking a New Path'
+[22:29:25]   TITLE: 'Being God's Man by Standing Firm Under Pressure (The Every Man Series)' → 'Being God's Man by Standing Firm Under Pressure'
+[22:29:25]   TITLE: 'Being God's Man by Resisting the World (The Every Man Series)' → 'Being God's Man by Resisting the World'
+[22:29:25]   TITLE: 'Being God's Man by Finding Contentment (The Every Man Series)' → 'Being God's Man by Finding Contentment'
+[22:29:25]   TITLE: 'Shadow Academy (Star Wars: Young Jedi Knights, #2)' → 'Shadow Academy'
+[22:29:25]   TITLE: 'Heirs of the Force (Star Wars: Young Jedi Knights, #1)' → 'Heirs of the Force'
+[22:29:25]   TITLE: 'Natural Shocks (Triquarterly Books)' → 'Natural Shocks'
+[22:29:25]   TITLE: 'Leaves on the Wind (Serenity, #4)' → 'Leaves on the Wind'
+[22:29:25]   TITLE: 'Better Days and Other Stories (Serenity, #2)' → 'Better Days and Other Stories'
+[22:29:25]   TITLE: 'Avatar: The Last Airbender: North and South (Avatar: The Last Airbender, #5)' → 'Avatar: The Last Airbender: North and South'
+[22:29:25]   TITLE: 'Avatar: The Last Airbender - Smoke and Shadow (Avatar: The Last Airbender, #4)' → 'Avatar: The Last Airbender - Smoke and Shadow'
+[22:29:25]   TITLE: 'The Rift (Avatar: The Last Airbender, #3)' → 'The Rift'
+[22:29:25]   TITLE: 'The Search (Avatar: The Last Airbender, #2)' → 'The Search'
+[22:29:25]   TITLE: 'The Hound of the Baskervilles (Sherlock Holmes, #5)' → 'The Hound of the Baskervilles'
+[22:29:25]   TITLE: 'The Adventures of Sherlock Holmes (Sherlock Holmes, #3)' → 'The Adventures of Sherlock Holmes'
+[22:29:25]   TITLE: 'A Study in Scarlet (Sherlock Holmes, #1)' → 'A Study in Scarlet'
+[22:29:25]   TITLE: 'Half-Blood (a Covenant Novel)' → 'Half-Blood'
+[22:29:25]   TITLE: 'Pure: The Second Covenant Novel (Covenant Series) (Volume 2)' → 'Pure: The Second Covenant Novel'
+[22:29:25]   TITLE: 'Give Me Liberty (Martha Washington Series)' → 'Give Me Liberty'
+[22:29:25]   TITLE: 'The Hugo Winners, Volume Three, Part Two (1973)' → 'The Hugo Winners, Volume Three, Part Two'
+[22:29:25]   TITLE: 'Way to Freedom, The' → 'The Way to Freedom'
+[22:29:25]   TITLE: 'Our John Willie, Centennial, Harlequin, Eric (Reader's Digest Condensed Books, Vol. 1-1975)' → 'Our John Willie, Centennial, Harlequin, Eric'
+[22:29:25]   TITLE: 'TV: 2000' → 'Tv: 2000'
+[22:29:25]   TITLE: 'Meeting the Needs of Your Most Able Pupils in History (The Gifted and Talented Series)' → 'Meeting the Needs of Your Most Able Pupils in History'
+[22:29:25]   TITLE: 'Autobiography of Benjamin Franklin, The' → 'The Autobiography of Benjamin Franklin'
+[22:29:25]   TITLE: 'Iowa Baseball Confederacy, The' → 'The Iowa Baseball Confederacy'
+[22:29:25]   TITLE: 'Council of Twelve, The' → 'The Council of Twelve'
+[22:29:25]   TITLE: 'Werewolf of Bamberg, The' → 'The Werewolf of Bamberg'
+[22:29:25]   TITLE: 'Hangman's Daughter, The' → 'The Hangman's Daughter'
+[22:29:25]   TITLE: 'Escape on Venus (Carson Napier Adventures #4) (Ace SF Classic, 21561)' → 'Escape on Venus (Carson Napier Adventures #4)'
+[22:29:25]   TITLE: 'The Wizard Of Venus (No 5 In The Venus Series)' → 'The Wizard Of Venus'
+[22:29:25]   TITLE: 'DemonWars: The First King: The Dame and The Bear (Saga of the First King)' → 'DemonWars: The First King: The Dame and The Bear'
+[22:29:25]   TITLE: 'Ravenor Returned (2)' → 'Ravenor Returned'
+[22:29:25]   TITLE: 'Kursed: A Novel (Sekret Series)' → 'Kursed: A Novel'
+[22:29:25]   TITLE: 'Onyx (Lux - Book Two)' → 'Onyx'
+[22:29:25]   TITLE: 'Obsidian (Lux - Book One)' → 'Obsidian'
+[22:29:25]   TITLE: 'TRUEL1F3' → 'Truel1f3'
+[22:29:25]   TITLE: 'The Fangs of Freelance (Fred, the Vampire Accountant Book 4)' → 'The Fangs of Freelance'
+[22:29:25] Phase 2 complete: 394 titles cleaned
+[22:29:25] 
+[22:29:25] === PHASE 3: Box set auto-detection ===
+[22:29:25]   BOX SET: Coble 2 in 1 - Without a Trace/Beyond a Doubt
+[22:29:25]   BOX SET: Lonestar Sanctuary and Sweetwater Gap 2 In 1
+[22:29:25]   BOX SET: Skyward Series 3 Books Set
+[22:29:25]   BOX SET: Ali Hazelwood Bestselling 5 Books Set
+[22:29:25]   BOX SET: CANNABIS : 2 Books in 1
+[22:29:25]   BOX SET: Love Inspired Suspense August 2013 Bundle
+[22:29:25]   BOX SET: The Housemaid 2 Book Set
+[22:29:25]   BOX SET: Tawny Man Trilogy 3-Book Bundle
+[22:29:25]   BOX SET: NEW! Miss Peregrine's Home for Peculiar Children Complete 6 Books Set
+[22:29:25]   BOX SET: Animorphs Graphic Novel 3 Books Set - the Invasion, the Visitor, the Encounter
+[22:29:25]   BOX SET: This Sun Eater Series 5 Books Set
+[22:29:25]   BOX SET: Roscoe Riley Rules 4 Books In 1!
+[22:29:25]   BOX SET: Scholomance Series 3 Books Set (Hardcover)
+[22:29:25]   BOX SET: Mickey7 Series, 2 Books Set, Mickey7, Antimatter Blues, by Edward Ashton
+[22:29:25]   BOX SET: German Edge of Collapse 3-1 Book Bundle
+[22:29:25]   BOX SET: Bundle
+[22:29:25]   BOX SET: Bundle : Today's Technician
+[22:29:25]   BOX SET: Band Series 2 Books Set - Kings of the Wyld and Bloody Rose
+[22:29:25]   BOX SET: Ted Chiang Bestselling 2 Books Set
+[22:29:25]   BOX SET: Tor. com Bundle 2 - October 2015
+[22:29:25]   BOX SET: The Study Series Bundle
+[22:29:25]   BOX SET: Judah Maccabee Bundle - Hardcover
+[22:29:25]   BOX SET: Chronicles Character Pictures 2 Book Bundle - Hardcover
+[22:29:25]   BOX SET: Chronicles of the Watchers 6 Book Bundle - Paperback
+[22:29:25]   BOX SET: Chronicles of the Watchers 6 Book Bundle - Large Print
+[22:29:25]   BOX SET: Spiritual World 3 Book Bundle - Large Print
+[22:29:25]   BOX SET: Spiritual World 3 Book Bundle - Paperback
+[22:29:25]   BOX SET: Chronicles of the Watchers 3 Book Bundle - Paperback
+[22:29:25]   BOX SET: Nephilim Theology 4 Book Bundle - Large Print
+[22:29:25]   BOX SET: Nephilim Theology 4 Book Bundle - Paperback
+[22:29:25]   BOX SET: Chronicles of Ixia 6 Book Set
+[22:29:25]   BOX SET: Chronicles of the Nephilim 8 Book Bundle - Large Print
+[22:29:25]   BOX SET: Chronicles of the Apocalypse 4 Book Bundle - Large Print
+[22:29:25]   BOX SET: Chronicles of the Nephilim 8 Book Bundle - Hardcover
+[22:29:25]   BOX SET: Chronicles of the Apocalypse 4 Book Bundle - Paperback
+[22:29:25]   BOX SET: Chronicles Character Pictures 2 Book Bundle - Paperback
+[22:29:25]   BOX SET: Endnotes for Chronicles of the Apocalypse 4 Book Bundle - Large Print
+[22:29:25]   BOX SET: Chronicles of the Apocalypse 4 Book Bundle - Hardcover
+[22:29:25]   BOX SET: Chronicles of the Nephilim 8 Book Bundle - Paperback
+[22:29:25]   BOX SET: World of the First Law Series 3 Books Set - Best Served Cold, the Heroes, and Red Country
+[22:29:25]   BOX SET: Lux Novel Series Vol. 1-2, Obsidian & Onyx, 2 Books Set, by Jennifer L. Armentrout
+[22:29:25]   BOX SET: Blake Crouch - The Wayward Pines 3-in-1 Collection
+[22:29:25] Phase 3 complete: 42 box sets marked
+[22:29:25] 
+[22:29:25] === PHASE 4: Skipped (--skip-covers) ===
+[22:29:25] 
+[22:29:25] === PHASE 5: Orphan cleanup ===
+[22:29:25]   DELETED: The Grandest Game — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: The Kremlin conspiracy — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Phantom Writer — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Wild Rescue — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Escaping Darkness — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Stolen Secrets — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Over the Wall — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Double Fault — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Not in the Heart — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Windy City Danger — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Dogwood — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: June Bug — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Minions of Time — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Saving Grayson — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Overdrive — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Every Waking Moment — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Instant Menace — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Sword of the Wormling — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Wind Chill — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Unveiled — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Marta's Legacy Collection — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Last Sin Eater — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Lineage of Grace — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Redeeming Love — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Sons of Encouragement — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Voice in the Wind — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Unspoken — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Prince — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Warrior — orphan (no author, genre, description, cover, or users)
+[22:29:25]   DELETED: Priest — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Unashamed — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Unshaken — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Unafraid — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Scribe — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Prophet — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Redeeming Love 20th Anniversary Edition — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Krygsman Manne Van Geloof — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Maria — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Rut — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Hombres de Valor — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Shoe Box — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Kathleen — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: See It! Stick It! — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Mijn moeders hoop — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Her Daughter’s Dream — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Ladys Mine — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Famous American Plays of the 1940s — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Yahudi yazarlar antolojisi — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Three Plays about Business in America — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Moto shel sokhen — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Hexenjagd — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Four Modern Plays First Series — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Foco — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: The misfits — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Tsed ha-mekhashefot — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: The American Clock — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: The American Clock / The Archbishop's Ceiling — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: The crucible — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Mort d'un commis voyageur — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Incident at Vichy — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Vu du pont — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Nafṭule zeman — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Moto shel sokhen-mekhirot — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Marʼeh me-ʻal ha-gesher — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Le-aḥar ha-nefilah — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Taḳrit be-Ṿishi — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Incident a Vichy — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Kulam hayu banai — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Sipur ahavah muzar — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Real Death in Paradise — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Terrifying Truth about the Threat from Bioterrorism — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: The Cobra Event Publisher — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: End of Cornwall — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: First Light — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Panic in Level 4 — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Reflections and Visions — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: R.M.C. and Kingston — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Frankie Pickle and the Invasion of the Polka Dots — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Totally Super Squad! — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: My Dead Girlfriend — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Frankie Pickle and the Pine Run 3000 — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Vanishing Coin — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Topps League Story : Book Three — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Topps League Story : Book Four — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Topps League Story : Book Two — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Life and Death in the North Woods — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Frankie Pickle and the Closet of Doom — orphan (no author, genre, description, cover, or users)
+[22:29:26]   DELETED: Maine game wardens — orphan (no author, genre, description, cover, or users)
+[22:29:26]   EMPTY SERIES DELETED: Cerulean Chronicles
+[22:29:26]   EMPTY SERIES DELETED: The Hierarchy Series
+[22:29:26]   EMPTY SERIES DELETED: BBC's Pointless Series
+[22:29:26]   EMPTY SERIES DELETED: 50Characters
+[22:29:26]   EMPTY SERIES DELETED: High Stakes Trilogy
+[22:29:26]   EMPTY SERIES DELETED: Of Blood & Bone
+[22:29:26]   EMPTY SERIES DELETED: The Avignon Quintet
+[22:29:26]   EMPTY SERIES DELETED: Anansi Boys
+[22:29:26]   EMPTY SERIES DELETED: James Nathaniel Holland Anthologies for Operatic Voice
+[22:29:26]   EMPTY SERIES DELETED: Bachelor Trilogy
+[22:29:26]   EMPTY SERIES DELETED: Bachelor
+[22:29:26]   EMPTY SERIES DELETED: Barbara Kingsolver Omnibus
+[22:29:26]   EMPTY SERIES DELETED: The Imposters
+[22:29:26]   EMPTY SERIES DELETED: Amish Fairytale Series
+[22:29:26]   EMPTY SERIES DELETED: Prentice Hall Literature
+[22:29:26]   EMPTY SERIES DELETED: Rock Harbor Series
+[22:29:26]   EMPTY SERIES DELETED: Teenage Mutant Ninja Turtles Cine-Manga
+[22:29:26]   EMPTY SERIES DELETED: Teenage Mutant Ninja Turtles Collected Series
+[22:29:26]   EMPTY SERIES DELETED: Teenage Mutant Ninja Turtles Compendium
+[22:29:26]   EMPTY SERIES DELETED: Black Wolves
+[22:29:26]   EMPTY SERIES DELETED: Tales of the Teenage Mutant Ninja Turtles Omnibus
+[22:29:26]   EMPTY SERIES DELETED: Animorphs Graphic Novels
+[22:29:26]   EMPTY SERIES DELETED: Cathedrals of Glass
+[22:29:26]   EMPTY SERIES DELETED: Chaos and Cosmos Sampler
+[22:29:26]   EMPTY SERIES DELETED: Y: The Last Man
+[22:29:26]   EMPTY SERIES DELETED: SparkNotes Literature Guides
+[22:29:26]   EMPTY SERIES DELETED: Benny Griessel
+[22:29:26]   EMPTY SERIES DELETED: Spiritwalker
+[22:29:26]   EMPTY SERIES DELETED: Stalingrad Dilogy
+[22:29:26]   EMPTY SERIES DELETED: Sheep Detective Story
+[22:29:26]   EMPTY SERIES DELETED: Super Powereds
+[22:29:26]   EMPTY SERIES DELETED: Corpies
+[22:29:26]   EMPTY SERIES DELETED: Cressida Cowell Assortment COSTCO CANADA
+[22:29:26]   EMPTY SERIES DELETED: The Mighty Thor
+[22:29:26]   EMPTY SERIES DELETED: The New Avengers
+[22:29:26]   EMPTY SERIES DELETED: The Passage Trilogy
+[22:29:26]   EMPTY SERIES DELETED: Fantastic Four Omnibus
+[22:29:26]   EMPTY SERIES DELETED: Moon Knight Omnibus
+[22:29:26]   EMPTY SERIES DELETED: Ghostbusters/Teenage Mutant Ninja Turtles
+[22:29:26]   EMPTY SERIES DELETED: Middle School
+[22:29:26]   EMPTY SERIES DELETED: Penric & Desdemona
+[22:29:26]   EMPTY SERIES DELETED: The Remains of the Corps
+[22:29:26]   EMPTY SERIES DELETED: SparkNotes Literature Guide
+[22:29:26]   EMPTY SERIES DELETED: Forgotten Realms: The Legend of Drizzt
+[22:29:26]   EMPTY SERIES DELETED: Forgotten Realms
+[22:29:26]   EMPTY SERIES DELETED: Guardians of the Galaxy (2008)
+[22:29:26]   EMPTY SERIES DELETED: Shatter Me: The New Republic
+[22:29:26]   EMPTY SERIES DELETED: Girl Vs. Boy Band
+[22:29:26]   EMPTY SERIES DELETED: The Chemical Garden
+[22:29:26]   EMPTY SERIES DELETED: de Vincent
+[22:29:26]   EMPTY SERIES DELETED: Pokemon
+[22:29:26]   EMPTY SERIES DELETED: Storie dal Domani
+[22:29:26]   EMPTY SERIES DELETED: Greg Egan Classic Sci-Fi Trilogy
+[22:29:26]   EMPTY SERIES DELETED: Terra Nova
+[22:29:26]   EMPTY SERIES DELETED: Austin Kleon's Creativity Series
+[22:29:26]   EMPTY SERIES DELETED: Austin Kleon Creativity Series
+[22:29:26]   EMPTY SERIES DELETED: Ein Mann will nach oben
+[22:29:26]   EMPTY SERIES DELETED: Minotaur Sampler
+[22:29:26]   EMPTY SERIES DELETED: Yesterday's Gone
+[22:29:26]   EMPTY SERIES DELETED: Ates Tasi
+[22:29:26]   EMPTY SERIES DELETED: De lente-serie
+[22:29:26]   EMPTY SERIES DELETED: World Breaker
+[22:29:26]   EMPTY SERIES DELETED: Jana Kippo
+[22:29:26]   EMPTY SERIES DELETED: Minecraft: Najlepsze Przygody
+[22:29:26]   EMPTY SERIES DELETED: Marvel Action: Spiderman
+[22:29:26]   EMPTY SERIES DELETED: Histórias de Robôs
+[22:29:26]   EMPTY SERIES DELETED: Shattered Sea Trilogy
+[22:29:26]   EMPTY SERIES DELETED: Middle-earth Legendarium
+[22:29:26]   EMPTY SERIES DELETED: Eine märchenhafte Anthologie
+[22:29:26]   EMPTY SERIES DELETED: Serina
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Jack Kirby's Fourth World
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Army of Darkness vs Reanimator
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Erasing Time
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Best American Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: New Thunderbolts
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Women and the City
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Best Small Fictions
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Alpha Male Strategies
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: World Cultures
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Timeless Love
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Saloninus
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Lancaster Imprints
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Lost Love
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Strange the Dreamer
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Chronicles of a Lizard Nobody
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Reamde Universe
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Lion's Blood
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Flowers in the Attic
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Sherlock Holmes Mystery Magazine
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Mårbacka
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Mystery Society
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Marvel Visionaries
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: DC Super Heroes Superman
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: FrightFest Guides
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Predator vs. Wolverine
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Conan the Barbarian by Jim Zub
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Tales of Dunk and Egg
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: 5-Minute Sherlock
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Wolfe Brothers
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Elder Race
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Merlin’s Charge
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Religion in America Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Spider-Man Newspaper Strips
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Forward Collection
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: PEN America: A Journal for Writers and Readers
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Baby Dragon
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Jack Reese
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Building for Safety Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Kevin Eastman's Totally Twisted Tales
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: On Wings of Ash and Dust
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Kull Eternal
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Doctor Who by Douglas Adams
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Sentinels of the Galaxy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Routledge Revivals
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The State
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Val Ryker
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Elementals
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: DFZ Changeling
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Fairy Tales
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Redwood Pack
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Desert Justice
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Transformers: Beast Wars
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Westward to Home
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Henry Kimball / Lily Kintner
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Last Days of American Crime
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Seasons
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Apex Magazine
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Expeditionary Force
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Slayers
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: CS Lewis Study Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Teenage Mutant Ninja Turtles: The Works
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Not Your Average Hot Guy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Outside Magazine's Urban Adventure
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Teenage Mutant Ninja Turtles Universe
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Dark Elf Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Changing World
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Promise
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Strand Originals
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Shadow Play: Ten Tales from the In-between
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Dance With My Demons
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Prologue Crime
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Rekke en Vargas
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Animorphs Megamorphs
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Black Tide Rising
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Swords Against Darkness
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Vigneras
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Terrible Worlds: Destinations
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Sonic the Hedgehog
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Cars
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Classified K-9 Unit
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Roald Dahl's Autobiography
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Red Rock Mysteries
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Future Is Female!
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Isaac Asimov's Anthologies
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Teenage Mutant Ninja Turtles IDW
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: El Chavo
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: True Love Story
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Under the Mistletoe
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Best American Travel Writing
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Narrator Cycle
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Nuclear Dawn
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Iron Man/Thor
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Crusade
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Gravity Falls
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: TMNT Color Classics
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Weapon H
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Alpha Male Bible
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Lost Are Found
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: WeirDo
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Flash
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Dark Lord Davi
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Not Brand Echh
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Alchemy of Secrets
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Ultimate Wolverine vs. Hulk
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Agape and Eros
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Scalebound Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Tales from Ivy Hill
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Twentieth Century Views
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Imperial Guardians
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Penny Dreadful Multipack
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Vanished Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: World Regions
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Jeremy Marsh & Lexie Darnell
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: 123 Come Rhyme With Me
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Great Cities Duology
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Clifford the Big Red Dog
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Religion in American Life
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Kyle Adams
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Herald Spy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Thin Man
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Year Zero
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Fogged Clarity
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Land of Exile
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Dragonwar Saga
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Tales of Grim Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Shepherd's Notes
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Aubry Knight
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Above the Line
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: G.I. Joe
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Spiritwalker Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Port Gamble Chronicles
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Stranger Things
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Mysteries of Blackberry Valley
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Infinity Ring
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Sullivan Crisp
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Positronic Super Pack Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Bride
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Annie Gore PI
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Maya Angelou's Autobiographies
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Mortal Instruments
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Decades: Marvel in the '40s
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Album Zutique
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: A Time of Dragons
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Battle Action
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Emblem Island
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Easy Oracle Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Marvel Action: Spider-Man
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Ruinous Love Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Philip Marlowe
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Brief Retrospect of the Eighteenth Century
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Amish Millionaire
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: New Dimensions
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Descendants of the House of Bathory
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Hansen Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Carolina Coast
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Snopes Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Welcome to Night Vale Episodes
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Grimnir Chronicles
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: TMNT IDW Collection
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Gemini
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Vampirella Vs. Red Sonja
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Amish Greenhouse Mystery
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Forbidden
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Road Trip Romance
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Made Ridiculously Simple
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Ringdweller Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Developments in Sweeteners
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: World of Reading Marvel
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Northlanders
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Space Fleet Academy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Practical Aspects of Criminal and Forensic Investigations
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Starring Lucille Beatrice Bear
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: American Biography
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Childhood, Boyhood, and Youth
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Shadow Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Afterworlds
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Two of Swords
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Detective Kimberley King
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Ultimate Spider-Man
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Shivers Collection
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Strathclyde papers on government and politics
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Avengers by Jonathan Hickman
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Seasons of Carnage Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: A Year in Bushwick
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Weird Tales
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Storyteller's History
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Barbarotti
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Understanding and Loving Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Cozy Murders
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Bulletin
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: BukuModels
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Acts of Faith
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Mammoth Book of Science Fiction
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Icewind Dale Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Toothsucker
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Rekke & Vargas
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Titan's Nest
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Curiosity House
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Tales of Renthia
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Venomverse Reborn
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Ladies of Infamy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Measure for Measure
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Living Dead
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Stories Inspired by the Holmes Canon
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Infinity Project
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Night Visions
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Family Snapshots
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Andy Carpenter
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Dragon Age
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Bards of a Feather
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Positronic Super Pack
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Fistful of Blood
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Rubber Blanket
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Emily Kenyon
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Kobold Guide
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Otherworlds
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Foreworld Saga
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Guardians of the Galaxy Modern Era Epic Collection
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Bomb Light
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The New York Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: New Warriors
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Dangerous Women
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Classics of Western Spirituality
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Batman: The Dark Knight Universe
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Vellichor Epic
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Dark Future
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Lunatics
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Adventures of Sherlock Holmes
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Marvel Team-Up
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Reidverse
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Mummy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The New Solaris Book of Fantasy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Way We Bleed
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Second Chance Love Story
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Bible in American Public Life
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Psychoanalysis in a New Key Book Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Climax
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Dating Playbook for Men
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Secrets & Shadows
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Theory and History
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Marvel-Verse
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Trash 'n' Treasures
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Aircam Aviation
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Southern Reach
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Beartown
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Shadows
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Squadcom-13
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Lux Universe
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Ruin Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Kingsbridge
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Rise of the Mystic Mage
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Empire of the East
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Cases of the FBI’s Original Mindhunter
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Stephen Arterburn 100 Days of Encouragement
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Civil War: A Narrative
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Galaxy's Edge Magazine
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Complete Idiot's Guide
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Tavistock Family
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Eclipse
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Nevernight Chronicle
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Demonwar Saga
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Caleb Books Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Fantastic Four
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Hudson
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Teenage Mutant Ninja Turtles: The IDW Collection
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Spirit Animals
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Year's Top Robot and AI Stories
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Galaxia Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Jack Daniels
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Making of the President
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Alibis Collection
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Barkely's School for Dogs
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Hector Cross
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Dante's Circle
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Transformers vs. Terminator
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Shivered Sky
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Windy City Pulp Stories
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: DemonWars: The Buccaneers
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Bare Bones
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Casebooks in Criticism
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Eastman and Laird's Teenage Mutant Ninja Turtles
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Wevlian Chronicles
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: DC Super Heroes: Superman
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Color of Evil
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: D4VE
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Fates of Galanor
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Captain America Epic Collection
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Thor: God of Thunder
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: One Year Books
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Armstrong Saga
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Hawaiian Quilt
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Ghostbusters (IDW Collected Editions)
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Faeries of Dreamdark
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Regency Faerie Tales
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Falcon's Nest Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Time Traveler's Passport
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Letters of Enchantment
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Schriftenreihe Hochschul Marketing
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Big Day
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Fantastic Four (2022-2025)
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Midnight Tales
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Last Fall
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Caleb Books
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Teenage Mutant Ninja Turtles: Reborn
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Doctor Who: New Series Adventures
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: IDW Deviations
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Katherine Forrester Vigneras
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: New Horizons in Public Policy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Sand Chronicles
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Death of the Endless
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Memory Rescue Resource
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Adventures of the Bailey School Kids Special
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Habitat Explorer
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Butcher and the Wren
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Sailing Thrillers
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Seasons of Horror
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Home to Green Creek
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Samurai Jack (IDW)
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Know the Game
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Thor by Walt Simonson
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Disrupted Magic
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Hellblazer
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Noobtown
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Weekly Wingman
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Battlestar Galactica (Classic)
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Collins Big Cat
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Fantastic Four Epic Collection
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: GoldSim Modules
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Heirs of History
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Texas Reckoners
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Figurae: Reading Medieval Culture
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Time Travel Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Marvel Masterworks
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Sheep Detective
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Charles M. Russell Center Series on Art and Photography of the American West
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Wells of Sorcery Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Best in Children's Books
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Keswick Week
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Archives of the Invisible Sword
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Sandman Universe - The Books of Magic
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Vorkosigan Saga
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Love Hypothesis
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Darkwar Saga
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Porter Family
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Keeper of Dreams
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Extreme Measures
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Mason Dixon
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Iron Man
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Of Blood and Bone
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: X Lives of Wolverine/X Deaths of Wolverine
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Beacon 23
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Bogglegate Manors
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Saxon Stories
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Wolfbreed
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Guys Read
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Oz
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Miscellanea Evangelica
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: DC Super Heroes: Batman
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Blur Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Eden Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Houses of Yorkshire
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Clarkesworld Anthology
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: New Gods
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Gaslight
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Elite Guardians Collection
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Best American Mystery Stories
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Archie
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Tyrant Philosophers
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: How to Train Your Dragon School
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: What Remains
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Land-Grant College Review
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Gifted and Talented Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Usagi Yojimbo
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Oxford Reading Tree TreeTops Chucklers
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: King of Scars Duology
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Chronicles of Tir Na
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Doctor Strange: The Oath
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Year's Best Science Fiction on Earth
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: A Hangman's Daughter Tale
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Drowned World
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Conjunctions
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Fall of Ile-Rien
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Strange Tales
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Second Chances
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Melling Sisters Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Pivotal Point Papers
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: What If…? Miles Morales
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Shift
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Annwn Cycle
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Three-Body Problem Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Year's Best Science Fiction & Fantasy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Sun Chronicles
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Collected Stories of Philip K. Dick
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: A Kitten Called Kitters
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Darkfell Saga
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Debutantes
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Tales of the Shadowmen
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Dark/Spark
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Scarlett Bernard
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Marcus Glenwood
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Best American Science and Nature Writing
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Jarrod Jarvis Mystery
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Twelve Tomorrows
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Jake Savage Adventure
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Best American Nonrequired Reading
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Alpha & Omega
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Andrew Z. Thomas/Luther Kite Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Into Darkness Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Dark Nights: Metal
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: God and Government
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Anne of Green Gables
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Sight Singing Do Re Mi and Tikitiki Ti
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Remembrance of Earth’s Past
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Wormling
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Pacific Coast Private Eyes
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Black Lizard
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Blackout/All Clear
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Dollanganger
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Po an zhi shen
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Horus Heresy: Siege of Terra
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The SockKids
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Dangerous Visions
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Comics Squad
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Ghost Rider (2022)
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Best Bike Rides Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Rose Mountain Refuge
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Unidentified Funny Objects Annual Anthology Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Guardians 3000
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Derkholm
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Midnight World
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Albany Cycle
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Duke Nukem: Glorious Bastard
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Stockingham & Pike
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Transformers Animated
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Fox Spirit Books of Monsters
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Spirit Animals: Fall of the Beasts
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Pale Queen
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Miracles and Mysteries of Mercy Hospital
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Mystery Writers of America Classics
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Culper Ring Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Deep Magic collections
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Side Step Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Firefly
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Reader's Digest Best Loved Books for Young Readers
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Animorphs: Megamorphs
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: La trilogía de Poldarm
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The One Year Bible
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Devils & Thieves
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Blood Guard
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Strong at the Broken Places
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Wastelands Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: All the Dust that Falls
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Godzilla: Monsters & Protectors
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Bailey Flanigan
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Sweetpea
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Planet of the Apes
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: History in Art
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: My Complete Health
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Galway Chronicles
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Firebirds
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: War of the Realms: Journey Into Mystery
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Women of Faith Fiction
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Guinness World Records
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Subjective Cosmology
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Alcatraz Versus the Evil Librarians
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Lady Hel
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Devils
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Orion by Walt Simonson
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: African-American Poets
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Animorphs: The Graphic Novel
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Blood Lite
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Year's Best Science Fiction
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Ironbound
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Cheviot Hills Time Travel Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Rabbit Angstrom
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Literary Conversations Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Bookclub-in-a-Box
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Nova Vita Protocol
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Dystopia Triptych
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Cases of the FBI's Original Mindhunter
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Bomblight
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Memoirs of Elie Wiesel
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: History of Evangelicalism
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Orbit
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Library of Religious Biography
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Indiana Jones
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Defending the Future
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Women of Faith
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Dragonlance
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Suicide Squad: The New 52
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Best Vegan Science Fiction and Fantasy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Amulet Fantasy Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Into the Wild
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Gwen Stacy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Thriller 2: Stories You Just Can't Put Down
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Wars of the Roses
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Dollanganger Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Malcolm Kershaw
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Norvelt
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Spider-Man Loves Mary Jane
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Cost of Betrayal Collection
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Jackpot
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Bill & Ted
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Ambergris
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Deadpool/Wolverine
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Norton Series on Interpersonal Neurobiology
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Sinners Club
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Luke Cage, Hero for Hire
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Globalizing Regions
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Diamond Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Waterman and Stark
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Lightspeed Magazine
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Flame Tree Gothic Fantasy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Revenant Games
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Color Purple Collection
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Age of Wrath
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Road Kill: Texas Horror by Texas Writers
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Black Crow Book of Best New Horror
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Crystal Calamity
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Food in Nineteenth-Century British History
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Witch Way Anthology
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Empty Coffin
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: City-Based Speculative Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Chosen Ones
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: From Fail to Win: Learning from Bad Ideas
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Twelfth Imam
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Call the Midwiz
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Young Person's Guide
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Moonlight Bay Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Great Cities
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Only Good Indians
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Orphans
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Queens of Renthia
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Golden Years of Science Fiction
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Daily Mail Crossword
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Race Is On
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Novels of the Jaran
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Archived
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: DC Super Heroes
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The X-Files: Case Files
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Marvel Comics History
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Turning South: Christian Scholars in an Age of World Christianity
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Infinite Stars
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The History of Middle-earth
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Hannah Swensen Mysteries
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Mirror Visitor
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Life Class Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: S.H.I.E.L.D.
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Invincible Iron Man
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Dead Sea Chronicles
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Unearthly Delights
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: High Stakes
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Pram
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Stonewater Kingdom
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Guardians of Infinity
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Janette Oke's Animal Friends
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Swordheart
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Star Wars: Forces of Destiny
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Star Science Fiction Stories
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Icons
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Christmas Novellas
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Bifrost
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Drizzt: Generations
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Tor Double Novel
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: With God
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Sutherland
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Austin Kleon Creativity Trilogy
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Pyle's King Arthur Series
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Space and Time
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: The Dragon Guardian Chronicles
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Barbaric
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Montmorency
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: System Universe
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Arkana Sword and Sorcery Adventure
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Sons of Encouragement
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Collegium Chronicles
+[22:29:26]   SINGLE-BOOK SERIES DISSOLVED: Megamorphs
+[22:29:26] Phase 5 complete: 88 orphan books deleted, 70 empty series, 577 single-book series dissolved
+[22:29:26] 
+[22:29:26] === PHASE 6: Individual parts removal ===

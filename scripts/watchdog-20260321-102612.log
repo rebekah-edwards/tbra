@@ -1,0 +1,29 @@
+[2026-03-21 10:26:12] [watchdog] === Enrichment watchdog starting ===
+[2026-03-21 10:26:12] [watchdog] Batch size: 25 | Sleep: 30s | Max restarts: 10
+[2026-03-21 10:26:12] [watchdog] Books needing enrichment: 5645
+[2026-03-21 10:57:27] [watchdog] Invalid response from Phase1 batch 9 — server may have crashed
+[2026-03-21 10:57:32] [watchdog] Server is DOWN — attempting restart (1/10)
+[2026-03-21 10:57:32] [watchdog] Starting dev server...
+[2026-03-21 10:57:32] [watchdog] Dev server launched (PID: 12007)
+[2026-03-21 10:57:37] [watchdog] Dev server healthy after 5s
+[2026-03-21 15:05:01] [watchdog] Invalid response from Phase1 batch 135 — server may have crashed
+[2026-03-21 15:05:06] [watchdog] Server is DOWN — attempting restart (2/10)
+[2026-03-21 15:05:06] [watchdog] Starting dev server...
+[2026-03-21 15:05:06] [watchdog] Dev server launched (PID: 34801)
+[2026-03-21 15:05:11] [watchdog] Dev server healthy after 5s
+[2026-03-21 15:05:16] [watchdog] Invalid response from Phase1 batch 136 — server may have crashed
+[2026-03-21 15:05:21] [watchdog] Server is DOWN — attempting restart (3/10)
+[2026-03-21 15:05:21] [watchdog] Starting dev server...
+[2026-03-21 15:05:21] [watchdog] Dev server launched (PID: 34972)
+[2026-03-21 15:05:26] [watchdog] Dev server healthy after 5s
+[2026-03-21 15:17:32] [watchdog] Invalid response from Phase1 batch 145 — server may have crashed
+[2026-03-21 15:17:37] [watchdog] Server is DOWN — attempting restart (4/10)
+[2026-03-21 15:17:37] [watchdog] Starting dev server...
+[2026-03-21 15:17:37] [watchdog] Killing stale processes on port 3000: 4532
+[2026-03-21 15:17:39] [watchdog] Dev server launched (PID: 36386)
+[2026-03-21 15:17:44] [watchdog] Dev server healthy after 5s
+[2026-03-21 15:17:50] [watchdog] Invalid response from Phase1 batch 146 — server may have crashed
+[2026-03-21 15:17:55] [watchdog] Server is DOWN — attempting restart (5/10)
+[2026-03-21 15:17:55] [watchdog] Starting dev server...
+[2026-03-21 15:17:55] [watchdog] Dev server launched (PID: 36522)
+[2026-03-21 15:18:00] [watchdog] Dev server healthy after 5s

@@ -1,0 +1,3 @@
+[2026-03-21 15:42:18] [watchdog] === Enrichment watchdog starting ===
+[2026-03-21 15:42:18] [watchdog] Batch size: 25 | Sleep: 30s | Max restarts: 10
+[2026-03-21 15:42:18] [watchdog] Books needing enrichment: 4972

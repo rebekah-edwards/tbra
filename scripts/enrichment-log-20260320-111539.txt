@@ -1,0 +1,3 @@
+[11:17:48] Starting overnight enrichment. Books needing enrichment: 7896
+[11:17:48] Google Books: SKIPPED. Batch size: 25. Delay: 30s
+[11:17:48] ---

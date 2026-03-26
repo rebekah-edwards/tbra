@@ -1,0 +1,500 @@
+
+I’ve already started The Two Towers. Despite knowing the story, I found myself on the edge of my seat through The Fellowship of the Ring & immediately jumped into the next book.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('4beca9f7-176e-4a7d-bf5f-1c463b221e9f', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'f97c8e03-6fed-4348-a8ed-fddbaffd7cc3', 3.0, NULL, NULL, 0, 4, 2024, '2024-04-29T12:00:00.000Z', '2026-03-17 23:30:55', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('c603f87d-dd23-4576-96a4-8d33fa9423b9', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '5491930f-9967-4f0a-838b-b72da29adee1', 4.0, NULL, NULL, 0, 2, 2024, '2024-02-19T12:00:00.000Z', '2026-03-17 23:31:03', 'Does Red Seas compare to its predecessor? Yes, despite not quite living up. 
+
+Mission: Impossible meets Ocean’s 11 meets Black Sails if it was directed by David Fincher. 
+
+It had been a few months since I’d read The Lies of Locke Lamora. And despite that, the first few chapters of this entry still had me on the edge of my seat as the consequences from their first adventure started to be realized. My heart was beating just as quickly as if it were happening to me. 
+
+There was a definite slog in the middle of this book that I powered through as they learned what they needed to know for their mission. But once they set sail, I was back in! 
+
+The ending may not be as classic as the first book, but I think it did live up to the IP. 
+
+The biggest downgrade from Lies was definitely the flashbacks for me. I was having trouble differentiating between that & the present. It felt forced to just match the organization of the first book. I would’ve preferred to just read the flashbacks & then immediately go Into the current story. 
+
+The real strength of this book was the same as Lies: the characters & their relationships with one another. When something happened to one of them, Lynch was brilliant in making me feel the event through the eyes of someone I truly believed loved them. That’s hard to do & he is one of the best in the genre at that. I’ll be ready to read Republic of Thieves just a few books into my TBR!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('f36ff16d-ce89-4807-a7cf-f244bcf84235', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '15f9b827-07c9-42f5-ab7d-f5bcdea91b05', 4.0, NULL, NULL, 0, 12, 2023, '2023-12-02T12:00:00.000Z', '2026-03-17 23:31:03', 'Freaky Friday meets Lost in Translation meets Studio Ghibli. 
+
+The worldbuilding was very Sanderlike. However, I found myself intrigued with Painter’s world far more than Yumi’s. The imagery of the pink & blue neon painted the picture (pun intended) in my head brilliantly. And the typical Sanderlanche had me enthralled in the last 80 pages! 
+
+Sanderson does a fantastic job of building side characters that almost overshadow the main characters (Mistborn & Stormlight especially), but this was a book that focused solely on the two leads’ inward journeys. The development & the romance both felt so natural that these characters became real to me. 
+
+The magic system wasn’t the focus, but it moved the plot along & was interesting enough. It’s a world I’d love to visit again, but I’m also satisfied with just this one story. 
+
+Hoid’s narration didn’t feel as Hoid-like as it did in Tress. Not a complaint. Just an observation. 
+
+Overall, I’d say Tress was a better book, but I personally enjoyed Yumi & the Nightmare Painter more. I’ll be moving on to The Sunlit Man next!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('f4293f19-ee1d-4884-a98a-0e5ce5dde8f4', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'be963910-85f0-48eb-a2fc-3eeea337328d', 5.0, NULL, NULL, 0, 11, 2019, '2019-11-29T12:00:00.000Z', '2026-03-17 23:31:12', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('3151aeff-6bc4-4f20-8a23-f4d6dddc4028', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'a21fcd9e-3d06-47d0-809f-bac86d255e19', 2.0, NULL, NULL, 0, 9, 2023, '2023-09-20T12:00:00.000Z', '2026-03-17 23:31:17', 'I’m going to be honest. I did not like this book. 
+
+Paolini had some beautiful prose as always & I did find myself intrigued by the mystery, but I just hated every character to a degree that I had nothing on which to latch. 
+
+This book was less than 300 pages & it took me over a month to read it. I ended up having to switch to the audiobook (which I’ve never had to do before) because it was such a slog. I really hate audiobooks too. 
+
+I’ve been on such a great streak of books the past year or so that my standards have been pretty high, so maybe this is just me. Overall, I’ll give it a 2 because it was a technically good book. I just dreaded picking it up.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('e330ab67-9778-4960-a3b4-2035c3e26d7f', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'd099d1de-7993-455a-918b-b8ae10e50058', 4.0, NULL, NULL, 0, 8, 2023, '2023-08-12T12:00:00.000Z', '2026-03-17 23:31:37', 'I had some very mixed feelings about this book as I read it. 
+
+Honestly, if you can get through the inception of an intro, it’s pretty much smooth sailing from there. The book within a book aspect definitely worked better in the movie. 
+
+What worked better in the book, however, were the characters. I actually felt like I knew them by the end. While the movie was fun, humorous, & just better to be honest, I felt that I actually knew the characters much better by the end of the book. 
+
+The style felt like a cross between Narnia & Monty Python, which is the highest of compliments. 
+
+I would recommend this to anyone that likes fairy tales, fantasy, or classics. It’s just one of those books that everyone needs to read at some point.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('fdfef552-d31b-49e2-9e92-94bae30a1b11', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '8cec0d8e-e612-412d-8dac-89512b4c61f2', 5.0, NULL, NULL, 0, 8, 2023, '2023-08-05T12:00:00.000Z', '2026-03-17 23:31:37', 'I’ve heard rave reviews about The Gentleman Bastard Sequence for years. Having given up on Scott Lynch ever finishing the series, I decided to just pick it up now. 
+
+Having spent the last year reading the entirety of Brandon Sanderson’s Cosmere universe, I was pretty accustomed to his writing style, so Lynch’s prose was pretty jarring for me. I did get used to it & it definitely fit the overall ambiance of the novel, but I can’t say I loved it. 
+
+I actually spent the first quarter of the book trying to figure out what all the fuss was about. It didn’t seem to be anything special and, if I’m being honest, it seemed pretty pretentious & like it was trying too hard to be edgy. 
+
+But at some point (and I’m not really sure what point it was), it just clicked. I really just fell in love with this book & every protagonist in it. I had to get in the habit of dropping my jaw every hundred pages or so. 
+
+It could possibly have my favorite antagonist I’ve ever read before as well. Whenever our “heroes” were in the presence of either the BBEG or his hireling, I felt real danger & was prepared to witness a death. The gruesomeness led to realness for me. 
+
+For most of the book, I couldn’t decide if I preferred the flashbacks or the main story. By the end, however, I felt like the flashbacks should’ve been finished in part 3. They felt very much in the way of the pacing in the final act, despite some very helpful worldbuilding. 
+
+It honestly didn’t feel like fantasy with the minimal use of magic, but it did in the worldbuilding. Camorr felt so real to me that I would swear to you I’ve spent the last month living there. 
+
+In conclusion, The Lies of Locke Lamora isn’t without flaws, but it’s the easiest five star read for me since Words of Radiance. I plan to jump into boom two very soon!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('936966aa-c124-4ed6-b793-8875b1c7a5ca', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '50e91b4b-17f8-4bf5-af6b-cb31962e334b', 4.0, NULL, NULL, 0, 6, 2023, '2023-06-24T12:00:00.000Z', '2026-03-17 23:31:37', 'The best way I can find to describe this book would be charming.
+
+It felt like I was reading a fairytale but not quite. 
+
+I could definitely see the Princess Bride inspiration, but I actually feel that it scratched my Narnia itch that is very seldom satisfied. It reminded me so much of the Silver Chair.
+
+As per usual, Sanderson’s worldbuilding is top notch. The idea of oceans with spores that react dangerously to water is so utterly brilliant that I wish I’d come up with it! 
+
+The characters were all quite three dimensional & oh so endearing. 
+
+But I think my favorite parts were the twists thrown into such a simple plot. I won’t spoil them here, but they honestly made the book for me. 
+
+Was it as incredible as a Stormlight or Mistborn book? No. But it was exactly what it needed to be in the best way.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('2abb3e41-33f1-4bc4-a3a6-55a4ec47909e', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'b24d07de-06e1-4bd3-89dd-07240e8ee1b3', 4.0, NULL, NULL, 0, 6, 2022, '2022-06-26T12:00:00.000Z', '2026-03-17 23:31:41', 'I actually took a Physics class from Dr. Hedin the semester after his Boundaries of Science class had been shut down. I was unaware of the scandal at the time. But after running into him at a revival meeting during the semester, I was completely confounded with the idea of a man working in the science department of the most liberal school in the state (a quite conservative one, I admit). 
+
+I’ve told that story to a few people over the nearly nine years since it happened. But recently, someone responded with this book recommendation, knowing exactly about whom I was speaking. So I ordered it on a whim. And I was not disappointed. 
+
+I’ve been a subscriber to Astronomy magazine for years now. I love the idea of discoveries in astrophysics. But I’m also a youth pastor that loves the idea of making sense of theology. This book would be a recommendation for anyone with even the slightest interest in apologetics. 
+
+He went over topics about which I’ve had many conversations, but he also touched on subjects about which I knew nothing. I was intrigued throughout the entire book. Personally, I believe the true strength of it is in the first & last chapters. Professor Hedin had a wonderful way of telling the story of his rollercoaster responses to his class. His skill as a teacher (that I know from first hand experience) was on display as he took complicated subject matter & translated it into terminology that help it make sense to people on most levels of intelligence & education. 
+
+Bottom line: I was encouraged & educated. God is moving in the scientific community. It was wonderful to see the details of how.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('d3aef2d2-7dfe-416a-97a2-edd988e79b7a', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'c734d0d8-1f9e-4b77-b9bb-5f283324e47d', 4.0, NULL, NULL, 0, 6, 2023, '2023-06-10T12:00:00.000Z', '2026-03-17 23:31:41', '[SPOILER]
+This is definitely my least favorite entry in The Stormlight Archive. But it’s still Stormlight, so it’s a four star book. 
+
+It took me four months to read it. It turns out that reading four straight 350,000 word books in a series is pretty taxing. Especially when you move states in the middle of it. 
+
+I’m not a huge fan of the Die Hard storyline. And I really just do not care about any of the Parshendi characters at all. 
+
+However, there were so many things I loved in this book: Kaladin’s arc, getting to see Navani shine on her own, & the deepper dive into Spren cultures. 
+
+I would’ve liked to get more time with Shallan & Adolin. I personally thought that was the most intriguing story in this book & I felt that the lack of exploration made the end of it feel a little like a deus ex machina. 
+
+Overall, I’m very satisfied with Rhythm of War & I enjoyed another book of hanging out with one of my favorite casts of characters ever written. I’ll be reading book 5 on release day!
+[/SPOILER]', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('e0a4946e-5274-4f74-9eae-b1b8375420e2', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'f4623793-0fb8-46da-8070-5da09e9bdb5a', 5.0, NULL, NULL, 0, 11, 2018, '2018-11-10T12:00:00.000Z', '2026-03-17 23:31:46', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('b68ed699-fe6f-4694-922d-2cf552816904', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '9cdae90a-23e5-47d2-965d-1cb315fc617c', 5.0, NULL, NULL, 0, 2, 2023, '2023-02-11T12:00:00.000Z', '2026-03-17 23:31:46', '[SPOILER]
+Oddly enough, this book really did feel like the finale of a trilogy. I’m not sure what direction they’ll take it from here, but I’m very excited. 
+
+Oathbringer was definitely not as close to perfect as the first to installments of the series, but it was still much closer than most books. 
+
+I would call this the worldbuilding book in The Stormlight Archive. Experiencing Shadesmar firsthand was riveting. Getting to see Kaladin, Shallan, & Adolin be a trio for most of a book was something I really wanted. 
+
+The history & culture that Sanderson has built is nothing short of incredible. 
+
+And as a fan of redemption arcs, I’m so excited for where Szeth’s story may be going. He’s one of the most interesting characters I’ve seen in a long, long time. And his interactions with Lift were very entertaining! 
+
+And speaking of Szeth, It was so exciting to see the Cosmere overlap a little bit in this one! 
+
+I’m immediately picking up Dawnshard & moving right along in my Stormlight journey!
+[/SPOILER]', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('9e210852-d7f8-41cc-9e32-7e463644fef6', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '8b18529a-c6c5-417a-8e63-a1ff19d1ec94', 4.0, NULL, NULL, 0, 12, 2022, '2022-12-15T12:00:00.000Z', '2026-03-17 23:31:53', 'Wow. I did not expect that ending. 
+
+Eight years of these characters is all over. It started reading it from the very beginning. It’s kind of hard to wrap my head around. But I’d say I feel satisfied. It was heartbreaking, but it was also perfect. That’s really how I would explain the entire series. 
+
+I won’t say spoilers, but it was nice to see happy endings for at least some of the characters. 
+
+I’m glad I reread the entire series to have it all fresh in my mind. It’s something that will be on my mind for a while. 
+
+I’ll need to read Kaya to get my fix of Wes Craig’s art now.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('ea60d351-15f4-46a7-bf4d-4df9142fea7a', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '03153b98-14a6-4d38-90da-0b1dd5b14a3a', 4.0, NULL, NULL, 0, 12, 2022, '2022-12-15T12:00:00.000Z', '2026-03-17 23:31:57', 'One thing I’ve always loved about Deadly Class is that it makes me sad in a good way. This volume definitely made me sad, but it was almost more regretful. 
+
+I appreciate knowing that any character could die at anytime. And I love seeing these characters almost 20 years later, but the realism of it, while beautiful, is also hard to read. 
+
+All that ti say, Remender built this up perfectly & succeeded in everything he intended to do. As I enter into the beginning of the end, I truly have no idea what could happen. 
+
+And Wes Craig is still brilliant. The little process sections in the back of the book are so interesting to look through!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('d5f03006-288a-4fb3-a2d6-5a612f7638b1', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '386cba6f-f2e1-4701-8d8c-1e11e6a14fd4', 4.0, NULL, NULL, 0, 11, 2021, '2021-11-24T12:00:00.000Z', '2026-03-17 23:32:00', 'My all time favorite series, writer, & top two favorite artist, so I’m a little biased. 
+
+The penultimate volume of the series is made to set up the finale &, oh boy, does it do just that! 
+
+I haven’t been that fond of be new class of student d as compared to the likes of Billy, Willie, & co. But this volume finally pulled me in on that. 
+
+I always have a lot of confusion because of the months j take between volumes, but Deadly Class somehow always catches me up & delivers. 
+
+Reminder delivery is usual teen angst in all its unedited, brash goodness! 
+
+Craig has grown into one of my favorite artists. The way the panels can give me the feel of a scene & have me emotionally in the room with them is a true testament to the artform. 
+
+And Loughridge shows why the colorist is the cinematographer of comics. Boyd was great, but Loughridge’s work on this series continues being elite. 
+
+This volume has properly prepared me for the final arc. I plan to reread the entire series going into it, just to make sure the emotional impact is accurate!
+
+Edit for second reading:
+
+Having read the entire series in just a couple days in preparation to read the finale, I do understand this story much better with it fresh in my mind. 
+
+The timejumps were jarring, but a part of my has always liked that little trick. Seeing where someone ended up without having seen the progression has so much potential in a story. It looks to me like the final arc is going to live up to the hype built up by the series so far!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('80390f63-bcf0-4201-9bf2-5d45b481b415', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'e4981de5-e355-4fa2-a69e-345a03916d93', 4.0, NULL, NULL, 0, 7, 2020, '2020-07-08T12:00:00.000Z', '2026-03-17 23:32:03', 'My first Deadly Class review under five stars. Indefinitely didn’t hate it. It was just more chaotic and hard to follow. A few of them went out of character from what I could see. It had a few moments that really jump out at me, especially in issue 44. 
+
+Uncertainly enjoyed this volume more than the first time I read it & had forgotten everything that had happened in the volume prior. I’m still excited to continue on with the last 12 issues & see how everything plays out! 
+
+And as always, Wes Craig, man. Drawing this well should be illegal!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('29189757-0421-4889-b942-123e311af7f3', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'b4897286-f902-4df9-96c1-9bc229c85893', 5.0, NULL, NULL, 0, 8, 2019, '2019-08-13T12:00:00.000Z', '2026-03-17 23:32:05', 'I’m really feeling like I’m inching toward the end now. Remender has done a phenomenal job of bringing this story full circle. Our main characters going back to the titular setting with a supporting cast of new & old characters feels fresh & familiar all at once. I especially love the hallucination scenes.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('8c693c13-faf5-452e-b285-b879eb3d562a', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'aa31bf93-53da-4a65-a7b8-4f57a7b3f961', 5.0, NULL, NULL, 0, 12, 2022, '2022-12-13T12:00:00.000Z', '2026-03-17 23:32:07', 'Man, I would’ve loved to have seen this arc play out with the cast of the show. It had been so long since I’d read this one that I’d actually forgotten a few of the bigger plot points & I could not remember what had happened. Other than four characters, I could not remember who survived. That made it pretty hard to put down. 
+
+Remember really knows how to make you love characters, fear for their lives, be shocked by what happens, & be annoyed at yourself for not seeing it coming because it makes perfect sense. It reminds me of why I fell in love with his writing during his Dimension Z arc on Captain America. 
+
+And obviously, Wes Craig again!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('0f2584cd-6410-4e35-ac72-9de778768376', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '582ece14-75a4-4f9a-8075-5f75cc55e9b8', 5.0, NULL, NULL, 0, 12, 2022, '2022-12-13T12:00:00.000Z', '2026-03-17 23:32:09', 'I would say this is the strongest entry of the series on the second time through. The new class of freshmen have mostly grown on me, especially Zenzele & Helmut. It felt like it had taken a little break from the original feel of the comic but is back with this one. 
+
+The story was intriguing. So many twists & turns that it really didn’t see coming. 
+
+This volume had some of my favorite spreads in the series. It’s almost like Wes Craig is getting even better!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('f9977ef3-3ad6-45cc-9d3c-dc40d5f12ba1', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '8e294d96-9ef4-45cc-97ea-06f6a0188104', 5.0, NULL, NULL, 0, 12, 2022, '2022-12-13T12:00:00.000Z', '2026-03-17 23:32:11', 'This definitely isn’t my favorite arc in Deadly Class. The new freshmen were definitely less jarring than the first time I read it, but there’s something about the old group that I’ll always miss when I reach this point. 
+
+The reason this wasn’t a four star is because of issue 26. It’s in the running for my favorite issue of the entire series. 
+
+Also, I’m running out of compliments to pay Wes Craig. He’s just so good.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('e7488901-e8c7-4d01-a862-2439ab59aef1', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '980cb4d0-7409-4d7d-be21-87df61a5fe2b', 5.0, NULL, NULL, 0, 12, 2022, '2022-12-13T12:00:00.000Z', '2026-03-17 23:32:13', 'Volume four is the real heart of this story. Most of the parts of Deadly Class that I’ve spent time thinking about over the years is in this volume. 
+
+The stakes have always felt real, but going into sophomore year in volume five with only one of the main cast was not expected the first time I read it. 
+
+I’m excited to jump straight into the next cast for volume five & see if I view them differently this time around.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('55ade07e-5dbc-4b58-93e2-f796caacbbe4', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '54f54247-54c3-4dd0-8538-1e403b88cbf2', 5.0, NULL, NULL, 0, 12, 2022, '2022-12-12T12:00:00.000Z', '2026-03-17 23:32:15', 'A solid entry. A connecting arc between two of the more memorable ones. A lot of drama & misunderstandings setting up the hunt of the rats. The mystery of the Maria set up but yet to be explored. I’ve forgotten just how much I loved this series & why it’s my favorite comic ever written. Despite it being a reread, it’s still quite the page turner for me. 
+
+And Wes Craig is still one of the best in the game after three straight volumes.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('0939b157-e636-483d-87a5-fec7aa0a0d5e', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'bcb694e7-10a0-445f-9d07-7b96889c33c1', 5.0, NULL, NULL, 0, 12, 2022, '2022-12-12T12:00:00.000Z', '2026-03-17 23:32:17', 'Volume one was a fantastic introduction & now we finally get to dove into these characters. I’ve always been impressed by Remender & Craig for their ability to use the magnifying glass of a school for assassins to really show who the kids are: very broken with the inability to trust anyone. 
+
+The backstories for Marcus & Maria gave some great depth. I remembered both stories well from my first read in 2014/2015, but it was still so enjoyable. 
+
+And also, Wes Craig is a madman. One of my favorite artists of all time. Some of these page layouts seriously blow my mind.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('fbb90876-8105-4228-bf9a-278dbc07c577', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'e2fc1974-1c0b-4588-af79-8e01d089d987', 5.0, NULL, NULL, 0, 12, 2022, '2022-12-12T12:00:00.000Z', '2026-03-17 23:32:19', 'Im rereading the whole series leading up to finally reading the final volume, so this is my first time rereading this since it was first released. The difference in perspective as a 28 year old compared to a 20 year old is vast. 
+
+Some of the memorable lines from Marcus & co have become a little more cheesy, but not necessarily in a bad way. It feels authentic for a teenager. While it may not be relatable to my current self, I still feel myself remembering those times. 
+
+This is one of my favorite ensemble stories of all time. And since some of this main cast isn’t around anymore, it was so nice to visit them again. With this being my first read of volume one since the syfy show aired, I now read it in the actors’ voices & am able to compare scenes. It’s clear to me that the show was able to expand on some of the best parts of this comic. It didn’t necessarily do them better, just more completely. For instance, the friendship that blooms between Marcus & Willie was far more natural in the show. But 45 minutes is easier to work with than 22 pages.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('2b7ad8f8-f1db-4ab7-88ba-d52026bc0305', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'e56c6e38-96f4-4010-98d5-dec478e7e735', 5.0, NULL, NULL, 0, 12, 2022, '2022-12-08T12:00:00.000Z', '2026-03-17 23:32:19', 'Brandon Sanderson answered the question of how to top The Way of Kings. 
+
+He somehow made me love the characters I hated (Dalinar & Adolin) while making me love the characters I liked (Kaladin & Shallan) even more. 
+
+I’ve never had quite this emotional response to a book. My adrenaline was pumping during the entire last 500 pages. I was fully invested in every storyline, wondering about things I thought couldn’t have been over, and trying to figure out where on earth it could all go from here. 
+
+The book-long buildup of characters made the culmination so satisfying. Seeing our main characters finally cross paths & form relationships with one another made it seem that two of my friends became friends with each other. Seeing the roller coaster of character arcs go up & down for 1200 pages to finally blow me away at the end was worth the month & a half I spent reading it. (It was the holidays! Life got busy!) 
+
+I will leave my review a 5/5 until Goodreads allows me to give a higher score.
+
+PS Rysn’s interlude was great & I’m pretty stoked for Dawnshard!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('f5d753ab-0835-4d5e-bec5-c3c2d399c985', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'def400ae-2640-4bea-b0bc-3a4e47743c41', 4.0, NULL, NULL, 0, 12, 2022, '2022-12-11T12:00:00.000Z', '2026-03-17 23:32:21', 'It’s always nice to read a collection of short stories. Nine Stories by JD Salinger is one of my favorite books of all time. 
+
+I took a big break before Edgedancer to read Way of Kings & Words of Radiance. Considering those are two of the most highly praised fiction books ever written, it was hard to sandwich this in there.
+
+It almost felt like the interludes in the Stormlight Archive. Hit or miss with me really just wanting to get back to the main story despite enjoying them quite a bit for the most part. 
+
+Emperor’s Soul was good. Started out slow, but I really enjoyed the characters. 
+
+Hope of Elantris was okay. It was nice to fill in the little bit from the book. 
+
+11th Metal was pretty good. More Kelsier is always nice. 
+
+Allomancer Jak was deliciously pulpy & so fun to read. I laughed out loud multiple times. 
+
+Secret History was good. Slow at times, but I was really emotional by the end. 
+
+I much preferred the written form of White Sand to the comic form. 
+
+Shadows for Silence in the Forests of Hell is my favorite by far. Great character work, worldbuilding, & mystery! The stakes felt so real for only being 50 pages! 
+
+Sixth of the Dusk was my second favorite. Intriguing character work & cultures along with a story that kept me on the edge of my seat. 
+
+I enjoyed Edgedancer more than most people seem to. But I also enjoy Lift more than most people seem to as well. So I guess that makes sense. 
+
+I do feel like an official Cosmere fan now, so that’s nice!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('bf09e658-4ca6-4a0d-b06b-f23c351bb04b', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'a6f643eb-edd9-4f23-96ab-b984297556b0', 5.0, NULL, NULL, 0, 10, 2022, '2022-10-21T12:00:00.000Z', '2026-03-17 23:32:21', 'This felt like the longest setup I’ve ever read in my entire life. And it was perfect in every way. 
+
+I’ve read the entire Cosmere building up to The Stormlight Archive. This is truly Sanderson’s magnum opus! 
+
+It’s long. It’s dense. But it pays off so well in the end. 
+
+This is a spoiler free review, so I’m not going to get I to any story. I’ll just say that I absolutely adored the chapters that followed Kaladin & Shallan/Jasnah. I wasn’t as fond of the Dalinar/Adolin story, but I definitely didn’t hate it by any means. 
+
+The entire buildup of all of these separate storylines made the last 100 pages of this book about as exhilarating as it gets! 
+
+I’ll need to chew on it, but this may be the (objectively) best book I’ve ever read.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('eabff769-2ded-45ea-b056-89c4bef2d113', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'c293dda5-2398-4ec5-a874-ba7e83036054', 4.0, NULL, NULL, 0, 9, 2022, '2022-09-29T12:00:00.000Z', '2026-03-17 23:32:22', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('b3768f19-e176-4ee4-b87d-560e1caf012b', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '6e392609-cfcb-40dd-8a20-0677999ecc68', 5.0, NULL, NULL, 0, 9, 2022, '2022-09-11T12:00:00.000Z', '2026-03-17 23:32:24', 'The five stars is not because this book was an easy read. As much as I love Lewis, his nonfiction books can ramble a bit. And the old English prose is rough at points; three page paragraphs & full paragraph sentences are no longer the accepted style. 
+
+That being said, I was enthralled by the story. Arguably the greatest theological mind of the 20th century telling the story of how he came into the faith. How could you not love it?! 
+
+The facetious banter was top notch. Some great lines came out of this read! 
+
+“God is, if I may say it, very unscrupulous.” 
+
+He’ll go to extreme lengths to use us to reach others. And very few have reached a fraction of the amount reached by CS Lewis. And it was an origin story to fit the man.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('e1d20e05-d438-4d71-aa5e-f3c3f1630ec9', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'd02cb82e-5697-4ba6-b89c-b3b0417da35e', 5.0, NULL, NULL, 0, 8, 2022, '2022-08-31T12:00:00.000Z', '2026-03-17 23:32:24', 'This book followed a similar path to the second entry of era 1, The Well of Ascension. Although, in my opinion, this was more impressive. I don’t mean that it’s a better book apples to apples, but more of an improvement as a follow up to their predecessors. (Granted, this one did have much less competition.) 
+
+Mystery, mistrust, & twists. Brandon Sanderson once again follows every step for a perfect crime thriller set in a steampunk fantasy world. With even more callbacks to the original books (but still not enough to be overkill), I had a hard time putting this one down! Every chapter gave new revelation that begged me to keep reading. 
+
+A definite improvement over its predecessor, it took the more lighthearted & fun character-driven story & gave it a real gut punch that just felt necessary. I definitely recommend this book, but prepare your heart for it.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('cf8b8e2b-283c-45cb-98ff-3f1fb674fe37', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'a86d43c6-7b07-4379-859c-5d3f5f4f5654', 4.0, NULL, NULL, 0, 8, 2022, '2022-08-16T12:00:00.000Z', '2026-03-17 23:32:24', 'Why shouldn’t I have read this first again? 
+
+I must say, I absolutely adored this book. 
+
+It was really three stories, overlapping slightly here & there, that come together at the end. Two of these stories (Raoden & Sarene), had me riveted. The third (Hrathen) was a bit of a chore to get through in the best way possible; I hated a character I was meant to hate. 
+
+Without giving away any spoilers, I’ll just say that the characterization & worldbuilding, while not as polished as his later books, we’re textbook Sanderson & I found myself feeling like I was really a citizen of this world & a friend of these characters. The ending felt like a machine gun with all the twists in the last few chapters. I count at least five in hindsight. The mystery that kept my attention for 550 pages paid off for me in every way. 
+
+And there were still enough unanswered questions to have me stoked for this sequel that’s apparently being written! 
+
+If you’re a big Sanderson fan or just a lover of fantasy in general, I suggest giving this one a try!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('85578d19-a4d6-4eb9-b081-e1b1fdb87125', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '8706913a-cc7c-4511-a1db-59066f64f164', 4.0, NULL, NULL, 0, 8, 2022, '2022-08-19T12:00:00.000Z', '2026-03-17 23:32:25', 'Another classic CS Lewis book! 
+
+The people I hear disliking Lewis’ fiction work seem to be misunderstanding what he is. He wasn’t a fiction writer sprinkling in theology. He was a theologian using fiction as a parable to help other understand his point. The Chronicles of Narnia & The Great Divorce show this  well also. 
+
+Whenever I read Lewis’ 80 year old works, I realize some of these “modern” issues in Christianity aren’t as modern as we may think. Postmodernism was a problem in 1940s England just as much as in 2020s America.
+
+He does such a good job of giving us a perspective we very seldom think about: demons. How they root & cheer for things that most of us think are no big deal, how they try to find the easiest ways to convince us to pursue our own pleasures, how they interact with one another in an effort to get us to slip. 
+
+Of course most of this is speculative fiction, but it does make a lot of since in the most interesting ways. And, as Lewis often does, makes me think about my own relationships with others, Jesus, & even the demons themselves.
+
+I’m glad to finally have this one marked off my list so I can think about it for a very long time.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('a1114861-d4c3-438f-bb20-1e804ee8105f', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '8d8b4176-e183-4f0c-b408-d590b1341de7', 5.0, NULL, NULL, 0, 1, 2022, '2022-01-04T12:00:00.000Z', '2026-03-17 23:32:27', 'Wow. 
+
+It’s been so long since I read a book that I didn’t want to put down. 
+
+It was so refreshing. The worldbuilding. The magic system. But most of all, the characters. 
+
+Sanderson was writing with a paintbrush here. These characters completely came to life. He took character tropes & put twists on them that made it seem so fresh. The hardened master? The street urchin turned protagonist? The aristocratic love interest? The evil warlord? None of them quite fit into their molds. 
+
+Maybe this is weird for a guy, but as much as I loved the action, the allowance, the political intrigue, I have to say my favorite part by far was the romance! It actually had me on the edge of my seat. I truly believe the scenes at the ball were the most cleverly written sections & I was always itching to get to the next one. 
+
+I understood why every character did what they did, whether I agreed with the action or not. They made me laugh, they broke my heart, they frustrated me, all in the best ways. 
+
+I’m so happy to have been this attached to a group of characters & I’ll be picking up the next book first thing tomorrow morning (since I need to go to sleep right now)!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('5cfe587a-5007-45a2-bc6b-596f15f6dd0b', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'e4292c3b-4377-4ab4-8363-5eb928ea310f', 3.0, NULL, NULL, 0, 8, 2022, '2022-08-05T12:00:00.000Z', '2026-03-17 23:32:29', 'I didn’t dislike this read at all. It just kind of felt like nothing happened. 
+
+It was nice to see that Toph’s character felt congruent with the television series. She would totally hate teaching at a bending academy! But it doesn’t really feel like that is ever resolved. Her three original students returning was nice. They were some fun characters in The Rift. 
+
+The art & coloring were up to par with all the other stories & the dialogue continued being great. These books just feel like a money grab to get people to buy anything with the ATLA logo on them. The writer, artist? & entire team definitely have some heart behind it & they’re doing a great job, they just aren’t doing much. 
+
+I’ll say that I liked this book much better than Suki, Alone, but it didn’t quite live up to Katara & the Pirate’s Silver.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('94b5799f-e9f7-4cff-b107-f75c68b10727', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'bba24540-4f27-43d8-877d-687c91def996', 4.0, NULL, NULL, 0, 8, 2022, '2022-08-04T12:00:00.000Z', '2026-03-17 23:32:33', 'In my second read of Faith Erin Hicks’ ATLA books, I was once again impressed with the dialogue & her ability to put the characters’ voices into her prose. 
+
+As for the story, it was hit or miss with many more hits than misses. Suki was well-represented. It’s been a few years since I’ve read the first five entries, but I don’t remember much of her in them. The overarching story was very good! The idea of benders & non-benders having issues would make so much sense in that political climate. The one glaring weakness, however was the villain. Her motives were paper thin & it seemed like she just wanted to do bad things because she wanted to do bad things. I wasn’t really feeling that. Maybe I’m just spoiled by Zuko’s incredible motives in the greatest redemption arc in the history of visual media, but It’s the reason the book lost a star. 
+
+The art was once again incredible! Along with the dialogue, it really felt like I was watching the show again. The colorist changing between books threw me off a little. Both were great, but the entire family changing hair colors was jarring. (Although the change was good. Redheads from the earth nation didn’t make very much sense.)
+
+Overall, I enjoyed the book & I’ll be excited to reread the whole series after one of my annual rewatched sometime!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('c22648d3-5508-4fb6-9cd7-d9b62191f102', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'c255a4a8-2302-410f-80c7-4974a5955afe', 5.0, NULL, NULL, 0, 8, 2022, '2022-08-03T12:00:00.000Z', '2026-03-17 23:32:35', 'As much as I hate waiting months between volumes, I absolutely love reading this series through the IDW Collection. I haven’t disliked a single entry. 
+
+This volume is the beginning of the writing change from Tom Waltz to Sophie Campbell. I had been warned that the quality dropped, but I must say I completely disagree. I don’t feel that she missed a single beat. It really just flowed from Waltz in a way that found me very impressed. Sure, it’s a little more emotional & has a few more characters that may come across as annoying (the kids, Mona Lisa, Jennika’s mini-series side characters), but I really feel they just added some heart to a part of this story that got pretty dark in all the right ways. 
+
+I can’t think of too many comics that have me caring about characters on this level. And I can’t think of a single OTHER one that’s based on an IP. 
+
+I recommend thoroughly that you go spend way too much money on these 14 volumes & let yourself fall in love with the Turtles one more time. You won’t regret it.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('83ee3bee-4563-4e71-aca0-b572199e1cdb', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '9396af76-c9f9-4ff4-b059-ac2b3602c3cf', 3.0, NULL, NULL, 0, 8, 2022, '2022-08-01T12:00:00.000Z', '2026-03-17 23:32:39', 'Don’t let the three star review fool you. I throughly enjoyed this read! It just has some issues for me that put it a bar below the rest of the collection. 
+
+For starters, the series name is more accurate in this volume. This book is truly about Orion & Orion alone. And for the first half (& the last issue, which alone nearly made this a four star read for me), it was riveting. But most of the second half of the book it just felt like fluff & filler. I’ll admit that I was bored throughout this section. There were so many random characters that just show up for an issue or two about which I really couldn’t have cared less. The shining light of this section is the character development we see in Orion. The toll of the prophecy, the power, & the failure really push him into the final issue, which have I mentioned is phenomenal? 
+
+All in all, it felt like a satisfying conclusion to 114 issues of Fourth World craziness into which Kirby, Byrne, & Simonson poured themselves & I’m glad it experienced this entire story at once!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('b12be4a6-8934-439c-8954-c3fe3953b1f8', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '212b9a5f-ac74-40d4-b053-3b73a7cca5d7', 4.0, NULL, NULL, 0, 7, 2022, '2022-07-28T12:00:00.000Z', '2026-03-17 23:32:43', 'I read this one directly after finishing the Jack Kirby omnibus and, I must say, I enjoyed it quite a bit more. 
+
+Obviously, Kirby’s vision was brilliant as always, but the comic world wasn’t ready for the overarching story that he was trying to tell at the time. Byrne seems to have completed that concept for him. And I think he did it in exquisite fashion! 
+
+Byrne brought these characters into the modern era in ways that felt natural. Characters like Orion, Darkseid, Mister Miracle, Bug Barda, Granny Goodness, Desaad, Kalibak, The Forever People, Metron, Highfather, etc., all felt like like products of the ‘70s & more like complex characters in their own rights, which is what Kirby was clearly trying to do two decades prior; in many ways, he had succeeded, despite everything fighting against him. 
+
+The only negative I can find in these stories is the Genesis story arc. After the first two issues, I told my roommate how I was shocked to read an event that was actually good, then I read issues 3 & 4, which bored me to no end. This was only about ten years after Secret Wars & Crisis on Infinite Earth kicked off the concept of events in comic book universes (unless I’m overlooking something), which have become the bane of their existences since then. It was the only problem in an otherwise phenomenal run of comics & I’ve already started the Walt Simonson run on Orion!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('00dbf29e-a0b7-48ee-957c-2487bf8cdf56', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'd3bad13c-41b4-4382-bbe8-1eb4dfbc9764', 4.0, NULL, NULL, 0, 6, 2022, '2022-06-16T12:00:00.000Z', '2026-03-17 23:32:46', 'I started reading Fourth World as a secondary read next to the book series I was currently reading. But by the end, I was really flying through it. 
+
+I had been meaning to read the series for years & finally received it as a Christmas present last year. 
+
+Long story short: this is the most I’ve ever enjoy a Bronze Age comic series. Granted, this is the defining series of the age. It begins & ends with Fourth World. 
+
+It wasn’t perfect by any means. Those early issues of Jimmy Olsen & the beginning of Mister Miracle were ROUGH. But the series was held up in the beginning by Forever People & New Gods. The former started to slack just as Mister Miracle picked up & became very interesting. 
+
+In a lot of ways, Fourth World was a product of its time. I have a hard time not cringing when an issue starts off with characters having far-too-detailed conversation of exposition with other characters that already know the information being given, but for the most part, this is just a really fun read! It has aged far better than most books for the same time period! 
+
+Fourth World is a series that every single comic book reader should check off their list. I’ll be stepping directly John Byrne’s run & complete it with Walt Simonson’s Orion series. I’m definitely not burnt out from 59 issues of pure ‘70s campiness & that’s saying something!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('87dfa321-0773-4912-a9a6-2297cf637e77', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'd52fe984-88a1-493e-908b-59754338508a', 4.0, NULL, NULL, 0, NULL, NULL, '2026-03-17T23:32:49.928Z', '2026-03-17 23:32:49', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('959a892a-b19e-45fa-a640-9fd54b465f8f', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'aaf59507-34b1-47e0-ac77-52e4d8e12a5e', 4.0, NULL, NULL, 0, 3, 2022, '2022-03-30T12:00:00.000Z', '2026-03-17 23:32:51', 'I took a little break in the middle of this book to get some other things read, so it was quite a slow read for me 
+
+Definitely much slower than it’s predecessor, The Well of Ascension is a highly character driven book, as compared to the plot heavy story of The Final Empire. 
+
+It makes sense. After the excitement of a rebellion dies down, there’s time for the characters to switch their focus from external to internal. 
+
+Some characters become even more likable to me (Elend, Sazed) while some characters became increasingly more frustrating (Vin), but I feel as though I know & understand them all much better after the second installment. 
+
+Watching Elend start from the bottom to become the leader he needs to be in contrast to watching Vin start at the top & question why she was there was just the brilliant storytelling I’ve come to expect from Mr. Sanderson. 
+
+It was also had some pretty big twists! One I saw coming; the other I did not at all. With this being a spoiler-free review, I’ll refrain from speaking further on these. 
+
+I am excited to move on to the last (& best reviewed) book of the trilogy to tie up some loose ends & see how this story ends! I can’t remember the last time I loved a book series this much!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('09bc378a-b097-4da1-9f29-5a1f3b8656a1', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '9e7336ac-1219-49ef-bb24-b696e38e2c8b', 3.0, NULL, NULL, 0, 3, 2022, '2022-03-08T12:00:00.000Z', '2026-03-17 23:32:55', 'I decided to read this book as part of a little personal study I’ve been doing on biblical love. It has been on my TBR list for quite a few years & it seemed short enough, so I went for it! 
+
+Now, CS Lewis is one of my favorite classical authors & I was excited to delve into one more level of his nonfiction writing. I’ve always appreciated how he compares to modern Christian thinkers. I love how you can always tell that he put a lot of personal thought into his books rather than the modern practice of googling what other people think to put in your book & make money. 
+
+That being said, this is my least favorite Lewis book in my collection so far. I’m not saying I don’t like it; j actually did like it quite a bit. My only issue is just how slow he is with the thoughts. The introduction was incredible, then we seemed to have four chapters of preparation to get to the Charity chapter. 
+
+It was still an enjoyable enough read that any level of theological scholar should read at least once in their lives, but it didn’t live up to the Masterpiece that is Mere Christianity.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('6b02983c-6316-40ec-820a-1013edca41d2', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '5595208a-987f-43b2-b9ae-7d138813324d', 4.0, NULL, NULL, 0, 2, 2022, '2022-02-21T12:00:00.000Z', '2026-03-17 23:32:57', 'This is a spoiler free review for the entire series. 
+
+I read the first volume of Seven to Eternity when it first came out. It didn’t really stick with me, so I didn’t consider the other volumes a priority when they were released. I owned volume two already for some reason and I bought volumes three & four when I saw them recommended to me on Amazon. Boy, I’m glad I did! 
+
+Remender is my favorite comic book writer of all time. I’m used to his writing style. However, StE doesn’t fit quite into my expectations for him. 
+
+I’m used to Rick writing very character heavy books. Fear Agent & Deadly Class will both sit on my top five list until the end of time for that very reason. However, I think this series really highlights Remender’s ability at worldbuilding. 
+
+But this story that started out a testament to worldbuilding quickly became a character study for a hero & a villain that were both more than meets the eye. Neither likable, but both understandable. All other character simply existing as plot devices, these two became sentient beings that simply drew on your curiosities. 
+
+The worldbuilding, the character studies, & the incredible art by Opeña (Seriously, somebody get this man on a Green Lantern book ASAP!) make this for a very worthwhile read!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('105ed6cc-6ab2-4a27-a2a2-4c9dce01ebba', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'a154afb6-a283-4b73-b240-f82dc7facb61', 5.0, NULL, NULL, 0, 2, 2022, '2022-02-23T12:00:00.000Z', '2026-03-17 23:33:01', 'This is a spoiler free review for the entire series. 
+
+I read the first volume of Seven to Eternity when it first came out. It didn’t really stick with me, so I didn’t consider the other volumes a priority when they were released. I owned volume two already for some reason and I bought volumes three & four when I saw them recommended to me on Amazon. Boy, I’m glad I did! 
+
+Remender is my favorite comic book writer of all time. I’m used to his writing style. However, StE doesn’t fit quite into my expectations for him. 
+
+I’m used to Rick writing very character heavy books. Fear Agent & Deadly Class will both sit on my top five list until the end of time for that very reason. However, I think this series really highlights Remender’s ability at worldbuilding. 
+
+But this story that started out a testament to worldbuilding quickly became a character study for a hero & a villain that were both more than meets the eye. Neither likable, but both understandable. All other character simply existing as plot devices, these two became sentient beings that simply drew on your curiosities. 
+
+The worldbuilding, the character studies, & the incredible art by Opeña (Seriously, somebody get this man on a Green Lantern book ASAP!) make this for a very worthwhile read!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('06aed649-13ee-42a5-ba85-b5eb7ef1944f', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '8598bbb5-4a2c-400b-b3c4-22a1845d78fd', 5.0, NULL, NULL, 0, 2, 2022, '2022-02-24T12:00:00.000Z', '2026-03-17 23:33:03', 'This is a spoiler free review for the entire series. 
+
+I read the first volume of Seven to Eternity when it first came out. It didn’t really stick with me, so I didn’t consider the other volumes a priority when they were released. I owned volume two already for some reason and I bought volumes three & four when I saw them recommended to me on Amazon. Boy, I’m glad I did! 
+
+Remender is my favorite comic book writer of all time. I’m used to his writing style. However, StE doesn’t fit quite into my expectations for him. 
+
+I’m used to Rick writing very character heavy books. Fear Agent & Deadly Class will both sit on my top five list until the end of time for that very reason. However, I think this series really highlights Remender’s ability at worldbuilding. 
+
+But this story that started out a testament to worldbuilding quickly became a character study for a hero & a villain that were both more than meets the eye. Neither likable, but both understandable. All other character simply existing as plot devices, these two became sentient beings that simply drew on your curiosities. 
+
+The worldbuilding, the character studies, & the incredible art by Opeña (Seriously, somebody get this man on a Green Lantern book ASAP!) make this for a very worthwhile read!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('67dcdf27-512a-4fd5-b08d-f7285cdede60', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'baa398ea-fc94-4902-8fc9-140ea334b199', 4.0, NULL, NULL, 0, 2, 2020, '2020-02-12T12:00:00.000Z', '2026-03-17 23:33:08', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('10262340-b0c0-4982-8928-8a25cf7cc2b2', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '69d970a5-3779-4d3f-b538-4810046b6327', 4.0, NULL, NULL, 0, 2, 2020, '2020-02-12T12:00:00.000Z', '2026-03-17 23:33:10', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('1e9df3e5-0364-4454-8def-c6bda3752f3f', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '5058427f-ada1-4ef3-88a5-f5fa78bd07a0', 4.0, NULL, NULL, 0, 2, 2020, '2020-02-12T12:00:00.000Z', '2026-03-17 23:33:12', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('2dc716c0-91a2-4bda-9bed-d4cdd10406cc', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '7284e822-4ca0-4056-b475-8f0a9173183f', 4.0, NULL, NULL, 0, 2, 2020, '2020-02-13T12:00:00.000Z', '2026-03-17 23:33:14', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('019ac67f-f3f7-4da9-83e7-ee2006dc75a3', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'a904bcc4-c40b-4ee5-a124-0a4d2331ad25', 4.0, NULL, NULL, 0, 2, 2020, '2020-02-13T12:00:00.000Z', '2026-03-17 23:33:16', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('01e7233e-cc9f-4f1a-90c0-fe56a294767a', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'f9a5af82-5cff-4dd7-9cde-8738325b9ea2', 5.0, NULL, NULL, 0, 12, 2018, '2018-12-20T12:00:00.000Z', '2026-03-17 23:33:29', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('f81a42c4-552a-453e-95b2-ebdbbbb20950', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '81d80210-1213-4256-868e-d4df90082630', 5.0, NULL, NULL, 0, 12, 2021, '2021-12-27T12:00:00.000Z', '2026-03-17 23:33:33', 'Lewis, as usual, seemed to be far ahead of his time. 
+
+It was such a refreshing look at Heaven & Hell, which the millennial in my must admit I don’t think much about. 
+
+It was quite thought-provoking in the realm of what we view as good or bad vs how it’s viewed in Heaven. 
+
+Ministers having a Bible study in Hell. 
+
+A mother that possessed her son rather than loving him. 
+
+A man overtaken by lust, but willing to rid himself of it. 
+
+A series of conversations that mostly left my brain spinning for answers to questions I never thought to ask. 
+
+CS Lewis remains one of my favorites, if not my favorite, christian author of all time & this book is a necessity to any minister or Christian thinker out there!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('26d59951-5489-47f7-8cb5-4df68c00377e', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'ae193c08-73a2-472f-aa39-b467b8d835d2', 4.0, NULL, NULL, 0, 12, 2021, '2021-12-25T12:00:00.000Z', '2026-03-17 23:33:36', 'And so concludes The Chronicles of Narnia. 
+
+Lewis did a great job concluding every storyline from the series in this book. It almost felt like an Avengers-style accumulation of every character meeting. 
+
+Just like the other books, the religious imagery (this time the book of Revelation) was wonderfully & tastefully done. 
+
+Experiencing the entire series in sequence like this will take some time to chew on, but in glad I finally got around to doing it. It truly is one of the book series everyone should read before they die. 
+
+I must say goodbye to Narnia, but, like the Pevensie children, my memories are fond & I will visit them often.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('2174ecde-ab18-45f2-bd77-c8d2c00a335b', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '50842ab5-9a10-4fc0-a60e-67f520068a39', 4.0, NULL, NULL, 0, 12, 2021, '2021-12-23T12:00:00.000Z', '2026-03-17 23:33:39', 'It’s been quite a ride getting through the Chronicles of Narnia books. The Magician’s Nephew is one that I’ve heard praised more than any other entry in the series. And I can see where that praise comes from. 
+
+The difference between four & five stars for me simply comes down to taste; I don’t really care for origin stories. 
+
+But as far as origin stories go, this one was done nearly flawlessly for what Lewis was trying to do. 
+
+Two likable leads give you a perspective as you walk through the creation of Narnia & the founding of the talking animals, dwarves, fauns, & even The White Witch. 
+
+I found the inconvenience of Uncle Andrew to take me out of a few scenes. I’ve never been a fan of characters being annoying as a plot device, but I was able to get over that hump to fully appreciate this brilliant piece of classic children’s literature.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('fcf0347c-4208-4a00-8071-de255dfc7565', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '2d4d436d-1ef9-4aa9-a620-6eee980b7297', 5.0, NULL, NULL, 0, 12, 2021, '2021-12-21T12:00:00.000Z', '2026-03-17 23:33:42', 'This is my favorite of the series so far! 
+
+It seems to me that it was the most character-based of the novels, but it also explored parts of the world we hadn’t seen yet, such as Calormen & Archenland. 
+
+There were points in this book where I even forgot it was reading a Narnia book at all. 
+
+There were subtle character dynamics between the main four that had me drawn in & fully engaged in their interactions. 
+
+To close up my actual review, I loved seeing a side story set in this world. It’s expanded my mind on the geography & the culture, in turn making Narnia more real to me than it was before. 
+
+
+
+Now, as for the claims of the “racist” depiction of middle eastern culture with the calormenes, I suppose that could be true if we use the made up definition provided by the sole mafia (who have tried to destroy enough pieces of art at this point). 
+
+Narnia was obviously used to depict Israel, who is constantly surrounded by enemy Muslim nations, so it’s pretty natural to use that culture as the enemies in this story. 
+
+It also shows that anyone is capable of good & redemption even if they’re in raised in this kind of culture. Both Shasta & Aravis are good the entire book & never stray from that alignment. 
+
+I’m sure Iraq, Iran, etc. have many, many, many good people living in them. However, their governments have proven to be dictatorial in nature & Lewis does a great job of capturing that.', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('a8727ac9-06b9-4d66-a4df-0f03bcff1d0f', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'd0588226-838f-449f-bef5-b978ebfd43ad', 3.0, NULL, NULL, 0, 12, 2021, '2021-12-18T12:00:00.000Z', '2026-03-17 23:34:07', 'This is the first book without any Pevensie included. (I’m reading them in release date order, not chronological.) 
+
+That being said, I think this was my least favorite entry so far, just barely sitting below Prince Caspian. 
+
+I really enjoyed the worldbuilding being expanded even more from Voyage of the Dawn Treader. Getting a peak into the culture of Narnian giants was appreciated. And I love the concept of the Marsh-wiggles. I even appreciated seeing some trolls & exploring the underground of the “earthmen.”
+
+The main problem for me is that the characters just weren’t there. Trumpkin & Caspian were both very short-lived narratively. Eustace & Jill were both quite one dimensional (despite Eustace having one of my favorite character arcs in the previous book). The best character by far was Puddleglum who stole the show hands down! 
+
+The biblical imagery wasn’t as much in the forefront of this one, other than in the second chapter where Aslan sends them on their mission & in the last chapter where they meet him again. That was a big disappointment for me, although I know many people disagree on that point. 
+
+As far as the story these first few books have created, I’m enjoying them all to varying degrees & I still appreciate what Lewis started in the early days of this genre. Some of the stories & prose has not aged well, but his brilliance is timeless!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('8cfccf01-5fd5-492f-97ac-d62ef353d6e8', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'baad838a-baaf-462f-8f21-02531da8bea9', 4.0, NULL, NULL, 0, 12, 2021, '2021-12-14T12:00:00.000Z', '2026-03-17 23:34:10', 'A definite improvement upon Prince Caspian, The Voyage of the Dawn Treader delivers on arguably the coolest aspect of The Chronicles of Narnia: Narnia itself! 
+
+We finally get to explore parts of this world that we had been wondering about. We get to see some races we hadn’t previously seen in some lands we hadn’t previously explored with some characters we hadn’t had fleshed out yet. 
+
+A nice last hoorah for the younger Pevensie siblings, they were both in perfect royal form. Prince Caspian got fleshed out a little better. Reepicheep isn’t completely intolerable. It was nice to see Lewis do some characterization other than for Aslan! 
+
+I hated Eustace (I understand that the purpose of the character was to hate him, but I was feeling like I hated him even more than Lewis had originally intended.) so much in the beginning that I really feel like his character arc was arguably the best part of this installment, unarguably top two with the worldbuilding. 
+
+Once again, the biblical imagery in this book is second to none & continues to draw me in. If you aren’t a believer, I can understand why that would be off-putting to you. 
+
+Let’s just say I have no intentions of slowing down with this series!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('60067980-84f9-4c13-bb1a-8088cea3e18e', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'eed67731-a03c-4ce8-8346-3c38a8873dd8', 3.0, NULL, NULL, 0, 12, 2021, '2021-12-12T12:00:00.000Z', '2026-03-17 23:34:12', 'Definitely not as strong an entry in the Chronicles of Narnia as it’s predecessor, but enjoyable nevertheless. 
+
+This series is purely classic fantasy in that it focuses far more on worldbuilding than character building. I mean, this 15-chapter book didn’t finish the setup until chapter seven. 
+
+Every character is just a plot device around the world. Caspian & his band of Old Narnians certainly served that purpose. 
+
+I have found that the most brilliant part of these books are the christian allegory. Any time Aslan is on the page, I find myself riveted with something Lewis wrote. 
+
+I’m absolutely looking forward to continuing this journey!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('1fff2b8f-e90a-4e36-92e7-4669a1a62389', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '32e85b7b-1a9c-4d43-8d96-c80649367553', 4.0, NULL, NULL, 0, 12, 2021, '2021-12-08T12:00:00.000Z', '2026-03-17 23:35:10', 'I have never read the Inheritance Cycle (they’re on my list!), so this is my first experience with Paolini. 
+
+I thoroughly enjoyed this book! 
+
+I heard him explain in an interview that this was a love letter to science fiction &, I have to say, that sums it up perfectly. I see nods to Star Trek, Firefly, Star Wars (which is space fantasy, not science fiction, but it’s still in there), among many others! Paolini somehow gave us both hard science fiction & pulp science fiction. I’m not sure how it was possible, but I’m very thankful for it! 
+
+The best & worst part of this book is the length. I’m conflicted on it. On one hand, it took much longer than most books (which wasn’t helped by a two week break), but he nails the world-building in those extra pages. 
+
+It’s split into six parts. The first two seem slow, but once you hit part three, it just hits the gas & never lets up. The careful world-building before that is what gives the opportunity for that kind of storytelling. 
+
+I was getting exhausted with all the characters changing around throughout the story. I’m a character guy, so that wasn’t doing it for me. But once the world was built & he introduced the actual main supporting cast of the book, I was completely invested all the way through the last heartbreaking page. 
+
+You can hear the joy in Paolini’s voice throughout the book. You can tell how much fun he had coming up with aliens, languages, & culture. It made it even more fun for us & that is always appreciated! Especially The Soft Blade, which felt like Venom mixed with Green Lantern to me. 
+
+Overall, this is a four star book & I am so excited to see where else he takes the Fractalverse!', NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('c4636395-412c-41cb-a754-0ca6d97afc51', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'c4e9894f-32b1-4f97-985a-e63c963bf4ac', 4.0, NULL, NULL, 0, 11, 2021, '2021-11-10T12:00:00.000Z', '2026-03-17 23:35:11', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('8cd8d6bb-6d44-4a54-bb87-58b16589a4ee', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '3be9c38b-c661-4c09-879f-be1ae4b90a17', 3.0, NULL, NULL, 0, 5, 2019, '2019-05-02T12:00:00.000Z', '2026-03-17 23:35:13', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('58680675-130c-46aa-8c59-700713076f52', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', 'acf67a14-f026-4903-b187-b91e29a1a0bb', 2.0, NULL, NULL, 0, 12, 2018, '2018-12-06T12:00:00.000Z', '2026-03-17 23:35:15', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('70fe99ea-1a8b-41a8-a575-f746bf2cbe9f', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '1584dee1-0fe9-43dc-a2af-b6eea5e62018', 3.0, NULL, NULL, 0, NULL, NULL, '2026-03-17T23:35:17.242Z', '2026-03-17 23:35:17', NULL, NULL, '', 0, 'user');
+INSERT INTO user_book_reviews (id, user_id, book_id, overall_rating, mood, mood_intensity, did_not_finish, finished_month, finished_year, created_at, updated_at, review_text, dnf_percent_complete, content_comments, is_anonymous, source) VALUES ('5d0f72ae-9e49-4a0f-bda1-04dbd6f9d3e2', '345dc32b-6a9d-4c34-81cf-c9a84fa17515', '90e7cbd1-98e0-4513-94d2-52856804fa5c', 3.0, NULL, NULL, 0, 10, 2021, '2021-10-16T12:00:00.000Z', '2026-03-17 23:35:19', 'I’ve been a fan of Sam Miller since the early days of Paradise Fears. Since I enjoyed his debut novel (A Lite Too Bright) well enough, I figured I’d give his new book a chance. I preordered it, but it took about a year & a half to get to it on my reading list. 
+
+I believe Sam could end up another John Green type, but his sophomore attempt once again was a mixed bag. 
+
+While I enjoyed the premise & the character developed beautifully, there was a payoff that was lacking once again. 
+
+I found the book hard to put down from Parts II-VI, but once the twist happened, I became much less invested. 
+
+I feel there was opportunity to make this story more Twin Peaks than Riverdale. 
+
+It’s really more my storytelling opinion. I did enjoy his first book more, but this book was certainly not bad & I look forward to his next work!', NULL, '', 0, 'user');

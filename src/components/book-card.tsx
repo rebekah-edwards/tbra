@@ -1,0 +1,59 @@
+import Image from "next/image";
+import Link from "next/link";
+import { NoCover } from "@/components/no-cover";
+import { formatRating } from "@/lib/text-utils";
+
+interface BookCardProps {
+  id: string;
+  slug?: string | null;
+  title: string;
+  coverImageUrl: string | null;
+  authors: string[];
+  isFiction?: boolean | null;
+  userRating?: number | null;
+  aggregateRating?: number | null;
+  activeFormats?: string[];
+  state?: string | null;
+}
+
+export function BookCard({ id, slug, title, coverImageUrl, userRating, aggregateRating, activeFormats, state }: BookCardProps) {
+  const isActivelyReading = state === "currently_reading" || state === "paused";
+  const isAudiobook = isActivelyReading && activeFormats?.length === 1 && activeFormats[0] === "audiobook";
+  const aspect = isAudiobook ? "aspect-square" : "aspect-[2/3]";
+
+  return (
+    <Link
+      href={`/book/${slug || id}`}
+      className="group block"
+    >
+      <div className="relative">
+        {coverImageUrl ? (
+          <Image
+            src={coverImageUrl}
+            alt={`Cover of ${title}`}
+            width={isAudiobook ? 120 : 120}
+            height={isAudiobook ? 120 : 180}
+            className={`${aspect} w-full rounded-lg object-cover book-card-cover transition-shadow`}
+          />
+        ) : (
+          <NoCover title={title} className={`${aspect} w-full book-card-cover transition-shadow`} size="md" />
+        )}
+        {/* Desktop hover: show title at top to avoid rating pill overlap */}
+        <div className="hidden lg:flex absolute inset-0 rounded-lg bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-start p-2 pointer-events-none">
+          <p className="text-[11px] font-medium text-white leading-tight line-clamp-3">
+            {title}
+          </p>
+        </div>
+        {userRating != null && userRating > 0 ? (
+          <span className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
+            {formatRating(userRating)} ★
+          </span>
+        ) : aggregateRating != null && aggregateRating > 0 ? (
+          <span className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 rounded-full bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm">
+            {formatRating(aggregateRating)} ★
+          </span>
+        ) : null}
+      </div>
+    </Link>
+  );
+}

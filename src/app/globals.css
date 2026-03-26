@@ -1,0 +1,589 @@
+@import "tailwindcss";
+
+:root,
+[data-theme="dark"] {
+  --background: #0a0a0f;
+  --foreground: #e4e2ef;
+  --primary: #a3e635;
+  --primary-light: #d9f99d;
+  --primary-dark: #84cc16;
+  --accent: #a3e635;
+  --accent-dark: #84cc16;
+  --link: #a3e635;
+  --neon-purple: #c084fc;
+  --neon-blue: #38bdf8;
+  --surface: #141420;
+  --surface-alt: #1c1c2a;
+  --border: #2a2a3a;
+  --muted: #7a7890;
+  --intensity-0: #2a2a3a;
+  --intensity-1: #38bdf8;
+  --intensity-2: #facc15;
+  --intensity-3: #fb923c;
+  --intensity-4: #f87171;
+  --destructive: #ef4444;
+}
+
+[data-theme="light"] {
+  --background: #fafbfc;
+  --foreground: #18181b;
+  --primary: #a3e635;
+  --primary-light: #d9f99d;
+  --primary-dark: #84cc16;
+  --accent: #a3e635;
+  --accent-dark: #84cc16;
+  --link: #16a34a;
+  --neon-purple: #a855f7;
+  --neon-blue: #0ea5e9;
+  --surface: #ffffff;
+  --surface-alt: #f4f4f6;
+  --border: #e4e4e9;
+  --muted: #71717a;
+  --intensity-0: #e4e4e9;
+  --intensity-1: #0ea5e9;
+  --intensity-2: #d97706;
+  --intensity-3: #ea580c;
+  --intensity-4: #dc2626;
+  --destructive: #dc2626;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-accent: var(--accent);
+  --color-accent-dark: var(--accent-dark);
+  --color-link: var(--link);
+  --color-neon-purple: var(--neon-purple);
+  --color-neon-blue: var(--neon-blue);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-intensity-0: var(--intensity-0);
+  --color-intensity-1: var(--intensity-1);
+  --color-intensity-2: var(--intensity-2);
+  --color-intensity-3: var(--intensity-3);
+  --color-intensity-4: var(--intensity-4);
+  --color-destructive: var(--destructive);
+  --font-sans: var(--font-body);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), system-ui, sans-serif;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Background depth — neon mesh gradient blobs */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 55% at 15% 10%, rgba(168, 85, 247, 0.08), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 85% 15%, rgba(192, 132, 252, 0.05), transparent 70%),
+    radial-gradient(ellipse 90% 55% at 80% 90%, rgba(56, 189, 248, 0.07), transparent 70%),
+    radial-gradient(ellipse 70% 45% at 50% 85%, rgba(163, 230, 53, 0.04), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(ellipse 80% 55% at 15% 10%, rgba(168, 85, 247, 0.06), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 85% 15%, rgba(168, 85, 247, 0.04), transparent 70%),
+    radial-gradient(ellipse 90% 55% at 80% 90%, rgba(14, 165, 233, 0.05), transparent 70%),
+    radial-gradient(ellipse 70% 45% at 50% 85%, rgba(163, 230, 53, 0.03), transparent 70%);
+}
+
+@layer base {
+  body > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+h1, h2, h3, .font-heading {
+  font-family: var(--font-heading), system-ui, sans-serif;
+}
+
+.font-logo {
+  font-family: var(--font-logo), system-ui, sans-serif !important;
+}
+
+.section-heading {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--foreground);
+}
+
+.logo-gradient {
+  background: linear-gradient(90deg, var(--accent) 0%, var(--neon-blue) 50%, var(--neon-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline;
+}
+
+/* Read more links: green in dark mode, purple in light mode */
+.read-more-link { color: #a3e635; }
+[data-theme="light"] .read-more-link { color: var(--neon-purple); }
+
+/* Verified badge: subtle/translucent on both modes to match other pills */
+.verified-badge { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); }
+[data-theme="light"] .verified-badge { background: color-mix(in srgb, var(--accent) 20%, transparent); color: #18181b; }
+
+/* Reader badge: green text on dark, black text on light */
+.reader-badge { color: var(--accent); }
+[data-theme="light"] .reader-badge { color: #000000; }
+
+/* In light mode, text on accent-colored backgrounds must be black for readability.
+   The bright lime green (#a3e635) must NEVER be darkened/olive — always bright.
+   Instead, use black text on any accent background or accent-bordered element. */
+[data-theme="light"] .text-accent { color: #000000 !important; }
+[data-theme="light"] .bg-accent { color: #000000; }
+[data-theme="light"] .border-accent { color: #000000; }
+
+/* In light mode, accent-colored text gets a subtle lime glow */
+[data-theme="light"] .lime-glow {
+  text-shadow: 0 0 14px rgba(163, 230, 53, 0.4);
+}
+
+/* Hide book button — light red in dark mode, darker red in light mode */
+.hide-book-btn { color: #f87171; }
+.hide-book-btn:hover { color: #fca5a5; }
+[data-theme="light"] .hide-book-btn { color: #dc2626; }
+[data-theme="light"] .hide-book-btn:hover { color: #b91c1c; }
+
+.book-page-divider {
+  margin: 24px 32px 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(to right, transparent, rgba(124, 58, 237, 0.5), transparent);
+}
+[data-theme="light"] .book-page-divider {
+  background: linear-gradient(to right, transparent, rgba(124, 58, 237, 0.3), transparent);
+}
+
+[data-theme="light"] .lime-glow-box {
+  box-shadow: 0 0 18px rgba(163, 230, 53, 0.25);
+}
+
+/* Content flag banner text: yellow on dark, black on light */
+.content-flag-text { color: #facc15; }
+[data-theme="light"] .content-flag-text { color: #000000; }
+
+/* Hide scrollbar for nav tabs */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Animated glow block for book summary */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes glow-drift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Hero bleed fade — mask edges so the blur doesn't create hard lines */
+.hero-bleed-fade {
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+@media (min-width: 1024px) {
+  .hero-bleed-fade {
+    -webkit-mask-image: radial-gradient(ellipse 120% 120% at 20% 30%, black 40%, transparent 68%);
+    mask-image: radial-gradient(ellipse 120% 120% at 20% 30%, black 40%, transparent 68%);
+  }
+}
+
+/* Full-bleed utility — breaks out of max-w container to viewport edges */
+.hero-bleed {
+  left: calc(-50vw + 50%);
+  right: calc(-50vw + 50%);
+}
+
+/* On desktop, contain the hero bleed on the right side only (left still full-bleeds) */
+@media (min-width: 1024px) {
+  .hero-bleed {
+    right: 0;
+  }
+}
+
+/* ── Option-Blob: Quotation accent with warm gradient ── */
+.summary-quote-mark {
+  background: linear-gradient(135deg, #f59e0b, #a3e635);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  opacity: 0.4;
+}
+[data-theme="light"] .summary-quote-mark {
+  background: linear-gradient(135deg, #d97706, #65a30d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  opacity: 0.3;
+}
+.summary-blob {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+}
+
+/* ── Option-Frosted: Glass card with breathing blob ── */
+.summary-frosted-card {
+  background: rgba(255, 255, 255, 0.06);
+}
+[data-theme="light"] .summary-frosted-card {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+.summary-frosted-quote {
+  opacity: 0.07;
+  color: var(--foreground);
+}
+[data-theme="light"] .summary-frosted-quote {
+  opacity: 0.05;
+}
+.summary-frosted-blob {
+  background: radial-gradient(ellipse 60% 80% at 30% 50%, rgba(168, 85, 247, 0.18), transparent 70%),
+              radial-gradient(ellipse 50% 60% at 70% 50%, rgba(56, 189, 248, 0.12), transparent 70%);
+  animation: frosted-breathe 6s ease-in-out infinite;
+}
+[data-theme="light"] .summary-frosted-blob {
+  background: radial-gradient(ellipse 60% 80% at 30% 50%, rgba(124, 58, 237, 0.10), transparent 70%),
+              radial-gradient(ellipse 50% 60% at 70% 50%, rgba(37, 99, 235, 0.07), transparent 70%);
+}
+@keyframes frosted-breathe {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+/* ── Option-Wash: Ink watercolor bleed ── */
+.summary-wash-inner {
+  position: relative;
+}
+.summary-wash-inner::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 10%;
+  right: 10%;
+  height: 60%;
+  background: radial-gradient(ellipse 100% 100% at 50% 0%, rgba(168, 85, 247, 0.07), transparent 80%);
+  pointer-events: none;
+  animation: wash-fade-in 1.2s ease-out both;
+}
+[data-theme="light"] .summary-wash-inner::before {
+  background: radial-gradient(ellipse 100% 100% at 50% 0%, rgba(124, 58, 237, 0.06), transparent 80%);
+}
+@keyframes wash-fade-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Option-Orb: Drifting ambient radial blob ── */
+.summary-orb-glow {
+  width: 200px;
+  height: 200px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.12), rgba(56, 189, 248, 0.06), transparent 70%);
+  filter: blur(40px);
+  animation: orb-drift 10s ease-in-out infinite;
+}
+[data-theme="light"] .summary-orb-glow {
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.08), rgba(37, 99, 235, 0.04), transparent 70%);
+}
+@keyframes orb-drift {
+  0%, 100% { transform: translate(-50%, -50%) translateX(0) translateY(0); }
+  25% { transform: translate(-50%, -50%) translateX(30px) translateY(-10px); }
+  50% { transform: translate(-50%, -50%) translateX(-20px) translateY(15px); }
+  75% { transform: translate(-50%, -50%) translateX(15px) translateY(-20px); }
+}
+
+/* Animated glow for cards (goal, streak, etc.) */
+.card-glow {
+  position: relative;
+  overflow: hidden;
+}
+.card-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      270deg,
+      rgba(168, 85, 247, 0.08),
+      rgba(56, 189, 248, 0.06),
+      rgba(168, 85, 247, 0.12),
+      rgba(56, 189, 248, 0.05),
+      rgba(168, 85, 247, 0.08)
+    );
+  background-size: 300% 100%;
+  animation: glow-drift 8s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+[data-theme="light"] .card-glow::before {
+  background:
+    linear-gradient(
+      270deg,
+      rgba(124, 58, 237, 0.06),
+      rgba(37, 99, 235, 0.05),
+      rgba(124, 58, 237, 0.09),
+      rgba(37, 99, 235, 0.04),
+      rgba(124, 58, 237, 0.06)
+    );
+  background-size: 300% 100%;
+}
+
+/* Book header — light mode: saturated hero bleed, lighter frosted card */
+
+/* Hero bleed background image — pump up saturation & brightness in light mode.
+   mix-blend-mode: screen drops dark pixels (they become the white bg)
+   and lets bright/colorful pixels shine through. */
+[data-theme="light"] .book-hero-img {
+  opacity: 0.9;
+  filter: blur(64px) saturate(2.5) brightness(1.6);
+  mix-blend-mode: screen;
+}
+
+/* Soften the edge fades so more color bleeds through */
+[data-theme="light"] .book-hero-fade-bottom {
+  background: linear-gradient(to bottom, transparent 65%, var(--background) 100%);
+}
+[data-theme="light"] .book-hero-fade-sides {
+  background: linear-gradient(to right, rgba(250,251,252,0.3), transparent 25%, transparent 75%, rgba(250,251,252,0.3));
+}
+
+/* Card inner background image — screen blend suppresses dark cover areas,
+   keeps vibrant colors. Extra saturation + brightness to compensate. */
+.book-card-bg-img {
+  opacity: 0.4;
+  filter: blur(16px) saturate(1.5);
+}
+[data-theme="light"] .book-card-bg-img {
+  opacity: 0.5;
+  filter: blur(16px) saturate(2.5) brightness(1.4);
+  mix-blend-mode: screen;
+}
+
+/* Card overlay — frosted white for text legibility over vivid colors */
+.book-header-overlay {
+  background: rgba(0, 0, 0, 0.30);
+}
+[data-theme="light"] .book-header-overlay {
+  background: rgba(255, 255, 255, 0.52);
+  backdrop-filter: blur(8px);
+}
+
+.book-header-text { color: white; }
+[data-theme="light"] .book-header-text { color: #18181b; }
+
+.book-header-text-sub { color: rgba(255, 255, 255, 0.80); }
+[data-theme="light"] .book-header-text-sub { color: rgba(24, 24, 27, 0.75); }
+
+.book-header-text-muted { color: rgba(255, 255, 255, 0.70); }
+[data-theme="light"] .book-header-text-muted { color: rgba(24, 24, 27, 0.60); }
+
+.book-header-pill {
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.85);
+}
+[data-theme="light"] .book-header-pill {
+  background: rgba(24, 24, 27, 0.10);
+  color: rgba(24, 24, 27, 0.70);
+}
+
+.book-action-btn {
+  background: rgba(163, 230, 53, 0.15);
+  color: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(163, 230, 53, 0.35);
+}
+[data-theme="light"] .book-action-btn {
+  background: rgba(132, 204, 22, 0.12);
+  color: rgba(24, 24, 27, 0.85);
+  border: 1px solid rgba(132, 204, 22, 0.35);
+}
+
+.book-header-link { text-decoration-color: rgba(255, 255, 255, 0.40); }
+.book-header-link:hover { text-decoration-color: white; }
+[data-theme="light"] .book-header-link { text-decoration-color: rgba(24, 24, 27, 0.30); }
+[data-theme="light"] .book-header-link:hover { text-decoration-color: #18181b; }
+
+.book-header-nocover {
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.60);
+}
+[data-theme="light"] .book-header-nocover {
+  background: rgba(24, 24, 27, 0.08);
+  color: rgba(24, 24, 27, 0.50);
+}
+
+/* No-cover gradient: blue → purple with depth */
+.no-cover-gradient {
+  background: linear-gradient(135deg, #3b5998 0%, #6b3fa0 40%, #8b5cf6 70%, #4c6ef5 100%);
+}
+.no-cover-pattern {
+  opacity: 0.07;
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,0.4) 1px, transparent 1px),
+    linear-gradient(-45deg, rgba(255,255,255,0.4) 1px, transparent 1px),
+    linear-gradient(135deg, rgba(255,255,255,0.15) 1px, transparent 1px),
+    linear-gradient(-135deg, rgba(255,255,255,0.15) 1px, transparent 1px),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.3) 1px, transparent 2px);
+  background-size: 16px 16px, 16px 16px, 8px 8px, 8px 8px, 12px 12px;
+}
+
+/* Currently-reading card overlay — matches book detail vibrancy */
+.currently-reading-overlay {
+  background: rgba(0, 0, 0, 0.25);
+}
+[data-theme="light"] .currently-reading-overlay {
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+/* Book card — subtle shadow + lift in light mode for vibrancy */
+[data-theme="light"] .book-card-cover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10), 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+[data-theme="light"] .book-card-cover:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14), 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Scroll fade hint — shows content continues to the right */
+.mask-fade-right {
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+
+/* Review editor placeholder */
+.review-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/*
+ * Spoiler tag — canvas-based particle overlay handles the sparkle.
+ * CSS just hides text and provides the dark background.
+ */
+.spoiler-tag {
+  color: transparent;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+  padding: 1px 4px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition: color 0.3s ease, background-color 0.3s ease;
+  background-color: var(--surface-alt);
+}
+
+.spoiler-tag.revealed {
+  color: var(--foreground);
+  background-color: transparent;
+}
+
+/* Inside the editor, spoiler text stays visible so the author can edit it */
+.spoiler-editor .spoiler-tag {
+  color: var(--foreground);
+  background-color: rgba(192, 132, 252, 0.2);
+  border: 1px dashed rgba(192, 132, 252, 0.5);
+}
+
+/* ─── Page transitions (View Transitions API) ─── */
+::view-transition-old(root) {
+  animation: slide-out-left 200ms ease-in both;
+}
+::view-transition-new(root) {
+  animation: slide-in-right 200ms ease-out both;
+}
+
+/* Back navigation — reverse direction */
+.back-navigation::view-transition-old(root) {
+  animation: slide-out-right 200ms ease-in both;
+}
+.back-navigation::view-transition-new(root) {
+  animation: slide-in-left 200ms ease-out both;
+}
+
+@keyframes slide-out-left {
+  to { opacity: 0; transform: translateX(-30px); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(30px); }
+}
+@keyframes slide-out-right {
+  to { opacity: 0; transform: translateX(30px); }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-30px); }
+}
+
+/* ─── Gem sparkle animation ─── */
+@keyframes sparkle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; filter: brightness(1.3); }
+}
+.gem-sparkle {
+  animation: sparkle-pulse 2s ease-in-out infinite;
+}
+
+/* Gem reason tag shimmer */
+.gem-reason-tag {
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ─── Pull-to-refresh ─── */
+/* ─── Text size preference ─── */
+[data-text-size="small"] { font-size: 14px; }
+[data-text-size="medium"] { font-size: 16px; }
+[data-text-size="large"] { font-size: 18px; }
+
+.pull-indicator {
+  transition: transform 200ms ease-out, opacity 200ms ease-out;
+}
+.pull-indicator svg {
+  transition: transform 300ms ease-out;
+}
+
+/* mask-fade-right is always active — grid sections use lg:overflow-visible which removes scroll anyway */

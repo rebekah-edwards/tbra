@@ -1,0 +1,3 @@
+INSERT INTO review_helpful_votes (id, user_id, review_id, created_at) VALUES ('f2941920-16b3-4684-bee1-406b25783d53', '012605dd-177d-48c6-9717-490e7ef05b30', 'seed-review-seed-reviewer-002', '2026-03-14 14:51:52');
+INSERT INTO review_helpful_votes (id, user_id, review_id, created_at) VALUES ('456f5cab-3084-4e4e-a85b-2a1b215a2a7b', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '55db2c1c-a5d4-4598-9359-b9daed32e9d8', '2026-03-18 15:42:03');
+INSERT INTO review_helpful_votes (id, user_id, review_id, created_at) VALUES ('c72f513e-6633-412d-93e9-d2a6431c2780', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', '85578d19-a4d6-4eb9-b081-e1b1fdb87125', '2026-03-19 01:50:56');

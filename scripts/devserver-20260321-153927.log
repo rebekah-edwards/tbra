@@ -1,0 +1,124 @@
+
+> tbra@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.0.0.89:3000
+- Environments: .env.local
+✓ Ready in 271ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+- Experiments (use with caution):
+  · staleTimes
+
+ GET / 200 in 1986ms (next.js: 435ms, proxy.ts: 59ms, application-code: 1491ms)
+ GET /book/8cfbd243-80dc-4b83-bcad-b25530e2cf19 200 in 1986ms (next.js: 1145ms, proxy.ts: 57ms, application-code: 784ms)
+ GET /api/books/similar?bookId=8cfbd243-80dc-4b83-bcad-b25530e2cf19 200 in 139ms (next.js: 67ms, proxy.ts: 3ms, application-code: 68ms)
+ GET /u/rebekah_creates 200 in 509ms (next.js: 358ms, proxy.ts: 6ms, application-code: 145ms)
+ GET /api/enrichment/status 200 in 39ms (next.js: 15ms, proxy.ts: 1809µs, application-code: 22ms)
+[enrichment] Starting enrichment for book 4fcc11d1-225a-4e37-b9d8-6e428efb02db
+[enrichment] Box set detected: "Untitled Collection" — cover-only enrichment
+[enrichment] No cover found across all tiers for "Untitled Collection"
+[enrichment] Starting enrichment for book 0fbb4b6b-0266-452b-ae44-300b64656e4c
+[enrichment] Box set detected: "Tor.com Collection" — cover-only enrichment
+[enrichment] Starting enrichment for book 06d029de-eef2-412e-992a-be4d5716d2ab
+[enrichment] Box set detected: "Left hand of darkness/Winter's king/Coming of Age in Karhide" — cover-only enrichment
+[enrichment] No cover found across all tiers for "Left hand of darkness/Winter's king/Coming of Age in Karhide"
+[enrichment] Starting enrichment for book ed24316e-e5fc-488a-9166-f5c510764445
+[enrichment] Box set detected: "Untitled Marple Collection" — cover-only enrichment
+[enrichment] Starting enrichment for book 355d86f2-a2eb-4303-9efe-a300c6188cb7
+[enrichment] Box set detected: "The Greatest Classic Love Stories Collection" — cover-only enrichment
+[enrichment] Starting enrichment for book b12ade72-a0f6-4b58-a95b-e86a61c2509f
+[enrichment] Box set detected: "Paddington Funny Story Collection" — cover-only enrichment
+[enrichment] No cover found across all tiers for "Paddington Funny Story Collection"
+[enrichment] Starting enrichment for book ba36f92a-a483-4f27-b336-c6b736eeff6a
+[enrichment] Box set detected: "Paddington Novels 1-3" — cover-only enrichment
+[enrichment] No cover found across all tiers for "Paddington Novels 1-3"
+[enrichment] Starting enrichment for book 2b693016-a185-44d5-8d15-bbc3b80e53a4
+[enrichment] Box set detected: "Paddington Picture Books 1-10" — cover-only enrichment
+[enrichment] No cover found across all tiers for "Paddington Picture Books 1-10"
+[enrichment] Starting enrichment for book 633a7957-ded3-4bbc-9ef1-a74e828f9ff7
+[enrichment] Box set detected: "Elizabeth Gilbert Collection 3 Books Set" — cover-only enrichment
+[enrichment] Starting enrichment for book 26b14bf0-4382-4183-b29e-561182299207
+[enrichment] Box set detected: "The Year's Best Fantasy and Horror (11th Annual Collection) (Paper)" — cover-only enrichment
+[enrichment] Starting enrichment for book dbf7f89a-c2fc-4a5c-8037-e9db8cbc7203
+[enrichment] Box set detected: "Librivox Short Story Collection 074" — cover-only enrichment
+[enrichment] Starting enrichment for book 39aa2f23-99cc-4773-9e18-d15f30be74b3
+[enrichment] Box set detected: "Philip K. Dick Collection - Volume I" — cover-only enrichment
+[enrichment] No cover found across all tiers for "Philip K. Dick Collection - Volume I"
+[enrichment] Starting enrichment for book d347e436-9c36-4fde-ac81-e516fa6d6183
+[enrichment] Box set detected: "The Philip K. Dick Collection - Volume II" — cover-only enrichment
+[enrichment] No cover found across all tiers for "The Philip K. Dick Collection - Volume II"
+[enrichment] Starting enrichment for book 2f83bf33-bb8b-4b67-b7bb-32543349ded9
+[enrichment] Box set detected: "Shingles Audio Collection Volume 2" — cover-only enrichment
+[enrichment] Starting enrichment for book 8c6d7e7e-c828-43fd-80a8-64d3162349f8
+[enrichment] Box set detected: "Shingles Audio Collection Volume 3" — cover-only enrichment
+[enrichment] Starting enrichment for book d3c1766c-e699-479a-9b64-23e661a6eaa1
+[enrichment] Box set detected: "Shingles Audio Collection Volume 1 Lib/E" — cover-only enrichment
+[enrichment] Starting enrichment for book fd8f63ea-b81c-4d44-9419-c3278461ba46
+[enrichment] Box set detected: "Untitled Abercrombie Collection" — cover-only enrichment
+[enrichment] No cover found across all tiers for "Untitled Abercrombie Collection"
+[enrichment] Starting enrichment for book c9f997cc-83f1-4c9a-b323-b9bc536028d0
+[enrichment] Box set detected: "Untitled Cressida Cowell/Neal Layto Untitled Cressida Cowell/Neal Layto" — cover-only enrichment
+[enrichment] No cover found across all tiers for "Untitled Cressida Cowell/Neal Layto Untitled Cressida Cowell/Neal Layto"
+[enrichment] Starting enrichment for book ab2e18cd-972c-4744-9603-ff44adb25c58
+[enrichment] Box set detected: "How to Train Your Dragon : Dragon Tales Collection" — cover-only enrichment
+[enrichment] Starting enrichment for book 975cac96-eb01-4365-bca2-f305e1f67f33
+[enrichment] Box set detected: "Land of Ingary Trilogy (includes Howl's Moving Castle)" — cover-only enrichment
+[enrichment] Starting enrichment for book 65f69550-4f67-4e1b-bf95-ee2b3a3c60e9
+[enrichment] Box set detected: "Diana Wynne Jones's Fantastical Journeys Collection (the Islands of Chaldea, a Tale of Time City, the Homeward Bounders)" — cover-only enrichment
+[enrichment] Starting enrichment for book b138041e-39d1-4f32-aefc-a0a59c038d2a
+[enrichment] Box set detected: "Diana Wynne Jones's Magic and Myths Collection (the Game, the Power of Three, Eight Days of Luke, Dogsbody)" — cover-only enrichment
+[enrichment] Starting enrichment for book f982d0b4-fefc-4b51-bfb9-c87eb6da097d
+[enrichment] Box set detected: "Essential Modern Classics Fantasy Collection" — cover-only enrichment
+[enrichment] No cover found across all tiers for "Essential Modern Classics Fantasy Collection"
+[enrichment] Starting enrichment for book 2caec85a-680c-408a-adcc-11cb3003c41b
+[enrichment] Box set detected: "Environment Challenge Classroom Collection" — cover-only enrichment
+[enrichment] No cover found across all tiers for "Environment Challenge Classroom Collection"
+[enrichment] Starting enrichment for book 2070c704-d552-4275-a26b-a139f9a3114a
+[enrichment] Searching for: "Weil uns Gott unendlich liebt." Brennan Manning
+[enrichment] Found 4 search results
+[enrichment] Analysis complete for "Weil uns Gott unendlich liebt."
+[enrichment] Updated isFiction: true → false
+[enrichment] Set language: English → German
+[enrichment] Added tag: Christian Nonfiction
+[enrichment] Added tag: Spirituality
+[enrichment] Added tag: Inspirational
+[enrichment] No audiobook length found for "Weil uns Gott unendlich liebt."
+[enrichment] Cover found via OL English edition for "Weil uns Gott unendlich liebt."
+[enrichment] Enrichment complete for "Weil uns Gott unendlich liebt."
+ POST /api/enrichment/run?limit=25&skipGoogleBooks=true 200 in 69s (next.js: 33ms, proxy.ts: 3ms, application-code: 69s)
+✓ Compiled in 223ms
+ GET / 200 in 1583ms (next.js: 72ms, proxy.ts: 4ms, application-code: 1508ms)
+ GET /u/rebekah_creates 200 in 1591ms (next.js: 803ms, proxy.ts: 5ms, application-code: 783ms)
+ GET / 200 in 875ms (next.js: 141ms, proxy.ts: 98ms, application-code: 636ms)
+ GET /book/8cfbd243-80dc-4b83-bcad-b25530e2cf19 200 in 2.1s (next.js: 902ms, proxy.ts: 4ms, application-code: 1228ms)
+ GET /u/rebekah_creates 200 in 1213ms (next.js: 551ms, proxy.ts: 34ms, application-code: 629ms)
+ GET /book/8cfbd243-80dc-4b83-bcad-b25530e2cf19 200 in 1737ms (next.js: 50ms, proxy.ts: 511ms, application-code: 1176ms)
+ GET / 200 in 1699ms (next.js: 5ms, proxy.ts: 5ms, application-code: 1689ms)
+ GET /u/rebekah_creates 200 in 1696ms (next.js: 552ms, proxy.ts: 3ms, application-code: 1142ms)
+ GET / 200 in 1164ms (next.js: 55ms, proxy.ts: 3ms, application-code: 1105ms)
+ GET /u/rebekah_creates 200 in 1131ms (next.js: 539ms, proxy.ts: 9ms, application-code: 583ms)
+ GET /book/8cfbd243-80dc-4b83-bcad-b25530e2cf19 200 in 1188ms (next.js: 569ms, proxy.ts: 7ms, application-code: 612ms)
+ GET / 200 in 1161ms (next.js: 51ms, proxy.ts: 2ms, application-code: 1108ms)
+ GET /u/rebekah_creates 200 in 1158ms (next.js: 35ms, proxy.ts: 1665µs, application-code: 1122ms)
+ GET /book/8cfbd243-80dc-4b83-bcad-b25530e2cf19 200 in 1162ms (next.js: 6ms, proxy.ts: 1773µs, application-code: 1155ms)
+ GET / 200 in 1131ms (next.js: 65ms, proxy.ts: 3ms, application-code: 1063ms)
+ GET /book/8cfbd243-80dc-4b83-bcad-b25530e2cf19 200 in 1111ms (next.js: 515ms, proxy.ts: 47ms, application-code: 549ms)
+ GET / 200 in 542ms (next.js: 2ms, proxy.ts: 11ms, application-code: 529ms)
+ GET /u/rebekah_creates 200 in 554ms (next.js: 489ms, proxy.ts: 3ms, application-code: 62ms)
+ GET / 200 in 1176ms (next.js: 1847µs, proxy.ts: 7ms, application-code: 1168ms)
+ GET /u/rebekah_creates 200 in 1181ms (next.js: 505ms, proxy.ts: 5ms, application-code: 671ms)
+ GET / 200 in 708ms (next.js: 76ms, proxy.ts: 7ms, application-code: 624ms)
+ GET /book/8cfbd243-80dc-4b83-bcad-b25530e2cf19 200 in 1194ms (next.js: 487ms, proxy.ts: 9ms, application-code: 698ms)
+ GET /u/rebekah_creates 200 in 635ms (next.js: 26ms, proxy.ts: 499ms, application-code: 110ms)
+ GET /book/8cfbd243-80dc-4b83-bcad-b25530e2cf19 200 in 772ms (next.js: 504ms, proxy.ts: 71ms, application-code: 197ms)
+ GET /book/8cfbd243-80dc-4b83-bcad-b25530e2cf19 200 in 149ms (next.js: 13ms, proxy.ts: 4ms, application-code: 131ms)
+ GET /u/rebekah_creates 200 in 143ms (next.js: 41ms, proxy.ts: 5ms, application-code: 97ms)
+ GET /book/8cfbd243-80dc-4b83-bcad-b25530e2cf19 200 in 111ms (next.js: 72ms, proxy.ts: 7ms, application-code: 33ms)
+ GET /api/enrichment/status 200 in 60ms (next.js: 32ms, proxy.ts: 1407µs, application-code: 27ms)
+[enrichment] Starting enrichment for book 4fcc11d1-225a-4e37-b9d8-6e428efb02db
+[enrichment] Box set detected: "Untitled Collection" — cover-only enrichment
+[enrichment] No cover found across all tiers for "Untitled Collection"
+[enrichment] Starting enrichment for book 0fbb4b6b-0266-452b-ae44-300b64656e4c
+[enrichment] Box set detected: "Tor.com Collection" — cover-only enrichment

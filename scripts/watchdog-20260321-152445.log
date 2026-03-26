@@ -1,0 +1,10 @@
+[2026-03-21 15:24:45] [watchdog] === Enrichment watchdog starting ===
+[2026-03-21 15:24:45] [watchdog] Batch size: 25 | Sleep: 30s | Max restarts: 10
+[2026-03-21 15:24:45] [watchdog] Books needing enrichment: 4984
+[2026-03-21 15:39:20] [watchdog] Invalid response from Phase1 batch 11 — server may have crashed
+[2026-03-21 15:39:25] [watchdog] Server is DOWN — attempting restart (1/10)
+[2026-03-21 15:39:25] [watchdog] Starting dev server...
+[2026-03-21 15:39:25] [watchdog] Killing stale processes on port 3000: 37009
+38217
+[2026-03-21 15:39:27] [watchdog] Dev server launched (PID: 39144)
+[2026-03-21 15:39:32] [watchdog] Dev server healthy after 5s

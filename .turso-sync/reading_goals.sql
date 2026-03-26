@@ -1,0 +1,2 @@
+INSERT INTO reading_goals (id, user_id, year, target_books, created_at, updated_at) VALUES ('a25237eb-1cf3-45c7-8ff8-dcbd3fbf182a', '012605dd-177d-48c6-9717-490e7ef05b30', 2026, 24, '2026-03-15 20:47:30', '2026-03-15 20:47:30');
+INSERT INTO reading_goals (id, user_id, year, target_books, created_at, updated_at) VALUES ('a0e0bc4a-0e22-4abd-b257-49d83fc21133', 'c2f3eb27-139f-4605-9566-8ded8d9e1336', 2026, 65, '2026-03-17 23:03:29', '2026-03-18T02:43:11.423Z');

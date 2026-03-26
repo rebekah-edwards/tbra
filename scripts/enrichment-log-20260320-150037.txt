@@ -1,0 +1,8 @@
+[15:02:08] Starting overnight enrichment. Books needing enrichment: 6527
+[15:02:08] Google Books: SKIPPED. Batch size: 25. Delay: 30s
+[15:02:08] ---
+[15:02:08] === PHASE 1: Initial enrichment (no summary, no ratings) ===
+[15:06:16] Batch 1: 25 ok, 0 failed (total: 25 ok, 0 failed)
+[15:06:16] Sleeping 30s...
+[15:10:36] Batch 2: 25 ok, 0 failed (total: 50 ok, 0 failed)
+[15:10:36] Sleeping 30s...
