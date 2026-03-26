@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { updateUserAccountType } from "@/lib/actions/admin-users";
+import { syncUsersFromLive } from "@/lib/actions/admin-sync";
 import { AccountBadge } from "@/components/profile/account-badge";
 
 interface UserRow {
@@ -28,6 +30,7 @@ export function UserManagement({
   users: UserRow[];
   currentUserId: string;
 }) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [localUsers, setLocalUsers] = useState(users);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -35,6 +38,11 @@ export function UserManagement({
   const [feedback, setFeedback] = useState<{
     id: string;
     message: string;
+    type: "success" | "error";
+  } | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<{
+    text: string;
     type: "success" | "error";
   } | null>(null);
 
@@ -79,8 +87,50 @@ export function UserManagement({
     });
   }
 
+  async function handleSync() {
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const result = await syncUsersFromLive();
+      setSyncMessage({
+        text: result.message,
+        type: result.success ? "success" : "error",
+      });
+      if (result.success) {
+        router.refresh();
+      }
+    } catch {
+      setSyncMessage({ text: "Sync failed", type: "error" });
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncMessage(null), 5000);
+    }
+  }
+
   return (
     <div className="space-y-4">
+      {/* Sync from live */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleSync}
+          disabled={syncing}
+          className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {syncing ? "Syncing..." : "Sync Users from Live"}
+        </button>
+        {syncMessage && (
+          <span
+            className={`text-xs font-medium ${
+              syncMessage.type === "success"
+                ? "text-accent"
+                : "text-destructive"
+            }`}
+          >
+            {syncMessage.text}
+          </span>
+        )}
+      </div>
+
       {/* Search */}
       <input
         type="text"
