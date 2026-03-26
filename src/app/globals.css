@@ -168,12 +168,11 @@ h1, h2, h3, .font-heading {
 
 .book-page-divider {
   margin: 24px 32px 16px;
-  height: 2px;
-  border-radius: 1px;
-  background: linear-gradient(to right, transparent, rgba(124, 58, 237, 0.5), transparent);
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(124, 58, 237, 0.35), transparent);
 }
 [data-theme="light"] .book-page-divider {
-  background: linear-gradient(to right, transparent, rgba(124, 58, 237, 0.3), transparent);
+  background: linear-gradient(to right, transparent, rgba(124, 58, 237, 0.2), transparent);
 }
 
 [data-theme="light"] .lime-glow-box {
@@ -426,6 +425,10 @@ h1, h2, h3, .font-heading {
   background: rgba(24, 24, 27, 0.10);
   color: rgba(24, 24, 27, 0.70);
 }
+
+[data-theme="light"] .pacing-pill-slow { color: #dc2626 !important; } /* red-600 */
+[data-theme="light"] .pacing-pill-medium { color: #d97706 !important; } /* amber-600 */
+[data-theme="light"] .pacing-pill-fast { color: #15803d !important; } /* green-700 */
 
 .book-action-btn {
   background: rgba(163, 230, 53, 0.15);

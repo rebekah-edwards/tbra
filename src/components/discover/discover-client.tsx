@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { NoCover } from "@/components/no-cover";
+import { InfoBubble } from "@/components/home/info-bubble";
 import { DISCOVER_MOODS } from "@/lib/mood-genre-map";
 
 interface DiscoverResult {
@@ -61,7 +62,6 @@ export function DiscoverClient() {
   const [libraryFilter, setLibraryFilter] = useState<string | null>(null);
   const [seriesStarters, setSeriesStarters] = useState(false);
   const [ignorePreferences, setIgnorePreferences] = useState(false);
-  const [showInfo, setShowInfo] = useState(false);
   const [results, setResults] = useState<DiscoverResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -118,25 +118,15 @@ export function DiscoverClient() {
           <h1 className="text-foreground text-2xl font-bold tracking-tight">
             Find Your Next Read
           </h1>
-          <button
-            type="button"
-            onClick={() => setShowInfo(!showInfo)}
-            className="flex items-center justify-center w-5 h-5 rounded-full border border-border text-muted hover:text-foreground hover:border-foreground/30 transition-colors flex-shrink-0"
-            title="How does this work?"
-          >
-            <span className="text-[10px] font-bold">?</span>
-          </button>
+          <InfoBubble>
+            <p className="font-medium text-foreground mb-1">How Discover works</p>
+            <p>Select one or more moods to describe what you&apos;re looking for. We&apos;ll match books based on genre overlap, content tone, and your reading preferences. Length filters nudge results toward your preferred page count.</p>
+            <p className="mt-1.5">Results are personalized &mdash; books that exceed your content comfort zone or belong to genres you&apos;ve marked as &ldquo;avoid&rdquo; are filtered out. Use the &ldquo;Ignore my preferences&rdquo; toggle to override this.</p>
+          </InfoBubble>
         </div>
         <p className="mt-2 text-muted text-sm">
           Select moods, set your filters, and we&apos;ll find books to match.
         </p>
-        {showInfo && (
-          <div className="mt-3 rounded-2xl border border-border bg-surface p-4 text-xs text-muted leading-relaxed">
-            <p className="font-medium text-foreground mb-1">How Dig works</p>
-            <p>Select one or more moods to describe what you&apos;re looking for. We&apos;ll match books in our library based on genre overlap, content tone, and your reading preferences.</p>
-            <p className="mt-1.5">Results are personalized — books that exceed your content comfort zone or belong to genres you&apos;ve marked as &ldquo;avoid&rdquo; are filtered out. Use the &ldquo;Ignore my preferences&rdquo; toggle below to override this.</p>
-          </div>
-        )}
       </div>
 
       {/* ─── Mood Selection — Card Grid with ambient glow ─── */}

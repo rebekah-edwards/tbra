@@ -10,8 +10,10 @@ import {
   userBookRatings,
   bookCategoryRatings,
   taxonomyCategories,
+  books,
+  users,
 } from "@/db/schema";
-import { eq, and, count } from "drizzle-orm";
+import { eq, and, count, like } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { CW_TO_TAXONOMY } from "@/lib/review-constants";
 
@@ -172,6 +174,9 @@ export async function saveReview(payload: ReviewPayload) {
   const cwTags = dimensionTags["content_details"] ?? [];
   await aggregateContentWarnings(bookId, cwTags);
 
+  // Process pacing → book-level pacing aggregation
+  await aggregatePacing(bookId);
+
   revalidatePath(`/book/${bookId}`);
 }
 
@@ -199,6 +204,9 @@ export async function deleteReview(bookId: string) {
 
   // Re-aggregate content warnings without this review
   await aggregateContentWarnings(bookId, []);
+
+  // Re-aggregate pacing without this review
+  await aggregatePacing(bookId);
 
   revalidatePath(`/book/${bookId}`);
 }
@@ -278,4 +286,50 @@ async function aggregateContentWarnings(bookId: string, _cwTags: string[]) {
       });
     }
   }
+}
+
+async function aggregatePacing(bookId: string) {
+  // Fetch all pacing tags for this book, with the reviewer's account type
+  const rows = await db
+    .select({
+      tag: reviewDescriptorTags.tag,
+      accountType: users.accountType,
+    })
+    .from(reviewDescriptorTags)
+    .innerJoin(userBookReviews, eq(reviewDescriptorTags.reviewId, userBookReviews.id))
+    .innerJoin(users, eq(userBookReviews.userId, users.id))
+    .where(
+      and(
+        eq(userBookReviews.bookId, bookId),
+        eq(reviewDescriptorTags.dimension, "plot"),
+        like(reviewDescriptorTags.tag, "pacing:%")
+      )
+    )
+    .all();
+
+  let pacing: string | null = null;
+
+  // Super admin pacing is authoritative
+  for (const row of rows) {
+    if (row.accountType === "super_admin") {
+      pacing = row.tag.slice(7); // strip "pacing:" prefix
+      break;
+    }
+  }
+
+  // Otherwise, need 3+ reviews with pacing for community consensus
+  if (!pacing && rows.length >= 3) {
+    const counts: Record<string, number> = { slow: 0, medium: 0, fast: 0 };
+    for (const row of rows) {
+      const val = row.tag.slice(7);
+      if (val in counts) counts[val]++;
+    }
+    // Majority wins
+    pacing = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+  }
+
+  await db
+    .update(books)
+    .set({ pacing, updatedAt: new Date().toISOString() })
+    .where(eq(books.id, bookId));
 }

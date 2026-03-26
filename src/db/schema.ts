@@ -28,6 +28,7 @@ export const books = sqliteTable("books", {
   seriesCoverUrl: text("series_cover_url"), // admin override for series views
   needsReview: integer("needs_review", { mode: "boolean" }).notNull().default(false),
   reviewReason: text("review_reason"),
+  pacing: text("pacing"), // 'slow' | 'medium' | 'fast' — aggregated from user reviews
   visibility: text("visibility").notNull().default("public"), // 'public' | 'import_only'
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),

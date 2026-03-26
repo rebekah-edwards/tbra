@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { logout } from "@/lib/actions/auth";
 
 interface HamburgerMenuProps {
@@ -95,8 +96,6 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
     return () => document.removeEventListener("keydown", handleKey);
   }, [isOpen]);
 
-  if (!isLoggedIn) return null;
-
   return (
     <div ref={menuRef} className="relative">
       <button
@@ -106,8 +105,9 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
         aria-label="Menu"
         aria-expanded={isOpen}
       >
-        {/* Mobile: hamburger / close icon */}
-        <span className="lg:hidden">
+        {/* Mobile: hamburger / close icon (always shown) */}
+        {/* Desktop logged-out: also show hamburger */}
+        <span className={isLoggedIn ? "lg:hidden" : ""}>
           {isOpen ? (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -121,17 +121,19 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
             </svg>
           )}
         </span>
-        {/* Desktop: avatar */}
-        <span className="hidden lg:flex w-8 h-8 rounded-full overflow-hidden border-2 border-transparent hover:border-[#a3e635]/50 transition-colors">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="Menu" className="w-full h-full object-cover" />
-          ) : (
-            <span className="w-full h-full flex items-center justify-center text-xs font-bold text-black" style={{ backgroundColor: "#a3e635" }}>
-              {displayName ? displayName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?"}
-            </span>
-          )}
-        </span>
+        {/* Desktop logged-in: avatar */}
+        {isLoggedIn && (
+          <span className="hidden lg:flex w-8 h-8 rounded-full overflow-hidden border-2 border-transparent hover:border-[#a3e635]/50 transition-colors">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt="Menu" className="w-full h-full object-cover" />
+            ) : (
+              <span className="w-full h-full flex items-center justify-center text-xs font-bold text-black" style={{ backgroundColor: "#a3e635" }}>
+                {displayName ? displayName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?"}
+              </span>
+            )}
+          </span>
+        )}
       </button>
 
       {isOpen && (
@@ -141,6 +143,55 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
           {/* Menu dropdown */}
           <div className="absolute right-0 top-full mt-2 z-50 w-56 rounded-xl border border-border bg-surface shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
             <div className="py-1">
+              {!isLoggedIn ? (
+                <>
+                  <Link
+                    href="/login"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-alt transition-colors"
+                  >
+                    <span className="text-muted">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                        <polyline points="10 17 15 12 10 7" />
+                        <line x1="15" y1="12" x2="3" y2="12" />
+                      </svg>
+                    </span>
+                    Sign In
+                  </Link>
+                  <div className="border-t border-border my-1" />
+                  <Link
+                    href="/methodology"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-alt transition-colors"
+                  >
+                    <span className="text-muted">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                      </svg>
+                    </span>
+                    Our Methodology
+                  </Link>
+                  <Link
+                    href="/discover"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-alt transition-colors"
+                  >
+                    <span className="text-muted">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      </svg>
+                    </span>
+                    Discover Books
+                  </Link>
+                  <div className="border-t border-border my-1" />
+                  <div className="flex items-center justify-between px-4 py-2.5">
+                    <span className="text-sm text-foreground">Theme</span>
+                    <ThemeToggle />
+                  </div>
+                </>
+              ) : (
+              <>
               <Link
                 href="/profile"
                 className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-alt transition-colors"
@@ -248,6 +299,11 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
                 </>
               )}
               <div className="border-t border-border my-1" />
+              <div className="flex items-center justify-between px-4 py-2.5">
+                <span className="text-sm text-foreground">Theme</span>
+                <ThemeToggle />
+              </div>
+              <div className="border-t border-border my-1" />
               <form action={logout}>
                 <button
                   type="submit"
@@ -257,6 +313,8 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
                   Sign Out
                 </button>
               </form>
+              </>
+              )}
             </div>
           </div>
         </>

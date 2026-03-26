@@ -4,7 +4,7 @@ import { Outfit } from "next/font/google";
 import { Space_Grotesk } from "next/font/google";
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
+// ThemeToggle moved into hamburger menu
 import { getCurrentUser, isAdmin, isSuperAdmin } from "@/lib/auth";
 import { SearchBar } from "@/components/nav/search-bar";
 import { BottomTabs } from "@/components/nav/bottom-tabs";
@@ -77,16 +77,31 @@ export default async function RootLayout({
               <DesktopNav isLoggedIn={!!session} avatarUrl={avatarUrl} displayName={displayName} />
 
               <div className="flex items-center gap-2">
-                <SearchBar isLoggedIn={!!session} />
-                <ThemeToggle />
-                <HamburgerMenu isLoggedIn={!!session} isAdmin={userIsAdmin} isSuperAdmin={userIsSuperAdmin} avatarUrl={avatarUrl} displayName={displayName} />
                 {!session && (
                   <Link
-                    href="/login"
-                    className="text-sm text-muted hover:text-foreground transition-colors"
+                    href="/signup"
+                    className="lg:hidden rounded-full bg-accent px-3 py-1 text-xs font-semibold text-black hover:brightness-110 transition-all"
                   >
-                    Sign in
+                    Sign Up
                   </Link>
+                )}
+                <SearchBar isLoggedIn={!!session} />
+                <HamburgerMenu isLoggedIn={!!session} isAdmin={userIsAdmin} isSuperAdmin={userIsSuperAdmin} avatarUrl={avatarUrl} displayName={displayName} />
+                {!session && (
+                  <div className="hidden lg:flex items-center gap-3">
+                    <Link
+                      href="/login"
+                      className="text-sm text-muted hover:text-foreground transition-colors"
+                    >
+                      Sign in
+                    </Link>
+                    <Link
+                      href="/signup"
+                      className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-black hover:brightness-110 transition-all"
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>

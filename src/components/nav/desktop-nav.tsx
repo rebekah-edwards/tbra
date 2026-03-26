@@ -9,11 +9,17 @@ interface DesktopNavProps {
   displayName?: string | null;
 }
 
-const tabs = [
+const TABS_LOGGED_IN = [
   { label: "Home", href: "/" },
   { label: "Discover", href: "/discover" },
   { label: "Bookshelf", href: "/library" },
   { label: "Stats", href: "/stats" },
+];
+
+const TABS_LOGGED_OUT = [
+  { label: "Home", href: "/" },
+  { label: "Discover", href: "/discover" },
+  { label: "Our Methodology", href: "/methodology" },
 ];
 
 function getInitials(name: string | null | undefined): string {
@@ -38,9 +44,9 @@ export function DesktopNav({ isLoggedIn, avatarUrl, displayName }: DesktopNavPro
     <div className="hidden lg:flex items-center gap-6 flex-1 ml-8">
       {/* Nav links — left justified after logo */}
       <div className="flex items-center gap-1">
-        {tabs.map((tab) => {
+        {(isLoggedIn ? TABS_LOGGED_IN : TABS_LOGGED_OUT).map((tab) => {
           const active = isActive(tab.href);
-          const href = !isLoggedIn && tab.href !== "/" && tab.href !== "/discover" ? "/login" : tab.href;
+          const href = tab.href;
 
           return (
             <Link

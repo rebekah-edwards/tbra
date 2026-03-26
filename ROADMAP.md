@@ -13,7 +13,7 @@
 ## Tier 2: Polished Beta Experience
 
 8. **System mode toggle** — Add "system" option to light/dark mode toggle
-9. **Rename Dig → Discover** — Update page name, H1 to "Find Your Next Read", refine discovery logic
+9. ~~**Rename Dig → Discover**~~ ✅ — Page renamed, H1 is "Find Your Next Read", info tooltip updated
 10. **Search bar visual redesign** — New expansion behavior (details TBD)
 11. **SEO for book pages** — Meta tags, Open Graph, structured data for book pages; extend to other pages
 12. **Desktop/web layout** — Responsive layouts for non-mobile screens
@@ -29,6 +29,7 @@
 19. Google Play packaging (needs Google Play Console)
 20. Mobile animations refinement
 21. Buddy reads (much later phase)
+22. **Pacing-based recommendations** — Once enough user reviews include pacing data (slow/medium/fast), aggregate review pacing tags into a book-level pacing score, then add a pacing filter to Discover and wire pacing into the recommendation scoring logic (scaffold #6 in recommendations.ts). Requires: aggregation query, book-level pacing field or materialized view, Discover UI filter, scoring integration.
 
 ## Completed
 
@@ -51,3 +52,6 @@
 - Summary truncation to 190 chars
 - Content rating deduplication
 - Enrichment: Phase 0 OL search by title, Brave metadata fallback, author/series discovery with Brave+GBooks fallback
+- Rename Dig → Discover (page name, H1, info tooltip)
+- Home page info bubbles on "Because You Liked" and "Discover Something New" sections
+- Friends Activity horizontal scroll on mobile (unified layout with desktop)

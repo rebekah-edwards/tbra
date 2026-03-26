@@ -52,9 +52,9 @@ export function BookSeries({ seriesId, seriesSlug, name, books, currentBookId }:
   if (displayBooks.length === 0) return null;
 
   return (
-    <section className="mt-8">
+    <section className="mt-8 overflow-hidden">
       <h2 className="section-heading text-xl">More In This Series</h2>
-      <div ref={scrollRef} className="mt-4 flex gap-4 overflow-x-auto px-1 py-1 pb-2 pr-12 no-scrollbar mask-fade-right">
+      <div ref={scrollRef} className="mt-4 flex gap-3 lg:gap-2 overflow-x-auto px-1 py-1 pb-2 pr-12 no-scrollbar mask-fade-right">
         {displayBooks.map((book) => {
           const isCurrent = book.id === currentBookId;
           return (
@@ -99,7 +99,7 @@ export function BookSeries({ seriesId, seriesSlug, name, books, currentBookId }:
 
       <Link
         href={seriesSlug ? `/series/${seriesSlug}` : `/search?series=${encodeURIComponent(seriesId)}`}
-        className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-neon-purple text-white py-3 px-5 text-sm font-semibold shadow-[0_0_16px_rgba(192,132,252,0.3)] hover:brightness-110 transition-all"
+        className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-neon-purple text-white py-3 px-5 text-sm font-semibold shadow-[0_0_16px_rgba(192,132,252,0.3)] hover:brightness-110 transition-all max-w-full"
       >
         View all books in this series
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

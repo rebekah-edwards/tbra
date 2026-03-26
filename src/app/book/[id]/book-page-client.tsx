@@ -41,6 +41,7 @@ interface BookPageClientProps {
     summary?: string | null;
     isbn13?: string | null;
     asin?: string | null;
+    pacing?: string | null;
   };
   userState: {
     state: string | null;
@@ -243,6 +244,7 @@ export function BookPageClient({
             isManuallyAdded={!book.openLibraryKey && !book.description && book.genres.length === 0}
             topLevelGenre={book.topLevelGenre}
             ageCategory={book.ageCategory}
+            pacing={book.pacing}
             onCoverEditClick={isAdmin ? async () => {
               setEditingCover(true);
               setEditionCovers([]);

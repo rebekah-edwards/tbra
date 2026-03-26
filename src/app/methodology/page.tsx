@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 export const revalidate = 3600;
-import Link from "next/link";
+
 
 export const metadata: Metadata = {
   title: "How We Rate Books | The Based Reader App",
@@ -73,15 +73,6 @@ const CATEGORIES = [
 export default function MethodologyPage() {
   return (
     <div className="pb-12">
-      <div className="mb-6">
-        <Link
-          href="/"
-          className="text-sm text-link hover:text-link/80"
-        >
-          &larr; Home
-        </Link>
-      </div>
-
       <h1 className="text-foreground text-2xl font-bold sm:text-3xl">How We Rate Books</h1>
       <p className="mt-4 text-base leading-relaxed text-foreground/80">
         tbr*a provides detailed, structured content information for books — not
@@ -144,29 +135,6 @@ export default function MethodologyPage() {
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="mt-10">
-        <h2 className="section-heading text-xl">What We Track</h2>
-        <p className="mt-2 text-sm text-foreground/80">
-          Every book is evaluated across 12 content categories.
-        </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {CATEGORIES.map((cat) => (
-            <div
-              key={cat.name}
-              className="rounded-lg border border-border bg-surface p-4"
-            >
-              <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-body), system-ui, sans-serif" }}>
-                {cat.name}
-              </h3>
-              <p className="mt-1 text-xs leading-relaxed text-muted">
-                {cat.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* Evidence Levels */}
       <section className="mt-10">
         <h2 className="section-heading text-xl">Evidence Levels</h2>
@@ -201,6 +169,29 @@ export default function MethodologyPage() {
         </div>
       </section>
 
+      {/* Categories */}
+      <section className="mt-10">
+        <h2 className="section-heading text-xl">What We Track</h2>
+        <p className="mt-2 text-sm text-foreground/80">
+          Every book is evaluated across 12 content categories.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {CATEGORIES.map((cat) => (
+            <div
+              key={cat.name}
+              className="rounded-lg border border-border bg-surface p-4"
+            >
+              <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-body), system-ui, sans-serif" }}>
+                {cat.name}
+              </h3>
+              <p className="mt-1 text-xs leading-relaxed text-muted">
+                {cat.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Spoiler Policy */}
       <section className="mt-10">
         <h2 className="section-heading text-xl">Spoiler Policy</h2>
@@ -221,7 +212,7 @@ export default function MethodologyPage() {
         </p>
         <p className="mt-1 text-xs text-muted">
           We&apos;re actively refining how we classify content. Reach out at{" "}
-          <span className="font-medium text-foreground">hello@tbra.app</span>
+          <span className="font-medium text-foreground">hello@thebasedreader.app</span>
         </p>
       </section>
     </div>

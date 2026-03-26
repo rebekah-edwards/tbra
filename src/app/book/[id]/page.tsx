@@ -186,6 +186,7 @@ export default async function BookPage({
           summary: book.summary ?? null,
           isbn13: book.isbn13 ?? null,
           asin: book.asin ?? null,
+          pacing: book.pacing ?? null,
         }}
         userState={{
           state: userState?.state ?? null,
@@ -269,9 +270,9 @@ export default async function BookPage({
         const hasSeries = book.seriesInfo && book.seriesInfo.books.length > 1;
         const hasReviews = reviewSummary && reviewSummary.totalReviewCount > 0;
         return (
-      <div className={hasSeries ? "lg:grid lg:grid-cols-[1.2fr_1fr_1fr] lg:gap-6 lg:mt-4" : "lg:grid lg:grid-cols-[3fr_2fr] lg:gap-8 lg:max-w-4xl lg:mx-auto lg:mt-4"}>
+      <div className={hasSeries ? "lg:grid lg:grid-cols-[1fr_0.85fr_1fr] lg:gap-6 lg:mt-4 lg:overflow-hidden" : "lg:grid lg:grid-cols-[3fr_2fr] lg:gap-8 lg:max-w-4xl lg:mx-auto lg:mt-4"}>
         {/* Left column: About + Details */}
-        <div className="lg:min-h-0">
+        <div className="lg:min-h-0 lg:min-w-0">
           <BookAboutDetails
             description={book.description}
             publicationDate={book.publicationDate ?? null}
@@ -315,7 +316,7 @@ export default async function BookPage({
         </div>
 
         {/* Middle column: What Readers Think (always shown on desktop) + content warning */}
-        <div className="lg:min-h-0">
+        <div className="lg:min-h-0 lg:min-w-0">
           {hasReviews ? (
             <ReviewSummary data={reviewSummary} bookId={bookId} bookSlug={resolved.book.slug} />
           ) : (
@@ -340,7 +341,7 @@ export default async function BookPage({
 
         {/* Right column: Series (only if series exists) */}
         {hasSeries && (
-          <div className="lg:min-h-0">
+          <div className="lg:min-h-0 lg:min-w-0 lg:overflow-hidden">
             <BookSeries
               seriesId={book.seriesInfo!.id}
               seriesSlug={book.seriesInfo!.slug}

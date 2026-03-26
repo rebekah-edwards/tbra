@@ -69,6 +69,7 @@ Local SQLite (`data/tbra.db`) and production Turso (`tbra-web-app`) can diverge.
 ## Watch Out For
 - **NEVER rewrite, reset, or bulk-modify the production database without explicit instruction from the user.** The book database (62MB, thousands of curated entries) has been cleaned, deduplicated, and enriched over many iterations. Schema migrations are fine; mass data operations are not.
 - **ALWAYS take a screenshot to verify visual changes before telling the user it's done.** Never confirm a UI change is complete without visually confirming it yourself via screenshot. Zoom in on the affected area if the change is subtle.
+- **ALWAYS verify CSS changes are actually applied** by checking the computed styles via JavaScript (`getComputedStyle` or inspecting `className` on the element). The Next.js dev server (Turbopack) frequently serves stale cached code — a hard refresh alone is NOT sufficient. If the computed styles don't match your code changes, kill the server (`lsof -ti:3000 | xargs kill -9`), delete `.next` (`rm -rf .next`), and restart (`npm run dev`). Do this BEFORE telling the user the change is live.
 - Database is SQLite — no concurrent writes. Scripts that modify DB should not run in parallel.
 - `globals.css` has many carefully tuned opacity values — never use `replace_all` on opacity
 - Hero card light mode vibrancy settings are hand-tuned — do not change without verifying visually

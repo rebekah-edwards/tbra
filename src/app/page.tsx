@@ -4,9 +4,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  robots: { index: false },
+  title: "tbr*a — Know what's in a book before you read it",
+  description: "Detailed content ratings, smart recommendations, and reading tools for readers who care about what they read.",
 };
 import { getCurrentUser } from "@/lib/auth";
+import { db } from "@/db";
+import { books, bookCategoryRatings, taxonomyCategories } from "@/db/schema";
+import { eq, isNotNull, and, sql, inArray } from "drizzle-orm";
+import { LandingPage } from "@/components/landing/landing-page";
 import { getUserBooks } from "@/lib/queries/reading-state";
 import { getUserUpNext } from "@/lib/queries/up-next";
 import { getSmartDiscoveryBooks, getBecauseYouLikedSuggestions } from "@/lib/queries/recommendations";
@@ -21,6 +26,7 @@ import { UpNextShelf } from "@/components/home/up-next-shelf";
 import { CurrentlyReadingSection } from "@/components/home/currently-reading-section";
 import { BecauseYouLiked } from "@/components/home/because-you-liked";
 import { FriendsActivity } from "@/components/home/friends-activity";
+import { InfoBubble } from "@/components/home/info-bubble";
 import { getFollowedUsersActivity } from "@/lib/queries/activity-feed";
 import { getFollowedUserIds } from "@/lib/queries/follows";
 import { getBulkAggregateRatings } from "@/lib/queries/rating";
@@ -56,17 +62,79 @@ export default async function Home() {
   const user = await getCurrentUser();
 
   if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <h1 className="text-foreground text-4xl font-bold tracking-tight">
-          Welcome to tbr*a
-        </h1>
-        <p className="mt-4 max-w-md text-lg text-muted">
-          Detailed, structured content information for books. Know what&apos;s in
-          a book before you read it.
-        </p>
-      </div>
-    );
+    // ── Landing Page Configuration ──
+    // Featured book for "What's Inside" showcase
+    const FEATURED_BOOK_SLUG = "angels-and-demons-dan-brown";
+
+    // Approved books for hero background and book parade.
+    // These are hand-picked for attractive, recognizable covers.
+    // Add or remove slugs to curate what appears on the landing page.
+    const LANDING_BOOK_SLUGS = [
+      "the-will-of-the-many-james-islington",
+      "the-way-of-kings-brandon-sanderson",
+      "the-final-empire-brandon-sanderson",
+      "red-rising-pierce-brown",
+      "wool-hugh-howey",
+      "the-hitchhikers-guide-to-the-galaxy-douglas-adams",
+      "looking-for-alaska-john-green",
+      "mere-christianity-c-s-lewis",
+      "the-great-divorce-c-s-lewis",
+      "the-black-prism-brent-weeks",
+      "wild-at-heart-john-eldredge",
+      "captivating-john-eldredge",
+      "an-abundance-of-katherines-john-green",
+      "irresistible-andy-stanley",
+      "franny-and-zooey-jd-salinger",
+      "the-cost-of-discipleship-dietrich-bonhoeffer",
+      "the-negotiator-dee-henderson",
+      "loveology-john-mark-comer",
+      "god-has-a-name-john-mark-comer",
+      "garden-city-john-mark-comer",
+      "surprised-by-joy-c-s-lewis",
+      "saga-volume-one-brian-k-vaughan",
+      "players-handbook-richard-baker",
+      "reappearing-church-mark-sayers",
+    ];
+
+    const [coverBooksRaw, featuredBookRow, totalCount] = await Promise.all([
+      db
+        .select({ id: books.id, title: books.title, coverImageUrl: books.coverImageUrl, slug: books.slug })
+        .from(books)
+        .where(and(inArray(books.slug, LANDING_BOOK_SLUGS), isNotNull(books.coverImageUrl)))
+        .orderBy(sql`RANDOM()`),
+      db.query.books.findFirst({ where: eq(books.slug, FEATURED_BOOK_SLUG) }),
+      db.select({ count: sql<number>`COUNT(*)` }).from(books).where(eq(books.visibility, "public")),
+    ]);
+
+    // Fetch content ratings for featured book
+    let featuredBook = null;
+    if (featuredBookRow?.id && featuredBookRow.coverImageUrl) {
+      const ratings = await db
+        .select({
+          categoryKey: taxonomyCategories.key,
+          categoryName: taxonomyCategories.name,
+          intensity: bookCategoryRatings.intensity,
+        })
+        .from(bookCategoryRatings)
+        .innerJoin(taxonomyCategories, eq(bookCategoryRatings.categoryId, taxonomyCategories.id))
+        .where(eq(bookCategoryRatings.bookId, featuredBookRow.id))
+        .all();
+
+      featuredBook = {
+        title: featuredBookRow.title,
+        slug: featuredBookRow.slug || featuredBookRow.id,
+        coverImageUrl: featuredBookRow.coverImageUrl,
+        ratings,
+      };
+    }
+
+    const coverBooks = coverBooksRaw
+      .filter((b): b is typeof b & { coverImageUrl: string } => !!b.coverImageUrl)
+      .map(b => ({ id: b.id, title: b.title, coverImageUrl: b.coverImageUrl, slug: b.slug }));
+
+    const bookCount = Math.floor(((totalCount[0]?.count ?? 12000) as number) / 1000) * 1000;
+
+    return <LandingPage featuredBook={featuredBook} coverBooks={coverBooks} bookCount={bookCount} />;
   }
 
   const currentYear = new Date().getFullYear();
@@ -152,7 +220,12 @@ export default async function Home() {
 
       {discoveryBooks.length > 0 && (
         <section>
-          <SectionHeading>Discover Something New</SectionHeading>
+          <div className="flex items-center gap-2 mb-4 lg:mb-3">
+            <h2 className="section-heading text-xl lg:text-lg">Discover Something New</h2>
+            <InfoBubble>
+              Personalized picks based on your reading history &mdash; genres you love, fiction vs. nonfiction balance, and content comfort level. Only shows books not already on your shelves. Refreshes each visit.
+            </InfoBubble>
+          </div>
           <HorizontalScroll books={discoveryBooks} />
         </section>
       )}

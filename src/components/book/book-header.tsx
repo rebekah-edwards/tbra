@@ -13,8 +13,15 @@ interface BookHeaderProps {
   isManuallyAdded?: boolean;
   topLevelGenre?: string | null;
   ageCategory?: string | null;
+  pacing?: string | null;
   onCoverEditClick?: () => void;
 }
+
+const PACING_CONFIG: Record<string, { label: string; style: string }> = {
+  slow: { label: "Slow-paced", style: "border-red-500/30 bg-red-500/10 text-red-400 pacing-pill-slow" },
+  medium: { label: "Medium-paced", style: "border-amber-500/30 bg-amber-500/10 text-amber-400 pacing-pill-medium" },
+  fast: { label: "Fast-paced", style: "border-accent/30 bg-accent/10 text-accent pacing-pill-fast" },
+};
 
 export function BookHeader({
   title,
@@ -28,6 +35,7 @@ export function BookHeader({
   isManuallyAdded,
   topLevelGenre,
   ageCategory,
+  pacing,
   onCoverEditClick,
 }: BookHeaderProps) {
   const formatMeta = showAudioLength
@@ -165,7 +173,7 @@ export function BookHeader({
               )}
             </div>
 
-            {(genres.length > 0 || isManuallyAdded) && (
+            {(genres.length > 0 || isManuallyAdded || pacing) && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {genres.map((genre) => (
                   <span
@@ -175,6 +183,15 @@ export function BookHeader({
                     {genre}
                   </span>
                 ))}
+                {pacing && PACING_CONFIG[pacing] && (
+                  <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium inline-flex items-center gap-1 ${PACING_CONFIG[pacing].style}`}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    {PACING_CONFIG[pacing].label}
+                  </span>
+                )}
                 {isManuallyAdded && (
                   <span className="rounded-full bg-amber-500/80 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-sm">
                     Manually Added

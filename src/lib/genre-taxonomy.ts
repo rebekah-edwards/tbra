@@ -371,6 +371,6 @@ export function classifyGenres(
   return {
     primaryGenre,
     ageCategory,
-    displayGenres: secondaryGenres.slice(0, 6),
+    displayGenres: secondaryGenres.slice(0, 5),
   };
 }
