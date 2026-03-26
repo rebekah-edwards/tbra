@@ -309,9 +309,9 @@ async function aggregatePacing(bookId: string) {
 
   let pacing: string | null = null;
 
-  // Super admin pacing is authoritative
+  // Super admin and beta tester pacing is authoritative
   for (const row of rows) {
-    if (row.accountType === "super_admin") {
+    if (row.accountType === "super_admin" || row.accountType === "beta_tester") {
       pacing = row.tag.slice(7); // strip "pacing:" prefix
       break;
     }

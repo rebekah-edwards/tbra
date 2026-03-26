@@ -12,7 +12,7 @@ import {
   clearSessionCookie,
   getCurrentUser,
 } from "@/lib/auth";
-import { sendVerificationEmail, sendPasswordResetEmail } from "@/lib/email";
+import { sendVerificationEmail, sendPasswordResetEmail, sendSignupNotificationEmail } from "@/lib/email";
 
 interface AuthState {
   error?: string;
@@ -78,6 +78,11 @@ export async function signup(
   if (!emailResult.success) {
     console.error(`[auth] Failed to send verification email to ${email}:`, emailResult.error);
   }
+
+  // Send signup notification (non-blocking — don't fail signup if notification fails)
+  sendSignupNotificationEmail(email.toLowerCase()).catch((err) => {
+    console.error(`[auth] Failed to send signup notification for ${email}:`, err);
+  });
 
   // Create session with verified=false so middleware gates access
   const token = await createSession(userId, email.toLowerCase(), false);

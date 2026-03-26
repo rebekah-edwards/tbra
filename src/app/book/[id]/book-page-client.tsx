@@ -14,6 +14,7 @@ import { setBookCover, uploadBookCover } from "@/lib/actions/books";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ContentWarningBanner } from "@/components/book/content-warning-banner";
 import { BookSummary } from "@/components/book/book-summary";
+import { ReportIssueButton } from "@/components/book/report-issue-button";
 import type { UserReview } from "@/lib/queries/review";
 
 export type EditionSelection = {
@@ -335,6 +336,11 @@ export function BookPageClient({
             {contentConflicts.length > 0 && (
               <ContentWarningBanner conflicts={contentConflicts} />
             )}
+            {canReport && (
+              <div className="pt-2">
+                <ReportIssueButton bookId={book.id} bookTitle={book.title} />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -360,6 +366,12 @@ export function BookPageClient({
           onEditionSelectionsChange={setEditionSelections}
         />
       </div>
+
+      {canReport && (
+        <div className="mt-3 flex justify-center lg:hidden">
+          <ReportIssueButton bookId={book.id} bookTitle={book.title} />
+        </div>
+      )}
 
       {lastReadFormat && lastReadDate && (currentState === "completed" || currentState === "dnf" || currentState === "to_read" || !currentState) && (
         <p className="mt-1 text-center text-xs text-muted">

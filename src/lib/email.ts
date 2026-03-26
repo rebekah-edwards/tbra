@@ -117,6 +117,48 @@ export async function sendPasswordResetEmail(
 }
 
 const ADMIN_EMAIL = "rebekah@thebasedreader.app";
+const NOTIFICATION_EMAIL = "hello@thebasedreader.app";
+
+/**
+ * Send a notification when a new user signs up.
+ */
+export async function sendSignupNotificationEmail(
+  email: string,
+  displayName?: string
+): Promise<{ success: boolean; error?: string }> {
+  const label = displayName ? `${email} (${displayName})` : email;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_ADDRESS,
+      to: NOTIFICATION_EMAIL,
+      subject: `[tbr*a] New signup: ${email}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+          <h1 style="font-size: 20px; font-weight: 700; color: #111; margin-bottom: 8px;">
+            New signup
+          </h1>
+          <p style="font-size: 16px; color: #444; line-height: 1.5;">
+            ${label}
+          </p>
+        </div>
+      `,
+    });
+
+    if (error) {
+      console.error("[email] Failed to send signup notification:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error("[email] Send error:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to send email",
+    };
+  }
+}
 
 /**
  * Notify admin when book enrichment fails.
