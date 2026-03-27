@@ -13,6 +13,7 @@ import {
   userBookState,
   bookGenres,
   genres,
+  readingSessions,
 } from "@/db/schema";
 import { eq, and, sql, isNull } from "drizzle-orm";
 
@@ -162,6 +163,63 @@ export async function batchFetchTopLevelGenres(
   for (const row of rows) {
     if (!map.has(row.bookId)) {
       map.set(row.bookId, row.name);
+    }
+  }
+  return map;
+}
+
+/** Batch fetch ALL genres for multiple books → Map<bookId, genreNames[]> */
+export async function batchFetchBookGenres(
+  bookIds: string[]
+): Promise<Map<string, string[]>> {
+  if (bookIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({ bookId: bookGenres.bookId, name: genres.name })
+    .from(bookGenres)
+    .innerJoin(genres, eq(bookGenres.genreId, genres.id))
+    .where(sql`${bookGenres.bookId} IN (${inList(bookIds)})`)
+    .all();
+
+  const map = new Map<string, string[]>();
+  for (const row of rows) {
+    const existing = map.get(row.bookId) ?? [];
+    existing.push(row.name);
+    map.set(row.bookId, existing);
+  }
+  return map;
+}
+
+/** Batch fetch latest completion year for multiple books → Map<bookId, year> */
+export async function batchFetchCompletionYears(
+  userId: string,
+  bookIds: string[]
+): Promise<Map<string, number>> {
+  if (bookIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      bookId: readingSessions.bookId,
+      completionDate: readingSessions.completionDate,
+    })
+    .from(readingSessions)
+    .where(
+      and(
+        eq(readingSessions.userId, userId),
+        sql`${readingSessions.bookId} IN (${inList(bookIds)})`,
+        eq(readingSessions.state, "completed"),
+        sql`${readingSessions.completionDate} IS NOT NULL`
+      )
+    )
+    .orderBy(sql`${readingSessions.completionDate} DESC`)
+    .all();
+
+  // Take the latest completion date per book
+  const map = new Map<string, number>();
+  for (const row of rows) {
+    if (!map.has(row.bookId) && row.completionDate) {
+      const year = parseInt(row.completionDate.substring(0, 4), 10);
+      if (!isNaN(year)) map.set(row.bookId, year);
     }
   }
   return map;

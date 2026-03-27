@@ -6,6 +6,8 @@ import {
   batchFetchBookAuthors,
   batchFetchUserRatings,
   batchFetchEditionCovers,
+  batchFetchBookGenres,
+  batchFetchCompletionYears,
 } from "@/lib/queries/batch-helpers";
 
 export interface UserBookState {
@@ -51,6 +53,8 @@ export interface UserBookWithDetails {
   isFiction: boolean | null;
   userRating: number | null;
   updatedAt: string | null;
+  genres: string[];
+  completionYear: number | null;
 }
 
 export async function getUserBooks(
@@ -100,12 +104,14 @@ export async function getUserBooks(
   const rows = await query.all();
   if (rows.length === 0) return [];
 
-  // Batch fetch all related data in 3 queries instead of 4×N
+  // Batch fetch all related data in 5 queries instead of N×per-book
   const bookIds = rows.map((r) => r.bookId);
-  const [authorsMap, ratingsMap, editionsMap] = await Promise.all([
+  const [authorsMap, ratingsMap, editionsMap, genresMap, completionYearsMap] = await Promise.all([
     batchFetchBookAuthors(bookIds),
     batchFetchUserRatings(userId, bookIds),
     batchFetchEditionCovers(userId, bookIds),
+    batchFetchBookGenres(bookIds),
+    batchFetchCompletionYears(userId, bookIds),
   ]);
 
   return rows.map((row) => {
@@ -134,6 +140,8 @@ export async function getUserBooks(
       isFiction: row.isFiction ?? null,
       userRating: ratingsMap.get(row.bookId) ?? null,
       updatedAt: row.updatedAt ?? null,
+      genres: genresMap.get(row.bookId) ?? [],
+      completionYear: completionYearsMap.get(row.bookId) ?? null,
     };
   });
 }

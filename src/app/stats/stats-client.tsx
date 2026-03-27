@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReadingGoalProgress } from "@/lib/queries/reading-goals";
 import type { ReadingStreak } from "@/lib/queries/reading-streak";
@@ -101,6 +102,10 @@ export function StatsClient({
           iconBg="bg-neon-purple/20"
           value={String(pageStats.bookCount)}
           label="Books"
+          href={typeof year === "number"
+            ? `/library?tab=activity&filter=completed&year=${year}`
+            : "/library?tab=activity&filter=completed"
+          }
         />
         <HeroCard
           icon="🔥"
@@ -325,14 +330,28 @@ export function StatsClient({
 
 /* ─── Sub-components ─── */
 
-function HeroCard({ icon, iconBg, value, label }: { icon: string; iconBg: string; value: string; label: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-4 text-center">
+function HeroCard({ icon, iconBg, value, label, href }: { icon: string; iconBg: string; value: string; label: string; href?: string }) {
+  const content = (
+    <>
       <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center mx-auto mb-2`}>
         <span className="text-lg">{icon}</span>
       </div>
       <p className="text-2xl font-bold font-heading">{value}</p>
       <p className="text-[10px] text-muted uppercase tracking-wider mt-0.5">{label}</p>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className="rounded-2xl border border-border bg-surface p-4 text-center hover:border-primary/30 transition-colors">
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4 text-center">
+      {content}
     </div>
   );
 }
