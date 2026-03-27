@@ -180,10 +180,25 @@ function TrackSheet({
 
 function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
   const [trackingBookId, setTrackingBookId] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ bookId: string; state: string; label: string } | null>(null);
   const [isPending, startTransition] = useTransition();
   const isAudiobook = book.activeFormats?.length === 1 && book.activeFormats[0] === "audiobook";
 
   function handleStateChange(bookId: string, newState: string) {
+    // Require confirmation for destructive actions
+    if (newState === "dnf" || newState === "paused") {
+      setConfirmAction({
+        bookId,
+        state: newState,
+        label: newState === "dnf" ? "Did Not Finish" : "Pause",
+      });
+      return;
+    }
+    executeStateChange(bookId, newState);
+  }
+
+  function executeStateChange(bookId: string, newState: string) {
+    setConfirmAction(null);
     startTransition(async () => {
       if (newState === "remove") {
         await removeBookState(bookId);
@@ -221,7 +236,7 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
             )}
             {/* Progress pill — frosted glass overlay on cover */}
             {book.progress != null && book.progress > 0 && (
-              <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums backdrop-blur-md bg-surface/70 border border-neon-purple/30 text-neon-purple shadow-[0_2px_12px_rgba(192,132,252,0.25)] whitespace-nowrap">
+              <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums backdrop-blur-md bg-surface/50 border border-neon-purple/30 text-neon-purple shadow-[0_2px_12px_rgba(192,132,252,0.25)] whitespace-nowrap">
                 {book.progress}%
               </span>
             )}
@@ -293,6 +308,28 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
         </div>
         {/* Progress indicator is now on the book cover */}
       </div>
+      {/* Confirmation prompt for DNF / Pause */}
+      {confirmAction && (
+        <div className="rounded-xl border border-border bg-surface p-3 mt-2 flex items-center justify-between gap-3">
+          <p className="text-sm text-foreground">
+            Mark <strong className="font-semibold">{book.title}</strong> as {confirmAction.label}?
+          </p>
+          <div className="flex gap-2 flex-shrink-0">
+            <button
+              onClick={() => setConfirmAction(null)}
+              className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted hover:text-foreground border border-border hover:bg-surface-alt transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => executeStateChange(confirmAction.bookId, confirmAction.state)}
+              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-black bg-primary hover:brightness-110 transition-all"
+            >
+              {confirmAction.label}
+            </button>
+          </div>
+        </div>
+      )}
       {trackingBookId === book.id && (
         <TrackSheet book={book} onClose={() => setTrackingBookId(null)} />
       )}
