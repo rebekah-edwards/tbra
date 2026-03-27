@@ -336,11 +336,6 @@ export function BookPageClient({
             {contentConflicts.length > 0 && (
               <ContentWarningBanner conflicts={contentConflicts} />
             )}
-            {canReport && (
-              <div className="pt-2">
-                <ReportIssueButton bookId={book.id} bookTitle={book.title} />
-              </div>
-            )}
           </div>
         </div>
       </div>
