@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { StoryGraphImport } from "./storygraph-import";
 import { GoodreadsImport } from "./goodreads-import";
+import { LibbyImport } from "./libby-import";
 
 const sources = [
   { key: "storygraph", label: "StoryGraph" },
   { key: "goodreads", label: "Goodreads" },
+  { key: "libby", label: "Libby" },
 ] as const;
 
 type SourceKey = (typeof sources)[number]["key"];
@@ -37,6 +39,8 @@ export function ImportTabs() {
       {active === "storygraph" && <StoryGraphImport />}
 
       {active === "goodreads" && <GoodreadsImport />}
+
+      {active === "libby" && <LibbyImport />}
     </div>
   );
 }
