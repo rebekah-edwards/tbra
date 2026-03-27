@@ -362,7 +362,7 @@ export function LibbyImport() {
       {/* Completion modal overlay */}
       {showCompletionModal && result && (
         <ImportCompletionModal
-          importedCount={result.imported + result.existing}
+          importedCount={result.imported + result.existing + result.skipped}
           hasEnrichment={(result.newBookIds?.length ?? 0) > 0}
           onDismiss={() => setShowCompletionModal(false)}
         />

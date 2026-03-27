@@ -52,7 +52,7 @@ export function ImportCompletionModal({ importedCount, hasEnrichment, onDismiss 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-surface border border-border w-full max-w-sm mx-4 p-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-300">
+      <div className="bg-surface border border-border rounded-2xl w-full max-w-sm mx-4 p-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-300">
         {/* Animated book */}
         <div className="relative w-24 h-28 mx-auto">
           {/* Book spine/back cover */}
@@ -128,7 +128,7 @@ export function ImportCompletionModal({ importedCount, hasEnrichment, onDismiss 
         {/* Dismiss button */}
         <button
           onClick={onDismiss}
-          className="inline-flex items-center gap-1.5 bg-accent text-black px-5 py-2 text-sm font-semibold hover:brightness-110 transition-all"
+          className="inline-flex items-center gap-1.5 bg-accent text-black px-5 py-2.5 rounded-xl text-sm font-semibold hover:brightness-110 transition-all"
         >
           Start exploring
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
