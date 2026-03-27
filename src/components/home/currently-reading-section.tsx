@@ -207,7 +207,7 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
           <div className="absolute inset-0 bg-gradient-to-br from-primary-dark to-primary rounded-xl" />
         )}
         <div className="relative z-10 flex items-center gap-4 p-4">
-          <Link href={`/book/${book.slug || book.id}`} className="flex-shrink-0">
+          <Link href={`/book/${book.slug || book.id}`} className="flex-shrink-0 relative">
             {book.coverImageUrl ? (
               <Image
                 src={book.coverImageUrl}
@@ -218,6 +218,12 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
               />
             ) : (
               <NoCover title={book.title} className="h-[90px] w-[60px] lg:h-[140px] lg:w-[94px] shadow-xl" size="sm" />
+            )}
+            {/* Progress pill — frosted glass overlay on cover */}
+            {book.progress != null && book.progress > 0 && (
+              <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums backdrop-blur-md bg-surface/70 border border-neon-purple/30 text-neon-purple shadow-[0_2px_12px_rgba(192,132,252,0.25)] whitespace-nowrap">
+                {book.progress}%
+              </span>
             )}
           </Link>
           <div className="min-w-0 flex-1">
@@ -285,18 +291,7 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
             </div>
           </div>
         </div>
-        {/* Progress bar */}
-        {book.progress != null && book.progress > 0 && (
-          <div className="relative z-10 flex items-center gap-2 px-4 pb-2">
-            <div className="flex-1 h-[3px] rounded-full bg-white/10 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-[#a3e635]"
-                style={{ width: `${book.progress}%` }}
-              />
-            </div>
-            <span className="text-[10px] font-semibold text-white/70 tabular-nums">{book.progress}%</span>
-          </div>
-        )}
+        {/* Progress indicator is now on the book cover */}
       </div>
       {trackingBookId === book.id && (
         <TrackSheet book={book} onClose={() => setTrackingBookId(null)} />
