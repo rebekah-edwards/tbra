@@ -281,7 +281,7 @@ export function BookPageClient({
           />
 
         {/* Desktop: actions panel — flows in flex layout so taller content pushes page down */}
-        <div className="hidden lg:block lg:flex-1 lg:pt-8 lg:pl-6">
+        <div className="hidden lg:block lg:flex-1 lg:pl-6">
           <div className="space-y-4">
             {/* Summary above buttons, left-justified */}
             {book.summary && (
