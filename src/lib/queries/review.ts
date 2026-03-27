@@ -118,6 +118,7 @@ export interface BookReviewEntry {
   didNotFinish: boolean;
   dnfPercentComplete: number | null;
   createdAt: string;
+  source: string;
   dimensionRatings: Record<string, number | null>;
   dimensionTags: Record<string, string[]>;
   helpfulCount: number;
@@ -141,15 +142,11 @@ export async function getBookReviews(bookId: string, currentUserId?: string | nu
       dnfPercentComplete: userBookReviews.dnfPercentComplete,
       isAnonymous: userBookReviews.isAnonymous,
       createdAt: userBookReviews.createdAt,
+      source: userBookReviews.source,
     })
     .from(userBookReviews)
     .innerJoin(users, eq(userBookReviews.userId, users.id))
-    .where(
-      and(
-        eq(userBookReviews.bookId, bookId),
-        eq(userBookReviews.source, "user")
-      )
-    )
+    .where(eq(userBookReviews.bookId, bookId))
     .orderBy(desc(userBookReviews.createdAt))
     .all();
 
@@ -242,6 +239,7 @@ export async function getBookReviews(bookId: string, currentUserId?: string | nu
     didNotFinish: row.didNotFinish,
     dnfPercentComplete: row.dnfPercentComplete ?? null,
     createdAt: row.createdAt,
+    source: row.source,
     dimensionRatings: dimMap.get(row.id) ?? {},
     dimensionTags: tagMap.get(row.id) ?? {},
     helpfulCount: helpfulMap.get(row.id) ?? 0,

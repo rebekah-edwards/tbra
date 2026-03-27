@@ -108,9 +108,16 @@ export function ReviewCard({ review, bookId, isOwnReview = false }: { review: Bo
             </p>
           )}
         </div>
-        <span className="text-xs text-muted flex-shrink-0">
-          {timeAgo(review.createdAt)}
-        </span>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {review.source && review.source !== "user" && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-surface-alt text-muted border border-border capitalize">
+              {review.source}
+            </span>
+          )}
+          <span className="text-xs text-muted">
+            {timeAgo(review.createdAt)}
+          </span>
+        </div>
       </div>
 
       {/* Centered overall rating — bigger, standout */}
