@@ -329,24 +329,22 @@ async function processRow(
       }
 
       // Create reading sessions for completed/currently-reading books
+      // Goodreads only provides ONE dateRead even for re-reads, so we only create
+      // ONE session with the known date. Re-read count is noted but we don't
+      // fabricate dates for reads we don't have dates for.
       if (row.readStatus === "completed" || row.readStatus === "currently_reading") {
         const dateStr = row.dateRead || new Date().toISOString().slice(0, 10);
 
-        // Handle re-reads: create multiple reading sessions
-        // Use onConflictDoNothing to skip existence check (saves 1 DB query per session)
-        const sessionCount = Math.max(1, row.readCount);
-        for (let readNum = 1; readNum <= sessionCount; readNum++) {
-          await db.insert(readingSessions).values({
-            id: crypto.randomUUID(),
-            userId,
-            bookId,
-            readNumber: readNum,
-            startedAt: dateStr,
-            completionDate: row.readStatus === "completed" ? dateStr : null,
-            completionPrecision: row.dateRead ? "exact" : null,
-            state: row.readStatus,
-          }).onConflictDoNothing();
-        }
+        await db.insert(readingSessions).values({
+          id: crypto.randomUUID(),
+          userId,
+          bookId,
+          readNumber: 1,
+          startedAt: dateStr,
+          completionDate: row.readStatus === "completed" ? dateStr : null,
+          completionPrecision: row.dateRead ? "exact" : null,
+          state: row.readStatus,
+        }).onConflictDoNothing();
       }
     }
 
