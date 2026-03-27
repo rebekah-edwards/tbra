@@ -6,15 +6,15 @@ import { GoodreadsImport } from "./goodreads-import";
 import { LibbyImport } from "./libby-import";
 
 const sources = [
-  { key: "storygraph", label: "StoryGraph" },
   { key: "goodreads", label: "Goodreads" },
+  { key: "storygraph", label: "StoryGraph" },
   { key: "libby", label: "Libby" },
 ] as const;
 
 type SourceKey = (typeof sources)[number]["key"];
 
 export function ImportTabs() {
-  const [active, setActive] = useState<SourceKey>("storygraph");
+  const [active, setActive] = useState<SourceKey>("goodreads");
 
   return (
     <div className="space-y-6">
