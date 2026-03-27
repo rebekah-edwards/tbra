@@ -30,6 +30,62 @@ import { BookSummary } from "@/components/book/book-summary";
 import { HideBookButton } from "@/components/book/hide-book-button";
 import { getFollowedUsersWhoRead } from "@/lib/queries/follows";
 
+function buildBookJsonLd(
+  book: {
+    title: string;
+    authors: { name: string; role: string }[];
+    coverImageUrl: string | null;
+    isbn13?: string | null;
+    pages?: number | null;
+    publicationDate?: string | null;
+    publicationYear?: number | null;
+    description?: string | null;
+    summary?: string | null;
+    language?: string | null;
+    publisher?: string | null;
+  },
+  slug: string | null,
+) {
+  const url = slug
+    ? `https://thebasedreader.app/book/${slug}`
+    : undefined;
+
+  const authorList = book.authors
+    .filter((a) => a.role === "author")
+    .map((a) => ({ "@type": "Person" as const, name: a.name }));
+
+  const datePublished = book.publicationDate ?? (book.publicationYear ? String(book.publicationYear) : undefined);
+  const descriptionText = book.summary || book.description || undefined;
+
+  // Build schema object, then strip undefined/null values
+  const schema: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Book",
+    name: book.title,
+    ...(authorList.length > 0 && { author: authorList }),
+    ...(url && { url }),
+    ...(book.coverImageUrl && { image: book.coverImageUrl }),
+    ...(book.isbn13 && { isbn: book.isbn13 }),
+    ...(book.pages && { numberOfPages: book.pages }),
+    ...(datePublished && { datePublished }),
+    ...(descriptionText && { description: descriptionText }),
+    ...(book.language && { inLanguage: book.language }),
+    ...(book.publisher && {
+      publisher: { "@type": "Organization", name: book.publisher },
+    }),
+    bookFormat: "https://schema.org/Paperback",
+    ...(book.isbn13 && {
+      workExample: {
+        "@type": "Book",
+        isbn: book.isbn13,
+        bookFormat: "https://schema.org/Paperback",
+      },
+    }),
+  };
+
+  return schema;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -165,8 +221,17 @@ export default async function BookPage({
     after(() => triggerEnrichment(book.id));
   }
 
+  // Build Book JSON-LD schema
+  const bookJsonLd = buildBookJsonLd(book, resolved.book.slug);
+
   return (
     <div>
+      {bookJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(bookJsonLd) }}
+        />
+      )}
 
       <BookPageClient
         book={{

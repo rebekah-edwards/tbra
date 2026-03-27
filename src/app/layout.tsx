@@ -33,6 +33,14 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: { default: "tbr*a", template: "%s" },
   description: "Detailed, structured content information for books.",
+  twitter: {
+    card: "summary_large_image",
+    site: "@thebasedreader",
+  },
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 };
 
 export default async function RootLayout({
@@ -66,6 +74,53 @@ export default async function RootLayout({
       <body
         className={`${plusJakarta.variable} ${outfit.variable} ${spaceGrotesk.variable} antialiased bg-background text-foreground`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([
+              {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                "name": "tbr*a",
+                "alternateName": "The Based Reader App",
+                "url": "https://thebasedreader.app",
+                "description": "Detailed content ratings, smart recommendations, and reading tools for readers who care about what they read.",
+                "logo": "https://thebasedreader.app/logo.png",
+                "sameAs": [
+                  "https://www.instagram.com/thebasedreaderapp/",
+                  "https://www.tiktok.com/@basedreaderapp",
+                  "https://x.com/basedreaderapp",
+                ],
+                "contactPoint": {
+                  "@type": "ContactPoint",
+                  "email": "hello@thebasedreader.app",
+                  "contactType": "customer support",
+                },
+                "founder": {
+                  "@type": "Person",
+                  "name": "Rebekah Edwards",
+                  "jobTitle": "Founder",
+                  "sameAs": [
+                    "https://www.linkedin.com/in/rebekahcreates/",
+                    "https://x.com/rebekah_creates",
+                  ],
+                },
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "name": "tbr*a",
+                "alternateName": "The Based Reader App",
+                "url": "https://thebasedreader.app",
+                "potentialAction": {
+                  "@type": "SearchAction",
+                  "target": "https://thebasedreader.app/search?q={search_term_string}",
+                  "query-input": "required name=search_term_string",
+                },
+              },
+            ]),
+          }}
+        />
         <ThemeProvider>
           <TextSizeInitializer />
           <nav className="sticky top-0 z-50 overflow-visible border-b border-border bg-surface shadow-sm">
