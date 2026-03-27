@@ -14,6 +14,7 @@ interface CurrentlyReadingBook {
   coverImageUrl: string | null;
   authors: string[];
   activeFormats?: string[];
+  progress?: number | null; // 0-100 percentage
 }
 
 const MOODS = [
@@ -284,6 +285,18 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
             </div>
           </div>
         </div>
+        {/* Progress bar */}
+        {book.progress != null && book.progress > 0 && (
+          <div className="relative z-10 flex items-center gap-2 px-4 pb-2">
+            <div className="flex-1 h-[3px] rounded-full bg-white/10 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#a3e635]"
+                style={{ width: `${book.progress}%` }}
+              />
+            </div>
+            <span className="text-[10px] font-semibold text-white/70 tabular-nums">{book.progress}%</span>
+          </div>
+        )}
       </div>
       {trackingBookId === book.id && (
         <TrackSheet book={book} onClose={() => setTrackingBookId(null)} />

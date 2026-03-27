@@ -17,8 +17,8 @@ export const metadata: Metadata = {
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/db";
-import { books, bookCategoryRatings, taxonomyCategories } from "@/db/schema";
-import { eq, isNotNull, and, sql, inArray } from "drizzle-orm";
+import { books, bookCategoryRatings, taxonomyCategories, readingNotes } from "@/db/schema";
+import { eq, isNotNull, and, sql, inArray, desc } from "drizzle-orm";
 import { LandingPage } from "@/components/landing/landing-page";
 import { landingPageBooks } from "@/db/schema";
 import { getUserBooks } from "@/lib/queries/reading-state";
@@ -154,6 +154,65 @@ export default async function Home() {
 
   const currentlyReading = allBooks.filter((b) => b.state === "currently_reading");
 
+  // Query latest reading progress for currently-reading books
+  const progressMap = new Map<string, number>();
+  if (currentlyReading.length > 0) {
+    const crBookIds = currentlyReading.map((b) => b.id);
+
+    // Get the most recent reading note with progress for each book
+    const latestNotes = await db
+      .select({
+        bookId: readingNotes.bookId,
+        pageNumber: readingNotes.pageNumber,
+        percentComplete: readingNotes.percentComplete,
+      })
+      .from(readingNotes)
+      .where(
+        and(
+          eq(readingNotes.userId, user.userId),
+          inArray(readingNotes.bookId, crBookIds),
+          sql`(${readingNotes.pageNumber} IS NOT NULL OR ${readingNotes.percentComplete} IS NOT NULL)`
+        )
+      )
+      .orderBy(desc(readingNotes.createdAt))
+      .all();
+
+    // Get page counts for books (needed for page_number → percentage calculation)
+    const bookPages = await db
+      .select({ id: books.id, pages: books.pages })
+      .from(books)
+      .where(inArray(books.id, crBookIds))
+      .all();
+    const pagesMap = new Map(bookPages.map((b) => [b.id, b.pages]));
+
+    // Take only the first (most recent) note per book
+    const seen = new Set<string>();
+    for (const note of latestNotes) {
+      if (seen.has(note.bookId)) continue;
+      seen.add(note.bookId);
+
+      let pct: number | null = null;
+      if (note.percentComplete != null && note.percentComplete > 0) {
+        pct = note.percentComplete;
+      } else if (note.pageNumber != null && note.pageNumber > 0) {
+        const totalPages = pagesMap.get(note.bookId);
+        if (totalPages && totalPages > 0) {
+          pct = Math.round((note.pageNumber / totalPages) * 100);
+        }
+      }
+
+      if (pct != null && pct > 0) {
+        progressMap.set(note.bookId, Math.min(pct, 100));
+      }
+    }
+  }
+
+  // Attach progress to currently-reading books
+  const currentlyReadingWithProgress = currentlyReading.map((b) => ({
+    ...b,
+    progress: progressMap.get(b.id) ?? null,
+  }));
+
   return (
     <div className="space-y-8 lg:space-y-6 lg:max-w-[1194px] lg:mx-auto">
       {/* Goal + Streak: shown first on desktop via order, stays in DOM position on mobile */}
@@ -166,7 +225,7 @@ export default async function Home() {
       <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-8 lg:space-y-0">
       <section>
         <SectionHeading>Reading Now</SectionHeading>
-        <CurrentlyReadingSection books={currentlyReading} />
+        <CurrentlyReadingSection books={currentlyReadingWithProgress} />
       </section>
 
       {/* Mobile only: goal/streak between Reading Now and Up Next */}
