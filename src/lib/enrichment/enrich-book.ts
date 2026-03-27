@@ -48,6 +48,21 @@ export interface EnrichOptions {
 }
 
 export async function enrichBook(bookId: string, options?: EnrichOptions): Promise<void> {
+  // Auto-pause: skip if API was exhausted in the last hour (resets at midnight PST)
+  if (process.env.ENRICHMENT_PAUSED === "true") {
+    console.log(`[enrichment] PAUSED — skipping ${bookId}`);
+    return;
+  }
+  const recentExhaustion = await db.all(sql`
+    SELECT count(*) as count FROM enrichment_log
+    WHERE status = 'api_exhausted'
+    AND created_at > datetime('now', '-1 hour')
+  `) as { count: number }[];
+  if ((recentExhaustion[0]?.count ?? 0) > 0) {
+    console.log(`[enrichment] Auto-paused (API exhausted in last hour) — skipping ${bookId}`);
+    return;
+  }
+
   console.log(`[enrichment] Starting enrichment for book ${bookId}`);
   try {
     await _enrichBookInner(bookId, options);
