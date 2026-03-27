@@ -257,6 +257,21 @@ h1, h2, h3, .font-heading {
   mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
 }
 
+/* ── Landing page frosted glass cards ── */
+.landing-glass-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+[data-theme="light"] .landing-glass-card {
+  background: rgba(0, 0, 0, 0.025);
+  border-color: rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
 /* ── Option-Frosted: Glass card with breathing blob ── */
 .summary-frosted-card {
   background: rgba(255, 255, 255, 0.06);

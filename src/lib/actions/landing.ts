@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { landingPageBooks, books } from "@/db/schema";
+import { landingPageBooks, landingPageCopy, books } from "@/db/schema";
 import { eq, and, like, isNotNull, sql } from "drizzle-orm";
 import { getCurrentUser, isSuperAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
@@ -101,4 +101,36 @@ export async function searchBooksForLanding(query: string) {
       )
     )
     .limit(20);
+}
+
+export async function getLandingCopy() {
+  return db
+    .select({
+      sectionKey: landingPageCopy.sectionKey,
+      sectionLabel: landingPageCopy.sectionLabel,
+      content: landingPageCopy.content,
+    })
+    .from(landingPageCopy)
+    .orderBy(landingPageCopy.sectionKey);
+}
+
+export async function updateLandingCopy(sectionKey: string, content: string) {
+  const user = await getCurrentUser();
+  if (!user || !isSuperAdmin(user)) throw new Error("Unauthorized");
+
+  await db
+    .update(landingPageCopy)
+    .set({ content, updatedAt: new Date().toISOString() })
+    .where(eq(landingPageCopy.sectionKey, sectionKey));
+
+  revalidatePath("/");
+  revalidatePath("/admin/landing");
+  return { success: true };
+}
+
+export async function getLandingCopyMap(): Promise<Record<string, string>> {
+  const rows = await db
+    .select({ sectionKey: landingPageCopy.sectionKey, content: landingPageCopy.content })
+    .from(landingPageCopy);
+  return Object.fromEntries(rows.map((r) => [r.sectionKey, r.content]));
 }

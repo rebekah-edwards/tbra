@@ -761,7 +761,10 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
   }
 
   // 7. Resolve cover if missing or not yet verified — multi-tier cascade
-  if (!book.coverImageUrl || !book.coverVerified) {
+  // NEVER overwrite manually-set covers (cover_source = 'manual' or Amazon URLs)
+  const isManualCover = book.coverSource === 'manual' ||
+    (book.coverImageUrl && book.coverImageUrl.includes('m.media-amazon.com'));
+  if ((!book.coverImageUrl || !book.coverVerified) && !isManualCover) {
     await resolveBookCover(book, authorNames, options);
   }
 

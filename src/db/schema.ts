@@ -446,6 +446,14 @@ export const landingPageBooks = sqliteTable("landing_page_books", {
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 
+export const landingPageCopy = sqliteTable("landing_page_copy", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  sectionKey: text("section_key").notNull().unique(),
+  sectionLabel: text("section_label").notNull(),
+  content: text("content").notNull(),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
 // ─── Password reset tokens ───
 
 export const passwordResetTokens = sqliteTable("password_reset_tokens", {

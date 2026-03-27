@@ -138,7 +138,11 @@ export default async function Home() {
 
     const bookCount = Math.floor(((totalCount[0]?.count ?? 12000) as number) / 1000) * 1000;
 
-    return <LandingPage featuredBook={featuredBook} coverBooks={coverBooks} bookCount={bookCount} />;
+    // Load editable copy from DB
+    const { getLandingCopyMap } = await import("@/lib/actions/landing");
+    const copy = await getLandingCopyMap();
+
+    return <LandingPage featuredBook={featuredBook} coverBooks={coverBooks} bookCount={bookCount} copy={copy} />;
   }
 
   const currentYear = new Date().getFullYear();

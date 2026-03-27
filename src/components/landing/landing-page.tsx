@@ -24,6 +24,7 @@ interface LandingPageProps {
   featuredBook: FeaturedBook | null;
   coverBooks: CoverBook[];
   bookCount: number;
+  copy?: Record<string, string>;
 }
 
 const INTENSITY_LABELS = ["None", "Mild", "Moderate", "Heavy", "Intense"];
@@ -69,7 +70,10 @@ function SignUpButton({ size = "lg" }: { size?: "lg" | "md" }) {
   );
 }
 
-export function LandingPage({ featuredBook, coverBooks, bookCount }: LandingPageProps) {
+export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: LandingPageProps) {
+  // Helper: get copy from DB or fall back to default
+  const c = (key: string, fallback: string) => copy[key] ?? fallback;
+
   return (
     <div className="space-y-16 lg:space-y-24 pb-16">
       {/* ─── Hero ─── */}
@@ -77,31 +81,35 @@ export function LandingPage({ featuredBook, coverBooks, bookCount }: LandingPage
         {/* Book cover mosaic background */}
         <div className="absolute inset-0 grid grid-cols-5 lg:grid-cols-8 gap-1 opacity-20 p-2">
           {coverBooks.map((book, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={book.id}
-              src={book.coverImageUrl}
-              alt=""
-              aria-hidden
-              className="w-full h-full object-cover rounded-lg"
-              loading={i < 10 ? "eager" : "lazy"}
-            />
+            <div key={book.id} className="relative aspect-[2/3] overflow-hidden rounded-lg">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={book.coverImageUrl}
+                alt=""
+                aria-hidden
+                className="w-full h-full object-cover"
+                loading={i < 10 ? "eager" : "lazy"}
+              />
+            </div>
           ))}
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)]/60 via-[var(--background)]/80 to-[var(--background)]" />
 
         <div className="relative z-10 px-6 py-16 lg:py-24 lg:px-12 text-center lg:text-left lg:max-w-3xl">
           <h1 className="font-heading text-4xl lg:text-6xl font-bold text-foreground tracking-tight leading-tight">
-            Know what&apos;s in a book before you read it.
+            {c("hero_headline", "Know what's in a book before you read it.")}
           </h1>
           <p className="mt-4 text-lg lg:text-xl text-muted max-w-xl mx-auto lg:mx-0">
-            Detailed content ratings, smart recommendations, and reading tools &mdash; built for readers who care about what they read.
+            {c("hero_subheadline", "Detailed content ratings, smart recommendations, and reading tools — built for readers who care about what they read.")}
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
             <SignUpButton />
-            <Link href="/login" className="text-sm text-muted hover:text-foreground transition-colors">
-              Already have an account? Sign in
-            </Link>
+            <span className="text-sm text-muted">
+              Already have an account?{" "}
+              <Link href="/login" className="text-neon-blue hover:underline transition-colors">
+                Sign in
+              </Link>
+            </span>
           </div>
         </div>
       </section>
@@ -109,32 +117,32 @@ export function LandingPage({ featuredBook, coverBooks, bookCount }: LandingPage
       {/* ─── Avatar Cards: Who is this for? ─── */}
       <section>
         <h2 className="font-heading text-2xl lg:text-3xl font-bold text-foreground text-center mb-8">
-          Built for readers who want to know more.
+          {c("avatars_heading", "Built for readers who want to know more.")}
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
           {/* Conscientious Reader */}
-          <div className="rounded-2xl border border-border bg-surface p-6 lg:p-8">
+          <div className="landing-glass-card rounded-2xl p-6 lg:p-8">
             <div className="flex items-center gap-3 mb-4">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent text-lg">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>
               </span>
-              <h3 className="font-heading text-lg font-bold text-foreground">For Readers</h3>
+              <h3 className="font-heading text-lg font-bold text-foreground">{c("avatar_readers_title", "For Readers")}</h3>
             </div>
             <p className="text-muted leading-relaxed">
-              Ever been blindsided by content you didn&apos;t want to read? tbr*a gives you detailed, structured content information for every book &mdash; so you can read with confidence and choose books that match your values.
+              {c("avatar_readers_body", "Ever been blindsided by content you didn't want to read? tbr*a gives you detailed, structured content information for every book — so you can read with confidence and choose books that match your values.")}
             </p>
           </div>
 
           {/* Conscientious Parent */}
-          <div className="rounded-2xl border border-border bg-surface p-6 lg:p-8">
+          <div className="landing-glass-card rounded-2xl p-6 lg:p-8">
             <div className="flex items-center gap-3 mb-4">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-neon-purple/15 text-neon-purple text-lg">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
               </span>
-              <h3 className="font-heading text-lg font-bold text-foreground">For Parents</h3>
+              <h3 className="font-heading text-lg font-bold text-foreground">{c("avatar_parents_title", "For Parents")}</h3>
             </div>
             <p className="text-muted leading-relaxed">
-              Not sure what&apos;s in the book your kid wants to read? tbr*a breaks down exactly how sensitive topics are handled &mdash; from mild to intense &mdash; so you can make informed decisions without reading every page yourself.
+              {c("avatar_parents_body", "Not sure what's in the book your kid wants to read? tbr*a breaks down exactly how sensitive topics are handled — from mild to intense — so you can make informed decisions without reading every page yourself.")}
             </p>
           </div>
         </div>
@@ -144,10 +152,10 @@ export function LandingPage({ featuredBook, coverBooks, bookCount }: LandingPage
       {featuredBook && (
         <section>
           <h2 className="font-heading text-2xl lg:text-3xl font-bold text-foreground text-center mb-3">
-            See exactly what&apos;s inside.
+            {c("showcase_heading", "See exactly what's inside.")}
           </h2>
           <p className="text-muted text-center mb-8 max-w-lg mx-auto">
-            Every book on tbr*a comes with a detailed content breakdown. No surprises, no guessing.
+            {c("showcase_subheading", "Every book on tbr*a comes with a detailed content breakdown. No surprises, no guessing.")}
           </p>
 
           <div className="rounded-2xl border border-border bg-surface overflow-hidden lg:flex lg:items-stretch">
@@ -200,26 +208,26 @@ export function LandingPage({ featuredBook, coverBooks, bookCount }: LandingPage
       {/* ─── Feature Cards ─── */}
       <section>
         <h2 className="font-heading text-2xl lg:text-3xl font-bold text-foreground text-center mb-8">
-          Everything you need to read smarter.
+          {c("features_heading", "Everything you need to read smarter.")}
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           <FeatureCard
             icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>}
             iconColor="bg-accent/15 text-accent"
-            title="Smart Recommendations"
-            description="Personalized picks based on your reading history. Filtered by your content comfort zone. Always respects series order."
+            title={c("feature_recs_title", "Smart Recommendations")}
+            description={c("feature_recs_body", "Personalized picks based on your reading history. Filtered by your content comfort zone. Always respects series order.")}
           />
           <FeatureCard
             icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>}
             iconColor="bg-neon-purple/15 text-neon-purple"
-            title="Discover by Mood"
-            description="Looking for something cozy? Dark and thrilling? Filter by mood, length, and genre to find your next perfect read."
+            title={c("feature_discover_title", "Discover by Mood")}
+            description={c("feature_discover_body", "Looking for something cozy? Dark and thrilling? Filter by mood, length, and genre to find your next perfect read.")}
           />
           <FeatureCard
             icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>}
             iconColor="bg-neon-blue/15 text-neon-blue"
-            title="Track Your Reading"
-            description="Reading goals, streaks, stats, and a private reading journal. See your habits grow over time."
+            title={c("feature_tracking_title", "Track Your Reading")}
+            description={c("feature_tracking_body", "Reading goals, streaks, stats, and a private reading journal. See your habits grow over time.")}
           />
         </div>
       </section>
@@ -227,10 +235,10 @@ export function LandingPage({ featuredBook, coverBooks, bookCount }: LandingPage
       {/* ─── Book Cover Parade ─── */}
       <section className="text-center">
         <h2 className="font-heading text-2xl lg:text-3xl font-bold text-foreground mb-2">
-          {bookCount.toLocaleString()}+ books and growing.
+          {c("parade_heading", "{count}+ books and growing.").replace("{count}", bookCount.toLocaleString())}
         </h2>
         <p className="text-muted mb-6">
-          From bestsellers to hidden gems &mdash; every one has content details.
+          {c("parade_subheading", "From bestsellers to hidden gems — every one has content details.")}
         </p>
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 pr-12 no-scrollbar mask-fade-right">
           {coverBooks.slice(0, 16).map((book) => (
@@ -250,15 +258,16 @@ export function LandingPage({ featuredBook, coverBooks, bookCount }: LandingPage
       {/* ─── Final CTA ─── */}
       <section className="text-center py-8">
         <h2 className="font-heading text-2xl lg:text-3xl font-bold text-foreground mb-4">
-          Start reading with confidence.
+          {c("cta_heading", "Start reading with confidence.")}
         </h2>
         <p className="text-muted mb-8 max-w-md mx-auto">
-          Free to use. No ads. No algorithms selling you things.
+          {c("cta_subheading", "Free to use. No ads. No algorithms selling you things.")}
         </p>
         <SignUpButton />
-        <p className="mt-4">
-          <Link href="/login" className="text-sm text-muted hover:text-foreground transition-colors">
-            Already have an account? Sign in
+        <p className="mt-4 text-sm text-muted">
+          Already have an account?{" "}
+          <Link href="/login" className="text-neon-blue hover:underline transition-colors">
+            Sign in
           </Link>
         </p>
       </section>
@@ -278,7 +287,7 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
+    <div className="landing-glass-card rounded-2xl p-6">
       <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconColor} mb-4`}>
         {icon}
       </span>
