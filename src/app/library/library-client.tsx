@@ -9,8 +9,8 @@ type GroupKey = "activity" | "tbr" | "owned";
 type SortKey = "recent" | "title" | "author" | "rating";
 
 const GROUPS: { key: GroupKey; label: string }[] = [
-  { key: "activity", label: "Activity" },
   { key: "tbr", label: "TBR" },
+  { key: "activity", label: "Activity" },
   { key: "owned", label: "Owned" },
 ];
 
@@ -154,8 +154,8 @@ function SortDropdown({
 }
 
 export function LibraryClient({ books }: { books: UserBookWithDetails[] }) {
-  const [activeGroup, setActiveGroup] = useState<GroupKey>("activity");
-  const [activeSubFilter, setActiveSubFilter] = useState<string>("currently_reading");
+  const [activeGroup, setActiveGroup] = useState<GroupKey>("tbr");
+  const [activeSubFilter, setActiveSubFilter] = useState<string>("all");
   const [sort, setSort] = useState<SortKey>("recent");
 
   // Compute summary stats
