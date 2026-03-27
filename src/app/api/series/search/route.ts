@@ -1,8 +1,31 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { series, bookSeries, books, bookAuthors, authors, userBookState } from "@/db/schema";
-import { like, eq, sql, and, isNotNull } from "drizzle-orm";
+import { eq, sql, and, isNotNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
+
+/**
+ * Compute Levenshtein edit distance between two strings.
+ */
+function editDistance(a: string, b: string): number {
+  const la = a.length;
+  const lb = b.length;
+  if (la === 0) return lb;
+  if (lb === 0) return la;
+
+  let prev = Array.from({ length: lb + 1 }, (_, i) => i);
+  let curr = new Array(lb + 1);
+
+  for (let i = 1; i <= la; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= lb; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[lb];
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -12,8 +35,12 @@ export async function GET(request: Request) {
     return NextResponse.json([]);
   }
 
-  // Find matching series
-  const seriesResults = await db
+  const queryLower = q.toLowerCase();
+  const prefix = queryLower.slice(0, 2);
+  const useFuzzy = queryLower.length >= 3;
+
+  // Fetch broader candidate set for fuzzy matching
+  const candidates = await db
     .select({
       id: series.id,
       name: series.name,
@@ -21,9 +48,56 @@ export async function GET(request: Request) {
     })
     .from(series)
     .leftJoin(bookSeries, eq(bookSeries.seriesId, series.id))
-    .where(like(series.name, `%${q}%`))
+    .where(
+      useFuzzy
+        ? sql`LOWER(${series.name}) LIKE ${`%${prefix}%`}`
+        : sql`LOWER(${series.name}) LIKE ${`%${queryLower}%`}`
+    )
     .groupBy(series.id)
-    .limit(3);
+    .limit(useFuzzy ? 30 : 10);
+
+  // Score each candidate
+  type ScoredSeries = (typeof candidates)[number] & { matchScore: number };
+  const scored: ScoredSeries[] = [];
+
+  for (const s of candidates) {
+    const nameLower = s.name.toLowerCase();
+    const isSubstring = nameLower.includes(queryLower);
+
+    if (useFuzzy && !isSubstring) {
+      const nameWords = nameLower.split(/\s+/);
+      const queryWords = queryLower.split(/\s+/);
+
+      let matchedWords = 0;
+      let totalDistance = 0;
+
+      for (const qWord of queryWords) {
+        let bestDist = qWord.length;
+        for (const nWord of nameWords) {
+          const dist = editDistance(qWord, nWord.slice(0, qWord.length + 2));
+          bestDist = Math.min(bestDist, dist);
+        }
+        const threshold = Math.max(1, Math.floor(qWord.length * 0.35));
+        if (bestDist <= threshold) {
+          matchedWords++;
+          totalDistance += bestDist;
+        }
+      }
+
+      if (matchedWords < Math.ceil(queryWords.length * 0.7)) continue;
+      scored.push({ ...s, matchScore: totalDistance + 10 });
+    } else if (isSubstring) {
+      const startsWithBonus = nameLower.startsWith(queryLower) ? -5 : 0;
+      scored.push({ ...s, matchScore: startsWithBonus });
+    }
+  }
+
+  scored.sort((a, b) => {
+    if (a.matchScore !== b.matchScore) return a.matchScore - b.matchScore;
+    return b.bookCount - a.bookCount;
+  });
+
+  const seriesResults = scored.slice(0, 3);
 
   if (seriesResults.length === 0) {
     return NextResponse.json([]);
@@ -109,7 +183,9 @@ export async function GET(request: Request) {
       );
 
       return {
-        ...s,
+        id: s.id,
+        name: s.name,
+        bookCount: s.bookCount,
         books: booksWithAuthors,
       };
     })

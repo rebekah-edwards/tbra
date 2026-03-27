@@ -59,6 +59,8 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const abortRef = useRef<AbortController | null>(null);
+  const searchIdRef = useRef(0);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -118,16 +120,33 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
         setSeriesMatches([]);
         setAuthorMatches([]);
         setUserResults([]);
+        setLoading(false);
         return;
       }
+
+      // Cancel any in-flight request
+      if (abortRef.current) {
+        abortRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      // Track request ID to ignore stale responses
+      const requestId = ++searchIdRef.current;
+
       setLoading(true);
       try {
+        const signal = controller.signal;
         const [booksRes, seriesRes, authorRes, usersRes] = await Promise.all([
-          fetch(`/api/books/search?q=${encodeURIComponent(q.trim())}`),
-          fetch(`/api/series/search?q=${encodeURIComponent(q.trim())}`),
-          fetch(`/api/authors/search?q=${encodeURIComponent(q.trim())}`),
-          fetch(`/api/users/search?q=${encodeURIComponent(q.trim())}`),
+          fetch(`/api/books/search?q=${encodeURIComponent(q.trim())}`, { signal }),
+          fetch(`/api/series/search?q=${encodeURIComponent(q.trim())}`, { signal }),
+          fetch(`/api/authors/search?q=${encodeURIComponent(q.trim())}`, { signal }),
+          fetch(`/api/users/search?q=${encodeURIComponent(q.trim())}`, { signal }),
         ]);
+
+        // If a newer search has started, discard these results
+        if (requestId !== searchIdRef.current) return;
+
         if (booksRes.ok) {
           const booksData: LocalBookResult[] = await booksRes.json();
           setBookResults(booksData);
@@ -144,10 +163,14 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
           const userData: UserResult[] = await usersRes.json();
           setUserResults(userData.slice(0, 3));
         }
-      } catch {
-        // ignore
+        setLoading(false);
+      } catch (err) {
+        // Only clear loading if this wasn't an abort
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        if (requestId === searchIdRef.current) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
     },
     []
   );
@@ -156,9 +179,17 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
     setQuery(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value.trim().length < 2) {
+      // Cancel in-flight requests and clear results
+      if (abortRef.current) abortRef.current.abort();
+      searchIdRef.current++;
       setBookResults([]);
+      setSeriesMatches([]);
+      setAuthorMatches([]);
+      setUserResults([]);
+      setLoading(false);
       return;
     }
+    // Don't clear existing results — keep them visible while loading new ones
     debounceRef.current = setTimeout(() => search(value), 300);
   }
 
@@ -182,8 +213,10 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
   }
 
   const hasResults = seriesMatches.length > 0 || authorMatches.length > 0 || userResults.length > 0 || bookResults.length > 0;
-  const showDropdown = query.trim().length >= 2 && !loading;
-  const noResults = showDropdown && !hasResults;
+  // Show dropdown when we have results OR when loading has completed with no results
+  // Don't hide results while loading new ones (prevents flash/disappearing results)
+  const showDropdown = query.trim().length >= 2 && (hasResults || !loading);
+  const noResults = showDropdown && !hasResults && !loading;
 
   return (
     <>
