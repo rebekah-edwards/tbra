@@ -14,6 +14,7 @@ export const metadata: Metadata = {
     type: "website",
   },
 };
+import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/db";
 import { books, bookCategoryRatings, taxonomyCategories } from "@/db/schema";
@@ -142,37 +143,14 @@ export default async function Home() {
 
   const currentYear = new Date().getFullYear();
 
-  // Fetch all data in parallel — maximizes concurrency
-  const [allBooks, upNextItems, readingGoal, readingStreak, tbrSuggestion, followedIds, discoveryBooks, becauseYouLiked] = await Promise.all([
+  // ── Fast queries: load immediately ──
+  const [allBooks, upNextItems, readingGoal, readingStreak, tbrSuggestion] = await Promise.all([
     getUserBooks(user.userId),
     getUserUpNext(user.userId),
     getReadingGoal(user.userId, currentYear),
     getReadingStreak(user.userId),
     getRandomOwnedTbrBook(user.userId),
-    getFollowedUserIds(user.userId),
-    getSmartDiscoveryBooks(user.userId),
-    getBecauseYouLikedSuggestions(user.userId, 3, 8),
   ]);
-
-  // Friends activity depends on followedIds
-  const friendsActivity = followedIds.size > 0
-    ? await getFollowedUsersActivity(user.userId, 10)
-    : [];
-
-  // Hydrate recommendations with aggregate ratings
-  const allRecBookIds = [
-    ...discoveryBooks.map((b) => b.id),
-    ...becauseYouLiked.flatMap(({ books }) => books.map((b) => b.id)),
-  ];
-  const ratingsMap = await getBulkAggregateRatings(allRecBookIds);
-  for (const book of discoveryBooks) {
-    book.aggregateRating = ratingsMap.get(book.id) ?? null;
-  }
-  for (const { books } of becauseYouLiked) {
-    for (const book of books) {
-      book.aggregateRating = ratingsMap.get(book.id) ?? null;
-    }
-  }
 
   const currentlyReading = allBooks.filter((b) => b.state === "currently_reading");
 
@@ -210,6 +188,75 @@ export default async function Home() {
         <TbrSuggestionCard initialBook={tbrSuggestion} />
       </section>
 
+      {/* ── Heavy sections: stream in with Suspense ── */}
+      <Suspense fallback={<HomeSkeleton />}>
+        <DeferredHomeSections userId={user.userId} />
+      </Suspense>
+    </div>
+  );
+}
+
+/** Skeleton placeholder while heavy sections stream in */
+function HomeSkeleton() {
+  return (
+    <div className="space-y-8 lg:space-y-6 animate-pulse">
+      {/* Because You Liked skeleton */}
+      <div>
+        <div className="h-5 w-48 bg-surface-alt rounded mb-4" />
+        <div className="flex gap-4 overflow-hidden">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="w-[130px] flex-shrink-0">
+              <div className="w-full aspect-[2/3] bg-surface-alt rounded-lg" />
+              <div className="h-3 w-20 bg-surface-alt rounded mt-2" />
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Discover skeleton */}
+      <div>
+        <div className="h-5 w-52 bg-surface-alt rounded mb-4" />
+        <div className="flex gap-4 overflow-hidden">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="w-[130px] flex-shrink-0">
+              <div className="w-full aspect-[2/3] bg-surface-alt rounded-lg" />
+              <div className="h-3 w-20 bg-surface-alt rounded mt-2" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Async component for heavy sections — streams in via Suspense */
+async function DeferredHomeSections({ userId }: { userId: string }) {
+  const [followedIds, discoveryBooks, becauseYouLiked] = await Promise.all([
+    getFollowedUserIds(userId),
+    getSmartDiscoveryBooks(userId),
+    getBecauseYouLikedSuggestions(userId, 3, 8),
+  ]);
+
+  const friendsActivity = followedIds.size > 0
+    ? await getFollowedUsersActivity(userId, 10)
+    : [];
+
+  // Hydrate recommendations with aggregate ratings
+  const allRecBookIds = [
+    ...discoveryBooks.map((b) => b.id),
+    ...becauseYouLiked.flatMap(({ books }) => books.map((b) => b.id)),
+  ];
+  const ratingsMap = await getBulkAggregateRatings(allRecBookIds);
+  for (const book of discoveryBooks) {
+    book.aggregateRating = ratingsMap.get(book.id) ?? null;
+  }
+  for (const { books } of becauseYouLiked) {
+    for (const book of books) {
+      book.aggregateRating = ratingsMap.get(book.id) ?? null;
+    }
+  }
+
+  return (
+    <>
       {becauseYouLiked.length > 0 && (
         <BecauseYouLiked suggestions={becauseYouLiked} />
       )}
@@ -232,6 +279,6 @@ export default async function Home() {
           <HorizontalScroll books={discoveryBooks} />
         </section>
       )}
-    </div>
+    </>
   );
 }

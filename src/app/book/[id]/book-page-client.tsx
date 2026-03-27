@@ -367,12 +367,6 @@ export function BookPageClient({
         />
       </div>
 
-      {canReport && (
-        <div className="mt-3 flex justify-center lg:hidden">
-          <ReportIssueButton bookId={book.id} bookTitle={book.title} />
-        </div>
-      )}
-
       {lastReadFormat && lastReadDate && (currentState === "completed" || currentState === "dnf" || currentState === "to_read" || !currentState) && (
         <p className="mt-1 text-center text-xs text-muted">
           Last read via {lastReadFormat === "ebook" ? "eBook" : lastReadFormat === "audiobook" ? "audiobook" : lastReadFormat}{" "}

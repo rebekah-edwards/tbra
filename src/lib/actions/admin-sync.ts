@@ -20,9 +20,20 @@ export async function syncUsersFromLive(): Promise<{
       { encoding: "utf-8", timeout: 30000 }
     );
 
-    // The turso CLI outputs the JSON result — parse it
-    const trimmed = raw.trim();
-    const liveUsers = JSON.parse(trimmed);
+    // The turso CLI outputs a header line then the JSON — find the JSON array
+    const lines = raw.trim().split("\n");
+    let jsonStr = "";
+    for (const line of lines) {
+      const t = line.trim();
+      if (t.startsWith("[")) {
+        jsonStr = t;
+        break;
+      }
+    }
+    if (!jsonStr) {
+      return { success: false, message: "Could not parse Turso output" };
+    }
+    const liveUsers = JSON.parse(jsonStr);
 
     if (!Array.isArray(liveUsers) || liveUsers.length === 0) {
       return { success: true, message: "No users found in live database" };
