@@ -111,7 +111,7 @@ export default async function PublicProfilePage({
               <p className="text-xs text-muted mt-0.5">@{user.username}</p>
             )}
             {user.bio && (
-              <p className="text-sm text-foreground/90 mt-1 leading-relaxed">{user.bio}</p>
+              <p className="text-sm text-foreground/90 mt-1 leading-relaxed whitespace-pre-line">{user.bio}</p>
             )}
             {/* Location — respect visibility setting */}
             {user.location && (

@@ -69,7 +69,7 @@ export default async function ProfilePage() {
               <p className="text-xs text-muted mt-0.5">@{user.username}</p>
             )}
             {user.bio && (
-              <p className="text-sm text-foreground/90 mt-1 leading-relaxed">{user.bio}</p>
+              <p className="text-sm text-foreground/90 mt-1 leading-relaxed whitespace-pre-line">{user.bio}</p>
             )}
             {user.location && (
               <p className="text-xs text-muted mt-1 flex items-center gap-1">

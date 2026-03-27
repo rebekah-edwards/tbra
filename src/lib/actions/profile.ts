@@ -50,6 +50,37 @@ export async function updateProfile(formData: FormData) {
     }
   }
 
+  // Auto-generate username from display name if user has no username
+  if (!username && displayName) {
+    const currentUser = await db
+      .select({ username: users.username })
+      .from(users)
+      .where(eq(users.id, user.userId))
+      .get();
+    if (!currentUser?.username) {
+      let generated = displayName
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "");
+      if (generated.length >= 3) {
+        if (generated.length > 30) {
+          generated = generated.slice(0, 30);
+        }
+        // Check uniqueness, append random digits if taken
+        const existingGenerated = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.username, generated))
+          .get();
+        if (existingGenerated && existingGenerated.id !== user.userId) {
+          const suffix = Math.floor(100 + Math.random() * 900).toString();
+          generated = generated.slice(0, 27) + suffix;
+        }
+        username = generated;
+      }
+    }
+  }
+
   await db
     .update(users)
     .set({ displayName, username, bio, instagram, tiktok, threads, twitter, isPrivate })
