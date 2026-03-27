@@ -57,6 +57,20 @@ npm run deploy:code   # Deploy code only
 - **xAI (Grok):** used for AI-generated summaries. Monitor spend.
 - **ENRICHMENT_PAUSED** in `.env.local`: set to `"true"` to halt all enrichment when quotas are exhausted. Currently `false`.
 
+## Import System
+- **Two-phase import:** Phase 1 (fast, no API calls) creates/matches books and sets states. Phase 2 (background) runs OL search + enrichment for new books.
+- **Chunked imports:** Client parses CSV via `/api/import/goodreads/parse`, then sends rows in batches of 100 to `/api/import/goodreads` (JSON mode). Each batch is a separate API call to avoid Vercel 5-min timeout.
+- **Pre-loaded lookup cache:** `buildLookupCache()` in `import-goodreads.ts` loads all ISBNs, titles, authors, slugs, and user states into memory at import start. Per-book matching is in-memory Map lookups.
+- **Dedup prevention:** `findExistingBook` and the cache both normalize titles (strip parentheticals, series suffixes) to match existing entries.
+- **Re-reads:** Goodreads only exports ONE dateRead per book even for re-reads. Import creates only ONE session with the known date. Users can manually add re-read sessions via the Reading History UI.
+- **Supported sources:** Goodreads, StoryGraph, Libby (OverDrive audiobook loans)
+
+## Deduplication
+- **Run `npx tsx scripts/dedup-books.ts`** to find and merge duplicate books. Supports `--dry-run` flag.
+- **The script:** normalizes titles (strips parentheticals, subtitles, "A Novel"), groups by normalized title + author, scores each entry (cover, ratings, clean title), merges all user data into the canonical entry, then deletes dupes.
+- **After running locally:** must also delete the removed book IDs from live Turso. The sync push script only adds new books, never deletes.
+- **Live covers are authoritative:** The sync pull script always overwrites local covers with live versions. Manual cover fixes on live are never lost.
+
 ## Database Sync Rules
 Local SQLite (`data/tbra.db`) and production Turso (`tbra-web-app`) can diverge. Always sync both directions before deploying.
 
@@ -70,8 +84,36 @@ Local SQLite (`data/tbra.db`) and production Turso (`tbra-web-app`) can diverge.
 - **NEVER rewrite, reset, or bulk-modify the production database without explicit instruction from the user.** The book database (62MB, thousands of curated entries) has been cleaned, deduplicated, and enriched over many iterations. Schema migrations are fine; mass data operations are not.
 - **ALWAYS take a screenshot to verify visual changes before telling the user it's done.** Never confirm a UI change is complete without visually confirming it yourself via screenshot. Zoom in on the affected area if the change is subtle.
 - **ALWAYS verify CSS changes are actually applied** by checking the computed styles via JavaScript (`getComputedStyle` or inspecting `className` on the element). The Next.js dev server (Turbopack) frequently serves stale cached code — a hard refresh alone is NOT sufficient. If the computed styles don't match your code changes, kill the server (`lsof -ti:3000 | xargs kill -9`), delete `.next` (`rm -rf .next`), and restart (`npm run dev`). Do this BEFORE telling the user the change is live.
+- **Intensity labels are standardized:** None / Mild / Moderate / Significant / Extreme. Never use "Heavy", "Intense", or "Strong".
+- **Super admins need BOTH `account_type = 'super_admin'` AND `role = 'admin'`** for the Admin Edit panel to show on book pages. When changing account types, always set both fields.
+- **Import enrichment is deferred:** The import process does NOT call `enrichBook()` inline. New books get enriched by Phase 2 background call or the nightly task.
 - Database is SQLite — no concurrent writes. Scripts that modify DB should not run in parallel.
 - `globals.css` has many carefully tuned opacity values — never use `replace_all` on opacity
 - Hero card light mode vibrancy settings are hand-tuned — do not change without verifying visually
 - See `docs/BRANDING.md` for full design system rules
 - See `ROADMAP.md` for beta launch priorities and completed work
+
+<!-- VERCEL BEST PRACTICES START -->
+## Best practices for developing on Vercel
+
+These defaults are optimized for AI coding agents (and humans) working on apps that deploy to Vercel.
+
+- Treat Vercel Functions as stateless + ephemeral (no durable RAM/FS, no background daemons), use Blob or marketplace integrations for preserving state
+- Edge Functions (standalone) are deprecated; prefer Vercel Functions
+- Don't start new projects on Vercel KV/Postgres (both discontinued); use Marketplace Redis/Postgres instead
+- Store secrets in Vercel Env Variables; not in git or `NEXT_PUBLIC_*`
+- Provision Marketplace native integrations with `vercel integration add` (CI/agent-friendly)
+- Sync env + project settings with `vercel env pull` / `vercel pull` when you need local/offline parity
+- Use `waitUntil` for post-response work; avoid the deprecated Function `context` parameter
+- Set Function regions near your primary data source; avoid cross-region DB/service roundtrips
+- Tune Fluid Compute knobs (e.g., `maxDuration`, memory/CPU) for long I/O-heavy calls (LLMs, APIs)
+- Use Runtime Cache for fast **regional** caching + tag invalidation (don't treat it as global KV)
+- Use Cron Jobs for schedules; cron runs in UTC and triggers your production URL via HTTP GET
+- Use Vercel Blob for uploads/media; Use Edge Config for small, globally-read config
+- If Enable Deployment Protection is enabled, use a bypass secret to directly access them
+- Add OpenTelemetry via `@vercel/otel` on Node; don't expect OTEL support on the Edge runtime
+- Enable Web Analytics + Speed Insights early
+- Use AI Gateway for model routing, set AI_GATEWAY_API_KEY, using a model string (e.g. 'anthropic/claude-sonnet-4.6'), Gateway is already default in AI SDK
+  needed. Always curl https://ai-gateway.vercel.sh/v1/models first; never trust model IDs from memory
+- For durable agent loops or untrusted code: use Workflow (pause/resume/state) + Sandbox; use Vercel MCP for secure infra access
+<!-- VERCEL BEST PRACTICES END -->
