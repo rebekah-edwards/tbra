@@ -11,6 +11,7 @@ import { hasCompletedSession, getLastCompletedSession } from "@/lib/queries/read
 import { isBookInUpNext, getUpNextCount } from "@/lib/queries/up-next";
 import { isBookFavorited } from "@/lib/queries/favorites";
 import { getBookReadingNotes } from "@/lib/queries/reading-notes";
+import { getBookSessions } from "@/lib/queries/reading-session";
 import { getUserContentSensitivities } from "@/lib/queries/reading-preferences";
 import { getCurrentUser, isAdmin } from "@/lib/auth";
 import { isBookHidden } from "@/lib/actions/hidden-books";
@@ -28,6 +29,7 @@ import { AdminEditPanel } from "@/components/admin/admin-edit-panel";
 import { FriendsWhoRead } from "@/components/book/friends-who-read";
 import { BookSummary } from "@/components/book/book-summary";
 import { HideBookButton } from "@/components/book/hide-book-button";
+import { ReadingHistory } from "@/components/book/reading-history";
 import { getFollowedUsersWhoRead } from "@/lib/queries/follows";
 
 function buildBookJsonLd(
@@ -166,6 +168,7 @@ export default async function BookPage({
     upNextCount,
     isFavoritedResult,
     readingNotes,
+    bookSessions,
     isHidden,
     friendsWhoRead,
     aggregate,
@@ -181,6 +184,7 @@ export default async function BookPage({
     user ? getUpNextCount(user.userId) : 0,
     user ? isBookFavorited(user.userId, bookId) : null,
     user ? getBookReadingNotes(user.userId, bookId) : Promise.resolve([]),
+    user ? getBookSessions(user.userId, bookId) : Promise.resolve([]),
     user ? isBookHidden(user.userId, bookId) : false,
     user ? getFollowedUsersWhoRead(user.userId, bookId) : Promise.resolve([]),
     getBookAggregateRating(bookId),
@@ -399,6 +403,10 @@ export default async function BookPage({
             <div className="px-4 lg:px-0">
               <FriendsWhoRead friends={friendsWhoRead} bookId={bookId} bookSlug={resolved.book.slug} />
             </div>
+          )}
+
+          {bookSessions.length > 0 && (
+            <ReadingHistory sessions={bookSessions} bookId={bookId} />
           )}
 
           {/* Content warning removed from here — shown in top-right card instead */}

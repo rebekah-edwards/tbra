@@ -147,3 +147,101 @@ export async function resumeActiveSession(
       .where(eq(readingSessions.id, active.id));
   }
 }
+
+/**
+ * Update dates on an existing reading session.
+ * Only the session owner can update.
+ */
+export async function updateReadingSession(
+  sessionId: string,
+  data: { startedAt?: string; completionDate?: string | null }
+) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
+  // Verify ownership
+  const session = await db
+    .select()
+    .from(readingSessions)
+    .where(eq(readingSessions.id, sessionId))
+    .get();
+
+  if (!session || session.userId !== user.userId) {
+    throw new Error("Session not found");
+  }
+
+  const updates: Record<string, string | null> = {
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (data.startedAt !== undefined) {
+    updates.startedAt = data.startedAt;
+  }
+  if (data.completionDate !== undefined) {
+    updates.completionDate = data.completionDate;
+    updates.completionPrecision = data.completionDate ? "exact" : null;
+  }
+
+  await db
+    .update(readingSessions)
+    .set(updates)
+    .where(eq(readingSessions.id, sessionId));
+
+  revalidatePath(`/book/${session.bookId}`);
+  revalidatePath("/profile");
+}
+
+/**
+ * Add a new re-read session for a book.
+ * Creates a completed session with the next read_number.
+ */
+export async function addRereadSession(
+  bookId: string,
+  data: { startedAt?: string; completionDate?: string | null }
+) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
+  const readNumber = await getNextReadNumber(user.userId, bookId);
+  const now = new Date().toISOString();
+
+  await db.insert(readingSessions).values({
+    userId: user.userId,
+    bookId,
+    readNumber,
+    state: "completed",
+    startedAt: data.startedAt || now,
+    completionDate: data.completionDate || null,
+    completionPrecision: data.completionDate ? "exact" : null,
+  });
+
+  revalidatePath(`/book/${bookId}`);
+  revalidatePath("/profile");
+}
+
+/**
+ * Delete a reading session.
+ * Only the session owner can delete.
+ */
+export async function deleteReadingSession(sessionId: string) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
+  // Verify ownership
+  const session = await db
+    .select()
+    .from(readingSessions)
+    .where(eq(readingSessions.id, sessionId))
+    .get();
+
+  if (!session || session.userId !== user.userId) {
+    throw new Error("Session not found");
+  }
+
+  await db
+    .delete(readingSessions)
+    .where(eq(readingSessions.id, sessionId));
+
+  revalidatePath(`/book/${session.bookId}`);
+  revalidatePath("/profile");
+}
