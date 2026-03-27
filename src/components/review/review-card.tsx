@@ -98,13 +98,13 @@ export function ReviewCard({ review, bookId, isOwnReview = false }: { review: Bo
         <div className="flex-1 min-w-0">
           {!review.isAnonymous && review.username ? (
             <Link href={`/u/${review.username}`} className="text-sm font-medium truncate text-foreground hover:text-primary transition-colors block">
-              {review.displayName ?? "Anonymous"}
+              {review.displayName || review.username || "A reader"}
             </Link>
           ) : (
             <p className={`text-sm font-medium truncate ${
               review.isAnonymous ? "text-muted italic" : "text-foreground"
             }`}>
-              {review.isAnonymous ? "Anonymous" : (review.displayName ?? "Anonymous")}
+              {review.isAnonymous ? "Anonymous" : (review.displayName || review.username || "A reader")}
             </p>
           )}
         </div>
