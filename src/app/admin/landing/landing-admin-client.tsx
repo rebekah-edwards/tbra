@@ -118,20 +118,22 @@ export function LandingAdminClient({ paradeBooks, featuredBook }: Props) {
               key={book.id}
               className="flex items-center gap-2 rounded-lg border border-border bg-surface p-2 group"
             >
-              {book.coverImageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={book.coverImageUrl}
-                  alt=""
-                  className="w-8 h-12 rounded object-cover flex-shrink-0"
-                />
-              ) : (
-                <div className="w-8 h-12 rounded bg-surface-alt flex-shrink-0" />
-              )}
+              <a href={`/book/${book.bookSlug}`} className="flex-shrink-0">
+                {book.coverImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={book.coverImageUrl}
+                    alt=""
+                    className="w-8 h-12 rounded object-cover hover:brightness-110 transition-all"
+                  />
+                ) : (
+                  <div className="w-8 h-12 rounded bg-surface-alt" />
+                )}
+              </a>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate">
+                <a href={`/book/${book.bookSlug}`} className="text-xs font-medium truncate hover:text-primary transition-colors block">
                   {book.bookTitle || book.bookSlug}
-                </p>
+                </a>
               </div>
               <button
                 onClick={() => handleRemove(book.id)}
