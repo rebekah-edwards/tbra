@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { setBookState, removeBookState } from "@/lib/actions/reading-state";
 import { addReadingNote } from "@/lib/actions/reading-notes";
 import { NoCover } from "@/components/no-cover";
@@ -182,9 +183,15 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
   const [trackingBookId, setTrackingBookId] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ bookId: string; state: string; label: string } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
   const isAudiobook = book.activeFormats?.length === 1 && book.activeFormats[0] === "audiobook";
 
   function handleStateChange(bookId: string, newState: string) {
+    // Completed → navigate to book page to trigger full completion flow (date, review)
+    if (newState === "completed") {
+      router.push(`/book/${book.slug || book.id}?complete=true`);
+      return;
+    }
     // Require confirmation for destructive actions
     if (newState === "dnf" || newState === "paused") {
       setConfirmAction({

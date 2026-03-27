@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BookHeader } from "@/components/book/book-header";
 import { ReadingStateSelector } from "@/components/book/reading-state-selector";
 
@@ -11,6 +11,7 @@ import { PostCompletionSuggestions } from "@/components/book/post-completion-sug
 import { getEffectiveCoverUrl } from "@/lib/covers";
 import { autoLinkFormatEdition } from "@/lib/actions/editions";
 import { setBookCover, uploadBookCover } from "@/lib/actions/books";
+import { setBookState } from "@/lib/actions/reading-state";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ContentWarningBanner } from "@/components/book/content-warning-banner";
 import { BookSummary } from "@/components/book/book-summary";
@@ -111,6 +112,7 @@ export function BookPageClient({
   const [savingCover, setSavingCover] = useState(false);
   const [baseCoverUrl, setBaseCoverUrl] = useState(book.coverImageUrl);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const pollCountRef = useRef(0);
   const coverFileRef = useRef<HTMLInputElement>(null);
 
@@ -119,6 +121,27 @@ export function BookPageClient({
     setMounted(true);
     if (isRecentlyImported) setShowEnrichmentBanner(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-trigger completion flow when navigated from homepage with ?complete=true
+  const autoCompleteTriggered = useRef(false);
+  useEffect(() => {
+    if (autoCompleteTriggered.current) return;
+    if (searchParams.get("complete") === "true" && currentState === "currently_reading") {
+      autoCompleteTriggered.current = true;
+      // Small delay to let the page render first, then trigger completion
+      setTimeout(() => {
+        setCurrentState("completed");
+        setActiveFormats([]);
+        setHasCompleted(true);
+        setAutoOpenReview(true);
+        setTimeout(() => setShowSuggestions(true), 500);
+        // Actually set the state on the server
+        setBookState(book.id, "completed");
+      }, 300);
+      // Clean up the URL
+      router.replace(`/book/${book.slug || book.id}`, { scroll: false });
+    }
+  }, [searchParams, currentState, book.id, book.slug, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Client-side fallback: trigger enrichment if server-side after() didn't fire
   useEffect(() => {
