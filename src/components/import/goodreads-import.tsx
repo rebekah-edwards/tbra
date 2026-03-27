@@ -109,6 +109,55 @@ export function GoodreadsImport() {
     }
   }, [enrichmentStarted]);
 
+  const BATCH_SIZE = 100;
+
+  /** Process a single batch stream response, accumulating results */
+  async function processBatchStream(
+    res: Response,
+    accumulator: { imported: number; existing: number; skipped: number; errors: { title: string; error: string }[]; newBookIds: string[] },
+    signal: AbortSignal,
+  ) {
+    const reader = res.body?.getReader();
+    if (!reader) return;
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      if (signal.aborted) { reader.cancel(); return; }
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const event = JSON.parse(line);
+          if (event.type === "progress") {
+            setProgress({ current: event.current, total: event.total, title: event.title });
+          } else if (event.type === "done") {
+            accumulator.imported += event.imported ?? 0;
+            accumulator.existing += event.existing ?? 0;
+            accumulator.skipped += event.skipped ?? 0;
+            if (event.errors) accumulator.errors.push(...event.errors);
+            if (event.newBookIds) accumulator.newBookIds.push(...event.newBookIds);
+          } else if (event.type === "error") {
+            throw new Error(event.message ?? "Import failed");
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message !== "Import failed") {
+            // JSON parse error — skip malformed line
+          } else {
+            throw e;
+          }
+        }
+      }
+    }
+  }
+
   const handleImport = useCallback(async (file: File) => {
     setState("uploading");
     setProgress({ current: 0, total: 0, title: "" });
@@ -119,75 +168,67 @@ export function GoodreadsImport() {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("updateReadingStates", String(importOptions.updateReadingStates));
-    formData.append("updateRatingsReviews", String(importOptions.updateRatingsReviews));
-    formData.append("updateOwnedFormats", String(importOptions.updateOwnedFormats));
-    formData.append("isReimport", String(importOptions.isReimport));
-
     try {
-      const res = await fetch("/api/import/goodreads", {
+      // Step 1: Parse CSV server-side → get JSON rows
+      const parseForm = new FormData();
+      parseForm.append("file", file);
+      const parseRes = await fetch("/api/import/goodreads/parse", {
         method: "POST",
-        body: formData,
+        body: parseForm,
         signal: controller.signal,
       });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: "Import failed" }));
-        setErrorMessage(body.error ?? "Import failed");
+      if (!parseRes.ok) {
+        const body = await parseRes.json().catch(() => ({ error: "Parse failed" }));
+        setErrorMessage(body.error ?? "Failed to parse CSV");
         setState("error");
         return;
       }
 
-      const reader = res.body?.getReader();
-      if (!reader) {
-        setErrorMessage("Failed to read response stream");
-        setState("error");
-        return;
-      }
+      const { rows, total } = await parseRes.json();
+      setProgress({ current: 0, total, title: "Starting import..." });
 
-      const decoder = new TextDecoder();
-      let buffer = "";
+      // Step 2: Send rows in batches of BATCH_SIZE
+      const accumulator = { imported: 0, existing: 0, skipped: 0, errors: [] as { title: string; error: string }[], newBookIds: [] as string[] };
+      const options = {
+        updateReadingStates: importOptions.updateReadingStates,
+        updateRatingsReviews: importOptions.updateRatingsReviews,
+        updateOwnedFormats: importOptions.updateOwnedFormats,
+        isReimport: importOptions.isReimport,
+      };
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      for (let offset = 0; offset < total; offset += BATCH_SIZE) {
+        if (controller.signal.aborted) return;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
+        const batch = rows.slice(offset, offset + BATCH_SIZE);
+        const batchRes = await fetch("/api/import/goodreads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rows: batch, offset, total, options }),
+          signal: controller.signal,
+        });
 
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const event = JSON.parse(line);
-            if (event.type === "progress") {
-              const p = event as ProgressEvent;
-              setProgress({ current: p.current, total: p.total, title: p.title });
-            } else if (event.type === "done") {
-              const doneEvent = event as DoneEvent;
-              setResult(doneEvent);
-              setShowCompletionModal(true);
-              setState("done");
-
-              // Fire Phase 2 enrichment in background
-              if (doneEvent.newBookIds && doneEvent.newBookIds.length > 0) {
-                startEnrichment(doneEvent.newBookIds);
-              }
-            } else if (event.type === "error") {
-              setErrorMessage(event.message ?? "Import failed");
-              setState("error");
-            }
-          } catch {
-            // Skip malformed lines
-          }
+        if (!batchRes.ok) {
+          const body = await batchRes.json().catch(() => ({ error: "Batch failed" }));
+          setErrorMessage(body.error ?? `Import failed at book ${offset}`);
+          setState("error");
+          return;
         }
+
+        await processBatchStream(batchRes, accumulator, controller.signal);
       }
 
-      // If we didn't get a "done" event, still mark as done
-      if (state === "uploading") {
-        setState("done");
+      // All batches complete — show results
+      const doneEvent: DoneEvent = {
+        type: "done",
+        ...accumulator,
+      };
+      setResult(doneEvent);
+      setShowCompletionModal(true);
+      setState("done");
+
+      if (accumulator.newBookIds.length > 0) {
+        startEnrichment(accumulator.newBookIds);
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
@@ -198,7 +239,7 @@ export function GoodreadsImport() {
     } finally {
       abortRef.current = null;
     }
-  }, [state, importOptions, startEnrichment]);
+  }, [importOptions, startEnrichment]);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
