@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { resendVerificationEmail } from "@/lib/actions/auth";
+import { useState, useTransition, useEffect } from "react";
+import { resendVerificationEmail, checkVerificationStatus } from "@/lib/actions/auth";
+import { useRouter } from "next/navigation";
 
 interface Props {
   email: string;
@@ -12,6 +13,22 @@ export function VerifyEmailClient({ email, errorMessage }: Props) {
   const [isPending, startTransition] = useTransition();
   const [resent, setResent] = useState(false);
   const [error, setError] = useState<string | null>(errorMessage);
+  const router = useRouter();
+
+  // Poll every 5 seconds to check if user verified in another browser/tab
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const result = await checkVerificationStatus();
+        if (result.verified) {
+          router.push("/onboarding");
+        }
+      } catch {
+        // Ignore polling errors
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [router]);
 
   function handleResend() {
     setError(null);

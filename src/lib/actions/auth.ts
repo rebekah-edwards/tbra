@@ -95,6 +95,30 @@ export async function signup(
 }
 
 /**
+ * Check if the current user's email has been verified (polls from verify-email page).
+ * If verified, refreshes the session cookie so middleware stops blocking.
+ */
+export async function checkVerificationStatus(): Promise<{ verified: boolean }> {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { verified: false };
+
+  const dbUser = await db
+    .select({ emailVerified: users.emailVerified })
+    .from(users)
+    .where(eq(users.id, currentUser.userId))
+    .get();
+
+  if (dbUser?.emailVerified) {
+    // Refresh session with verified=true
+    const token = await createSession(currentUser.userId, currentUser.email, true);
+    await setSessionCookie(token);
+    return { verified: true };
+  }
+
+  return { verified: false };
+}
+
+/**
  * Resend verification email for the current logged-in user.
  */
 export async function resendVerificationEmail(): Promise<AuthState> {

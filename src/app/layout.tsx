@@ -56,17 +56,19 @@ export default async function RootLayout({
   // Fetch avatar for bottom nav profile icon
   let avatarUrl: string | null = null;
   let displayName: string | null = null;
+  let isVerified = true;
   if (session) {
     const { db } = await import("@/db");
     const { users } = await import("@/db/schema");
     const { eq } = await import("drizzle-orm");
     const row = await db
-      .select({ avatarUrl: users.avatarUrl, displayName: users.displayName })
+      .select({ avatarUrl: users.avatarUrl, displayName: users.displayName, emailVerified: users.emailVerified })
       .from(users)
       .where(eq(users.id, session.userId))
       .get();
     avatarUrl = row?.avatarUrl ?? null;
     displayName = row?.displayName ?? null;
+    isVerified = row?.emailVerified ?? false;
   }
 
   return (
@@ -165,7 +167,7 @@ export default async function RootLayout({
             <main className="relative z-0 mx-auto max-w-3xl lg:max-w-[1194px] px-6 pt-8 pb-24 lg:pb-8">{children}</main>
           </PullToRefresh>
           {userIsSuperAdmin && <GlobalReportButton />}
-          <BottomTabs isLoggedIn={!!session} avatarUrl={avatarUrl} />
+          {isVerified && <BottomTabs isLoggedIn={!!session} avatarUrl={avatarUrl} />}
         </ThemeProvider>
       </body>
     </html>
