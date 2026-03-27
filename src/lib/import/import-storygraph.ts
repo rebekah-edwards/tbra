@@ -224,6 +224,13 @@ async function processRow(
       if (match) {
         // 3. Import via OL (handles book creation, authors, genres, enrichment)
         bookId = await importFromOpenLibraryAndReturn(match);
+        // Trigger enrichment explicitly — after() in importFromOpenLibraryAndReturn
+        // doesn't fire outside of serverless route context
+        if (bookId) {
+          enrichBook(bookId).catch((err) => {
+            console.error(`[storygraph-import] Enrichment error for "${row.title}":`, err);
+          });
+        }
         status = "imported";
       } else {
         // 4. No OL match — create minimal book record with available identifiers

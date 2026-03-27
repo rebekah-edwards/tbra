@@ -257,6 +257,13 @@ async function processRow(
 
       if (match) {
         bookId = await importFromOpenLibraryAndReturn(match);
+        // Trigger enrichment explicitly — after() in importFromOpenLibraryAndReturn
+        // doesn't fire outside of serverless route context
+        if (bookId) {
+          enrichBook(bookId).catch((err) => {
+            console.error(`[goodreads-import] Enrichment error for "${row.title}":`, err);
+          });
+        }
         status = "imported";
       } else {
         // Create minimal book record
