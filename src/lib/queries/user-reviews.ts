@@ -37,10 +37,7 @@ export async function getUserReviewsWithBooks(
     .from(userBookReviews)
     .innerJoin(books, eq(userBookReviews.bookId, books.id))
     .where(
-      and(
-        eq(userBookReviews.userId, userId),
-        eq(userBookReviews.source, "user")
-      )
+      eq(userBookReviews.userId, userId)
     )
     .orderBy(
       // Sort by completion date (most recent first), null dates last
