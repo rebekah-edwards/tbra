@@ -409,7 +409,7 @@ export function ContentProfile({ ratings, bookId, isLoggedIn, isAdmin }: Content
   if (ratings.length === 0) {
     return (
       <section className="mt-8">
-        <div className="flex items-center justify-between">
+        <div id="whats-inside" className="flex items-center justify-between scroll-mt-20">
           <h2 className="section-heading text-xl">What&apos;s Inside</h2>
           <Link href="/methodology" className="rounded-full border border-neon-blue/30 bg-neon-blue/10 px-3 py-1 text-xs font-medium hover:bg-neon-blue/20 transition-colors">
             How we rate

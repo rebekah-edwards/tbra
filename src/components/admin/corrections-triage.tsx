@@ -33,7 +33,7 @@ const STATUS_TABS = [
   { key: "rejected", label: "Rejected" },
 ];
 
-const INTENSITY_LABELS = ["None", "Mild", "Moderate", "Strong", "Extreme"];
+const INTENSITY_LABELS = ["None", "Mild", "Moderate", "Significant", "Extreme"];
 
 function IntensityBadge({ intensity }: { intensity: number | null }) {
   if (intensity === null) return <span className="text-muted text-xs italic">not specified</span>;

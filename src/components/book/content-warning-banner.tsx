@@ -16,7 +16,7 @@ const INTENSITY_LABELS: Record<number, string> = {
   0: "none",
   1: "mild",
   2: "moderate",
-  3: "heavy",
+  3: "significant",
   4: "extreme",
 };
 

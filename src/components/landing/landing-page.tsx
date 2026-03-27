@@ -27,7 +27,7 @@ interface LandingPageProps {
   copy?: Record<string, string>;
 }
 
-const INTENSITY_LABELS = ["None", "Mild", "Moderate", "Heavy", "Intense"];
+const INTENSITY_LABELS = ["None", "Mild", "Moderate", "Significant", "Extreme"];
 const INTENSITY_COLORS = [
   "bg-intensity-0",
   "bg-intensity-1",
@@ -200,6 +200,13 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
                     );
                   })}
               </div>
+              <Link
+                href={`/book/${featuredBook.slug}#whats-inside`}
+                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-neon-blue hover:underline transition-colors"
+              >
+                See full descriptions
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+              </Link>
             </div>
           </div>
         </section>
