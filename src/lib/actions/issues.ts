@@ -1,12 +1,13 @@
 "use server";
 
 import { db } from "@/db";
-import { reportedIssues } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { reportedIssues, books } from "@/db/schema";
+import { eq, sql, or } from "drizzle-orm";
 import { getCurrentUser, isAdmin } from "@/lib/auth";
 
 export async function submitIssue(data: {
   bookId?: string;
+  bookSlug?: string;
   seriesId?: string;
   pageUrl: string;
   description: string;
@@ -18,9 +19,20 @@ export async function submitIssue(data: {
     return { success: false, error: "Description is required" };
   }
 
+  // Resolve bookId from slug if not provided directly
+  let bookId = data.bookId ?? null;
+  if (!bookId && data.bookSlug) {
+    const book = await db
+      .select({ id: books.id })
+      .from(books)
+      .where(or(eq(books.slug, data.bookSlug), eq(books.id, data.bookSlug)))
+      .get();
+    bookId = book?.id ?? null;
+  }
+
   await db.insert(reportedIssues).values({
     userId: user.userId,
-    bookId: data.bookId ?? null,
+    bookId,
     seriesId: data.seriesId ?? null,
     pageUrl: data.pageUrl,
     description: data.description.trim(),

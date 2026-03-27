@@ -16,9 +16,14 @@ export function GlobalReportButton() {
     if (!description.trim()) return;
 
     startTransition(async () => {
+      // Extract book slug from pathname if on a book page
+      const bookSlugMatch = pathname.match(/^\/book\/([^/]+)/);
+      const bookSlug = bookSlugMatch?.[1] ?? undefined;
+
       const result = await submitIssue({
         pageUrl: pathname,
         description,
+        bookSlug,
       });
 
       if (result.success) {
