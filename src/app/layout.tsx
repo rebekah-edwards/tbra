@@ -12,6 +12,7 @@ import { HamburgerMenu } from "@/components/nav/hamburger-menu";
 import { DesktopNav } from "@/components/nav/desktop-nav";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { GlobalReportButton } from "@/components/global-report-button";
+import { NotificationBell } from "@/components/nav/notification-bell";
 import { TextSizeInitializer } from "@/components/settings/text-size-selector";
 import "./globals.css";
 
@@ -143,6 +144,7 @@ export default async function RootLayout({
                   </Link>
                 )}
                 <SearchBar isLoggedIn={!!session} />
+                {session && <NotificationBell />}
                 <HamburgerMenu isLoggedIn={!!session} isAdmin={userIsAdmin} isSuperAdmin={userIsSuperAdmin} avatarUrl={avatarUrl} displayName={displayName} />
                 {!session && (
                   <div className="hidden lg:flex items-center gap-3">

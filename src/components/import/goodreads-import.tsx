@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { BookshelfAnimation } from "./bookshelf-animation";
 import { ImportOptionsUI } from "./import-options-ui";
+import { ImportCompletionModal } from "./import-completion-modal";
 import { DEFAULT_IMPORT_OPTIONS, type ImportOptions } from "@/lib/import/import-options";
 
 type ImportState = "idle" | "uploading" | "done" | "error" | "cancelled";
@@ -22,6 +23,7 @@ interface DoneEvent {
   existing: number;
   skipped: number;
   errors: { title: string; error: string }[];
+  newBookIds: string[];
 }
 
 export function GoodreadsImport() {
@@ -32,11 +34,13 @@ export function GoodreadsImport() {
   const [showErrors, setShowErrors] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [importOptions, setImportOptions] = useState<ImportOptions>({ ...DEFAULT_IMPORT_OPTIONS });
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [enrichmentStarted, setEnrichmentStarted] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const startTimeRef = useRef<number>(0);
 
-  // Warn before leaving during import
+  // Warn before leaving during Phase 1 import
   useEffect(() => {
     if (state !== "uploading") return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -44,6 +48,31 @@ export function GoodreadsImport() {
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
+  }, [state]);
+
+  // Intercept Next.js route changes during Phase 1
+  useEffect(() => {
+    if (state !== "uploading") return;
+
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const anchor = target.closest("a");
+      if (anchor && anchor.href && !anchor.href.startsWith("javascript:")) {
+        const url = new URL(anchor.href, window.location.origin);
+        if (url.origin === window.location.origin && url.pathname !== window.location.pathname) {
+          const confirmed = window.confirm(
+            "Your import is still in progress. Leaving may result in an incomplete import."
+          );
+          if (!confirmed) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }
+      }
+    };
+
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
   }, [state]);
 
   const handleCancel = useCallback(() => {
@@ -59,8 +88,26 @@ export function GoodreadsImport() {
     setResult(null);
     setErrorMessage("");
     setProgress({ current: 0, total: 0, title: "" });
+    setShowCompletionModal(false);
+    setEnrichmentStarted(false);
     if (fileRef.current) fileRef.current.value = "";
   }, []);
+
+  // Phase 2: Fire background enrichment
+  const startEnrichment = useCallback(async (bookIds: string[]) => {
+    if (bookIds.length === 0 || enrichmentStarted) return;
+    setEnrichmentStarted(true);
+
+    try {
+      await fetch("/api/import/enrich-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookIds }),
+      });
+    } catch (err) {
+      console.error("[goodreads-import] Failed to start enrichment:", err);
+    }
+  }, [enrichmentStarted]);
 
   const handleImport = useCallback(async (file: File) => {
     setState("uploading");
@@ -77,6 +124,7 @@ export function GoodreadsImport() {
     formData.append("updateReadingStates", String(importOptions.updateReadingStates));
     formData.append("updateRatingsReviews", String(importOptions.updateRatingsReviews));
     formData.append("updateOwnedFormats", String(importOptions.updateOwnedFormats));
+    formData.append("isReimport", String(importOptions.isReimport));
 
     try {
       const res = await fetch("/api/import/goodreads", {
@@ -118,8 +166,15 @@ export function GoodreadsImport() {
               const p = event as ProgressEvent;
               setProgress({ current: p.current, total: p.total, title: p.title });
             } else if (event.type === "done") {
-              setResult(event as DoneEvent);
+              const doneEvent = event as DoneEvent;
+              setResult(doneEvent);
+              setShowCompletionModal(true);
               setState("done");
+
+              // Fire Phase 2 enrichment in background
+              if (doneEvent.newBookIds && doneEvent.newBookIds.length > 0) {
+                startEnrichment(doneEvent.newBookIds);
+              }
             } else if (event.type === "error") {
               setErrorMessage(event.message ?? "Import failed");
               setState("error");
@@ -143,7 +198,7 @@ export function GoodreadsImport() {
     } finally {
       abortRef.current = null;
     }
-  }, [state]);
+  }, [state, importOptions, startEnrichment]);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,7 +270,7 @@ export function GoodreadsImport() {
             <p className="text-xs text-muted mt-1">or click to browse</p>
           </div>
           <p className="text-xs text-muted text-center">
-            Imports typically take 1–3 seconds per book while we match your library.
+            Import is fast &mdash; typically under a minute for 1,000+ books. Book details are enriched in the background.
           </p>
 
           {/* What gets imported */}
@@ -244,6 +299,15 @@ export function GoodreadsImport() {
         />
       )}
 
+      {/* Completion modal overlay */}
+      {showCompletionModal && result && (
+        <ImportCompletionModal
+          importedCount={result.imported + result.existing}
+          hasEnrichment={(result.newBookIds?.length ?? 0) > 0}
+          onDismiss={() => setShowCompletionModal(false)}
+        />
+      )}
+
       {/* Cancelled */}
       {state === "cancelled" && (
         <div className="border border-border bg-surface p-5 space-y-3">
@@ -263,7 +327,7 @@ export function GoodreadsImport() {
       )}
 
       {/* Results */}
-      {state === "done" && result && (
+      {state === "done" && result && !showCompletionModal && (
         <div className="border border-border bg-surface p-5 space-y-4">
           <div className="flex items-center gap-2">
             <span className="text-xl text-purple-500">&#10003;</span>
@@ -309,6 +373,12 @@ export function GoodreadsImport() {
                 </div>
               )}
             </div>
+          )}
+
+          {enrichmentStarted && (
+            <p className="text-xs text-muted bg-surface-alt/50 px-3 py-2">
+              Book details are being enriched in the background. You&apos;ll be notified when it&apos;s done.
+            </p>
           )}
 
           <button

@@ -15,17 +15,43 @@ export function ImportOptionsUI({ options, onChange }: ImportOptionsUIProps) {
   return (
     <div className="border border-border/50 bg-surface-alt/50 p-3 space-y-2.5">
       <p className="text-[11px] font-semibold text-muted uppercase tracking-wider">
-        Update options for existing books
+        Import settings
       </p>
+
+      {/* Re-import checkbox */}
+      <label className="flex items-start gap-2.5 cursor-pointer group">
+        <input
+          type="checkbox"
+          checked={options.isReimport}
+          onChange={() => toggle("isReimport")}
+          className="mt-0.5 accent-accent"
+        />
+        <div>
+          <p className="text-xs font-medium text-foreground group-hover:text-accent transition-colors">
+            This is a re-import
+          </p>
+          <p className="text-[11px] text-muted leading-snug">
+            Skip books already in your library entirely (no duplicate reading sessions)
+          </p>
+        </div>
+      </label>
+
+      {/* Divider */}
+      <div className="border-t border-border/30 pt-2">
+        <p className="text-[10px] font-semibold text-muted/80 uppercase tracking-wider mb-2">
+          For existing books
+        </p>
+      </div>
 
       <label className="flex items-start gap-2.5 cursor-pointer group">
         <input
           type="checkbox"
           checked={options.updateReadingStates}
           onChange={() => toggle("updateReadingStates")}
-          className="mt-0.5 accent-accent"
+          disabled={options.isReimport}
+          className="mt-0.5 accent-accent disabled:opacity-40"
         />
-        <div>
+        <div className={options.isReimport ? "opacity-40" : ""}>
           <p className="text-xs font-medium text-foreground group-hover:text-accent transition-colors">
             Update reading states
           </p>
@@ -40,9 +66,10 @@ export function ImportOptionsUI({ options, onChange }: ImportOptionsUIProps) {
           type="checkbox"
           checked={options.updateRatingsReviews}
           onChange={() => toggle("updateRatingsReviews")}
-          className="mt-0.5 accent-accent"
+          disabled={options.isReimport}
+          className="mt-0.5 accent-accent disabled:opacity-40"
         />
-        <div>
+        <div className={options.isReimport ? "opacity-40" : ""}>
           <p className="text-xs font-medium text-foreground group-hover:text-accent transition-colors">
             Update ratings &amp; reviews
           </p>
@@ -57,9 +84,10 @@ export function ImportOptionsUI({ options, onChange }: ImportOptionsUIProps) {
           type="checkbox"
           checked={options.updateOwnedFormats}
           onChange={() => toggle("updateOwnedFormats")}
-          className="mt-0.5 accent-accent"
+          disabled={options.isReimport}
+          className="mt-0.5 accent-accent disabled:opacity-40"
         />
-        <div>
+        <div className={options.isReimport ? "opacity-40" : ""}>
           <p className="text-xs font-medium text-foreground group-hover:text-accent transition-colors">
             Update owned library info
           </p>
@@ -70,7 +98,9 @@ export function ImportOptionsUI({ options, onChange }: ImportOptionsUIProps) {
       </label>
 
       <p className="text-[10px] text-muted/70 leading-snug">
-        New books are always imported. These options only affect books already in your library.
+        {options.isReimport
+          ? "Re-import mode: books already in your library will be skipped entirely."
+          : "New books are always imported. These options only affect books already in your library."}
       </p>
     </div>
   );

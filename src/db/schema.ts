@@ -471,3 +471,17 @@ export const blockedOlKeys = sqliteTable("blocked_ol_keys", {
   reason: text("reason"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
+
+// ─── User notifications ───
+
+export const userNotifications = sqliteTable("user_notifications", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(), // 'import_complete' | 'enrichment_complete' | etc.
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  read: integer("read", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  index("user_notifications_user_idx").on(table.userId),
+]);

@@ -11,9 +11,7 @@ import {
   userFavoriteBooks,
 } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { searchOpenLibrary, type OLSearchResult } from "@/lib/openlibrary";
-import { importFromOpenLibraryAndReturn, findOrCreateAuthor } from "@/lib/actions/books";
-import { enrichBook } from "@/lib/enrichment/enrich-book";
+import { findOrCreateAuthor } from "@/lib/actions/books";
 import crypto from "crypto";
 import type { GoodreadsRow } from "./parse-goodreads";
 import { mergeOwnedFormats, isStateProgression, formatImportError, type ImportOptions, DEFAULT_IMPORT_OPTIONS } from "./import-options";
@@ -33,65 +31,17 @@ export interface ImportDone {
   existing: number;
   skipped: number;
   errors: { title: string; error: string }[];
+  /** Book IDs that were newly created and need enrichment (Phase 2) */
+  newBookIds: string[];
 }
 
 export type ImportEvent = ImportProgress | ImportDone;
-
-const OL_DELAY_MS = 150;
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Normalize a title for fuzzy matching.
- */
-function normalizeTitle(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[:;–—]\s*.+$/, "") // remove subtitle
-    .replace(/^(the|a|an)\s+/i, "") // remove leading article
-    .replace(/[^a-z0-9\s]/g, "") // remove punctuation
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/**
- * Check if an OL search result is a reasonable match for the imported row.
- */
-function isGoodMatch(result: OLSearchResult, row: GoodreadsRow): boolean {
-  const normResult = normalizeTitle(result.title);
-  const normRow = normalizeTitle(row.title);
-
-  if (normResult === normRow) return true;
-
-  if (normResult.includes(normRow) && normResult.length <= normRow.length * 1.5) return true;
-  if (normRow.includes(normResult) && normRow.length <= normResult.length * 1.5) return true;
-
-  const resultWords = normResult.split(" ");
-  const rowWords = normRow.split(" ");
-  const resultSet = new Set(resultWords);
-  const rowSet = new Set(rowWords);
-  const matchesFromRow = rowWords.filter((w) => resultSet.has(w)).length;
-  const matchesFromResult = resultWords.filter((w) => rowSet.has(w)).length;
-
-  if (
-    rowWords.length > 0 &&
-    resultWords.length > 0 &&
-    matchesFromRow / rowWords.length >= 0.6 &&
-    matchesFromResult / resultWords.length >= 0.6
-  ) {
-    return true;
-  }
-
-  return false;
-}
 
 /**
  * Try to find a book already in the DB by title + author (case-insensitive),
  * or by ISBN if provided.
  */
-async function findExistingBook(
+export async function findExistingBook(
   title: string,
   authorName: string | null,
   isbn13?: string | null,
@@ -209,17 +159,20 @@ async function markOwned(userId: string, bookId: string, format: string | null, 
 }
 
 /**
- * Process a single Goodreads import row.
+ * Phase 1: Fast import — process a single Goodreads row.
+ * NO OpenLibrary searches, NO enrichment API calls.
+ * Matches by ISBN/title to existing DB records. If not found, creates a minimal book record.
  */
 async function processRow(
   row: GoodreadsRow,
   userId: string,
   options: ImportOptions
-): Promise<{ status: "imported" | "existing" | "skipped" | "error"; error?: string; bookId?: string }> {
+): Promise<{ status: "imported" | "existing" | "skipped" | "error"; error?: string; bookId?: string; isNewBook?: boolean }> {
   try {
     // 1. Check if book already exists in DB (by ISBN first, then title+author)
     let bookId = await findExistingBook(row.title, row.author || null, row.isbn13, row.isbn10);
     let status: "imported" | "existing" = "imported";
+    let isNewBook = false;
 
     if (bookId) {
       const existingUserState = await db
@@ -228,71 +181,44 @@ async function processRow(
         .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)))
         .get();
       status = existingUserState ? "existing" : "imported";
+
+      // Re-import mode: skip books the user already has entirely
+      if (options.isReimport && existingUserState) {
+        return { status: "skipped", bookId };
+      }
     }
 
     if (!bookId) {
-      let match: OLSearchResult | undefined;
+      // Create minimal book record from CSV data — no OL search
+      const [book] = await db
+        .insert(books)
+        .values({
+          title: row.title,
+          isbn13: row.isbn13,
+          isbn10: row.isbn10,
+          pages: row.pages,
+          publicationYear: row.originalPublicationYear || row.yearPublished,
+        })
+        .returning();
+      bookId = book.id;
+      isNewBook = true;
 
-      // 2a. Try ISBN lookup first (most reliable)
-      const isbn = row.isbn13 || row.isbn10;
-      if (isbn) {
-        await delay(OL_DELAY_MS);
-        const isbnResults = await searchOpenLibrary(isbn, 5);
-        match = isbnResults.find((r) => isGoodMatch(r, row));
-        if (!match && isbnResults.length > 0) {
-          match = isbnResults[0];
-        }
+      if (row.author) {
+        const authorId = await findOrCreateAuthor(row.author);
+        await db.insert(bookAuthors).values({ bookId, authorId }).onConflictDoNothing();
       }
 
-      // 2b. Fallback to title+author text search
-      if (!match) {
-        const query = row.author
-          ? `${row.title} ${row.author}`
-          : row.title;
-
-        await delay(OL_DELAY_MS);
-        const results = await searchOpenLibrary(query, 5);
-        match = results.find((r) => isGoodMatch(r, row));
+      // Additional authors
+      for (const additionalAuthor of row.additionalAuthors) {
+        const authorId = await findOrCreateAuthor(additionalAuthor);
+        await db.insert(bookAuthors).values({ bookId, authorId }).onConflictDoNothing();
       }
 
-      if (match) {
-        bookId = await importFromOpenLibraryAndReturn(match);
-        // Enrichment deferred to nightly task or manual trigger — inline enrichment
-        // during bulk imports exhausts API quotas and risks function timeouts
-        status = "imported";
-      } else {
-        // Create minimal book record
-        const [book] = await db
-          .insert(books)
-          .values({
-            title: row.title,
-            isbn13: row.isbn13,
-            isbn10: row.isbn10,
-            pages: row.pages,
-            publicationYear: row.originalPublicationYear || row.yearPublished,
-          })
-          .returning();
-        bookId = book.id;
+      // Generate SEO slug
+      const { assignBookSlug } = await import("@/lib/utils/slugify");
+      await assignBookSlug(bookId, row.title, row.author ?? "");
 
-        if (row.author) {
-          const authorId = await findOrCreateAuthor(row.author);
-          await db.insert(bookAuthors).values({ bookId, authorId }).onConflictDoNothing();
-        }
-
-        // Additional authors
-        for (const additionalAuthor of row.additionalAuthors) {
-          const authorId = await findOrCreateAuthor(additionalAuthor);
-          await db.insert(bookAuthors).values({ bookId, authorId }).onConflictDoNothing();
-        }
-
-        // Generate SEO slug
-        const { assignBookSlug } = await import("@/lib/utils/slugify");
-        await assignBookSlug(bookId, row.title, row.author ?? "");
-
-        // Enrichment deferred to nightly task — inline enrichment during bulk imports
-        // exhausts API quotas and risks function timeouts
-        status = "imported";
-      }
+      status = "imported";
     }
 
     const isExistingBook = status === "existing";
@@ -304,8 +230,6 @@ async function processRow(
     }
 
     // 4. Set user reading state
-    // Always create user state — if a book is in a Goodreads export, the user tracked it.
-    // Default to "tbr" if no explicit status (prevents orphaned books invisible to the user).
     {
       const existingState = await db
         .select()
@@ -397,7 +321,6 @@ async function processRow(
     if (row.rating || row.review) {
       let reviewText: string | null = null;
       if (row.review) {
-        // Convert HTML to plain text
         let plainText = row.review
           .replace(/<br\s*\/?>/gi, "\n")
           .replace(/<\/?(div|p|em|strong|span|b|i|a)[^>]*>/gi, "")
@@ -409,7 +332,6 @@ async function processRow(
           .replace(/&#39;/g, "'")
           .trim() || null;
 
-        // Wrap spoiler reviews
         if (row.isSpoiler && plainText) {
           plainText = `[SPOILER]\n${plainText}\n[/SPOILER]`;
         }
@@ -424,7 +346,6 @@ async function processRow(
         .get();
 
       if (!existingReview) {
-        // No existing review — create new (always, regardless of options)
         let finishedMonth: number | null = null;
         let finishedYear: number | null = null;
         if (row.dateRead) {
@@ -451,7 +372,6 @@ async function processRow(
           createdAt: reviewCreatedAt,
         });
       } else if (isExistingBook && options.updateRatingsReviews) {
-        // Existing review — fill empty review text + update rating
         const updates: Record<string, unknown> = {};
         if (reviewText && !existingReview.reviewText) {
           updates.reviewText = reviewText;
@@ -501,7 +421,6 @@ async function processRow(
         (s) => s.startsWith("favorite") || s.includes("favorite")
       );
       if (favoriteShelves.length > 0) {
-        // Add to user's favorites if not already there
         const existingFav = await db
           .select()
           .from(userFavoriteBooks)
@@ -509,7 +428,6 @@ async function processRow(
           .get();
 
         if (!existingFav) {
-          // Get next position
           const maxPos = await db.all(sql`
             SELECT MAX(position) as max_pos FROM user_favorite_books WHERE user_id = ${userId}
           `) as { max_pos: number | null }[];
@@ -524,7 +442,7 @@ async function processRow(
       }
     }
 
-    return { status, bookId };
+    return { status, bookId, isNewBook };
   } catch (err) {
     const raw = err instanceof Error ? err.message : "Unknown error";
     console.error(`[goodreads-import] Error processing "${row.title}":`, err);
@@ -533,7 +451,9 @@ async function processRow(
 }
 
 /**
- * Import all rows from a Goodreads CSV, yielding progress events.
+ * Phase 1: Fast import all rows from a Goodreads CSV, yielding progress events.
+ * No OL searches or enrichment — just DB matching and record creation.
+ * Returns newBookIds in the done event for Phase 2 enrichment.
  */
 export async function* importGoodreadsRows(
   rows: GoodreadsRow[],
@@ -544,6 +464,7 @@ export async function* importGoodreadsRows(
   let existing = 0;
   let skipped = 0;
   const errors: { title: string; error: string }[] = [];
+  const newBookIds: string[] = [];
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -554,6 +475,11 @@ export async function* importGoodreadsRows(
     else if (result.status === "skipped") skipped++;
     else if (result.status === "error") {
       errors.push({ title: row.title, error: result.error ?? "Unknown error" });
+    }
+
+    // Track newly created books for Phase 2 enrichment
+    if (result.isNewBook && result.bookId) {
+      newBookIds.push(result.bookId);
     }
 
     yield {
@@ -572,5 +498,6 @@ export async function* importGoodreadsRows(
     existing,
     skipped,
     errors,
+    newBookIds,
   };
 }

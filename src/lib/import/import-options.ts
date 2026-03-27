@@ -5,12 +5,15 @@ export interface ImportOptions {
   updateRatingsReviews: boolean;
   /** Merge owned formats and strip all "unknown" entries for existing books */
   updateOwnedFormats: boolean;
+  /** Re-import mode: skip books the user already has entirely (no duplicate sessions) */
+  isReimport: boolean;
 }
 
 export const DEFAULT_IMPORT_OPTIONS: ImportOptions = {
   updateReadingStates: true,
   updateRatingsReviews: true,
   updateOwnedFormats: true,
+  isReimport: false,
 };
 
 /** Parse import options from FormData (defaults to true if absent) */
@@ -19,6 +22,7 @@ export function parseImportOptions(formData: FormData): ImportOptions {
     updateReadingStates: formData.get("updateReadingStates") !== "false",
     updateRatingsReviews: formData.get("updateRatingsReviews") !== "false",
     updateOwnedFormats: formData.get("updateOwnedFormats") !== "false",
+    isReimport: formData.get("isReimport") === "true",
   };
 }
 

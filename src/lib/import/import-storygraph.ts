@@ -1,9 +1,7 @@
 import { db } from "@/db";
 import { books, bookAuthors, userBookState, userBookRatings, readingSessions, userBookReviews } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { searchOpenLibrary, type OLSearchResult } from "@/lib/openlibrary";
-import { importFromOpenLibraryAndReturn, findOrCreateAuthor } from "@/lib/actions/books";
-import { enrichBook } from "@/lib/enrichment/enrich-book";
+import { findOrCreateAuthor } from "@/lib/actions/books";
 import crypto from "crypto";
 import type { StoryGraphRow } from "./parse-storygraph";
 import { mergeOwnedFormats, isStateProgression, formatImportError, type ImportOptions, DEFAULT_IMPORT_OPTIONS } from "./import-options";
@@ -23,121 +21,11 @@ export interface ImportDone {
   existing: number;
   skipped: number;
   errors: { title: string; error: string }[];
+  /** Book IDs that were newly created and need enrichment (Phase 2) */
+  newBookIds: string[];
 }
 
 export type ImportEvent = ImportProgress | ImportDone;
-
-const OL_DELAY_MS = 150;
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Normalize a title for fuzzy matching: lowercase, remove subtitles, articles, punctuation.
- */
-function normalizeTitle(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[:;–—]\s*.+$/, "") // remove subtitle
-    .replace(/^(the|a|an)\s+/i, "") // remove leading article
-    .replace(/[^a-z0-9\s]/g, "") // remove punctuation
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/**
- * Check if an OL search result is a reasonable match for the imported row.
- */
-function isGoodMatch(result: OLSearchResult, row: StoryGraphRow): boolean {
-  const normResult = normalizeTitle(result.title);
-  const normRow = normalizeTitle(row.title);
-
-  // Exact normalized match
-  if (normResult === normRow) return true;
-
-  // Row title contained in result (but result shouldn't be much longer — reject "Summary of X" padding)
-  if (normResult.includes(normRow) && normResult.length <= normRow.length * 1.5) return true;
-  if (normRow.includes(normResult) && normRow.length <= normResult.length * 1.5) return true;
-
-  // Check word overlap — require high overlap in BOTH directions to avoid
-  // matching "Summary and Review of The Midnight Library" for "The Midnight Library"
-  const resultWords = normResult.split(" ");
-  const rowWords = normRow.split(" ");
-  const resultSet = new Set(resultWords);
-  const rowSet = new Set(rowWords);
-  const matchesFromRow = rowWords.filter((w) => resultSet.has(w)).length;
-  const matchesFromResult = resultWords.filter((w) => rowSet.has(w)).length;
-
-  // Both directions must have >= 60% overlap
-  if (
-    rowWords.length > 0 &&
-    resultWords.length > 0 &&
-    matchesFromRow / rowWords.length >= 0.6 &&
-    matchesFromResult / resultWords.length >= 0.6
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Mark a book as owned, optionally adding a format. Merges with existing state.
- * When cleanUnknown is true, strips all "unknown" entries from existing formats.
- */
-async function markOwned(userId: string, bookId: string, format: string | null, cleanUnknown: boolean): Promise<void> {
-  const existing = await db
-    .select()
-    .from(userBookState)
-    .where(
-      and(
-        eq(userBookState.userId, userId),
-        eq(userBookState.bookId, bookId)
-      )
-    )
-    .get();
-
-  if (existing) {
-    const currentFormats: string[] = existing.ownedFormats
-      ? (JSON.parse(existing.ownedFormats) as string[])
-      : [];
-    let updatedFormats: string[];
-    if (cleanUnknown) {
-      // Strip all "unknown" entries and merge new format
-      updatedFormats = mergeOwnedFormats(currentFormats, format);
-    } else {
-      // Legacy behavior: just append if not present
-      updatedFormats = [...currentFormats];
-      if (format && !updatedFormats.includes(format)) {
-        updatedFormats.push(format);
-      }
-    }
-    // If no formats at all, default to "unknown" to signal owned
-    if (updatedFormats.length === 0) {
-      updatedFormats.push("unknown");
-    }
-    await db
-      .update(userBookState)
-      .set({
-        ownedFormats: JSON.stringify(updatedFormats),
-        updatedAt: new Date().toISOString(),
-      })
-      .where(
-        and(
-          eq(userBookState.userId, userId),
-          eq(userBookState.bookId, bookId)
-        )
-      );
-  } else {
-    const formats = format ? [format] : ["unknown"];
-    await db.insert(userBookState).values({
-      userId,
-      bookId,
-      ownedFormats: JSON.stringify(formats),
-    });
-  }
-}
 
 /**
  * Try to find a book already in the DB by title + author (case-insensitive),
@@ -172,19 +60,76 @@ async function findExistingBook(
 }
 
 /**
- * Process a single import row. Returns the status of the operation.
+ * Mark a book as owned, optionally adding a format. Merges with existing state.
+ * When cleanUnknown is true, strips all "unknown" entries from existing formats.
+ */
+async function markOwned(userId: string, bookId: string, format: string | null, cleanUnknown: boolean): Promise<void> {
+  const existing = await db
+    .select()
+    .from(userBookState)
+    .where(
+      and(
+        eq(userBookState.userId, userId),
+        eq(userBookState.bookId, bookId)
+      )
+    )
+    .get();
+
+  if (existing) {
+    const currentFormats: string[] = existing.ownedFormats
+      ? (JSON.parse(existing.ownedFormats) as string[])
+      : [];
+    let updatedFormats: string[];
+    if (cleanUnknown) {
+      updatedFormats = mergeOwnedFormats(currentFormats, format);
+    } else {
+      updatedFormats = [...currentFormats];
+      if (format && !updatedFormats.includes(format)) {
+        updatedFormats.push(format);
+      }
+    }
+    if (updatedFormats.length === 0) {
+      updatedFormats.push("unknown");
+    }
+    await db
+      .update(userBookState)
+      .set({
+        ownedFormats: JSON.stringify(updatedFormats),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(
+        and(
+          eq(userBookState.userId, userId),
+          eq(userBookState.bookId, bookId)
+        )
+      );
+  } else {
+    const formats = format ? [format] : ["unknown"];
+    await db.insert(userBookState).values({
+      userId,
+      bookId,
+      ownedFormats: JSON.stringify(formats),
+    });
+  }
+}
+
+/**
+ * Phase 1: Fast import — process a single StoryGraph row.
+ * NO OpenLibrary searches, NO enrichment API calls.
+ * Matches by ISBN/title to existing DB records. If not found, creates a minimal book record.
  */
 async function processRow(
   row: StoryGraphRow,
   userId: string,
   options: ImportOptions
-): Promise<{ status: "imported" | "existing" | "skipped" | "error"; error?: string; bookId?: string }> {
+): Promise<{ status: "imported" | "existing" | "skipped" | "error"; error?: string; bookId?: string; isNewBook?: boolean }> {
   const primaryAuthor = row.authors[0] ?? null;
 
   try {
     // 1. Check if book already exists in DB (by ISBN first, then title+author)
     let bookId = await findExistingBook(row.title, primaryAuthor, row.isbn);
     let status: "imported" | "existing" = "imported";
+    let isNewBook = false;
 
     // "existing" means the user already has this book in their library
     if (bookId) {
@@ -194,76 +139,46 @@ async function processRow(
         .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)))
         .get();
       status = existingUserState ? "existing" : "imported";
+
+      // Re-import mode: skip books the user already has entirely
+      if (options.isReimport && existingUserState) {
+        return { status: "skipped", bookId };
+      }
     }
 
     if (!bookId) {
-      let match: OLSearchResult | undefined;
+      // Create minimal book record from CSV data — no OL search
+      const [book] = await db
+        .insert(books)
+        .values({
+          title: row.title,
+          isbn13: row.isbn?.length === 13 ? row.isbn : null,
+          isbn10: row.isbn?.length === 10 ? row.isbn : null,
+          asin: row.asin ?? null,
+        })
+        .returning();
+      bookId = book.id;
+      isNewBook = true;
 
-      // 2a. Try ISBN-first lookup (direct hit, much more reliable than text search)
-      if (row.isbn) {
-        await delay(OL_DELAY_MS);
-        const isbnResults = await searchOpenLibrary(row.isbn, 5);
-        match = isbnResults.find((r) => isGoodMatch(r, row));
-        if (!match && isbnResults.length > 0) {
-          // ISBN matched something — trust it even if title match is loose
-          match = isbnResults[0];
-        }
+      // Link author if we have one
+      if (primaryAuthor) {
+        const authorId = await findOrCreateAuthor(primaryAuthor);
+        await db
+          .insert(bookAuthors)
+          .values({ bookId, authorId })
+          .onConflictDoNothing();
       }
 
-      // 2b. Fallback to title+author text search
-      if (!match) {
-        const query = primaryAuthor
-          ? `${row.title} ${primaryAuthor}`
-          : row.title;
+      // Generate SEO slug
+      const { assignBookSlug } = await import("@/lib/utils/slugify");
+      await assignBookSlug(bookId, row.title, primaryAuthor ?? "");
 
-        await delay(OL_DELAY_MS);
-        const results = await searchOpenLibrary(query, 5);
-        match = results.find((r) => isGoodMatch(r, row));
-      }
-
-      if (match) {
-        // 3. Import via OL (handles book creation, authors, genres, enrichment)
-        bookId = await importFromOpenLibraryAndReturn(match);
-        // Enrichment deferred to nightly task — inline enrichment during bulk imports
-        // exhausts API quotas and risks function timeouts
-        status = "imported";
-      } else {
-        // 4. No OL match — create minimal book record with available identifiers
-        const [book] = await db
-          .insert(books)
-          .values({
-            title: row.title,
-            isbn13: row.isbn?.length === 13 ? row.isbn : null,
-            isbn10: row.isbn?.length === 10 ? row.isbn : null,
-            asin: row.asin ?? null,
-          })
-          .returning();
-        bookId = book.id;
-
-        // Link author if we have one
-        if (primaryAuthor) {
-          const authorId = await findOrCreateAuthor(primaryAuthor);
-          await db
-            .insert(bookAuthors)
-            .values({ bookId, authorId })
-            .onConflictDoNothing();
-        }
-
-        // Generate SEO slug
-        const { assignBookSlug } = await import("@/lib/utils/slugify");
-        await assignBookSlug(bookId, row.title, primaryAuthor ?? "");
-
-        // Enrichment deferred to nightly task — inline enrichment during bulk imports
-        // exhausts API quotas and risks function timeouts
-        status = "imported";
-      }
+      status = "imported";
     }
 
     const isExistingBook = status === "existing";
 
-    // 5. Set user reading state (direct DB — no server action cookie dependency)
-    // Always create user state — if a book is in an export, the user tracked it.
-    // Default to "tbr" if no explicit status (prevents orphaned books invisible to the user).
+    // 5. Set user reading state
     {
       const existingState = await db
         .select()
@@ -273,13 +188,11 @@ async function processRow(
 
       const stateValue = row.readStatus === "tbr" ? "tbr" : row.readStatus ?? "tbr";
 
-      // Use the completion date as updatedAt so completed books sort by when they were finished
       const updatedAt = row.lastDateRead
         ? `${row.lastDateRead}T00:00:00.000Z`
         : new Date().toISOString();
 
       if (existingState) {
-        // For existing books: skip if option disabled, or only move forward
         const shouldUpdateState = !isExistingBook || (
           options.updateReadingStates &&
           isStateProgression(existingState.state, stateValue)
@@ -301,8 +214,7 @@ async function processRow(
 
       // Create a completed reading session if we have a completion date
       if ((row.readStatus === "completed" || row.readStatus === "dnf") && row.lastDateRead) {
-        const dateStr = row.lastDateRead; // Already "YYYY-MM-DD" from parser
-        // Find next read_number for this user+book
+        const dateStr = row.lastDateRead;
         const lastSession = await db.all(sql`
           SELECT MAX(read_number) as max_num FROM reading_sessions
           WHERE user_id = ${userId} AND book_id = ${bookId}
@@ -322,7 +234,7 @@ async function processRow(
       }
     }
 
-    // 6. Set rating if present (direct DB)
+    // 6. Set rating if present
     if (row.rating && (!isExistingBook || options.updateRatingsReviews)) {
       const existingRating = await db
         .select()
@@ -345,11 +257,10 @@ async function processRow(
       }
     }
 
-    // 7. Import review record if rating or written review exists
+    // 7. Import review record
     if (row.rating || row.review) {
       let plainText: string | null = null;
       if (row.review) {
-        // Strip HTML tags for plain text storage
         plainText = row.review
           .replace(/<br\s*\/?>/gi, "\n")
           .replace(/<\/?(div|p|em|strong|span|b|i)[^>]*>/gi, "")
@@ -368,7 +279,6 @@ async function processRow(
         .get();
 
       if (!existingReview) {
-        // No existing review — create new (always, regardless of options)
         let finishedMonth: number | null = null;
         let finishedYear: number | null = null;
         if (row.lastDateRead) {
@@ -395,7 +305,6 @@ async function processRow(
           source: "storygraph",
         });
       } else if (isExistingBook && options.updateRatingsReviews) {
-        // Existing review — fill empty review text + update rating
         const updates: Record<string, unknown> = {};
         if (plainText && !existingReview.reviewText) {
           updates.reviewText = plainText;
@@ -413,12 +322,12 @@ async function processRow(
       }
     }
 
-    // 8. Set owned status — track format if provided, or just mark as owned
+    // 8. Set owned status
     if (row.owned && (!isExistingBook || options.updateOwnedFormats)) {
       await markOwned(userId, bookId, row.format, options.updateOwnedFormats);
     }
 
-    // 9. Set active format for currently reading books based on StoryGraph format
+    // 9. Set active format for currently reading books
     if (row.format && row.readStatus === "currently_reading") {
       const existState = await db
         .select()
@@ -439,7 +348,7 @@ async function processRow(
       }
     }
 
-    return { status, bookId };
+    return { status, bookId, isNewBook };
   } catch (err) {
     const raw = err instanceof Error ? err.message : "Unknown error";
     console.error(`[import] Error processing "${row.title}":`, err);
@@ -448,7 +357,9 @@ async function processRow(
 }
 
 /**
- * Import all rows from a StoryGraph CSV, yielding progress events.
+ * Phase 1: Fast import all rows from a StoryGraph CSV, yielding progress events.
+ * No OL searches or enrichment — just DB matching and record creation.
+ * Returns newBookIds in the done event for Phase 2 enrichment.
  */
 export async function* importStoryGraphRows(
   rows: StoryGraphRow[],
@@ -459,6 +370,7 @@ export async function* importStoryGraphRows(
   let existing = 0;
   let skipped = 0;
   const errors: { title: string; error: string }[] = [];
+  const newBookIds: string[] = [];
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -469,6 +381,11 @@ export async function* importStoryGraphRows(
     else if (result.status === "skipped") skipped++;
     else if (result.status === "error") {
       errors.push({ title: row.title, error: result.error ?? "Unknown error" });
+    }
+
+    // Track newly created books for Phase 2 enrichment
+    if (result.isNewBook && result.bookId) {
+      newBookIds.push(result.bookId);
     }
 
     yield {
@@ -487,5 +404,6 @@ export async function* importStoryGraphRows(
     existing,
     skipped,
     errors,
+    newBookIds,
   };
 }
