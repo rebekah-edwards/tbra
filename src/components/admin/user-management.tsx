@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { updateUserAccountType } from "@/lib/actions/admin-users";
 import { syncUsersFromLive } from "@/lib/actions/admin-sync";
 import { AccountBadge } from "@/components/profile/account-badge";
@@ -161,9 +162,15 @@ export function UserManagement({
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {user.displayName || user.email.split("@")[0]}
-                  </p>
+                  {user.username ? (
+                    <Link href={`/u/${user.username}`} className="text-sm font-medium text-foreground truncate hover:text-primary transition-colors">
+                      {user.displayName || user.email.split("@")[0]}
+                    </Link>
+                  ) : (
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {user.displayName || user.email.split("@")[0]}
+                    </p>
+                  )}
                   <AccountBadge accountType={user.accountType} />
                   {isSelf && (
                     <span className="text-[10px] text-muted">(you)</span>
@@ -171,7 +178,9 @@ export function UserManagement({
                 </div>
                 <p className="text-xs text-muted truncate">{user.email}</p>
                 {user.username && (
-                  <p className="text-xs text-muted/70">@{user.username}</p>
+                  <Link href={`/u/${user.username}`} className="text-xs text-muted/70 hover:text-primary transition-colors">
+                    @{user.username}
+                  </Link>
                 )}
                 <p className="text-[10px] text-muted/50 mt-0.5">
                   Joined {memberSince}

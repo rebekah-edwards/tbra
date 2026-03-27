@@ -27,7 +27,7 @@ export default async function SettingsPage() {
   ]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:w-[60%] lg:mx-auto">
       <div>
         <h1 className="text-foreground text-2xl font-bold tracking-tight">Settings</h1>
         <p className="text-sm text-muted mt-1">

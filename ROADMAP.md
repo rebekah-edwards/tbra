@@ -30,6 +30,7 @@
 20. Mobile animations refinement
 21. Buddy reads (much later phase)
 22. **Pacing-based recommendations** — Pacing aggregation and display built (stoplight-colored pills on book pages, beta_tester + super_admin pacing trusted). Once enough reviews include pacing data, add pacing filter to Discover and wire into recommendation scoring (scaffold #6 in recommendations.ts).
+23. **New follower notifications** — Email and/or in-app notification when someone follows you. Currently no notification is triggered on follow.
 
 ## Completed
 

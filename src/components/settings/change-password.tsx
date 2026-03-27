@@ -10,7 +10,7 @@ export function ChangePassword() {
     <div>
       <h2 className="section-heading text-lg mb-3">Change Password</h2>
 
-      <form action={action} className="space-y-3 max-w-sm">
+      <form action={action} className="space-y-3 max-w-md">
         {state.error && (
           <div className="rounded-lg border border-intensity-4/30 bg-intensity-4/10 px-4 py-3 text-sm text-intensity-4">
             {state.error}
