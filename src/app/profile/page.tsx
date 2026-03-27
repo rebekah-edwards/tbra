@@ -10,6 +10,7 @@ import { getUser, getUserStats } from "@/lib/queries/profile";
 import { getUserFavorites } from "@/lib/queries/favorites";
 import { getUserReviewsWithBooks } from "@/lib/queries/user-reviews";
 import { getRecentNotes } from "@/lib/queries/reading-notes";
+import { getFollowerCount, getFollowingCount } from "@/lib/queries/follows";
 import { FavoritesShelf } from "@/components/profile/favorites-shelf";
 import { ReviewHistory } from "@/components/profile/review-history";
 import { ReadingJournal } from "@/components/profile/reading-journal";
@@ -23,11 +24,13 @@ export default async function ProfilePage() {
   const user = await getUser(session.userId);
   if (!user) redirect("/login");
 
-  const [stats, favorites, reviews, journalNotes] = await Promise.all([
+  const [stats, favorites, reviews, journalNotes, followerCount, followingCount] = await Promise.all([
     getUserStats(session.userId),
     getUserFavorites(session.userId),
     getUserReviewsWithBooks(session.userId, 6),
     getRecentNotes(session.userId, 20),
+    getFollowerCount(session.userId),
+    getFollowingCount(session.userId),
   ]);
 
   const memberSince = new Date(user.createdAt).toLocaleDateString("en-US", {
@@ -83,9 +86,13 @@ export default async function ProfilePage() {
             <p className="text-xs text-muted mt-1.5">
               Member since {memberSince}
             </p>
-            <p className="text-sm font-medium text-foreground">
-              {stats.completed} books read
-            </p>
+            <div className="flex items-center gap-3 mt-1 text-sm">
+              <span className="font-medium text-foreground">{stats.completed} books read</span>
+              <span className="text-muted">·</span>
+              <span className="text-foreground"><strong>{followerCount}</strong> <span className="text-muted">followers</span></span>
+              <span className="text-muted">·</span>
+              <span className="text-foreground"><strong>{followingCount}</strong> <span className="text-muted">following</span></span>
+            </div>
             <div className="flex items-center gap-3 mt-1.5">
               <Link
                 href="/profile/edit"
