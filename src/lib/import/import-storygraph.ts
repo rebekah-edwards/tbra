@@ -121,27 +121,30 @@ async function markOwned(userId: string, bookId: string, format: string | null, 
 async function processRow(
   row: StoryGraphRow,
   userId: string,
-  options: ImportOptions
+  options: ImportOptions,
+  cache?: Awaited<ReturnType<typeof import("./import-goodreads")["buildLookupCache"]>>
 ): Promise<{ status: "imported" | "existing" | "skipped" | "error"; error?: string; bookId?: string; isNewBook?: boolean }> {
   const primaryAuthor = row.authors[0] ?? null;
+  const isbn13 = row.isbn?.length === 13 ? row.isbn : null;
+  const isbn10 = row.isbn?.length === 10 ? row.isbn : null;
 
   try {
-    // 1. Check if book already exists in DB (by ISBN first, then title+author)
-    let bookId = await findExistingBook(row.title, primaryAuthor, row.isbn);
+    // 1. Check if book already exists — use cache if available (fast)
+    let bookId = cache
+      ? cache.findBook(row.title, primaryAuthor, isbn13, isbn10)
+      : await findExistingBook(row.title, primaryAuthor, row.isbn);
     let status: "imported" | "existing" = "imported";
     let isNewBook = false;
 
-    // "existing" means the user already has this book in their library
     if (bookId) {
-      const existingUserState = await db
+      const hasState = cache ? cache.hasUserState(bookId) : !!(await db
         .select()
         .from(userBookState)
         .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)))
-        .get();
-      status = existingUserState ? "existing" : "imported";
+        .get());
+      status = hasState ? "existing" : "imported";
 
-      // Re-import mode: skip books the user already has entirely
-      if (options.isReimport && existingUserState) {
+      if (options.isReimport && hasState) {
         return { status: "skipped", bookId };
       }
     }
@@ -159,6 +162,8 @@ async function processRow(
         .returning();
       bookId = book.id;
       isNewBook = true;
+
+      cache?.registerBook(bookId, row.title, primaryAuthor, isbn13, isbn10);
 
       // Link author if we have one
       if (primaryAuthor) {
@@ -180,11 +185,14 @@ async function processRow(
 
     // 5. Set user reading state
     {
-      const existingState = await db
-        .select()
-        .from(userBookState)
-        .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)))
-        .get();
+      const cachedState = cache?.getUserState(bookId);
+      const existingState = cachedState !== undefined
+        ? (cachedState !== null ? { state: cachedState } : null)
+        : await db
+            .select()
+            .from(userBookState)
+            .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)))
+            .get();
 
       const stateValue = row.readStatus === "tbr" ? "tbr" : row.readStatus ?? "tbr";
 
@@ -202,6 +210,7 @@ async function processRow(
             .update(userBookState)
             .set({ state: stateValue ?? existingState.state, updatedAt })
             .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
+          cache?.registerUserState(bookId, stateValue ?? existingState.state);
         }
       } else {
         await db.insert(userBookState).values({
@@ -210,6 +219,7 @@ async function processRow(
           state: stateValue,
           updatedAt,
         });
+        cache?.registerUserState(bookId, stateValue);
       }
 
       // Create a completed reading session if we have a completion date
@@ -366,6 +376,10 @@ export async function* importStoryGraphRows(
   userId: string,
   options: ImportOptions = DEFAULT_IMPORT_OPTIONS
 ): AsyncGenerator<ImportEvent> {
+  // Pre-load all lookup data into memory for fast matching
+  const { buildLookupCache } = await import("./import-goodreads");
+  const cache = await buildLookupCache(userId);
+
   let imported = 0;
   let existing = 0;
   let skipped = 0;
@@ -374,7 +388,7 @@ export async function* importStoryGraphRows(
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const result = await processRow(row, userId, options);
+    const result = await processRow(row, userId, options, cache);
 
     if (result.status === "imported") imported++;
     else if (result.status === "existing") existing++;

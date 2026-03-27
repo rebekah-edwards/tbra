@@ -166,24 +166,27 @@ async function markOwned(userId: string, bookId: string, format: string | null, 
 async function processRow(
   row: GoodreadsRow,
   userId: string,
-  options: ImportOptions
+  options: ImportOptions,
+  cache?: LookupCache
 ): Promise<{ status: "imported" | "existing" | "skipped" | "error"; error?: string; bookId?: string; isNewBook?: boolean }> {
   try {
-    // 1. Check if book already exists in DB (by ISBN first, then title+author)
-    let bookId = await findExistingBook(row.title, row.author || null, row.isbn13, row.isbn10);
+    // 1. Check if book already exists — use cache if available (fast), fall back to DB query
+    let bookId = cache
+      ? cache.findBook(row.title, row.author || null, row.isbn13, row.isbn10)
+      : await findExistingBook(row.title, row.author || null, row.isbn13, row.isbn10);
     let status: "imported" | "existing" = "imported";
     let isNewBook = false;
 
     if (bookId) {
-      const existingUserState = await db
+      const hasState = cache ? cache.hasUserState(bookId) : !!(await db
         .select()
         .from(userBookState)
         .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)))
-        .get();
-      status = existingUserState ? "existing" : "imported";
+        .get());
+      status = hasState ? "existing" : "imported";
 
       // Re-import mode: skip books the user already has entirely
-      if (options.isReimport && existingUserState) {
+      if (options.isReimport && hasState) {
         return { status: "skipped", bookId };
       }
     }
@@ -202,6 +205,9 @@ async function processRow(
         .returning();
       bookId = book.id;
       isNewBook = true;
+
+      // Register in cache so duplicate CSV rows don't create duplicates
+      cache?.registerBook(bookId, row.title, row.author || null, row.isbn13, row.isbn10);
 
       if (row.author) {
         const authorId = await findOrCreateAuthor(row.author);
@@ -231,11 +237,14 @@ async function processRow(
 
     // 4. Set user reading state
     {
-      const existingState = await db
-        .select()
-        .from(userBookState)
-        .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)))
-        .get();
+      const cachedState = cache?.getUserState(bookId);
+      const existingState = cachedState !== undefined
+        ? (cachedState !== null ? { state: cachedState } : null)
+        : await db
+            .select()
+            .from(userBookState)
+            .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)))
+            .get();
 
       const stateValue = row.readStatus ?? "tbr";
 
@@ -255,6 +264,7 @@ async function processRow(
             .update(userBookState)
             .set({ state: stateValue ?? existingState.state, updatedAt })
             .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
+          cache?.registerUserState(bookId, stateValue ?? existingState.state);
         }
       } else {
         await db.insert(userBookState).values({
@@ -263,6 +273,7 @@ async function processRow(
           state: stateValue,
           updatedAt,
         });
+        cache?.registerUserState(bookId, stateValue);
       }
 
       // Create reading sessions for completed/currently-reading books
@@ -451,6 +462,86 @@ async function processRow(
 }
 
 /**
+ * Pre-load lookup caches to avoid per-book DB round-trips.
+ * This turns ~1800 remote queries into 3-4 bulk queries at startup.
+ */
+export async function buildLookupCache(userId: string) {
+  // Load all ISBNs → book ID
+  const isbn13Map = new Map<string, string>();
+  const isbn10Map = new Map<string, string>();
+  const allIsbns = await db.all(sql`
+    SELECT id, isbn_13, isbn_10 FROM books
+    WHERE isbn_13 IS NOT NULL OR isbn_10 IS NOT NULL
+  `) as { id: string; isbn_13: string | null; isbn_10: string | null }[];
+  for (const row of allIsbns) {
+    if (row.isbn_13) isbn13Map.set(row.isbn_13, row.id);
+    if (row.isbn_10) isbn10Map.set(row.isbn_10, row.id);
+  }
+
+  // Load all title+author combos → book ID
+  const titleAuthorMap = new Map<string, string>();
+  const allBooks = await db.all(sql`
+    SELECT b.id, LOWER(b.title) as title_lower, LOWER(a.name) as author_lower
+    FROM books b
+    LEFT JOIN book_authors ba ON b.id = ba.book_id
+    LEFT JOIN authors a ON ba.author_id = a.id
+  `) as { id: string; title_lower: string; author_lower: string | null }[];
+  for (const row of allBooks) {
+    const key = row.author_lower ? `${row.title_lower}|||${row.author_lower}` : row.title_lower;
+    titleAuthorMap.set(key, row.id);
+    // Also store title-only as fallback
+    if (!titleAuthorMap.has(row.title_lower)) {
+      titleAuthorMap.set(row.title_lower, row.id);
+    }
+  }
+
+  // Load user's existing book states
+  const userStateMap = new Map<string, string>();
+  const userStates = await db.all(sql`
+    SELECT book_id, state FROM user_book_state WHERE user_id = ${userId}
+  `) as { book_id: string; state: string }[];
+  for (const row of userStates) {
+    userStateMap.set(row.book_id, row.state);
+  }
+
+  return {
+    isbn13Map,
+    isbn10Map,
+    titleAuthorMap,
+    userStateMap,
+    findBook(title: string, author: string | null, isbn13?: string | null, isbn10?: string | null): string | null {
+      if (isbn13 && isbn13Map.has(isbn13)) return isbn13Map.get(isbn13)!;
+      if (isbn10 && isbn10Map.has(isbn10)) return isbn10Map.get(isbn10)!;
+      const titleLower = title.toLowerCase();
+      if (author) {
+        const key = `${titleLower}|||${author.toLowerCase()}`;
+        if (titleAuthorMap.has(key)) return titleAuthorMap.get(key)!;
+      }
+      return titleAuthorMap.get(titleLower) ?? null;
+    },
+    hasUserState(bookId: string): boolean {
+      return userStateMap.has(bookId);
+    },
+    getUserState(bookId: string): string | null {
+      return userStateMap.get(bookId) ?? null;
+    },
+    // Register newly created books so subsequent rows can find them
+    registerBook(bookId: string, title: string, author: string | null, isbn13?: string | null, isbn10?: string | null) {
+      if (isbn13) isbn13Map.set(isbn13, bookId);
+      if (isbn10) isbn10Map.set(isbn10, bookId);
+      const titleLower = title.toLowerCase();
+      if (author) titleAuthorMap.set(`${titleLower}|||${author.toLowerCase()}`, bookId);
+      titleAuthorMap.set(titleLower, bookId);
+    },
+    registerUserState(bookId: string, state: string) {
+      userStateMap.set(bookId, state);
+    },
+  };
+}
+
+type LookupCache = Awaited<ReturnType<typeof buildLookupCache>>;
+
+/**
  * Phase 1: Fast import all rows from a Goodreads CSV, yielding progress events.
  * No OL searches or enrichment — just DB matching and record creation.
  * Returns newBookIds in the done event for Phase 2 enrichment.
@@ -460,6 +551,9 @@ export async function* importGoodreadsRows(
   userId: string,
   options: ImportOptions = DEFAULT_IMPORT_OPTIONS
 ): AsyncGenerator<ImportEvent> {
+  // Pre-load all lookup data into memory (3-4 bulk queries instead of ~1800 per-book queries)
+  const cache = await buildLookupCache(userId);
+
   let imported = 0;
   let existing = 0;
   let skipped = 0;
@@ -468,7 +562,7 @@ export async function* importGoodreadsRows(
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const result = await processRow(row, userId, options);
+    const result = await processRow(row, userId, options, cache);
 
     if (result.status === "imported") imported++;
     else if (result.status === "existing") existing++;
