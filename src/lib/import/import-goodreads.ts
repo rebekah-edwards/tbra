@@ -37,7 +37,7 @@ export interface ImportDone {
 
 export type ImportEvent = ImportProgress | ImportDone;
 
-const OL_DELAY_MS = 300;
+const OL_DELAY_MS = 150;
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -257,13 +257,8 @@ async function processRow(
 
       if (match) {
         bookId = await importFromOpenLibraryAndReturn(match);
-        // Trigger enrichment explicitly — after() in importFromOpenLibraryAndReturn
-        // doesn't fire outside of serverless route context
-        if (bookId) {
-          enrichBook(bookId).catch((err) => {
-            console.error(`[goodreads-import] Enrichment error for "${row.title}":`, err);
-          });
-        }
+        // Enrichment deferred to nightly task or manual trigger — inline enrichment
+        // during bulk imports exhausts API quotas and risks function timeouts
         status = "imported";
       } else {
         // Create minimal book record
@@ -294,11 +289,8 @@ async function processRow(
         const { assignBookSlug } = await import("@/lib/utils/slugify");
         await assignBookSlug(bookId, row.title, row.author ?? "");
 
-        // Trigger enrichment for unmatched books
-        enrichBook(bookId).catch((err) => {
-          console.error(`[goodreads-import] Enrichment error for "${row.title}":`, err);
-        });
-
+        // Enrichment deferred to nightly task — inline enrichment during bulk imports
+        // exhausts API quotas and risks function timeouts
         status = "imported";
       }
     }
