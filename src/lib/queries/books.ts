@@ -481,10 +481,10 @@ const NON_ENGLISH_PATTERNS = [
   // German words/markers
   /\b(das|der|die|und|oder|für|über|ein|eine|vom|zur|zum|Tödliche|Lektion|Geschichte|Buch|erwacht|Geheimnis)\b/i,
   // French articles/prepositions/words
-  /\b(avec|dans|pour|une|fille|froide|lune|autres|mortels|pasteur|monde|héritage|incroyable|affreuse|meurtrière)\b/i,
+  /\b(avec|dans|pour|une|fille|froide|lune|autres|mortels|pasteur|monde|héritage|incroyable|affreuse|meurtrière|charmante?|garce|allumeuse|pétard|nouvelle|nouvelle|trop|chance|maison|coeur|amour|nuit|jour|mort|petit|petite|grand|grande|noir|blanc|rouge|bleu|vert|vrai|faux|nouveau|beau|belle|jeune|vieux|haut|bas|seul|tout|même|autre|cher|chère)\b/i,
   /\b(le|la|les|du|des|au|aux|ce|cette|qui|est|sont|sur|par|en)\b(?=\s+[a-zà-ÿ])/i,
   // Spanish/Portuguese
-  /\b(del|los|las|por|como|desde|hacia|seus|sua|seu|mejor|amiga|amigo|sangre|fuego|ceniza|linaje|gracia|junto|monstruo|viene|verme|secreto|cuentos|comienzo|luchador|cumpleaños|pequeño|favor)\b/i,
+  /\b(del|los|las|por|como|desde|hacia|seus|sua|seu|mejor|amiga|amigo|sangre|fuego|ceniza|linaje|gracia|junto|monstruo|viene|verme|secreto|cuentos|comienzo|luchador|cumpleaños|pequeño|favor|aquí|casa|sal|lágrimas|cartas|diablo|caza|poder|reglas|estuche)\b/i,
   // Italian
   /\b(nel|nella|della|degli|delle|dell|giardino|oscurità|sogni)\b/i,
   // Dutch
@@ -495,6 +495,10 @@ const NON_ENGLISH_PATTERNS = [
   /^Un\s+[a-záéíóúñ]/i,
   // Edition markers in other languages
   /\bédition\b|\bTeil\b|\bBand\b|\bTome\b|\bTomo\b|\bLivre\b|\blivro\b|\bSérie\b/i,
+  // Common non-English suffixes (words ending in -zione, -ción, -ção, -heit, -keit, -ung)
+  /\b\w+(zione|ción|ção|heit|keit|ung|eux|euse|eux|isse)\b/i,
+  // Titles starting with "Estuche" (Spanish box set) or "Coffret" (French box set)
+  /^(Estuche|Coffret)\s/i,
   // Words with accented characters (any word containing ö, ü, ä, è, ê, ë, ñ, etc.)
   // Two+ accented words is almost certainly non-English
   /\b\w*[à-ëí-ïñ-öù-ü]\w*\b.*\b\w*[à-ëí-ïñ-öù-ü]\w*\b/,
