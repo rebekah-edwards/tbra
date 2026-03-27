@@ -3,18 +3,19 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import type { OLSearchResult } from "@/lib/openlibrary";
 import { NoCover } from "@/components/no-cover";
 
 interface SearchBarProps {
   isLoggedIn: boolean;
 }
 
-interface ExistingBooks {
-  existing: Record<string, string>;
-  states: Record<string, string>;
-  ownedFormats: Record<string, string[]>;
-  covers: Record<string, string>;
+interface LocalBookResult {
+  id: string;
+  title: string;
+  coverImageUrl: string | null;
+  authors: string[];
+  publicationYear: number | null;
+  state: string | null;
 }
 
 interface SeriesBookResult {
@@ -47,16 +48,10 @@ interface UserResult {
 export function SearchBar({ isLoggedIn }: SearchBarProps) {
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<OLSearchResult[]>([]);
+  const [bookResults, setBookResults] = useState<LocalBookResult[]>([]);
   const [seriesMatches, setSeriesMatches] = useState<SeriesMatch[]>([]);
   const [authorMatches, setAuthorMatches] = useState<AuthorMatch[]>([]);
   const [userResults, setUserResults] = useState<UserResult[]>([]);
-  const [existingBooks, setExistingBooks] = useState<ExistingBooks>({
-    existing: {},
-    states: {},
-    ownedFormats: {},
-    covers: {},
-  });
   const [loading, setLoading] = useState(false);
   // Track animation state for enter/exit transitions
   const [animating, setAnimating] = useState(false);
@@ -109,7 +104,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
       setExpanded(false);
       setVisible(false);
       setQuery("");
-      setResults([]);
+      setBookResults([]);
       setSeriesMatches([]);
       setAuthorMatches([]);
       setUserResults([]);
@@ -119,7 +114,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
   const search = useCallback(
     async (q: string) => {
       if (q.trim().length < 2) {
-        setResults([]);
+        setBookResults([]);
         setSeriesMatches([]);
         setAuthorMatches([]);
         setUserResults([]);
@@ -127,12 +122,16 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
       }
       setLoading(true);
       try {
-        const [res, seriesRes, authorRes, usersRes] = await Promise.all([
-          fetch(`/api/openlibrary/search?q=${encodeURIComponent(q.trim())}`),
+        const [booksRes, seriesRes, authorRes, usersRes] = await Promise.all([
+          fetch(`/api/books/search?q=${encodeURIComponent(q.trim())}`),
           fetch(`/api/series/search?q=${encodeURIComponent(q.trim())}`),
           fetch(`/api/authors/search?q=${encodeURIComponent(q.trim())}`),
           fetch(`/api/users/search?q=${encodeURIComponent(q.trim())}`),
         ]);
+        if (booksRes.ok) {
+          const booksData: LocalBookResult[] = await booksRes.json();
+          setBookResults(booksData);
+        }
         if (seriesRes.ok) {
           const seriesData: SeriesMatch[] = await seriesRes.json();
           setSeriesMatches(seriesData);
@@ -144,24 +143,6 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
         if (usersRes.ok) {
           const userData: UserResult[] = await usersRes.json();
           setUserResults(userData.slice(0, 3));
-        }
-        if (res.ok) {
-          const data: OLSearchResult[] = await res.json();
-          setResults(data.slice(0, 5));
-
-          // Check which are already in DB
-          if (data.length > 0) {
-            const keys = data.slice(0, 5).map((d) => d.key);
-            const checkRes = await fetch("/api/books/check", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ keys }),
-            });
-            if (checkRes.ok) {
-              const checkData = await checkRes.json();
-              setExistingBooks(checkData);
-            }
-          }
         }
       } catch {
         // ignore
@@ -175,7 +156,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
     setQuery(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value.trim().length < 2) {
-      setResults([]);
+      setBookResults([]);
       return;
     }
     debounceRef.current = setTimeout(() => search(value), 300);
@@ -189,24 +170,20 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
     }
   }
 
-  function handleResultClick(result: OLSearchResult) {
-    const existingId = existingBooks.existing[result.key];
-    if (existingId) {
-      collapse();
-      router.push(`/book/${existingId}`);
-    } else {
-      collapse();
-      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+  function stateLabel(state: string): string | null {
+    switch (state) {
+      case "completed": return "Finished";
+      case "currently_reading": return "Reading";
+      case "tbr": return "TBR";
+      case "paused": return "Paused";
+      case "dnf": return "DNF";
+      default: return null;
     }
   }
 
-  function buildCoverUrl(coverId?: number) {
-    if (!coverId) return null;
-    return `https://covers.openlibrary.org/b/id/${coverId}-S.jpg`;
-  }
-
-  const hasResults = seriesMatches.length > 0 || authorMatches.length > 0 || userResults.length > 0 || results.length > 0;
-  const noResults = query.trim().length >= 2 && !loading && !hasResults;
+  const hasResults = seriesMatches.length > 0 || authorMatches.length > 0 || userResults.length > 0 || bookResults.length > 0;
+  const showDropdown = query.trim().length >= 2 && !loading;
+  const noResults = showDropdown && !hasResults;
 
   return (
     <>
@@ -305,7 +282,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                     type="button"
                     onClick={() => {
                       setQuery("");
-                      setResults([]);
+                      setBookResults([]);
                       setSeriesMatches([]);
                       setAuthorMatches([]);
                       setUserResults([]);
@@ -455,93 +432,78 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                           </svg>
                         </Link>
                       ))}
-                      {/* Book results */}
-                      {results.map((result) => {
-                        const coverUrl = (result as unknown as { _localCoverUrl?: string })._localCoverUrl
-                          ?? existingBooks.covers[result.key]
-                          ?? buildCoverUrl(result.cover_i);
-                        const existingId = existingBooks.existing[result.key];
-                        const state = existingBooks.states[result.key];
+                      {/* Local book results — each links directly to the book page */}
+                      {bookResults.map((book) => (
+                        <Link
+                          key={book.id}
+                          href={`/book/${book.id}`}
+                          onClick={collapse}
+                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-alt transition-colors border-b border-border/50 last:border-0"
+                        >
+                          {/* Cover */}
+                          <div className="flex-shrink-0 w-10 h-[60px] rounded overflow-hidden bg-surface-alt">
+                            {book.coverImageUrl ? (
+                              <img
+                                src={book.coverImageUrl}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <NoCover title={book.title} className="w-full h-full" size="sm" />
+                            )}
+                          </div>
 
-                        return (
-                          <button
-                            key={result.key}
-                            onClick={() => handleResultClick(result)}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-alt transition-colors border-b border-border/50 last:border-0"
-                          >
-                            {/* Cover */}
-                            <div className="flex-shrink-0 w-10 h-[60px] rounded overflow-hidden bg-surface-alt">
-                              {coverUrl ? (
-                                <img
-                                  src={coverUrl}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <NoCover title={result.englishTitle ?? result.title} className="w-full h-full" size="sm" />
-                              )}
-                            </div>
-
-                            {/* Info */}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-foreground truncate">
-                                {result.englishTitle ?? result.title}
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {book.title}
+                            </p>
+                            {book.authors.length > 0 && (
+                              <p className="text-xs text-muted truncate">
+                                {book.authors.slice(0, 2).join(", ")}
                               </p>
-                              {result.author_name && result.author_name.length > 0 && (
-                                <p className="text-xs text-muted truncate">
-                                  {result.author_name.slice(0, 2).join(", ")}
-                                </p>
-                              )}
-                              {result.first_publish_year && (
-                                <p className="text-xs text-muted/60">
-                                  {result.first_publish_year}
-                                </p>
-                              )}
-                            </div>
+                            )}
+                            {book.publicationYear && (
+                              <p className="text-xs text-muted/60">
+                                {book.publicationYear}
+                              </p>
+                            )}
+                          </div>
 
-                            {/* Status badge */}
-                            <div className="flex-shrink-0">
-                              {state ? (
-                                <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                                  {state === "completed"
-                                    ? "Finished"
-                                    : state === "currently_reading"
-                                      ? "Reading"
-                                      : state === "tbr"
-                                        ? "TBR"
-                                        : state === "paused"
-                                          ? "Paused"
-                                          : state === "dnf"
-                                            ? "DNF"
-                                            : null}
-                                </span>
-                              ) : (
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40">
-                                  <polyline points="9 18 15 12 9 6" />
-                                </svg>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-
-                      {/* Show all results */}
-                      <Link
-                        href={`/search?q=${encodeURIComponent(query.trim())}`}
-                        onClick={collapse}
-                        className="block w-full px-4 py-2.5 text-center text-xs font-medium text-primary hover:bg-surface-alt transition-colors"
-                      >
-                        Show all results
-                      </Link>
+                          {/* Status badge */}
+                          <div className="flex-shrink-0">
+                            {book.state ? (
+                              <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                {stateLabel(book.state)}
+                              </span>
+                            ) : (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40">
+                                <polyline points="9 18 15 12 9 6" />
+                              </svg>
+                            )}
+                          </div>
+                        </Link>
+                      ))}
                     </>
                   )}
 
                   {/* No results state */}
                   {noResults && (
-                    <p className="text-sm text-muted text-center py-6">
-                      No books found for &ldquo;{query}&rdquo;
-                    </p>
+                    <div className="py-5 px-4 text-center">
+                      <p className="text-sm text-muted">
+                        No books found in library
+                      </p>
+                    </div>
                   )}
+
+                  {/* Footer link — always shown when dropdown is visible */}
+                  <Link
+                    href={`/search?q=${encodeURIComponent(query.trim())}`}
+                    onClick={collapse}
+                    className="block w-full px-4 py-2.5 text-center text-xs text-muted hover:text-foreground hover:bg-surface-alt transition-colors border-t border-border/50"
+                  >
+                    See more results or add a book
+                  </Link>
                 </div>
               )}
             </div>

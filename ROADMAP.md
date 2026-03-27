@@ -3,7 +3,7 @@
 ## Tier 1: Must-Have Before Beta Launch
 
 1. ~~**Account types & admin access**~~ ✅ — Super admin sharing (Seth Cordle added), beta tester type with report access and pacing trust, account type dropdown on admin Users page
-2. **Corrections triage pipeline** — Admin review system for beta tester submissions
+2. ~~**Corrections triage pipeline**~~ → Moved to Tier 3 (beta testers use issue reporting; formal corrections pipeline not needed for beta launch)
 3. ~~**Beta issue reporting button**~~ ✅ — Report button visible for beta_tester, admin, and super_admin accounts on all book pages
 4. ~~**Light mode green-on-green fixes**~~ ✅ — Fixed all instances; exceptions preserved (mood buttons, ignore preferences on Discover, year/all-time toggles on Stats, match details on Discover gems, hearted options in reading preferences)
 5. ~~**Hide book option**~~ ✅ — Users can permanently hide a book from all recommendations
@@ -31,6 +31,7 @@
 21. Buddy reads (much later phase)
 22. **Pacing-based recommendations** — Pacing aggregation and display built (stoplight-colored pills on book pages, beta_tester + super_admin pacing trusted). Once enough reviews include pacing data, add pacing filter to Discover and wire into recommendation scoring (scaffold #6 in recommendations.ts).
 23. **New follower notifications** — Email and/or in-app notification when someone follows you. Currently no notification is triggered on follow.
+24. **Corrections triage pipeline** — Formal admin review system for beta tester content detail submissions. Currently handled via issue reports.
 
 ## Completed
 
