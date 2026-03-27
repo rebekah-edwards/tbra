@@ -234,7 +234,7 @@ export function LibbyImport() {
         <h3 className="text-sm font-semibold">How to export from Libby</h3>
         <ol className="text-xs text-muted space-y-1.5 list-decimal list-inside">
           <li>Open the <strong>Libby</strong> app</li>
-          <li>Tap your <strong>shelf icon</strong> &rarr; <strong>Actions</strong></li>
+          <li>Tap your <strong>Shelf</strong> &rarr; <strong>Timeline</strong> &rarr; <strong>Actions</strong></li>
           <li>Tap <strong>Export Timeline</strong></li>
           <li>Select <strong>All Loans</strong> and download the CSV</li>
           <li>Upload the downloaded CSV below</li>
