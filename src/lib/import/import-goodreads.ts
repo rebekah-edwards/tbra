@@ -210,19 +210,28 @@ async function processRow(
       cache?.registerBook(bookId, row.title, row.author || null, row.isbn13, row.isbn10);
 
       if (row.author) {
-        const authorId = await findOrCreateAuthor(row.author);
+        const authorId = cache
+          ? await cache.getOrCreateAuthor(row.author)
+          : await findOrCreateAuthor(row.author);
         await db.insert(bookAuthors).values({ bookId, authorId }).onConflictDoNothing();
       }
 
       // Additional authors
       for (const additionalAuthor of row.additionalAuthors) {
-        const authorId = await findOrCreateAuthor(additionalAuthor);
+        const authorId = cache
+          ? await cache.getOrCreateAuthor(additionalAuthor)
+          : await findOrCreateAuthor(additionalAuthor);
         await db.insert(bookAuthors).values({ bookId, authorId }).onConflictDoNothing();
       }
 
-      // Generate SEO slug
-      const { assignBookSlug } = await import("@/lib/utils/slugify");
-      await assignBookSlug(bookId, row.title, row.author ?? "");
+      // Generate SEO slug — use cache if available (avoids DB round-trip for collision check)
+      if (cache) {
+        const slug = cache.generateSlug(row.title, row.author ?? "");
+        await db.all(sql`UPDATE books SET slug = ${slug} WHERE id = ${bookId}`);
+      } else {
+        const { assignBookSlug } = await import("@/lib/utils/slugify");
+        await assignBookSlug(bookId, row.title, row.author ?? "");
+      }
 
       status = "imported";
     }
@@ -281,26 +290,19 @@ async function processRow(
         const dateStr = row.dateRead || new Date().toISOString().slice(0, 10);
 
         // Handle re-reads: create multiple reading sessions
+        // Use onConflictDoNothing to skip existence check (saves 1 DB query per session)
         const sessionCount = Math.max(1, row.readCount);
         for (let readNum = 1; readNum <= sessionCount; readNum++) {
-          const existingSession = await db.all(sql`
-            SELECT id FROM reading_sessions
-            WHERE user_id = ${userId} AND book_id = ${bookId} AND read_number = ${readNum}
-            LIMIT 1
-          `) as { id: string }[];
-
-          if (existingSession.length === 0) {
-            await db.insert(readingSessions).values({
-              id: crypto.randomUUID(),
-              userId,
-              bookId,
-              readNumber: readNum,
-              startedAt: dateStr,
-              completionDate: row.readStatus === "completed" ? dateStr : null,
-              completionPrecision: row.dateRead ? "exact" : null,
-              state: row.readStatus,
-            });
-          }
+          await db.insert(readingSessions).values({
+            id: crypto.randomUUID(),
+            userId,
+            bookId,
+            readNumber: readNum,
+            startedAt: dateStr,
+            completionDate: row.readStatus === "completed" ? dateStr : null,
+            completionPrecision: row.dateRead ? "exact" : null,
+            state: row.readStatus,
+          }).onConflictDoNothing();
         }
       }
     }
@@ -504,11 +506,31 @@ export async function buildLookupCache(userId: string) {
     userStateMap.set(row.book_id, row.state);
   }
 
+  // Pre-load all authors by name → ID (avoids per-book findOrCreateAuthor queries)
+  const authorMap = new Map<string, string>();
+  const allAuthors = await db.all(sql`
+    SELECT id, LOWER(name) as name_lower FROM authors
+  `) as { id: string; name_lower: string }[];
+  for (const row of allAuthors) {
+    authorMap.set(row.name_lower, row.id);
+  }
+
+  // Pre-load existing slugs to avoid collision checks
+  const slugSet = new Set<string>();
+  const allSlugs = await db.all(sql`
+    SELECT slug FROM books WHERE slug IS NOT NULL
+  `) as { slug: string }[];
+  for (const row of allSlugs) {
+    slugSet.add(row.slug);
+  }
+
   return {
     isbn13Map,
     isbn10Map,
     titleAuthorMap,
     userStateMap,
+    authorMap,
+    slugSet,
     findBook(title: string, author: string | null, isbn13?: string | null, isbn10?: string | null): string | null {
       if (isbn13 && isbn13Map.has(isbn13)) return isbn13Map.get(isbn13)!;
       if (isbn10 && isbn10Map.has(isbn10)) return isbn10Map.get(isbn10)!;
@@ -535,6 +557,37 @@ export async function buildLookupCache(userId: string) {
     },
     registerUserState(bookId: string, state: string) {
       userStateMap.set(bookId, state);
+    },
+    /** Get or create an author — uses cache to avoid DB lookup for known authors */
+    async getOrCreateAuthor(name: string): Promise<string> {
+      const key = name.toLowerCase();
+      const cached = authorMap.get(key);
+      if (cached) return cached;
+      // Not in cache — create in DB
+      const id = crypto.randomUUID();
+      await db.all(sql`INSERT OR IGNORE INTO authors (id, name) VALUES (${id}, ${name})`);
+      // Check if it was actually inserted or already existed (race condition)
+      const existing = await db.all(sql`SELECT id FROM authors WHERE LOWER(name) = ${key} LIMIT 1`) as { id: string }[];
+      const authorId = existing[0]?.id ?? id;
+      authorMap.set(key, authorId);
+      return authorId;
+    },
+    /** Generate a unique slug without DB round-trip for collision check */
+    generateSlug(title: string, author: string): string {
+      const base = `${title} ${author}`
+        .toLowerCase()
+        .replace(/['']/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 80);
+      let slug = base;
+      let i = 2;
+      while (slugSet.has(slug)) {
+        slug = `${base}-${i}`;
+        i++;
+      }
+      slugSet.add(slug);
+      return slug;
     },
   };
 }
