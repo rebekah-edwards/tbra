@@ -257,6 +257,14 @@ h1, h2, h3, .font-heading {
   mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
 }
 
+/* ── Landing page hero mosaic opacity ── */
+.landing-hero-mosaic {
+  opacity: 0.2;
+}
+[data-theme="light"] .landing-hero-mosaic {
+  opacity: 0.35;
+}
+
 /* ── Landing page frosted glass cards ── */
 .landing-glass-card {
   background: rgba(255, 255, 255, 0.06);

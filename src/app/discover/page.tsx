@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { DiscoverClient } from "@/components/discover/discover-client";
 
 export const metadata: Metadata = {
@@ -13,7 +14,9 @@ export const metadata: Metadata = {
 export default function FindPage() {
   return (
     <div>
-      <DiscoverClient />
+      <Suspense>
+        <DiscoverClient />
+      </Suspense>
     </div>
   );
 }

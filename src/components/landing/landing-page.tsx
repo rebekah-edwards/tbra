@@ -79,7 +79,7 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
       {/* ─── Hero ─── */}
       <section className="relative overflow-hidden rounded-3xl -mx-4 lg:-mx-0">
         {/* Book cover mosaic background */}
-        <div className="absolute inset-0 grid grid-cols-5 lg:grid-cols-8 gap-1 opacity-20 p-2">
+        <div className="absolute inset-0 grid grid-cols-5 lg:grid-cols-8 gap-1 landing-hero-mosaic p-2">
           {coverBooks.map((book, i) => (
             <div key={book.id} className="relative aspect-[2/3] overflow-hidden rounded-lg">
               {/* eslint-disable-next-line @next/next/no-img-element */}

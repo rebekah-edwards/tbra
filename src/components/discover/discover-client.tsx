@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { NoCover } from "@/components/no-cover";
@@ -55,17 +56,51 @@ const MOOD_TINTS: Record<string, { idle: string; selected: string }> = {
 };
 
 export function DiscoverClient() {
-  const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
-  const [lengthPref, setLengthPref] = useState<string | null>(null);
-  const [fictionPref, setFictionPref] = useState<string | null>(null);
-  const [audiencePref, setAudiencePref] = useState<string | null>(null);
-  const [libraryFilter, setLibraryFilter] = useState<string | null>(null);
-  const [seriesStarters, setSeriesStarters] = useState(false);
-  const [ignorePreferences, setIgnorePreferences] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Initialize state from URL params (for back-button restoration)
+  const [selectedMoods, setSelectedMoods] = useState<string[]>(() => {
+    const p = searchParams.get("moods");
+    return p ? p.split(",").filter(Boolean) : [];
+  });
+  const [lengthPref, setLengthPref] = useState<string | null>(() => searchParams.get("length"));
+  const [fictionPref, setFictionPref] = useState<string | null>(() => searchParams.get("fiction"));
+  const [audiencePref, setAudiencePref] = useState<string | null>(() => searchParams.get("audience"));
+  const [libraryFilter, setLibraryFilter] = useState<string | null>(() => searchParams.get("library"));
+  const [seriesStarters, setSeriesStarters] = useState(() => searchParams.get("starters") === "1");
+  const [ignorePreferences, setIgnorePreferences] = useState(() => searchParams.get("ignore") === "1");
   const [results, setResults] = useState<DiscoverResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const initialLoadDone = useRef(false);
+
+  // Sync filter state → URL params (replaces current history entry so back still works)
+  const syncUrl = useCallback((moods: string[], length: string | null, fiction: string | null, audience: string | null, library: string | null, starters: boolean, ignore: boolean, hasResults: boolean) => {
+    const params = new URLSearchParams();
+    if (moods.length > 0) params.set("moods", moods.join(","));
+    if (length) params.set("length", length);
+    if (fiction) params.set("fiction", fiction);
+    if (audience) params.set("audience", audience);
+    if (library) params.set("library", library);
+    if (starters) params.set("starters", "1");
+    if (ignore) params.set("ignore", "1");
+    if (hasResults) params.set("searched", "1");
+    const qs = params.toString();
+    const newUrl = qs ? `/discover?${qs}` : "/discover";
+    window.history.replaceState(null, "", newUrl);
+  }, []);
+
+  // Auto-restore results if URL has "searched" param (user navigated back)
+  useEffect(() => {
+    if (initialLoadDone.current) return;
+    initialLoadDone.current = true;
+    if (searchParams.get("searched") === "1" && selectedMoods.length > 0) {
+      handleDiscover(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function toggleMood(key: string) {
     setSelectedMoods((prev) =>
@@ -73,7 +108,7 @@ export function DiscoverClient() {
     );
   }
 
-  async function handleDiscover() {
+  async function handleDiscover(skipScroll = false) {
     if (selectedMoods.length === 0) return;
     setLoading(true);
     setSearched(false);
@@ -95,13 +130,18 @@ export function DiscoverClient() {
       setResults(data);
       setSearched(true);
 
-      setTimeout(() => {
-        const el = resultsRef.current;
-        if (el) {
-          const y = el.getBoundingClientRect().top + window.scrollY - 80;
-          window.scrollTo({ top: y, behavior: "smooth" });
-        }
-      }, 100);
+      // Update URL with current filters + searched flag
+      syncUrl(selectedMoods, lengthPref, fictionPref, audiencePref, libraryFilter, seriesStarters, ignorePreferences, true);
+
+      if (!skipScroll) {
+        setTimeout(() => {
+          const el = resultsRef.current;
+          if (el) {
+            const y = el.getBoundingClientRect().top + window.scrollY - 80;
+            window.scrollTo({ top: y, behavior: "smooth" });
+          }
+        }, 100);
+      }
     } catch {
       setResults([]);
       setSearched(true);
