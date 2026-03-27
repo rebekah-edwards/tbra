@@ -5,7 +5,6 @@ import {
   addLandingBook,
   removeLandingBook,
   setFeaturedBook,
-  searchBooksForLanding,
 } from "@/lib/actions/landing";
 import { useRouter } from "next/navigation";
 
@@ -26,30 +25,29 @@ interface Props {
 export function LandingAdminClient({ paradeBooks, featuredBook }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<
-    { slug: string | null; title: string; coverImageUrl: string | null }[]
-  >([]);
-  const [searching, setSearching] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
   const [addType, setAddType] = useState<"parade" | "featured">("parade");
+  const [addMessage, setAddMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
-  const handleSearch = async () => {
-    if (query.length < 2) return;
-    setSearching(true);
-    const res = await searchBooksForLanding(query);
-    setResults(res);
-    setSearching(false);
-  };
+  const handleAddByUrl = () => {
+    // Extract slug from URL like /book/some-slug or https://thebasedreader.app/book/some-slug or localhost:3000/book/some-slug
+    const match = urlInput.match(/\/book\/([^/?#]+)/);
+    if (!match) {
+      setAddMessage({ text: "Couldn't find a book slug in that URL", type: "error" });
+      setTimeout(() => setAddMessage(null), 3000);
+      return;
+    }
+    const slug = match[1];
 
-  const handleAdd = (slug: string) => {
     startTransition(async () => {
       if (addType === "featured") {
         await setFeaturedBook(slug);
       } else {
         await addLandingBook(slug, "parade");
       }
-      setResults([]);
-      setQuery("");
+      setUrlInput("");
+      setAddMessage({ text: `Added "${slug}"`, type: "success" });
+      setTimeout(() => setAddMessage(null), 3000);
       router.refresh();
     });
   };
@@ -174,62 +172,27 @@ export function LandingAdminClient({ paradeBooks, featuredBook }: Props) {
             Featured
           </button>
         </div>
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-3">
           <input
             type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="Search by book title..."
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAddByUrl()}
+            placeholder="Paste book URL (e.g. /book/the-way-of-kings-brandon-sanderson)"
             className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50"
           />
           <button
-            onClick={handleSearch}
-            disabled={searching || query.length < 2}
+            onClick={handleAddByUrl}
+            disabled={isPending || !urlInput.trim()}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black hover:brightness-110 transition-all disabled:opacity-50"
           >
-            {searching ? "..." : "Search"}
+            Add
           </button>
         </div>
-
-        {results.length > 0 && (
-          <div className="space-y-1 max-h-[400px] overflow-y-auto rounded-lg border border-border">
-            {results.map((book) => {
-              const alreadyAdded = book.slug ? existingSlugs.has(book.slug) : false;
-              return (
-                <div
-                  key={book.slug}
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-surface-alt transition-colors"
-                >
-                  {book.coverImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={book.coverImageUrl}
-                      alt=""
-                      className="w-8 h-12 rounded object-cover flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-8 h-12 rounded bg-surface-alt flex-shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{book.title}</p>
-                    <p className="text-xs text-muted truncate">{book.slug}</p>
-                  </div>
-                  {alreadyAdded ? (
-                    <span className="text-xs text-muted">Added</span>
-                  ) : (
-                    <button
-                      onClick={() => book.slug && handleAdd(book.slug)}
-                      disabled={isPending || !book.slug}
-                      className="rounded-full bg-accent/20 border border-accent px-3 py-1 text-xs font-medium text-accent-dark hover:bg-accent/30 transition-colors disabled:opacity-50"
-                    >
-                      + Add
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+        {addMessage && (
+          <p className={`text-xs font-medium ${addMessage.type === "success" ? "text-accent" : "text-destructive"}`}>
+            {addMessage.text}
+          </p>
         )}
       </section>
     </div>
