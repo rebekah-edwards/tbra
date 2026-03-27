@@ -278,6 +278,30 @@ for table, pk_cols, has_updated_at in TABLES:
     total_updated += updated
 
 conn.commit()
+
+# ── Always sync covers from live → local (live covers are authoritative) ──
+try:
+    cover_query = "SELECT json_group_array(json_object('id', id, 'cover', cover_image_url)) FROM books WHERE cover_image_url IS NOT NULL;"
+    live_covers = turso_json(cover_query, timeout=120)
+    cover_fixed = 0
+    for row in live_covers:
+        bid = row.get("id")
+        live_cover = row.get("cover")
+        if not bid or not live_cover:
+            continue
+        local_row = cursor.execute("SELECT cover_image_url FROM books WHERE id = ?", (bid,)).fetchone()
+        if local_row and local_row[0] != live_cover:
+            cursor.execute("UPDATE books SET cover_image_url = ? WHERE id = ?", (live_cover, bid))
+            cover_fixed += 1
+        elif local_row and local_row[0] is None:
+            cursor.execute("UPDATE books SET cover_image_url = ? WHERE id = ?", (live_cover, bid))
+            cover_fixed += 1
+    if cover_fixed:
+        conn.commit()
+        print(f"  ✓  covers                              ~{cover_fixed} synced from live")
+except Exception as e:
+    print(f"  ⚠  cover sync: {e}")
+
 conn.close()
 
 print("")
