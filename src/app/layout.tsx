@@ -168,7 +168,7 @@ export default async function RootLayout({
           <PullToRefresh>
             <main className="relative z-0 mx-auto max-w-3xl lg:max-w-[1194px] px-6 pt-8 pb-24 lg:pb-8">{children}</main>
           </PullToRefresh>
-          {userIsSuperAdmin && <GlobalReportButton />}
+          {(userIsSuperAdmin || session?.accountType === "beta_tester") && <GlobalReportButton />}
           {isVerified && <BottomTabs isLoggedIn={!!session} avatarUrl={avatarUrl} />}
         </ThemeProvider>
       </body>

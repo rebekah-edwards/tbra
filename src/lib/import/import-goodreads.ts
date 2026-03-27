@@ -38,8 +38,27 @@ export interface ImportDone {
 export type ImportEvent = ImportProgress | ImportDone;
 
 /**
+ * Normalize a title for fuzzy matching during import.
+ * Strips parenthetical suffixes and common noise words.
+ * Does NOT strip "#N" or "Book N" — those distinguish different books in a series.
+ */
+export function normalizeImportTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)\s*$/, "")            // strip trailing parenthetical "(Series, #N)"
+    .replace(/\s*:\s+a\s+novel\s*$/i, "")        // strip ": A Novel"
+    .replace(/\s*:\s+a\s+memoir\s*$/i, "")        // strip ": A Memoir"
+    .replace(/,?\s*a\s+novel\s*$/i, "")           // strip ", A Novel" or " A Novel"
+    .replace(/^the\s+/i, "")                       // strip leading "The "
+    .replace(/^a\s+/i, "")                         // strip leading "A "
+    .replace(/[^a-z0-9]/g, "")                     // only alphanumeric
+    .trim();
+}
+
+/**
  * Try to find a book already in the DB by title + author (case-insensitive),
- * or by ISBN if provided.
+ * or by ISBN if provided. Also tries normalized title matching to catch
+ * editions with parenthetical series info (e.g., "Red Rising (Red Rising Saga, #1)").
  */
 export async function findExistingBook(
   title: string,
@@ -61,8 +80,8 @@ export async function findExistingBook(
     if (match[0]) return match[0].id;
   }
 
-  // 2. Fallback to title + author
-  const matches = await db.all(sql`
+  // 2. Try exact title + author match
+  const exactMatches = await db.all(sql`
     SELECT b.id, b.title
     FROM books b
     LEFT JOIN book_authors ba ON b.id = ba.book_id
@@ -72,7 +91,31 @@ export async function findExistingBook(
     LIMIT 1
   `) as { id: string; title: string }[];
 
-  return matches[0]?.id ?? null;
+  if (exactMatches[0]) return exactMatches[0].id;
+
+  // 3. Try normalized title matching (catches parenthetical editions)
+  if (authorName) {
+    const normalizedInput = normalizeImportTitle(title);
+    if (normalizedInput) {
+      // Fetch candidates by author, then filter by normalized title in JS
+      // (SQLite can't easily do the full normalization in SQL)
+      const candidates = await db.all(sql`
+        SELECT b.id, b.title
+        FROM books b
+        JOIN book_authors ba ON b.id = ba.book_id
+        JOIN authors a ON ba.author_id = a.id
+        WHERE LOWER(a.name) = LOWER(${authorName})
+      `) as { id: string; title: string }[];
+
+      for (const candidate of candidates) {
+        if (normalizeImportTitle(candidate.title) === normalizedInput) {
+          return candidate.id;
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -480,8 +523,9 @@ export async function buildLookupCache(userId: string) {
     if (row.isbn_10) isbn10Map.set(row.isbn_10, row.id);
   }
 
-  // Load all title+author combos → book ID
+  // Load all title+author combos → book ID (exact and normalized)
   const titleAuthorMap = new Map<string, string>();
+  const normalizedTitleAuthorMap = new Map<string, string>();
   const allBooks = await db.all(sql`
     SELECT b.id, LOWER(b.title) as title_lower, LOWER(a.name) as author_lower
     FROM books b
@@ -494,6 +538,15 @@ export async function buildLookupCache(userId: string) {
     // Also store title-only as fallback
     if (!titleAuthorMap.has(row.title_lower)) {
       titleAuthorMap.set(row.title_lower, row.id);
+    }
+    // Build normalized title map for fuzzy matching
+    const normTitle = normalizeImportTitle(row.title_lower);
+    if (normTitle && row.author_lower) {
+      const normKey = `${normTitle}|||${row.author_lower.replace(/[^a-z]/g, "")}`;
+      // Prefer entries without parenthetical titles (cleaner canonical)
+      if (!normalizedTitleAuthorMap.has(normKey) || !row.title_lower.includes("(")) {
+        normalizedTitleAuthorMap.set(normKey, row.id);
+      }
     }
   }
 
@@ -538,6 +591,13 @@ export async function buildLookupCache(userId: string) {
       if (author) {
         const key = `${titleLower}|||${author.toLowerCase()}`;
         if (titleAuthorMap.has(key)) return titleAuthorMap.get(key)!;
+        // Try normalized title matching (catches parenthetical editions)
+        const normTitle = normalizeImportTitle(titleLower);
+        const normAuthor = author.toLowerCase().replace(/[^a-z]/g, "");
+        if (normTitle && normAuthor) {
+          const normKey = `${normTitle}|||${normAuthor}`;
+          if (normalizedTitleAuthorMap.has(normKey)) return normalizedTitleAuthorMap.get(normKey)!;
+        }
       }
       return titleAuthorMap.get(titleLower) ?? null;
     },
@@ -552,7 +612,15 @@ export async function buildLookupCache(userId: string) {
       if (isbn13) isbn13Map.set(isbn13, bookId);
       if (isbn10) isbn10Map.set(isbn10, bookId);
       const titleLower = title.toLowerCase();
-      if (author) titleAuthorMap.set(`${titleLower}|||${author.toLowerCase()}`, bookId);
+      if (author) {
+        titleAuthorMap.set(`${titleLower}|||${author.toLowerCase()}`, bookId);
+        // Also register normalized version
+        const normTitle = normalizeImportTitle(titleLower);
+        const normAuthor = author.toLowerCase().replace(/[^a-z]/g, "");
+        if (normTitle && normAuthor) {
+          normalizedTitleAuthorMap.set(`${normTitle}|||${normAuthor}`, bookId);
+        }
+      }
       titleAuthorMap.set(titleLower, bookId);
     },
     registerUserState(bookId: string, state: string) {

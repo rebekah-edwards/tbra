@@ -73,14 +73,20 @@ function scoreBook(
 
 /**
  * Normalize a title for deduplication comparison.
- * Strips parenthetical suffixes and common subtitles.
+ * Strips parenthetical suffixes, subtitles after colons,
+ * "The"/"A" prefixes, and common noise words.
+ * Does NOT strip "#N" or "Book N" — those distinguish different books/comics.
  */
 function normalizeTitle(title: string): string {
   return title
     .toLowerCase()
-    .replace(/\s*\(.*\)\s*$/, "") // strip trailing parentheticals
-    .replace(/\s*:\s+a\s+novel\s*$/i, "") // strip ": A Novel"
-    .replace(/[^a-z0-9]/g, "") // only alphanumeric
+    .replace(/\s*\(.*\)\s*$/, "")              // strip trailing parentheticals "(Series, #N)"
+    .replace(/\s*:.*$/, "")                     // strip everything after colon (subtitle)
+    .replace(/,?\s*a\s+novel\s*$/i, "")         // strip "A Novel"
+    .replace(/,?\s*a\s+memoir\s*$/i, "")        // strip "A Memoir"
+    .replace(/^the\s+/i, "")                     // strip leading "The "
+    .replace(/^a\s+/i, "")                       // strip leading "A "
+    .replace(/[^a-z0-9]/g, "")                   // only alphanumeric
     .trim();
 }
 

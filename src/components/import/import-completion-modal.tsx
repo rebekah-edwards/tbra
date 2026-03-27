@@ -53,55 +53,65 @@ export function ImportCompletionModal({ importedCount, hasEnrichment, onDismiss 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-surface border border-border rounded-2xl w-full max-w-sm mx-4 p-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-300">
-        {/* Animated book */}
-        <div className="relative w-24 h-28 mx-auto">
-          {/* Book spine/back cover */}
-          <div className="absolute inset-0 bg-accent/20 border border-accent/30" style={{ borderRadius: "2px 4px 4px 2px" }} />
+        {/* Animated book — 3D perspective */}
+        <div className="relative w-32 h-40 mx-auto" style={{ perspective: "400px" }}>
+          {/* Book spine (left edge) */}
+          <div
+            className="absolute left-0 top-0 w-3 h-full rounded-l-sm"
+            style={{ background: "linear-gradient(to right, #65a30d, #84cc16)", zIndex: 1 }}
+          />
+
+          {/* Back cover */}
+          <div
+            className="absolute top-0 left-2 right-0 h-full rounded-r-lg border border-accent/30"
+            style={{ background: "linear-gradient(135deg, rgba(163,230,53,0.15), rgba(163,230,53,0.05))", zIndex: 0 }}
+          />
 
           {/* Pages fanning out */}
-          {[...Array(5)].map((_, i) => (
+          {[...Array(6)].map((_, i) => (
             <div
               key={i}
-              className="absolute top-1 bottom-1 bg-surface border border-border/40"
+              className="absolute top-1.5 bottom-1.5 left-3 right-1 rounded-r-sm"
               style={{
-                left: "4px",
-                right: "4px",
-                borderRadius: "1px 3px 3px 1px",
+                background: `linear-gradient(to right, #f5f5f0 ${90 - i * 5}%, #e8e8e0)`,
+                borderRight: "1px solid rgba(0,0,0,0.08)",
+                borderTop: "1px solid rgba(0,0,0,0.04)",
+                borderBottom: "1px solid rgba(0,0,0,0.04)",
                 transformOrigin: "left center",
-                transform:
-                  animationPhase === "opening"
-                    ? "rotateY(0deg)"
-                    : animationPhase === "fanning"
-                      ? `rotateY(-${(i + 1) * 12}deg) translateX(${(i + 1) * 2}px)`
-                      : `rotateY(-${(i + 1) * 15}deg) translateX(${(i + 1) * 3}px)`,
-                transition: `transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 0.08}s`,
-                zIndex: 5 - i,
+                transform: animationPhase === "opening"
+                  ? "rotateY(0deg)"
+                  : `rotateY(-${(i + 1) * (animationPhase === "fanning" ? 8 : 11)}deg)`,
+                transition: `transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 0.06}s`,
+                zIndex: 6 - i,
               }}
             />
           ))}
 
           {/* Front cover */}
           <div
-            className="absolute inset-0 bg-accent border border-accent/60"
+            className="absolute top-0 left-2 right-0 h-full rounded-r-lg shadow-lg"
             style={{
-              borderRadius: "2px 4px 4px 2px",
+              background: "linear-gradient(135deg, #a3e635, #84cc16)",
+              border: "1px solid rgba(101,163,13,0.5)",
               transformOrigin: "left center",
-              transform:
-                animationPhase === "opening"
-                  ? "rotateY(0deg)"
-                  : animationPhase === "fanning"
-                    ? "rotateY(-40deg)"
-                    : "rotateY(-70deg)",
-              transition: "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              transform: animationPhase === "opening"
+                ? "rotateY(0deg)"
+                : animationPhase === "fanning"
+                  ? "rotateY(-50deg)"
+                  : "rotateY(-75deg)",
+              transition: "transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)",
               zIndex: 10,
             }}
           >
-            {/* Cover decoration */}
-            <div className="absolute inset-3 border border-black/10 flex items-center justify-center">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#18181b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-30">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            {/* Cover details */}
+            <div className="absolute inset-3 border border-black/10 rounded flex flex-col items-center justify-center gap-1">
+              <div className="w-8 h-0.5 bg-black/15 rounded" />
+              <div className="w-12 h-0.5 bg-black/10 rounded" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#18181b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-20 mt-1">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
               </svg>
+              <div className="w-6 h-0.5 bg-black/10 rounded mt-1" />
             </div>
           </div>
         </div>

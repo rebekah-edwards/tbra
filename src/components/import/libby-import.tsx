@@ -230,7 +230,7 @@ export function LibbyImport() {
   return (
     <div className="space-y-6">
       {/* Instructions */}
-      <div className="border border-border bg-surface p-4 space-y-2">
+      <div className="border border-border bg-surface rounded-xl p-4 space-y-3">
         <h3 className="text-sm font-semibold">How to export from Libby</h3>
         <ol className="text-xs text-muted space-y-1.5 list-decimal list-inside">
           <li>Open the <strong>Libby</strong> app</li>
@@ -239,6 +239,12 @@ export function LibbyImport() {
           <li>Select <strong>All Loans</strong> and download the CSV</li>
           <li>Upload the downloaded CSV below</li>
         </ol>
+        <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 p-3">
+          <span className="text-amber-500 text-sm mt-0.5">⚠️</span>
+          <p className="text-xs text-amber-500 font-medium leading-relaxed">
+            <strong>Safari users:</strong> The Libby export may open as a new tab instead of downloading. If this happens, please use <strong>Chrome</strong> or another browser to export and save the CSV file.
+          </p>
+        </div>
       </div>
 
       {/* Upload area */}
