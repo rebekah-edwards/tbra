@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { userFollows } from "@/db/schema";
+import { userFollows, userNotifications, users } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
@@ -34,6 +34,26 @@ export async function followUser(
     followerId: session.userId,
     followedId: targetUserId,
   });
+
+  // Notify the followed user
+  try {
+    const follower = await db
+      .select({ displayName: users.displayName, username: users.username })
+      .from(users)
+      .where(eq(users.id, session.userId))
+      .get();
+
+    const followerName = follower?.displayName || (follower?.username ? `@${follower.username}` : "Someone");
+
+    await db.insert(userNotifications).values({
+      userId: targetUserId,
+      type: "new_follower",
+      title: "New follower",
+      message: `${followerName} started following you`,
+    });
+  } catch (err) {
+    console.error("[follows] Failed to create notification:", err);
+  }
 
   revalidatePath("/");
   revalidatePath("/u/[username]", "page");
