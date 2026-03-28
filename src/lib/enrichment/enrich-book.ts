@@ -133,35 +133,17 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     return;
   }
 
-  // Box sets: resolve cover only, skip content analysis entirely
+  // Box sets: still enrich (content ratings, genres, summary) but skip author discovery later
   if (book.isBoxSet) {
-    console.log(`[enrichment] Box set detected: "${book.title}" — cover-only enrichment`);
-    const authorRows = await db
-      .select({ name: authors.name })
-      .from(bookAuthors)
-      .innerJoin(authors, eq(bookAuthors.authorId, authors.id))
-      .where(eq(bookAuthors.bookId, bookId));
-    if (!book.coverImageUrl || !book.coverVerified) {
-      await resolveBookCover(book, authorRows.map((r) => r.name), options);
-    }
-    return;
+    console.log(`[enrichment] Box set detected: "${book.title}" — enriching content, skipping author discovery`);
   }
 
   // Auto-detect box sets by title keywords
   const BOX_SET_TITLE_PATTERNS = /\b(?:duology|trilogy|omnibus|box\s*set|boxed\s*set|collection|complete\s*series|volume\s*set|book\s*set|bundle|compilation|compendium)\b/i;
   if (!book.isBoxSet && BOX_SET_TITLE_PATTERNS.test(book.title)) {
-    console.log(`[enrichment] Auto-detected box set: "${book.title}"`);
+    console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content, skipping author discovery`);
     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).where(eq(books.id, bookId));
-    // Do cover-only enrichment for box sets
-    const authorRows = await db
-      .select({ name: authors.name })
-      .from(bookAuthors)
-      .innerJoin(authors, eq(bookAuthors.authorId, authors.id))
-      .where(eq(bookAuthors.bookId, bookId));
-    if (!book.coverImageUrl || !book.coverVerified) {
-      await resolveBookCover(book, authorRows.map((r) => r.name), options);
-    }
-    return;
+    book = { ...book, isBoxSet: true };
   }
 
   const bookAuthorRows = await db
@@ -741,7 +723,11 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
 
   // ── Author bibliography discovery ──
   // If this is the first book by any of this book's authors, discover their other works
-  for (const authorRow of bookAuthorRows) {
+  // Skip for box sets — they don't represent new authors
+  if (book.isBoxSet) {
+    console.log(`[enrichment] Skipping author discovery for box set: "${book.title}"`);
+  }
+  for (const authorRow of (book.isBoxSet ? [] : bookAuthorRows)) {
     const authorRecord = await db.query.authors.findFirst({
       where: eq(authors.name, authorRow.name),
       columns: { id: true, openLibraryKey: true },
