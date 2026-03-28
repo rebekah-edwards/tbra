@@ -222,7 +222,7 @@ async function processRow(
         cache?.registerUserState(bookId, stateValue);
       }
 
-      // Create a completed reading session if we have a completion date
+      // Create a reading session for completed, dnf, or paused books
       if ((row.readStatus === "completed" || row.readStatus === "dnf") && row.lastDateRead) {
         const dateStr = row.lastDateRead;
         const lastSession = await db.all(sql`
@@ -240,6 +240,23 @@ async function processRow(
           completionDate: dateStr,
           completionPrecision: "exact",
           state: row.readStatus,
+        }).onConflictDoNothing();
+      } else if (row.readStatus === "paused") {
+        // Create a paused session so it has a start date
+        const lastSession = await db.all(sql`
+          SELECT MAX(read_number) as max_num FROM reading_sessions
+          WHERE user_id = ${userId} AND book_id = ${bookId}
+        `) as { max_num: number | null }[];
+        const readNumber = (lastSession[0]?.max_num ?? 0) + 1;
+        const startDate = row.lastDateRead || new Date().toISOString().split("T")[0];
+
+        await db.insert(readingSessions).values({
+          id: crypto.randomUUID(),
+          userId,
+          bookId,
+          readNumber,
+          startedAt: startDate,
+          state: "paused",
         }).onConflictDoNothing();
       }
     }
@@ -337,8 +354,8 @@ async function processRow(
       await markOwned(userId, bookId, row.format, options.updateOwnedFormats);
     }
 
-    // 9. Set active format for currently reading books
-    if (row.format && row.readStatus === "currently_reading") {
+    // 9. Set active format for currently reading or paused books
+    if (row.format && (row.readStatus === "currently_reading" || row.readStatus === "paused")) {
       const existState = await db
         .select()
         .from(userBookState)

@@ -65,6 +65,10 @@ export async function setBookState(bookId: string, state: string) {
   if (state === "currently_reading") {
     await ensureReadingSession(user.userId, bookId, activeFormats);
   } else if (state === "paused") {
+    // Ensure a reading session exists before pausing — if a book goes straight
+    // to "paused" (e.g., imported without a session), create one first so
+    // the reader has a start date, then pause it.
+    await ensureReadingSession(user.userId, bookId, activeFormats);
     await pauseActiveSession(user.userId, bookId);
   }
   // Note: "completed" and "dnf" are handled by setBookStateWithCompletion (called from UI with date info)

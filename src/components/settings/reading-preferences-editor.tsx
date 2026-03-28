@@ -249,7 +249,10 @@ export function ReadingPreferencesEditor({
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden">
       <div className="px-5 py-4 border-b border-border">
-        <h2 className="section-heading text-lg">Reading Preferences</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="section-heading text-lg">Reading Preferences</h2>
+          <span className="text-[11px] text-muted bg-surface-hover px-2 py-0.5 rounded-full">Auto-saved</span>
+        </div>
         <p className="text-xs text-muted mt-0.5">
           {lovedCount > 0 && `${lovedCount} loved genre${lovedCount !== 1 ? "s" : ""}`}
           {lovedCount > 0 && dislikedCount > 0 && " · "}

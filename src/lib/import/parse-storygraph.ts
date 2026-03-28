@@ -12,7 +12,7 @@ export interface StoryGraphRow {
   asin: string | null;
   format: "hardcover" | "paperback" | "ebook" | "audiobook" | null;
   rating: number | null;
-  readStatus: "completed" | "currently_reading" | "tbr" | "dnf" | null;
+  readStatus: "completed" | "currently_reading" | "tbr" | "dnf" | "paused" | null;
   lastDateRead: string | null; // ISO date string "YYYY-MM-DD"
   owned: boolean;
   review: string | null; // HTML review text from StoryGraph
@@ -25,6 +25,7 @@ const STATUS_MAP: Record<string, StoryGraphRow["readStatus"]> = {
   "currently-reading": "currently_reading",
   "to-read": "tbr",
   "did-not-finish": "dnf",
+  paused: "paused",
 };
 
 const FORMAT_MAP: Record<string, StoryGraphRow["format"]> = {

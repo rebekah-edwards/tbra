@@ -1257,7 +1257,7 @@ export async function getDiscoverRecommendations(
         .from(userBookState)
         .where(and(
           eq(userBookState.userId, userId),
-          sql`${userBookState.state} IN ('completed', 'dnf')`
+          sql`${userBookState.state} IN ('completed', 'dnf', 'paused')`
         ))
         .all();
       excludedIds = new Set(finishedRows.map((r) => r.bookId));
@@ -1716,7 +1716,7 @@ export async function getBecauseYouLikedSuggestions(
     getExplicitPreferences(userId),
     db.select({ bookId: upNext.bookId }).from(upNext).where(eq(upNext.userId, userId)).all(),
     db.select({ bookId: userBookState.bookId }).from(userBookState).where(
-      and(eq(userBookState.userId, userId), sql`${userBookState.state} IN ('completed', 'currently_reading', 'dnf')`)
+      and(eq(userBookState.userId, userId), sql`${userBookState.state} IN ('completed', 'currently_reading', 'dnf', 'paused')`)
     ).all(),
     db.select({ bookId: userFavoriteBooks.bookId, title: books.title })
       .from(userFavoriteBooks).innerJoin(books, eq(userFavoriteBooks.bookId, books.id))
