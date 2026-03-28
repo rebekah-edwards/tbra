@@ -266,6 +266,13 @@ export async function discoverAuthorBooks(
       // Extract description (fetchOpenLibraryWork returns description as string | null)
       const description: string | null = workDetails?.description ?? null;
 
+      // Gate 7: If description exists but isn't English, skip this work
+      // This catches foreign-language editions that have English-looking titles
+      if (description && !isEnglishTitle(description.substring(0, 100))) {
+        console.log(`[author-discovery] Skipping "${title}" — non-English description detected`);
+        continue;
+      }
+
       // Extract genres
       const genreNames = workDetails?.subjects
         ? normalizeGenres(workDetails.subjects)
