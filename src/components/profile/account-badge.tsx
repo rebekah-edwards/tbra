@@ -15,9 +15,10 @@ const badgeConfig: Record<
     className:
       "reader-badge border-accent bg-accent/20",
   },
-  based_reader: {
+  premium: {
     label: "Based Reader",
     className: "border-neon-purple bg-neon-purple/20 text-neon-purple",
+    icon: "star",
   },
   beta_tester: {
     label: "Beta Tester",

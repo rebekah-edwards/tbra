@@ -18,7 +18,7 @@ interface UserRow {
 
 const ACCOUNT_TYPE_OPTIONS = [
   { value: "reader", label: "Reader" },
-  { value: "based_reader", label: "Based Reader" },
+  { value: "premium", label: "Based Reader (Premium)" },
   { value: "beta_tester", label: "Beta Tester" },
   { value: "admin", label: "Admin" },
   { value: "super_admin", label: "Super Admin" },

@@ -53,7 +53,7 @@ export async function clearSessionCookie() {
   cookieStore.delete(COOKIE_NAME);
 }
 
-export type AccountType = "reader" | "based_reader" | "beta_tester" | "admin" | "super_admin";
+export type AccountType = "reader" | "premium" | "beta_tester" | "admin" | "super_admin";
 
 export interface AuthUser {
   userId: string;
@@ -107,8 +107,11 @@ export function isSuperAdmin(user: { accountType?: string } | null): boolean {
 /** Check if user has premium access (premium, beta_tester, admin, super_admin) */
 export function hasPremiumAccess(user: { accountType?: string } | null): boolean {
   if (!user?.accountType) return false;
-  return ["based_reader", "beta_tester", "admin", "super_admin"].includes(user.accountType);
+  return ["premium", "beta_tester", "admin", "super_admin"].includes(user.accountType);
 }
+
+/** Alias for hasPremiumAccess — use in feature gates */
+export const isPremium = hasPremiumAccess;
 
 /** Check if user is a beta tester */
 export function isBetaTester(user: { accountType?: string } | null): boolean {

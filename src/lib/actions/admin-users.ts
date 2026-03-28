@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 
 const VALID_ACCOUNT_TYPES: AccountType[] = [
   "reader",
-  "based_reader",
+  "premium",
   "beta_tester",
   "admin",
   "super_admin",
