@@ -164,7 +164,9 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
     const existingId = existingBooks[result.key] ?? (result as Record<string, unknown>)._localBookId as string | undefined;
     const currentState = bookStates[result.key] ?? null;
     const localCoverUrl = (result as Record<string, unknown>)._localCoverUrl as string | undefined;
+    const localSlug = (result as Record<string, unknown>)._localSlug as string | undefined;
     const effectiveCover = coverUrl || localCoverUrl;
+    const bookHref = existingId ? `/book/${localSlug || existingId}` : undefined;
 
     const coverElement = effectiveCover ? (
       <Image
@@ -186,8 +188,8 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
     return (
       <div key={result.key} className="flex gap-4 rounded-lg border border-border bg-surface p-4">
         <div className="flex-shrink-0">
-          {existingId ? (
-            <Link href={`/book/${existingId}`}>{coverElement}</Link>
+          {bookHref ? (
+            <Link href={bookHref}>{coverElement}</Link>
           ) : (
             <button onClick={() => handleNavigateToBook(result)} disabled={navigating === result.key} className="cursor-pointer disabled:opacity-50">
               {coverElement}
@@ -196,8 +198,8 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         </div>
         <div className="flex flex-1 flex-col justify-between">
           <div>
-            {existingId ? (
-              <Link href={`/book/${existingId}`}>
+            {bookHref ? (
+              <Link href={bookHref}>
                 <h3 className="font-medium leading-tight hover:text-link transition-colors">
                   {result.englishTitle ?? result.title}
                 </h3>

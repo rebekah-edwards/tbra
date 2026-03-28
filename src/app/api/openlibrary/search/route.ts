@@ -108,6 +108,7 @@ async function searchLocalBooks(query: string, showBoxSets = false) {
     .select({
       id: books.id,
       title: books.title,
+      slug: books.slug,
       openLibraryKey: books.openLibraryKey,
       coverImageUrl: books.coverImageUrl,
       publicationYear: books.publicationYear,
@@ -126,6 +127,7 @@ async function searchLocalBooks(query: string, showBoxSets = false) {
       .select({
         id: books.id,
         title: books.title,
+        slug: books.slug,
         openLibraryKey: books.openLibraryKey,
         coverImageUrl: books.coverImageUrl,
         publicationYear: books.publicationYear,
@@ -167,8 +169,9 @@ async function searchLocalBooks(query: string, showBoxSets = false) {
       cover_i: coverId,
       isbn: [row.isbn13, row.isbn10].filter(Boolean) as string[],
       number_of_pages_median: row.pages ?? undefined,
-      // Flag for the frontend to know this is a local result
+      // Flags for the frontend to know this is a local result
       _localBookId: row.id,
+      _localSlug: row.slug,
       _localCoverUrl: row.coverImageUrl,
     });
   }
