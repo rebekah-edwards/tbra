@@ -13,7 +13,7 @@ export default async function AllReviewsPage() {
   const reviews = await getUserReviewsWithBooks(session.userId, 10000);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-3xl lg:max-w-[60%] mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/profile" className="text-muted hover:text-foreground transition-colors">
@@ -34,7 +34,7 @@ export default async function AllReviewsPage() {
       <div className="space-y-3">
         {reviews.map((review) => {
           const previewText = review.reviewText
-            ? stripHtml(review.reviewText).slice(0, 45) + (stripHtml(review.reviewText).length > 45 ? "..." : "")
+            ? stripHtml(review.reviewText).slice(0, 150) + (stripHtml(review.reviewText).length > 150 ? "..." : "")
             : null;
 
           return (
@@ -68,7 +68,7 @@ export default async function AllReviewsPage() {
                   </span>
                 </div>
                 {previewText && (
-                  <p className="text-xs text-muted/70 mt-1 italic line-clamp-1">&ldquo;{previewText}&rdquo;</p>
+                  <p className="text-xs text-muted/70 mt-1 italic line-clamp-3">&ldquo;{previewText}&rdquo;</p>
                 )}
               </div>
             </Link>

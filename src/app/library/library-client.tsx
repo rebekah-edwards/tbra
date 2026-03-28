@@ -487,7 +487,7 @@ export function LibraryClient({ books }: { books: UserBookWithDetails[] }) {
               {availableGenres.length > 0 && (
                 <div>
                   <span className="text-xs text-muted mb-1.5 block">Genre</span>
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar mask-fade-right">
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 pr-8 no-scrollbar mask-fade-right">
                     <button
                       onClick={() => updateParams({ genre: null })}
                       className={`rounded-full px-3 py-1 text-[11px] font-medium whitespace-nowrap transition-all ${

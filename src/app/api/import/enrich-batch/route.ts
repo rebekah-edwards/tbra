@@ -7,7 +7,7 @@ import { importFromOpenLibraryAndReturn } from "@/lib/actions/books";
 import { enrichBook } from "@/lib/enrichment/enrich-book";
 
 export const runtime = "nodejs";
-export const maxDuration = 300; // 5 minutes
+export const maxDuration = 600; // 10 minutes — enrichment can take a while for large imports
 
 const OL_DELAY_MS = 150;
 
@@ -81,24 +81,20 @@ export async function POST(request: Request) {
     });
   }
 
-  // Return immediately — enrichment runs in the background via waitUntil-style pattern
-  // We use a streaming response that closes quickly but kicks off background work
+  // Run enrichment in batches, streaming progress to keep the connection alive.
+  // On Vercel, the function stays alive as long as the response stream is open.
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
-      // Send immediate acknowledgment
       controller.enqueue(
         encoder.encode(JSON.stringify({ status: "started", count: bookIds.length }) + "\n")
       );
-      controller.close();
 
-      // Background enrichment — runs after response is sent
       let enriched = 0;
       let failed = 0;
 
       for (const bookId of bookIds) {
         try {
-          // Look up the book to get title, ISBN, author for OL search
           const book = await db
             .select()
             .from(books)
@@ -143,16 +139,25 @@ export async function POST(request: Request) {
           }
 
           if (olMatch) {
-            // Import via OL — this upgrades the minimal record with full metadata
             await importFromOpenLibraryAndReturn(olMatch);
           }
 
-          // Run enrichment (covers, descriptions, etc.)
           await enrichBook(bookId, { skipGoogleBooks: true });
           enriched++;
         } catch (err) {
           console.error(`[enrich-batch] Error enriching book ${bookId}:`, err);
           failed++;
+        }
+
+        // Send periodic keepalive to prevent Vercel timeout (every 10 books)
+        if ((enriched + failed) % 10 === 0) {
+          try {
+            controller.enqueue(
+              encoder.encode(JSON.stringify({ progress: enriched + failed, total: bookIds.length }) + "\n")
+            );
+          } catch {
+            // Stream closed by client — that's fine, keep enriching
+          }
         }
       }
 
@@ -169,6 +174,15 @@ export async function POST(request: Request) {
       }
 
       console.log(`[enrich-batch] Done: ${enriched} enriched, ${failed} failed out of ${bookIds.length}`);
+
+      try {
+        controller.enqueue(
+          encoder.encode(JSON.stringify({ status: "done", enriched, failed }) + "\n")
+        );
+        controller.close();
+      } catch {
+        // Stream already closed
+      }
     },
   });
 
