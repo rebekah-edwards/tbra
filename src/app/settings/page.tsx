@@ -15,6 +15,8 @@ import { ChangePassword } from "@/components/settings/change-password";
 import { TextSizeSelector } from "@/components/settings/text-size-selector";
 import { LocationSettings } from "@/components/settings/location-settings";
 import { getHiddenBooks } from "@/lib/actions/hidden-books";
+import { ExportSection } from "@/components/settings/export-section";
+import { isPremium } from "@/lib/auth";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
@@ -56,6 +58,8 @@ export default async function SettingsPage() {
       </div>
 
       <NotificationPreferences initialPrefs={notifPrefs} />
+
+      <ExportSection isPremium={isPremium(user)} />
 
       <div>
         <h2 className="section-heading text-lg mb-3">Hidden Books</h2>
