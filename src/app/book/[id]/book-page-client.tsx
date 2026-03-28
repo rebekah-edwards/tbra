@@ -26,6 +26,7 @@ export type EditionSelection = {
 };
 
 interface BookPageClientProps {
+  shelfButton?: React.ReactNode;
   book: {
     id: string;
     title: string;
@@ -79,6 +80,7 @@ function formatReadDate(dateStr: string, precision: string | null): string {
 }
 
 export function BookPageClient({
+  shelfButton,
   book,
   userState,
   isLoggedIn,
@@ -324,6 +326,7 @@ export function BookPageClient({
               isFavorited={isFavorited}
               isbn13={book.isbn13}
               asin={book.asin}
+              shelfButton={shelfButton}
               onStateChange={handleStateChange}
               onActiveFormatsChange={handleActiveFormatsChange}
               onEditionSelectionsChange={setEditionSelections}
@@ -379,6 +382,7 @@ export function BookPageClient({
           isFavorited={isFavorited}
           isbn13={book.isbn13}
           asin={book.asin}
+          shelfButton={shelfButton}
           onStateChange={handleStateChange}
           onActiveFormatsChange={handleActiveFormatsChange}
           onEditionSelectionsChange={setEditionSelections}

@@ -263,10 +263,15 @@ export function LibraryClient({ books }: { books: UserBookWithDetails[] }) {
   const readCount = useMemo(() => books.filter((b) => b.state === "completed").length, [books]);
   const tbrCount = useMemo(() => books.filter((b) => b.state === "tbr").length, [books]);
 
-  // Get available genres from user's books
+  const subFilters = SUB_FILTERS[validGroup];
+
+  // Base filter (tab + sub-filter, before advanced filters)
+  const baseFiltered = filterBooks(books, validGroup, activeSubFilter);
+
+  // Get available genres from the current tab's books (not all books)
   const availableGenres = useMemo(() => {
     const genreCounts = new Map<string, number>();
-    for (const book of books) {
+    for (const book of baseFiltered) {
       for (const g of book.genres) {
         genreCounts.set(g, (genreCounts.get(g) ?? 0) + 1);
       }
@@ -274,21 +279,16 @@ export function LibraryClient({ books }: { books: UserBookWithDetails[] }) {
     return Array.from(genreCounts.entries())
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
-  }, [books]);
+  }, [baseFiltered]);
 
-  // Get available completion years
+  // Get available completion years from the current tab's books
   const availableYears = useMemo(() => {
     const years = new Set<number>();
-    for (const book of books) {
+    for (const book of baseFiltered) {
       if (book.completionYear) years.add(book.completionYear);
     }
     return Array.from(years).sort((a, b) => b - a);
-  }, [books]);
-
-  const subFilters = SUB_FILTERS[validGroup];
-
-  // Base filter + advanced filters
-  const baseFiltered = filterBooks(books, validGroup, activeSubFilter);
+  }, [baseFiltered]);
   const showAdvanced = validGroup === "activity" || validGroup === "tbr";
   const filteredBooks = showAdvanced
     ? sortBooks(
@@ -344,7 +344,7 @@ export function LibraryClient({ books }: { books: UserBookWithDetails[] }) {
 
   return (
     <div className="lg:max-w-[60%] lg:mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-foreground text-2xl font-bold tracking-tight">
           Bookshelf
         </h1>
@@ -352,6 +352,22 @@ export function LibraryClient({ books }: { books: UserBookWithDetails[] }) {
           {ownedCount} owned · {readCount} read · {tbrCount} tbr
         </span>
       </div>
+
+      {/* My Shelves link */}
+      <Link
+        href="/library/shelves"
+        className="flex items-center justify-between w-full rounded-xl border border-border bg-surface/50 px-4 py-3 mb-4 group transition-colors hover:border-accent/30"
+      >
+        <div className="flex items-center gap-2.5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent shrink-0">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+          </svg>
+          <span className="text-sm font-medium text-foreground">My Shelves</span>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted/40 group-hover:text-accent transition-colors">
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      </Link>
 
       {/* Top-tier segments */}
       <div className="flex gap-1 rounded-xl bg-surface-alt p-1 mb-4">

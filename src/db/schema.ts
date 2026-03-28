@@ -341,6 +341,49 @@ export const userFavoriteBooks = sqliteTable("user_favorite_books", {
   uniqueIndex("user_favorite_books_unique").on(table.userId, table.bookId),
 ]);
 
+// ─── Custom shelves (premium) ───
+
+export const shelves = sqliteTable("shelves", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  color: text("color"), // hex like "#f43f5e", null = default amber
+  coverImageUrl: text("cover_image_url"),
+  isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
+  position: integer("position").notNull(),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("shelves_user_slug_unique").on(table.userId, table.slug),
+  index("shelves_user_position_idx").on(table.userId, table.position),
+]);
+
+export const shelfBooks = sqliteTable("shelf_books", {
+  shelfId: text("shelf_id").notNull().references(() => shelves.id, { onDelete: "cascade" }),
+  bookId: text("book_id").notNull().references(() => books.id),
+  position: integer("position").notNull(),
+  note: text("note"),
+  addedAt: text("added_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("shelf_books_pk").on(table.shelfId, table.bookId),
+  index("shelf_books_shelf_position_idx").on(table.shelfId, table.position),
+  index("shelf_books_book_idx").on(table.bookId),
+]);
+
+// ─── Shelf follows ───
+
+export const shelfFollows = sqliteTable("shelf_follows", {
+  userId: text("user_id").notNull().references(() => users.id),
+  shelfId: text("shelf_id").notNull().references(() => shelves.id, { onDelete: "cascade" }),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("shelf_follows_unique").on(table.userId, table.shelfId),
+  index("shelf_follows_user_idx").on(table.userId),
+  index("shelf_follows_shelf_idx").on(table.shelfId),
+]);
+
 // ─── Reading notes / journal ───
 
 export const readingNotes = sqliteTable("reading_notes", {

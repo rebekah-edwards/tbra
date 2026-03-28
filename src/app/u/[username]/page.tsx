@@ -6,7 +6,9 @@ import { getUserFavorites } from "@/lib/queries/favorites";
 import { getUserReviewsWithBooks } from "@/lib/queries/user-reviews";
 import { getFollowerCount, getFollowingCount, isFollowing } from "@/lib/queries/follows";
 import { getCurrentUser } from "@/lib/auth";
+import { getPublicShelves } from "@/lib/queries/shelves";
 import { FavoritesShelf } from "@/components/profile/favorites-shelf";
+import { ProfileShelvesSection } from "@/components/shelves/profile-shelves-section";
 import { PublicReviewHistory } from "@/components/profile/public-review-history";
 import { SocialIcons } from "@/components/profile/social-icons";
 import { AccountBadge } from "@/components/profile/account-badge";
@@ -64,13 +66,14 @@ export default async function PublicProfilePage({
     );
   }
 
-  const [stats, favorites, reviews, followerCount, followingCount, currentlyFollowing] = await Promise.all([
+  const [stats, favorites, reviews, followerCount, followingCount, currentlyFollowing, publicShelves] = await Promise.all([
     getUserStats(user.id),
     getUserFavorites(user.id),
     getUserReviewsWithBooks(user.id, 500),
     getFollowerCount(user.id),
     getFollowingCount(user.id),
     session ? isFollowing(session.userId, user.id) : Promise.resolve(false),
+    getPublicShelves(user.id),
   ]);
 
   // Filter out anonymous reviews for public view
@@ -204,6 +207,14 @@ export default async function PublicProfilePage({
 
       {/* Favorites */}
       <FavoritesShelf favorites={favorites} />
+
+      {/* Public Shelves */}
+      <ProfileShelvesSection
+        shelves={publicShelves}
+        linkBase={`/u/${username}/shelves`}
+        viewAllHref={`/u/${username}/shelves`}
+        isOwner={false}
+      />
 
       {/* Reviews (no anonymous, no journal) */}
       <PublicReviewHistory reviews={publicReviews} />

@@ -10,6 +10,7 @@ import { DISCOVER_MOODS } from "@/lib/mood-genre-map";
 
 interface DiscoverResult {
   id: string;
+  slug: string | null;
   title: string;
   coverImageUrl: string | null;
   authors: string[];
@@ -383,7 +384,7 @@ export function DiscoverClient() {
               {results.map((book) => (
                 <Link
                   key={book.id}
-                  href={`/book/${book.id}`}
+                  href={`/book/${book.slug || book.id}`}
                   className="group rounded-2xl border border-border bg-surface p-2.5 lg:p-2 hover:border-accent/30 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10"
                 >
                   <div className="aspect-[2/3] relative rounded-lg overflow-hidden mb-2 shadow-md group-hover:shadow-lg transition-shadow">

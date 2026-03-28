@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isPremium } from "@/lib/auth";
 
 export const metadata: Metadata = {
   robots: { index: false },
@@ -16,6 +16,8 @@ import { ReviewHistory } from "@/components/profile/review-history";
 import { ReadingJournal } from "@/components/profile/reading-journal";
 import { ShareProfileButton } from "@/components/profile/share-profile-button";
 import { AccountBadge } from "@/components/profile/account-badge";
+import { getUserShelves } from "@/lib/queries/shelves";
+import { ProfileShelvesSection } from "@/components/shelves/profile-shelves-section";
 
 export default async function ProfilePage() {
   const session = await getCurrentUser();
@@ -24,13 +26,14 @@ export default async function ProfilePage() {
   const user = await getUser(session.userId);
   if (!user) redirect("/login");
 
-  const [stats, favorites, reviews, journalNotes, followerCount, followingCount] = await Promise.all([
+  const [stats, favorites, reviews, journalNotes, followerCount, followingCount, userShelves] = await Promise.all([
     getUserStats(session.userId),
     getUserFavorites(session.userId),
     getUserReviewsWithBooks(session.userId, 6),
     getRecentNotes(session.userId, 20),
     getFollowerCount(session.userId),
     getFollowingCount(session.userId),
+    getUserShelves(session.userId),
   ]);
 
   const memberSince = new Date(user.createdAt).toLocaleDateString("en-US", {
@@ -141,6 +144,15 @@ export default async function ProfilePage() {
 
       {/* Top-Shelf Reads */}
       <FavoritesShelf favorites={favorites} />
+
+      {/* Custom Shelves */}
+      <ProfileShelvesSection
+        shelves={userShelves}
+        linkBase="/library/shelves"
+        viewAllHref="/library/shelves"
+        isPremium={isPremium({ accountType: user.accountType })}
+        isOwner={true}
+      />
 
       {/* Recent Reviews */}
       <ReviewHistory reviews={reviews} />

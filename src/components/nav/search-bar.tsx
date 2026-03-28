@@ -11,6 +11,7 @@ interface SearchBarProps {
 
 interface LocalBookResult {
   id: string;
+  slug: string | null;
   title: string;
   coverImageUrl: string | null;
   authors: string[];
@@ -379,7 +380,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                               {s.books.slice(0, 6).map((book) => (
                                 <Link
                                   key={book.id}
-                                  href={`/book/${book.id}`}
+                                  href={`/book/${book.slug || book.id}`}
                                   onClick={collapse}
                                   className="flex-shrink-0 group"
                                   title={book.title}
@@ -469,7 +470,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                       {bookResults.map((book) => (
                         <Link
                           key={book.id}
-                          href={`/book/${book.id}`}
+                          href={`/book/${book.slug || book.id}`}
                           onClick={collapse}
                           className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-alt transition-colors border-b border-border/50 last:border-0"
                         >

@@ -53,6 +53,14 @@ export function generateAuthorSlug(authorName: string): string {
 }
 
 /**
+ * Generate a slug for a custom shelf: just the shelf name normalized.
+ * e.g., "Summer 2026 Reads" → "summer-2026-reads"
+ */
+export function generateShelfSlug(shelfName: string): string {
+  return normalize(shelfName);
+}
+
+/**
  * Generate a unique book slug and save it to the database.
  * Handles collisions by appending numeric suffixes (-2, -3, etc.).
  * Call this after inserting the book and linking the author.

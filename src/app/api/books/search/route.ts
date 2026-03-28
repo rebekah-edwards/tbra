@@ -7,6 +7,7 @@ import { userBookState } from "@/db/schema";
 
 interface LocalBookResult {
   id: string;
+  slug: string | null;
   title: string;
   coverImageUrl: string | null;
   authors: string[];
@@ -121,6 +122,7 @@ export async function GET(request: NextRequest) {
   const exactRows = await db
     .select({
       id: books.id,
+      slug: books.slug,
       title: books.title,
       coverImageUrl: books.coverImageUrl,
       publicationYear: books.publicationYear,
@@ -144,6 +146,7 @@ export async function GET(request: NextRequest) {
     const broader = await db
       .select({
         id: books.id,
+        slug: books.slug,
         title: books.title,
         coverImageUrl: books.coverImageUrl,
         publicationYear: books.publicationYear,
@@ -327,6 +330,7 @@ export async function GET(request: NextRequest) {
   // Build final results
   const results: LocalBookResult[] = topResults.map((row) => ({
     id: row.id,
+    slug: row.slug,
     title: row.title,
     coverImageUrl: row.coverImageUrl,
     authors: row.authorNames,

@@ -25,6 +25,8 @@ interface ReadingStateSelectorProps {
   isFavorited?: boolean;
   isbn13?: string | null;
   asin?: string | null;
+  /** Slot for the AddToShelfButton rendered below the action grid */
+  shelfButton?: React.ReactNode;
   onStateChange?: (state: string | null) => void;
   onActiveFormatsChange?: (formats: string[]) => void;
   onEditionSelectionsChange?: (selections: EditionSelection[]) => void;
@@ -44,6 +46,7 @@ export function ReadingStateSelector({
   isFavorited = false,
   isbn13,
   asin,
+  shelfButton,
   onStateChange,
   onActiveFormatsChange,
   onEditionSelectionsChange,
@@ -125,6 +128,7 @@ export function ReadingStateSelector({
         />
         <FavoriteButton bookId={bookId} isFavorited={isFavorited} />
       </div>
+      {shelfButton}
     </div>
   );
 }

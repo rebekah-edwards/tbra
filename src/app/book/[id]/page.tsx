@@ -13,8 +13,10 @@ import { isBookFavorited } from "@/lib/queries/favorites";
 import { getBookReadingNotes } from "@/lib/queries/reading-notes";
 import { getBookSessions } from "@/lib/queries/reading-session";
 import { getUserContentSensitivities } from "@/lib/queries/reading-preferences";
-import { getCurrentUser, isAdmin } from "@/lib/auth";
+import { getCurrentUser, isAdmin, isPremium } from "@/lib/auth";
 import { isBookHidden } from "@/lib/actions/hidden-books";
+import { getUserShelves, getBookShelves } from "@/lib/queries/shelves";
+import { AddToShelfButton } from "@/components/book/add-to-shelf-button";
 import { triggerEnrichment } from "@/lib/enrichment/trigger";
 import { after } from "next/server";
 import { BookAboutDetails } from "@/components/book/book-about-details";
@@ -174,6 +176,8 @@ export default async function BookPage({
     aggregate,
     reviewSummary,
     userSensitivities,
+    userShelves,
+    bookShelfMemberships,
   ] = await Promise.all([
     user ? getUserBookState(user.userId, bookId) : null,
     user ? getUserOwnedEditions(user.userId, bookId) : Promise.resolve([]),
@@ -190,6 +194,8 @@ export default async function BookPage({
     getBookAggregateRating(bookId),
     getBookReviewSummaryData(bookId),
     user ? getUserContentSensitivities(user.userId) : null,
+    user ? getUserShelves(user.userId) : Promise.resolve([]),
+    user ? getBookShelves(user.userId, bookId) : Promise.resolve([]),
   ]);
 
   const editionSelections = rawEditions.map((e) => ({
@@ -238,6 +244,16 @@ export default async function BookPage({
       )}
 
       <BookPageClient
+        shelfButton={
+          user ? (
+            <AddToShelfButton
+              bookId={book.id}
+              shelves={userShelves}
+              bookShelves={bookShelfMemberships}
+              isPremium={isPremium({ accountType: user.accountType })}
+            />
+          ) : undefined
+        }
         book={{
           id: book.id,
           title: book.title,
