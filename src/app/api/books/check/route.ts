@@ -27,9 +27,6 @@ export async function POST(request: Request) {
   const bookIdToKey: Record<string, string> = {};
   const bookIdToCover: Record<string, string | null> = {};
 
-  // Track OL keys that map to hidden/box-set books so frontend can filter them out
-  const hiddenKeys = new Set<string>();
-
   // Look up by OL key
   if (olKeys.length > 0) {
     const rows = await db
@@ -39,19 +36,14 @@ export async function POST(request: Request) {
         openLibraryKey: books.openLibraryKey,
         coverImageUrl: books.coverImageUrl,
         isBoxSet: books.isBoxSet,
-        visibility: books.visibility,
       })
       .from(books)
       .where(inArray(books.openLibraryKey, olKeys))
       .all();
 
     for (const row of rows) {
-      // Track hidden/box-set books so frontend can remove them from OL results
-      if (row.openLibraryKey && (row.isBoxSet || row.visibility === "hidden")) {
-        hiddenKeys.add(row.openLibraryKey);
-        continue;
-      }
-      if (row.openLibraryKey) {
+      // Skip box sets / collections — don't surface them as "existing" in search
+      if (row.openLibraryKey && !row.isBoxSet) {
         existing[row.openLibraryKey] = row.id;
         bookIdToKey[row.id] = row.openLibraryKey;
         bookIdToCover[row.id] = row.coverImageUrl;
@@ -172,5 +164,5 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ existing, states, ownedFormats, covers, hiddenKeys: Array.from(hiddenKeys) });
+  return NextResponse.json({ existing, states, ownedFormats, covers });
 }
