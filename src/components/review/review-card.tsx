@@ -104,7 +104,7 @@ export function ReviewCard({ review, bookId, isOwnReview = false }: { review: Bo
             </Link>
           ) : (
             <p className="text-sm font-medium truncate text-foreground">
-              {review.displayName || "A reader"}
+              {review.displayName || "tbr*a reader"}
             </p>
           )}
         </div>

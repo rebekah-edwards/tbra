@@ -60,7 +60,7 @@ export function ReviewSummary({
                 <span className={`text-sm font-medium truncate flex-1 ${
                   review.isAnonymous ? "text-muted italic" : "text-foreground"
                 }`}>
-                  {review.isAnonymous ? "Anonymous" : (review.displayName ?? "Anonymous")}
+                  {review.isAnonymous ? "Anonymous" : (review.displayName || "tbr*a reader")}
                 </span>
                 {review.overallRating != null && (
                   <div className="flex items-center gap-1.5 flex-shrink-0">
