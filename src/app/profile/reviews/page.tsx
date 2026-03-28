@@ -10,7 +10,7 @@ export default async function AllReviewsPage() {
   const session = await getCurrentUser();
   if (!session) redirect("/login");
 
-  const reviews = await getUserReviewsWithBooks(session.userId, 500);
+  const reviews = await getUserReviewsWithBooks(session.userId, 10000);
 
   return (
     <div className="space-y-6">
