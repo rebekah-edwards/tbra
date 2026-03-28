@@ -41,13 +41,19 @@ export async function GET(request: NextRequest) {
   const blockedKeySet = new Set(blockedKeys.map((r) => r.key));
   const hiddenKeySet = new Set(hiddenOlKeys.map((r) => r.key).filter(Boolean) as string[]);
 
-  // Build a set of normalized titles from our public local books for dedup
+  // Build sets from local results for dedup against OL
   const localNormTitles = new Set(
     localResults.map((r) => normTitle(r.title))
+  );
+  // OL keys that local results already cover (so we don't show the OL version too)
+  const localOlKeys = new Set(
+    localResults.map((r) => r.key).filter((k) => !k.startsWith("local:"))
   );
 
   // Filter OL results aggressively
   const filteredOl = olResults.filter((r) => {
+    // 0. Already covered by a local result with matching OL key
+    if (localOlKeys.has(r.key)) return false;
     // 1. Blocked OL keys
     if (blockedKeySet.has(r.key)) return false;
     // 2. Hidden or box-set in our DB
