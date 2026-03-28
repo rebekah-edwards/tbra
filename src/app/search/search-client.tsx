@@ -81,23 +81,25 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
       try {
-        // Search OL, local series, and authors in parallel
-        const [res, seriesRes, authorRes] = await Promise.all([
+        // Search OL, local DB, series, and authors in parallel
+        const [res, localRes, seriesRes, authorRes] = await Promise.all([
           fetch(`/api/openlibrary/search?q=${encodeURIComponent(query.trim())}`),
+          fetch(`/api/books/search?q=${encodeURIComponent(query.trim())}`),
           fetch(`/api/series/search?q=${encodeURIComponent(query.trim())}`),
           fetch(`/api/authors/search?q=${encodeURIComponent(query.trim())}`),
         ]);
-        const data: OLSearchResult[] = await res.json();
+        const olData: OLSearchResult[] = await res.json();
+        const localData: { id: string; title: string; coverImageUrl: string | null; authors: string[]; publicationYear: number | null; state: string | null }[] = localRes.ok ? await localRes.json() : [];
         const seriesData: SeriesMatch[] = await seriesRes.json();
         const authorData: AuthorMatch[] = await authorRes.json();
-        setResults(data);
         setSeriesMatches(seriesData);
         setAuthorMatches(authorData);
         setSearched(true);
 
-        // Check which books are already imported
-        if (data.length > 0) {
-          const keys = data.map((r) => r.key);
+        // Check which OL books are already imported (and which are hidden)
+        let hiddenKeys = new Set<string>();
+        if (olData.length > 0) {
+          const keys = olData.map((r) => r.key);
           const checkRes = await fetch("/api/books/check", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -108,14 +110,38 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           setBookStates((prev) => ({ ...prev, ...(checkData.states ?? {}) }));
           setBookOwnedFormats((prev) => ({ ...prev, ...(checkData.ownedFormats ?? {}) }));
           setBookCovers((prev) => ({ ...prev, ...(checkData.covers ?? {}) }));
-          // Filter out OL results that match hidden/box-set books in our DB
-          const hidden = new Set<string>(checkData.hiddenKeys ?? []);
-          if (hidden.size > 0) {
-            setResults((prev) => prev.filter((r) => !hidden.has(r.key)));
-          }
+          hiddenKeys = new Set<string>(checkData.hiddenKeys ?? []);
         } else {
           setExistingBooks({});
         }
+
+        // Merge results: local DB books first, then OL results (excluding hidden and already-shown)
+        const localBookIds = new Set(localData.map((b) => b.id));
+        // Convert local results to OL format so they render consistently
+        const localAsOL: OLSearchResult[] = localData.map((b) => ({
+          key: `local:${b.id}`,
+          title: b.title,
+          author_name: b.authors,
+          first_publish_year: b.publicationYear ?? undefined,
+          cover_i: undefined,
+        }));
+        // Also register these as "existing" so they get the right UI treatment
+        for (const b of localData) {
+          setExistingBooks((prev) => ({ ...prev, [`local:${b.id}`]: b.id }));
+          if (b.coverImageUrl) {
+            setBookCovers((prev) => ({ ...prev, [`local:${b.id}`]: b.coverImageUrl! }));
+          }
+          if (b.state) {
+            setBookStates((prev) => ({ ...prev, [`local:${b.id}`]: b.state! }));
+          }
+        }
+        // Filter OL results: remove hidden, and remove duplicates of local results
+        const existingMap = Object.values(existingBooks);
+        const filteredOL = olData.filter((r) => {
+          if (hiddenKeys.has(r.key)) return false;
+          return true;
+        });
+        setResults([...localAsOL, ...filteredOL]);
       } catch {
         setResults([]);
       } finally {
