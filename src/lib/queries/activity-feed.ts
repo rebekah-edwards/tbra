@@ -150,7 +150,7 @@ export async function getFollowedUsersActivity(
     LIMIT ${limit}
   `)) as RawActivityRow[];
 
-  // 6. Reading notes
+  // 6. Reading notes (only public notes shown in feed; never leak private note text)
   const noteRows = await db.all(sql.raw(`
     SELECT
       'reading_note' as type,
@@ -164,11 +164,12 @@ export async function getFollowedUsersActivity(
       b.cover_image_url,
       rn.created_at as timestamp,
       NULL as rating,
-      SUBSTR(rn.note_text, 1, 100) as review_preview
+      CASE WHEN rn.is_private = 0 THEN SUBSTR(rn.note_text, 1, 100) ELSE NULL END as review_preview
     FROM reading_notes rn
     INNER JOIN users u ON rn.user_id = u.id
     INNER JOIN books b ON rn.book_id = b.id
     WHERE rn.user_id IN (${idList})
+      AND rn.is_private = 0
     ORDER BY rn.created_at DESC
     LIMIT ${limit}
   `)) as RawActivityRow[];

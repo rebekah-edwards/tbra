@@ -110,7 +110,7 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
   const focus = options?.focus ?? "full";
 
   // 1. Fetch book with authors and genres
-  const book = await db.query.books.findFirst({
+  let book = await db.query.books.findFirst({
     where: eq(books.id, bookId),
   });
   if (!book) {

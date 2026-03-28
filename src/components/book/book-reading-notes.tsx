@@ -32,14 +32,17 @@ interface BookReadingNotesProps {
 export function NoteCard({
   note,
   onDelete,
+  onTogglePrivacy,
   isPending,
 }: {
   note: ReadingNote;
   onDelete?: (id: string) => void;
+  onTogglePrivacy?: (id: string) => void;
   isPending?: boolean;
 }) {
   const mood = note.mood ? MOOD_MAP[note.mood] : null;
   const pace = note.pace ? PACE_MAP[note.pace] : null;
+  const isPrivate = note.isPrivate !== false; // default to private if undefined
 
   return (
     <div className="rounded-xl border border-border/50 bg-surface p-4 space-y-2">
@@ -65,6 +68,31 @@ export function NoteCard({
           </span>
         )}
         <span className="ml-auto flex items-center gap-2">
+          {onTogglePrivacy && (
+            <button
+              onClick={() => onTogglePrivacy(note.id)}
+              disabled={isPending}
+              className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-all ${
+                isPrivate
+                  ? "bg-surface-alt text-muted hover:text-foreground"
+                  : "bg-accent/10 text-accent hover:bg-accent/20"
+              }`}
+              title={isPrivate ? "Only you can see this note. Click to share with friends." : "Visible to friends. Click to make private."}
+            >
+              {isPrivate ? (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              ) : (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                </svg>
+              )}
+              {isPrivate ? "Private" : "Shared"}
+            </button>
+          )}
           <span className="text-[10px]">
             {new Date(note.createdAt).toLocaleDateString("en-US", {
               month: "short",

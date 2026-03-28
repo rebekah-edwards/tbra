@@ -49,6 +49,8 @@ export async function addReadingNote(formData: FormData): Promise<{ success: boo
     return { success: false, error: "Invalid pace" };
   }
 
+  const isPrivate = formData.get("isPrivate") !== "false"; // default true
+
   await db.insert(readingNotes).values({
     userId: session.userId,
     bookId,
@@ -57,10 +59,33 @@ export async function addReadingNote(formData: FormData): Promise<{ success: boo
     percentComplete,
     mood: mood || null,
     pace: pace || null,
+    isPrivate,
   });
 
   revalidatePath("/");
   revalidatePath(`/book/${bookId}`);
+  return { success: true };
+}
+
+export async function toggleNotePrivacy(noteId: string): Promise<{ success: boolean; error?: string }> {
+  const session = await getCurrentUser();
+  if (!session) return { success: false, error: "Not logged in" };
+
+  const note = await db
+    .select({ id: readingNotes.id, bookId: readingNotes.bookId, isPrivate: readingNotes.isPrivate })
+    .from(readingNotes)
+    .where(and(eq(readingNotes.id, noteId), eq(readingNotes.userId, session.userId)))
+    .get();
+
+  if (!note) return { success: false, error: "Note not found" };
+
+  await db.update(readingNotes)
+    .set({ isPrivate: !note.isPrivate })
+    .where(eq(readingNotes.id, noteId));
+
+  revalidatePath("/");
+  revalidatePath(`/book/${note.bookId}`);
+  revalidatePath("/profile/journal");
   return { success: true };
 }
 

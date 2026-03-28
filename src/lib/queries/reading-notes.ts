@@ -10,6 +10,7 @@ export interface ReadingNote {
   percentComplete: number | null;
   mood: string | null;
   pace: string | null;
+  isPrivate: boolean;
   createdAt: string;
 }
 
@@ -32,6 +33,7 @@ export async function getBookReadingNotes(
       percentComplete: readingNotes.percentComplete,
       mood: readingNotes.mood,
       pace: readingNotes.pace,
+      isPrivate: readingNotes.isPrivate,
       createdAt: readingNotes.createdAt,
     })
     .from(readingNotes)
@@ -53,6 +55,7 @@ export async function getRecentNotes(
       percentComplete: readingNotes.percentComplete,
       mood: readingNotes.mood,
       pace: readingNotes.pace,
+      isPrivate: readingNotes.isPrivate,
       createdAt: readingNotes.createdAt,
       bookTitle: books.title,
       bookSlug: books.slug,

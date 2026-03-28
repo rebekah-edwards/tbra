@@ -350,6 +350,7 @@ export const readingNotes = sqliteTable("reading_notes", {
   percentComplete: integer("percent_complete"),
   mood: text("mood"),
   pace: text("pace"),
+  isPrivate: integer("is_private", { mode: "boolean" }).notNull().default(true),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   index("reading_notes_user_book_idx").on(table.userId, table.bookId),
