@@ -60,7 +60,7 @@ export default async function AdminEnrichmentPage() {
   }>;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="lg:w-[60%] lg:mx-auto px-4 py-8">
       <h1
         className="text-foreground text-2xl font-bold tracking-tight mb-6"
        

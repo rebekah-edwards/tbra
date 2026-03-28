@@ -62,7 +62,7 @@ export default async function AdminReviewPage() {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:w-[60%] lg:mx-auto">
       <div>
         <h1
           className="text-foreground text-2xl font-bold tracking-tight"

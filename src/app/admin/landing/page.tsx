@@ -17,7 +17,7 @@ export default async function AdminLandingPage() {
   const featuredBook = landingBooks.find((b: typeof landingBooks[number]) => b.type === "featured") ?? null;
 
   return (
-    <div className="pb-12 space-y-12">
+    <div className="pb-12 space-y-12 lg:w-[60%] lg:mx-auto">
       <div>
         <h1 className="text-foreground text-2xl font-bold mb-2">Landing Page</h1>
         <p className="text-sm text-muted mb-8">

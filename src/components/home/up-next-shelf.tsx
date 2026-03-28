@@ -160,14 +160,16 @@ export function UpNextShelf({ items: initialItems }: { items: UpNextItem[] }) {
       >
         {items.map((item, index) => {
           const isBeingDragged = draggingIndex === index;
+          const isDropTarget = draggingIndex !== null && overIndex === index && !isBeingDragged;
 
           return (
             <div
               key={item.bookId}
               data-drag-index={index}
+              style={draggingIndex !== null ? { order: previewPositions[index] } : undefined}
               className={`relative rounded-xl overflow-hidden transition-all duration-200 ${
                 isBeingDragged ? "opacity-50 scale-95 ring-2 ring-primary" : ""
-              }`}
+              } ${isDropTarget ? "scale-[1.03] ring-2 ring-primary/50" : ""}`}
               onPointerDown={(e) => handlePointerDown(e, index)}
             >
               {/* Blurred cover background */}

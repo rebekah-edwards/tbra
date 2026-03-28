@@ -125,8 +125,10 @@ export function ReadingStateButton({
     setPendingState(null);
     startTransition(async () => {
       await setBookStateWithCompletion(bookId, finalState, date, precision);
-      onStateChange?.(finalState);
     });
+    // Fire OUTSIDE transition so parent state updates (e.g., autoOpenReview)
+    // aren't deferred by React's transition batching
+    onStateChange?.(finalState);
   }
 
   function handleDateCancel() {
