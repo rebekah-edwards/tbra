@@ -106,7 +106,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json([]);
   }
 
-  const trimmed = q.trim().toLowerCase();
+  // Normalize smart/curly quotes to straight quotes (mobile keyboards insert these)
+  const trimmed = q
+    .trim()
+    .toLowerCase()
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")   // curly single quotes → straight
+    .replace(/[\u201C\u201D\u201E\u201F]/g, '"');   // curly double quotes → straight
 
   // Two-pass search: first get exact substring matches (reliable),
   // then broaden with a shorter prefix for fuzzy/typo tolerance.
