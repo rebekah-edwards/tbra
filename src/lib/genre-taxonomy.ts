@@ -301,7 +301,7 @@ export function classifyGenres(
   // Resolve each genre to its curated display name (direct or mapped).
   // Among resolved genres, prefer direct whitelist matches over mapped ones,
   // and within each tier, earlier insertion order wins.
-  // Exception: LitRPG beats Sci-Fi when both are present.
+  // Exception: LitRPG beats Sci-Fi and Fantasy when both are present.
   let primaryGenre: string | null = null;
   let fallbackPrimary: string | null = null;
 
@@ -314,8 +314,8 @@ export function classifyGenres(
       if (!primaryGenre) {
         primaryGenre = g.name;
       }
-      // LitRPG always wins over Sci-Fi
-      if (g.name === "LitRPG" && primaryGenre === "Sci-Fi") {
+      // LitRPG always wins over Sci-Fi and Fantasy (it's more specific)
+      if (g.name === "LitRPG" && (primaryGenre === "Sci-Fi" || primaryGenre === "Fantasy")) {
         primaryGenre = "LitRPG";
       }
     } else if (mapped && TOP_LEVEL_WHITELIST.has(mapped) && !CHILDRENS_AGE_CATEGORIES.has(mapped)) {
