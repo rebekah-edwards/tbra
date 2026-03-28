@@ -14,7 +14,10 @@ import { PullToRefresh } from "@/components/pull-to-refresh";
 import { GlobalReportButton } from "@/components/global-report-button";
 import { NotificationBell } from "@/components/nav/notification-bell";
 import { TextSizeInitializer } from "@/components/settings/text-size-selector";
+import Script from "next/script";
 import "./globals.css";
+
+const GA_MEASUREMENT_ID = "G-WMF29PM9E2";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-body",
@@ -74,6 +77,20 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="ga4-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');
+          `}
+        </Script>
+      </head>
       <body
         className={`${plusJakarta.variable} ${outfit.variable} ${spaceGrotesk.variable} antialiased bg-background text-foreground`}
       >
