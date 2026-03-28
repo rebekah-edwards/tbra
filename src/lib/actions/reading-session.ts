@@ -127,7 +127,11 @@ export async function pauseActiveSession(
   if (active) {
     await db
       .update(readingSessions)
-      .set({ state: "paused", updatedAt: new Date().toISOString() })
+      .set({
+        state: "paused",
+        pausedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
       .where(eq(readingSessions.id, active.id));
   }
 }
@@ -141,9 +145,22 @@ export async function resumeActiveSession(
 ): Promise<void> {
   const active = await getActiveSession(userId, bookId);
   if (active && active.state === "paused") {
+    // Calculate days spent paused and add to running total
+    let additionalPausedDays = 0;
+    if (active.pausedAt) {
+      const pausedMs = Date.now() - new Date(active.pausedAt).getTime();
+      additionalPausedDays = Math.max(0, Math.round(pausedMs / (1000 * 60 * 60 * 24)));
+    }
+    const totalPaused = (active.totalPausedDays ?? 0) + additionalPausedDays;
+
     await db
       .update(readingSessions)
-      .set({ state: "currently_reading", updatedAt: new Date().toISOString() })
+      .set({
+        state: "currently_reading",
+        pausedAt: null,
+        totalPausedDays: totalPaused,
+        updatedAt: new Date().toISOString(),
+      })
       .where(eq(readingSessions.id, active.id));
   }
 }

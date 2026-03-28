@@ -180,6 +180,8 @@ export const readingSessions = sqliteTable("reading_sessions", {
   completionDate: text("completion_date"), // ISO date '2026-03-14' or null
   completionPrecision: text("completion_precision"), // 'exact' | 'month' | 'year' | null
   activeFormats: text("active_formats"), // JSON array
+  pausedAt: text("paused_at"), // ISO datetime when last paused (null if not paused)
+  totalPausedDays: integer("total_paused_days").default(0), // Accumulated paused days across all pause periods
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [

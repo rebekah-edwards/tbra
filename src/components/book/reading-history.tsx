@@ -99,8 +99,18 @@ function SessionRow({
             <input
               type="date"
               defaultValue={toInputDate(session.startedAt)}
-              onChange={(e) => handleDateChange("startedAt", e.target.value)}
-              onBlur={() => setEditingStart(false)}
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val && val !== toInputDate(session.startedAt)) {
+                  handleDateChange("startedAt", val);
+                } else {
+                  setEditingStart(false);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                if (e.key === "Escape") setEditingStart(false);
+              }}
               autoFocus
               className="rounded border border-border bg-surface-alt px-1.5 py-0.5 text-xs text-foreground"
             />
@@ -121,10 +131,18 @@ function SessionRow({
             <input
               type="date"
               defaultValue={toInputDate(session.completionDate)}
-              onChange={(e) =>
-                handleDateChange("completionDate", e.target.value)
-              }
-              onBlur={() => setEditingEnd(false)}
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val !== toInputDate(session.completionDate)) {
+                  handleDateChange("completionDate", val || "");
+                } else {
+                  setEditingEnd(false);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                if (e.key === "Escape") setEditingEnd(false);
+              }}
               autoFocus
               className="rounded border border-border bg-surface-alt px-1.5 py-0.5 text-xs text-foreground"
             />

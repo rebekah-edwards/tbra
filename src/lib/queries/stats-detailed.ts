@@ -118,14 +118,14 @@ export async function getMostReadAuthors(
   return rows;
 }
 
-/** Average reading pace (days from start to completion) — always requires real dates */
+/** Average reading pace (active reading days, excluding paused periods) */
 export async function getReadingPace(
   userId: string,
   year?: number
 ): Promise<{ avgDays: number; totalBooks: number } | null> {
   const rows = await db.all(sql`
     SELECT
-      AVG(MAX(julianday(completion_date) - julianday(date(started_at)), 0)) as avg_days,
+      AVG(MAX(julianday(completion_date) - julianday(date(started_at)) - COALESCE(total_paused_days, 0), 0)) as avg_days,
       count(DISTINCT book_id) as total
     FROM reading_sessions
     WHERE user_id = ${userId}
