@@ -171,7 +171,7 @@ export async function resumeActiveSession(
  */
 export async function updateReadingSession(
   sessionId: string,
-  data: { startedAt?: string; completionDate?: string | null }
+  data: { startedAt?: string; completionDate?: string | null; pausedAt?: string | null }
 ) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -197,6 +197,9 @@ export async function updateReadingSession(
   if (data.completionDate !== undefined) {
     updates.completionDate = data.completionDate;
     updates.completionPrecision = data.completionDate ? "exact" : null;
+  }
+  if (data.pausedAt !== undefined) {
+    updates.pausedAt = data.pausedAt;
   }
 
   await db

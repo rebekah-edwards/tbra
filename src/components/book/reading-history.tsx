@@ -13,9 +13,13 @@ function formatDate(dateStr: string | null): string {
   // Handle ISO datetime strings — extract date part
   const datePart = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
   const parts = datePart.split("-");
-  if (parts.length !== 3) return datePart;
+  if (parts.length !== 3) return "";
   const [y, m, d] = parts;
-  const date = new Date(Number(y), Number(m) - 1, Number(d));
+  const year = Number(y);
+  // Reject clearly invalid years
+  if (isNaN(year) || year < 1900 || year > 2100) return "";
+  const date = new Date(year, Number(m) - 1, Number(d));
+  if (isNaN(date.getTime())) return "";
   return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -43,19 +47,21 @@ function SessionRow({
   onUpdate: () => void;
 }) {
   const [editingStart, setEditingStart] = useState(false);
+  const [editingPaused, setEditingPaused] = useState(false);
   const [editingEnd, setEditingEnd] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleDateChange(
-    field: "startedAt" | "completionDate",
+    field: "startedAt" | "completionDate" | "pausedAt",
     value: string
   ) {
     startTransition(async () => {
       await updateReadingSession(session.id, {
-        [field]: field === "completionDate" && !value ? null : value,
+        [field]: !value ? null : value,
       });
       if (field === "startedAt") setEditingStart(false);
+      if (field === "pausedAt") setEditingPaused(false);
       if (field === "completionDate") setEditingEnd(false);
       onUpdate();
     });
@@ -126,6 +132,41 @@ function SessionRow({
 
           <span className="text-muted/50 mx-0.5">&rarr;</span>
 
+          {/* Paused date — only show when session is paused */}
+          {session.state === "paused" && (
+            <>
+              {editingPaused ? (
+                <input
+                  type="date"
+                  defaultValue={toInputDate(session.pausedAt)}
+                  onBlur={(e) => {
+                    const val = e.target.value;
+                    if (val !== toInputDate(session.pausedAt)) {
+                      handleDateChange("pausedAt", val || "");
+                    } else {
+                      setEditingPaused(false);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    if (e.key === "Escape") setEditingPaused(false);
+                  }}
+                  autoFocus
+                  className="rounded border border-border bg-surface-alt px-1.5 py-0.5 text-xs text-foreground"
+                />
+              ) : (
+                <button
+                  onClick={() => setEditingPaused(true)}
+                  className="hover:text-foreground transition-colors underline decoration-dotted underline-offset-2"
+                  title="Edit paused date"
+                >
+                  {formatDate(session.pausedAt) || "No paused date"}
+                </button>
+              )}
+              <span className="text-muted/50 mx-0.5">&rarr;</span>
+            </>
+          )}
+
           {/* End date */}
           {editingEnd ? (
             <input
@@ -152,9 +193,7 @@ function SessionRow({
               className="hover:text-foreground transition-colors underline decoration-dotted underline-offset-2"
               title="Edit finish date"
             >
-              {session.completionDate
-                ? formatDate(session.completionDate)
-                : "No finish date"}
+              {formatDate(session.completionDate) || "No finish date"}
             </button>
           )}
         </div>

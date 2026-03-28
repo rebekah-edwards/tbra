@@ -10,6 +10,7 @@ export interface ReadingSession {
   completionDate: string | null;
   completionPrecision: string | null;
   activeFormats: string[];
+  pausedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,6 +24,7 @@ function parseSession(row: typeof readingSessions.$inferSelect): ReadingSession 
     completionDate: row.completionDate,
     completionPrecision: row.completionPrecision,
     activeFormats: row.activeFormats ? JSON.parse(row.activeFormats) : [],
+    pausedAt: row.pausedAt ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
