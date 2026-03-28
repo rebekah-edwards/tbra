@@ -122,31 +122,43 @@ const NOTIFICATION_EMAIL = "hello@thebasedreader.app";
 /**
  * Send a notification when a new user signs up.
  */
-export async function sendSignupNotificationEmail(
-  email: string,
-  displayName?: string
+/**
+ * Send a daily digest of new signups (replaces per-signup notifications).
+ */
+export async function sendSignupDigestEmail(
+  signups: Array<{ email: string; displayName: string | null; createdAt: string; verified: boolean }>
 ): Promise<{ success: boolean; error?: string }> {
-  const label = displayName ? `${email} (${displayName})` : email;
+  if (signups.length === 0) return { success: true };
+
+  const rows = signups
+    .map((s) => {
+      const name = s.displayName ? ` (${s.displayName})` : "";
+      const badge = s.verified ? "✅" : "⏳";
+      return `<tr><td style="padding:4px 8px;">${badge}</td><td style="padding:4px 8px;">${s.email}${name}</td><td style="padding:4px 8px;color:#888;">${s.createdAt}</td></tr>`;
+    })
+    .join("");
 
   try {
     const { error } = await resend.emails.send({
       from: FROM_ADDRESS,
       to: NOTIFICATION_EMAIL,
-      subject: `[tbr*a] New signup: ${email}`,
+      subject: `[tbr*a] ${signups.length} new signup${signups.length !== 1 ? "s" : ""} today`,
       html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
-          <h1 style="font-size: 20px; font-weight: 700; color: #111; margin-bottom: 8px;">
-            New signup
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+          <h1 style="font-size: 20px; font-weight: 700; color: #111; margin-bottom: 16px;">
+            ${signups.length} new signup${signups.length !== 1 ? "s" : ""} today
           </h1>
-          <p style="font-size: 16px; color: #444; line-height: 1.5;">
-            ${label}
-          </p>
+          <table style="font-size: 14px; color: #444; border-collapse: collapse; width: 100%;">
+            <tr style="border-bottom: 1px solid #eee;"><th style="padding:4px 8px;text-align:left;">Status</th><th style="padding:4px 8px;text-align:left;">Email</th><th style="padding:4px 8px;text-align:left;">Signed up</th></tr>
+            ${rows}
+          </table>
+          <p style="font-size: 12px; color: #888; margin-top: 24px;">✅ = verified, ⏳ = pending verification</p>
         </div>
       `,
     });
 
     if (error) {
-      console.error("[email] Failed to send signup notification:", error);
+      console.error("[email] Failed to send signup digest:", error);
       return { success: false, error: error.message };
     }
 

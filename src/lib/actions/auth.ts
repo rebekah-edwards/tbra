@@ -79,10 +79,8 @@ export async function signup(
     console.error(`[auth] Failed to send verification email to ${email}:`, emailResult.error);
   }
 
-  // Send signup notification (non-blocking — don't fail signup if notification fails)
-  sendSignupNotificationEmail(email.toLowerCase()).catch((err) => {
-    console.error(`[auth] Failed to send signup notification for ${email}:`, err);
-  });
+  // Signup notifications are batched into a daily digest (nightly-enrichment task)
+  // instead of sending per-signup to conserve Resend quota.
 
   // Create session with verified=false so middleware gates access
   const token = await createSession(userId, email.toLowerCase(), false);
