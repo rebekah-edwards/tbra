@@ -523,9 +523,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                   {/* No results state */}
                   {noResults && (
                     <div className="py-5 px-4 text-center">
-                      <p className="text-sm text-muted">
-                        No books found in library
-                      </p>
+                      <p className="text-sm text-muted">No books found</p>
                     </div>
                   )}
 

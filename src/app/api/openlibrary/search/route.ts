@@ -2,8 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { searchOpenLibrary, isJunkTitle } from "@/lib/openlibrary";
 import { db } from "@/db";
 import { books, bookAuthors, authors, blockedOlKeys } from "@/db/schema";
-import { like, eq, sql, and, ne } from "drizzle-orm";
+import { like, eq, sql, and } from "drizzle-orm";
 import { isBoxSetTitle, isEnglishTitle } from "@/lib/queries/books";
+
+/** Normalize a title for dedup — strips parentheticals, subtitles, articles, punctuation */
+function normTitle(title: string): string {
+  return title.toLowerCase()
+    .replace(/\s*\(.*\)\s*$/, "")              // strip trailing parentheticals
+    .replace(/\s*[:\-–—]\s*.*$/, "")           // strip subtitles after colon/dash
+    .replace(/,?\s*a\s+(novel|memoir)\s*$/i, "") // strip "A Novel" / "A Memoir"
+    .replace(/^(the|a|an)\s+/i, "")             // strip leading articles
+    .replace(/[^a-z0-9]/g, "");                 // only alphanumeric
+}
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q");
@@ -18,57 +28,69 @@ export async function GET(request: NextRequest) {
   const showBoxSets = BOX_SET_QUERY.test(trimmed);
 
   // Search OL, local DB, and blocked keys in parallel
-  const [olResults, localResults, blockedKeys] = await Promise.all([
+  // Also fetch OL keys of hidden/box-set books to filter from OL results
+  const [olResults, localResults, blockedKeys, hiddenOlKeys] = await Promise.all([
     searchOpenLibrary(trimmed),
     searchLocalBooks(trimmed, showBoxSets),
     db.select({ key: blockedOlKeys.openLibraryKey }).from(blockedOlKeys).all(),
+    db.select({ key: books.openLibraryKey })
+      .from(books)
+      .where(sql`${books.openLibraryKey} IS NOT NULL AND (${books.visibility} = 'hidden' OR ${books.isBoxSet} = 1)`)
+      .all(),
   ]);
   const blockedKeySet = new Set(blockedKeys.map((r) => r.key));
+  const hiddenKeySet = new Set(hiddenOlKeys.map((r) => r.key).filter(Boolean) as string[]);
 
-  // Filter box sets, non-English titles, and blocked OL keys from results
-  const filteredOl = olResults.filter((r) =>
-    (showBoxSets || !isBoxSetTitle(r.title)) && isEnglishTitle(r.title) && !blockedKeySet.has(r.key)
+  // Build a set of normalized titles from our public local books for dedup
+  const localNormTitles = new Set(
+    localResults.map((r) => normTitle(r.title))
   );
 
-  // Merge: local-only books (no OL key) go first, then OL results
+  // Filter OL results aggressively
+  const filteredOl = olResults.filter((r) => {
+    // 1. Blocked OL keys
+    if (blockedKeySet.has(r.key)) return false;
+    // 2. Hidden or box-set in our DB
+    if (hiddenKeySet.has(r.key)) return false;
+    // 3. Box set titles (unless explicitly searching for them)
+    if (!showBoxSets && isBoxSetTitle(r.title)) return false;
+    // 4. Non-English titles
+    if (!isEnglishTitle(r.title)) return false;
+    // 5. Junk titles (summaries, study guides, etc.)
+    if (isJunkTitle(r.title)) return false;
+    // 6. Duplicate of a book already in our library (by normalized title)
+    //    This catches "Assassin's Apprentice (Farseer Trilogy, #1)" when we have "Assassin's Apprentice"
+    if (localNormTitles.has(normTitle(r.title))) return false;
+    return true;
+  });
+
+  // Merge: local books first, then filtered OL results
   // Deduplicate by OL key
-  const olKeys = new Set(filteredOl.map((r) => r.key));
-  const uniqueLocal = localResults.filter((r) => !olKeys.has(r.key));
+  const olKeySet = new Set(filteredOl.map((r) => r.key));
+  const uniqueLocal = localResults.filter((r) => !olKeySet.has(r.key));
 
-  // Fuzzy title dedup across the merged results — prevents showing both a local entry
+  // Fuzzy title dedup across merged results — prevents showing both a local entry
   // and an OL entry for the same book with different OL keys.
-  // Two-pass: first pick the best entry per normalized key, then filter.
   const merged = [...uniqueLocal, ...filteredOl];
-  const bestByKey = new Map<string, number>(); // normKey → index of best entry
+  const bestByNorm = new Map<string, number>();
 
-  function normKey(r: (typeof merged)[number]): string {
-    const normTitle = r.title.toLowerCase()
-      .replace(/\s*[:\-–—([\/{]\s*.*$/, "")
-      .replace(/^(the|a|an)\s+/i, "")
-      .replace(/[^a-z0-9]/g, "");
-    const firstAuthor = (r.author_name?.[0] ?? "").toLowerCase().replace(/[^a-z]/g, "");
-    return `${normTitle}:${firstAuthor}`;
-  }
-
-  // Pass 1: pick best index for each normalized key
   merged.forEach((r, idx) => {
-    const key = normKey(r);
-    if (!bestByKey.has(key)) {
-      bestByKey.set(key, idx);
+    const key = normTitle(r.title);
+    if (!bestByNorm.has(key)) {
+      bestByNorm.set(key, idx);
       return;
     }
-    const prevIdx = bestByKey.get(key)!;
+    const prevIdx = bestByNorm.get(key)!;
     const prev = merged[prevIdx];
     const prevIsLocal = !!(prev as Record<string, unknown>)._localBookId;
     const thisIsLocal = !!(r as Record<string, unknown>)._localBookId;
-    // Prefer local results; if both local or both OL, keep the first one
+    // Prefer local results; if both local or both OL, keep the first
     if (thisIsLocal && !prevIsLocal) {
-      bestByKey.set(key, idx);
+      bestByNorm.set(key, idx);
     }
   });
 
-  // Pass 2: only keep entries that are the best for their key
-  const bestIndices = new Set(bestByKey.values());
+  const bestIndices = new Set(bestByNorm.values());
   const deduped = merged.filter((_, idx) => bestIndices.has(idx));
 
   return NextResponse.json(deduped);
@@ -88,7 +110,7 @@ async function searchLocalBooks(query: string, showBoxSets = false) {
       isbn10: books.isbn10,
     })
     .from(books)
-    .where(and(like(books.title, `%${query.toLowerCase()}%`), ne(books.visibility, "import_only")))
+    .where(and(like(books.title, `%${query.toLowerCase()}%`), eq(books.visibility, "public")))
     .limit(15)
     .all();
 
@@ -106,7 +128,7 @@ async function searchLocalBooks(query: string, showBoxSets = false) {
         isbn10: books.isbn10,
       })
       .from(books)
-      .where(sql`LOWER(${books.title}) LIKE ${`%${query.toLowerCase()}%`} AND ${books.visibility} != 'import_only'`)
+      .where(sql`LOWER(${books.title}) LIKE ${`%${query.toLowerCase()}%`} AND ${books.visibility} = 'public'`)
       .limit(15)
       .all();
     rows.push(...fallbackRows);

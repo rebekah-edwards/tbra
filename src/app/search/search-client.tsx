@@ -159,6 +159,98 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
     await importFromOpenLibrary(result);
   }
 
+  function renderBookCard(result: OLSearchResult) {
+    const coverUrl = bookCovers[result.key] ?? buildCoverUrl(result.cover_i, "M");
+    const existingId = existingBooks[result.key] ?? (result as Record<string, unknown>)._localBookId as string | undefined;
+    const currentState = bookStates[result.key] ?? null;
+    const localCoverUrl = (result as Record<string, unknown>)._localCoverUrl as string | undefined;
+    const effectiveCover = coverUrl || localCoverUrl;
+
+    const coverElement = effectiveCover ? (
+      <Image
+        src={effectiveCover}
+        alt={`Cover of ${result.title}`}
+        width={60}
+        height={90}
+        className="h-[90px] w-[60px] rounded object-cover hover:opacity-80 transition-opacity"
+      />
+    ) : (
+      <NoCover title={result.title} className="h-[90px] w-[60px]" size="sm" />
+    );
+
+    const meta = [
+      result.first_publish_year,
+      result.number_of_pages_median ? `${result.number_of_pages_median} pp` : null,
+    ].filter(Boolean).join(" · ");
+
+    return (
+      <div key={result.key} className="flex gap-4 rounded-lg border border-border bg-surface p-4">
+        <div className="flex-shrink-0">
+          {existingId ? (
+            <Link href={`/book/${existingId}`}>{coverElement}</Link>
+          ) : (
+            <button onClick={() => handleNavigateToBook(result)} disabled={navigating === result.key} className="cursor-pointer disabled:opacity-50">
+              {coverElement}
+            </button>
+          )}
+        </div>
+        <div className="flex flex-1 flex-col justify-between">
+          <div>
+            {existingId ? (
+              <Link href={`/book/${existingId}`}>
+                <h3 className="font-medium leading-tight hover:text-link transition-colors">
+                  {result.englishTitle ?? result.title}
+                </h3>
+              </Link>
+            ) : (
+              <button onClick={() => handleNavigateToBook(result)} disabled={navigating === result.key} className="text-left cursor-pointer disabled:opacity-50">
+                <h3 className="font-medium leading-tight hover:text-link transition-colors">
+                  {result.englishTitle ?? result.title}
+                </h3>
+              </button>
+            )}
+            {result.author_name && (
+              <p className="mt-0.5 text-sm text-muted">{result.author_name.join(", ")}</p>
+            )}
+            {meta && <p className="text-xs text-muted">{meta}</p>}
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <ReadingStateButton
+              bookId={existingId ?? undefined}
+              olResult={existingId ? undefined : result}
+              currentState={currentState}
+              isLoggedIn={isLoggedIn}
+              compact
+              onStateChange={(newState) => {
+                setBookStates((prev) => {
+                  const next = { ...prev };
+                  if (newState) next[result.key] = newState;
+                  else delete next[result.key];
+                  return next;
+                });
+              }}
+              onImported={(olKey, newBookId) => {
+                setExistingBooks((prev) => ({ ...prev, [olKey]: newBookId }));
+              }}
+            />
+            <CompactOwnedButton
+              bookId={existingId ?? undefined}
+              olResult={existingId ? undefined : result}
+              currentFormats={bookOwnedFormats[result.key] ?? []}
+              isLoggedIn={isLoggedIn}
+              onFormatsChange={(formats) => {
+                setBookOwnedFormats((prev) => ({ ...prev, [result.key]: formats }));
+              }}
+              onImported={(olKey, newBookId) => {
+                setExistingBooks((prev) => ({ ...prev, [olKey]: newBookId }));
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Tabs */}
@@ -350,131 +442,43 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         </div>
       )}
 
-      {!loading && activeTab === "books" && results.length > 0 && (
-        <div className="mt-6 space-y-3 lg:grid lg:grid-cols-2 lg:gap-4">
-          {results.map((result) => {
-            // Use library cover for imported books, fall back to OL search cover
-            const coverUrl = bookCovers[result.key] ?? buildCoverUrl(result.cover_i, "M");
-            const existingId = existingBooks[result.key];
-            const currentState = bookStates[result.key] ?? null;
+      {!loading && activeTab === "books" && results.length > 0 && (() => {
+        // Split results into local (in tbra library) and OL (external) groups
+        const localResults = results.filter((r) => (r as Record<string, unknown>)._localBookId || existingBooks[r.key]);
+        const olResults = results.filter((r) => !(r as Record<string, unknown>)._localBookId && !existingBooks[r.key]);
 
-            const coverElement = coverUrl ? (
-              <Image
-                src={coverUrl}
-                alt={`Cover of ${result.title}`}
-                width={60}
-                height={90}
-                className="h-[90px] w-[60px] rounded object-cover hover:opacity-80 transition-opacity"
-              />
-            ) : (
-              <NoCover title={result.title} className="h-[90px] w-[60px]" size="sm" />
-            );
-
-            const meta = [
-              result.first_publish_year,
-              result.number_of_pages_median ? `${result.number_of_pages_median} pp` : null,
-            ].filter(Boolean).join(" · ");
-
-            return (
-              <div
-                key={result.key}
-                className="flex gap-4 rounded-lg border border-border bg-surface p-4"
-              >
-                <div className="flex-shrink-0">
-                  {existingId ? (
-                    <Link href={`/book/${existingId}`}>
-                      {coverElement}
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={() => handleNavigateToBook(result)}
-                      disabled={navigating === result.key}
-                      className="cursor-pointer disabled:opacity-50"
-                    >
-                      {coverElement}
-                    </button>
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col justify-between">
-                  <div>
-                    {existingId ? (
-                      <Link href={`/book/${existingId}`}>
-                        <h3 className="font-medium leading-tight hover:text-link transition-colors">
-                          {result.englishTitle ?? result.title}
-                        </h3>
-                        {result.englishTitle && (
-                          <p className="text-xs text-muted/70 italic">{result.title}</p>
-                        )}
-                      </Link>
-                    ) : (
-                      <button
-                        onClick={() => handleNavigateToBook(result)}
-                        disabled={navigating === result.key}
-                        className="text-left cursor-pointer disabled:opacity-50"
-                      >
-                        <h3 className="font-medium leading-tight hover:text-link transition-colors">
-                          {result.englishTitle ?? result.title}
-                        </h3>
-                        {result.englishTitle && (
-                          <p className="text-xs text-muted/70 italic">{result.title}</p>
-                        )}
-                      </button>
-                    )}
-                    {result.author_name && (
-                      <p className="mt-0.5 text-sm text-muted">
-                        {result.author_name.join(", ")}
-                      </p>
-                    )}
-                    {meta && (
-                      <p className="text-xs text-muted">
-                        {meta}
-                      </p>
-                    )}
-                  </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <ReadingStateButton
-                      bookId={existingId ?? undefined}
-                      olResult={existingId ? undefined : result}
-                      currentState={currentState}
-                      isLoggedIn={isLoggedIn}
-                      compact
-                      onStateChange={(newState) => {
-                        setBookStates((prev) => {
-                          const next = { ...prev };
-                          if (newState) next[result.key] = newState;
-                          else delete next[result.key];
-                          return next;
-                        });
-                      }}
-                      onImported={(olKey, newBookId) => {
-                        setExistingBooks((prev) => ({ ...prev, [olKey]: newBookId }));
-                      }}
-                    />
-                    <CompactOwnedButton
-                      bookId={existingId ?? undefined}
-                      olResult={existingId ? undefined : result}
-                      currentFormats={bookOwnedFormats[result.key] ?? []}
-                      isLoggedIn={isLoggedIn}
-                      onFormatsChange={(formats) => {
-                        setBookOwnedFormats((prev) => ({ ...prev, [result.key]: formats }));
-                      }}
-                      onImported={(olKey, newBookId) => {
-                        setExistingBooks((prev) => ({ ...prev, [olKey]: newBookId }));
-                      }}
-                    />
-                  </div>
-                </div>
+        return (
+          <>
+          {localResults.length > 0 && (
+            <div className="mt-6">
+              <p className="text-xs font-medium text-muted uppercase tracking-wider mb-3">In tbr*a library</p>
+              <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4">
+                {localResults.map((result) => renderBookCard(result))}
               </div>
-            );
-          })}
-          <div className="pt-2 text-center">
-            <Link
-              href="/search/add"
-              className="text-sm text-link hover:text-link/80"
-            >
-              Can&apos;t find your book? Manually add it to your shelf.
-            </Link>
-          </div>
+            </div>
+          )}
+          {olResults.length > 0 && (
+            <div className="mt-6">
+              {localResults.length > 0 && (
+                <p className="text-xs font-medium text-muted uppercase tracking-wider mb-3">More results</p>
+              )}
+              <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4">
+                {olResults.map((result) => renderBookCard(result))}
+              </div>
+            </div>
+          )}
+          </>
+        );
+      })()}
+
+      {!loading && activeTab === "books" && results.length > 0 && (
+        <div className="pt-2 text-center">
+          <Link
+            href="/search/add"
+            className="text-sm text-link hover:text-link/80"
+          >
+            Can&apos;t find your book? Manually add it to your shelf.
+          </Link>
         </div>
       )}
 
