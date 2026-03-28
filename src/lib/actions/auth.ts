@@ -64,9 +64,16 @@ export async function signup(
   const verificationToken = generateVerificationToken();
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
 
+  // Auto-generate username from email prefix
+  const emailPrefix = email.toLowerCase().split("@")[0].replace(/[^a-z0-9]/g, "").slice(0, 20);
+  // Check for uniqueness, append random suffix if needed
+  const existingUser = await db.select({ id: users.id }).from(users).where(eq(users.username, emailPrefix)).get();
+  const username = existingUser ? `${emailPrefix}${Math.floor(Math.random() * 1000)}` : emailPrefix;
+
   await db.insert(users).values({
     id: userId,
     email: email.toLowerCase(),
+    username,
     passwordHash,
     emailVerified: false,
     emailVerificationToken: verificationToken,
