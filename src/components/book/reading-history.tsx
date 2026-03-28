@@ -40,12 +40,14 @@ interface ReadingHistoryProps {
 }
 
 function SessionRow({
-  session,
+  session: initialSession,
   onUpdate,
 }: {
   session: ReadingSession;
   onUpdate: () => void;
 }) {
+  // Optimistic local state so UI updates instantly
+  const [session, setSession] = useState(initialSession);
   const [editingStart, setEditingStart] = useState(false);
   const [editingPaused, setEditingPaused] = useState(false);
   const [editingEnd, setEditingEnd] = useState(false);
@@ -56,13 +58,17 @@ function SessionRow({
     field: "startedAt" | "completionDate" | "pausedAt",
     value: string
   ) {
+    // Optimistically update local state immediately
+    setSession((prev) => ({ ...prev, [field]: value || null }));
+    if (field === "startedAt") setEditingStart(false);
+    if (field === "pausedAt") setEditingPaused(false);
+    if (field === "completionDate") setEditingEnd(false);
+
+    // Save to server in background
     startTransition(async () => {
       await updateReadingSession(session.id, {
         [field]: !value ? null : value,
       });
-      if (field === "startedAt") setEditingStart(false);
-      if (field === "pausedAt") setEditingPaused(false);
-      if (field === "completionDate") setEditingEnd(false);
       onUpdate();
     });
   }
