@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { books, bookAuthors, authors, bookCategoryRatings } from "@/db/schema";
-import { eq, sql, and, ne } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { userBookState } from "@/db/schema";
 
@@ -108,13 +108,12 @@ export async function GET(request: NextRequest) {
 
   const trimmed = q.trim().toLowerCase();
 
-  // Build a looser query for fuzzy matching:
-  // Use first 2 characters for prefix match to get broader candidate set,
-  // then score/filter in JS. For very short queries (2-3 chars), use exact LIKE.
-  const prefix = trimmed.slice(0, 2);
-  const useFuzzy = trimmed.length >= 3;
+  // Two-pass search: first get exact substring matches (reliable),
+  // then broaden with a shorter prefix for fuzzy/typo tolerance.
+  const useFuzzy = trimmed.length >= 4;
 
-  const rows = await db
+  // Pass 1: exact substring match on full query — always reliable
+  const exactRows = await db
     .select({
       id: books.id,
       title: books.title,
@@ -124,14 +123,40 @@ export async function GET(request: NextRequest) {
     .from(books)
     .where(
       and(
-        useFuzzy
-          ? sql`LOWER(${books.title}) LIKE ${`%${prefix}%`}`
-          : sql`LOWER(${books.title}) LIKE ${`%${trimmed}%`}`,
-        ne(books.visibility, "import_only")
+        sql`LOWER(${books.title}) LIKE ${`%${trimmed}%`}`,
+        eq(books.visibility, "public"),
+        eq(books.isBoxSet, false)
       )
     )
-    .limit(useFuzzy ? 100 : 20)
+    .limit(50)
     .all();
+
+  // Pass 2: broader prefix match for fuzzy/typo tolerance (only if query is long enough)
+  let fuzzyRows: typeof exactRows = [];
+  if (useFuzzy && exactRows.length < 8) {
+    const prefix = trimmed.slice(0, 3);
+    const exactIds = new Set(exactRows.map((r) => r.id));
+    const broader = await db
+      .select({
+        id: books.id,
+        title: books.title,
+        coverImageUrl: books.coverImageUrl,
+        publicationYear: books.publicationYear,
+      })
+      .from(books)
+      .where(
+        and(
+          sql`LOWER(${books.title}) LIKE ${`%${prefix}%`}`,
+          eq(books.visibility, "public"),
+          eq(books.isBoxSet, false)
+        )
+      )
+      .limit(200)
+      .all();
+    fuzzyRows = broader.filter((r) => !exactIds.has(r.id));
+  }
+
+  const rows = [...exactRows, ...fuzzyRows];
 
   // For fuzzy matching, score each result by edit distance
   // between query and the title (or substring of the title)
