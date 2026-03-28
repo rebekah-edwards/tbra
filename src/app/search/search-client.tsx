@@ -108,6 +108,11 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           setBookStates((prev) => ({ ...prev, ...(checkData.states ?? {}) }));
           setBookOwnedFormats((prev) => ({ ...prev, ...(checkData.ownedFormats ?? {}) }));
           setBookCovers((prev) => ({ ...prev, ...(checkData.covers ?? {}) }));
+          // Filter out OL results that match hidden/box-set books in our DB
+          const hidden = new Set<string>(checkData.hiddenKeys ?? []);
+          if (hidden.size > 0) {
+            setResults((prev) => prev.filter((r) => !hidden.has(r.key)));
+          }
         } else {
           setExistingBooks({});
         }
