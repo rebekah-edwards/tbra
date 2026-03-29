@@ -95,6 +95,7 @@ function BookshelfGrid({
             className="h-[5px] shadow-[inset_0_2px_3px_rgba(0,0,0,0.1)]"
             style={{ background: `linear-gradient(to bottom, ${accentColor}30, ${accentColor}45)` }}
           />
+          <div className="h-1.5" />
         </div>
       ))}
     </div>
