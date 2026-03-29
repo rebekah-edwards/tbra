@@ -6,7 +6,7 @@ import { eq, and, gt, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-const MAX_FAVORITES = 10;
+const MAX_FAVORITES = 50;
 
 export async function addFavorite(bookId: string): Promise<{ success: boolean; error?: string }> {
   const session = await getCurrentUser();
