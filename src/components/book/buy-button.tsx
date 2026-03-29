@@ -18,9 +18,16 @@ interface BuyButtonProps {
 export function BuyButton({ bookTitle, amazonUrl, isbn13, asin }: BuyButtonProps) {
   const ASSOCIATE_TAG = "tbra-20";
 
-  // Use affiliate homepage link for now — per-book deep links will be added
-  // once we have verified ASINs from Amazon PA-API
-  const getAmazonLink = () => "https://amzn.to/4dduqLr";
+  const getAmazonLink = () => {
+    // Direct Amazon URL if provided
+    if (amazonUrl) return amazonUrl;
+    // ASIN → direct product page with affiliate tag
+    if (asin) return `https://www.amazon.com/dp/${asin}?tag=${ASSOCIATE_TAG}`;
+    // ISBN → Amazon search with affiliate tag
+    if (isbn13) return `https://www.amazon.com/s?k=${isbn13}&tag=${ASSOCIATE_TAG}`;
+    // Fallback: search by title
+    return `https://www.amazon.com/s?k=${encodeURIComponent(bookTitle)}&tag=${ASSOCIATE_TAG}`;
+  };
 
   return (
     <a
