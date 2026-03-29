@@ -157,12 +157,12 @@ export function BookPageClient({
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-refresh after 10 seconds when enrichment is pending
+  // Auto-dismiss banner after 8 seconds (details arrive via background enrichment, not instant)
   useEffect(() => {
     if (!showEnrichmentBanner) return;
     const timeout = setTimeout(() => {
-      window.location.reload();
-    }, 10000);
+      setShowEnrichmentBanner(false);
+    }, 8000);
     return () => clearTimeout(timeout);
   }, [showEnrichmentBanner]);
 
@@ -246,11 +246,11 @@ export function BookPageClient({
   return (
     <>
       {mounted && showEnrichmentBanner && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-4 px-8 text-center">
-            <div className="w-10 h-10 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
-            <p className="text-base text-white/90 max-w-sm leading-relaxed">
-              This book is currently being added to our database. Please wait 5&ndash;10 seconds for content details to be added.
+        <div className="mx-auto lg:max-w-[60%] mb-4">
+          <div className="flex items-center gap-3 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3">
+            <div className="w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin shrink-0" />
+            <p className="text-xs text-muted">
+              Additional details for this book are on the way. What you see below is everything we have so far.
             </p>
           </div>
         </div>
