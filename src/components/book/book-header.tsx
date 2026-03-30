@@ -196,12 +196,13 @@ export function BookHeader({
             {(genres.length > 0 || isManuallyAdded || pacing) && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {genres.map((genre) => (
-                  <span
+                  <Link
                     key={genre}
-                    className="rounded-full book-header-pill px-2.5 py-0.5 text-xs font-medium"
+                    href={`/browse?genre=${encodeURIComponent(genre)}`}
+                    className="rounded-full book-header-pill px-2.5 py-0.5 text-xs font-medium hover:brightness-125 transition-all"
                   >
                     {genre}
-                  </span>
+                  </Link>
                 ))}
                 {pacing && PACING_CONFIG[pacing] && (
                   <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium inline-flex items-center gap-1 ${PACING_CONFIG[pacing].style}`}>

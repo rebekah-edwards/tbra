@@ -35,6 +35,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://thebasedreader.app"),
   title: { default: "tbr*a", template: "%s" },
   description: "Detailed, structured content information for books.",
   twitter: {

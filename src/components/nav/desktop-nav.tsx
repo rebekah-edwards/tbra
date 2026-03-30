@@ -12,6 +12,7 @@ interface DesktopNavProps {
 const TABS_LOGGED_IN = [
   { label: "Home", href: "/" },
   { label: "Discover", href: "/discover" },
+  { label: "Browse", href: "/browse" },
   { label: "My Library", href: "/library" },
   { label: "Stats", href: "/stats" },
 ];
@@ -19,6 +20,7 @@ const TABS_LOGGED_IN = [
 const TABS_LOGGED_OUT = [
   { label: "Home", href: "/" },
   { label: "Discover", href: "/discover" },
+  { label: "Browse", href: "/browse" },
   { label: "Our Methodology", href: "/methodology" },
 ];
 
