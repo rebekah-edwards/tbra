@@ -38,13 +38,6 @@ const PASS_THROUGH_PREFIXES = [
 export async function middleware(request: NextRequest) {
   const { pathname, host, protocol } = request.nextUrl;
 
-  // Redirect www → non-www
-  if (host.startsWith("www.")) {
-    const url = request.nextUrl.clone();
-    url.host = host.replace("www.", "");
-    return NextResponse.redirect(url, 301);
-  }
-
   // Redirect /defaultsite → /
   if (pathname === "/defaultsite") {
     return NextResponse.redirect(new URL("/", request.url), 301);
