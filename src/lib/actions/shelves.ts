@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { shelves, shelfBooks, shelfFollows, userNotifications } from "@/db/schema";
+import { shelves, shelfBooks, shelfFollows, userNotifications, users } from "@/db/schema";
 import { eq, and, asc, sql, desc } from "drizzle-orm";
 import { getCurrentUser, hasPremiumAccess } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
@@ -420,6 +420,21 @@ export async function followShelf(shelfId: string): Promise<{ success: boolean; 
   await db.run(sql`
     INSERT INTO shelf_follows (user_id, shelf_id) VALUES (${user.userId}, ${shelfId})
   `);
+
+  // Notify shelf owner
+  try {
+    const follower = await db.select({ displayName: users.displayName, username: users.username })
+      .from(users).where(eq(users.id, user.userId)).get();
+    const followerName = follower?.displayName || follower?.username || "Someone";
+    await db.insert(userNotifications).values({
+      userId: shelf.userId,
+      type: "shelf_followed",
+      title: "New shelf follower",
+      message: `${followerName} started following your shelf "${shelf.name}"`,
+    });
+  } catch {
+    // Don't break the follow if notification fails
+  }
 
   revalidatePath("/library/shelves");
   return { success: true };

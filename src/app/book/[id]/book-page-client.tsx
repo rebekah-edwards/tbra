@@ -13,6 +13,7 @@ import { autoLinkFormatEdition } from "@/lib/actions/editions";
 import { setBookCover, uploadBookCover } from "@/lib/actions/books";
 import { setBookState } from "@/lib/actions/reading-state";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { Confetti } from "@/components/ui/confetti";
 import { ContentWarningBanner } from "@/components/book/content-warning-banner";
 import { BookSummary } from "@/components/book/book-summary";
 import { ReportIssueButton } from "@/components/book/report-issue-button";
@@ -108,6 +109,7 @@ export function BookPageClient({
   const [activeFormats, setActiveFormats] = useState(userState.activeFormats);
   const [editionSelections, setEditionSelections] = useState(initialEditionSelections);
   const [autoOpenReview, setAutoOpenReview] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [hasCompleted, setHasCompleted] = useState(initialHasCompleted);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showEnrichmentBanner, setShowEnrichmentBanner] = useState(false);
@@ -240,8 +242,9 @@ export function BookPageClient({
     if (newState === "completed" && !userReview) {
       setAutoOpenReview(true);
     }
-    // Show post-completion suggestions
+    // Show post-completion suggestions and celebration
     if (newState === "completed") {
+      setShowConfetti(true);
       // Small delay so review wizard opens first
       setTimeout(() => setShowSuggestions(true), 500);
     }
@@ -249,6 +252,7 @@ export function BookPageClient({
 
   return (
     <>
+      {showConfetti && <Confetti onDone={() => setShowConfetti(false)} />}
       {mounted && showEnrichmentBanner && (
         <div className="mx-auto lg:max-w-[60%] mb-4">
           <div className="flex items-center gap-3 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3">

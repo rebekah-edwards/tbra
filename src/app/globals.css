@@ -692,6 +692,43 @@ h1, h2, h3, .font-heading {
   margin: 8px auto 0;
 }
 
+/* Confetti burst */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) translateX(var(--drift)) rotate(720deg);
+    opacity: 0;
+  }
+}
+.confetti-particle {
+  position: absolute;
+  top: -10px;
+  left: var(--x);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 2px;
+  animation: confetti-fall 2s ease-in both;
+  animation-delay: var(--delay);
+}
+
+/* Skeleton shimmer */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-alt) 25%, var(--border) 50%, var(--surface-alt) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
 /* ─── Reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
   .tap-scale:active { transform: none; }
@@ -700,6 +737,8 @@ h1, h2, h3, .font-heading {
   .dot-pop { animation: none; }
   .card-stagger { animation: none; opacity: 1; }
   .bottom-sheet-handle { transition: none; }
+  .confetti-particle { animation: none; display: none; }
+  .skeleton { animation: none; }
 }
 
 /* ─── Pull-to-refresh ─── */
