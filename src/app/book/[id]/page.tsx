@@ -118,18 +118,36 @@ export async function generateMetadata({
     authorStr = ` by ${authorNames[0]} et al.`;
   }
 
-  const description = `Find comprehensive content breakdowns of what's in ${book.title}${authorStr}, add it to your shelf, and read based reviews.`;
+  const titleStr = `${book.title}${authorStr} | tbr*a`;
+  const descriptionRaw = book.summary || book.description || "";
+  const description = descriptionRaw
+    ? descriptionRaw.slice(0, 155).replace(/\s+\S*$/, "…")
+    : `Content breakdowns, reviews, and ratings for ${book.title}${authorStr} on tbr*a.`;
+
+  // Ensure cover image is an absolute URL for OG tags
+  const ogImage = book.coverImageUrl
+    ? book.coverImageUrl.startsWith("http")
+      ? book.coverImageUrl
+      : `https://thebasedreader.app${book.coverImageUrl}`
+    : undefined;
 
   return {
-    title: `What's Inside ${book.title} | tbr*a`,
+    title: titleStr,
     description,
     alternates: { canonical: canonicalUrl },
     openGraph: {
-      title: `What's Inside ${book.title} | tbr*a`,
+      title: titleStr,
       description,
       type: "book",
       url: canonicalUrl,
-      ...(book.coverImageUrl ? { images: [{ url: book.coverImageUrl }] } : {}),
+      siteName: "tbr*a",
+      ...(ogImage ? { images: [{ url: ogImage, width: 400, height: 600, alt: `Cover of ${book.title}` }] } : {}),
+    },
+    twitter: {
+      card: ogImage ? "summary_large_image" : "summary",
+      title: titleStr,
+      description,
+      ...(ogImage ? { images: [ogImage] } : {}),
     },
   };
 }
@@ -272,6 +290,10 @@ export default async function BookPage({
           isbn13: book.isbn13 ?? null,
           asin: book.asin ?? null,
           pacing: book.pacing ?? null,
+          seriesName: book.seriesInfo?.name ?? null,
+          seriesSlug: book.seriesInfo?.slug ?? null,
+          seriesId: book.seriesInfo?.id ?? null,
+          positionInSeries: book.seriesPosition ?? null,
         }}
         userState={{
           state: userState?.state ?? null,

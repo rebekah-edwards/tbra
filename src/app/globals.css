@@ -74,6 +74,12 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+
+/* Prevent iOS tap highlight boxes on interactive elements */
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {

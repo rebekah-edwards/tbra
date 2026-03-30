@@ -45,6 +45,10 @@ interface BookPageClientProps {
     isbn13?: string | null;
     asin?: string | null;
     pacing?: string | null;
+    seriesName?: string | null;
+    seriesSlug?: string | null;
+    seriesId?: string | null;
+    positionInSeries?: number | null;
   };
   userState: {
     state: string | null;
@@ -271,6 +275,10 @@ export function BookPageClient({
             topLevelGenre={book.topLevelGenre}
             ageCategory={book.ageCategory}
             pacing={book.pacing}
+            seriesName={book.seriesName}
+            seriesSlug={book.seriesSlug}
+            seriesId={book.seriesId}
+            positionInSeries={book.positionInSeries}
             onCoverEditClick={isAdmin ? async () => {
               setEditingCover(true);
               setEditionCovers([]);

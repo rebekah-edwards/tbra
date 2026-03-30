@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import type { ActivityItem } from "@/lib/queries/activity-feed";
 import { NoCover } from "@/components/no-cover";
 import { formatRating } from "@/lib/text-utils";
@@ -70,8 +71,7 @@ function UserAvatar({ user }: { user: ActivityItem["user"] }) {
   return (
     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-black overflow-hidden flex-shrink-0">
       {user.avatarUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+        <Image src={user.avatarUrl} alt="" width={20} height={20} className="h-full w-full object-cover" loading="lazy" />
       ) : (
         (user.displayName || "?")[0].toUpperCase()
       )}
@@ -117,10 +117,11 @@ export function FriendsActivity({ activity }: FriendsActivityProps) {
                 />
                 <div className="absolute inset-0 currently-reading-overlay" />
                 <div className="absolute bottom-1.5 lg:bottom-2 left-2 lg:left-3 z-10">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={item.book.coverImageUrl}
                     alt={item.book.title}
+                    width={38}
+                    height={56}
                     loading="lazy"
                     className="h-11 w-[30px] lg:h-14 lg:w-[38px] rounded object-cover shadow-lg border border-white/10"
                   />

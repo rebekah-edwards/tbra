@@ -1,0 +1,58 @@
+
+> tbra@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.0.0.89:3000
+- Environments: .env.local
+✓ Ready in 169ms
+⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+⚠ Invalid next.config.ts options detected: 
+⚠     Unrecognized key(s) in object: 'eslint'
+⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+- Experiments (use with caution):
+  · staleTimes
+  ✓ viewTransition
+
+⚠ Unsupported metadata themeColor is configured in metadata export in /admin/landing. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /admin/landing 200 in 1083ms (next.js: 834ms, proxy.ts: 51ms, application-code: 198ms)
+ GET /api/notifications 200 in 97ms (next.js: 78ms, proxy.ts: 5ms, application-code: 13ms)
+ GET /api/enrichment/status 200 in 98ms (next.js: 38ms, proxy.ts: 3ms, application-code: 56ms)
+[enrichment] Starting enrichment for book 4d4373d6-d4e5-472d-bd12-00a46a2d7623
+[enrichment] Searching for: "Precipice" Travis Bagwell
+ GET /icon?c3618184b7c1454e 200 in 883ms (next.js: 11ms, proxy.ts: 2ms, application-code: 869ms)
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Precipice"
+[enrichment] Set language: null → English
+[enrichment] Added tag: LitRPG
+[enrichment] Auto-linked parent tag: Fantasy
+[enrichment] Added tag: Dark Fantasy
+[enrichment] Added tag: Progression Fantasy
+[enrichment] Set audiobook length: 18h 28m
+[enrichment] No cover found across all tiers for "Precipice"
+[enrichment] Flagged for review: cover, publisher
+[enrichment] Enrichment complete for "Precipice"
+[enrichment] Starting enrichment for book 493c0bd5-cd88-4ef2-bcad-61fbaf1ee4f5
+[enrichment] Brave metadata filled: description
+[enrichment] Searching for: "Catharsis" Travis Bagwell
+[enrichment] Found 27 search results
+ GET /api/books/search?q=book 200 in 89ms (next.js: 62ms, proxy.ts: 5ms, application-code: 22ms)
+[enrichment] Analysis complete for "Catharsis"
+[enrichment] Set language: null → English
+[enrichment] Added tag: LitRPG
+[enrichment] Auto-linked parent tag: Fantasy
+[enrichment] Added tag: Dark Fantasy
+[enrichment] Added tag: Coming of Age
+[enrichment] Set audiobook length: 16h 0m
+[enrichment] No cover found across all tiers for "Catharsis"
+[enrichment] Flagged for review: cover, publisher
+[enrichment] Enrichment complete for "Catharsis"
+[enrichment] Starting enrichment for book 7236ec39-5048-4bcc-b94c-3deb8c793033
+[enrichment] Brave metadata filled: description
+[enrichment] Searching for: "Hellion" Travis Bagwell
+[enrichment] Found 27 search results
+ POST /api/enrichment/run?limit=25&skipGoogleBooks=true 200 in 31.4s (next.js: 46ms, proxy.ts: 3ms, application-code: 31.4s)
+[?25h

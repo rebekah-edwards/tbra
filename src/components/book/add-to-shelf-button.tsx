@@ -47,8 +47,11 @@ export function AddToShelfButton({ bookId, shelves, bookShelves, isPremium }: Ad
         href="/upgrade"
         className="flex items-center justify-center gap-2 w-full rounded-xl border-2 border-dashed border-neon-purple/30 bg-neon-purple/5 py-3 px-3 text-sm font-medium text-neon-purple/70 transition-all hover:bg-neon-purple/10"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 4h2v16H4z" />
+          <path d="M8 4h2v16H8z" />
+          <path d="M13 4l2 16" />
+          <path d="M18 4l2 16" />
         </svg>
         Add to Shelf
         <PremiumBadge />
@@ -66,8 +69,11 @@ export function AddToShelfButton({ bookId, shelves, bookShelves, isPremium }: Ad
             : "border-border bg-surface-alt text-muted hover:text-foreground hover:border-border/80"
         }`}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 4h2v16H4z" />
+          <path d="M8 4h2v16H8z" />
+          <path d="M13 4l2 16" />
+          <path d="M18 4l2 16" />
         </svg>
         {shelfCount > 0 ? `On ${shelfCount} ${shelfCount === 1 ? "shelf" : "shelves"}` : "Add to Shelf"}
       </button>

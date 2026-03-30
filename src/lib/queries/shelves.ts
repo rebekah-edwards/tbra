@@ -28,6 +28,13 @@ export interface ShelfBook {
   note: string | null;
   state: string | null;
   addedAt: string;
+  userRating: number | null;
+  publicationYear: number | null;
+  pages: number | null;
+  isFiction: boolean | null;
+  genres: string[];
+  ownedFormats: string[];
+  aggregateRating: number | null;
 }
 
 export interface ShelfDetail {
@@ -83,35 +90,41 @@ export async function getUserShelves(userId: string): Promise<ShelfSummary[]> {
     book_count: number;
   }[];
 
-  const result: ShelfSummary[] = [];
+  if (rows.length === 0) return [];
 
-  for (const row of rows) {
-    // Fetch first 4 covers for mosaic
-    const covers = await db.all(sql`
-      SELECT b.cover_image_url
-      FROM shelf_books sb
-      JOIN books b ON sb.book_id = b.id
-      WHERE sb.shelf_id = ${row.id} AND b.cover_image_url IS NOT NULL
-      ORDER BY sb.position ASC
-      LIMIT 12
-    `) as { cover_image_url: string }[];
+  // Batch fetch covers for all shelves in one query
+  const shelfIds = rows.map((r) => r.id);
+  const allCovers = await db.all(sql`
+    SELECT sb.shelf_id, b.cover_image_url,
+      ROW_NUMBER() OVER (PARTITION BY sb.shelf_id ORDER BY sb.position ASC) as rn
+    FROM shelf_books sb
+    JOIN books b ON sb.book_id = b.id
+    WHERE sb.shelf_id IN (${sql.join(shelfIds.map(id => sql`${id}`), sql`, `)})
+      AND b.cover_image_url IS NOT NULL
+  `) as { shelf_id: string; cover_image_url: string; rn: number }[];
 
-    result.push({
-      id: row.id,
-      name: row.name,
-      slug: row.slug,
-      description: row.description,
-      color: row.color,
-      coverImageUrl: row.cover_image_url,
-      isPublic: !!row.is_public,
-      position: row.position,
-      bookCount: row.book_count,
-      coverUrls: covers.map((c) => c.cover_image_url),
-      createdAt: row.created_at,
-    });
+  // Group covers by shelf, limit to 12
+  const coversByShelf = new Map<string, string[]>();
+  for (const c of allCovers) {
+    if (c.rn > 12) continue;
+    const arr = coversByShelf.get(c.shelf_id) ?? [];
+    arr.push(c.cover_image_url);
+    coversByShelf.set(c.shelf_id, arr);
   }
 
-  return result;
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    description: row.description,
+    color: row.color,
+    coverImageUrl: row.cover_image_url,
+    isPublic: !!row.is_public,
+    position: row.position,
+    bookCount: row.book_count,
+    coverUrls: coversByShelf.get(row.id) ?? [],
+    createdAt: row.created_at,
+  }));
 }
 
 /**
@@ -139,7 +152,13 @@ export async function getShelfWithBooks(shelfId: string): Promise<ShelfDetail | 
       b.title,
       b.slug,
       b.cover_image_url,
-      (SELECT ubs.state FROM user_book_state ubs WHERE ubs.user_id = ${s.user_id} AND ubs.book_id = sb.book_id) as state
+      b.publication_year,
+      b.pages,
+      b.is_fiction,
+      (SELECT ubs.state FROM user_book_state ubs WHERE ubs.user_id = ${s.user_id} AND ubs.book_id = sb.book_id) as state,
+      (SELECT ubr.rating FROM user_book_ratings ubr WHERE ubr.user_id = ${s.user_id} AND ubr.book_id = sb.book_id) as user_rating,
+      (SELECT ubs2.owned_formats FROM user_book_state ubs2 WHERE ubs2.user_id = ${s.user_id} AND ubs2.book_id = sb.book_id) as owned_formats,
+      (SELECT AVG(ubr2.rating) FROM user_book_ratings ubr2 WHERE ubr2.book_id = sb.book_id) as aggregate_rating
     FROM shelf_books sb
     JOIN books b ON sb.book_id = b.id
     WHERE sb.shelf_id = ${shelfId}
@@ -147,26 +166,69 @@ export async function getShelfWithBooks(shelfId: string): Promise<ShelfDetail | 
   `) as {
     book_id: string; position: number; note: string | null; added_at: string;
     title: string; slug: string | null; cover_image_url: string | null; state: string | null;
+    user_rating: number | null; publication_year: number | null; pages: number | null;
+    is_fiction: number | null; owned_formats: string | null; aggregate_rating: number | null;
   }[];
 
-  const books: ShelfBook[] = [];
-  for (const row of bookRows) {
-    const authorRows = await db.all(sql`
-      SELECT a.name FROM book_authors ba JOIN authors a ON ba.author_id = a.id WHERE ba.book_id = ${row.book_id}
-    `) as { name: string }[];
-
-    books.push({
-      bookId: row.book_id,
-      slug: row.slug,
-      title: row.title,
-      coverImageUrl: row.cover_image_url,
-      authors: authorRows.map((a) => a.name),
-      position: row.position,
-      note: row.note,
-      state: row.state,
-      addedAt: row.added_at,
-    });
+  if (bookRows.length === 0) {
+    return {
+      id: s.id, name: s.name, slug: s.slug, description: s.description,
+      color: s.color, coverImageUrl: s.cover_image_url, isPublic: !!s.is_public,
+      position: s.position, createdAt: s.created_at, userId: s.user_id, books: [],
+    };
   }
+
+  // Batch fetch authors and genres for all books
+  const bookIds = bookRows.map((r) => r.book_id);
+  const inClause = sql.join(bookIds.map(id => sql`${id}`), sql`, `);
+
+  const [allAuthors, allGenres] = await Promise.all([
+    db.all(sql`
+      SELECT ba.book_id, a.name
+      FROM book_authors ba
+      JOIN authors a ON ba.author_id = a.id
+      WHERE ba.book_id IN (${inClause})
+    `) as Promise<{ book_id: string; name: string }[]>,
+    db.all(sql`
+      SELECT bg.book_id, g.name
+      FROM book_genres bg
+      JOIN genres g ON bg.genre_id = g.id
+      WHERE bg.book_id IN (${inClause})
+    `) as Promise<{ book_id: string; name: string }[]>,
+  ]);
+
+  const authorsByBook = new Map<string, string[]>();
+  for (const a of allAuthors) {
+    const arr = authorsByBook.get(a.book_id) ?? [];
+    arr.push(a.name);
+    authorsByBook.set(a.book_id, arr);
+  }
+
+  const genresByBook = new Map<string, string[]>();
+  for (const g of allGenres) {
+    const arr = genresByBook.get(g.book_id) ?? [];
+    arr.push(g.name);
+    genresByBook.set(g.book_id, arr);
+  }
+
+  const books: ShelfBook[] = bookRows.map((row) => ({
+    bookId: row.book_id,
+    slug: row.slug,
+    title: row.title,
+    coverImageUrl: row.cover_image_url,
+    authors: authorsByBook.get(row.book_id) ?? [],
+    userRating: row.user_rating ?? null,
+    position: row.position,
+    note: row.note,
+    state: row.state,
+    addedAt: row.added_at,
+    publicationYear: row.publication_year,
+    pages: row.pages,
+    isFiction: row.is_fiction === null ? null : !!row.is_fiction,
+    genres: genresByBook.get(row.book_id) ?? [],
+    ownedFormats: row.owned_formats ? (JSON.parse(row.owned_formats) as string[]) : [],
+    aggregateRating: row.aggregate_rating ? Math.round(row.aggregate_rating * 100) / 100 : null,
+  }));
 
   return {
     id: s.id,
@@ -270,32 +332,39 @@ export async function getFollowedShelves(userId: string): Promise<FollowedShelf[
     owner_display_name: string | null; book_count: number;
   }[];
 
-  const result: FollowedShelf[] = [];
-  for (const row of rows) {
-    const covers = await db.all(sql`
-      SELECT b.cover_image_url
-      FROM shelf_books sb
-      JOIN books b ON sb.book_id = b.id
-      WHERE sb.shelf_id = ${row.id} AND b.cover_image_url IS NOT NULL
-      ORDER BY sb.position ASC
-      LIMIT 12
-    `) as { cover_image_url: string }[];
+  if (rows.length === 0) return [];
 
-    result.push({
-      id: row.id,
-      name: row.name,
-      slug: row.slug,
-      description: row.description,
-      color: row.color,
-      bookCount: row.book_count,
-      coverUrls: covers.map((c) => c.cover_image_url),
-      ownerUsername: row.owner_username,
-      ownerDisplayName: row.owner_display_name,
-      followedAt: row.followed_at,
-    });
+  // Batch fetch covers for all followed shelves in one query
+  const shelfIds = rows.map((r) => r.id);
+  const allCovers = await db.all(sql`
+    SELECT sb.shelf_id, b.cover_image_url,
+      ROW_NUMBER() OVER (PARTITION BY sb.shelf_id ORDER BY sb.position ASC) as rn
+    FROM shelf_books sb
+    JOIN books b ON sb.book_id = b.id
+    WHERE sb.shelf_id IN (${sql.join(shelfIds.map(id => sql`${id}`), sql`, `)})
+      AND b.cover_image_url IS NOT NULL
+  `) as { shelf_id: string; cover_image_url: string; rn: number }[];
+
+  const coversByShelf = new Map<string, string[]>();
+  for (const c of allCovers) {
+    if (c.rn > 12) continue;
+    const arr = coversByShelf.get(c.shelf_id) ?? [];
+    arr.push(c.cover_image_url);
+    coversByShelf.set(c.shelf_id, arr);
   }
 
-  return result;
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    description: row.description,
+    color: row.color,
+    bookCount: row.book_count,
+    coverUrls: coversByShelf.get(row.id) ?? [],
+    ownerUsername: row.owner_username,
+    ownerDisplayName: row.owner_display_name,
+    followedAt: row.followed_at,
+  }));
 }
 
 /**

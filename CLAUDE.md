@@ -74,7 +74,8 @@ npm run deploy:code   # Deploy code only
 ## Database Sync Rules
 Local SQLite (`data/tbra.db`) and production Turso (`tbra-web-app`) can diverge. Always sync both directions before deploying.
 
-- **Before any deploy:** run `./scripts/sync-incremental.sh pull` (Turso → local) then `./scripts/sync-incremental.sh push` (local → Turso) to reconcile.
+- **NEVER nuke-and-replace live data.** The old `deploy.sh` used to DELETE all live data and re-insert from local — this destroyed user activity (reading sessions, notes, states) created between the last pull and the deploy. `deploy.sh` now uses `sync-incremental.sh` which only adds/updates, never deletes.
+- **Before any deploy:** run `./scripts/sync-incremental.sh pull` (Turso → local) then `./scripts/sync-incremental.sh push` (local → Turso) to reconcile. `deploy.sh --db-only` does both automatically.
 - **User-facing tables that change on BOTH sides:** `up_next`, `user_book_state`, `user_book_ratings`, `user_book_reviews`, `user_favorite_books`, `user_follows`, `reading_goals`, `reading_sessions`, `reading_notes`, `report_corrections`, `reported_issues`, `users`. These MUST be synced bidirectionally.
 - **Book/enrichment tables that change locally:** `books`, `authors`, `book_authors`, `book_genres`, `editions`, `enrichment_log`, etc. These are typically pushed local → Turso after enrichment runs.
 - **Never assume local = production.** Live users create accounts, write reviews, and update reading states directly on Turso. Local enrichment scripts add/update book metadata on the local SQLite. Both sides have unique changes.

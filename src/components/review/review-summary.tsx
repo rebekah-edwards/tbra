@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { StarRow } from "./rounded-star";
 import type { ReviewSummaryData } from "@/lib/queries/review-summary";
 
@@ -51,8 +52,7 @@ export function ReviewSummary({
                       <circle cx="12" cy="7" r="4" />
                     </svg>
                   ) : review.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={review.avatarUrl} alt="" className="w-full h-full object-cover" />
+                    <Image src={review.avatarUrl} alt="" width={28} height={28} className="w-full h-full object-cover" loading="lazy" />
                   ) : (
                     getInitials(review.displayName)
                   )}

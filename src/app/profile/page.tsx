@@ -90,8 +90,6 @@ export default async function ProfilePage() {
               Member since {memberSince}
             </p>
             <div className="flex items-center gap-3 mt-1 text-sm">
-              <span className="font-medium text-foreground">{stats.completed} books read</span>
-              <span className="text-muted">·</span>
               <span className="text-foreground"><strong>{followerCount}</strong> <span className="text-muted">followers</span></span>
               <span className="text-muted">·</span>
               <span className="text-foreground"><strong>{followingCount}</strong> <span className="text-muted">following</span></span>
@@ -143,7 +141,7 @@ export default async function ProfilePage() {
       </div>
 
       {/* Top-Shelf Reads */}
-      <FavoritesShelf favorites={favorites} />
+      <FavoritesShelf favorites={favorites} userAvatarUrl={user.avatarUrl} />
 
       {/* Custom Shelves */}
       <ProfileShelvesSection

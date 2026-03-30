@@ -1,0 +1,12 @@
+[backfill] Found 457 books needing summaries
+[backfill] Failed on "The Adventures of the Princess and Mr. Whiffle": 403 "Content violates usage guidelines. Team: 91278514-ce94-452f-a08a-58f103c51836, API key ID: 4aeca8e3-5d48-494e-9523-79dea57d70f2, Model: grok-3-mini, Failed check: SAFETY_CHECK_TYPE_CSAM"
+[backfill] Progress: 50/457 (49 ok, 0 skipped, 1 failed)
+[backfill] Progress: 100/457 (99 ok, 0 skipped, 1 failed)
+[backfill] Progress: 150/457 (149 ok, 0 skipped, 1 failed)
+[backfill] Progress: 200/457 (199 ok, 0 skipped, 1 failed)
+[backfill] Progress: 250/457 (249 ok, 0 skipped, 1 failed)
+[backfill] Progress: 300/457 (299 ok, 0 skipped, 1 failed)
+[backfill] Progress: 350/457 (349 ok, 0 skipped, 1 failed)
+[backfill] Progress: 400/457 (399 ok, 0 skipped, 1 failed)
+[backfill] Progress: 450/457 (449 ok, 0 skipped, 1 failed)
+[backfill] DONE: 457 total, 456 summaries written, 0 skipped, 1 failed

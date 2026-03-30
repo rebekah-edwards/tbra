@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { NoCover } from "@/components/no-cover";
 
 interface SimilarBook {
@@ -70,11 +71,12 @@ export function SimilarBooks({ bookId }: { bookId: string }) {
           >
             <div className="aspect-[2/3] relative rounded-lg overflow-hidden">
               {book.coverImageUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
+                <Image
                   src={book.coverImageUrl}
                   alt={`Cover of ${book.title}`}
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="120px"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
                 />
               ) : (

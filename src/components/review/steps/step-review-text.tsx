@@ -260,7 +260,7 @@ export function StepReviewText({ text, isAnonymous, onChange, onAnonymousChange 
           onClick={() => onAnonymousChange(!isAnonymous)}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
             isAnonymous
-              ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+              ? "bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/30"
               : "text-muted hover:text-foreground border border-border/50 hover:border-border"
           }`}
         >

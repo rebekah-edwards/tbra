@@ -206,7 +206,7 @@ export default async function PublicProfilePage({
       </div>
 
       {/* Favorites */}
-      <FavoritesShelf favorites={favorites} />
+      <FavoritesShelf favorites={favorites} userAvatarUrl={user.avatarUrl} />
 
       {/* Public Shelves */}
       <ProfileShelvesSection

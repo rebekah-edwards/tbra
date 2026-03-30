@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const PULL_THRESHOLD = 80;
@@ -13,45 +13,48 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
   const touchStartY = useRef(0);
   const pulling = useRef(false);
 
-  const handleTouchStart = useCallback((e: TouchEvent) => {
-    // Only activate when scrolled to top
-    if (window.scrollY > 5) return;
-    touchStartY.current = e.touches[0].clientY;
-    pulling.current = true;
-  }, []);
-
-  const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!pulling.current || refreshing) return;
-    const deltaY = e.touches[0].clientY - touchStartY.current;
-    if (deltaY < 0) {
-      pulling.current = false;
-      setPullDistance(0);
-      return;
-    }
-    // Dampen the pull (feels more natural)
-    const dampened = Math.min(deltaY * 0.5, MAX_PULL);
-    setPullDistance(dampened);
-  }, [refreshing]);
-
-  const handleTouchEnd = useCallback(() => {
-    if (!pulling.current) return;
-    pulling.current = false;
-
-    if (pullDistance >= PULL_THRESHOLD && !refreshing) {
-      setRefreshing(true);
-      setPullDistance(PULL_THRESHOLD * 0.6);
-      router.refresh();
-      // Reset after a short delay to show the spinner
-      setTimeout(() => {
-        setRefreshing(false);
-        setPullDistance(0);
-      }, 800);
-    } else {
-      setPullDistance(0);
-    }
-  }, [pullDistance, refreshing, router]);
+  // Use refs for handlers to avoid re-attaching listeners on every state change
+  const refreshingRef = useRef(refreshing);
+  refreshingRef.current = refreshing;
+  const pullDistanceRef = useRef(pullDistance);
+  pullDistanceRef.current = pullDistance;
 
   useEffect(() => {
+    function handleTouchStart(e: TouchEvent) {
+      if (window.scrollY > 5) return;
+      touchStartY.current = e.touches[0].clientY;
+      pulling.current = true;
+    }
+
+    function handleTouchMove(e: TouchEvent) {
+      if (!pulling.current || refreshingRef.current) return;
+      const deltaY = e.touches[0].clientY - touchStartY.current;
+      if (deltaY < 0) {
+        pulling.current = false;
+        setPullDistance(0);
+        return;
+      }
+      const dampened = Math.min(deltaY * 0.5, MAX_PULL);
+      setPullDistance(dampened);
+    }
+
+    function handleTouchEnd() {
+      if (!pulling.current) return;
+      pulling.current = false;
+
+      if (pullDistanceRef.current >= PULL_THRESHOLD && !refreshingRef.current) {
+        setRefreshing(true);
+        setPullDistance(PULL_THRESHOLD * 0.6);
+        router.refresh();
+        setTimeout(() => {
+          setRefreshing(false);
+          setPullDistance(0);
+        }, 800);
+      } else {
+        setPullDistance(0);
+      }
+    }
+
     document.addEventListener("touchstart", handleTouchStart, { passive: true });
     document.addEventListener("touchmove", handleTouchMove, { passive: true });
     document.addEventListener("touchend", handleTouchEnd);
@@ -60,7 +63,7 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
+  }, [router]);
 
   const progress = Math.min(pullDistance / PULL_THRESHOLD, 1);
   const rotation = refreshing ? 360 : progress * 270;

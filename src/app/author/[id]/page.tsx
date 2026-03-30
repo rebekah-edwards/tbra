@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { resolveAuthor, getAuthorBooks } from "@/lib/queries/authors";
 import { NoCover } from "@/components/no-cover";
+import { BackButton } from "@/components/ui/back-button";
 
 export async function generateMetadata({
   params,
@@ -70,7 +71,10 @@ export default async function AuthorPage({
 
   return (
     <div>
-      <h1 className="text-foreground text-2xl font-bold tracking-tight">{author.name}</h1>
+      <div className="flex items-center gap-3 mb-2">
+        <BackButton />
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">{author.name}</h1>
+      </div>
       {author.bio && (
         <p className="mt-2 text-sm leading-relaxed text-muted">{author.bio}</p>
       )}
@@ -78,15 +82,23 @@ export default async function AuthorPage({
       {/* Series sections */}
       {[...seriesMap.entries()].map(([seriesId, { name, slug, books: seriesBooks }]) => (
         <section key={seriesId} className="mt-8">
-          <h2 className="section-heading text-lg">
+          <div className="flex items-center justify-between">
+            <h2 className="section-heading text-lg">
+              <Link
+                href={slug ? `/series/${slug}` : `/search?series=${seriesId}`}
+                className="hover:text-link transition-colors"
+              >
+                {name}
+              </Link>
+            </h2>
             <Link
               href={slug ? `/series/${slug}` : `/search?series=${seriesId}`}
-              className="hover:text-link transition-colors"
+              className="text-xs text-link hover:text-link/80 transition-colors whitespace-nowrap"
             >
-              {name}
+              View Series &rarr;
             </Link>
-          </h2>
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
             {seriesBooks.map((book) => (
               <Link
                 key={book.id}
@@ -131,7 +143,7 @@ export default async function AuthorPage({
               Books ({standaloneBooks.length})
             </h2>
           )}
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
             {standaloneBooks.map((book) => (
               <Link
                 key={book.id}

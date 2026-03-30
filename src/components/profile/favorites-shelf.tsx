@@ -5,6 +5,7 @@ import { NoCover } from "@/components/no-cover";
 
 interface FavoritesShelfProps {
   favorites: FavoriteBook[];
+  userAvatarUrl?: string | null;
 }
 
 /** A single book or a group of adjacent same-series books */
@@ -53,7 +54,7 @@ function groupIntoShelfItems(favorites: FavoriteBook[]): ShelfItem[] {
   return items;
 }
 
-function BookCover({ book }: { book: FavoriteBook }) {
+function BookCover({ book, userAvatarUrl }: { book: FavoriteBook; userAvatarUrl?: string | null }) {
   return (
     <div className="relative">
       {book.coverImageUrl ? (
@@ -73,6 +74,17 @@ function BookCover({ book }: { book: FavoriteBook }) {
       )}
       {/* Book spine shadow effect */}
       <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-r from-black/20 to-transparent rounded-l-sm" />
+      {book.userRating != null && book.userRating > 0 && (
+        <span className="absolute bottom-1 right-1 flex items-center gap-1 rounded-full bg-black/75 pl-0.5 pr-1.5 py-0.5 text-[9px] font-medium text-white backdrop-blur-sm">
+          {userAvatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={userAvatarUrl} alt="" className="w-3.5 h-3.5 rounded-full object-cover flex-shrink-0" />
+          ) : (
+            <span className="w-3.5 h-3.5 rounded-full bg-accent/60 flex items-center justify-center text-[7px] text-black font-bold flex-shrink-0">★</span>
+          )}
+          {book.userRating % 1 === 0 ? book.userRating.toFixed(0) : book.userRating.toFixed(2)} ★
+        </span>
+      )}
     </div>
   );
 }
@@ -125,7 +137,7 @@ function SeriesStack({ books }: { books: FavoriteBook[] }) {
                 filter: isTop ? undefined : "brightness(0.8)",
               }}
             >
-              <BookCover book={book} />
+              <BookCover book={book} userAvatarUrl={userAvatarUrl} />
             </div>
           );
         })}
@@ -154,7 +166,7 @@ function SeriesStack({ books }: { books: FavoriteBook[] }) {
   );
 }
 
-export function FavoritesShelf({ favorites }: FavoritesShelfProps) {
+export function FavoritesShelf({ favorites, userAvatarUrl }: FavoritesShelfProps) {
   const shelfItems = groupIntoShelfItems(favorites);
 
   return (
@@ -178,7 +190,7 @@ export function FavoritesShelf({ favorites }: FavoritesShelfProps) {
                       href={`/book/${item.book.slug || item.book.id}`}
                       className="flex-shrink-0 group relative"
                     >
-                      <BookCover book={item.book} />
+                      <BookCover book={item.book} userAvatarUrl={userAvatarUrl} />
                     </Link>
                   );
                 }
@@ -201,7 +213,7 @@ export function FavoritesShelf({ favorites }: FavoritesShelfProps) {
         <div className="rounded-lg border border-dashed border-border p-6 text-center">
           <p className="text-sm text-muted">Pin your all-time favorites here</p>
           <p className="mt-1 text-xs text-muted/60">
-            Tap the heart on any book page to add it
+            Tap Top Shelf on any book page to add it
           </p>
         </div>
       )}

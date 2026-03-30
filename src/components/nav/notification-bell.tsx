@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface Notification {
   id: string;
@@ -18,7 +18,8 @@ export function NotificationBell() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotificationsRef = useRef<() => Promise<void>>(undefined);
+  fetchNotificationsRef.current = async () => {
     try {
       const res = await fetch("/api/notifications");
       if (res.ok) {
@@ -28,14 +29,13 @@ export function NotificationBell() {
     } catch {
       // Silently fail
     }
-  }, []);
+  };
 
   useEffect(() => {
-    fetchNotifications();
-    // Poll every 60 seconds
-    const interval = setInterval(fetchNotifications, 60_000);
+    fetchNotificationsRef.current?.();
+    const interval = setInterval(() => fetchNotificationsRef.current?.(), 60_000);
     return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {

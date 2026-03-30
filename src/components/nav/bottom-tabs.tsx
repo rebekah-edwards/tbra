@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 interface BottomTabsProps {
@@ -23,7 +24,7 @@ const tabs = [
     ),
   },
   {
-    label: "Bookshelf",
+    label: "My Library",
     href: "/library",
     authRequired: true,
     icon: (
@@ -131,8 +132,7 @@ export function BottomTabs({ isLoggedIn, avatarUrl }: BottomTabsProps) {
                 <div className={`w-[22px] h-[22px] rounded-full overflow-hidden flex-shrink-0 ${
                   active ? "ring-2 ring-neon-purple" : "ring-1 ring-border"
                 }`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                  <Image src={avatarUrl} alt="" width={22} height={22} className="w-full h-full object-cover" />
                 </div>
               ) : (
                 tab.icon

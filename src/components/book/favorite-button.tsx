@@ -9,7 +9,7 @@ interface FavoriteButtonProps {
   isFavorited: boolean;
 }
 
-function TopShelfToast({ onDismiss }: { onDismiss: () => void }) {
+function TopShelfToast({ onDismiss, isFirstAdd }: { onDismiss: () => void; isFirstAdd: boolean }) {
   useEffect(() => {
     const timer = setTimeout(onDismiss, 3500);
     return () => clearTimeout(timer);
@@ -63,7 +63,9 @@ function TopShelfToast({ onDismiss }: { onDismiss: () => void }) {
           fontFamily: "var(--font-body)",
         }}
       >
-        Added to your Top Shelf (favorites)! Check your profile to see all Top Shelf Books.
+        {isFirstAdd
+          ? "You just added this to your Top Shelf Reads! This is a place for your all-time favorites. Visit your profile to see them all."
+          : "Added to Top Shelf!"}
       </span>
       <button
         onClick={(e) => {
@@ -99,6 +101,7 @@ export function FavoriteButton({ bookId, isFavorited: initialFavorited }: Favori
   const [favorited, setFavorited] = useState(initialFavorited);
   const [isPending, startTransition] = useTransition();
   const [showToast, setShowToast] = useState(false);
+  const [isFirstAdd, setIsFirstAdd] = useState(false);
 
   const dismissToast = useCallback(() => setShowToast(false), []);
 
@@ -108,7 +111,11 @@ export function FavoriteButton({ bookId, isFavorited: initialFavorited }: Favori
       if (result.success) {
         setFavorited(result.isFavorited);
         if (result.isFavorited) {
+          // Check v2 flag (reset from old flag)
+          const seen = localStorage.getItem("tbra-topshelf-seen-v2");
+          setIsFirstAdd(!seen);
           setShowToast(true);
+          localStorage.setItem("tbra-topshelf-seen-v2", "1");
         }
       }
     });
@@ -141,7 +148,7 @@ export function FavoriteButton({ bookId, isFavorited: initialFavorited }: Favori
         </svg>
         Top Shelf
       </button>
-      {showToast && <TopShelfToast onDismiss={dismissToast} />}
+      {showToast && <TopShelfToast onDismiss={dismissToast} isFirstAdd={isFirstAdd} />}
     </>
   );
 }

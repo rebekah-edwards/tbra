@@ -14,6 +14,8 @@ import {
   bookGenres,
   genres,
   readingSessions,
+  bookCategoryRatings,
+  taxonomyCategories,
 } from "@/db/schema";
 import { eq, and, sql, isNull } from "drizzle-orm";
 
@@ -221,6 +223,31 @@ export async function batchFetchCompletionYears(
       const year = parseInt(row.completionDate.substring(0, 4), 10);
       if (!isNaN(year)) map.set(row.bookId, year);
     }
+  }
+  return map;
+}
+
+/** Batch fetch content category ratings for multiple books → Map<bookId, {categoryId, intensity}[]> */
+export async function batchFetchBookContentRatings(
+  bookIds: string[]
+): Promise<Map<string, { categoryId: string; intensity: number }[]>> {
+  if (bookIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      bookId: bookCategoryRatings.bookId,
+      categoryId: bookCategoryRatings.categoryId,
+      intensity: bookCategoryRatings.intensity,
+    })
+    .from(bookCategoryRatings)
+    .where(sql`${bookCategoryRatings.bookId} IN (${inList(bookIds)})`)
+    .all();
+
+  const map = new Map<string, { categoryId: string; intensity: number }[]>();
+  for (const row of rows) {
+    const existing = map.get(row.bookId) ?? [];
+    existing.push({ categoryId: row.categoryId, intensity: row.intensity });
+    map.set(row.bookId, existing);
   }
   return map;
 }

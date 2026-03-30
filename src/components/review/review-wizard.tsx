@@ -277,6 +277,8 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
         animating ? "translate-y-0" : "translate-y-full"
       }`}
     >
+    {/* Desktop: constrain to 60% width centered */}
+    <div className="flex flex-col h-full w-full md:max-w-[60%] md:mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         {step > 0 ? (
@@ -437,6 +439,7 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
         </div>
       </div>
 
+      </div>
       {/* Exit confirmation dialog */}
       {showExitConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-6">

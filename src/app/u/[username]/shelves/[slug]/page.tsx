@@ -9,6 +9,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { isFollowingShelf, getShelfFollowerCount } from "@/lib/queries/shelves";
 import { ShareShelfButton } from "./share-button";
 import { FollowShelfButton } from "./follow-button";
+import { ShelfViewClient } from "@/components/shelves/shelf-view-client";
+import { BackButton } from "@/components/ui/back-button";
 
 interface Props {
   params: Promise<{ username: string; slug: string }>;
@@ -44,11 +46,13 @@ function BookshelfGrid({
   accentColor,
   className,
   maxWidth,
+  userAvatarUrl,
 }: {
-  rows: { bookId: string; slug: string | null; title: string; coverImageUrl: string | null; authors: string[] }[][];
+  rows: { bookId: string; slug: string | null; title: string; coverImageUrl: string | null; authors: string[]; userRating: number | null }[][];
   accentColor: string;
   className?: string;
   maxWidth: string;
+  userAvatarUrl?: string | null;
 }) {
   return (
     <div
@@ -81,6 +85,17 @@ function BookshelfGrid({
                     <NoCover title={book.title} className="w-full aspect-[2/3] rounded-sm shadow-[2px_2px_8px_rgba(0,0,0,0.3)]" size="md" />
                   )}
                   <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-r from-black/20 to-transparent rounded-l-sm" />
+                  {book.userRating != null && book.userRating > 0 && (
+                    <span className="absolute bottom-1 right-1 flex items-center gap-1 rounded-full bg-black/75 pl-0.5 pr-1.5 py-0.5 text-[9px] font-medium text-white backdrop-blur-sm">
+                      {userAvatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={userAvatarUrl} alt="" className="w-3.5 h-3.5 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <span className="w-3.5 h-3.5 rounded-full bg-accent/60 flex items-center justify-center text-[7px] text-black font-bold flex-shrink-0">★</span>
+                      )}
+                      {book.userRating % 1 === 0 ? book.userRating.toFixed(0) : book.userRating.toFixed(2)} ★
+                    </span>
+                  )}
                 </div>
                 <p className="mt-2 text-[11px] text-foreground font-medium line-clamp-2 leading-tight">
                   {book.title}
@@ -123,27 +138,12 @@ export default async function PublicShelfPage({ params }: Props) {
   const accentColor = shelf.color || "#d97706";
 
   // Chunk books into rows — 3 for mobile, 5 for desktop
-  const mobileRows: typeof shelf.books[] = [];
-  for (let i = 0; i < shelf.books.length; i += 3) {
-    mobileRows.push(shelf.books.slice(i, i + 3));
-  }
-  const desktopRows: typeof shelf.books[] = [];
-  for (let i = 0; i < shelf.books.length; i += 5) {
-    desktopRows.push(shelf.books.slice(i, i + 5));
-  }
 
   return (
     <div className="lg:max-w-[60%] lg:mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
-        <Link
-          href={`/u/${username}`}
-          className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-alt transition-colors text-muted hover:text-foreground"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
+        <BackButton />
         <div className="flex-1 min-w-0">
           <h1 className="text-foreground text-xl font-bold tracking-tight truncate">
             {shelf.name}
@@ -181,19 +181,14 @@ export default async function PublicShelfPage({ params }: Props) {
         <p className="text-sm text-muted mb-5">{shelf.description}</p>
       )}
 
-      {/* Bookshelf */}
-      {shelf.books.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center">
-          <p className="text-sm text-muted">This shelf is empty.</p>
-        </div>
-      ) : (
-        <>
-          {/* Mobile: 3 per row */}
-          <BookshelfGrid rows={mobileRows} accentColor={accentColor} className="lg:hidden" maxWidth="30%" />
-          {/* Desktop: 5 per row */}
-          <BookshelfGrid rows={desktopRows} accentColor={accentColor} className="hidden lg:block" maxWidth="18%" />
-        </>
-      )}
+      {/* Bookshelf with sort/filter */}
+      <ShelfViewClient
+        books={shelf.books}
+        accentColor={accentColor}
+        userAvatarUrl={user.avatarUrl}
+        isOwner={isOwner}
+        editHref={isOwner ? `/library/shelves/${slug}` : undefined}
+      />
     </div>
   );
 }

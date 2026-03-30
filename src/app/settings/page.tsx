@@ -13,6 +13,7 @@ import { HiddenBooksManager } from "@/components/settings/hidden-books-manager";
 import { AccountSettings } from "@/components/settings/account-settings";
 import { ChangePassword } from "@/components/settings/change-password";
 import { TextSizeSelector } from "@/components/settings/text-size-selector";
+import { ThemeSelector } from "@/components/settings/theme-selector";
 import { LocationSettings } from "@/components/settings/location-settings";
 import { getHiddenBooks } from "@/lib/actions/hidden-books";
 import { ExportSection } from "@/components/settings/export-section";
@@ -42,7 +43,12 @@ export default async function SettingsPage() {
       {/* Display */}
       <div>
         <h2 className="section-heading text-lg mb-3">Display</h2>
-        <div className="space-y-3">
+        <div className="space-y-5">
+          <div>
+            <p className="text-sm text-foreground mb-1.5">Theme</p>
+            <p className="text-xs text-muted mb-2">Choose your preferred color scheme</p>
+            <ThemeSelector />
+          </div>
           <div>
             <p className="text-sm text-foreground mb-1.5">Text Size</p>
             <p className="text-xs text-muted mb-2">Adjust the base font size across the app</p>

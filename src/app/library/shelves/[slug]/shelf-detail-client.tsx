@@ -1,14 +1,33 @@
 "use client";
 
-import { useState, useTransition, useRef, useCallback } from "react";
+import { useState, useTransition, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { NoCover } from "@/components/no-cover";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { CreateShelfModal } from "@/components/shelves/create-shelf-modal";
 import {
   removeBookFromShelf,
+  bulkRemoveFromShelf,
   reorderShelfBooks,
   deleteShelf,
   addBookToShelf,
@@ -30,7 +49,6 @@ function ShelfBookItem({
   book,
   shelfId,
   onRemove,
-  color,
   selected,
   onToggleSelect,
   selectMode,
@@ -38,7 +56,6 @@ function ShelfBookItem({
   book: ShelfBook;
   shelfId: string;
   onRemove: (bookId: string) => void;
-  color: string | null;
   selected?: boolean;
   onToggleSelect?: (bookId: string) => void;
   selectMode?: boolean;
@@ -47,6 +64,22 @@ function ShelfBookItem({
   const [editingNote, setEditingNote] = useState(false);
   const [noteText, setNoteText] = useState(book.note || "");
   const [notePending, startNoteTransition] = useTransition();
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: book.bookId, disabled: selectMode || editingNote });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
 
   function saveNote() {
     const trimmed = noteText.trim();
@@ -57,7 +90,29 @@ function ShelfBookItem({
   }
 
   return (
-    <div className="flex items-center gap-3 py-3 px-1 border-b border-border/50 last:border-0">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 py-3 px-1 border-b border-border/50 last:border-0 ${isDragging ? "bg-surface-alt/50 rounded-lg" : ""}`}
+    >
+      {/* Drag handle */}
+      {!selectMode && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="touch-none cursor-grab active:cursor-grabbing p-1 text-muted/30 hover:text-muted/60 shrink-0"
+          title="Drag to reorder"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="9" cy="6" r="1.5" />
+            <circle cx="15" cy="6" r="1.5" />
+            <circle cx="9" cy="12" r="1.5" />
+            <circle cx="15" cy="12" r="1.5" />
+            <circle cx="9" cy="18" r="1.5" />
+            <circle cx="15" cy="18" r="1.5" />
+          </svg>
+        </div>
+      )}
       {selectMode && (
         <button
           onClick={() => onToggleSelect?.(book.bookId)}
@@ -250,8 +305,9 @@ function AddBooksModal({
 
 // ─── Main Shelf Detail ───
 
-export function ShelfDetailClient({ shelf, allBooks, isPremium, username }: ShelfDetailClientProps) {
+export function ShelfDetailClient({ shelf: initialShelf, allBooks, isPremium, username }: ShelfDetailClientProps) {
   const router = useRouter();
+  const [books, setBooks] = useState(initialShelf.books);
   const [editOpen, setEditOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -259,12 +315,33 @@ export function ShelfDetailClient({ shelf, allBooks, isPremium, username }: Shel
   const [selectMode, setSelectMode] = useState(false);
   const [selectedBooks, setSelectedBooks] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
+  const shelf = { ...initialShelf, books };
 
-  const shelfBookIds = new Set(shelf.books.map((b) => b.bookId));
-  const hasCustomColor = !!shelf.color;
+  const shelfBookIds = new Set(books.map((b) => b.bookId));
   const accentColor = shelf.color || "#d97706";
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = books.findIndex((b) => b.bookId === active.id);
+    const newIndex = books.findIndex((b) => b.bookId === over.id);
+    const reordered = arrayMove(books, oldIndex, newIndex).map((b, i) => ({ ...b, position: i + 1 }));
+    setBooks(reordered);
+
+    startTransition(async () => {
+      await reorderShelfBooks(shelf.id, reordered.map((b) => b.bookId));
+    });
+  }
+
   function handleRemoveBook(bookId: string) {
+    setBooks((prev) => prev.filter((b) => b.bookId !== bookId));
     startTransition(async () => {
       await removeBookFromShelf(shelf.id, bookId);
     });
@@ -280,12 +357,12 @@ export function ShelfDetailClient({ shelf, allBooks, isPremium, username }: Shel
   }
 
   function handleBulkRemove() {
+    const toRemove = [...selectedBooks];
+    setBooks((prev) => prev.filter((b) => !selectedBooks.has(b.bookId)));
+    setSelectedBooks(new Set());
+    setSelectMode(false);
     startTransition(async () => {
-      for (const bookId of selectedBooks) {
-        await removeBookFromShelf(shelf.id, bookId);
-      }
-      setSelectedBooks(new Set());
-      setSelectMode(false);
+      await bulkRemoveFromShelf(shelf.id, toRemove);
     });
   }
 
@@ -300,14 +377,14 @@ export function ShelfDetailClient({ shelf, allBooks, isPremium, username }: Shel
     <div className="lg:max-w-[60%] lg:mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
-        <Link
-          href="/library/shelves"
+        <button
+          onClick={() => router.back()}
           className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-alt transition-colors text-muted hover:text-foreground"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 18l-6-6 6-6" />
           </svg>
-        </Link>
+        </button>
         <div className="flex-1 min-w-0">
           <h1 className="text-foreground text-xl font-bold tracking-tight truncate">
             {shelf.name}
@@ -452,20 +529,27 @@ export function ShelfDetailClient({ shelf, allBooks, isPremium, username }: Shel
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-border bg-surface/50 px-3">
-          {shelf.books.map((book) => (
-            <ShelfBookItem
-              key={book.bookId}
-              book={book}
-              shelfId={shelf.id}
-              onRemove={handleRemoveBook}
-              color={shelf.color}
-              selectMode={selectMode}
-              selected={selectedBooks.has(book.bookId)}
-              onToggleSelect={toggleSelectBook}
-            />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={books.map((b) => b.bookId)} strategy={verticalListSortingStrategy}>
+            <div className="rounded-xl border border-border bg-surface/50 px-3">
+              {books.map((book) => (
+                <ShelfBookItem
+                  key={book.bookId}
+                  book={book}
+                  shelfId={shelf.id}
+                  onRemove={handleRemoveBook}
+                  selectMode={selectMode}
+                  selected={selectedBooks.has(book.bookId)}
+                  onToggleSelect={toggleSelectBook}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Edit modal */}

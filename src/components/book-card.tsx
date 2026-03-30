@@ -14,9 +14,10 @@ interface BookCardProps {
   aggregateRating?: number | null;
   activeFormats?: string[];
   state?: string | null;
+  hasContentConflict?: boolean;
 }
 
-export function BookCard({ id, slug, title, coverImageUrl, userRating, aggregateRating, activeFormats, state }: BookCardProps) {
+export function BookCard({ id, slug, title, coverImageUrl, userRating, aggregateRating, activeFormats, state, hasContentConflict }: BookCardProps) {
   const isActivelyReading = state === "currently_reading" || state === "paused";
   const isAudiobook = isActivelyReading && activeFormats?.length === 1 && activeFormats[0] === "audiobook";
   const aspect = isAudiobook ? "aspect-square" : "aspect-[2/3]";
@@ -44,6 +45,11 @@ export function BookCard({ id, slug, title, coverImageUrl, userRating, aggregate
             {title}
           </p>
         </div>
+        {hasContentConflict && (
+          <span className="absolute top-1.5 left-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-yellow-500/90 text-black text-[11px] font-bold shadow-sm" title="Contains flagged content">
+            !
+          </span>
+        )}
         {userRating != null && userRating > 0 ? (
           <span className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
             {formatRating(userRating)} ★

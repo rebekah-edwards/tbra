@@ -28,6 +28,7 @@ const SUB_FILTERS: Record<GroupKey, { key: string; label: string }[]> = {
     { key: "not_owned", label: "Not Owned" },
     { key: "fiction", label: "Fiction" },
     { key: "nonfiction", label: "Non-Fiction" },
+    { key: "flagged", label: "⚠ Flagged" },
   ],
   owned: [
     { key: "all", label: "All" },
@@ -68,7 +69,7 @@ function sortBooks(books: UserBookWithDetails[], sort: SortKey): UserBookWithDet
   return sorted;
 }
 
-function filterBooks(books: UserBookWithDetails[], group: GroupKey, subFilter: string): UserBookWithDetails[] {
+function filterBooks(books: UserBookWithDetails[], group: GroupKey, subFilter: string, conflictIds?: Set<string>): UserBookWithDetails[] {
   switch (group) {
     case "activity":
       return books.filter((b) => b.state === subFilter);
@@ -83,6 +84,8 @@ function filterBooks(books: UserBookWithDetails[], group: GroupKey, subFilter: s
           return tbrBooks.filter((b) => b.isFiction === true);
         case "nonfiction":
           return tbrBooks.filter((b) => b.isFiction === false);
+        case "flagged":
+          return tbrBooks.filter((b) => conflictIds?.has(b.id));
         default:
           return tbrBooks;
       }
@@ -219,7 +222,7 @@ function StarFilter({ value, onChange }: { value: number; onChange: (v: number) 
 
 /* ─── Main Component ─── */
 
-export function LibraryClient({ books }: { books: UserBookWithDetails[] }) {
+export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWithDetails[]; contentPrefs?: Record<string, number> }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -263,10 +266,27 @@ export function LibraryClient({ books }: { books: UserBookWithDetails[] }) {
   const readCount = useMemo(() => books.filter((b) => b.state === "completed").length, [books]);
   const tbrCount = useMemo(() => books.filter((b) => b.state === "tbr").length, [books]);
 
+  // Compute which books have content conflicts with user preferences
+  const contentConflictIds = useMemo(() => {
+    const hasPrefs = Object.keys(contentPrefs).length > 0;
+    if (!hasPrefs) return new Set<string>();
+    const ids = new Set<string>();
+    for (const book of books) {
+      for (const r of book.contentRatings) {
+        const userMax = contentPrefs[r.categoryId];
+        if (userMax !== undefined && userMax < 4 && r.intensity > userMax) {
+          ids.add(book.id);
+          break;
+        }
+      }
+    }
+    return ids;
+  }, [books, contentPrefs]);
+
   const subFilters = SUB_FILTERS[validGroup];
 
   // Base filter (tab + sub-filter, before advanced filters)
-  const baseFiltered = filterBooks(books, validGroup, activeSubFilter);
+  const baseFiltered = filterBooks(books, validGroup, activeSubFilter, contentConflictIds);
 
   // Get available genres from the current tab's books (not all books)
   const availableGenres = useMemo(() => {
@@ -307,10 +327,10 @@ export function LibraryClient({ books }: { books: UserBookWithDetails[] }) {
   const subFilterCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const sf of subFilters) {
-      counts[sf.key] = filterBooks(books, validGroup, sf.key).length;
+      counts[sf.key] = filterBooks(books, validGroup, sf.key, contentConflictIds).length;
     }
     return counts;
-  }, [books, validGroup, subFilters]);
+  }, [books, validGroup, subFilters, contentConflictIds]);
 
   // Active advanced filter count
   const advancedFilterCount = [yearFilter, genreFilter, minRating > 0 ? "y" : "", fictionFilter, formatFilter].filter(Boolean).length;
@@ -346,7 +366,7 @@ export function LibraryClient({ books }: { books: UserBookWithDetails[] }) {
     <div className="lg:max-w-[60%] lg:mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-foreground text-2xl font-bold tracking-tight">
-          Bookshelf
+          My Library
         </h1>
         <span className="text-xs text-muted">
           {ownedCount} owned · {readCount} read · {tbrCount} tbr
@@ -359,8 +379,11 @@ export function LibraryClient({ books }: { books: UserBookWithDetails[] }) {
         className="flex items-center justify-between w-full rounded-xl border border-border bg-surface/50 px-4 py-3 mb-4 group transition-colors hover:border-accent/30"
       >
         <div className="flex items-center gap-2.5">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent shrink-0">
-            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent shrink-0">
+            <path d="M4 4h2v16H4z" />
+            <path d="M8 4h2v16H8z" />
+            <path d="M13 4l2 16" />
+            <path d="M18 4l2 16" />
           </svg>
           <span className="text-sm font-medium text-foreground">My Shelves</span>
         </div>
@@ -562,7 +585,7 @@ export function LibraryClient({ books }: { books: UserBookWithDetails[] }) {
       {filteredBooks.length > 0 ? (
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {filteredBooks.map((book) => (
-            <BookCard key={book.id} {...book} />
+            <BookCard key={book.id} {...book} hasContentConflict={contentConflictIds.has(book.id)} />
           ))}
         </div>
       ) : (

@@ -1,0 +1,1493 @@
+[backfill] Found 1024 books needing summaries
+[enrichment] Starting enrichment for book 2e8d7d99-6e57-4ca0-bcad-12f97bc0a544
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Arthur Gordon Pym, Benito Cereno, and Related Writings" Herman Melville
+[enrichment] Found 17 search results
+[enrichment] Analysis complete for "Arthur Gordon Pym, Benito Cereno, and Related Writings"
+[enrichment] Added tag: Dark Fiction
+[enrichment] Added tag: Gothic
+[enrichment] Trimmed excess tag: Survival Story
+[enrichment] Trimmed excess tag: Dark Fiction
+[enrichment] Trimmed excess tag: Gothic
+[enrichment] Trimmed excess tag: Psychological Thriller
+[enrichment] No audiobook length found for "Arthur Gordon Pym, Benito Cereno, and Related Writings"
+[enrichment] Cover found via OL English edition for "Arthur Gordon Pym, Benito Cereno, and Related Writings"
+[enrichment] Enrichment complete for "Arthur Gordon Pym, Benito Cereno, and Related Writings"
+[enrichment] Starting enrichment for book 6a5c90d7-e607-427b-afef-8e8c0471cb6c
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Will of the Many" James Islington
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Will of the Many"
+[enrichment] Trimmed excess tag: Roman-Inspired
+[enrichment] Trimmed excess tag: Empire-Building
+[enrichment] Cover found via OL English edition for "The Will of the Many"
+[enrichment] Enrichment complete for "The Will of the Many"
+[enrichment] Starting enrichment for book e39e27d7-4bbc-49e3-850d-df2fbcd70039
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Cheshire Crossing" Andy Weir
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Cheshire Crossing"
+[enrichment] Added tag: Multiverse
+[enrichment] Added tag: Adventure
+[enrichment] Trimmed excess tag: Webcomic Style
+[enrichment] Trimmed excess tag: YA Crossover
+[enrichment] Trimmed excess tag: Multiverse
+[enrichment] Trimmed excess tag: Adventure
+[enrichment] Cover found via OL English edition for "Cheshire Crossing"
+[enrichment] Enrichment complete for "Cheshire Crossing"
+[enrichment] Starting enrichment for book 8a1ea68d-eedd-4f8d-b436-2d2684eb0e87
+[enrichment] Brave metadata filled: publicationYear
+[enrichment] Searching for: "Lacero" Andy Weir
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Lacero"
+[enrichment] Added tag: LitRPG
+[enrichment] Added tag: Ascended Fanfic
+[enrichment] Trimmed excess tag: Litrpg
+[enrichment] Trimmed excess tag: Ascended Fanfic
+[enrichment] Trimmed excess tag: Virtual Reality Fiction
+[enrichment] No audiobook length found for "Lacero"
+[enrichment] No cover found across all tiers for "Lacero"
+[enrichment] Flagged for review: pages, publisher
+[enrichment] Enrichment complete for "Lacero"
+[enrichment] Starting enrichment for book f7f98b1f-d009-4235-b021-1d741553c8d6
+[enrichment] Searching for: "Casey and Andy" Andy Weir
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Casey and Andy"
+[enrichment] Trimmed excess tag: Superhero Parody
+[enrichment] Trimmed excess tag: Mad Scientist Fiction
+[enrichment] No audiobook length found for "Casey and Andy"
+[enrichment] No cover found across all tiers for "Casey and Andy"
+[enrichment] Flagged for review: pages, year, publisher
+[enrichment] Enrichment complete for "Casey and Andy"
+[enrichment] Starting enrichment for book 1b41e314-02c5-4b14-a961-9f3d01aebd7e
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Horrorstör" Grady Hendrix
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Horrorstör"
+[enrichment] Trimmed excess tag: Black Comedy
+[enrichment] Trimmed excess tag: Haunted House
+[enrichment] Cover found via OL English edition for "Horrorstör"
+[enrichment] Enrichment complete for "Horrorstör"
+[enrichment] Starting enrichment for book 57b6a36a-4c09-4593-b82b-f3459812c395
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Paperbacks from Hell" Grady Hendrix
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Paperbacks from Hell"
+[enrichment] Trimmed excess tag: Illustrated Non-Fiction
+[enrichment] Trimmed excess tag: Book Collecting History
+[enrichment] Cover found via OL English edition for "Paperbacks from Hell"
+[enrichment] Enrichment complete for "Paperbacks from Hell"
+[enrichment] Starting enrichment for book a417123f-9874-4c98-bcd5-3b7a56817992
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Mercy of Gods" James S. A. Corey
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Mercy of Gods"
+[enrichment] Trimmed excess tag: Survival Story
+[enrichment] Trimmed excess tag: Hard Science Fiction
+[enrichment] Trimmed excess tag: Dark Academia
+[enrichment] Trimmed excess tag: Military Sf
+[enrichment] Trimmed excess tag: Alien Conquest
+[enrichment] No audiobook length found for "The Mercy of Gods"
+[enrichment] Cover found via OL English edition for "The Mercy of Gods"
+[enrichment] Enrichment complete for "The Mercy of Gods"
+[enrichment] Starting enrichment for book f4b3e66c-0d75-4fd2-af30-211ce1087a3a
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "For We Are Many" Dennis E. Taylor
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "For We Are Many"
+[enrichment] Trimmed excess tag: Interstellar Conflict
+[enrichment] Trimmed excess tag: Philosophical Science Fiction
+[enrichment] Cover found via OL English edition for "For We Are Many"
+[enrichment] Enrichment complete for "For We Are Many"
+[enrichment] Starting enrichment for book a6f643eb-edd9-4f23-96ab-b984297556b0
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Way of Kings" Brandon Sanderson
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Way of Kings"
+[enrichment] Trimmed excess tag: Hopepunk
+[enrichment] Cover found via OL English edition for "The Way of Kings"
+[enrichment] Enrichment complete for "The Way of Kings"
+[enrichment] Starting enrichment for book 42082646-d9f3-44d0-988b-ee2065a4acbe
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Dangerous Women" Brandon Sanderson
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Dangerous Women"
+[enrichment] Trimmed excess tag: Dark-Fantasy
+[enrichment] Cover found via OL English edition for "Dangerous Women"
+[enrichment] Enrichment complete for "Dangerous Women"
+[enrichment] Starting enrichment for book e1945d1b-bbb4-48fe-a7d0-b0e0fbd3930e
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Tailored Realities" Brandon Sanderson
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Tailored Realities"
+[enrichment] Added tag: Grimdark
+[enrichment] Added tag: Noir
+[enrichment] Trimmed excess tag: Alternate Realities
+[enrichment] Trimmed excess tag: Grimdark
+[enrichment] Trimmed excess tag: Noir
+[enrichment] Cover found via OL English edition for "Tailored Realities"
+[enrichment] Enrichment complete for "Tailored Realities"
+[enrichment] Starting enrichment for book 15f9b827-07c9-42f5-ab7d-f5bcdea91b05
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Yumi and the Nightmare Painter" Brandon Sanderson
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Yumi and the Nightmare Painter"
+[enrichment] Trimmed excess tag: Interdimensional Adventure
+[enrichment] Trimmed excess tag: Philosophical Fantasy
+[enrichment] Cover found via OL English edition for "Yumi and the Nightmare Painter"
+[enrichment] Enrichment complete for "Yumi and the Nightmare Painter"
+[enrichment] Starting enrichment for book 1f6ef682-0e23-4846-b336-f4597bb33849
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Skyward" Brandon Sanderson
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Skyward"
+[enrichment] Cover found via OL English edition for "Skyward"
+[enrichment] Enrichment complete for "Skyward"
+[enrichment] Starting enrichment for book 2360b0aa-b67d-4ae1-92e5-4e3c8d94fb38
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Way of Shadows" Brent Weeks
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Way of Shadows"
+[enrichment] Trimmed excess tag: Dark Fantasy
+[enrichment] Set audiobook length: 75h 0m
+[enrichment] Cover found via OL English edition for "The Way of Shadows"
+[enrichment] Enrichment complete for "The Way of Shadows"
+[enrichment] Starting enrichment for book abb62b81-38d3-402d-9f10-0a6160306ae6
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Shadow's Edge" Brent Weeks
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Shadow's Edge"
+[enrichment] Trimmed excess tag: Antihero Narrative
+[enrichment] Trimmed excess tag: Sword and Sorcery
+[enrichment] Cover found via OL English edition for "Shadow's Edge"
+[enrichment] Enrichment complete for "Shadow's Edge"
+[enrichment] Starting enrichment for book 72fce70b-416d-449b-acd5-4e28ecf467de
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Black Prism" Brent Weeks
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Black Prism"
+[enrichment] Trimmed excess tag: Coming of Age
+[enrichment] Trimmed excess tag: Multiple POV
+[enrichment] Cover found via OL English edition for "The Black Prism"
+[enrichment] Enrichment complete for "The Black Prism"
+[enrichment] Starting enrichment for book a22e856b-2ebd-4e66-9a55-1cf6a13100dd
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Final Gambit" Jennifer Lynn Barnes
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Final Gambit"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Set audiobook length: 11h 24m
+[enrichment] Cover found via OL English edition for "The Final Gambit"
+[enrichment] Enrichment complete for "The Final Gambit"
+[enrichment] Starting enrichment for book 4fa29708-cf63-4c97-a750-57248ff526e2
+[enrichment] OL metadata filled: pages, publicationDate, isbn13, isbn10, publisher
+[enrichment] Searching for: "The Grandest Game" Jennifer Lynn Barnes
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Grandest Game"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Puzzle Mystery
+[enrichment] Enrichment complete for "The Grandest Game"
+[enrichment] Starting enrichment for book c36656c1-abb8-4e88-845f-ce5c8d73c9c7
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Enthralled" Jennifer Lynn Barnes
+[enrichment] Found 18 search results
+[enrichment] Analysis complete for "Enthralled"
+[enrichment] Added tag: Anthology
+[enrichment] Added tag: Paranormal
+[enrichment] Added tag: Young Adult
+[enrichment] No audiobook length found for "Enthralled"
+[enrichment] Cover found via OL English edition for "Enthralled"
+[enrichment] Enrichment complete for "Enthralled"
+[enrichment] Starting enrichment for book 3abea144-f50b-4796-b9e3-63c88805d701
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Francine Rivers Reader" Francine Rivers
+[enrichment] Found 3 search results
+[enrichment] Analysis complete for "The Francine Rivers Reader"
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Inspirational
+[enrichment] Added tag: Women's Fiction
+[enrichment] No audiobook length found for "The Francine Rivers Reader"
+[enrichment] Cover found via OL English edition for "The Francine Rivers Reader"
+[enrichment] Enrichment complete for "The Francine Rivers Reader"
+[enrichment] Starting enrichment for book cd9cfeb0-faf4-4704-a92e-c1d37372aebd
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "As Sure As the Dawn" Francine Rivers
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "As Sure As the Dawn"
+[enrichment] Added tag: Biblical Fiction
+[enrichment] Added tag: Epic Saga
+[enrichment] Cover found via OL English edition for "As Sure As the Dawn"
+[enrichment] Enrichment complete for "As Sure As the Dawn"
+[enrichment] Starting enrichment for book 346eaa8e-e413-45e7-9776-9aff2e88ac6a
+[enrichment] OL metadata filled: publisher
+[enrichment] Brave metadata filled: pages
+[enrichment] Searching for: "Voice in the Wind" Francine Rivers
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Voice in the Wind"
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Romantic Drama
+[enrichment] Added tag: Epic Historical
+[enrichment] Added to series: Mark of the Lion #1
+[series-discovery] Searching for books in series: "Mark of the Lion"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Mark of the Lion"
+[series-discovery] Skipping duplicate title: "Mark of the Lion Collection"
+[series-discovery] Discovered and imported 0 new books for "Mark of the Lion"
+[enrichment] Set audiobook length: 21h 29m
+[enrichment] Cover found via OL English edition for "Voice in the Wind"
+[enrichment] Enrichment complete for "Voice in the Wind"
+[enrichment] Starting enrichment for book 0648e70f-da98-4935-9162-1d11c5f40b96
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Her Daughter's Dream" Francine Rivers
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Her Daughter's Dream"
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Family Saga
+[enrichment] Added tag: Historical Fiction
+[enrichment] Added to series: Marta's Legacy #2
+[series-discovery] Searching for books in series: "Marta's Legacy"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Linked existing book "Marta's Legacy Gift Collection" to series
+[series-discovery] Imported "Marta's Legacy Collection" into series "Marta's Legacy"
+[series-discovery] Discovered and imported 1 new books for "Marta's Legacy"
+[enrichment] No audiobook length found for "Her Daughter's Dream"
+[enrichment] Cover found via OL English edition for "Her Daughter's Dream"
+[enrichment] Enrichment complete for "Her Daughter's Dream"
+[enrichment] Starting enrichment for book 333b9b62-8cb8-4f9f-a931-c817c81af8d6
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Redeeming Love" Francine Rivers
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Redeeming Love"
+[enrichment] Added tag: Inspirational Romance
+[enrichment] Set audiobook length: 17h 16m
+[enrichment] Cover found via OL English edition for "Redeeming Love"
+[enrichment] Enrichment complete for "Redeeming Love"
+[backfill] Progress: 25/1024 (25 ok, 0 skipped, 0 failed)
+[enrichment] Starting enrichment for book 96ee2eee-ea0c-4b5f-b3ae-14943591fdb2
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Masterpiece" Francine Rivers
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Masterpiece"
+[enrichment] Added tag: Christian Fiction
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Contemporary Romance
+[enrichment] Added tag: Inspirational
+[enrichment] Set audiobook length: 15h 54m
+[enrichment] Cover found via OL English edition for "The Masterpiece"
+[enrichment] Enrichment complete for "The Masterpiece"
+[enrichment] Starting enrichment for book 2a877947-c6e8-416d-93e8-d0667a19cff9
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Unspoken (Lineage of Grace, 5)" Francine Rivers
+[enrichment] Found 0 search results
+[enrichment] Analysis complete for "Unspoken (Lineage of Grace, 5)"
+[enrichment] Added tag: Historical Fiction
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Biblical Fiction
+[enrichment] Added to series: Lineage of Grace #5
+[series-discovery] Searching for books in series: "Lineage of Grace"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Lineage of Grace"
+[series-discovery] Skipping duplicate title: "A Lineage of Grace Gift Edition"
+[series-discovery] Skipping non-English title: "Linaje de GraciaA Lineage of Grace"
+[series-discovery] Discovered and imported 0 new books for "Lineage of Grace"
+[enrichment] No audiobook length found for "Unspoken (Lineage of Grace, 5)"
+[enrichment] Cover found via OL English edition for "Unspoken (Lineage of Grace, 5)"
+[enrichment] Enrichment complete for "Unspoken (Lineage of Grace, 5)"
+[enrichment] Starting enrichment for book 056735e5-e02c-4939-8ad5-5e0cb99e7c86
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Warrior (Sons of Encouragement (Audio))" Francine Rivers
+[enrichment] Found 0 search results
+[enrichment] Analysis complete for "The Warrior (Sons of Encouragement (Audio))"
+[enrichment] Added tag: Biblical Fiction
+[enrichment] Added tag: Inspirational
+[enrichment] Added to series: Sons of Encouragement #2
+[series-discovery] Searching for books in series: "Sons of Encouragement"
+[series-discovery] Brave allowlist too small (2), skipping cross-ref filter
+[series-discovery] Linked existing book "The Scribe" to series
+[series-discovery] Linked existing book "Sons of Encouragement" to series
+[series-discovery] Skipping duplicate title: "Sons of Encouragement"
+[series-discovery] Discovered and imported 0 new books for "Sons of Encouragement"
+[enrichment] No audiobook length found for "The Warrior (Sons of Encouragement (Audio))"
+[enrichment] Cover found via OL English edition for "The Warrior (Sons of Encouragement (Audio))"
+[enrichment] Enrichment complete for "The Warrior (Sons of Encouragement (Audio))"
+[enrichment] Starting enrichment for book c683d5b3-756d-42d6-8d0b-43d41af31b3f
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Leota's Garden" Francine Rivers
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Leota's Garden"
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Inspirational
+[enrichment] Added tag: Family Drama
+[enrichment] Set audiobook length: 48h 0m
+[enrichment] Cover found via OL English edition for "Leota's Garden"
+[enrichment] Enrichment complete for "Leota's Garden"
+[enrichment] Starting enrichment for book 2a501dc9-2c3e-4527-9e3c-600ef171279a
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Priest (Rivers, Francine)" Francine Rivers
+[enrichment] Found 0 search results
+[enrichment] Analysis complete for "The Priest (Rivers, Francine)"
+[enrichment] Added tag: Biblical Fiction
+[enrichment] Added tag: Inspirational Fiction
+[enrichment] Added to series: Sons of Encouragement #1
+[series-discovery] Searching for books in series: "Sons of Encouragement"
+[series-discovery] Brave allowlist too small (2), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "The Scribe (Sons of Encouragement)"
+[series-discovery] Skipping duplicate title: "Sons of Encouragement"
+[series-discovery] Skipping duplicate title: "Sons of Encouragement"
+[series-discovery] Discovered and imported 0 new books for "Sons of Encouragement"
+[enrichment] No audiobook length found for "The Priest (Rivers, Francine)"
+[enrichment] Cover found via OL English edition for "The Priest (Rivers, Francine)"
+[enrichment] Enrichment complete for "The Priest (Rivers, Francine)"
+[enrichment] Starting enrichment for book a750482c-50ae-44e4-98e8-683c97d02244
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Unshaken" Francine Rivers
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Unshaken"
+[enrichment] Added tag: Biblical Fiction
+[enrichment] Added tag: Historical Fiction
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added to series: Lineage of Grace #3
+[series-discovery] Searching for books in series: "Lineage of Grace"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Lineage of Grace"
+[series-discovery] Skipping duplicate title: "A Lineage of Grace Gift Edition"
+[series-discovery] Skipping non-English title: "Linaje de GraciaA Lineage of Grace"
+[series-discovery] Discovered and imported 0 new books for "Lineage of Grace"
+[enrichment] Set audiobook length: 75h 0m
+[enrichment] Cover found via OL English edition for "Unshaken"
+[enrichment] Enrichment complete for "Unshaken"
+[enrichment] Starting enrichment for book e5d64cde-f94d-431c-a85c-94c78466204e
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Rebel in His Arms" Francine Rivers
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Rebel in His Arms"
+[enrichment] Auto-linked parent tag: Historical Fiction
+[enrichment] Added tag: Historical Romance
+[enrichment] Added tag: Enemies to Lovers
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Western Romance
+[enrichment] No audiobook length found for "Rebel in His Arms"
+[enrichment] Cover found via OL English edition for "Rebel in His Arms"
+[enrichment] Enrichment complete for "Rebel in His Arms"
+[enrichment] Starting enrichment for book 3f05a0cb-6888-4b2e-b7ef-31fa32585305
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Pagan Heart" Francine Rivers
+[enrichment] Found 24 search results
+[enrichment] Analysis complete for "Pagan Heart"
+[enrichment] Added tag: Romance
+[enrichment] Added tag: Contemporary Romance
+[enrichment] Added to series: Second Chance at Love #250
+[series-discovery] Searching for books in series: "Second Chance at Love"
+[series-discovery] Brave allowlist too small (0), skipping cross-ref filter
+[series-discovery] Linked existing book "Hearts Divided" to series
+[series-discovery] Discovered and imported 0 new books for "Second Chance at Love"
+[enrichment] No audiobook length found for "Pagan Heart"
+[enrichment] Cover found via OL English edition for "Pagan Heart"
+[enrichment] Enrichment complete for "Pagan Heart"
+[enrichment] Starting enrichment for book e8aae22a-4a4e-4557-b72c-055286f021b0
+[enrichment] OL metadata filled: isbn13, publisher
+[enrichment] Searching for: "The Scarlet Thread (Sons of Encouragement (Audio))" Francine Rivers
+[enrichment] Found 0 search results
+[enrichment] Analysis complete for "The Scarlet Thread (Sons of Encouragement (Audio))"
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Inspirational
+[enrichment] Added tag: Historical Fiction
+[enrichment] Added to series: Sons of Encouragement #?
+[series-discovery] Searching for books in series: "Sons of Encouragement"
+[series-discovery] Brave allowlist too small (2), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "The Scribe (Sons of Encouragement)"
+[series-discovery] Skipping duplicate title: "Sons of Encouragement"
+[series-discovery] Skipping duplicate title: "Sons of Encouragement"
+[series-discovery] Discovered and imported 0 new books for "Sons of Encouragement"
+[enrichment] No audiobook length found for "The Scarlet Thread (Sons of Encouragement (Audio))"
+[enrichment] Cover found via OL English edition for "The Scarlet Thread (Sons of Encouragement (Audio))"
+[enrichment] Enrichment complete for "The Scarlet Thread (Sons of Encouragement (Audio))"
+[enrichment] Starting enrichment for book f18b5add-0258-4fed-9d2e-8034445417b8
+[enrichment] Box set detected: "Mark of the Lion Trilogy" — cover-only enrichment
+[enrichment] Cover found via OL English edition for "Mark of the Lion Trilogy"
+[enrichment] Starting enrichment for book 47596db6-3d1a-4c19-b22a-32fdf9d4f6be
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Kathleen" Francine Rivers
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Kathleen"
+[enrichment] Auto-linked parent tag: Historical Fiction
+[enrichment] Added tag: Historical Romance
+[enrichment] Added tag: Christian Fiction
+[enrichment] No audiobook length found for "Kathleen"
+[enrichment] Cover found via OL English edition for "Kathleen"
+[enrichment] Enrichment complete for "Kathleen"
+[enrichment] Starting enrichment for book e91f71a9-a1c9-4f3c-b53e-fa0509fd5576
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Unafraid (Lineage of Grace, 5)" Francine Rivers
+[enrichment] Found 0 search results
+[enrichment] Analysis complete for "Unafraid (Lineage of Grace, 5)"
+[enrichment] Added tag: Historical Fiction
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Inspirational
+[enrichment] Added to series: Lineage of Grace #5
+[series-discovery] Searching for books in series: "Lineage of Grace"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Lineage of Grace"
+[series-discovery] Skipping duplicate title: "A Lineage of Grace Gift Edition"
+[series-discovery] Skipping non-English title: "Linaje de GraciaA Lineage of Grace"
+[series-discovery] Discovered and imported 0 new books for "Lineage of Grace"
+[enrichment] No audiobook length found for "Unafraid (Lineage of Grace, 5)"
+[enrichment] Cover found via OL English edition for "Unafraid (Lineage of Grace, 5)"
+[enrichment] Enrichment complete for "Unafraid (Lineage of Grace, 5)"
+[enrichment] Starting enrichment for book 8e2748ec-e3b1-4a52-8993-cc162ab3d4a7
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Her Mother's Hope" Francine Rivers
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Her Mother's Hope"
+[enrichment] Added tag: Historical Fiction
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Women's Fiction
+[enrichment] Added to series: Marta's Legacy #1
+[series-discovery] Searching for books in series: "Marta's Legacy"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Marta's Legacy Gift Collection"
+[series-discovery] Skipping duplicate title: "Marta's Legacy Collection"
+[series-discovery] Discovered and imported 0 new books for "Marta's Legacy"
+[enrichment] Set audiobook length: 14h 52m
+[enrichment] Cover found via OL English edition for "Her Mother's Hope"
+[enrichment] Enrichment complete for "Her Mother's Hope"
+[enrichment] Starting enrichment for book e2b5496f-ba9d-417c-a730-2623ca829898
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Saturday Morning" Lauraine Snelling
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Saturday Morning"
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Women's Fiction
+[enrichment] Added tag: Inspirational
+[enrichment] Set audiobook length: 13h 33m
+[enrichment] Cover found via OL English edition for "Saturday Morning"
+[enrichment] Enrichment complete for "Saturday Morning"
+[enrichment] Starting enrichment for book 7cd3e483-587d-4fdf-821e-a26b76ef2bdc
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Funny Story" Emily Henry
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Funny Story"
+[enrichment] Added tag: Romance
+[enrichment] Added tag: Contemporary Romance
+[enrichment] Added tag: Romantic Comedy
+[enrichment] Set audiobook length: 11h 50m
+[enrichment] Cover found via OL English edition for "Funny Story"
+[enrichment] Enrichment complete for "Funny Story"
+[enrichment] Starting enrichment for book e2a34a0a-fb17-4853-81bc-f719d8c5c843
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Happy Place" Emily Henry
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Happy Place"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Contemporary Romance
+[enrichment] Added tag: Second Chance Romance
+[enrichment] Added tag: Found Family
+[enrichment] Set audiobook length: 11h 3m
+[enrichment] Cover found via OL English edition for "Happy Place"
+[enrichment] Enrichment complete for "Happy Place"
+[enrichment] Starting enrichment for book 5b7c6f8d-8688-444d-ab9e-8d99fd073673
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Love That Split the World" Emily Henry
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Love That Split the World"
+[enrichment] Added tag: Young Adult
+[enrichment] Added tag: Magical Realism
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] No audiobook length found for "Love That Split the World"
+[enrichment] Cover found via OL English edition for "Love That Split the World"
+[enrichment] Enrichment complete for "Love That Split the World"
+[enrichment] Starting enrichment for book 5a3ca941-7379-4fc4-86b5-fb29af056bef
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Centurion's Wife" Janette Oke
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Centurion's Wife"
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Biblical Fiction
+[enrichment] Added tag: Historical Romance
+[enrichment] Added to series: Acts of Faith #1
+[series-discovery] Searching for books in series: "Acts of Faith"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Linked existing book "Acts of Faith" to series
+[series-discovery] Imported "Damascus Way (Acts of Faith Book #3)" into series "Acts of Faith"
+[series-discovery] Discovered and imported 1 new books for "Acts of Faith"
+[enrichment] Set audiobook length: 7h 30m
+[enrichment] Cover found via OL English edition for "The Centurion's Wife"
+[enrichment] Enrichment complete for "The Centurion's Wife"
+[enrichment] Starting enrichment for book 30ec2882-39ce-4090-9fb7-be797d0a3132
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Hidden Flame" Janette Oke
+[backfill] Found 982 books needing summaries
+[enrichment] Starting enrichment for book f18b5add-0258-4fed-9d2e-8034445417b8
+[enrichment] Box set detected: "Mark of the Lion Trilogy" — cover-only enrichment
+[enrichment] Starting enrichment for book 30ec2882-39ce-4090-9fb7-be797d0a3132
+[enrichment] Searching for: "The Hidden Flame" Janette Oke
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Hidden Flame"
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Biblical Fiction
+[enrichment] Added tag: Inspirational
+[enrichment] Added to series: Acts of Faith #2
+[series-discovery] Searching for books in series: "Acts of Faith"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Acts of Faith"
+[series-discovery] Skipping duplicate title: "Damascus Way (Acts of Faith Book #3)"
+[series-discovery] Discovered and imported 0 new books for "Acts of Faith"
+[enrichment] Set audiobook length: 7h 1m
+[enrichment] Cover found via OL English edition for "The Hidden Flame"
+[enrichment] Enrichment complete for "The Hidden Flame"
+[enrichment] Starting enrichment for book a4257b77-f38a-460d-91c9-6fa8a646d03a
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "When Calls the Heart" Janette Oke
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "When Calls the Heart"
+[enrichment] Auto-linked parent tag: Historical Fiction
+[enrichment] Added tag: Historical Romance
+[enrichment] Added tag: Inspirational Fiction
+[enrichment] Added tag: Frontier Fiction
+[enrichment] Set audiobook length: 7h 28m
+[enrichment] Cover found via OL English edition for "When Calls the Heart"
+[enrichment] Enrichment complete for "When Calls the Heart"
+[enrichment] Starting enrichment for book cf61b82f-a7b3-4f00-b0b4-a6b617d5a31a
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Love's Long Journey" Janette Oke
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Love's Long Journey"
+[enrichment] Added tag: Historical Fiction
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Western
+[enrichment] Added to series: Love Comes Softly #3
+[series-discovery] Searching for books in series: "Love Comes Softly"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Love Comes Softly"
+[series-discovery] Skipping duplicate title: "Loves Enduring Promise (Love Comes Softly, Book 2)"
+[series-discovery] Skipping duplicate title: "Love Comes Softly 1-4"
+[series-discovery] Skipping duplicate title: "Love comes softly series"
+[series-discovery] Skipping duplicate title: "Love Comes Softly Collection (vol 1-8)"
+[series-discovery] Skipping duplicate title: "Love Comes Softly & Love's Enduring Promise (Janette Oke Keepsake Series 2-in-1 Book)"
+[series-discovery] Discovered and imported 0 new books for "Love Comes Softly"
+[enrichment] Set audiobook length: 8h 6m
+[enrichment] Cover found via OL English edition for "Love's Long Journey"
+[enrichment] Enrichment complete for "Love's Long Journey"
+[enrichment] Starting enrichment for book bc7d8a3b-69dd-4490-a8a8-12cc1ebe3003
+[enrichment] OL metadata filled: isbn13, publisher
+[enrichment] Searching for: "Love's Unending Legacy" Janette Oke
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Love's Unending Legacy"
+[enrichment] Added tag: Christian Fiction
+[enrichment] Auto-linked parent tag: Historical Fiction
+[enrichment] Added tag: Historical Romance
+[enrichment] Added tag: Family Saga
+[enrichment] Added to series: Love Comes Softly #5
+[series-discovery] Searching for books in series: "Love Comes Softly"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Love Comes Softly"
+[series-discovery] Skipping duplicate title: "Loves Enduring Promise (Love Comes Softly, Book 2)"
+[series-discovery] Skipping duplicate title: "Love Comes Softly 1-4"
+[series-discovery] Skipping duplicate title: "Love comes softly series"
+[series-discovery] Skipping duplicate title: "Love Comes Softly Collection (vol 1-8)"
+[series-discovery] Skipping duplicate title: "Love Comes Softly & Love's Enduring Promise (Janette Oke Keepsake Series 2-in-1 Book)"
+[series-discovery] Discovered and imported 0 new books for "Love Comes Softly"
+[enrichment] Set audiobook length: 1h 30m
+[enrichment] Cover found via OL English edition for "Love's Unending Legacy"
+[enrichment] Enrichment complete for "Love's Unending Legacy"
+[enrichment] Starting enrichment for book 9d13924b-2527-4170-a867-8c1fc1e4b5c9
+[enrichment] OL metadata filled: isbn13, publisher
+[enrichment] Searching for: "Return to Harmony" Janette Oke
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Return to Harmony"
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Historical Fiction
+[enrichment] Added tag: Inspirational
+[enrichment] No audiobook length found for "Return to Harmony"
+[enrichment] Cover found via OL English edition for "Return to Harmony"
+[enrichment] Enrichment complete for "Return to Harmony"
+[enrichment] Starting enrichment for book 358e126c-5506-4122-a415-f3b97cde3f26
+[enrichment] Non-English book: "Erfenis van de Liefde" (non-English title detected) — marking import_only
+[enrichment] Starting enrichment for book 5d443784-96a8-428b-a92a-a7cceec25dd4
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Noble Fugitive" Janette Oke
+[enrichment] Found 1 search results
+[enrichment] Analysis complete for "The Noble Fugitive"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Inspirational Romance
+[enrichment] Added to series: Heirs of Acadia #3
+[series-discovery] Searching for books in series: "Heirs of Acadia"
+[series-discovery] Brave allowlist too small (0), skipping cross-ref filter
+[series-discovery] No OL results for "Heirs of Acadia" — trying Brave fallback
+[enrichment] Set audiobook length: 14h 0m
+[enrichment] Cover found via OL English edition for "The Noble Fugitive"
+[enrichment] Enrichment complete for "The Noble Fugitive"
+[enrichment] Starting enrichment for book c9bf7770-d2a5-4524-a883-007c958db8c5
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Where Courage Calls" Janette Oke
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Where Courage Calls"
+[enrichment] Added tag: Historical Fiction
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Inspirational
+[enrichment] Added to series: Return to the Canadian West #1
+[series-discovery] Searching for books in series: "Return to the Canadian West"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] No OL results for "Return to the Canadian West" — trying Brave fallback
+[enrichment] No audiobook length found for "Where Courage Calls"
+[enrichment] Cover found via OL English edition for "Where Courage Calls"
+[enrichment] Enrichment complete for "Where Courage Calls"
+[enrichment] Starting enrichment for book 580db64f-0ad6-4c28-b3a0-1414a431bc1e
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Where Hope Prevails" Janette Oke
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Where Hope Prevails"
+[enrichment] Auto-linked parent tag: Historical Fiction
+[enrichment] Added tag: Historical Romance
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Inspirational
+[enrichment] Added to series: Return to the Canadian West #3
+[series-discovery] Searching for books in series: "Return to the Canadian West"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] No OL results for "Return to the Canadian West" — trying Brave fallback
+[enrichment] No audiobook length found for "Where Hope Prevails"
+[enrichment] Cover found via OL English edition for "Where Hope Prevails"
+[enrichment] Enrichment complete for "Where Hope Prevails"
+[enrichment] Starting enrichment for book 7949a4b1-275f-47ac-8cf2-dc4a094952b8
+[enrichment] Box set detected: "When Calls the Heart/When Comes the Spring/When Breaks the Dawn/When Hope Springs New (Canadian West 1-4)" — cover-only enrichment
+[enrichment] Cover found via OL English edition for "When Calls the Heart/When Comes the Spring/When Breaks the Dawn/When Hope Springs New (Canadian West 1-4)"
+[enrichment] Starting enrichment for book b5660af0-0a42-4535-90b9-7cd784003a3a
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "What We Hide" Colleen Coble
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "What We Hide"
+[enrichment] Added tag: Romantic Suspense
+[enrichment] Auto-linked parent tag: Thriller
+[enrichment] Added tag: Legal Thriller
+[enrichment] Auto-linked parent tag: Mystery
+[enrichment] Added tag: Cozy Mystery
+[enrichment] Added to series: Tupelo Grove #1
+[series-discovery] Searching for books in series: "Tupelo Grove"
+[series-discovery] Brave allowlist too small (0), skipping cross-ref filter
+[series-discovery] No OL results for "Tupelo Grove" — trying Brave fallback
+[enrichment] Set audiobook length: 10h 8m
+[enrichment] Cover found via OL English edition for "What We Hide"
+[enrichment] Enrichment complete for "What We Hide"
+[enrichment] Starting enrichment for book 171f5253-5a94-4fb9-b1b2-523a755caa63
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Into the Deep" Colleen Coble
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Into the Deep"
+[enrichment] Added tag: Romantic Suspense
+[enrichment] Auto-linked parent tag: Mystery
+[enrichment] Added tag: Cozy Mystery
+[enrichment] Added to series: Rock Harbor #3
+[series-discovery] Searching for books in series: "Rock Harbor"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Imported "Beyond a Doubt (Rock Harbor Series #2)" into series "Rock Harbor"
+[series-discovery] Skipping duplicate title: "Rock Harbor Search and Rescue"
+[series-discovery] Skipping duplicate title: "Rock Harbor Search and Rescue"
+[series-discovery] Skipping duplicate title: "Cry in the Night - A Rock Harbor Mystery"
+[series-discovery] Discovered and imported 1 new books for "Rock Harbor"
+[enrichment] Set audiobook length: 34h 37m
+[enrichment] Cover found via OL English edition for "Into the Deep"
+[enrichment] Enrichment complete for "Into the Deep"
+[enrichment] Starting enrichment for book 98739cf4-48cd-4e3a-80d9-38ca8480afc1
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Pilgrim's Progress" John Bunyan
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Pilgrim's Progress"
+[enrichment] Added tag: Puritan Literature
+[enrichment] Trimmed excess tag: Devotional
+[enrichment] Trimmed excess tag: Puritan Literature
+[enrichment] Cover found via OL English edition for "The Pilgrim's Progress"
+[enrichment] Enrichment complete for "The Pilgrim's Progress"
+[enrichment] Starting enrichment for book ca7cda93-c606-427d-8819-d672b1cf1474
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Phantom (B Format)" H. D. Carlton
+[enrichment] Found 13 search results
+[enrichment] Analysis complete for "Phantom (B Format)"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Dark Romance
+[enrichment] Added tag: Gothic
+[enrichment] Added tag: Suspense
+[enrichment] No audiobook length found for "Phantom (B Format)"
+[enrichment] Cover found via OL English edition for "Phantom (B Format)"
+[enrichment] Enrichment complete for "Phantom (B Format)"
+[enrichment] Starting enrichment for book 6eb28861-0f3a-4701-b36a-5cfc3c66ee8d
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Where's Molly" H. D. Carlton
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Where's Molly"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Grimdark
+[enrichment] Added to series: Cat and Mouse #2.5
+[series-discovery] Searching for books in series: "Cat and Mouse"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] No OL results for "Cat and Mouse" — trying Brave fallback
+[enrichment] Set audiobook length: 5h 58m
+[enrichment] Cover found via OL English edition for "Where's Molly"
+[enrichment] Enrichment complete for "Where's Molly"
+[enrichment] Starting enrichment for book 4d70fca8-7d3f-4d11-aced-097ea0b2658e
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Satan's Affair" H. D. Carlton
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Satan's Affair"
+[enrichment] Added tag: Grimdark
+[enrichment] Auto-linked parent tag: Thriller
+[enrichment] Added tag: Psychological Thriller
+[enrichment] Added to series: Cat and Mouse #0.5
+[series-discovery] Searching for books in series: "Cat and Mouse"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] No OL results for "Cat and Mouse" — trying Brave fallback
+[enrichment] No audiobook length found for "Satan's Affair"
+[enrichment] Cover found via OL English edition for "Satan's Affair"
+[enrichment] Enrichment complete for "Satan's Affair"
+[enrichment] Starting enrichment for book b4141e4c-b1c5-4aa2-a67c-0dab6a253be6
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Shallow River" H. D. Carlton
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Shallow River"
+[enrichment] Auto-linked parent tag: Thriller
+[enrichment] Added tag: Psychological Thriller
+[enrichment] Added tag: Romantic Suspense
+[enrichment] Set audiobook length: 13h 2m
+[enrichment] Cover found via OL English edition for "Shallow River"
+[enrichment] Enrichment complete for "Shallow River"
+[enrichment] Starting enrichment for book 30676fa5-3e1f-4b6f-933b-47475828524b
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Untainted" H. D. Carlton
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Untainted"
+[enrichment] Auto-linked parent tag: Sci-Fi
+[enrichment] Added tag: Dark Sci-Fi
+[enrichment] Added tag: Post-Apocalyptic
+[enrichment] Added to series: Zero Saga #2
+[series-discovery] Searching for books in series: "Zero Saga"
+[series-discovery] Brave allowlist too small (0), skipping cross-ref filter
+[series-discovery] No OL results for "Zero Saga" — trying Brave fallback
+[enrichment] No audiobook length found for "Untainted"
+[enrichment] Cover found via OL English edition for "Untainted"
+[enrichment] Enrichment complete for "Untainted"
+[enrichment] Starting enrichment for book f09da32f-4b8f-4117-884c-1c608c3c9972
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Hollow" H. D. Carlton
+[enrichment] Found 25 search results
+[enrichment] Analysis complete for "Hollow"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Dark Romance
+[enrichment] Added tag: Alien Invasion
+[enrichment] Added tag: Post-Apocalyptic
+[enrichment] Added to series: Zero Saga #1
+[series-discovery] Searching for books in series: "Zero Saga"
+[series-discovery] Brave allowlist too small (0), skipping cross-ref filter
+[series-discovery] No OL results for "Zero Saga" — trying Brave fallback
+[enrichment] No audiobook length found for "Hollow"
+[enrichment] Cover found via OL English edition for "Hollow"
+[enrichment] Enrichment complete for "Hollow"
+[enrichment] Starting enrichment for book c9e56592-38d1-434b-b244-50019301ac7e
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Does It Hurt?" H. D. Carlton
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Does It Hurt?"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Dark Romance
+[enrichment] Added tag: Thriller
+[enrichment] Added tag: New Adult
+[enrichment] Set audiobook length: 12h 7m
+[enrichment] Cover found via OL English edition for "Does It Hurt?"
+[enrichment] Enrichment complete for "Does It Hurt?"
+[enrichment] Starting enrichment for book 5a5e6ab5-4293-4cf1-b3da-9769483be019
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Hunting Adeline International Edition" H. D. Carlton
+[enrichment] Found 5 search results
+[enrichment] Analysis complete for "Hunting Adeline International Edition"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Grimdark
+[enrichment] Added to series: Cat and Mouse Duet #2
+[series-discovery] Searching for books in series: "Cat and Mouse Duet"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] No OL results for "Cat and Mouse Duet" — trying Brave fallback
+[enrichment] No audiobook length found for "Hunting Adeline International Edition"
+[enrichment] Cover found via OL English edition for "Hunting Adeline International Edition"
+[enrichment] Enrichment complete for "Hunting Adeline International Edition"
+[enrichment] Starting enrichment for book ce6e1257-540d-4af8-8424-c769287aa2fb
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Moondust Lake" T. Davis Bunn
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Moondust Lake"
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Inspirational
+[enrichment] Added tag: Romance
+[enrichment] Added to series: Miramar Bay #3
+[series-discovery] Searching for books in series: "Miramar Bay"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Miramar Bay"
+[series-discovery] Discovered and imported 0 new books for "Miramar Bay"
+[enrichment] No audiobook length found for "Moondust Lake"
+[enrichment] Cover found via OL English edition for "Moondust Lake"
+[enrichment] Enrichment complete for "Moondust Lake"
+[enrichment] Starting enrichment for book 5b8f7537-e58b-4e60-8411-dd2ddb599573
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Path Finder" T. Davis Bunn
+[enrichment] Found 0 search results
+[enrichment] Analysis complete for "Path Finder"
+[enrichment] Auto-linked parent tag: Sci-Fi
+[enrichment] Added tag: Space Opera
+[enrichment] Added tag: Action Adventure
+[enrichment] Added to series: Path Finder #1
+[series-discovery] Searching for books in series: "Path Finder"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Path finder"
+[series-discovery] Linked existing book "Light Weaver/Dream Voyager/Path Finder/Heart Chaser" to series
+[series-discovery] Discovered and imported 0 new books for "Path Finder"
+[enrichment] No audiobook length found for "Path Finder"
+[enrichment] Cover found via OL English edition for "Path Finder"
+[enrichment] Enrichment complete for "Path Finder"
+[enrichment] Starting enrichment for book 52d186bf-c46f-4659-a50b-89463369a546
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Heart Chaser" T. Davis Bunn
+[enrichment] Found 6 search results
+[enrichment] Analysis complete for "Heart Chaser"
+[enrichment] Auto-linked parent tag: Sci-Fi
+[enrichment] Added tag: Space Opera
+[enrichment] Added tag: Young Adult
+[enrichment] Added to series: Spectrum Chronicles #4
+[series-discovery] Searching for books in series: "Spectrum Chronicles"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] No OL results for "Spectrum Chronicles" — trying Brave fallback
+[enrichment] No audiobook length found for "Heart Chaser"
+[enrichment] Cover found via OL English edition for "Heart Chaser"
+[enrichment] Enrichment complete for "Heart Chaser"
+[backfill] Progress: 25/982 (22 ok, 3 skipped, 0 failed)
+[enrichment] Starting enrichment for book faacc0d0-c4a8-43db-a7a5-a539eb3baa8c
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Trial Run" T. Davis Bunn
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Trial Run"
+[enrichment] Added tag: Sci-Fi
+[enrichment] Auto-linked parent tag: Thriller
+[enrichment] Added tag: Techno-Thriller
+[enrichment] Added tag: Suspense
+[enrichment] Added to series: Fault Lines #1
+[series-discovery] Searching for books in series: "Fault Lines"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Imported "Fault Lines" into series "Fault Lines"
+[series-discovery] Discovered and imported 1 new books for "Fault Lines"
+[enrichment] No audiobook length found for "Trial Run"
+[enrichment] Cover found via OL English edition for "Trial Run"
+[enrichment] Enrichment complete for "Trial Run"
+[enrichment] Starting enrichment for book f56e00b8-4678-4187-8eda-3cfba1862ba0
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Light Weaver" T. Davis Bunn
+[enrichment] Found 7 search results
+[enrichment] Analysis complete for "Light Weaver"
+[enrichment] Added tag: Christian Fantasy
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Added to series: Spectrum Chronicles #1
+[series-discovery] Searching for books in series: "Spectrum Chronicles"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] No OL results for "Spectrum Chronicles" — trying Brave fallback
+[enrichment] No audiobook length found for "Light Weaver"
+[enrichment] Cover found via OL English edition for "Light Weaver"
+[enrichment] Enrichment complete for "Light Weaver"
+[enrichment] Starting enrichment for book 3901f29d-9d45-462e-9c34-c6af8eb219a1
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Domino Effect" T. Davis Bunn
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Domino Effect"
+[enrichment] Added tag: Financial Thriller
+[enrichment] Set audiobook length: 7h 20m
+[enrichment] Cover found via OL English edition for "The Domino Effect"
+[enrichment] Enrichment complete for "The Domino Effect"
+[enrichment] Starting enrichment for book efe01bc0-eea0-475f-80a5-e6c290df986a
+[enrichment] OL metadata filled: pages, publicationDate, isbn13, publisher
+[enrichment] Searching for: "Siddharta" Hermann Hesse
+[enrichment] Found 5 search results
+[enrichment] Analysis complete for "Siddharta"
+[enrichment] Set language: English → Spanish
+[enrichment] Added tag: Philosophical Fiction
+[enrichment] Added tag: Spiritual Literature
+[enrichment] No audiobook length found for "Siddharta"
+[enrichment] No cover found across all tiers for "Siddharta"
+[enrichment] Enrichment complete for "Siddharta"
+[enrichment] Starting enrichment for book 259f7e80-491e-4e23-b519-adc25dba5cde
+[enrichment] OL metadata filled: pages, publicationDate, isbn13, isbn10, publisher
+[enrichment] Searching for: "Rachel N 5" Dee Henderson
+[enrichment] Found 0 search results
+[enrichment] Analysis complete for "Rachel N 5"
+[enrichment] Set language: English → French
+[enrichment] No audiobook length found for "Rachel N 5"
+[enrichment] No cover found across all tiers for "Rachel N 5"
+[enrichment] Enrichment complete for "Rachel N 5"
+[enrichment] Starting enrichment for book 7ff89bc3-20c5-49ea-adbc-8a82f3df7142
+[enrichment] OL metadata filled: pages, publicationDate, isbn13, isbn10, publisher
+[enrichment] Searching for: "Onverschrokken" Dee Henderson
+[enrichment] Found 1 search results
+[enrichment] Analysis complete for "Onverschrokken"
+[enrichment] Set language: English → Dutch
+[enrichment] Added tag: Military Fiction
+[enrichment] Added tag: Romantic Suspense
+[enrichment] Added to series: Uncommon Heroes #1
+[series-discovery] Searching for books in series: "Uncommon Heroes"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Imported "True Devotion (Uncommon Heroes, Book 1)" into series "Uncommon Heroes"
+[series-discovery] Imported "Uncommon Heroes Collection" into series "Uncommon Heroes"
+[series-discovery] Imported "Danger in the Shadows/The Negotiator/True Devotion (Prequel and Book 1 in The O'Malley Series and Book 1 in the Uncommon Heroes Series)" into series "Uncommon Heroes"
+[series-discovery] Imported "True Valor (Uncommon Heroes #2)" into series "Uncommon Heroes"
+[series-discovery] Discovered and imported 4 new books for "Uncommon Heroes"
+[enrichment] No audiobook length found for "Onverschrokken"
+[enrichment] No cover found across all tiers for "Onverschrokken"
+[enrichment] Enrichment complete for "Onverschrokken"
+[enrichment] Starting enrichment for book 11e3d757-6250-4081-8fe9-d018dca7c168
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Embers of Memory" Sarah J. Maas
+[enrichment] Found 24 search results
+[enrichment] Analysis complete for "Embers of Memory"
+[enrichment] Auto-linked parent tag: Fantasy
+[enrichment] Added tag: Young Adult Fantasy
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Added to series: Throne of Glass #?
+[series-discovery] Searching for books in series: "Throne of Glass"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Throne of Glass"
+[series-discovery] Imported "The Assassin's Blade / Throne of Glass / Crown of Midnight / Heir of Fire / Queen of Shadows / Empire of Storms / Tower of Dawn / Kingdom of Ash" into series "Throne of Glass"
+[series-discovery] Imported "World of Throne of Glass" into series "Throne of Glass"
+[series-discovery] Linked existing book "Throne of Glass 1-3 Set" to series
+[series-discovery] Discovered and imported 2 new books for "Throne of Glass"
+[enrichment] No audiobook length found for "Embers of Memory"
+[enrichment] Cover found via OL English edition for "Embers of Memory"
+[enrichment] Enrichment complete for "Embers of Memory"
+[enrichment] Starting enrichment for book e0e49d29-947d-475c-b777-192fdf1305ce
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Throne of Glass" Sarah J. Maas
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Throne of Glass"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Set audiobook length: 13h 3m
+[enrichment] Cover found via OL English edition for "Throne of Glass"
+[enrichment] Enrichment complete for "Throne of Glass"
+[enrichment] Starting enrichment for book 9914b3d7-b82a-4c8f-b7ed-88c8167ad100
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Assassin and the Desert" Sarah J. Maas
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Assassin and the Desert"
+[enrichment] Added tag: High Fantasy
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Novella
+[enrichment] Added to series: Throne of Glass #0.3
+[series-discovery] Searching for books in series: "Throne of Glass"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Throne of Glass"
+[series-discovery] Skipping duplicate title: "The Assassin's Blade / Throne of Glass / Crown of Midnight / Heir of Fire / Queen of Shadows / Empire of Storms / Tower of Dawn / Kingdom of Ash"
+[series-discovery] Skipping duplicate title: "World of Throne of Glass"
+[series-discovery] Skipping duplicate title: "Throne of Glass 1-3 set"
+[series-discovery] Discovered and imported 0 new books for "Throne of Glass"
+[enrichment] Set audiobook length: 12h 52m
+[enrichment] Cover found via OL English edition for "The Assassin and the Desert"
+[enrichment] Enrichment complete for "The Assassin and the Desert"
+[enrichment] Starting enrichment for book 0a175915-4a11-4619-9f25-dbb83dda82a8
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Assassin and the Healer" Sarah J. Maas
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Assassin and the Healer"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Grimdark
+[enrichment] Added to series: Throne of Glass #0.2
+[series-discovery] Searching for books in series: "Throne of Glass"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Throne of Glass"
+[series-discovery] Skipping duplicate title: "The Assassin's Blade / Throne of Glass / Crown of Midnight / Heir of Fire / Queen of Shadows / Empire of Storms / Tower of Dawn / Kingdom of Ash"
+[series-discovery] Skipping duplicate title: "World of Throne of Glass"
+[series-discovery] Skipping duplicate title: "Throne of Glass 1-3 set"
+[series-discovery] Discovered and imported 0 new books for "Throne of Glass"
+[enrichment] Set audiobook length: 12h 52m
+[enrichment] Cover found via OL English edition for "The Assassin and the Healer"
+[enrichment] Enrichment complete for "The Assassin and the Healer"
+[enrichment] Starting enrichment for book f99b3ff9-f9c1-4be5-996d-ca145e17ddb2
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "House of Flame and Shadow" Sarah J. Maas
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "House of Flame and Shadow"
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Added tag: Urban Fantasy
+[enrichment] Added to series: Crescent City #3
+[series-discovery] Searching for books in series: "Crescent City"
+[series-discovery] Brave allowlist too small (2), skipping cross-ref filter
+[series-discovery] Imported "Crescent City" into series "Crescent City"
+[series-discovery] Skipping duplicate title: "Crescent City 2 Paperback 1 Hardcover"
+[series-discovery] Discovered and imported 1 new books for "Crescent City"
+[enrichment] Set audiobook length: 29h 42m
+[enrichment] Cover found via OL English edition for "House of Flame and Shadow"
+[enrichment] Enrichment complete for "House of Flame and Shadow"
+[enrichment] Starting enrichment for book 636d7f16-23cc-438a-9736-0722a5ca9c27
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Kingdom of Ash" Sarah J. Maas
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Kingdom of Ash"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Auto-linked parent tag: Fantasy
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Added tag: Grimdark
+[enrichment] Set audiobook length: 33h 11m
+[enrichment] Cover found via OL English edition for "Kingdom of Ash"
+[enrichment] Enrichment complete for "Kingdom of Ash"
+[enrichment] Starting enrichment for book e0c7ed56-b3e6-408c-bd31-a0f14b5837f1
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Heir of Fire" Sarah J. Maas
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Heir of Fire"
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Grimdark
+[enrichment] Set audiobook length: 17h 56m
+[enrichment] Cover found via OL English edition for "Heir of Fire"
+[enrichment] Enrichment complete for "Heir of Fire"
+[enrichment] Starting enrichment for book 784fbd19-d667-4985-92fa-20cc32e4eef1
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Queen of Shadows" Sarah J. Maas
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Queen of Shadows"
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Grimdark
+[enrichment] Set audiobook length: 20h 43m
+[enrichment] Cover found via OL English edition for "Queen of Shadows"
+[enrichment] Enrichment complete for "Queen of Shadows"
+[enrichment] Starting enrichment for book 70d37155-0f0d-426d-867a-04d737eaf60f
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Tower of Dawn" Sarah J. Maas
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Tower of Dawn"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Set audiobook length: 22h 39m
+[enrichment] Cover found via OL English edition for "Tower of Dawn"
+[enrichment] Enrichment complete for "Tower of Dawn"
+[enrichment] Starting enrichment for book a6901889-0e15-4399-b632-c714bc3f7e9f
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "House of Sky and Breath" Sarah J. Maas
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "House of Sky and Breath"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Auto-linked parent tag: Fantasy
+[enrichment] Added tag: Urban Fantasy
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Added to series: Crescent City #2
+[series-discovery] Searching for books in series: "Crescent City"
+[series-discovery] Brave allowlist too small (2), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Crescent City"
+[series-discovery] Skipping duplicate title: "Crescent City 2 Paperback 1 Hardcover"
+[series-discovery] Discovered and imported 0 new books for "Crescent City"
+[enrichment] Set audiobook length: 27h 42m
+[enrichment] Cover found via OL English edition for "House of Sky and Breath"
+[enrichment] Enrichment complete for "House of Sky and Breath"
+[enrichment] Starting enrichment for book d2ba2f62-eb8d-4cc8-92b1-c7074f40209e
+[enrichment] Box set detected: "Throne of Glass 1-3 Set" — cover-only enrichment
+[enrichment] Cover found via OL English edition for "Throne of Glass 1-3 Set"
+[enrichment] Starting enrichment for book e8944305-3fe0-4e64-8a82-f7cf489343ef
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Empire of Storms" Sarah J. Maas
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Empire of Storms"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Auto-linked parent tag: Fantasy
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Added tag: Grimdark
+[enrichment] Set audiobook length: 25h 18m
+[enrichment] Cover found via OL English edition for "Empire of Storms"
+[enrichment] Enrichment complete for "Empire of Storms"
+[enrichment] Starting enrichment for book 119ef667-e53c-4040-82f9-0a2b1afaecfc
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Assassin’s Blade" Sarah J. Maas
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Assassin’s Blade"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Grimdark
+[enrichment] Added tag: Young Adult Fantasy
+[enrichment] Set audiobook length: 12h 52m
+[enrichment] Cover found via OL English edition for "The Assassin’s Blade"
+[enrichment] Enrichment complete for "The Assassin’s Blade"
+[enrichment] Starting enrichment for book 75b8b161-0588-4bdc-b3a8-6d7ca7d0f2f3
+[enrichment] OL metadata filled: isbn13, publisher
+[enrichment] Searching for: "Apollyon" Tim F. LaHaye
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Apollyon"
+[enrichment] Cover found via OL English edition for "Apollyon"
+[enrichment] Enrichment complete for "Apollyon"
+[enrichment] Starting enrichment for book a8a5e111-a05d-451a-b6b7-39da1adc5cf1
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Protected" Tim F. LaHaye
+[enrichment] Found 8 search results
+[enrichment] Analysis complete for "Protected"
+[enrichment] Added tag: Young Adult
+[enrichment] Added tag: Apocalyptic
+[enrichment] Added tag: Inspirational
+[enrichment] Added to series: Left Behind: The Kids #10
+[series-discovery] Searching for books in series: "Left Behind: The Kids"
+[series-discovery] Brave allowlist too small (2), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Left Behind"
+[series-discovery] Skipping duplicate title: "Left behind"
+[series-discovery] Skipping duplicate title: "Rescued (Left Behind: The Kids Collection)"
+[series-discovery] Skipping duplicate title: "Pursued (Left Behind: The Kids Collection Book 2)"
+[series-discovery] Skipping duplicate title: "Left behind"
+[series-discovery] Discovered and imported 0 new books for "Left Behind: The Kids"
+[enrichment] No audiobook length found for "Protected"
+[enrichment] Cover found via OL English edition for "Protected"
+[enrichment] Enrichment complete for "Protected"
+[enrichment] Starting enrichment for book c44517a9-09f9-436a-8db7-d18205889325
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Hunted" Tim F. LaHaye
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Hunted"
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added tag: Apocalyptic
+[enrichment] Added tag: Young Adult
+[enrichment] Added to series: Left Behind: The Kids #11
+[series-discovery] Searching for books in series: "Left Behind: The Kids"
+[series-discovery] Brave allowlist too small (2), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Left Behind"
+[series-discovery] Skipping duplicate title: "Left behind"
+[series-discovery] Skipping duplicate title: "Rescued (Left Behind: The Kids Collection)"
+[series-discovery] Skipping duplicate title: "Pursued (Left Behind: The Kids Collection Book 2)"
+[series-discovery] Skipping duplicate title: "Left behind"
+[series-discovery] Discovered and imported 0 new books for "Left Behind: The Kids"
+[enrichment] No audiobook length found for "Hunted"
+[enrichment] Cover found via OL English edition for "Hunted"
+[enrichment] Enrichment complete for "Hunted"
+[enrichment] Starting enrichment for book a49db45f-a6bf-4e01-b8c9-a5a8a487983d
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Hollywood Holdup" Jerry B. Jenkins
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Hollywood Holdup"
+[enrichment] Added tag: Mystery
+[enrichment] Added tag: Middle Grade
+[enrichment] Added tag: Adventure
+[enrichment] Added to series: Red Rock Mysteries #12
+[series-discovery] Searching for books in series: "Red Rock Mysteries"
+[series-discovery] Brave allowlist too small (2), skipping cross-ref filter
+[series-discovery] Discovered and imported 0 new books for "Red Rock Mysteries"
+[enrichment] No audiobook length found for "Hollywood Holdup"
+[enrichment] Cover found via OL English edition for "Hollywood Holdup"
+[enrichment] Enrichment complete for "Hollywood Holdup"
+[enrichment] Starting enrichment for book 96a7332a-ba54-4a68-8bd6-dc9e527fa7d8
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "WWJD" Charles Monroe Sheldon
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "WWJD"
+[enrichment] Added tag: Social Gospel
+[enrichment] Added tag: Inspirational Fiction
+[enrichment] No audiobook length found for "WWJD"
+[enrichment] Cover found via OL English edition for "WWJD"
+[enrichment] Enrichment complete for "WWJD"
+[enrichment] Starting enrichment for book d3716060-4fb9-4c0f-98cb-5577e0d2a521
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Icebreaker" Hannah Grace
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Icebreaker"
+[enrichment] Added tag: New Adult
+[enrichment] Added tag: Sports Romance
+[enrichment] Added tag: Enemies to Lovers
+[enrichment] Added to series: Maple Hills #1
+[series-discovery] Searching for books in series: "Maple Hills"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] No OL results for "Maple Hills" — trying Brave fallback
+[enrichment] Set audiobook length: 13h 2m
+[enrichment] Cover found via OL English edition for "Icebreaker"
+[enrichment] Enrichment complete for "Icebreaker"
+[backfill] Progress: 50/982 (46 ok, 4 skipped, 0 failed)
+[enrichment] Starting enrichment for book 42b16e80-b15e-4f15-a36c-7e0db37d7987
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Catching Fire" Suzanne Collins
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Catching Fire"
+[enrichment] Auto-linked parent tag: Romance
+[enrichment] Added tag: Romantasy
+[enrichment] Added tag: Action-Adventure
+[enrichment] Trimmed excess tag: Action-Adventure
+[enrichment] Cover found via OL English edition for "Catching Fire"
+[enrichment] Enrichment complete for "Catching Fire"
+[enrichment] Starting enrichment for book e657e1ee-abf2-48f5-9a59-ccccdbac2159
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Jazz" Toni Morrison
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Jazz"
+[enrichment] Added tag: Literary Fiction
+[enrichment] Added tag: African American Literature
+[enrichment] Set audiobook length: 3h 0m
+[enrichment] Cover found via OL English edition for "Jazz"
+[enrichment] Enrichment complete for "Jazz"
+[enrichment] Starting enrichment for book 949abf7f-d502-4e74-bb8b-f061657a9611
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Paradise" Toni Morrison
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Paradise"
+[enrichment] Added tag: Literary Fiction
+[enrichment] Added tag: Historical Fiction
+[enrichment] Set audiobook length: 15h 19m
+[enrichment] Cover found via OL English edition for "Paradise"
+[enrichment] Enrichment complete for "Paradise"
+[enrichment] Starting enrichment for book aaf59507-34b1-47e0-ac77-52e4d8e12a5e
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Well of Ascension" Brandon Sanderson
+[enrichment] Found 27 search results
+[enrichment] failed for book aaf59507-34b1-47e0-ac77-52e4d8e12a5e: Request was aborted.
+[enrichment] Starting enrichment for book e56c6e38-96f4-4010-98d5-dec478e7e735
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Words of Radiance" Brandon Sanderson
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Words of Radiance"
+[enrichment] Added tag: Grimdark
+[enrichment] Added tag: Progression Fantasy
+[enrichment] Cover found via OL English edition for "Words of Radiance"
+[enrichment] Enrichment complete for "Words of Radiance"
+[enrichment] Starting enrichment for book 81499be5-3ec8-49d5-8315-58054c5d5dee
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Fires of Heaven" Robert Jordan
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Fires of Heaven"
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Added tag: High Fantasy
+[enrichment] Added tag: Grimdark
+[enrichment] Set audiobook length: 36h 27m
+[enrichment] Cover found via OL English edition for "The Fires of Heaven"
+[enrichment] Enrichment complete for "The Fires of Heaven"
+[enrichment] Starting enrichment for book a2ea6002-e00d-4f7d-8c53-6a1c1bdfaae2
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Lord of Chaos" Robert Jordan
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Lord of Chaos"
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Added tag: High Fantasy
+[enrichment] Added tag: Grimdark
+[enrichment] Set audiobook length: 41h 32m
+[enrichment] Cover found via OL English edition for "Lord of Chaos"
+[enrichment] Enrichment complete for "Lord of Chaos"
+[enrichment] Starting enrichment for book 74e9ed33-32de-41ab-8a66-3052dfded58a
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "A Crown of Swords" Robert Jordan
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "A Crown of Swords"
+[enrichment] Added tag: Grimdark
+[enrichment] Added tag: Political Fantasy
+[enrichment] Cover found via OL English edition for "A Crown of Swords"
+[enrichment] Enrichment complete for "A Crown of Swords"
+[enrichment] Starting enrichment for book fef65835-95fa-4213-a1b6-c762aff25bbb
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Path of Daggers" Robert Jordan
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Path of Daggers"
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Added tag: Grimdark
+[enrichment] Set audiobook length: 30h 24m
+[enrichment] Cover found via OL English edition for "The Path of Daggers"
+[enrichment] Enrichment complete for "The Path of Daggers"
+[enrichment] Starting enrichment for book cdacef21-61e9-428c-9e9c-4bb3b3cc714f
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Winters Heart" Robert Jordan
+[enrichment] Found 9 search results
+[enrichment] Analysis complete for "Winters Heart"
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Added tag: High Fantasy
+[enrichment] Added tag: Grimdark
+[enrichment] No audiobook length found for "Winters Heart"
+[enrichment] Cover found via OL English edition for "Winters Heart"
+[enrichment] Enrichment complete for "Winters Heart"
+[enrichment] Starting enrichment for book 68dc80af-baeb-4d7d-b672-af428bb4294f
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Knife of Dreams" Robert Jordan
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "Knife of Dreams"
+[enrichment] Added tag: Epic Fantasy
+[enrichment] Added tag: Grimdark
+[enrichment] Set audiobook length: 32h 24m
+[enrichment] Cover found via OL English edition for "Knife of Dreams"
+[enrichment] Enrichment complete for "Knife of Dreams"
+[enrichment] Starting enrichment for book 916da9d1-f9b7-400b-a67e-f0deaea91210
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Without warning" 
+[enrichment] Found 18 search results
+[enrichment] Analysis complete for "Without warning"
+[enrichment] Auto-linked parent tag: Thriller
+[enrichment] Added tag: Political Thriller
+[enrichment] Added tag: Action
+[enrichment] Added tag: Suspense
+[enrichment] Added to series: J. B. Collins #3
+[series-discovery] Searching for books in series: "J. B. Collins"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "J. B. Collins Collection"
+[series-discovery] Discovered and imported 0 new books for "J. B. Collins"
+[enrichment] Set audiobook length: 17h 56m
+[enrichment] Cover found via OL English edition for "Without warning"
+[enrichment] Flagged for review: author
+[enrichment] Enrichment complete for "Without warning"
+[enrichment] Starting enrichment for book b76aa58f-4726-450c-85e0-79531e0a578b
+[enrichment] Searching for: "The first hostage" 
+[enrichment] Found 6 search results
+[enrichment] Analysis complete for "The first hostage"
+[enrichment] Auto-linked parent tag: Thriller
+[enrichment] Added tag: Political Thriller
+[enrichment] Added tag: Action Thriller
+[enrichment] Added tag: Suspense
+[enrichment] Added to series: J. B. Collins #2
+[series-discovery] Searching for books in series: "J. B. Collins"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "J. B. Collins Collection"
+[series-discovery] Discovered and imported 0 new books for "J. B. Collins"
+[enrichment] Set audiobook length: 10h 47m
+[enrichment] Cover found via OL English edition for "The first hostage"
+[enrichment] Flagged for review: author, publisher
+[enrichment] Enrichment complete for "The first hostage"
+[enrichment] Starting enrichment for book 20aa354c-d051-4f29-acbe-0b9fb9766813
+[enrichment] OL metadata filled: publisher
+[enrichment] Added author from Brave: Joel C. Rosenberg
+[enrichment] Searching for: "The third target" Joel C. Rosenberg
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The third target"
+[enrichment] Auto-linked parent tag: Thriller
+[enrichment] Added tag: Political Thriller
+[enrichment] Added tag: Military Fiction
+[enrichment] Added tag: International Intrigue
+[enrichment] Added to series: J. B. Collins #1
+[series-discovery] Searching for books in series: "J. B. Collins"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Linked existing book "The J. B. Collins Collection" to series
+[series-discovery] Skipping duplicate title: "J. B. Collins Collection"
+[series-discovery] Discovered and imported 0 new books for "J. B. Collins"
+[enrichment] Set audiobook length: 11h 0m
+[enrichment] Cover found via OL English edition for "The third target"
+[enrichment] Enrichment complete for "The third target"
+[enrichment] Starting enrichment for book 7534da43-da8b-4690-b88b-75f965a5e039
+[enrichment] Searching for: "The Auschwitz Escape" 
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Auschwitz Escape"
+[enrichment] Added tag: World War II
+[enrichment] Added tag: Holocaust
+[enrichment] Added tag: Thriller
+[enrichment] Set audiobook length: 14h 40m
+[enrichment] Cover found via OL English edition for "The Auschwitz Escape"
+[enrichment] Flagged for review: author, publisher
+[enrichment] Enrichment complete for "The Auschwitz Escape"
+[enrichment] Starting enrichment for book 0910290b-56aa-4d88-93e9-aa403aa84741
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Twelfth Imam" 
+[enrichment] Found 27 search results
+[enrichment] Analysis complete for "The Twelfth Imam"
+[enrichment] Auto-linked parent tag: Thriller
+[enrichment] Added tag: Political Thriller
+[enrichment] Added tag: Apocalyptic Fiction
+[enrichment] Added to series: Twelfth Imam #1
+[series-discovery] Searching for books in series: "Twelfth Imam"
+[series-discovery] Brave allowlist too small (2), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "Twelfth Imam"
+[series-discovery] Skipping duplicate title: "Twelfth Imam"
+[series-discovery] Skipping duplicate title: "The twelfth Imam"
+[series-discovery] Skipping duplicate title: "The Twelfth Imam"
+[series-discovery] Skipping duplicate title: "The Twelfth Imam"
+[series-discovery] Discovered and imported 0 new books for "Twelfth Imam"
+[enrichment] Set audiobook length: 15h 7m
+[enrichment] Cover found via OL English edition for "The Twelfth Imam"
+[enrichment] Flagged for review: author
+[enrichment] Enrichment complete for "The Twelfth Imam"
+[enrichment] Starting enrichment for book db1fb586-d4df-43d8-bb46-240526f23266
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Last Days" 
+[enrichment] Found 19 search results
+[enrichment] Analysis complete for "The Last Days"
+[enrichment] Added tag: Thriller
+[enrichment] Added tag: International Intrigue
+[enrichment] Set audiobook length: 8h 11m
+[enrichment] Cover found via OL English edition for "The Last Days"
+[enrichment] Flagged for review: author
+[enrichment] Enrichment complete for "The Last Days"
+[enrichment] Starting enrichment for book a7d05e5d-b5ff-42f0-a692-818f3b39cb0b
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Ezekiel Option" 
+[enrichment] Found 17 search results
+[enrichment] Analysis complete for "The Ezekiel Option"
+[enrichment] Added tag: Political Thriller
+[enrichment] Added tag: Apocalyptic
+[enrichment] Added tag: Espionage
+[enrichment] Added to series: The Last Jihad #3
+[series-discovery] Searching for books in series: "The Last Jihad"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "The last jihad"
+[series-discovery] Skipping duplicate title: "The Last Jihad"
+[series-discovery] Skipping non-English title: "La Ultima Cruzada/ the Last Jihad"
+[series-discovery] Discovered and imported 0 new books for "The Last Jihad"
+[enrichment] Set audiobook length: 11h 19m
+[enrichment] Cover found via OL English edition for "The Ezekiel Option"
+[enrichment] Flagged for review: author
+[enrichment] Enrichment complete for "The Ezekiel Option"
+[enrichment] Starting enrichment for book deb18db5-7c8f-4673-b8ce-1d5c6b2d9c2c
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "Inside the Revolution" 
+[enrichment] Found 2 search results
+[enrichment] Analysis complete for "Inside the Revolution"
+[enrichment] Updated isFiction: true → false
+[enrichment] Added tag: Political Analysis
+[enrichment] Added tag: Religious Studies
+[enrichment] Added tag: Middle East History
+[enrichment] No audiobook length found for "Inside the Revolution"
+[enrichment] Cover found via OL English edition for "Inside the Revolution"
+[enrichment] Flagged for review: author
+[enrichment] Enrichment complete for "Inside the Revolution"
+[enrichment] Starting enrichment for book eaa8d845-5ff2-4c78-9314-291c3dee1b99
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Copper Scroll" 
+[enrichment] Found 26 search results
+[enrichment] Analysis complete for "The Copper Scroll"
+[enrichment] Added tag: Thriller
+[enrichment] Added tag: Biblical Fiction
+[enrichment] Added to series: The Last Jihad #4
+[series-discovery] Searching for books in series: "The Last Jihad"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "The last jihad"
+[series-discovery] Skipping duplicate title: "The Last Jihad"
+[series-discovery] Skipping non-English title: "La Ultima Cruzada/ the Last Jihad"
+[series-discovery] Discovered and imported 0 new books for "The Last Jihad"
+[enrichment] Set audiobook length: 8h 22m
+[enrichment] Cover found via OL English edition for "The Copper Scroll"
+[enrichment] Flagged for review: author
+[enrichment] Enrichment complete for "The Copper Scroll"
+[enrichment] Starting enrichment for book ff0c8390-62a0-4208-9d8a-5d7e9c66678c
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The last jihad" 
+[enrichment] Found 14 search results
+[enrichment] Analysis complete for "The last jihad"
+[enrichment] Auto-linked parent tag: Thriller
+[enrichment] Added tag: Political Thriller
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added to series: The Last Jihad #1
+[series-discovery] Searching for books in series: "The Last Jihad"
+[series-discovery] Brave allowlist too small (1), skipping cross-ref filter
+[series-discovery] Skipping duplicate title: "The last jihad"
+[series-discovery] Skipping duplicate title: "The Last Jihad"
+[series-discovery] Skipping non-English title: "La Ultima Cruzada/ the Last Jihad"
+[series-discovery] Discovered and imported 0 new books for "The Last Jihad"
+[enrichment] Set audiobook length: 9h 53m
+[enrichment] Cover found via OL English edition for "The last jihad"
+[enrichment] Flagged for review: author
+[enrichment] Enrichment complete for "The last jihad"
+[enrichment] Starting enrichment for book 355dba8d-e607-4f65-862e-96e1da230ea9
+[enrichment] OL metadata filled: publisher
+[enrichment] Searching for: "The Tehran Initiative" 
+[enrichment] Found 14 search results
+[enrichment] Analysis complete for "The Tehran Initiative"
+[enrichment] Auto-linked parent tag: Thriller
+[enrichment] Added tag: Political Thriller
+[enrichment] Added tag: Military Thriller
+[enrichment] Added tag: Christian Fiction
+[enrichment] Added to series: Twelfth Imam #2
+[series-discovery] Searching for books in series: "Twelfth Imam"
+[backfill] Found 920 books needing summaries

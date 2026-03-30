@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { logout } from "@/lib/actions/auth";
@@ -125,8 +126,7 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
         {isLoggedIn && (
           <span className="hidden lg:flex w-8 h-8 rounded-full overflow-hidden border-2 border-transparent hover:border-[#a3e635]/50 transition-colors">
             {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt="Menu" className="w-full h-full object-cover" />
+              <Image src={avatarUrl} alt="Menu" width={32} height={32} className="w-full h-full object-cover" />
             ) : (
               <span className="w-full h-full flex items-center justify-center text-xs font-bold text-black" style={{ backgroundColor: "#a3e635" }}>
                 {displayName ? displayName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?"}

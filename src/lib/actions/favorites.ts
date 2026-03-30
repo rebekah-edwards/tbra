@@ -71,6 +71,29 @@ export async function removeFavorite(bookId: string): Promise<{ success: boolean
   return { success: true };
 }
 
+export async function reorderFavorites(bookIds: string[]): Promise<{ success: boolean }> {
+  const session = await getCurrentUser();
+  if (!session) return { success: false };
+
+  // Phase 1: negative positions to avoid UNIQUE constraint conflicts
+  for (let i = 0; i < bookIds.length; i++) {
+    await db.update(userFavoriteBooks).set({ position: -(i + 1) }).where(
+      and(eq(userFavoriteBooks.userId, session.userId), eq(userFavoriteBooks.bookId, bookIds[i])),
+    );
+  }
+  // Phase 2: final positions
+  for (let i = 0; i < bookIds.length; i++) {
+    await db.update(userFavoriteBooks).set({ position: i + 1 }).where(
+      and(eq(userFavoriteBooks.userId, session.userId), eq(userFavoriteBooks.bookId, bookIds[i])),
+    );
+  }
+
+  revalidatePath("/library/shelves");
+  revalidatePath("/library/shelves/top-shelf");
+  revalidatePath("/profile");
+  return { success: true };
+}
+
 export async function toggleFavorite(bookId: string): Promise<{ success: boolean; isFavorited: boolean; error?: string }> {
   const session = await getCurrentUser();
   if (!session) return { success: false, isFavorited: false, error: "Not logged in" };

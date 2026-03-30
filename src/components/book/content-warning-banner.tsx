@@ -81,6 +81,20 @@ export function ContentWarningBanner({ conflicts }: ContentWarningBannerProps) {
               </span>
             </div>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              const el = document.getElementById("whats-inside");
+              if (el) {
+                const navHeight = 64;
+                const y = el.getBoundingClientRect().top + window.scrollY - navHeight;
+                window.scrollTo({ top: y, behavior: "smooth" });
+              }
+            }}
+            className="mt-2 text-xs text-link hover:text-link/80 transition-colors"
+          >
+            See all content details &darr;
+          </button>
         </div>
       )}
     </div>

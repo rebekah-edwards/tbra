@@ -253,7 +253,7 @@ const DimensionSection = forwardRef<
               onClick={() => onTagToggle(tag)}
               className={`rounded-full px-4 py-2 text-sm transition-all ${
                 isSelected
-                  ? "bg-purple-500/20 border-2 border-purple-400 text-purple-300 font-medium"
+                  ? "bg-purple-500/20 border-2 border-purple-400 text-purple-700 dark:text-purple-300 font-medium"
                   : "bg-transparent border-2 border-purple-500/30 text-foreground/70 hover:border-purple-400/50"
               }`}
             >

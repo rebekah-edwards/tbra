@@ -15,6 +15,7 @@ BASE="http://localhost:3000/api/enrichment"
 LOG_FILE="scripts/enrichment-log-$(date +%Y%m%d-%H%M%S).txt"
 BATCH_SIZE=25
 SLEEP_BETWEEN=30  # seconds between batches
+MAX_PHASE1_BATCHES=20  # Cap: 20 batches × 25 = 500 books max per run (limits Brave API spend)
 TOTAL_SUCCESS=0
 TOTAL_FAILED=0
 BATCH_NUM=0
@@ -68,6 +69,11 @@ while true; do
 
   if [ "$PROCESSED" -eq 0 ]; then
     log "Phase 1 complete — no more books need initial enrichment."
+    break
+  fi
+
+  if [ "$BATCH_NUM" -ge "$MAX_PHASE1_BATCHES" ]; then
+    log "Phase 1 capped at $MAX_PHASE1_BATCHES batches ($TOTAL_SUCCESS books). Remaining will run tomorrow."
     break
   fi
 

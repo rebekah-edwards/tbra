@@ -1,0 +1,2260 @@
+
+> tbra@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.0.0.89:3000
+- Environments: .env.local
+✓ Ready in 246ms
+⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+⚠ Invalid next.config.ts options detected: 
+⚠     Unrecognized key(s) in object: 'eslint'
+⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+- Experiments (use with caution):
+  · staleTimes
+  ✓ viewTransition
+
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+[browser] ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  144 |     console.log(`[enrichment] Auto-detected box set: "${book.title}" — enriching content,...
+  145 |     await db.update(books).set({ isBoxSet: true, updatedAt: new Date().toISOString() }).w...
+> 146 |     book = { ...book, isBoxSet: true };
+      |     ^^^^
+  147 |   }
+  148 |
+  149 |   const bookAuthorRows = await db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts 
+⚠ Unsupported metadata themeColor is configured in metadata export in /admin/landing. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+⚠ Unsupported metadata themeColor is configured in metadata export in /u/[username]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /admin/landing 200 in 1453ms (next.js: 961ms, proxy.ts: 49ms, application-code: 443ms)
+ GET /u/kennytianna 200 in 1460ms (next.js: 1176ms, proxy.ts: 55ms, application-code: 228ms)
+ GET /api/notifications 200 in 66ms (next.js: 53ms, proxy.ts: 2ms, application-code: 10ms)
+ GET /icon?c3618184b7c1454e 200 in 468ms (next.js: 16ms, proxy.ts: 56ms, application-code: 396ms)
+ GET /api/notifications 200 in 12ms (next.js: 3ms, proxy.ts: 4ms, application-code: 5ms)
+ GET /api/enrichment/status 200 in 83ms (next.js: 31ms, proxy.ts: 3ms, application-code: 48ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/run/route.ts
+
+
+ POST /api/enrichment/run?limit=25&skipGoogleBooks=true 500 in 85ms (next.js: 45ms, proxy.ts: 3ms, application-code: 37ms)
+ GET /icon?c3618184b7c1454e 500 in 10ms (next.js: 2ms, proxy.ts: 1939µs, application-code: 6ms)
+ GET /api/enrichment/status 500 in 10ms (next.js: 3ms, proxy.ts: 1764µs, application-code: 5ms)
+ GET /api/enrichment/status 500 in 7ms (next.js: 1943µs, proxy.ts: 1106µs, application-code: 4ms)
+ GET /api/enrichment/status 500 in 13ms (next.js: 3ms, proxy.ts: 2ms, application-code: 7ms)
+ GET /api/enrichment/status 500 in 10ms (next.js: 4ms, proxy.ts: 1145µs, application-code: 4ms)
+ GET /api/enrichment/status 500 in 11ms (next.js: 3ms, proxy.ts: 3ms, application-code: 5ms)
+ GET /api/enrichment/status 500 in 12ms (next.js: 3ms, proxy.ts: 1901µs, application-code: 7ms)
+ GET /api/enrichment/status 500 in 11ms (next.js: 3ms, proxy.ts: 1278µs, application-code: 6ms)
+ GET /api/enrichment/status 500 in 8ms (next.js: 1858µs, proxy.ts: 1634µs, application-code: 5ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 18ms (next.js: 9ms, proxy.ts: 1542µs, application-code: 7ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 9ms (next.js: 3ms, proxy.ts: 1637µs, application-code: 4ms)
+ GET /api/enrichment/status 500 in 11ms (next.js: 3ms, proxy.ts: 3ms, application-code: 5ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 11ms (next.js: 4ms, proxy.ts: 1974µs, application-code: 5ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 10ms (next.js: 3ms, proxy.ts: 1623µs, application-code: 5ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 9ms (next.js: 3ms, proxy.ts: 2ms, application-code: 4ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 12ms (next.js: 3ms, proxy.ts: 4ms, application-code: 5ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 8ms (next.js: 1909µs, proxy.ts: 1676µs, application-code: 4ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 14ms (next.js: 6ms, proxy.ts: 4ms, application-code: 5ms)
+ GET /api/enrichment/status 500 in 10ms (next.js: 4ms, proxy.ts: 1880µs, application-code: 5ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 7ms (next.js: 1743µs, proxy.ts: 1378µs, application-code: 4ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 19ms (next.js: 3ms, proxy.ts: 3ms, application-code: 12ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 13ms (next.js: 5ms, proxy.ts: 2ms, application-code: 7ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 7ms (next.js: 1739µs, proxy.ts: 1598µs, application-code: 4ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 8ms (next.js: 2ms, proxy.ts: 1702µs, application-code: 4ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 9ms (next.js: 2ms, proxy.ts: 1847µs, application-code: 4ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 11ms (next.js: 3ms, proxy.ts: 2ms, application-code: 6ms)
+ GET /api/enrichment/status 500 in 9ms (next.js: 3ms, proxy.ts: 2ms, application-code: 4ms)
+ GET /api/enrichment/status 500 in 11ms (next.js: 3ms, proxy.ts: 2ms, application-code: 6ms)
+ GET /api/notifications 500 in 22ms (next.js: 5ms, proxy.ts: 4ms, application-code: 13ms)
+ GET /api/notifications 500 in 17ms (next.js: 4ms, proxy.ts: 3ms, application-code: 9ms)
+ GET /api/enrichment/status 500 in 12ms (next.js: 3ms, proxy.ts: 2ms, application-code: 6ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 11ms (next.js: 3ms, proxy.ts: 1759µs, application-code: 7ms)
+ GET /api/enrichment/status 500 in 8ms (next.js: 1974µs, proxy.ts: 1400µs, application-code: 5ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 13ms (next.js: 3ms, proxy.ts: 3ms, application-code: 7ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 11ms (next.js: 3ms, proxy.ts: 2ms, application-code: 6ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 11ms (next.js: 4ms, proxy.ts: 1973µs, application-code: 5ms)
+ GET /api/enrichment/status 500 in 10ms (next.js: 3ms, proxy.ts: 2ms, application-code: 5ms)
+ GET /api/enrichment/status 500 in 9ms (next.js: 3ms, proxy.ts: 1821µs, application-code: 5ms)
+ GET /api/enrichment/status 500 in 10ms (next.js: 3ms, proxy.ts: 1927µs, application-code: 5ms)
+ GET /api/enrichment/status 500 in 11ms (next.js: 4ms, proxy.ts: 1777µs, application-code: 5ms)
+ GET /api/enrichment/status 500 in 12ms (next.js: 4ms, proxy.ts: 2ms, application-code: 6ms)
+ GET /api/enrichment/status 500 in 11ms (next.js: 3ms, proxy.ts: 3ms, application-code: 6ms)
+ GET /api/enrichment/status 500 in 12ms (next.js: 3ms, proxy.ts: 2ms, application-code: 6ms)
+ GET /api/enrichment/status 500 in 11ms (next.js: 3ms, proxy.ts: 1869µs, application-code: 6ms)
+ GET /api/enrichment/status 500 in 12ms (next.js: 3ms, proxy.ts: 3ms, application-code: 6ms)
+ GET /api/enrichment/status 500 in 12ms (next.js: 3ms, proxy.ts: 2ms, application-code: 6ms)
+ GET /api/notifications 500 in 16ms (next.js: 5ms, proxy.ts: 3ms, application-code: 8ms)
+ GET /api/notifications 500 in 17ms (next.js: 4ms, proxy.ts: 4ms, application-code: 9ms)
+ GET /api/enrichment/status 500 in 12ms (next.js: 4ms, proxy.ts: 2ms, application-code: 6ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 8ms (next.js: 2ms, proxy.ts: 1542µs, application-code: 4ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 9ms (next.js: 2ms, proxy.ts: 3ms, application-code: 4ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 11ms (next.js: 4ms, proxy.ts: 3ms, application-code: 4ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 9ms (next.js: 2ms, proxy.ts: 2ms, application-code: 5ms)
+ GET /api/enrichment/status 500 in 11ms (next.js: 3ms, proxy.ts: 2ms, application-code: 6ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 11ms (next.js: 3ms, proxy.ts: 3ms, application-code: 5ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 8ms (next.js: 2ms, proxy.ts: 2ms, application-code: 4ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 12ms (next.js: 5ms, proxy.ts: 3ms, application-code: 5ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 11ms (next.js: 3ms, proxy.ts: 3ms, application-code: 5ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 10ms (next.js: 3ms, proxy.ts: 2ms, application-code: 5ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 10ms (next.js: 3ms, proxy.ts: 2ms, application-code: 4ms)
+ GET /api/enrichment/status 500 in 10ms (next.js: 5ms, proxy.ts: 1825µs, application-code: 4ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 8ms (next.js: 3ms, proxy.ts: 1941µs, application-code: 4ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 8ms (next.js: 2ms, proxy.ts: 2ms, application-code: 3ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 7ms (next.js: 2ms, proxy.ts: 1629µs, application-code: 3ms)
+ GET /api/enrichment/status 500 in 7ms (next.js: 2ms, proxy.ts: 2ms, application-code: 2ms)
+ GET /api/enrichment/status 500 in 13ms (next.js: 4ms, proxy.ts: 3ms, application-code: 6ms)
+ GET /api/enrichment/status 500 in 10ms (next.js: 4ms, proxy.ts: 2ms, application-code: 5ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 8ms (next.js: 1927µs, proxy.ts: 1985µs, application-code: 4ms)
+ GET /api/enrichment/status 500 in 8ms (next.js: 2ms, proxy.ts: 1291µs, application-code: 4ms)
+ GET /api/enrichment/status 500 in 11ms (next.js: 3ms, proxy.ts: 1825µs, application-code: 6ms)
+ GET /api/enrichment/status 500 in 10ms (next.js: 2ms, proxy.ts: 2ms, application-code: 6ms)
+ GET /api/enrichment/status 500 in 7ms (next.js: 2ms, proxy.ts: 1186µs, application-code: 4ms)
+ GET /api/enrichment/status 500 in 16ms (next.js: 4ms, proxy.ts: 2ms, application-code: 9ms)
+ GET /api/enrichment/status 500 in 11ms (next.js: 1728µs, proxy.ts: 1588µs, application-code: 8ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 11ms (next.js: 4ms, proxy.ts: 2ms, application-code: 5ms)
+ GET /api/notifications 500 in 13ms (next.js: 5ms, proxy.ts: 3ms, application-code: 6ms)
+⨯ ./src/lib/enrichment/enrich-book.ts:146:5
+cannot reassign to a variable declared with `const`
+  [90m144 |[0m     console.log([32m`[enrichment] Auto-detected box set: "[0m${book.title[32m}" — enriching content,...[0m
+  [90m145 |[0m     [36mawait[0m db.update(books).set({ isBoxSet: [36mtrue[0m, updatedAt: [36mnew[0m [33mDate[0m().toISOString() }).w...
+[31m[1m>[0m [90m146 |[0m     book = { ...book, isBoxSet: [36mtrue[0m };
+  [90m    |[0m     [31m[1m^^^^[0m
+  [90m147 |[0m   }
+  [90m148 |[0m
+  [90m149 |[0m   [36mconst[0m bookAuthorRows = [36mawait[0m db
+
+Ecmascript file had an error
+
+Import trace:
+  App Route:
+    ./src/lib/enrichment/enrich-book.ts
+    ./src/app/api/enrichment/trigger/route.ts
+
+
+ POST /api/enrichment/trigger 500 in 9ms (next.js: 2ms, proxy.ts: 1464µs, application-code: 5ms)
+ GET /api/notifications 500 in 9ms (next.js: 3ms, proxy.ts: 2ms, application-code: 4ms)
+ GET /api/enrichment/status 500 in 9ms (next.js: 3ms, proxy.ts: 1405µs, application-code: 5ms)

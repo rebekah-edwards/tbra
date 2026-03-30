@@ -14,6 +14,8 @@ export interface FavoriteBook {
   seriesId: string | null;
   /** Position within that series */
   seriesPosition: number | null;
+  /** User's rating for this book (null if unrated) */
+  userRating: number | null;
 }
 
 export async function getUserFavorites(userId: string): Promise<FavoriteBook[]> {
@@ -45,40 +47,53 @@ export async function getUserFavorites(userId: string): Promise<FavoriteBook[]> 
         FROM book_series bs
         WHERE bs.book_id = uf.book_id
         LIMIT 1
-      ) as series_position
+      ) as series_position,
+      (
+        SELECT ubr.rating
+        FROM user_book_ratings ubr
+        WHERE ubr.user_id = ${userId} AND ubr.book_id = uf.book_id
+      ) as user_rating
     FROM user_favorite_books uf
     JOIN books b ON uf.book_id = b.id
     WHERE uf.user_id = ${userId}
     ORDER BY uf.position ASC
-  `) as { book_id: string; position: number; title: string; slug: string | null; cover_image_url: string | null; owned_cover_id: number | null; series_id: string | null; series_position: number | null }[];
+  `) as { book_id: string; position: number; title: string; slug: string | null; cover_image_url: string | null; owned_cover_id: number | null; series_id: string | null; series_position: number | null; user_rating: number | null }[];
 
-  const result: FavoriteBook[] = [];
-  for (const row of rows) {
-    const authorRows = await db
-      .select({ name: authors.name })
-      .from(bookAuthors)
-      .innerJoin(authors, eq(bookAuthors.authorId, authors.id))
-      .where(eq(bookAuthors.bookId, row.book_id))
-      .all();
+  if (rows.length === 0) return [];
 
-    // Use owned edition cover if available, otherwise fall back to base cover
+  // Batch fetch authors for all books in one query
+  const bookIds = rows.map((r) => r.book_id);
+  const allAuthors = await db.all(sql`
+    SELECT ba.book_id, a.name
+    FROM book_authors ba
+    JOIN authors a ON ba.author_id = a.id
+    WHERE ba.book_id IN (${sql.join(bookIds.map(id => sql`${id}`), sql`, `)})
+  `) as { book_id: string; name: string }[];
+
+  const authorsByBook = new Map<string, string[]>();
+  for (const a of allAuthors) {
+    const arr = authorsByBook.get(a.book_id) ?? [];
+    arr.push(a.name);
+    authorsByBook.set(a.book_id, arr);
+  }
+
+  return rows.map((row) => {
     const effectiveCover = row.owned_cover_id
       ? (buildCoverUrl(row.owned_cover_id, "M") ?? row.cover_image_url)
       : row.cover_image_url;
 
-    result.push({
+    return {
       id: row.book_id,
       slug: row.slug,
       title: row.title,
       coverImageUrl: effectiveCover,
-      authors: authorRows.map((a) => a.name),
+      authors: authorsByBook.get(row.book_id) ?? [],
       position: row.position,
       seriesId: row.series_id,
       seriesPosition: row.series_position,
-    });
-  }
-
-  return result;
+      userRating: row.user_rating,
+    };
+  });
 }
 
 export async function isBookFavorited(userId: string, bookId: string): Promise<number | null> {

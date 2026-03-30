@@ -6,18 +6,26 @@ import { useRouter } from "next/navigation";
 import { ShelfCard } from "@/components/shelves/shelf-card";
 import { ShelfCoverMosaic } from "@/components/shelves/shelf-cover-mosaic";
 import { CreateShelfModal } from "@/components/shelves/create-shelf-modal";
-import { PremiumGate, PremiumBadge } from "@/components/premium-gate";
+import { PremiumBadge } from "@/components/premium-gate";
 import type { ShelfSummary, FollowedShelf } from "@/lib/queries/shelves";
+import type { FavoriteBook } from "@/lib/queries/favorites";
 
 interface ShelvesClientProps {
   shelves: ShelfSummary[];
   followedShelves: FollowedShelf[];
   isPremium: boolean;
+  favorites: FavoriteBook[];
+  username: string | null;
 }
 
-export function ShelvesClient({ shelves, followedShelves, isPremium }: ShelvesClientProps) {
+export function ShelvesClient({ shelves, followedShelves, isPremium, favorites, username }: ShelvesClientProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const router = useRouter();
+
+  const topShelfCovers = favorites
+    .filter((f) => f.coverImageUrl)
+    .slice(0, 12)
+    .map((f) => f.coverImageUrl!);
 
   return (
     <div className="lg:max-w-[60%] lg:mx-auto">
@@ -50,38 +58,111 @@ export function ShelvesClient({ shelves, followedShelves, isPremium }: ShelvesCl
         )}
       </div>
 
-      {/* Premium gate for non-premium users */}
-      {!isPremium ? (
-        <PremiumGate isPremium={false} featureName="Custom Shelves" />
-      ) : shelves.length === 0 ? (
-        /* Empty state */
-        <div className="rounded-xl border border-dashed border-border p-8 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-accent">
-              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+      {/* Top Shelf — always visible for all users */}
+      <Link
+        href="/library/shelves/top-shelf"
+        className="block mb-4"
+      >
+        <div
+          className="rounded-xl border transition-all hover:scale-[1.01] active:scale-[0.99]"
+          style={{
+            background: "linear-gradient(to bottom, #f59e0b12, #f59e0b22)",
+            borderColor: "#f59e0b30",
+          }}
+        >
+          <div className="flex items-start gap-3 px-4 pt-4 pb-2.5">
+            {topShelfCovers.length > 0 ? (
+              <ShelfCoverMosaic
+                coverUrls={topShelfCovers}
+                color="#f59e0b"
+                maxCovers={3}
+              />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-amber-500/10">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-500">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </div>
+            )}
+            <div className="flex-1 min-w-0 py-0.5">
+              <div className="flex items-center gap-2">
+                <h3 className="font-heading text-sm font-bold text-foreground truncate">
+                  Top Shelf
+                </h3>
+                <span className="text-[10px] text-amber-500/60 font-medium">★</span>
+              </div>
+              <p className="text-[11px] text-muted mt-0.5">
+                {favorites.length} {favorites.length === 1 ? "book" : "books"} · Your all-time favorites
+              </p>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted/40 mt-2 flex-shrink-0">
+              <path d="M9 18l6-6-6-6" />
             </svg>
           </div>
-          <h3 className="font-heading text-base font-bold text-foreground">No shelves yet</h3>
-          <p className="mt-1 text-sm text-muted">
-            Create your first shelf to organize books into custom lists.
-          </p>
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black transition-all hover:brightness-110"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Create Shelf
-          </button>
+
+          {/* Shelf edge */}
+          <div
+            className="h-[5px] shadow-[inset_0_2px_3px_rgba(0,0,0,0.1)]"
+            style={{ background: "linear-gradient(to bottom, #f59e0b30, #f59e0b45)" }}
+          />
+          <div className="h-1.5" />
         </div>
+      </Link>
+
+      {/* Custom shelves — premium only */}
+      {isPremium ? (
+        shelves.length === 0 ? (
+          /* Empty state */
+          <div className="rounded-xl border border-dashed border-border p-8 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
+                <path d="M4 4h2v16H4z" />
+                <path d="M8 4h2v16H8z" />
+                <path d="M13 4l2 16" />
+                <path d="M18 4l2 16" />
+              </svg>
+            </div>
+            <h3 className="font-heading text-base font-bold text-foreground">No custom shelves yet</h3>
+            <p className="mt-1 text-sm text-muted">
+              Create your first shelf to organize books into custom lists.
+            </p>
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black transition-all hover:brightness-110"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Create Shelf
+            </button>
+          </div>
+        ) : (
+          /* Shelf grid */
+          <div className="space-y-3">
+            {shelves.map((shelf) => (
+              <ShelfCard
+                key={shelf.id}
+                shelf={shelf}
+                linkBase={username && shelf.isPublic ? `/u/${username}/shelves` : `/library/shelves`}
+                editHref={`/library/shelves/${shelf.slug}`}
+              />
+            ))}
+          </div>
+        )
       ) : (
-        /* Shelf grid */
-        <div className="space-y-3">
-          {shelves.map((shelf) => (
-            <ShelfCard key={shelf.id} shelf={shelf} />
-          ))}
+        /* Upgrade prompt for free users */
+        <div className="rounded-xl border border-dashed border-neon-purple/20 bg-neon-purple/5 p-6 text-center">
+          <p className="text-sm text-muted mb-2">
+            Want to create custom shelves?
+          </p>
+          <Link
+            href="/upgrade"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-neon-purple hover:text-neon-purple/80 transition-colors"
+          >
+            Upgrade to Based Reader
+            <PremiumBadge />
+          </Link>
         </div>
       )}
 

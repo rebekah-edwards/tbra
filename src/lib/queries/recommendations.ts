@@ -1115,7 +1115,7 @@ function hasDislikedGenre(
  * Smart discovery: personalized book recommendations for the homepage carousel.
  * Falls back to random for cold-start users.
  */
-export async function getSmartDiscoveryBooks(
+async function getSmartDiscoveryBooksInternal(
   userId: string,
   limit = 10
 ): Promise<RecommendedBook[]> {
@@ -1202,6 +1202,20 @@ export async function getSmartDiscoveryBooks(
     score: book.score,
   }));
 }
+
+/**
+ * Smart discovery: personalized book recommendations for the homepage carousel.
+ * Cached across requests for 5 minutes per user.
+ */
+export const getSmartDiscoveryBooks = (
+  userId: string,
+  limit = 10
+): Promise<RecommendedBook[]> =>
+  unstable_cache(
+    () => getSmartDiscoveryBooksInternal(userId, limit),
+    [`smart-discovery-${userId}-${limit}`],
+    { revalidate: 300, tags: [`user-${userId}-recommendations`] }
+  )();
 
 /**
  * Discover recommendations: mood-filtered, content-aware personalized results.
@@ -1999,7 +2013,7 @@ async function findRecsForSeed(
 /**
  * Post-completion suggestions: similar books + series continuation after finishing a book.
  */
-export async function getPostCompletionSuggestions(
+async function getPostCompletionSuggestionsInternal(
   userId: string,
   completedBookId: string,
   limit = 8
@@ -2210,6 +2224,24 @@ export async function getPostCompletionSuggestions(
 
   return { seriesNext, similarBooks };
 }
+
+/**
+ * Post-completion suggestions: similar books + series continuation after finishing a book.
+ * Cached across requests for 5 minutes per user + book.
+ */
+export const getPostCompletionSuggestions = (
+  userId: string,
+  completedBookId: string,
+  limit = 8
+): Promise<{
+  seriesNext: RecommendedBook | null;
+  similarBooks: RecommendedBook[];
+}> =>
+  unstable_cache(
+    () => getPostCompletionSuggestionsInternal(userId, completedBookId, limit),
+    [`post-completion-${userId}-${completedBookId}-${limit}`],
+    { revalidate: 300, tags: [`user-${userId}-recommendations`] }
+  )();
 
 // ─── Helpers ───
 

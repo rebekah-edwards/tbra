@@ -49,7 +49,10 @@ export const bookAuthors = sqliteTable("book_authors", {
   bookId: text("book_id").notNull().references(() => books.id),
   authorId: text("author_id").notNull().references(() => authors.id),
   role: text("role").notNull().default("author"),
-});
+}, (table) => [
+  index("book_authors_book_idx").on(table.bookId),
+  index("book_authors_author_idx").on(table.authorId),
+]);
 
 export const narrators = sqliteTable("narrators", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -59,7 +62,9 @@ export const narrators = sqliteTable("narrators", {
 export const bookNarrators = sqliteTable("book_narrators", {
   bookId: text("book_id").notNull().references(() => books.id),
   narratorId: text("narrator_id").notNull().references(() => narrators.id),
-});
+}, (table) => [
+  index("book_narrators_book_idx").on(table.bookId),
+]);
 
 export const genres = sqliteTable("genres", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -70,7 +75,10 @@ export const genres = sqliteTable("genres", {
 export const bookGenres = sqliteTable("book_genres", {
   bookId: text("book_id").notNull().references(() => books.id),
   genreId: text("genre_id").notNull().references(() => genres.id),
-});
+}, (table) => [
+  index("book_genres_book_idx").on(table.bookId),
+  index("book_genres_genre_idx").on(table.genreId),
+]);
 
 export const series = sqliteTable("series", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -83,14 +91,19 @@ export const bookSeries = sqliteTable("book_series", {
   bookId: text("book_id").notNull().references(() => books.id),
   seriesId: text("series_id").notNull().references(() => series.id),
   positionInSeries: integer("position_in_series"),
-});
+}, (table) => [
+  index("book_series_book_idx").on(table.bookId),
+  index("book_series_series_idx").on(table.seriesId),
+]);
 
 export const links = sqliteTable("links", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   bookId: text("book_id").notNull().references(() => books.id),
   type: text("type").notNull(), // 'amazon' | 'presave' | 'publisher'
   url: text("url").notNull(),
-});
+}, (table) => [
+  index("links_book_idx").on(table.bookId),
+]);
 
 // ─── Taxonomy tables ───
 
@@ -129,7 +142,9 @@ export const citations = sqliteTable("citations", {
 export const ratingCitations = sqliteTable("rating_citations", {
   ratingId: text("rating_id").notNull().references(() => bookCategoryRatings.id),
   citationId: text("citation_id").notNull().references(() => citations.id),
-});
+}, (table) => [
+  index("rating_citations_rating_idx").on(table.ratingId),
+]);
 
 // ─── Users & reading state ───
 
@@ -213,7 +228,9 @@ export const editions = sqliteTable("editions", {
   pages: integer("pages"),
   coverId: integer("cover_id"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
-});
+}, (table) => [
+  index("editions_book_idx").on(table.bookId),
+]);
 
 export const userOwnedEditions = sqliteTable("user_owned_editions", {
   userId: text("user_id").notNull().references(() => users.id),
@@ -222,6 +239,8 @@ export const userOwnedEditions = sqliteTable("user_owned_editions", {
   format: text("format").notNull(), // "hardcover" | "paperback" | "ebook" | "audiobook"
 }, (table) => [
   uniqueIndex("user_owned_editions_unique").on(table.userId, table.bookId, table.editionId, table.format),
+  index("user_owned_editions_user_idx").on(table.userId),
+  index("user_owned_editions_book_idx").on(table.bookId),
 ]);
 
 // ─── Reviews ───
@@ -245,6 +264,7 @@ export const userBookReviews = sqliteTable("user_book_reviews", {
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   uniqueIndex("user_book_reviews_unique").on(table.userId, table.bookId),
+  index("user_book_reviews_book_idx").on(table.bookId),
 ]);
 
 export const userBookDimensionRatings = sqliteTable("user_book_dimension_ratings", {

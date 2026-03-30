@@ -287,6 +287,41 @@ export async function removeBookFromShelf(
   return { success: true };
 }
 
+// ─── Bulk remove books from shelf ───
+
+export async function bulkRemoveFromShelf(
+  shelfId: string,
+  bookIds: string[],
+): Promise<{ success: boolean }> {
+  const user = await getCurrentUser();
+  if (!user) return { success: false };
+  if (bookIds.length === 0) return { success: true };
+
+  const shelf = await db.select().from(shelves).where(eq(shelves.id, shelfId)).get();
+  if (!shelf || shelf.userId !== user.userId) return { success: false };
+
+  const inClause = bookIds.map((id) => `'${id.replace(/'/g, "''")}'`).join(",");
+  await db.run(sql.raw(`DELETE FROM shelf_books WHERE shelf_id = '${shelfId.replace(/'/g, "''")}' AND book_id IN (${inClause})`));
+
+  // Reorder remaining books sequentially
+  const remaining = await db
+    .select({ bookId: shelfBooks.bookId })
+    .from(shelfBooks)
+    .where(eq(shelfBooks.shelfId, shelfId))
+    .orderBy(asc(shelfBooks.position))
+    .all();
+
+  for (let i = 0; i < remaining.length; i++) {
+    await db.update(shelfBooks)
+      .set({ position: i + 1 })
+      .where(and(eq(shelfBooks.shelfId, shelfId), eq(shelfBooks.bookId, remaining[i].bookId)));
+  }
+
+  revalidatePath("/library/shelves");
+  revalidatePath(`/library/shelves/${shelf.slug}`);
+  return { success: true };
+}
+
 // ─── Toggle book on shelf ───
 
 export async function toggleBookOnShelf(

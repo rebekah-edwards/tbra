@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { StarRow } from "./rounded-star";
 import { SpoilerParticles } from "./spoiler-particles";
 import { MOODS, DIMENSION_SECTIONS } from "@/lib/review-constants";
@@ -89,8 +90,7 @@ export function ReviewCard({ review, bookId, isOwnReview = false }: { review: Bo
               <circle cx="12" cy="7" r="4" />
             </svg>
           ) : review.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={review.avatarUrl} alt="" className="w-full h-full object-cover" />
+            <Image src={review.avatarUrl} alt="" width={36} height={36} className="w-full h-full object-cover" loading="lazy" />
           ) : (
             getInitials(review.displayName)
           )}
@@ -254,7 +254,7 @@ export function ReviewCard({ review, bookId, isOwnReview = false }: { review: Bo
             }}
             className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full transition-colors ${
               voted
-                ? "bg-purple-500/15 text-purple-400"
+                ? "bg-purple-500/15 text-purple-700 dark:text-purple-400"
                 : "text-muted hover:text-foreground hover:bg-surface-alt"
             }`}
           >

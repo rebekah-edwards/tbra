@@ -28,153 +28,96 @@ export async function getFollowedUsersActivity(
   const followedIds = await getFollowedUserIds(userId);
   if (followedIds.size === 0) return [];
 
-  const idList = [...followedIds].map((id) => `'${id.replace(/'/g, "''")}'`).join(",");
+  const inClause = sql.join([...followedIds].map((id) => sql`${id}`), sql`, `);
 
-  // 1. Completed books (from reading_sessions where state = 'completed')
-  const completedRows = await db.all(sql.raw(`
-    SELECT
-      'completed' as type,
-      u.id as user_id,
-      u.display_name,
-      u.username,
-      u.avatar_url,
-      b.id as book_id,
-      b.slug,
-      b.title,
-      b.cover_image_url,
-      rs.completion_date as timestamp,
-      NULL as rating,
-      NULL as review_preview
-    FROM reading_sessions rs
-    INNER JOIN users u ON rs.user_id = u.id
-    INNER JOIN books b ON rs.book_id = b.id
-    WHERE rs.state = 'completed'
-      AND rs.user_id IN (${idList})
-      AND rs.completion_date IS NOT NULL
-    ORDER BY rs.completion_date DESC
-    LIMIT ${limit}
-  `)) as RawActivityRow[];
+  // Run all 6 queries in parallel instead of sequentially
+  const [completedRows, reviewRows, ratingRows, readingRows, tbrRows, noteRows] = await Promise.all([
+    db.all(sql`
+      SELECT
+        'completed' as type,
+        u.id as user_id, u.display_name, u.username, u.avatar_url,
+        b.id as book_id, b.slug, b.title, b.cover_image_url,
+        rs.completion_date as timestamp,
+        NULL as rating, NULL as review_preview
+      FROM reading_sessions rs
+      INNER JOIN users u ON rs.user_id = u.id
+      INNER JOIN books b ON rs.book_id = b.id
+      WHERE rs.state = 'completed' AND rs.user_id IN (${inClause}) AND rs.completion_date IS NOT NULL
+      ORDER BY rs.completion_date DESC LIMIT ${limit}
+    `) as Promise<RawActivityRow[]>,
 
-  // 2. New reviews (non-anonymous only)
-  const reviewRows = await db.all(sql.raw(`
-    SELECT
-      'review' as type,
-      u.id as user_id,
-      u.display_name,
-      u.username,
-      u.avatar_url,
-      b.id as book_id,
-      b.slug,
-      b.title,
-      b.cover_image_url,
-      ubr.created_at as timestamp,
-      ubr.overall_rating as rating,
-      SUBSTR(ubr.review_text, 1, 100) as review_preview
-    FROM user_book_reviews ubr
-    INNER JOIN users u ON ubr.user_id = u.id
-    INNER JOIN books b ON ubr.book_id = b.id
-    WHERE ubr.is_anonymous = 0
-      AND ubr.user_id IN (${idList})
-    ORDER BY ubr.created_at DESC
-    LIMIT ${limit}
-  `)) as RawActivityRow[];
+    db.all(sql`
+      SELECT
+        'review' as type,
+        u.id as user_id, u.display_name, u.username, u.avatar_url,
+        b.id as book_id, b.slug, b.title, b.cover_image_url,
+        ubr.created_at as timestamp,
+        ubr.overall_rating as rating, SUBSTR(ubr.review_text, 1, 100) as review_preview
+      FROM user_book_reviews ubr
+      INNER JOIN users u ON ubr.user_id = u.id
+      INNER JOIN books b ON ubr.book_id = b.id
+      WHERE ubr.is_anonymous = 0 AND ubr.user_id IN (${inClause})
+      ORDER BY ubr.created_at DESC LIMIT ${limit}
+    `) as Promise<RawActivityRow[]>,
 
-  // 3. New ratings
-  const ratingRows = await db.all(sql.raw(`
-    SELECT
-      'rating' as type,
-      u.id as user_id,
-      u.display_name,
-      u.username,
-      u.avatar_url,
-      b.id as book_id,
-      b.slug,
-      b.title,
-      b.cover_image_url,
-      ubrat.updated_at as timestamp,
-      ubrat.rating as rating,
-      NULL as review_preview
-    FROM user_book_ratings ubrat
-    INNER JOIN users u ON ubrat.user_id = u.id
-    INNER JOIN books b ON ubrat.book_id = b.id
-    WHERE ubrat.user_id IN (${idList})
-    ORDER BY ubrat.updated_at DESC
-    LIMIT ${limit}
-  `)) as RawActivityRow[];
+    db.all(sql`
+      SELECT
+        'rating' as type,
+        u.id as user_id, u.display_name, u.username, u.avatar_url,
+        b.id as book_id, b.slug, b.title, b.cover_image_url,
+        ubrat.updated_at as timestamp,
+        ubrat.rating as rating, NULL as review_preview
+      FROM user_book_ratings ubrat
+      INNER JOIN users u ON ubrat.user_id = u.id
+      INNER JOIN books b ON ubrat.book_id = b.id
+      WHERE ubrat.user_id IN (${inClause})
+      ORDER BY ubrat.updated_at DESC LIMIT ${limit}
+    `) as Promise<RawActivityRow[]>,
 
-  // 4. Currently reading (state changes)
-  const readingRows = await db.all(sql.raw(`
-    SELECT
-      'currently_reading' as type,
-      u.id as user_id,
-      u.display_name,
-      u.username,
-      u.avatar_url,
-      b.id as book_id,
-      b.slug,
-      b.title,
-      b.cover_image_url,
-      ubs.updated_at as timestamp,
-      NULL as rating,
-      NULL as review_preview
-    FROM user_book_state ubs
-    INNER JOIN users u ON ubs.user_id = u.id
-    INNER JOIN books b ON ubs.book_id = b.id
-    WHERE ubs.state = 'currently_reading'
-      AND ubs.user_id IN (${idList})
-    ORDER BY ubs.updated_at DESC
-    LIMIT ${limit}
-  `)) as RawActivityRow[];
+    db.all(sql`
+      SELECT
+        'currently_reading' as type,
+        u.id as user_id, u.display_name, u.username, u.avatar_url,
+        b.id as book_id, b.slug, b.title, b.cover_image_url,
+        ubs.updated_at as timestamp,
+        NULL as rating, NULL as review_preview
+      FROM user_book_state ubs
+      INNER JOIN users u ON ubs.user_id = u.id
+      INNER JOIN books b ON ubs.book_id = b.id
+      WHERE ubs.state = 'currently_reading' AND ubs.user_id IN (${inClause})
+      ORDER BY ubs.updated_at DESC LIMIT ${limit}
+    `) as Promise<RawActivityRow[]>,
 
-  // 5. Added to TBR
-  const tbrRows = await db.all(sql.raw(`
-    SELECT
-      'tbr' as type,
-      u.id as user_id,
-      u.display_name,
-      u.username,
-      u.avatar_url,
-      b.id as book_id,
-      b.slug,
-      b.title,
-      b.cover_image_url,
-      ubs.updated_at as timestamp,
-      NULL as rating,
-      NULL as review_preview
-    FROM user_book_state ubs
-    INNER JOIN users u ON ubs.user_id = u.id
-    INNER JOIN books b ON ubs.book_id = b.id
-    WHERE ubs.state = 'tbr'
-      AND ubs.user_id IN (${idList})
-    ORDER BY ubs.updated_at DESC
-    LIMIT ${limit}
-  `)) as RawActivityRow[];
+    db.all(sql`
+      SELECT
+        'tbr' as type,
+        u.id as user_id, u.display_name, u.username, u.avatar_url,
+        b.id as book_id, b.slug, b.title, b.cover_image_url,
+        ubs.updated_at as timestamp,
+        NULL as rating, NULL as review_preview
+      FROM user_book_state ubs
+      INNER JOIN users u ON ubs.user_id = u.id
+      INNER JOIN books b ON ubs.book_id = b.id
+      WHERE ubs.state = 'tbr' AND ubs.user_id IN (${inClause})
+      ORDER BY ubs.updated_at DESC LIMIT ${limit}
+    `) as Promise<RawActivityRow[]>,
 
-  // 6. Reading notes (only public notes shown in feed; never leak private note text)
-  const noteRows = await db.all(sql.raw(`
-    SELECT
-      'reading_note' as type,
-      u.id as user_id,
-      u.display_name,
-      u.username,
-      u.avatar_url,
-      b.id as book_id,
-      b.slug,
-      b.title,
-      b.cover_image_url,
-      rn.created_at as timestamp,
-      NULL as rating,
-      CASE WHEN rn.is_private = 0 THEN SUBSTR(rn.note_text, 1, 100) ELSE NULL END as review_preview
-    FROM reading_notes rn
-    INNER JOIN users u ON rn.user_id = u.id
-    INNER JOIN books b ON rn.book_id = b.id
-    WHERE rn.user_id IN (${idList})
-      AND rn.is_private = 0
-    ORDER BY rn.created_at DESC
-    LIMIT ${limit}
-  `)) as RawActivityRow[];
+    db.all(sql`
+      SELECT
+        'reading_note' as type,
+        u.id as user_id, u.display_name, u.username, u.avatar_url,
+        b.id as book_id, b.slug, b.title, b.cover_image_url,
+        rn.created_at as timestamp,
+        NULL as rating,
+        CASE WHEN rn.is_private = 0 THEN SUBSTR(rn.note_text, 1, 100) ELSE NULL END as review_preview
+      FROM reading_notes rn
+      INNER JOIN users u ON rn.user_id = u.id
+      INNER JOIN books b ON rn.book_id = b.id
+      WHERE rn.user_id IN (${inClause}) AND rn.is_private = 0
+      ORDER BY rn.created_at DESC LIMIT ${limit}
+    `) as Promise<RawActivityRow[]>,
+  ]);
 
-  // Merge all events
   const allRows = [...completedRows, ...reviewRows, ...ratingRows, ...readingRows, ...tbrRows, ...noteRows];
 
   // Deduplicate: if a user completed a book AND left a review, keep the review (richer data)
@@ -198,7 +141,6 @@ export async function getFollowedUsersActivity(
     }
   }
 
-  // Sort final list and limit
   const deduped = [...seen.values()]
     .sort((a, b) => (b.timestamp ?? "").localeCompare(a.timestamp ?? ""))
     .slice(0, limit);

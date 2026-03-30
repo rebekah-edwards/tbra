@@ -480,7 +480,8 @@ export function ContentProfile({ ratings, bookId, isLoggedIn, isAdmin }: Content
 
         {/* Ratings grid — blurred when not revealed */}
         <div
-          className={`grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 ${!revealed ? "blur-md select-none pointer-events-none" : ""} transition-[filter] duration-300`}
+          className={`grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 outline-none ${!revealed ? "blur-md select-none pointer-events-none" : ""} transition-[filter] duration-300`}
+          style={{ WebkitBackfaceVisibility: "hidden" }}
         >
           {sortedRatings.map((rating) => (
             <RatingCard key={rating.categoryKey} rating={rating} bookId={bookId} isLoggedIn={isLoggedIn} isAdmin={isAdmin} />

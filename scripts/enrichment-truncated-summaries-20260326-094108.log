@@ -1,0 +1,6 @@
+[09:41:08] Starting targeted enrichment for books with truncated summaries
+[09:51:41] Batch 1: 25 processed (total: 25)
+[09:55:41] Batch 2: 25 processed (total: 50)
+[09:59:31] Batch 3: 25 processed (total: 75)
+[10:03:11] Re-enrich complete after 4 batches, 75 total
+[10:03:11] Done
