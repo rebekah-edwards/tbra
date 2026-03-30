@@ -39,10 +39,19 @@
 7. **Pacing-based recommendations** — Pacing aggregation and display built (stoplight-colored pills on book pages, beta_tester + super_admin pacing trusted). Once enough reviews include pacing data, add pacing filter to Discover and wire into recommendation scoring.
 8. **Comic/manga series parent pages** — Group high-volume series into season/arc/volume sub-series with parent page linking them.
 
+### Round 4 (needs Turso push)
+- **Follow Author + notifications**
+- **TBR Notes (Based Reader)**
+- **Pre-publication rating gates**
+- **Referral program**
+- **Admin notification broadcast**
+- **Shelf followed → notification**
+- **Review marked as helpful → notification**
+- **PWA (Progressive Web App)** — Installable from browser, offline fallback, service worker caching. Bridge distribution strategy until Amazon Creators API + app store packaging.
+
 ### Later Phase
 9. **Buddy reads** — Social reading feature (much later)
 10. **Handle change redirects** — Store previous usernames and add redirect middleware so old `/u/` links still work after a handle change
-11. **Handle change rate limiting** — Limit username changes (e.g., 1 per 30 days). Needs `username_changed_at` column on users table
 
 ### Needs External Accounts/Credentials
 10. Google + Apple login (waiting on credentials)

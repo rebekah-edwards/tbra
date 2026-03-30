@@ -171,6 +171,7 @@ export const users = sqliteTable("users", {
   locationVisibility: text("location_visibility").default("public"), // 'public' | 'followers'
   // Privacy
   isPrivate: integer("is_private", { mode: "boolean" }).notNull().default(false),
+  usernameChangedAt: text("username_changed_at"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 

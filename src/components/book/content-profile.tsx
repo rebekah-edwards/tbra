@@ -464,10 +464,10 @@ export function ContentProfile({ ratings, bookId, isLoggedIn, isAdmin }: Content
         </div>
       </div>
 
-      <div className="relative mt-4">
+      <div className="relative mt-4 overflow-hidden rounded-lg">
         {/* Blurred overlay when not revealed */}
         {!revealed && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-lg">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center">
             <button
               onClick={() => setRevealed(true)}
               className="lime-glow-box rounded-full border border-accent bg-accent/10 px-6 py-3 text-sm font-semibold text-foreground shadow-[0_0_20px_rgba(163,230,53,0.25)] transition-all hover:bg-accent/20 hover:shadow-[0_0_30px_rgba(163,230,53,0.4)]"
@@ -480,8 +480,7 @@ export function ContentProfile({ ratings, bookId, isLoggedIn, isAdmin }: Content
 
         {/* Ratings grid — blurred when not revealed */}
         <div
-          className={`grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 outline-none ${!revealed ? "blur-md select-none pointer-events-none" : ""} transition-[filter] duration-300`}
-          style={{ WebkitBackfaceVisibility: "hidden" }}
+          className={`grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 outline-none ${!revealed ? "blur-md select-none pointer-events-none" : ""}`}
         >
           {sortedRatings.map((rating) => (
             <RatingCard key={rating.categoryKey} rating={rating} bookId={bookId} isLoggedIn={isLoggedIn} isAdmin={isAdmin} />

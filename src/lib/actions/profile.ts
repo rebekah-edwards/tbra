@@ -29,6 +29,13 @@ export async function updateProfile(formData: FormData) {
   // Privacy toggle
   const isPrivate = formData.get("isPrivate") === "true";
 
+  // Fetch current user state once for all checks below
+  const currentUser = await db
+    .select({ username: users.username, usernameChangedAt: users.usernameChangedAt })
+    .from(users)
+    .where(eq(users.id, user.userId))
+    .get();
+
   // Validate username
   let username: string | null = null;
   if (rawUsername) {
@@ -48,42 +55,50 @@ export async function updateProfile(formData: FormData) {
     if (existing && existing.id !== user.userId) {
       return { error: "That username is already taken." };
     }
-  }
 
-  // Auto-generate username from display name if user has no username
-  if (!username && displayName) {
-    const currentUser = await db
-      .select({ username: users.username })
-      .from(users)
-      .where(eq(users.id, user.userId))
-      .get();
-    if (!currentUser?.username) {
-      let generated = displayName
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_]/g, "");
-      if (generated.length >= 3) {
-        if (generated.length > 30) {
-          generated = generated.slice(0, 30);
-        }
-        // Check uniqueness, append random digits if taken
-        const existingGenerated = await db
-          .select({ id: users.id })
-          .from(users)
-          .where(eq(users.username, generated))
-          .get();
-        if (existingGenerated && existingGenerated.id !== user.userId) {
-          const suffix = Math.floor(100 + Math.random() * 900).toString();
-          generated = generated.slice(0, 27) + suffix;
-        }
-        username = generated;
+    // Rate limit: 1 change per 30 days (skip if username is unchanged)
+    if (currentUser?.username && currentUser.username !== username && currentUser.usernameChangedAt) {
+      const lastChange = new Date(currentUser.usernameChangedAt);
+      const daysSince = (Date.now() - lastChange.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSince < 30) {
+        const daysLeft = Math.ceil(30 - daysSince);
+        return { error: `You can change your username again in ${daysLeft} day${daysLeft === 1 ? "" : "s"}.` };
       }
     }
   }
 
+  // Auto-generate username from display name if user has no username
+  if (!username && displayName && !currentUser?.username) {
+    let generated = displayName
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_]/g, "");
+    if (generated.length >= 3) {
+      if (generated.length > 30) {
+        generated = generated.slice(0, 30);
+      }
+      // Check uniqueness, append random digits if taken
+      const existingGenerated = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.username, generated))
+        .get();
+      if (existingGenerated && existingGenerated.id !== user.userId) {
+        const suffix = Math.floor(100 + Math.random() * 900).toString();
+        generated = generated.slice(0, 27) + suffix;
+      }
+      username = generated;
+    }
+  }
+
+  const usernameChanged = username && currentUser?.username !== username;
+
   await db
     .update(users)
-    .set({ displayName, username, bio, instagram, tiktok, threads, twitter, isPrivate })
+    .set({
+      displayName, username, bio, instagram, tiktok, threads, twitter, isPrivate,
+      ...(usernameChanged ? { usernameChangedAt: new Date().toISOString() } : {}),
+    })
     .where(eq(users.id, user.userId));
 
   revalidatePath("/profile");
