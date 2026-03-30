@@ -4,8 +4,11 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { resolveAuthor, getAuthorBooks } from "@/lib/queries/authors";
+import { isFollowingAuthor, getAuthorFollowerCount } from "@/lib/queries/author-follows";
+import { getCurrentUser } from "@/lib/auth";
 import { NoCover } from "@/components/no-cover";
 import { BackButton } from "@/components/ui/back-button";
+import { AuthorFollowButton } from "@/components/author/author-follow-button";
 
 export async function generateMetadata({
   params,
@@ -51,7 +54,17 @@ export default async function AuthorPage({
   }
 
   const author = resolved.author;
-  const authorBooksList = await getAuthorBooks(author.id);
+  const [authorBooksList, session] = await Promise.all([
+    getAuthorBooks(author.id),
+    getCurrentUser(),
+  ]);
+
+  const [following, followerCount] = session
+    ? await Promise.all([
+        isFollowingAuthor(session.userId, author.id),
+        getAuthorFollowerCount(author.id),
+      ])
+    : [false, await getAuthorFollowerCount(author.id)];
 
   // Group books by series for display
   const seriesMap = new Map<string, { name: string; slug: string | null; books: typeof authorBooksList }>();
@@ -74,7 +87,15 @@ export default async function AuthorPage({
       <div className="flex items-center gap-3 mb-2">
         <BackButton />
         <h1 className="text-foreground text-2xl font-bold tracking-tight">{author.name}</h1>
+        {session && (
+          <AuthorFollowButton authorId={author.id} initialIsFollowing={following} />
+        )}
       </div>
+      {followerCount > 0 && (
+        <p className="text-xs text-muted mt-1 ml-10">
+          {followerCount} {followerCount === 1 ? "follower" : "followers"}
+        </p>
+      )}
       {author.bio && (
         <p className="mt-2 text-sm leading-relaxed text-muted">{author.bio}</p>
       )}

@@ -491,6 +491,18 @@ export const userFollows = sqliteTable("user_follows", {
   index("user_follows_followed_idx").on(table.followedId),
 ]);
 
+// ─── Author follows ───
+
+export const authorFollows = sqliteTable("author_follows", {
+  userId: text("user_id").notNull().references(() => users.id),
+  authorId: text("author_id").notNull().references(() => authors.id),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("author_follows_unique").on(table.userId, table.authorId),
+  index("author_follows_user_idx").on(table.userId),
+  index("author_follows_author_idx").on(table.authorId),
+]);
+
 // ─── Notification preferences ───
 
 export const userNotificationPreferences = sqliteTable("user_notification_preferences", {
