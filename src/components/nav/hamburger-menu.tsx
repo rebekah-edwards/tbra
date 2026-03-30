@@ -16,7 +16,7 @@ interface HamburgerMenuProps {
 }
 
 const MENU_ITEMS = [
-  { label: "Browse Library", href: "/browse", icon: "browse" },
+  { label: "Browse All Books", href: "/browse", icon: "browse" },
   { label: "Settings", href: "/settings", icon: "settings" },
   { label: "Import Your Library", href: "/import", icon: "import" },
   { label: "Contact Us", href: "/contact", icon: "mail" },
