@@ -578,6 +578,7 @@ async function deleteDupeBook(dupeId: string): Promise<void> {
     "reported_issues",
     "editions",
     "landing_page_books",
+    "shelf_books",
     "user_hidden_books",
     "user_owned_editions",
     "up_next",
@@ -814,6 +815,61 @@ async function main() {
       });
     }
   }
+
+  // 2b. Handle authorless books — match against existing groups with same normalized title
+  const authorlessBooks = await client.execute(`
+    SELECT b.*
+    FROM books b
+    LEFT JOIN book_authors ba ON b.id = ba.book_id
+    WHERE ba.author_id IS NULL AND b.visibility = 'public'
+  `);
+
+  let authorlessMatched = 0;
+  for (const row of authorlessBooks.rows) {
+    const title = row.title as string;
+    const normTitle = normalizeTitle(title);
+    if (!normTitle) continue;
+
+    // Find any existing group that matches this normalized title
+    for (const [key, group] of groups) {
+      const [groupNormTitle] = key.split("|||");
+      if (groupNormTitle === normTitle) {
+        const bookInfo: BookInfo = {
+          id: row.id as string,
+          title: row.title as string,
+          cover_image_url: row.cover_image_url as string | null,
+          cover_verified: row.cover_verified as number,
+          summary: row.summary as string | null,
+          description: row.description as string | null,
+          slug: row.slug as string | null,
+          pages: row.pages as number | null,
+          words: row.words as number | null,
+          audio_length_minutes: row.audio_length_minutes as number | null,
+          open_library_key: row.open_library_key as string | null,
+          isbn_13: row.isbn_13 as string | null,
+          isbn_10: row.isbn_10 as string | null,
+          asin: row.asin as string | null,
+          publication_year: row.publication_year as number | null,
+          publication_date: row.publication_date as string | null,
+          language: row.language as string | null,
+          publisher: row.publisher as string | null,
+          is_fiction: row.is_fiction as number | null,
+          is_box_set: row.is_box_set as number,
+          pacing: row.pacing as string | null,
+          series_cover_url: row.series_cover_url as string | null,
+          cover_source: row.cover_source as string | null,
+          visibility: row.visibility as string,
+        };
+        if (!group.books.some(b => b.id === bookInfo.id)) {
+          group.books.push(bookInfo);
+          authorlessMatched++;
+        }
+        break; // Only match first group
+      }
+    }
+  }
+
+  console.log(`  Authorless books matched to existing groups: ${authorlessMatched}`);
 
   // Filter to only groups with 2+ books (actual duplicates)
   const dupeGroups: DupeGroup[] = [];

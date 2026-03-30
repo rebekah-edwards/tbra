@@ -65,20 +65,40 @@ export async function signup(
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
 
   // Auto-generate username from email prefix
-  const emailPrefix = email.toLowerCase().split("@")[0].replace(/[^a-z0-9]/g, "").slice(0, 20);
-  // Check for uniqueness, append random suffix if needed
-  const existingUser = await db.select({ id: users.id }).from(users).where(eq(users.username, emailPrefix)).get();
-  const username = existingUser ? `${emailPrefix}${Math.floor(Math.random() * 1000)}` : emailPrefix;
+  let username: string | null = null;
+  try {
+    const emailPrefix = email.toLowerCase().split("@")[0].replace(/[^a-z0-9_]/g, "").slice(0, 20);
+    if (emailPrefix.length >= 3) {
+      const existingUser = await db.select({ id: users.id }).from(users).where(eq(users.username, emailPrefix)).get();
+      if (!existingUser) {
+        username = emailPrefix;
+      } else {
+        // Try up to 3 random suffixes
+        for (let i = 0; i < 3; i++) {
+          const candidate = `${emailPrefix.slice(0, 17)}${Math.floor(100 + Math.random() * 900)}`;
+          const taken = await db.select({ id: users.id }).from(users).where(eq(users.username, candidate)).get();
+          if (!taken) { username = candidate; break; }
+        }
+      }
+    }
+  } catch {
+    // Username generation failed — proceed without one, user can set it later
+  }
 
-  await db.insert(users).values({
-    id: userId,
-    email: email.toLowerCase(),
-    username,
-    passwordHash,
-    emailVerified: false,
-    emailVerificationToken: verificationToken,
-    emailVerificationExpiresAt: expiresAt,
-  });
+  try {
+    await db.insert(users).values({
+      id: userId,
+      email: email.toLowerCase(),
+      username,
+      passwordHash,
+      emailVerified: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpiresAt: expiresAt,
+    });
+  } catch (err) {
+    console.error("[auth] Signup insert failed:", err);
+    return { error: "Something went wrong creating your account. Please try again." };
+  }
 
   // Send verification email (non-blocking — don't fail signup if email fails)
   const emailResult = await sendVerificationEmail(email.toLowerCase(), verificationToken);
