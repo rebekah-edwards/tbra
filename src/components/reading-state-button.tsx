@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { setBookState, removeBookState, setBookStateWithImport, removeFromLibrary } from "@/lib/actions/reading-state";
 import { setBookStateWithCompletion } from "@/lib/actions/reading-session";
 import { CompletionDatePicker } from "@/components/book/completion-date-picker";
+import { TbrNoteEditor } from "@/components/book/tbr-note-editor";
 import type { OLSearchResult } from "@/lib/openlibrary";
 
 const STATE_TOAST_MESSAGES: Record<string, string> = {
@@ -65,6 +66,8 @@ interface ReadingStateButtonProps {
   currentState: string | null;
   isLoggedIn: boolean;
   compact?: boolean;
+  isPremium?: boolean;
+  initialTbrNote?: string | null;
   onStateChange?: (newState: string | null) => void;
   onImported?: (olKey: string, bookId: string) => void;
 }
@@ -75,6 +78,8 @@ export function ReadingStateButton({
   currentState,
   isLoggedIn,
   compact = false,
+  isPremium = false,
+  initialTbrNote = null,
   onStateChange,
   onImported,
 }: ReadingStateButtonProps) {
@@ -364,7 +369,7 @@ export function ReadingStateButton({
         </button>
 
         {open && (
-          <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-border bg-surface shadow-xl z-50 popover-enter">
+          <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-border bg-surface shadow-xl z-50 popover-enter" onMouseDown={(e) => e.stopPropagation()}>
             {STATES.map((s) => (
               <button
                 key={s.value}
@@ -381,6 +386,11 @@ export function ReadingStateButton({
                 )}
               </button>
             ))}
+            {currentState === "tbr" && bookId && (
+              <div className="border-t border-border px-3 py-2">
+                <TbrNoteEditor bookId={bookId} initialNote={initialTbrNote} isPremium={isPremium} />
+              </div>
+            )}
             {isActive && (
               <button
                 onClick={handleRemove}

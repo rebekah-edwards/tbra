@@ -10,6 +10,7 @@ import {
   batchFetchCompletionYears,
   batchFetchBookContentRatings,
 } from "@/lib/queries/batch-helpers";
+import { getTbrNotesForBooks } from "@/lib/queries/tbr-notes";
 
 export interface UserBookState {
   state: string | null;
@@ -57,6 +58,7 @@ export interface UserBookWithDetails {
   genres: string[];
   completionYear: number | null;
   contentRatings: { categoryId: string; intensity: number }[];
+  tbrNote?: string | null;
 }
 
 export async function getUserBooks(
@@ -108,13 +110,17 @@ export async function getUserBooks(
 
   // Batch fetch all related data in 5 queries instead of N×per-book
   const bookIds = rows.map((r) => r.bookId);
-  const [authorsMap, ratingsMap, editionsMap, genresMap, completionYearsMap, contentRatingsMap] = await Promise.all([
+  // Collect TBR book IDs for note batch loading
+  const tbrBookIds = rows.filter((r) => r.state === "tbr").map((r) => r.bookId);
+
+  const [authorsMap, ratingsMap, editionsMap, genresMap, completionYearsMap, contentRatingsMap, tbrNotesMap] = await Promise.all([
     batchFetchBookAuthors(bookIds),
     batchFetchUserRatings(userId, bookIds),
     batchFetchEditionCovers(userId, bookIds),
     batchFetchBookGenres(bookIds),
     batchFetchCompletionYears(userId, bookIds),
     batchFetchBookContentRatings(bookIds),
+    tbrBookIds.length > 0 ? getTbrNotesForBooks(userId, tbrBookIds) : Promise.resolve(new Map<string, string>()),
   ]);
 
   return rows.map((row) => {
@@ -146,6 +152,7 @@ export async function getUserBooks(
       genres: genresMap.get(row.bookId) ?? [],
       completionYear: completionYearsMap.get(row.bookId) ?? null,
       contentRatings: contentRatingsMap.get(row.bookId) ?? [],
+      tbrNote: row.state === "tbr" ? (tbrNotesMap.get(row.bookId) ?? null) : null,
     };
   });
 }

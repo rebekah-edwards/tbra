@@ -503,6 +503,20 @@ export const authorFollows = sqliteTable("author_follows", {
   index("author_follows_author_idx").on(table.authorId),
 ]);
 
+// ─── TBR Notes (premium) ───
+
+export const tbrNotes = sqliteTable("tbr_notes", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  bookId: text("book_id").notNull().references(() => books.id),
+  noteText: text("note_text").notNull(),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("tbr_notes_user_book_unique").on(table.userId, table.bookId),
+  index("tbr_notes_user_idx").on(table.userId),
+]);
+
 // ─── Notification preferences ───
 
 export const userNotificationPreferences = sqliteTable("user_notification_preferences", {

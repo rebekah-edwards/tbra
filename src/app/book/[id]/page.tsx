@@ -16,6 +16,7 @@ import { getUserContentSensitivities } from "@/lib/queries/reading-preferences";
 import { getCurrentUser, isAdmin, isPremium } from "@/lib/auth";
 import { isBookHidden } from "@/lib/actions/hidden-books";
 import { getUserShelves, getBookShelves } from "@/lib/queries/shelves";
+import { getTbrNote } from "@/lib/queries/tbr-notes";
 import { AddToShelfButton } from "@/components/book/add-to-shelf-button";
 import { triggerEnrichment } from "@/lib/enrichment/trigger";
 import { after } from "next/server";
@@ -196,6 +197,7 @@ export default async function BookPage({
     userSensitivities,
     userShelves,
     bookShelfMemberships,
+    tbrNote,
   ] = await Promise.all([
     user ? getUserBookState(user.userId, bookId) : null,
     user ? getUserOwnedEditions(user.userId, bookId) : Promise.resolve([]),
@@ -214,6 +216,7 @@ export default async function BookPage({
     user ? getUserContentSensitivities(user.userId) : null,
     user ? getUserShelves(user.userId) : Promise.resolve([]),
     user ? getBookShelves(user.userId, bookId) : Promise.resolve([]),
+    user ? getTbrNote(user.userId, bookId) : null,
   ]);
 
   const editionSelections = rawEditions.map((e) => ({
@@ -316,6 +319,8 @@ export default async function BookPage({
         isRecentlyImported={needsEnrichment}
         isHidden={isHidden}
         contentConflicts={contentConflicts}
+        isPremium={isPremium({ accountType: user?.accountType })}
+        initialTbrNote={tbrNote ?? null}
       />
 
       {/* Content warning — mobile only here, desktop version goes under reviews */}

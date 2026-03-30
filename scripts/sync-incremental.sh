@@ -45,7 +45,7 @@ tables = ['users', 'books', 'authors', 'series', 'genres',
           'user_favorite_books', 'reading_notes', 'reading_sessions',
           'reading_goals', 'up_next', 'reported_issues', 'report_corrections',
           'enrichment_log', 'editions', 'links', 'user_hidden_books',
-          'user_follows', 'author_follows', 'shelf_follows',
+          'user_follows', 'author_follows', 'shelf_follows', 'tbr_notes',
           'user_content_preferences', 'user_reading_preferences']
 
 print(f'{'Table':<35} {'Local':>8} {'Live':>8} {'Diff':>8}')
@@ -182,6 +182,7 @@ TABLES = [
     ("user_follows",             ["follower_id", "followed_id"], False),
     ("author_follows",           ["user_id", "author_id"],      False),
     ("shelf_follows",            ["user_id", "shelf_id"],       False),
+    ("tbr_notes",                ["id"],                        False),
     ("user_owned_editions",      ["user_id", "edition_id"], False),
     ("user_content_preferences", ["user_id", "category_id"], False),
     ("user_reading_preferences", ["user_id"],               False),

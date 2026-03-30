@@ -27,6 +27,8 @@ interface ReadingStateSelectorProps {
   asin?: string | null;
   /** Slot for the AddToShelfButton rendered below the action grid */
   shelfButton?: React.ReactNode;
+  isPremium?: boolean;
+  initialTbrNote?: string | null;
   onStateChange?: (state: string | null) => void;
   onActiveFormatsChange?: (formats: string[]) => void;
   onEditionSelectionsChange?: (selections: EditionSelection[]) => void;
@@ -47,6 +49,8 @@ export function ReadingStateSelector({
   isbn13,
   asin,
   shelfButton,
+  isPremium = false,
+  initialTbrNote = null,
   onStateChange,
   onActiveFormatsChange,
   onEditionSelectionsChange,
@@ -103,6 +107,8 @@ export function ReadingStateSelector({
             bookId={bookId}
             currentState={currentState}
             isLoggedIn={isLoggedIn}
+            isPremium={isPremium}
+            initialTbrNote={initialTbrNote}
             onStateChange={handleStateChange}
           />
         </div>

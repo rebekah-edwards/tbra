@@ -72,6 +72,8 @@ interface BookPageClientProps {
   isHidden?: boolean;
   canReport?: boolean;
   contentConflicts?: { categoryName: string; bookIntensity: number; userMax: number }[];
+  isPremium?: boolean;
+  initialTbrNote?: string | null;
 }
 
 function formatReadDate(dateStr: string, precision: string | null): string {
@@ -104,6 +106,8 @@ export function BookPageClient({
   isHidden: initialIsHidden = false,
   canReport = false,
   contentConflicts = [],
+  isPremium: userIsPremium = false,
+  initialTbrNote = null,
 }: BookPageClientProps) {
   const [currentState, setCurrentState] = useState(userState.state);
   const [activeFormats, setActiveFormats] = useState(userState.activeFormats);
@@ -339,6 +343,8 @@ export function BookPageClient({
               isbn13={book.isbn13}
               asin={book.asin}
               shelfButton={shelfButton}
+              isPremium={userIsPremium}
+              initialTbrNote={initialTbrNote}
               onStateChange={handleStateChange}
               onActiveFormatsChange={handleActiveFormatsChange}
               onEditionSelectionsChange={setEditionSelections}
@@ -395,6 +401,8 @@ export function BookPageClient({
           isbn13={book.isbn13}
           asin={book.asin}
           shelfButton={shelfButton}
+          isPremium={userIsPremium}
+          initialTbrNote={initialTbrNote}
           onStateChange={handleStateChange}
           onActiveFormatsChange={handleActiveFormatsChange}
           onEditionSelectionsChange={setEditionSelections}
