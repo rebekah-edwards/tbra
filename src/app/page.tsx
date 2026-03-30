@@ -12,6 +12,20 @@ export const metadata: Metadata = {
     description: "Track your reading, discover books you ACTUALLY want to read, and DNF fewer books with comprehensive content details.",
     siteName: "tbr*a",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "tbr*a — Know what's in a book before you read it",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "tbr*a — Know what's in a book before you read it",
+    description: "Track your reading, discover books you ACTUALLY want to read, and DNF fewer books with comprehensive content details.",
+    images: ["/og-image.png"],
   },
 };
 import { Suspense } from "react";
