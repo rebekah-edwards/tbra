@@ -6,7 +6,6 @@ import { ReadingStateButton } from "@/components/reading-state-button";
 import { OwnedButton } from "@/components/owned-button";
 import { FormatButton } from "@/components/format-button";
 import { UpNextButton } from "@/components/book/up-next-button";
-import { FavoriteButton } from "@/components/book/favorite-button";
 import { BuyButton } from "@/components/book/buy-button";
 
 import type { EditionSelection } from "@/app/book/[id]/book-page-client";
@@ -79,29 +78,26 @@ export function ReadingStateSelector({
         >
           Sign in to track
         </Link>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl bg-neon-blue/10 border-2 border-neon-blue/20 py-3 px-3 text-center text-sm font-semibold text-muted/50">
-            Format
-          </div>
-          <div className="rounded-xl bg-neon-purple/10 border-2 border-neon-purple/20 py-3 px-3 text-center text-sm font-semibold text-muted/50">
-            Owned
-          </div>
-          <div className="rounded-xl bg-amber-500/10 border-2 border-amber-500/20 py-3 px-3 text-center text-sm font-semibold text-muted/50">
-            Top Shelf
-          </div>
+        <div className="rounded-xl bg-neon-purple/10 border-2 border-neon-purple/20 py-3 px-3 text-center text-sm font-semibold text-muted/50">
+          Owned
         </div>
       </div>
     );
   }
 
+  const showUpNext = currentState === "tbr";
+  const showFormat = currentState === "currently_reading" || currentState === "paused";
+
   return (
     <div className="mt-6 space-y-3">
       <div className="flex items-center gap-2">
-        <UpNextButton
-          bookId={bookId}
-          position={upNextPosition ?? null}
-          queueCount={upNextCount}
-        />
+        {showUpNext && (
+          <UpNextButton
+            bookId={bookId}
+            position={upNextPosition ?? null}
+            queueCount={upNextCount}
+          />
+        )}
         <div className="flex-1">
           <ReadingStateButton
             bookId={bookId}
@@ -114,16 +110,18 @@ export function ReadingStateSelector({
         </div>
         <BuyButton bookTitle={bookTitle} isbn13={isbn13} asin={asin} />
       </div>
-      <div className="grid grid-cols-3 gap-3">
-        <FormatButton
-          bookId={bookId}
-          activeFormats={activeFormats}
-          isCurrentlyReading={formatEnabled}
-          isLoggedIn={isLoggedIn}
-          forceOpen={promptFormat}
-          onForceOpenHandled={handleForceOpenHandled}
-          onFormatsChange={onActiveFormatsChange}
-        />
+      <div className={`grid gap-3 ${showFormat ? "grid-cols-3" : "grid-cols-2"}`}>
+        {showFormat && (
+          <FormatButton
+            bookId={bookId}
+            activeFormats={activeFormats}
+            isCurrentlyReading={true}
+            isLoggedIn={isLoggedIn}
+            forceOpen={promptFormat}
+            onForceOpenHandled={handleForceOpenHandled}
+            onFormatsChange={onActiveFormatsChange}
+          />
+        )}
         <OwnedButton
           bookId={bookId}
           currentFormats={ownedFormats}
@@ -132,9 +130,8 @@ export function ReadingStateSelector({
           existingEditionSelections={existingEditionSelections}
           onEditionSelectionsChange={onEditionSelectionsChange}
         />
-        <FavoriteButton bookId={bookId} isFavorited={isFavorited} />
+        {shelfButton}
       </div>
-      {shelfButton}
     </div>
   );
 }
