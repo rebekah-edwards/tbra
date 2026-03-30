@@ -272,7 +272,7 @@ export default async function BookPage({
               shelves={userShelves}
               bookShelves={bookShelfMemberships}
               isPremium={isPremium({ accountType: user.accountType })}
-              isFavorited={isFavoritedResult ?? false}
+              isFavorited={isFavoritedResult !== null}
             />
           ) : undefined
         }
