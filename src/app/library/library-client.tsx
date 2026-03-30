@@ -584,8 +584,8 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
       {/* Book Grid */}
       {filteredBooks.length > 0 ? (
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-          {filteredBooks.map((book) => (
-            <BookCard key={book.id} {...book} hasContentConflict={contentConflictIds.has(book.id)} />
+          {filteredBooks.map((book, i) => (
+            <BookCard key={book.id} {...book} hasContentConflict={contentConflictIds.has(book.id)} staggerIndex={i} />
           ))}
         </div>
       ) : (

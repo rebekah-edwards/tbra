@@ -122,7 +122,7 @@ export function FormatButton({
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 rounded-xl border border-border bg-surface shadow-xl z-50 p-2" style={{ width: "calc(200% + 0.75rem)" }}>
+        <div className="absolute top-full left-0 mt-2 rounded-xl border border-border bg-surface shadow-xl z-50 p-2 popover-enter" style={{ width: "calc(200% + 0.75rem)" }}>
           <p className="px-3 pb-2 text-xs font-medium text-muted">Reading format(s)</p>
           {ALL_FORMATS.map((format) => {
             const checked = localFormats.includes(format);

@@ -1,11 +1,55 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { setBookState, removeBookState, setBookStateWithImport, removeFromLibrary } from "@/lib/actions/reading-state";
 import { setBookStateWithCompletion } from "@/lib/actions/reading-session";
 import { CompletionDatePicker } from "@/components/book/completion-date-picker";
 import type { OLSearchResult } from "@/lib/openlibrary";
+
+const STATE_TOAST_MESSAGES: Record<string, string> = {
+  tbr: "Added to TBR",
+  currently_reading: "Marked as Reading Now",
+  completed: "Marked as Finished",
+  paused: "Marked as Paused",
+  dnf: "Marked as DNF",
+};
+
+function StateChangeToast({ message, onDone }: { message: string; onDone: () => void }) {
+  const [dismissing, setDismissing] = useState(false);
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    mounted.current = true;
+    const timer = setTimeout(() => {
+      if (mounted.current) setDismissing(true);
+    }, 2200);
+    const removeTimer = setTimeout(() => {
+      if (mounted.current) onDone();
+    }, 2500);
+    return () => {
+      mounted.current = false;
+      clearTimeout(timer);
+      clearTimeout(removeTimer);
+    };
+  }, [onDone]);
+
+  return createPortal(
+    <div
+      className="fixed bottom-24 left-1/2 z-[200] flex items-center gap-2 rounded-full bg-surface border border-border px-4 py-2.5 shadow-lg"
+      style={{
+        animation: dismissing ? "toast-out 0.25s ease-in forwards" : "toast-in 0.25s ease-out",
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+      <span className="text-sm font-medium text-foreground">{message}</span>
+    </div>,
+    document.body
+  );
+}
 
 const STATES = [
   { value: "tbr", label: "To Read" },
@@ -39,8 +83,14 @@ export function ReadingStateButton({
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [pendingState, setPendingState] = useState<"completed" | "dnf" | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  function showToast(state: string) {
+    const msg = STATE_TOAST_MESSAGES[state];
+    if (msg) setToastMessage(msg);
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -73,9 +123,11 @@ export function ReadingStateButton({
         if (bookId) {
           await setBookState(bookId, "tbr");
           onStateChange?.("tbr");
+          showToast("tbr");
         } else if (olResult) {
           const newId = await setBookStateWithImport(null, olResult, "tbr");
           onStateChange?.("tbr");
+          showToast("tbr");
           onImported?.(olResult.key, newId);
         }
       }
@@ -106,9 +158,11 @@ export function ReadingStateButton({
         if (bookId) {
           await setBookState(bookId, state);
           onStateChange?.(state);
+          showToast(state);
         } else if (olResult) {
           const newId = await setBookStateWithImport(null, olResult, state);
           onStateChange?.(state);
+          showToast(state);
           onImported?.(olResult.key, newId);
         }
       }
@@ -129,6 +183,7 @@ export function ReadingStateButton({
     // Fire OUTSIDE transition so parent state updates (e.g., autoOpenReview)
     // aren't deferred by React's transition batching
     onStateChange?.(finalState);
+    showToast(finalState);
   }
 
   function handleDateCancel() {
@@ -194,7 +249,7 @@ export function ReadingStateButton({
           </button>
 
           {open && (
-            <div className="absolute top-full left-0 mt-1 w-40 rounded-lg border border-border bg-surface shadow-lg z-50">
+            <div className="absolute top-full left-0 mt-1 w-40 rounded-lg border border-border bg-surface shadow-lg z-50 popover-enter">
               {STATES.map((s) => (
                 <button
                   key={s.value}
@@ -261,6 +316,8 @@ export function ReadingStateButton({
             </div>
           </div>
         )}
+
+        {toastMessage && <StateChangeToast message={toastMessage} onDone={() => setToastMessage(null)} />}
       </>
     );
   }
@@ -307,7 +364,7 @@ export function ReadingStateButton({
         </button>
 
         {open && (
-          <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-border bg-surface shadow-xl z-50">
+          <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-border bg-surface shadow-xl z-50 popover-enter">
             {STATES.map((s) => (
               <button
                 key={s.value}
@@ -374,6 +431,8 @@ export function ReadingStateButton({
           </div>
         </div>
       )}
+
+      {toastMessage && <StateChangeToast message={toastMessage} onDone={() => setToastMessage(null)} />}
     </>
   );
 }

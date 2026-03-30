@@ -107,7 +107,7 @@ export function BottomTabs({ isLoggedIn, avatarUrl }: BottomTabsProps) {
                 href={href}
                 className="flex items-center justify-center -mt-5"
               >
-                <div className={`flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all ${
+                <div className={`flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all tap-scale ${
                   active
                     ? "bg-accent text-black shadow-accent/30"
                     : "bg-surface-alt text-muted border border-border hover:bg-accent hover:text-black hover:shadow-accent/20"
@@ -122,7 +122,7 @@ export function BottomTabs({ isLoggedIn, avatarUrl }: BottomTabsProps) {
             <Link
               key={tab.label}
               href={href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-2.5 text-[10px] font-medium transition-colors ${
+              className={`flex flex-col items-center gap-0.5 px-3 py-2.5 text-[10px] font-medium transition-colors tap-scale ${
                 active
                   ? "text-neon-purple"
                   : "text-muted hover:text-accent"

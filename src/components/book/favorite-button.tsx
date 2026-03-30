@@ -86,12 +86,6 @@ function TopShelfToast({ onDismiss, isFirstAdd }: { onDismiss: () => void; isFir
       >
         &#10005;
       </button>
-      <style>{`
-        @keyframes toast-in {
-          from { opacity: 0; transform: translateX(-50%) translateY(12px); }
-          to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-      `}</style>
     </div>,
     document.body
   );

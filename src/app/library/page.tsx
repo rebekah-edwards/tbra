@@ -23,7 +23,7 @@ export default async function LibraryPage() {
 
   // Build a map of categoryId → maxTolerance for content conflict detection
   const contentPrefsMap: Record<string, number> = {};
-  for (const cp of sensitivities.contentPreferences) {
+  for (const cp of sensitivities?.contentPreferences ?? []) {
     contentPrefsMap[cp.categoryId] = cp.maxTolerance;
   }
 

@@ -15,9 +15,10 @@ interface BookCardProps {
   activeFormats?: string[];
   state?: string | null;
   hasContentConflict?: boolean;
+  staggerIndex?: number;
 }
 
-export function BookCard({ id, slug, title, coverImageUrl, userRating, aggregateRating, activeFormats, state, hasContentConflict }: BookCardProps) {
+export function BookCard({ id, slug, title, coverImageUrl, userRating, aggregateRating, activeFormats, state, hasContentConflict, staggerIndex }: BookCardProps) {
   const isActivelyReading = state === "currently_reading" || state === "paused";
   const isAudiobook = isActivelyReading && activeFormats?.length === 1 && activeFormats[0] === "audiobook";
   const aspect = isAudiobook ? "aspect-square" : "aspect-[2/3]";
@@ -25,7 +26,8 @@ export function BookCard({ id, slug, title, coverImageUrl, userRating, aggregate
   return (
     <Link
       href={`/book/${slug || id}`}
-      className="group block"
+      className={`group block tap-scale ${staggerIndex != null && staggerIndex < 12 ? "card-stagger" : ""}`}
+      style={staggerIndex != null && staggerIndex < 12 ? { "--stagger-index": staggerIndex } as React.CSSProperties : undefined}
     >
       <div className="relative">
         {coverImageUrl ? (

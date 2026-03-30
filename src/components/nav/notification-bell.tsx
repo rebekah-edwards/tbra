@@ -14,9 +14,21 @@ interface Notification {
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const [ringing, setRinging] = useState(false);
+  const [dotPop, setDotPop] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const prevUnreadRef = useRef(0);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // Detect new notifications and trigger animations
+  useEffect(() => {
+    if (unreadCount > 0 && prevUnreadRef.current === 0) {
+      setRinging(true);
+      setDotPop(true);
+    }
+    prevUnreadRef.current = unreadCount;
+  }, [unreadCount]);
 
   const fetchNotificationsRef = useRef<() => Promise<void>>(undefined);
   fetchNotificationsRef.current = async () => {
@@ -92,24 +104,38 @@ export function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-1.5 text-muted hover:text-foreground transition-colors"
+        className="relative p-1.5 text-muted hover:text-foreground transition-colors tap-scale"
         aria-label="Notifications"
       >
         {/* Bell icon */}
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={ringing ? "bell-ring" : ""}
+          onAnimationEnd={() => setRinging(false)}
+        >
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
         {/* Unread dot */}
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-accent text-black text-[9px] font-bold flex items-center justify-center">
+          <span
+            className={`absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-accent text-black text-[9px] font-bold flex items-center justify-center ${dotPop ? "dot-pop" : ""}`}
+            onAnimationEnd={() => setDotPop(false)}
+          >
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-surface border border-border shadow-lg z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-surface border border-border shadow-lg z-50 overflow-hidden popover-enter">
           <div className="flex items-center justify-between px-3 py-2 border-b border-border">
             <p className="text-xs font-semibold">Notifications</p>
             {unreadCount > 0 && (
