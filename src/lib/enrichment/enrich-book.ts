@@ -694,10 +694,16 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
       );
 
       if (!seriesRow) {
-        // No fuzzy match — create new
+        // No fuzzy match — create new (generate slug from name)
+        const seriesSlug = result.series.name
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9\s-]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-");
         const [created] = await db
           .insert(series)
-          .values({ name: result.series.name })
+          .values({ name: result.series.name, slug: seriesSlug })
           .returning();
         seriesRow = created;
       }
