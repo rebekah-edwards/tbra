@@ -28,6 +28,7 @@ interface ReadingStateSelectorProps {
   shelfButton?: React.ReactNode;
   isPremium?: boolean;
   initialTbrNote?: string | null;
+  autoComplete?: boolean;
   onStateChange?: (state: string | null) => void;
   onActiveFormatsChange?: (formats: string[]) => void;
   onEditionSelectionsChange?: (selections: EditionSelection[]) => void;
@@ -50,6 +51,7 @@ export function ReadingStateSelector({
   shelfButton,
   isPremium = false,
   initialTbrNote = null,
+  autoComplete = false,
   onStateChange,
   onActiveFormatsChange,
   onEditionSelectionsChange,
@@ -105,6 +107,7 @@ export function ReadingStateSelector({
             isLoggedIn={isLoggedIn}
             isPremium={isPremium}
             initialTbrNote={initialTbrNote}
+            autoComplete={autoComplete}
             onStateChange={handleStateChange}
           />
         </div>

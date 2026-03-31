@@ -68,6 +68,7 @@ interface ReadingStateButtonProps {
   compact?: boolean;
   isPremium?: boolean;
   initialTbrNote?: string | null;
+  autoComplete?: boolean;
   onStateChange?: (newState: string | null) => void;
   onImported?: (olKey: string, bookId: string) => void;
 }
@@ -80,6 +81,7 @@ export function ReadingStateButton({
   compact = false,
   isPremium = false,
   initialTbrNote = null,
+  autoComplete = false,
   onStateChange,
   onImported,
 }: ReadingStateButtonProps) {
@@ -108,6 +110,16 @@ export function ReadingStateButton({
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [open]);
+
+  // Auto-trigger completion flow (from Home page ?complete=true redirect)
+  const autoCompleteTriggered = useRef(false);
+  useEffect(() => {
+    if (autoComplete && !autoCompleteTriggered.current && bookId && currentState === "currently_reading") {
+      autoCompleteTriggered.current = true;
+      setPendingState("completed");
+      setDatePickerOpen(true);
+    }
+  }, [autoComplete, bookId, currentState]);
 
   const activeState = STATES.find((s) => s.value === currentState);
   const mainLabel = activeState?.label ?? "To Read";

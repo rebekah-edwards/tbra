@@ -137,25 +137,16 @@ export function BookPageClient({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-trigger completion flow when navigated from homepage with ?complete=true
-  const autoCompleteTriggered = useRef(false);
+  // This passes through to ReadingStateButton's autoComplete prop, which opens the
+  // date picker first (same flow as tapping "Finished" on the book page itself)
+  const autoComplete = searchParams.get("complete") === "true" && currentState === "currently_reading";
+  const autoCompleteCleanedUp = useRef(false);
   useEffect(() => {
-    if (autoCompleteTriggered.current) return;
-    if (searchParams.get("complete") === "true" && currentState === "currently_reading") {
-      autoCompleteTriggered.current = true;
-      // Small delay to let the page render first, then trigger completion
-      setTimeout(() => {
-        setCurrentState("completed");
-        setActiveFormats([]);
-        setHasCompleted(true);
-        setAutoOpenReview(true);
-        setTimeout(() => setShowSuggestions(true), 500);
-        // Actually set the state on the server
-        setBookState(book.id, "completed");
-      }, 300);
-      // Clean up the URL
+    if (autoComplete && !autoCompleteCleanedUp.current) {
+      autoCompleteCleanedUp.current = true;
       router.replace(`/book/${book.slug || book.id}`, { scroll: false });
     }
-  }, [searchParams, currentState, book.id, book.slug, router]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoComplete, book.slug, book.id, router]);
 
   // Client-side fallback: trigger enrichment if server-side after() didn't fire
   useEffect(() => {
@@ -347,6 +338,7 @@ export function BookPageClient({
               shelfButton={shelfButton}
               isPremium={userIsPremium}
               initialTbrNote={initialTbrNote}
+              autoComplete={autoComplete}
               onStateChange={handleStateChange}
               onActiveFormatsChange={handleActiveFormatsChange}
               onEditionSelectionsChange={setEditionSelections}
@@ -405,6 +397,7 @@ export function BookPageClient({
           shelfButton={shelfButton}
           isPremium={userIsPremium}
           initialTbrNote={initialTbrNote}
+          autoComplete={autoComplete}
           onStateChange={handleStateChange}
           onActiveFormatsChange={handleActiveFormatsChange}
           onEditionSelectionsChange={setEditionSelections}
