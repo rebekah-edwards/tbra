@@ -260,8 +260,8 @@ export function BookPageClient({
     <>
       {showConfetti && <Confetti onDone={() => setShowConfetti(false)} />}
       {mounted && showEnrichmentBanner && (
-        <div className="mx-auto lg:max-w-[60%] mb-4">
-          <div className="flex items-center gap-3 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3">
+        <div className="relative z-10 mx-auto lg:max-w-[60%] mb-4">
+          <div className="flex items-center gap-3 rounded-xl border border-accent/20 bg-accent/5 backdrop-blur-sm px-4 py-3">
             <div className="w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin shrink-0" />
             <p className="text-xs text-muted">
               Additional details for this book are on the way. What you see below is everything we have so far.
