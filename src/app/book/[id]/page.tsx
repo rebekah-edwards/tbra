@@ -15,7 +15,7 @@ import { getBookSessions } from "@/lib/queries/reading-session";
 import { getUserContentSensitivities } from "@/lib/queries/reading-preferences";
 import { getCurrentUser, isAdmin, isPremium } from "@/lib/auth";
 import { isBookHidden } from "@/lib/actions/hidden-books";
-import { getUserShelves, getBookShelves } from "@/lib/queries/shelves";
+import { getUserShelves, getBookShelves, getOtherShelvesWithBook } from "@/lib/queries/shelves";
 import { getTbrNote } from "@/lib/queries/tbr-notes";
 import { AddToShelfButton } from "@/components/book/add-to-shelf-button";
 import { triggerEnrichment } from "@/lib/enrichment/trigger";
@@ -199,6 +199,7 @@ export default async function BookPage({
     userShelves,
     bookShelfMemberships,
     tbrNote,
+    otherShelves,
   ] = await Promise.all([
     user ? getUserBookState(user.userId, bookId) : null,
     user ? getUserOwnedEditions(user.userId, bookId) : Promise.resolve([]),
@@ -218,6 +219,7 @@ export default async function BookPage({
     user ? getUserShelves(user.userId) : Promise.resolve([]),
     user ? getBookShelves(user.userId, bookId) : Promise.resolve([]),
     user ? getTbrNote(user.userId, bookId) : null,
+    user ? getOtherShelvesWithBook(bookId, user.userId) : Promise.resolve([]),
   ]);
 
   const editionSelections = rawEditions.map((e) => ({
@@ -274,6 +276,7 @@ export default async function BookPage({
               bookShelves={bookShelfMemberships}
               isPremium={isPremium({ accountType: user.accountType })}
               isFavorited={isFavoritedResult !== null}
+              otherShelves={otherShelves}
             />
           ) : undefined
         }

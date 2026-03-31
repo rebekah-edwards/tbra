@@ -3,10 +3,10 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { toggleBookOnShelf, createShelf } from "@/lib/actions/shelves";
+import { toggleBookOnShelf, createShelf, followShelf, unfollowShelf } from "@/lib/actions/shelves";
 import { toggleFavorite } from "@/lib/actions/favorites";
 import { PremiumBadge } from "@/components/premium-gate";
-import type { ShelfSummary } from "@/lib/queries/shelves";
+import type { ShelfSummary, OtherShelfWithBook } from "@/lib/queries/shelves";
 import type { BookShelfMembership } from "@/lib/queries/shelves";
 
 interface AddToShelfButtonProps {
@@ -15,9 +15,10 @@ interface AddToShelfButtonProps {
   bookShelves: BookShelfMembership[];
   isPremium: boolean;
   isFavorited?: boolean;
+  otherShelves?: OtherShelfWithBook[];
 }
 
-export function AddToShelfButton({ bookId, shelves, bookShelves, isPremium, isFavorited: initialFavorited = false }: AddToShelfButtonProps) {
+export function AddToShelfButton({ bookId, shelves, bookShelves, isPremium, isFavorited: initialFavorited = false, otherShelves: initialOtherShelves = [] }: AddToShelfButtonProps) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [favorited, setFavorited] = useState(initialFavorited);
@@ -28,6 +29,25 @@ export function AddToShelfButton({ bookId, shelves, bookShelves, isPremium, isFa
   );
 
   const shelfCount = memberShelfIds.size + (favorited ? 1 : 0);
+
+  // Track which other shelves the user is following (optimistic)
+  const [otherShelfFollowing, setOtherShelfFollowing] = useState<Set<string>>(
+    () => new Set(initialOtherShelves.filter((s) => s.isFollowing).map((s) => s.id)),
+  );
+
+  function handleFollowToggle(shelfId: string) {
+    const isFollowing = otherShelfFollowing.has(shelfId);
+    setOtherShelfFollowing((prev) => {
+      const next = new Set(prev);
+      if (isFollowing) next.delete(shelfId);
+      else next.add(shelfId);
+      return next;
+    });
+    startTransition(async () => {
+      if (isFollowing) await unfollowShelf(shelfId);
+      else await followShelf(shelfId);
+    });
+  }
 
   function handleToggle(shelfId: string) {
     const isOnShelf = memberShelfIds.has(shelfId);
@@ -156,6 +176,51 @@ export function AddToShelfButton({ bookId, shelves, bookShelves, isPremium, isFa
                 Manage Shelves →
               </Link>
             </>
+          )}
+
+          {/* Other public shelves with this book */}
+          {initialOtherShelves.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-border">
+              <p className="text-[11px] font-medium text-muted uppercase tracking-wide mb-2">
+                Other shelves with this book
+              </p>
+              {initialOtherShelves.map((shelf) => {
+                const following = otherShelfFollowing.has(shelf.id);
+                return (
+                  <div
+                    key={shelf.id}
+                    className="flex items-center gap-3 w-full py-2.5 px-1"
+                  >
+                    <span
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ background: shelf.color || "#d97706" }}
+                    />
+                    <Link
+                      href={`/u/${shelf.ownerUsername}/shelves/${shelf.slug}`}
+                      onClick={() => setOpen(false)}
+                      className="flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                    >
+                      <p className="text-sm text-foreground truncate">{shelf.name}</p>
+                      <p className="text-[11px] text-muted">
+                        by {shelf.ownerDisplayName || `@${shelf.ownerUsername}`} · {shelf.bookCount} {shelf.bookCount === 1 ? "book" : "books"}
+                      </p>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleFollowToggle(shelf.id)}
+                      disabled={pending}
+                      className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-semibold transition-all ${
+                        following
+                          ? "bg-accent text-black"
+                          : "border border-accent text-accent hover:bg-accent/10"
+                      }`}
+                    >
+                      {following ? "Following" : "Follow"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </BottomSheet>

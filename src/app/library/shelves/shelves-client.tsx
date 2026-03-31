@@ -93,6 +93,8 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
     });
   }
 
+  const [activeTab, setActiveTab] = useState<"mine" | "following">("mine");
+
   const topShelfCovers = favorites
     .filter((f) => f.coverImageUrl)
     .slice(0, 12)
@@ -101,7 +103,7 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
   return (
     <div className="lg:max-w-[60%] lg:mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <Link
             href="/library"
@@ -112,10 +114,10 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
             </svg>
           </Link>
           <h1 className="text-foreground text-2xl font-bold tracking-tight">
-            My Shelves
+            Shelves
           </h1>
         </div>
-        {isPremium && (
+        {isPremium && activeTab === "mine" && (
           <button
             onClick={() => setCreateOpen(true)}
             className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-black transition-all hover:brightness-110"
@@ -129,6 +131,27 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
         )}
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2 mb-5">
+        <button
+          onClick={() => setActiveTab("mine")}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            activeTab === "mine" ? "bg-accent text-black" : "bg-surface-alt text-muted hover:text-foreground"
+          }`}
+        >
+          My Shelves
+        </button>
+        <button
+          onClick={() => setActiveTab("following")}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            activeTab === "following" ? "bg-accent text-black" : "bg-surface-alt text-muted hover:text-foreground"
+          }`}
+        >
+          Following{followedShelves.length > 0 ? ` (${followedShelves.length})` : ""}
+        </button>
+      </div>
+
+      {activeTab === "mine" && (<>
       {/* Top Shelf — always visible for all users */}
       <Link
         href="/library/shelves/top-shelf"
@@ -240,11 +263,11 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
           </Link>
         </div>
       )}
+      </>)}
 
-      {/* Following section — visible to all users (free feature) */}
-      {followedShelves.length > 0 && (
-        <div className="mt-8">
-          <h2 className="section-heading text-sm mb-3">Following</h2>
+      {/* Following tab */}
+      {activeTab === "following" && (
+        followedShelves.length > 0 ? (
           <div className="space-y-3">
             {followedShelves.map((shelf) => (
               <Link
@@ -279,8 +302,6 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
                       )}
                     </div>
                   </div>
-
-                  {/* Shelf edge */}
                   <div
                     className="h-[5px] shadow-[inset_0_2px_3px_rgba(0,0,0,0.1)]"
                     style={{ background: `linear-gradient(to bottom, ${shelf.color || "#d97706"}30, ${shelf.color || "#d97706"}45)` }}
@@ -290,7 +311,12 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
               </Link>
             ))}
           </div>
-        </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border p-8 text-center">
+            <p className="text-sm text-muted">You're not following any shelves yet.</p>
+            <p className="text-xs text-muted/60 mt-1">Follow shelves from other users' profiles or from book pages.</p>
+          </div>
+        )
       )}
 
       <CreateShelfModal

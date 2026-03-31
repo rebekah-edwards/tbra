@@ -368,6 +368,62 @@ export async function getFollowedShelves(userId: string): Promise<FollowedShelf[
 }
 
 /**
+ * Other users' public shelves that contain a specific book.
+ * Excludes the current user's own shelves.
+ */
+export interface OtherShelfWithBook {
+  id: string;
+  name: string;
+  slug: string;
+  color: string | null;
+  bookCount: number;
+  ownerUsername: string;
+  ownerDisplayName: string | null;
+  isFollowing: boolean;
+}
+
+export async function getOtherShelvesWithBook(
+  bookId: string,
+  currentUserId: string | null
+): Promise<OtherShelfWithBook[]> {
+  const rows = await db.all(sql`
+    SELECT
+      s.id,
+      s.name,
+      s.slug,
+      s.color,
+      u.username as owner_username,
+      u.display_name as owner_display_name,
+      (SELECT COUNT(*) FROM shelf_books sb2 WHERE sb2.shelf_id = s.id) as book_count,
+      CASE WHEN sf.user_id IS NOT NULL THEN 1 ELSE 0 END as is_following
+    FROM shelf_books sb
+    JOIN shelves s ON sb.shelf_id = s.id
+    JOIN users u ON s.user_id = u.id
+    LEFT JOIN shelf_follows sf ON sf.shelf_id = s.id AND sf.user_id = ${currentUserId}
+    WHERE sb.book_id = ${bookId}
+      AND s.is_public = 1
+      AND s.user_id != ${currentUserId ?? ""}
+    ORDER BY book_count DESC
+    LIMIT 10
+  `) as {
+    id: string; name: string; slug: string; color: string | null;
+    owner_username: string; owner_display_name: string | null;
+    book_count: number; is_following: number;
+  }[];
+
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    slug: r.slug,
+    color: r.color,
+    bookCount: r.book_count,
+    ownerUsername: r.owner_username,
+    ownerDisplayName: r.owner_display_name,
+    isFollowing: !!r.is_following,
+  }));
+}
+
+/**
  * Get follower count for a shelf.
  */
 export async function getShelfFollowerCount(shelfId: string): Promise<number> {
