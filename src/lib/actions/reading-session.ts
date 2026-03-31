@@ -79,7 +79,7 @@ export async function setBookStateWithCompletion(
   }
 
   revalidatePath(`/book/${bookId}`);
-  revalidatePath("/");
+  revalidatePath("/library");
   revalidatePath("/profile");
 }
 

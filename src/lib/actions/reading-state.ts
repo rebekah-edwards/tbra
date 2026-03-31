@@ -75,8 +75,8 @@ export async function setBookState(bookId: string, state: string) {
   // "tbr" doesn't need a session
 
   revalidatePath(`/book/${bookId}`);
-  revalidatePath("/");
-  revalidatePath("/profile");
+  revalidatePath("/library");
+  revalidatePath("/library");
 }
 
 export async function removeBookState(bookId: string) {
@@ -123,7 +123,7 @@ export async function removeBookState(bookId: string) {
   }
 
   revalidatePath(`/book/${bookId}`);
-  revalidatePath("/");
+  revalidatePath("/library");
 }
 
 export async function setOwnedFormats(bookId: string, formats: string[]) {
@@ -194,7 +194,7 @@ export async function setOwnedFormats(bookId: string, formats: string[]) {
   }
 
   revalidatePath(`/book/${bookId}`);
-  revalidatePath("/");
+  revalidatePath("/library");
 }
 
 export async function setBookStateWithImport(
@@ -258,7 +258,7 @@ export async function setBookStateWithImport(
   }
 
   revalidatePath(`/book/${resolvedBookId}`);
-  revalidatePath("/");
+  revalidatePath("/library");
 
   return resolvedBookId;
 }
@@ -281,7 +281,7 @@ export async function setActiveFormats(bookId: string, formats: string[]) {
     );
 
   revalidatePath(`/book/${bookId}`);
-  revalidatePath("/");
+  revalidatePath("/library");
 }
 
 export async function addToTbr(bookId: string) {
@@ -325,5 +325,5 @@ export async function removeFromLibrary(bookId: string) {
     .where(and(eq(userBookState.userId, user.userId), eq(userBookState.bookId, bookId)));
 
   revalidatePath(`/book/${bookId}`);
-  revalidatePath("/");
+  revalidatePath("/library");
 }

@@ -62,7 +62,7 @@ export async function addReadingNote(formData: FormData): Promise<{ success: boo
     isPrivate,
   });
 
-  revalidatePath("/");
+  revalidatePath("/library");
   revalidatePath(`/book/${bookId}`);
   return { success: true };
 }
@@ -83,7 +83,7 @@ export async function toggleNotePrivacy(noteId: string): Promise<{ success: bool
     .set({ isPrivate: !note.isPrivate })
     .where(eq(readingNotes.id, noteId));
 
-  revalidatePath("/");
+  revalidatePath("/library");
   revalidatePath(`/book/${note.bookId}`);
   revalidatePath("/profile/journal");
   return { success: true };
@@ -104,7 +104,7 @@ export async function deleteReadingNote(noteId: string): Promise<{ success: bool
 
   await db.delete(readingNotes).where(eq(readingNotes.id, noteId));
 
-  revalidatePath("/");
+  revalidatePath("/library");
   revalidatePath(`/book/${note.bookId}`);
   revalidatePath("/profile/journal");
   return { success: true };

@@ -34,7 +34,7 @@ export async function addToUpNext(bookId: string): Promise<{ success: boolean; p
     position: newPosition,
   });
 
-  revalidatePath("/");
+  revalidatePath("/library");
   revalidatePath(`/book/${bookId}`);
   return { success: true, position: newPosition };
 }
@@ -64,7 +64,7 @@ export async function removeFromUpNext(bookId: string): Promise<void> {
     .set({ position: sql`${upNext.position} - 1` })
     .where(and(eq(upNext.userId, user.userId), gt(upNext.position, removedPosition)));
 
-  revalidatePath("/");
+  revalidatePath("/library");
   revalidatePath(`/book/${bookId}`);
 }
 
@@ -98,5 +98,5 @@ export async function reorderUpNext(bookId: string, newPosition: number): Promis
     await db.update(upNext).set({ position: i + 1 }).where(eq(upNext.id, reordered[i].id));
   }
 
-  revalidatePath("/");
+  revalidatePath("/library");
 }

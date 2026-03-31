@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
           eq(books.isBoxSet, false)
         )
       )
-      .limit(200)
+      .limit(50)
       .all();
     fuzzyRows = broader.filter((r) => !exactIds.has(r.id));
   }
