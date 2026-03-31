@@ -52,8 +52,8 @@ export function AddToShelfButton({ bookId, shelves, bookShelves, isPremium, isFa
         onClick={() => setOpen(true)}
         className={`flex items-center justify-center gap-1.5 w-full rounded-xl border-2 py-3 px-2 text-sm font-semibold whitespace-nowrap transition-all ${
           shelfCount > 0
-            ? "border-accent/30 bg-accent/10 text-accent"
-            : "border-border bg-surface-alt text-muted hover:text-foreground hover:border-border/80"
+            ? "bg-neon-blue text-white shadow-[0_0_16px_rgba(96,165,250,0.3)] border-2 border-neon-blue"
+            : "bg-neon-blue/10 text-muted border-2 border-neon-blue/40 hover:text-foreground hover:border-neon-blue/70"
         }`}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
