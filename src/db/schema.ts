@@ -35,6 +35,7 @@ export const books = sqliteTable("books", {
 }, (table) => [
   uniqueIndex("books_isbn13_unique").on(table.isbn13),
   uniqueIndex("books_ol_key_unique").on(table.openLibraryKey),
+  index("idx_books_title").on(table.title),
 ]);
 
 export const authors = sqliteTable("authors", {
@@ -43,7 +44,9 @@ export const authors = sqliteTable("authors", {
   slug: text("slug"),
   bio: text("bio"),
   openLibraryKey: text("open_library_key"),
-});
+}, (table) => [
+  index("idx_authors_name").on(table.name),
+]);
 
 export const bookAuthors = sqliteTable("book_authors", {
   bookId: text("book_id").notNull().references(() => books.id),
@@ -85,7 +88,9 @@ export const series = sqliteTable("series", {
   name: text("name").notNull(),
   slug: text("slug"),
   coverStyle: text("cover_style").notNull().default("default"), // 'default' = base covers, 'format' = user format covers
-});
+}, (table) => [
+  index("idx_series_name").on(table.name),
+]);
 
 export const bookSeries = sqliteTable("book_series", {
   bookId: text("book_id").notNull().references(() => books.id),

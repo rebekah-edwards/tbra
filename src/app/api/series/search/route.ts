@@ -103,93 +103,106 @@ export async function GET(request: Request) {
     return NextResponse.json([]);
   }
 
-  // Get current user for reading state
-  const user = await getCurrentUser();
-  const userId = user?.userId ?? null;
+  const seriesIds = seriesResults.map((s) => s.id);
 
-  // For each matched series, fetch its books (core only — integer positions, no box sets)
-  const enriched = await Promise.all(
-    seriesResults.map(async (s) => {
-      const seriesBooks = await db
-        .select({
-          id: books.id,
-          title: books.title,
-          coverImageUrl: books.coverImageUrl,
-          position: bookSeries.positionInSeries,
-          publicationYear: books.publicationYear,
-          openLibraryKey: books.openLibraryKey,
-          isBoxSet: books.isBoxSet,
-        })
-        .from(bookSeries)
-        .innerJoin(books, eq(books.id, bookSeries.bookId))
-        .where(
-          and(
-            eq(bookSeries.seriesId, s.id),
-            isNotNull(bookSeries.positionInSeries)
-          )
-        )
-        .orderBy(bookSeries.positionInSeries);
-
-      // Filter to core books (integer positions, not box sets)
-      const coreBooks = seriesBooks.filter(
-        (b) =>
-          b.position != null &&
-          Number.isInteger(b.position) &&
-          !b.isBoxSet
-      );
-
-      // Get authors for each book
-      const booksWithAuthors = await Promise.all(
-        coreBooks.map(async (book) => {
-          const bookAuthorRows = await db
-            .select({ name: authors.name })
-            .from(bookAuthors)
-            .innerJoin(authors, eq(authors.id, bookAuthors.authorId))
-            .where(eq(bookAuthors.bookId, book.id));
-
-          // Get reading state if logged in
-          let currentState: string | null = null;
-          let ownedFormats: string[] = [];
-          if (userId) {
-            const stateRow = await db
-              .select({ state: userBookState.state, ownedFormats: userBookState.ownedFormats })
-              .from(userBookState)
-              .where(
-                and(
-                  eq(userBookState.userId, userId),
-                  eq(userBookState.bookId, book.id)
-                )
-              )
-              .limit(1);
-            if (stateRow.length > 0) {
-              currentState = stateRow[0].state;
-              ownedFormats = stateRow[0].ownedFormats
-                ? JSON.parse(stateRow[0].ownedFormats)
-                : [];
-            }
-          }
-
-          return {
-            id: book.id,
-            title: book.title,
-            coverImageUrl: book.coverImageUrl,
-            position: book.position,
-            publicationYear: book.publicationYear,
-            authors: bookAuthorRows.map((a) => a.name),
-            currentState,
-            ownedFormats,
-          };
-        })
-      );
-
-      return {
-        id: s.id,
-        name: s.name,
-        bookCount: s.bookCount,
-        books: booksWithAuthors,
-      };
+  // Batch: fetch ALL books for ALL matched series in one query
+  const allSeriesBooks = await db
+    .select({
+      seriesId: bookSeries.seriesId,
+      bookId: books.id,
+      title: books.title,
+      coverImageUrl: books.coverImageUrl,
+      position: bookSeries.positionInSeries,
+      publicationYear: books.publicationYear,
+      isBoxSet: books.isBoxSet,
     })
+    .from(bookSeries)
+    .innerJoin(books, eq(books.id, bookSeries.bookId))
+    .where(
+      and(
+        sql`${bookSeries.seriesId} IN (${sql.join(seriesIds.map((id) => sql`${id}`), sql`, `)})`,
+        isNotNull(bookSeries.positionInSeries)
+      )
+    )
+    .orderBy(bookSeries.positionInSeries);
+
+  // Filter to core books (integer positions, not box sets)
+  const coreBooks = allSeriesBooks.filter(
+    (b) => b.position != null && Number.isInteger(b.position) && !b.isBoxSet
   );
+  const allBookIds = coreBooks.map((b) => b.bookId);
+
+  // Batch: fetch ALL authors for ALL books in one query
+  const [allAuthors, user] = await Promise.all([
+    allBookIds.length > 0
+      ? db
+          .select({ bookId: bookAuthors.bookId, name: authors.name })
+          .from(bookAuthors)
+          .innerJoin(authors, eq(authors.id, bookAuthors.authorId))
+          .where(sql`${bookAuthors.bookId} IN (${sql.join(allBookIds.map((id) => sql`${id}`), sql`, `)})`)
+          .all()
+      : Promise.resolve([]),
+    getCurrentUser(),
+  ]);
+
+  const authorsByBook = new Map<string, string[]>();
+  for (const row of allAuthors) {
+    const existing = authorsByBook.get(row.bookId) ?? [];
+    existing.push(row.name);
+    authorsByBook.set(row.bookId, existing);
+  }
+
+  // Batch: fetch ALL reading states in one query
+  const userId = user?.userId ?? null;
+  const stateMap = new Map<string, { state: string | null; ownedFormats: string[] }>();
+  if (userId && allBookIds.length > 0) {
+    const stateRows = await db
+      .select({
+        bookId: userBookState.bookId,
+        state: userBookState.state,
+        ownedFormats: userBookState.ownedFormats,
+      })
+      .from(userBookState)
+      .where(
+        and(
+          eq(userBookState.userId, userId),
+          sql`${userBookState.bookId} IN (${sql.join(allBookIds.map((id) => sql`${id}`), sql`, `)})`
+        )
+      )
+      .all();
+    for (const r of stateRows) {
+      stateMap.set(r.bookId, {
+        state: r.state,
+        ownedFormats: r.ownedFormats ? JSON.parse(r.ownedFormats) : [],
+      });
+    }
+  }
+
+  // Group books by series and assemble response
+  const enriched = seriesResults.map((s) => {
+    const seriesCoreBooks = coreBooks
+      .filter((b) => b.seriesId === s.id)
+      .map((book) => {
+        const stateInfo = stateMap.get(book.bookId);
+        return {
+          id: book.bookId,
+          title: book.title,
+          coverImageUrl: book.coverImageUrl,
+          position: book.position,
+          publicationYear: book.publicationYear,
+          authors: authorsByBook.get(book.bookId) ?? [],
+          currentState: stateInfo?.state ?? null,
+          ownedFormats: stateInfo?.ownedFormats ?? [],
+        };
+      });
+
+    return {
+      id: s.id,
+      name: s.name,
+      bookCount: s.bookCount,
+      books: seriesCoreBooks,
+    };
+  });
 
   return NextResponse.json(enriched);
 }
