@@ -1214,7 +1214,7 @@ export const getSmartDiscoveryBooks = (
   unstable_cache(
     () => getSmartDiscoveryBooksInternal(userId, limit),
     [`smart-discovery-${userId}-${limit}`],
-    { revalidate: 300, tags: [`user-${userId}-recommendations`] }
+    { revalidate: 3600, tags: [`user-${userId}-recommendations`] }
   )();
 
 /**
@@ -1723,6 +1723,24 @@ export async function getBecauseYouLikedSuggestions(
   maxSeeds = 3,
   booksPerSeed = 8,
   globalExcludeIds?: Set<string>
+): Promise<{ seed: { id: string; title: string }; books: RecommendedBook[] }[]> {
+  const cached = unstable_cache(
+    () => getBecauseYouLikedInner(userId, maxSeeds, booksPerSeed),
+    [`because-you-liked-${userId}`],
+    { revalidate: 3600 }
+  );
+  const results = await cached();
+  if (!globalExcludeIds || globalExcludeIds.size === 0) return results;
+  // Filter out globally excluded books
+  return results
+    .map((r) => ({ ...r, books: r.books.filter((b) => !globalExcludeIds.has(b.id)) }))
+    .filter((r) => r.books.length > 0);
+}
+
+async function getBecauseYouLikedInner(
+  userId: string,
+  maxSeeds: number,
+  booksPerSeed: number,
 ): Promise<{ seed: { id: string; title: string }; books: RecommendedBook[] }[]> {
   // Fetch all setup data in parallel (was 6 sequential queries, now 1 round)
   const [seriesProgress, explicit, upNextRows, completedAndCurrentIds, favSeed, ratedPool] = await Promise.all([

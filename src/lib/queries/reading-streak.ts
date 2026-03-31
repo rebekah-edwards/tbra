@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { readingNotes, userBookState, readingSessions, userBookReviews, userBookRatings } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 
 export interface ReadingStreak {
   currentStreak: number;
@@ -20,6 +21,14 @@ export interface ReadingStreak {
  * Consecutive calendar days form a streak.
  */
 export async function getReadingStreak(userId: string, year?: number): Promise<ReadingStreak> {
+  return unstable_cache(
+    () => getReadingStreakInner(userId, year),
+    [`reading-streak-${userId}-${year ?? "all"}`],
+    { revalidate: 3600 }
+  )();
+}
+
+async function getReadingStreakInner(userId: string, year?: number): Promise<ReadingStreak> {
   // Collect all interaction dates from multiple tables using UNION
   // Each subquery extracts the date portion (YYYY-MM-DD) of timestamps
   // Optionally filter to a specific year
