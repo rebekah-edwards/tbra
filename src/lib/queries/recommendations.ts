@@ -1784,7 +1784,7 @@ async function getBecauseYouLikedInner(
   ]);
 
   // Track all recommended IDs across seeds to prevent duplication within this section
-  const recommendedAcrossSeeds = new Set<string>(globalExcludeIds ?? []);
+  const recommendedAcrossSeeds = new Set<string>();
   const triedSeedIds = new Set<string>();
   const minRows = 2; // Minimum "because you liked" rows to show
   const minBooksPerRow = 4; // Minimum books to qualify a row
