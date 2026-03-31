@@ -1743,13 +1743,14 @@ async function getBecauseYouLikedInner(
   booksPerSeed: number,
 ): Promise<{ seed: { id: string; title: string }; books: RecommendedBook[] }[]> {
   // Fetch all setup data in parallel (was 6 sequential queries, now 1 round)
-  const [seriesProgress, explicit, upNextRows, completedAndCurrentIds, favSeed, ratedPool] = await Promise.all([
+  const [seriesProgress, explicit, upNextRows, completedAndCurrentIds, hiddenRows, favSeed, ratedPool] = await Promise.all([
     getUserSeriesProgress(userId),
     getExplicitPreferences(userId),
     db.select({ bookId: upNext.bookId }).from(upNext).where(eq(upNext.userId, userId)).all(),
     db.select({ bookId: userBookState.bookId }).from(userBookState).where(
       and(eq(userBookState.userId, userId), sql`${userBookState.state} IN ('completed', 'currently_reading', 'dnf', 'paused')`)
     ).all(),
+    db.select({ bookId: userHiddenBooks.bookId }).from(userHiddenBooks).where(eq(userHiddenBooks.userId, userId)).all(),
     db.select({ bookId: userFavoriteBooks.bookId, title: books.title })
       .from(userFavoriteBooks).innerJoin(books, eq(userFavoriteBooks.bookId, books.id))
       .where(eq(userFavoriteBooks.userId, userId)).orderBy(sql`RANDOM()`).limit(1).all(),
@@ -1784,7 +1785,9 @@ async function getBecauseYouLikedInner(
   ]);
 
   // Track all recommended IDs across seeds to prevent duplication within this section
-  const recommendedAcrossSeeds = new Set<string>();
+  // Also exclude hidden books from recommendations
+  const hiddenIds = new Set(hiddenRows.map((r) => r.bookId));
+  const recommendedAcrossSeeds = new Set<string>(hiddenIds);
   const triedSeedIds = new Set<string>();
   const minRows = 2; // Minimum "because you liked" rows to show
   const minBooksPerRow = 4; // Minimum books to qualify a row
