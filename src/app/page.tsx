@@ -1,4 +1,5 @@
-export const dynamic = "force-dynamic";
+// Removed force-dynamic: cookies() in getCurrentUser() auto-triggers dynamic rendering
+// for logged-in users. Logged-out users can benefit from edge caching.
 import { unstable_cache } from "next/cache";
 
 import type { Metadata } from "next";
@@ -177,30 +178,30 @@ export default async function Home() {
   if (currentlyReading.length > 0) {
     const crBookIds = currentlyReading.map((b) => b.id);
 
-    // Get the most recent reading note with progress for each book
-    const latestNotes = await db
-      .select({
-        bookId: readingNotes.bookId,
-        pageNumber: readingNotes.pageNumber,
-        percentComplete: readingNotes.percentComplete,
-      })
-      .from(readingNotes)
-      .where(
-        and(
-          eq(readingNotes.userId, user.userId),
-          inArray(readingNotes.bookId, crBookIds),
-          sql`(${readingNotes.pageNumber} IS NOT NULL OR ${readingNotes.percentComplete} IS NOT NULL)`
+    // Get reading notes + page counts in parallel
+    const [latestNotes, bookPages] = await Promise.all([
+      db
+        .select({
+          bookId: readingNotes.bookId,
+          pageNumber: readingNotes.pageNumber,
+          percentComplete: readingNotes.percentComplete,
+        })
+        .from(readingNotes)
+        .where(
+          and(
+            eq(readingNotes.userId, user.userId),
+            inArray(readingNotes.bookId, crBookIds),
+            sql`(${readingNotes.pageNumber} IS NOT NULL OR ${readingNotes.percentComplete} IS NOT NULL)`
+          )
         )
-      )
-      .orderBy(desc(readingNotes.createdAt))
-      .all();
-
-    // Get page counts for books (needed for page_number → percentage calculation)
-    const bookPages = await db
-      .select({ id: books.id, pages: books.pages })
-      .from(books)
-      .where(inArray(books.id, crBookIds))
-      .all();
+        .orderBy(desc(readingNotes.createdAt))
+        .all(),
+      db
+        .select({ id: books.id, pages: books.pages })
+        .from(books)
+        .where(inArray(books.id, crBookIds))
+        .all(),
+    ]);
     const pagesMap = new Map(bookPages.map((b) => [b.id, b.pages]));
 
     // Take only the first (most recent) note per book

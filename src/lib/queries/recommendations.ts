@@ -141,24 +141,24 @@ export const getUserPreferenceProfile = cache(
     // Fetch explicit preferences alongside implicit signals
     const explicit = await getExplicitPreferences(userId);
 
-    // Get highly-rated book IDs
-    const highRatedRows = await db
-      .select({ bookId: userBookRatings.bookId })
-      .from(userBookRatings)
-      .where(
-        and(
-          eq(userBookRatings.userId, userId),
-          sql`${userBookRatings.rating} >= 4.0`
+    // Get highly-rated + favorited book IDs in parallel
+    const [highRatedRows, favRows] = await Promise.all([
+      db
+        .select({ bookId: userBookRatings.bookId })
+        .from(userBookRatings)
+        .where(
+          and(
+            eq(userBookRatings.userId, userId),
+            sql`${userBookRatings.rating} >= 4.0`
+          )
         )
-      )
-      .all();
-
-    // Get favorited book IDs
-    const favRows = await db
-      .select({ bookId: userFavoriteBooks.bookId })
-      .from(userFavoriteBooks)
-      .where(eq(userFavoriteBooks.userId, userId))
-      .all();
+        .all(),
+      db
+        .select({ bookId: userFavoriteBooks.bookId })
+        .from(userFavoriteBooks)
+        .where(eq(userFavoriteBooks.userId, userId))
+        .all(),
+    ]);
 
     // Merge unique book IDs (favorites get extra weight)
     const favBookIds = new Set(favRows.map((r) => r.bookId));
@@ -177,16 +177,35 @@ export const getUserPreferenceProfile = cache(
 
     const likedIds = [...likedBookIds];
 
-    // Get fiction/nonfiction info
-    const bookInfoRows = await db
-      .select({
-        id: books.id,
-        isFiction: books.isFiction,
-      })
-      .from(books)
-      .where(sql`${books.id} IN (${sql.join(likedIds.map((id) => sql`${id}`), sql`, `)})`)
-      .all();
+    // Run all 4 independent queries in parallel
+    const idFilter = sql`IN (${sql.join(likedIds.map((id) => sql`${id}`), sql`, `)})`;
+    const [bookInfoRows, genreRows, authorRows, contentRows] = await Promise.all([
+      db
+        .select({ id: books.id, isFiction: books.isFiction })
+        .from(books)
+        .where(sql`${books.id} ${idFilter}`)
+        .all(),
+      db
+        .select({ genreId: bookGenres.genreId, bookId: bookGenres.bookId })
+        .from(bookGenres)
+        .where(sql`${bookGenres.bookId} ${idFilter}`)
+        .all(),
+      db
+        .select({ authorId: bookAuthors.authorId })
+        .from(bookAuthors)
+        .where(sql`${bookAuthors.bookId} ${idFilter}`)
+        .all(),
+      db
+        .select({
+          categoryId: bookCategoryRatings.categoryId,
+          intensity: bookCategoryRatings.intensity,
+        })
+        .from(bookCategoryRatings)
+        .where(sql`${bookCategoryRatings.bookId} ${idFilter}`)
+        .all(),
+    ]);
 
+    // Fiction ratio
     const fictionCount = bookInfoRows.filter((b) => b.isFiction).length;
     let fictionRatio =
       bookInfoRows.length > 0 ? fictionCount / bookInfoRows.length : 0.5;
@@ -194,31 +213,20 @@ export const getUserPreferenceProfile = cache(
     // [INTEGRATION #2] Override fiction ratio with explicit preference
     if (explicit?.fictionPreference) {
       if (explicit.fictionPreference === "fiction") {
-        // Blend: push strongly toward fiction
         fictionRatio = likedBookIds.size >= 5
-          ? fictionRatio * 0.4 + 0.9 * 0.6 // weighted blend for users with history
-          : 0.9; // near-pure fiction for new users
+          ? fictionRatio * 0.4 + 0.9 * 0.6
+          : 0.9;
       } else if (explicit.fictionPreference === "nonfiction") {
         fictionRatio = likedBookIds.size >= 5
           ? fictionRatio * 0.4 + 0.1 * 0.6
           : 0.1;
       }
-      // "both" → keep implicit ratio as-is
     }
 
-    // Genre affinities: count how often each genre appears in liked books
-    const genreRows = await db
-      .select({
-        genreId: bookGenres.genreId,
-        bookId: bookGenres.bookId,
-      })
-      .from(bookGenres)
-      .where(sql`${bookGenres.bookId} IN (${sql.join(likedIds.map((id) => sql`${id}`), sql`, `)})`)
-      .all();
-
+    // Genre affinities
     const genreAffinities = new Map<string, number>();
     for (const row of genreRows) {
-      const weight = favBookIds.has(row.bookId) ? 2 : 1; // favorites count double
+      const weight = favBookIds.has(row.bookId) ? 2 : 1;
       genreAffinities.set(
         row.genreId,
         (genreAffinities.get(row.genreId) ?? 0) + weight
@@ -254,24 +262,9 @@ export const getUserPreferenceProfile = cache(
       }
     }
 
-    // Liked author IDs
-    const authorRows = await db
-      .select({ authorId: bookAuthors.authorId })
-      .from(bookAuthors)
-      .where(sql`${bookAuthors.bookId} IN (${sql.join(likedIds.map((id) => sql`${id}`), sql`, `)})`)
-      .all();
     const likedAuthorIds = new Set(authorRows.map((r) => r.authorId));
 
-    // Content tolerances: average intensity per category across liked books
-    const contentRows = await db
-      .select({
-        categoryId: bookCategoryRatings.categoryId,
-        intensity: bookCategoryRatings.intensity,
-      })
-      .from(bookCategoryRatings)
-      .where(sql`${bookCategoryRatings.bookId} IN (${sql.join(likedIds.map((id) => sql`${id}`), sql`, `)})`)
-      .all();
-
+    // Content tolerances
     const contentSums = new Map<string, { sum: number; count: number }>();
     for (const row of contentRows) {
       const entry = contentSums.get(row.categoryId) ?? { sum: 0, count: 0 };

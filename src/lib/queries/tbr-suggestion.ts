@@ -46,6 +46,9 @@ export async function getRandomOwnedTbrBook(userId: string): Promise<TbrSuggesti
         eq(userBookState.userId, userId),
         eq(userBookState.state, "tbr"),
         isNotNull(books.coverImageUrl),
+        // Exclude books with future publication dates
+        sql`(${books.publicationDate} IS NULL OR ${books.publicationDate} <= date('now'))`,
+        sql`(${books.publicationYear} IS NULL OR ${books.publicationYear} <= cast(strftime('%Y', 'now') as integer))`,
       )
     )
     .orderBy(sql`RANDOM()`)

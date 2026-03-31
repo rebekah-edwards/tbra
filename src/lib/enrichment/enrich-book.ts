@@ -12,6 +12,7 @@ import {
   bookSeries,
   enrichmentLog,
   links,
+  userBookState,
 } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { braveSearch } from "./search";
@@ -118,19 +119,29 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     return;
   }
 
-  // Skip and auto-delete non-English books — don't waste API calls
+  // Skip non-English books — don't waste API calls
+  // But never hide books that a user has explicitly added to their library
   const isNonEnglishLang = book.language && book.language !== "English" && book.language !== "";
   const isNonEnglishTitle = !isEnglishTitle(book.title);
 
   if (isNonEnglishLang || isNonEnglishTitle) {
-    const reason = isNonEnglishLang ? `language: ${book.language}` : "non-English title detected";
-    console.log(`[enrichment] Non-English book: "${book.title}" (${reason}) — marking import_only`);
-    await db.update(books).set({
-      visibility: "import_only",
-      language: book.language || "non-English",
-      updatedAt: new Date().toISOString(),
-    }).where(eq(books.id, bookId));
-    return;
+    const userStates = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(userBookState)
+      .where(eq(userBookState.bookId, bookId));
+    const hasUserStates = (userStates[0]?.count ?? 0) > 0;
+
+    if (!hasUserStates) {
+      const reason = isNonEnglishLang ? `language: ${book.language}` : "non-English title detected";
+      console.log(`[enrichment] Non-English book: "${book.title}" (${reason}) — marking import_only`);
+      await db.update(books).set({
+        visibility: "import_only",
+        language: book.language || "non-English",
+        updatedAt: new Date().toISOString(),
+      }).where(eq(books.id, bookId));
+      return;
+    }
+    console.log(`[enrichment] Non-English detected for "${book.title}" but user has it in library — keeping public, continuing enrichment`);
   }
 
   // Box sets: still enrich (content ratings, genres, summary) but skip author discovery later

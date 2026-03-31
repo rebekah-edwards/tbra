@@ -126,6 +126,7 @@ export const bookCategoryRatings = sqliteTable("book_category_ratings", {
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   index("idx_bcr_book_id").on(table.bookId),
+  uniqueIndex("idx_bcr_book_category").on(table.bookId, table.categoryId),
 ]);
 
 // ─── Citations / evidence ───

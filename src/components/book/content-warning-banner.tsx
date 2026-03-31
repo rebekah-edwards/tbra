@@ -84,12 +84,13 @@ export function ContentWarningBanner({ conflicts }: ContentWarningBannerProps) {
           <button
             type="button"
             onClick={() => {
-              const el = document.getElementById("whats-inside");
-              if (el) {
-                const navHeight = 64;
-                const y = el.getBoundingClientRect().top + window.scrollY - navHeight;
-                window.scrollTo({ top: y, behavior: "smooth" });
-              }
+              setExpanded(false);
+              requestAnimationFrame(() => {
+                const el = document.getElementById("whats-inside");
+                if (el) {
+                  el.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+              });
             }}
             className="mt-2 text-xs text-link hover:text-link/80 transition-colors"
           >

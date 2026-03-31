@@ -271,7 +271,7 @@ export function BookPageClient({
       )}
 
       {/* Book header — full width, desktop uses flex so both sides contribute to height */}
-      <div className="relative lg:flex lg:items-start lg:gap-4">
+      <div className="relative isolate lg:flex lg:items-start lg:gap-4">
         <BookHeader
             title={book.title}
             coverImageUrl={effectiveCoverUrl}
