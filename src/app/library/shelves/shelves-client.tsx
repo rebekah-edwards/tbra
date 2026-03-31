@@ -1,12 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { ShelfCard } from "@/components/shelves/shelf-card";
 import { ShelfCoverMosaic } from "@/components/shelves/shelf-cover-mosaic";
 import { CreateShelfModal } from "@/components/shelves/create-shelf-modal";
 import { PremiumBadge } from "@/components/premium-gate";
+import { reorderShelves } from "@/lib/actions/shelves";
 import type { ShelfSummary, FollowedShelf } from "@/lib/queries/shelves";
 import type { FavoriteBook } from "@/lib/queries/favorites";
 
@@ -18,9 +37,61 @@ interface ShelvesClientProps {
   username: string | null;
 }
 
-export function ShelvesClient({ shelves, followedShelves, isPremium, favorites, username }: ShelvesClientProps) {
+function SortableShelfCard({ shelf, linkBase, editHref }: { shelf: ShelfSummary; linkBase: string; editHref: string }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: shelf.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2">
+      <button
+        {...attributes}
+        {...listeners}
+        className="touch-none p-1 text-muted/40 hover:text-muted cursor-grab active:cursor-grabbing shrink-0"
+        aria-label="Drag to reorder"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="9" cy="5" r="1.5" /><circle cx="15" cy="5" r="1.5" />
+          <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+          <circle cx="9" cy="19" r="1.5" /><circle cx="15" cy="19" r="1.5" />
+        </svg>
+      </button>
+      <div className="flex-1 min-w-0">
+        <ShelfCard shelf={shelf} linkBase={linkBase} editHref={editHref} />
+      </div>
+    </div>
+  );
+}
+
+export function ShelvesClient({ shelves: initialShelves, followedShelves, isPremium, favorites, username }: ShelvesClientProps) {
   const [createOpen, setCreateOpen] = useState(false);
+  const [orderedShelves, setOrderedShelves] = useState(initialShelves);
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = orderedShelves.findIndex((s) => s.id === active.id);
+    const newIndex = orderedShelves.findIndex((s) => s.id === over.id);
+    const reordered = arrayMove(orderedShelves, oldIndex, newIndex);
+    setOrderedShelves(reordered);
+
+    startTransition(async () => {
+      await reorderShelves(reordered.map((s) => s.id));
+    });
+  }
 
   const topShelfCovers = favorites
     .filter((f) => f.coverImageUrl)
@@ -111,7 +182,7 @@ export function ShelvesClient({ shelves, followedShelves, isPremium, favorites, 
 
       {/* Custom shelves — premium only */}
       {isPremium ? (
-        shelves.length === 0 ? (
+        orderedShelves.length === 0 ? (
           /* Empty state */
           <div className="rounded-xl border border-dashed border-border p-8 text-center">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
@@ -138,17 +209,21 @@ export function ShelvesClient({ shelves, followedShelves, isPremium, favorites, 
             </button>
           </div>
         ) : (
-          /* Shelf grid */
-          <div className="space-y-3">
-            {shelves.map((shelf) => (
-              <ShelfCard
-                key={shelf.id}
-                shelf={shelf}
-                linkBase={username && shelf.isPublic ? `/u/${username}/shelves` : `/library/shelves`}
-                editHref={`/library/shelves/${shelf.slug}`}
-              />
-            ))}
-          </div>
+          /* Shelf grid — drag to reorder */
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={orderedShelves.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-3">
+                {orderedShelves.map((shelf) => (
+                  <SortableShelfCard
+                    key={shelf.id}
+                    shelf={shelf}
+                    linkBase={username && shelf.isPublic ? `/u/${username}/shelves` : `/library/shelves`}
+                    editHref={`/library/shelves/${shelf.slug}`}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )
       ) : (
         /* Upgrade prompt for free users */
