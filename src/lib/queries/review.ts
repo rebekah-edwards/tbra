@@ -123,6 +123,7 @@ export interface BookReviewEntry {
   dimensionTags: Record<string, string[]>;
   helpfulCount: number;
   currentUserVoted: boolean;
+  arcStatus?: string | null;
 }
 
 export async function getBookReviews(bookId: string, currentUserId?: string | null): Promise<BookReviewEntry[]> {
@@ -143,12 +144,21 @@ export async function getBookReviews(bookId: string, currentUserId?: string | nu
       isAnonymous: userBookReviews.isAnonymous,
       createdAt: userBookReviews.createdAt,
       source: userBookReviews.source,
+      arcStatus: userBookReviews.arcStatus,
     })
     .from(userBookReviews)
     .innerJoin(users, eq(userBookReviews.userId, users.id))
     .where(eq(userBookReviews.bookId, bookId))
     .orderBy(desc(userBookReviews.createdAt))
-    .all();
+    .all()
+    .then((rows) =>
+      rows.filter((r) => {
+        if (!r.arcStatus) return true; // Not an ARC review — always show
+        if (r.arcStatus === "approved") return true; // Approved ARC — show
+        if (currentUserId && r.userId === currentUserId) return true; // User's own pending review
+        return false; // Hide pending/rejected from others
+      })
+    );
 
   if (rows.length === 0) return [];
 
@@ -244,5 +254,6 @@ export async function getBookReviews(bookId: string, currentUserId?: string | nu
     dimensionTags: tagMap.get(row.id) ?? {},
     helpfulCount: helpfulMap.get(row.id) ?? 0,
     currentUserVoted: userVotedSet.has(row.id),
+    arcStatus: row.arcStatus ?? null,
   }));
 }

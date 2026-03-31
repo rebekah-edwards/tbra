@@ -30,6 +30,9 @@ interface ReviewPayload {
   customContentWarning?: string | null;
   contentComments?: string | null;
   isAnonymous?: boolean;
+  arcSource?: string | null;
+  arcSourceDetail?: string | null;
+  arcProofUrl?: string | null;
 }
 
 export async function saveReview(payload: ReviewPayload) {
@@ -49,7 +52,13 @@ export async function saveReview(payload: ReviewPayload) {
     customContentWarning,
     contentComments,
     isAnonymous,
+    arcSource,
+    arcSourceDetail,
+    arcProofUrl,
   } = payload;
+
+  // Determine ARC status: if ARC data provided, mark as pending for admin review
+  const arcStatus = arcSource ? "pending" : null;
 
   // Validate overall rating
   let validatedRating = overallRating;
@@ -80,6 +89,10 @@ export async function saveReview(payload: ReviewPayload) {
         dnfPercentComplete: didNotFinish ? dnfPercentComplete : null,
         isAnonymous: isAnonymous ?? false,
         contentComments: contentComments?.trim() || "",
+        arcSource: arcSource ?? null,
+        arcSourceDetail: arcSourceDetail ?? null,
+        arcProofUrl: arcProofUrl ?? null,
+        arcStatus: arcStatus,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(userBookReviews.id, reviewId));
@@ -97,6 +110,10 @@ export async function saveReview(payload: ReviewPayload) {
       dnfPercentComplete: didNotFinish ? dnfPercentComplete : null,
       isAnonymous: isAnonymous ?? false,
       contentComments: contentComments?.trim() || "",
+      arcSource: arcSource ?? null,
+      arcSourceDetail: arcSourceDetail ?? null,
+      arcProofUrl: arcProofUrl ?? null,
+      arcStatus: arcStatus,
     });
   }
 

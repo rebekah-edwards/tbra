@@ -8,6 +8,7 @@ import { StepDimensions } from "./steps/step-dimensions";
 import { StepReviewText } from "./steps/step-review-text";
 import { StepContentDetails } from "./steps/step-content-details";
 import { saveReview, deleteReview } from "@/lib/actions/review";
+import type { ArcSourceData } from "@/components/book/arc-source-form";
 
 const TOTAL_STEPS = 5;
 
@@ -170,6 +171,7 @@ interface ReviewWizardProps {
   open: boolean;
   onClose: () => void;
   isExisting: boolean;
+  arcData?: ArcSourceData | null;
   existingReview?: {
     overallRating: number | null;
     didNotFinish: boolean;
@@ -186,7 +188,7 @@ interface ReviewWizardProps {
   } | null;
 }
 
-export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, existingReview }: ReviewWizardProps) {
+export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, existingReview, arcData }: ReviewWizardProps) {
   const [step, setStep] = useReducer(
     (_: number, next: number) => Math.max(0, Math.min(TOTAL_STEPS - 1, next)),
     0
@@ -243,10 +245,13 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
         customContentWarning: state.customContentWarning || null,
         contentComments: state.contentComments || null,
         isAnonymous: state.isAnonymous,
+        arcSource: arcData?.arcSource ?? null,
+        arcSourceDetail: arcData?.arcSourceDetail ?? null,
+        arcProofUrl: arcData?.arcProofUrl ?? null,
       });
       onClose();
     });
-  }, [bookId, state, onClose]);
+  }, [bookId, state, onClose, arcData]);
 
   const handleDelete = useCallback(() => {
     startDeleteTransition(async () => {

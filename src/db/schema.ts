@@ -210,6 +210,9 @@ export const userBookRatings = sqliteTable("user_book_ratings", {
   userId: text("user_id").notNull().references(() => users.id),
   bookId: text("book_id").notNull().references(() => books.id),
   rating: real("rating").notNull(), // 0.25 to 5.0 in 0.25 increments
+  arcSource: text("arc_source"), // pre-pub ARC source
+  arcProofUrl: text("arc_proof_url"), // proof screenshot URL
+  arcStatus: text("arc_status"), // 'pending' | 'approved' | 'rejected' | null
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   uniqueIndex("user_book_ratings_unique").on(table.userId, table.bookId),
@@ -261,6 +264,10 @@ export const userBookReviews = sqliteTable("user_book_reviews", {
   finishedMonth: integer("finished_month"), // 1-12
   finishedYear: integer("finished_year"),
   source: text("source").notNull().default("user"), // 'user' | 'goodreads' | 'storygraph'
+  arcSource: text("arc_source"), // 'netgalley' | 'publisher_arc' | 'author_copy' | 'booksirens' | 'edelweiss' | 'other'
+  arcSourceDetail: text("arc_source_detail"), // free text for "Other" or extra context
+  arcProofUrl: text("arc_proof_url"), // Vercel Blob URL of proof screenshot
+  arcStatus: text("arc_status"), // 'pending' | 'approved' | 'rejected' | null (null = not ARC)
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [

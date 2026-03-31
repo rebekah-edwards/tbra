@@ -162,12 +162,27 @@ const MINOR_WORDS = new Set([
   "on", "at", "to", "from", "by", "of", "in", "vs",
 ]);
 
+/** Genres with non-standard capitalization that must be preserved. */
+const GENRE_CAPS: Record<string, string> = {
+  litrpg: "LitRPG",
+  lgbtq: "LGBTQ",
+  "lgbtq+": "LGBTQ+",
+  ya: "YA",
+};
+
 /** Title-case a genre name. First word always capitalized; minor words stay lowercase. */
 export function titleCaseGenre(name: string): string {
+  // Check for exact override first
+  const override = GENRE_CAPS[name.toLowerCase()];
+  if (override) return override;
+
   return name
     .split(/([- ])/)
     .map((word, i) => {
       if (word === " " || word === "-") return word;
+      // Check per-word overrides
+      const wordOverride = GENRE_CAPS[word.toLowerCase()];
+      if (wordOverride) return wordOverride;
       if (i === 0 || !MINOR_WORDS.has(word.toLowerCase())) {
         return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
       }

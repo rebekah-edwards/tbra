@@ -109,6 +109,11 @@ export function ReviewCard({ review, bookId, isOwnReview = false }: { review: Bo
           )}
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
+          {review.arcStatus === "approved" && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-neon-blue/15 text-neon-blue border border-neon-blue/30 font-semibold">
+              ARC
+            </span>
+          )}
           {review.source && review.source !== "user" && (
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-surface-alt text-muted border border-border capitalize">
               {review.source}

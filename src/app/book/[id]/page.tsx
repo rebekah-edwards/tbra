@@ -19,6 +19,7 @@ import { getUserShelves, getBookShelves } from "@/lib/queries/shelves";
 import { getTbrNote } from "@/lib/queries/tbr-notes";
 import { AddToShelfButton } from "@/components/book/add-to-shelf-button";
 import { triggerEnrichment } from "@/lib/enrichment/trigger";
+import { isBookPrePublication } from "@/lib/publication-date";
 import { after } from "next/server";
 import { BookAboutDetails } from "@/components/book/book-about-details";
 import { BookSeries } from "@/components/book/book-series";
@@ -322,6 +323,7 @@ export default async function BookPage({
         contentConflicts={contentConflicts}
         isPremium={isPremium({ accountType: user?.accountType })}
         initialTbrNote={tbrNote ?? null}
+        prePublication={isBookPrePublication(book.publicationDate, book.publicationYear)}
       />
 
       {/* Content warning — mobile only here, desktop version goes under reviews */}

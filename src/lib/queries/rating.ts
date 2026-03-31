@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { userBookRatings } from "@/db/schema";
-import { eq, and, avg, count, inArray } from "drizzle-orm";
+import { eq, and, or, isNull, avg, count, inArray } from "drizzle-orm";
 
 export async function getUserBookRating(
   userId: string,
@@ -52,7 +52,12 @@ export async function getBookAggregateRating(
       count: count(userBookRatings.id),
     })
     .from(userBookRatings)
-    .where(eq(userBookRatings.bookId, bookId))
+    .where(
+      and(
+        eq(userBookRatings.bookId, bookId),
+        or(isNull(userBookRatings.arcStatus), eq(userBookRatings.arcStatus, "approved"))
+      )
+    )
     .get();
 
   if (!row || row.count === 0) return null;

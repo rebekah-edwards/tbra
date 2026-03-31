@@ -74,6 +74,7 @@ interface BookPageClientProps {
   contentConflicts?: { categoryName: string; bookIntensity: number; userMax: number }[];
   isPremium?: boolean;
   initialTbrNote?: string | null;
+  prePublication?: boolean;
 }
 
 function formatReadDate(dateStr: string, precision: string | null): string {
@@ -108,6 +109,7 @@ export function BookPageClient({
   contentConflicts = [],
   isPremium: userIsPremium = false,
   initialTbrNote = null,
+  prePublication = false,
 }: BookPageClientProps) {
   const [currentState, setCurrentState] = useState(userState.state);
   const [activeFormats, setActiveFormats] = useState(userState.activeFormats);
@@ -426,6 +428,7 @@ export function BookPageClient({
           isLoggedIn={isLoggedIn}
           autoOpen={autoOpenReview}
           hasCompletedSession={hasCompleted}
+          prePublication={prePublication}
         />
       </div>
 

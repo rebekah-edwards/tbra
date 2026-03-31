@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { StarRow } from "./rounded-star";
 import { ReviewWizard } from "./review-wizard";
+import { ArcSourceForm } from "@/components/book/arc-source-form";
+import type { ArcSourceData } from "@/components/book/arc-source-form";
 import type { UserReview } from "@/lib/queries/review";
 
 interface ReviewTriggerProps {
@@ -15,6 +17,7 @@ interface ReviewTriggerProps {
   isLoggedIn: boolean;
   autoOpen?: boolean;
   hasCompletedSession?: boolean;
+  prePublication?: boolean;
 }
 
 export function ReviewTrigger({
@@ -25,20 +28,39 @@ export function ReviewTrigger({
   isLoggedIn,
   autoOpen = false,
   hasCompletedSession = false,
+  prePublication = false,
 }: ReviewTriggerProps) {
   const [wizardOpen, setWizardOpen] = useState(autoOpen);
+  const [arcFormOpen, setArcFormOpen] = useState(false);
+  const [arcData, setArcData] = useState<ArcSourceData | null>(null);
   const router = useRouter();
 
   // React to autoOpen changing from false→true after mount
   useEffect(() => {
-    if (autoOpen) setWizardOpen(true);
-  }, [autoOpen]);
+    if (autoOpen) {
+      if (prePublication && !arcData) {
+        setArcFormOpen(true);
+      } else {
+        setWizardOpen(true);
+      }
+    }
+  }, [autoOpen, prePublication, arcData]);
 
   const handleOpen = () => {
     if (!isLoggedIn) {
       router.push("/login");
       return;
     }
+    if (prePublication && !arcData && !userReview) {
+      setArcFormOpen(true);
+    } else {
+      setWizardOpen(true);
+    }
+  };
+
+  const handleArcSubmit = (data: ArcSourceData) => {
+    setArcData(data);
+    setArcFormOpen(false);
     setWizardOpen(true);
   };
 
@@ -92,6 +114,15 @@ export function ReviewTrigger({
         </button>
       )}
 
+      {/* ARC source form for pre-pub books */}
+      {prePublication && (
+        <ArcSourceForm
+          open={arcFormOpen}
+          onClose={() => setArcFormOpen(false)}
+          onSubmit={handleArcSubmit}
+        />
+      )}
+
       {/* Wizard modal */}
       <ReviewWizard
         bookId={bookId}
@@ -100,6 +131,7 @@ export function ReviewTrigger({
         onClose={() => setWizardOpen(false)}
         isExisting={!!userReview}
         existingReview={userReview}
+        arcData={arcData}
       />
     </div>
   );
