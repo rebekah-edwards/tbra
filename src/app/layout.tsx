@@ -186,6 +186,11 @@ export default async function RootLayout({
           <PullToRefresh>
             <main className="relative z-0 mx-auto max-w-3xl lg:max-w-[1194px] px-6 pt-8 pb-24 lg:pb-8">{children}</main>
           </PullToRefresh>
+          <footer className="hidden lg:block mx-auto max-w-3xl lg:max-w-[1194px] px-6 pb-6 pt-2">
+            <p className="text-[10px] text-muted/40 text-center">
+              As an Amazon Associate, tbr*a earns from qualifying purchases.
+            </p>
+          </footer>
           {(userIsSuperAdmin || session?.accountType === "beta_tester") && <GlobalReportButton />}
           {isVerified && <BottomTabs isLoggedIn={!!session} avatarUrl={avatarUrl} />}
         </ThemeProvider>
