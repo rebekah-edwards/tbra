@@ -178,6 +178,18 @@ export function getISBNdbDescription(book: ISBNdbBook): string | null {
   // Remove leading/trailing fragments that look like junk
   clean = clean.replace(/^[\s.,;:|]+/, "").replace(/[\s.,;:|]+$/, "").trim();
 
+  // Reject author bios masquerading as descriptions
+  if (/^(?:but )?during his|^he (?:has had|is the author)|^she (?:has had|is the author)|^born in/i.test(clean)) return null;
+
+  // Reject Amazon product page text
+  if (/^Amazon\.com:|^\d{10,13}:|: Books$/i.test(clean)) return null;
+
+  // Reject if it still contains HTML tags after stripping
+  if (/<strong>|<em>|<br>/i.test(clean)) return null;
+
+  // Cap at 2000 chars — anything longer is likely a full book contents dump
+  if (clean.length > 2000) clean = clean.slice(0, 2000).replace(/\s\S*$/, "...");
+
   // Must be substantial content
   return clean.length > 40 ? clean : null;
 }
