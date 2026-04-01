@@ -259,12 +259,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
           {/* Search overlay bar */}
           <div
             ref={containerRef}
-            className="fixed top-0 left-0 right-0 z-[56] flex items-start justify-center"
-            style={{
-              paddingTop: "8px",
-              paddingLeft: "12px",
-              paddingRight: "12px",
-            }}
+            className="fixed top-0 left-0 right-0 z-[56] flex items-start justify-center pt-[calc(env(safe-area-inset-top)+8px)] px-3"
           >
             <div
               className="w-full max-w-2xl lg:max-w-3xl transition-all duration-300 ease-out"
