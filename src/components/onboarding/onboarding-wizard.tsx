@@ -249,7 +249,7 @@ export function OnboardingWizard() {
   useEffect(() => setMounted(true), []);
 
   const content = (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+    <div className="fixed inset-0 z-50 flex flex-col bg-background pt-[env(safe-area-inset-top)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <span className="text-xs font-medium text-muted uppercase tracking-wide">

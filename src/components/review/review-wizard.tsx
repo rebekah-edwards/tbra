@@ -278,7 +278,7 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-50 flex flex-col bg-background transition-transform duration-300 ease-out ${
+      className={`fixed inset-0 z-50 flex flex-col bg-background transition-transform duration-300 ease-out pt-[env(safe-area-inset-top)] ${
         animating ? "translate-y-0" : "translate-y-full"
       }`}
     >

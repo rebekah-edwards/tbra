@@ -6,8 +6,26 @@ export function BackButton() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Don't show on home page or top-level pages
-  if (pathname === "/" || pathname === "/discover" || pathname === "/library" || pathname === "/stats" || pathname === "/profile") {
+  // Don't show on home page, top-level tab pages, or sub-pages that have their own back nav
+  if (
+    pathname === "/" ||
+    pathname === "/discover" ||
+    pathname === "/library" ||
+    pathname === "/stats" ||
+    pathname === "/profile" ||
+    pathname === "/settings" ||
+    pathname === "/browse" ||
+    pathname === "/signup" ||
+    pathname === "/login" ||
+    // Sub-pages with their own navigation headers
+    pathname.endsWith("/reviews") ||
+    pathname.startsWith("/author/") ||
+    pathname.startsWith("/series/") ||
+    pathname.startsWith("/u/") ||
+    pathname.startsWith("/profile/") ||
+    pathname.startsWith("/admin/") ||
+    pathname.startsWith("/import")
+  ) {
     return null;
   }
 
