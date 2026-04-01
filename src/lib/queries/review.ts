@@ -29,7 +29,17 @@ export async function getUserReview(
   bookId: string
 ): Promise<UserReview | null> {
   const review = await db
-    .select()
+    .select({
+      id: userBookReviews.id,
+      overallRating: userBookReviews.overallRating,
+      didNotFinish: userBookReviews.didNotFinish,
+      dnfPercentComplete: userBookReviews.dnfPercentComplete,
+      reviewText: userBookReviews.reviewText,
+      mood: userBookReviews.mood,
+      moodIntensity: userBookReviews.moodIntensity,
+      isAnonymous: userBookReviews.isAnonymous,
+      contentComments: userBookReviews.contentComments,
+    })
     .from(userBookReviews)
     .where(
       and(
@@ -128,37 +138,64 @@ export interface BookReviewEntry {
 
 export async function getBookReviews(bookId: string, currentUserId?: string | null): Promise<BookReviewEntry[]> {
   // Fetch all reviews for this book joined with user info
-  const rows = await db
-    .select({
-      id: userBookReviews.id,
-      userId: userBookReviews.userId,
-      displayName: users.displayName,
-      username: users.username,
-      avatarUrl: users.avatarUrl,
-      overallRating: userBookReviews.overallRating,
-      mood: userBookReviews.mood,
-      moodIntensity: userBookReviews.moodIntensity,
-      reviewText: userBookReviews.reviewText,
-      didNotFinish: userBookReviews.didNotFinish,
-      dnfPercentComplete: userBookReviews.dnfPercentComplete,
-      isAnonymous: userBookReviews.isAnonymous,
-      createdAt: userBookReviews.createdAt,
-      source: userBookReviews.source,
-      arcStatus: userBookReviews.arcStatus,
-    })
-    .from(userBookReviews)
-    .innerJoin(users, eq(userBookReviews.userId, users.id))
-    .where(eq(userBookReviews.bookId, bookId))
-    .orderBy(desc(userBookReviews.createdAt))
-    .all()
-    .then((rows) =>
-      rows.filter((r) => {
-        if (!r.arcStatus) return true; // Not an ARC review — always show
-        if (r.arcStatus === "approved") return true; // Approved ARC — show
-        if (currentUserId && r.userId === currentUserId) return true; // User's own pending review
-        return false; // Hide pending/rejected from others
+  let rows;
+  try {
+    rows = await db
+      .select({
+        id: userBookReviews.id,
+        userId: userBookReviews.userId,
+        displayName: users.displayName,
+        username: users.username,
+        avatarUrl: users.avatarUrl,
+        overallRating: userBookReviews.overallRating,
+        mood: userBookReviews.mood,
+        moodIntensity: userBookReviews.moodIntensity,
+        reviewText: userBookReviews.reviewText,
+        didNotFinish: userBookReviews.didNotFinish,
+        dnfPercentComplete: userBookReviews.dnfPercentComplete,
+        isAnonymous: userBookReviews.isAnonymous,
+        createdAt: userBookReviews.createdAt,
+        source: userBookReviews.source,
+        arcStatus: userBookReviews.arcStatus,
       })
-    );
+      .from(userBookReviews)
+      .innerJoin(users, eq(userBookReviews.userId, users.id))
+      .where(eq(userBookReviews.bookId, bookId))
+      .orderBy(desc(userBookReviews.createdAt))
+      .all()
+      .then((rows) =>
+        rows.filter((r) => {
+          if (!r.arcStatus) return true; // Not an ARC review — always show
+          if (r.arcStatus === "approved") return true; // Approved ARC — show
+          if (currentUserId && r.userId === currentUserId) return true; // User's own pending review
+          return false; // Hide pending/rejected from others
+        })
+      );
+  } catch {
+    // Fallback: arc_status column may not exist on production yet
+    rows = (await db
+      .select({
+        id: userBookReviews.id,
+        userId: userBookReviews.userId,
+        displayName: users.displayName,
+        username: users.username,
+        avatarUrl: users.avatarUrl,
+        overallRating: userBookReviews.overallRating,
+        mood: userBookReviews.mood,
+        moodIntensity: userBookReviews.moodIntensity,
+        reviewText: userBookReviews.reviewText,
+        didNotFinish: userBookReviews.didNotFinish,
+        dnfPercentComplete: userBookReviews.dnfPercentComplete,
+        isAnonymous: userBookReviews.isAnonymous,
+        createdAt: userBookReviews.createdAt,
+        source: userBookReviews.source,
+      })
+      .from(userBookReviews)
+      .innerJoin(users, eq(userBookReviews.userId, users.id))
+      .where(eq(userBookReviews.bookId, bookId))
+      .orderBy(desc(userBookReviews.createdAt))
+      .all()).map((r) => ({ ...r, arcStatus: null as string | null }));
+  }
 
   if (rows.length === 0) return [];
 

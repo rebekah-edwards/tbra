@@ -51,8 +51,9 @@ function MiniShelfRow({ shelf, linkBase }: { shelf: ShelfSummary; linkBase: stri
             }}
           >
             <div className="flex gap-2 items-end overflow-x-auto pb-2.5 -mx-0.5 px-0.5 pr-8 no-scrollbar mask-fade-right">
-              {shelf.coverUrls.map((url, i) => (
-                <div key={i} className="shrink-0">
+              {shelf.coverUrls.map((url, i) => {
+                const bookSlug = shelf.coverSlugs?.[i];
+                const cover = (
                   <Image
                     src={url}
                     alt=""
@@ -60,8 +61,17 @@ function MiniShelfRow({ shelf, linkBase }: { shelf: ShelfSummary; linkBase: stri
                     height={69}
                     className="h-[69px] w-[46px] rounded-sm object-cover shadow-[2px_2px_6px_rgba(0,0,0,0.3)]"
                   />
-                </div>
-              ))}
+                );
+                return bookSlug ? (
+                  <Link key={i} href={`/book/${bookSlug}`} className="shrink-0 hover:opacity-80 transition-opacity">
+                    {cover}
+                  </Link>
+                ) : (
+                  <div key={i} className="shrink-0">
+                    {cover}
+                  </div>
+                );
+              })}
             </div>
             {/* Shelf edge */}
             <div

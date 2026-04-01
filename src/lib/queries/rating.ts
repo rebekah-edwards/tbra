@@ -46,19 +46,33 @@ export async function getBulkAggregateRatings(
 export async function getBookAggregateRating(
   bookId: string
 ): Promise<{ average: number; count: number } | null> {
-  const row = await db
-    .select({
-      average: avg(userBookRatings.rating),
-      count: count(userBookRatings.id),
-    })
-    .from(userBookRatings)
-    .where(
-      and(
-        eq(userBookRatings.bookId, bookId),
-        or(isNull(userBookRatings.arcStatus), eq(userBookRatings.arcStatus, "approved"))
+  let row;
+  try {
+    // Filter out pending/rejected ARC reviews from aggregate
+    row = await db
+      .select({
+        average: avg(userBookRatings.rating),
+        count: count(userBookRatings.id),
+      })
+      .from(userBookRatings)
+      .where(
+        and(
+          eq(userBookRatings.bookId, bookId),
+          or(isNull(userBookRatings.arcStatus), eq(userBookRatings.arcStatus, "approved"))
+        )
       )
-    )
-    .get();
+      .get();
+  } catch {
+    // Fallback: arc_status column may not exist on production yet
+    row = await db
+      .select({
+        average: avg(userBookRatings.rating),
+        count: count(userBookRatings.id),
+      })
+      .from(userBookRatings)
+      .where(eq(userBookRatings.bookId, bookId))
+      .get();
+  }
 
   if (!row || row.count === 0) return null;
 

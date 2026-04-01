@@ -15,6 +15,8 @@ export interface ShelfSummary {
   bookCount: number;
   /** First 4 book covers for mosaic display */
   coverUrls: string[];
+  /** Book slugs matching coverUrls by index (for linking) */
+  coverSlugs: string[];
   createdAt: string;
 }
 
@@ -95,21 +97,25 @@ export async function getUserShelves(userId: string): Promise<ShelfSummary[]> {
   // Batch fetch covers for all shelves in one query
   const shelfIds = rows.map((r) => r.id);
   const allCovers = await db.all(sql`
-    SELECT sb.shelf_id, b.cover_image_url,
+    SELECT sb.shelf_id, b.cover_image_url, b.slug,
       ROW_NUMBER() OVER (PARTITION BY sb.shelf_id ORDER BY sb.position ASC) as rn
     FROM shelf_books sb
     JOIN books b ON sb.book_id = b.id
     WHERE sb.shelf_id IN (${sql.join(shelfIds.map(id => sql`${id}`), sql`, `)})
       AND b.cover_image_url IS NOT NULL
-  `) as { shelf_id: string; cover_image_url: string; rn: number }[];
+  `) as { shelf_id: string; cover_image_url: string; slug: string; rn: number }[];
 
-  // Group covers by shelf, limit to 12
+  // Group covers and slugs by shelf, limit to 12
   const coversByShelf = new Map<string, string[]>();
+  const slugsByShelf = new Map<string, string[]>();
   for (const c of allCovers) {
     if (c.rn > 12) continue;
-    const arr = coversByShelf.get(c.shelf_id) ?? [];
-    arr.push(c.cover_image_url);
-    coversByShelf.set(c.shelf_id, arr);
+    const covers = coversByShelf.get(c.shelf_id) ?? [];
+    covers.push(c.cover_image_url);
+    coversByShelf.set(c.shelf_id, covers);
+    const slugs = slugsByShelf.get(c.shelf_id) ?? [];
+    slugs.push(c.slug);
+    slugsByShelf.set(c.shelf_id, slugs);
   }
 
   return rows.map((row) => ({
@@ -123,6 +129,7 @@ export async function getUserShelves(userId: string): Promise<ShelfSummary[]> {
     position: row.position,
     bookCount: row.book_count,
     coverUrls: coversByShelf.get(row.id) ?? [],
+    coverSlugs: slugsByShelf.get(row.id) ?? [],
     createdAt: row.created_at,
   }));
 }
