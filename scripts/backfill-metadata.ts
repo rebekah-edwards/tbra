@@ -122,7 +122,27 @@ function sleep(ms: number): Promise<void> {
 }
 
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#\d+;/g, "")
+    // Remove Amazon ad snippets
+    .replace(/"[^"]+"\s+by\s+[^|]+\|\s*Learn more/gi, "")
+    .replace(/From #\d+.*?bestselling author.*?(?=\.|$)/gi, "")
+    // Remove author attribution lines
+    .replace(/^by\s+[A-Z][\w\s,()&]+(?:Author|Illustrator|Editor|Translator|Contributor|more)\s*/i, "")
+    .replace(/\(Author\)|\(Illustrator\)|\(Editor\)|\(Translator\)/gi, "")
+    .replace(/&\s*\d+\s*more/gi, "")
+    .replace(/\$\d+\.\d{2}/g, "")
+    .replace(/\|\s*Learn more/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 async function main() {

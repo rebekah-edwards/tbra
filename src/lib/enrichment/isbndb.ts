@@ -139,22 +139,47 @@ export function getISBNdbCoverUrl(book: ISBNdbBook): string | null {
 }
 
 /**
- * Extract clean description from ISBNdb synopsis (strip HTML tags).
+ * Extract clean description from ISBNdb synopsis.
+ * Strips HTML tags, decodes entities, removes Amazon ad snippets,
+ * author attribution lines, and other junk.
  */
 export function getISBNdbDescription(book: ISBNdbBook): string | null {
   if (!book.synopsis) return null;
-  // Strip HTML tags
-  const clean = book.synopsis
+
+  let clean = book.synopsis
+    // Strip HTML tags
     .replace(/<[^>]+>/g, " ")
+    // Decode HTML entities
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, " ")
+    .replace(/&#\d+;/g, "")
+    // Remove Amazon ad snippets ("Title" by Author for $X.XX ... | Learn more)
+    .replace(/"[^"]+"\s+by\s+[^|]+\|\s*Learn more/gi, "")
+    .replace(/From #\d+.*?bestselling author.*?(?=\.|$)/gi, "")
+    // Remove author attribution lines (starts with "by Author (Author), Illustrator...")
+    .replace(/^by\s+[A-Z][\w\s,()&]+(?:Author|Illustrator|Editor|Translator|Contributor|more)\s*/i, "")
+    .replace(/\(Author\)|\(Illustrator\)|\(Editor\)|\(Translator\)/gi, "")
+    // Remove "& N more" patterns
+    .replace(/&\s*\d+\s*more/gi, "")
+    // Remove price patterns
+    .replace(/\$\d+\.\d{2}/g, "")
+    // Remove "Learn more" / "Read more" links
+    .replace(/\|\s*Learn more/gi, "")
+    .replace(/Read more\s*$/gi, "")
+    // Collapse whitespace
     .replace(/\s+/g, " ")
     .trim();
-  return clean.length > 20 ? clean : null;
+
+  // Remove leading/trailing fragments that look like junk
+  clean = clean.replace(/^[\s.,;:|]+/, "").replace(/[\s.,;:|]+$/, "").trim();
+
+  // Must be substantial content
+  return clean.length > 40 ? clean : null;
 }
 
 /**
