@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { getCurrentUser, isAdmin, isSuperAdmin } from "@/lib/auth";
 import { SearchBar } from "@/components/nav/search-bar";
 import { BottomTabs } from "@/components/nav/bottom-tabs";
+import { BackButton } from "@/components/nav/back-button";
 import { HamburgerMenu } from "@/components/nav/hamburger-menu";
 import { DesktopNav } from "@/components/nav/desktop-nav";
 import { PullToRefresh } from "@/components/pull-to-refresh";
@@ -203,6 +204,7 @@ export default async function RootLayout({
               </div>
             </div>
           </nav>
+          <BackButton />
           <PullToRefresh>
             <main className="relative z-0 mx-auto max-w-3xl lg:max-w-[1194px] px-6 pt-8 pb-24 lg:pb-8">{children}</main>
           </PullToRefresh>
