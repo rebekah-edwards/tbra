@@ -6,7 +6,7 @@ import { eq, and, gt, asc, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-export const MAX_UP_NEXT = 6;
+const MAX_UP_NEXT = 6;
 
 export async function addToUpNext(bookId: string): Promise<{ success: boolean; position?: number; error?: string }> {
   const user = await getCurrentUser();

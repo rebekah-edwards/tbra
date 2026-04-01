@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addToUpNext, removeFromUpNext, MAX_UP_NEXT } from "@/lib/actions/up-next";
+import { addToUpNext, removeFromUpNext } from "@/lib/actions/up-next";
+
+const MAX_UP_NEXT = 6;
 
 interface UpNextButtonProps {
   bookId: string;
