@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Outfit } from "next/font/google";
 import { Space_Grotesk } from "next/font/google";
@@ -33,6 +33,12 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-logo",
   subsets: ["latin"],
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://thebasedreader.app"),
