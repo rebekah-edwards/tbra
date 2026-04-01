@@ -80,7 +80,6 @@ function SortableUpNextCard({
         isDragging ? "ring-2 ring-primary shadow-xl" : ""
       }`}
       {...attributes}
-      {...listeners}
     >
       {/* Blurred cover background */}
       {item.coverImageUrl && (
@@ -99,6 +98,17 @@ function SortableUpNextCard({
         <div className="absolute inset-0 bg-gradient-to-br from-surface-alt to-surface rounded-xl" />
       )}
 
+      {/* Drag handle — sits in top-right, above the Link */}
+      <button
+        {...listeners}
+        className="absolute top-2 right-2 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm text-white/70 active:text-white touch-none"
+        aria-label="Drag to reorder"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <line x1="8" y1="6" x2="16" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="8" y1="18" x2="16" y2="18" />
+        </svg>
+      </button>
+
       {/* Position badge */}
       <span className="absolute top-2 left-2 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-neon-purple text-[10px] font-bold text-white shadow-md">
         {index + 1}
@@ -107,7 +117,7 @@ function SortableUpNextCard({
       {/* Card content */}
       <Link
         href={`/book/${item.slug || item.bookId}`}
-        onClick={(e) => { if (isDragging || wasDragged.current) e.preventDefault(); }}
+        onClick={(e) => { if (isDragging) e.preventDefault(); }}
         draggable={false}
         className="relative z-10 flex items-center gap-3 p-3"
       >
