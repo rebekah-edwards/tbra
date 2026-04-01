@@ -178,6 +178,7 @@ export function FriendsWhoRead({ friends, bookId, bookSlug }: FriendsWhoReadProp
 
   return (
     <div className="mt-6">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">Friends&apos; Activity</h3>
       {/* Collapsed header — always visible, tap to expand */}
       <button
         onClick={() => setExpanded(!expanded)}
