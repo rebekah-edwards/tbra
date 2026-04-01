@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -48,9 +48,11 @@ function formatAudioCompact(minutes: number | null): string | null {
 
 function SortableUpNextCard({
   item,
+  wasDragged,
   index,
 }: {
   item: UpNextItem;
+  wasDragged: React.RefObject<boolean>;
   index: number;
 }) {
   const {
@@ -105,7 +107,7 @@ function SortableUpNextCard({
       {/* Card content */}
       <Link
         href={`/book/${item.slug || item.bookId}`}
-        onClick={(e) => { if (isDragging) e.preventDefault(); }}
+        onClick={(e) => { if (isDragging || wasDragged.current) e.preventDefault(); }}
         draggable={false}
         className="relative z-10 flex items-center gap-3 p-3"
       >
@@ -163,6 +165,7 @@ function SortableUpNextCard({
 export function UpNextShelf({ items: initialItems }: { items: UpNextItem[] }) {
   const [items, setItems] = useState(initialItems);
   const [isPending, startTransition] = useTransition();
+  const wasDragged = useRef(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -179,7 +182,14 @@ export function UpNextShelf({ items: initialItems }: { items: UpNextItem[] }) {
     );
   }
 
+  function handleDragStart() {
+    wasDragged.current = true;
+  }
+
   function handleDragEnd(event: DragEndEvent) {
+    // Reset wasDragged after a tick so the click handler can read it
+    setTimeout(() => { wasDragged.current = false; }, 100);
+
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -202,12 +212,13 @@ export function UpNextShelf({ items: initialItems }: { items: UpNextItem[] }) {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={items.map((i) => i.bookId)} strategy={rectSortingStrategy}>
           <div className={`grid grid-cols-2 gap-3 lg:grid-cols-2 lg:gap-3 ${isPending ? "opacity-60" : ""}`}>
             {items.map((item, index) => (
-              <SortableUpNextCard key={item.bookId} item={item} index={index} />
+              <SortableUpNextCard key={item.bookId} item={item} wasDragged={wasDragged} index={index} />
             ))}
           </div>
         </SortableContext>
