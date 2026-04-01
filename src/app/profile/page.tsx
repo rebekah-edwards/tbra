@@ -18,6 +18,8 @@ import { ShareProfileButton } from "@/components/profile/share-profile-button";
 import { AccountBadge } from "@/components/profile/account-badge";
 import { getUserShelves } from "@/lib/queries/shelves";
 import { ProfileShelvesSection } from "@/components/shelves/profile-shelves-section";
+import { ensureReferralCode, getReferralCount } from "@/lib/referrals";
+import { ReferralCard } from "@/components/profile/referral-card";
 
 export default async function ProfilePage() {
   const session = await getCurrentUser();
@@ -26,7 +28,7 @@ export default async function ProfilePage() {
   const user = await getUser(session.userId);
   if (!user) redirect("/login");
 
-  const [stats, favorites, reviews, journalNotes, followerCount, followingCount, userShelves] = await Promise.all([
+  const [stats, favorites, reviews, journalNotes, followerCount, followingCount, userShelves, referralCode, referralCount] = await Promise.all([
     getUserStats(session.userId),
     getUserFavorites(session.userId),
     getUserReviewsWithBooks(session.userId, 6),
@@ -34,6 +36,8 @@ export default async function ProfilePage() {
     getFollowerCount(session.userId),
     getFollowingCount(session.userId),
     getUserShelves(session.userId),
+    ensureReferralCode(session.userId),
+    getReferralCount(session.userId),
   ]);
 
   const memberSince = new Date(user.createdAt).toLocaleDateString("en-US", {
@@ -139,6 +143,9 @@ export default async function ProfilePage() {
           <p className="text-xs text-muted">TBR</p>
         </div>
       </div>
+
+      {/* Referral Card */}
+      <ReferralCard code={referralCode} count={referralCount} />
 
       {/* Top-Shelf Reads */}
       <FavoritesShelf favorites={favorites} userAvatarUrl={user.avatarUrl} />

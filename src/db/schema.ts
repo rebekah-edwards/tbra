@@ -178,8 +178,13 @@ export const users = sqliteTable("users", {
   // Privacy
   isPrivate: integer("is_private", { mode: "boolean" }).notNull().default(false),
   usernameChangedAt: text("username_changed_at"),
+  // Referrals
+  referralCode: text("referral_code"),
+  referredByUserId: text("referred_by_user_id"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
-});
+}, (table) => [
+  uniqueIndex("users_referral_code_unique").on(table.referralCode),
+]);
 
 export const userBookState = sqliteTable("user_book_state", {
   userId: text("user_id").notNull().references(() => users.id),

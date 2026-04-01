@@ -2,8 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { users, passwordResetTokens } from "@/db/schema";
+import { users, passwordResetTokens, userNotifications } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { lookupReferralCode } from "@/lib/referrals";
 import {
   hashPassword,
   verifyPassword,
@@ -36,6 +37,7 @@ export async function signup(
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
+  const referralCode = (formData.get("referralCode") as string)?.trim() || null;
 
   if (!email || !password) {
     return { error: "Email and password are required." };
@@ -85,6 +87,17 @@ export async function signup(
     // Username generation failed — proceed without one, user can set it later
   }
 
+  // Look up referral code if provided
+  let referredByUserId: string | null = null;
+  let referrer: { userId: string; displayName: string | null; username: string | null } | null = null;
+  if (referralCode) {
+    referrer = await lookupReferralCode(referralCode);
+    if (referrer) {
+      referredByUserId = referrer.userId;
+    }
+    // Invalid codes are silently ignored — don't block signup
+  }
+
   try {
     await db.insert(users).values({
       id: userId,
@@ -94,10 +107,26 @@ export async function signup(
       emailVerified: false,
       emailVerificationToken: verificationToken,
       emailVerificationExpiresAt: expiresAt,
+      referredByUserId,
     });
   } catch (err) {
     console.error("[auth] Signup insert failed:", err);
     return { error: "Something went wrong creating your account. Please try again." };
+  }
+
+  // Notify referrer if this signup came through a referral
+  if (referredByUserId) {
+    const newUserName = username ? `@${username}` : email.split("@")[0];
+    try {
+      await db.insert(userNotifications).values({
+        userId: referredByUserId,
+        type: "referral_signup",
+        title: "New referral!",
+        message: `${newUserName} joined tbr*a through your referral link`,
+      });
+    } catch {
+      // Don't fail signup if notification fails
+    }
   }
 
   // Send verification email (non-blocking — don't fail signup if email fails)
