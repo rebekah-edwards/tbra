@@ -16,6 +16,9 @@ import {
 } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { braveSearch } from "./search";
+import { searchISBNdb, searchISBNdbByTitle, getISBNdbCoverUrl, getISBNdbDescription, getISBNdbYear } from "./isbndb";
+import { searchLibraryOfCongress } from "./loc";
+import { searchBookBrainz } from "./bookbrainz";
 import { analyzeBookContent } from "./analyze";
 import type { BookContext } from "./types";
 import {
@@ -225,6 +228,26 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     }
   }
 
+  // ── Phase 0.5: BookBrainz fallback (only if OL failed AND no ISBN) ──
+  if (focus === "full" && !book.openLibraryKey && !book.isbn13 && !book.isbn10) {
+    try {
+      const bbResult = await searchBookBrainz(book.title, authorNames[0] || "");
+      if (bbResult) {
+        const bbUpdates: Record<string, unknown> = {};
+        if (bbResult.isbn) bbUpdates.isbn13 = bbResult.isbn;
+        if (bbResult.year && !book.publicationYear) bbUpdates.publicationYear = bbResult.year;
+        if (Object.keys(bbUpdates).length > 0) {
+          bbUpdates.updatedAt = new Date().toISOString();
+          await db.update(books).set(bbUpdates).where(eq(books.id, bookId));
+          Object.assign(book, bbUpdates);
+          console.log(`[enrichment] BookBrainz filled: ${Object.keys(bbUpdates).filter(k => k !== 'updatedAt').join(', ')}`);
+        }
+      }
+    } catch (err) {
+      console.warn(`[enrichment] BookBrainz error for "${book.title}":`, err);
+    }
+  }
+
   // ── Phase 1: OL Metadata (free) — fill gaps before spending on Brave/Grok ──
   if (focus === "full" && book.openLibraryKey) {
     const olMeta = await fetchOLMetadata(book.openLibraryKey, book.isbn13, book.isbn10);
@@ -267,6 +290,107 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
             await db.insert(bookGenres).values({ bookId, genreId: genre.id }).onConflictDoNothing();
           }
         }
+      }
+    }
+  }
+
+  // ── Phase 1.5: ISBNdb (fill gaps OL missed — covers, pages, publisher, year, description) ──
+  if (focus === "full") {
+    const needsISBNdb = !book.coverImageUrl || !book.description || !book.pages || !book.publicationYear || !book.publisher;
+    if (needsISBNdb) {
+      try {
+        const isbndbResult = book.isbn13
+          ? await searchISBNdb(book.isbn13)
+          : book.isbn10
+            ? await searchISBNdb(book.isbn10)
+            : await searchISBNdbByTitle(book.title, authorNames[0] || "");
+
+        if (isbndbResult) {
+          const isbnUpdates: Record<string, unknown> = {};
+
+          if (!book.coverImageUrl) {
+            const cover = getISBNdbCoverUrl(isbndbResult);
+            if (cover) {
+              isbnUpdates.coverImageUrl = cover;
+              isbnUpdates.coverSource = "isbndb";
+              isbnUpdates.coverVerified = true;
+            }
+          }
+          if (!book.description) {
+            const desc = getISBNdbDescription(isbndbResult);
+            if (desc) isbnUpdates.description = desc;
+          }
+          if (!book.pages && isbndbResult.pages && isbndbResult.pages > 20) {
+            isbnUpdates.pages = isbndbResult.pages;
+          }
+          if (!book.publicationYear) {
+            const year = getISBNdbYear(isbndbResult);
+            if (year) isbnUpdates.publicationYear = year;
+          }
+          if (!book.publicationDate && isbndbResult.date_published) {
+            isbnUpdates.publicationDate = isbndbResult.date_published;
+          }
+          if (!book.publisher && isbndbResult.publisher) {
+            isbnUpdates.publisher = isbndbResult.publisher;
+          }
+          if (!book.isbn13 && isbndbResult.isbn13) {
+            isbnUpdates.isbn13 = isbndbResult.isbn13;
+          }
+          if (!book.isbn10 && isbndbResult.isbn10) {
+            isbnUpdates.isbn10 = isbndbResult.isbn10;
+          }
+
+          if (Object.keys(isbnUpdates).length > 0) {
+            isbnUpdates.updatedAt = new Date().toISOString();
+            await db.update(books).set(isbnUpdates).where(eq(books.id, bookId));
+            Object.assign(book, isbnUpdates);
+            console.log(`[enrichment] ISBNdb filled: ${Object.keys(isbnUpdates).filter(k => k !== 'updatedAt').join(', ')}`);
+          }
+        }
+      } catch (err) {
+        console.warn(`[enrichment] ISBNdb error for "${book.title}":`, err);
+      }
+    }
+  }
+
+  // ── Phase 1.7: Library of Congress (free genre/year supplement) ──
+  if (focus === "full") {
+    const needsLoC = !book.publicationYear || !book.pages;
+    const hasNoGenres = await db.all(sql`SELECT COUNT(*) as count FROM book_genres WHERE book_id = ${bookId}`) as { count: number }[];
+    const genreCount = hasNoGenres[0]?.count ?? 0;
+
+    if (needsLoC || genreCount === 0) {
+      try {
+        const locResult = await searchLibraryOfCongress(book.title, authorNames[0] || "");
+        if (locResult) {
+          const locUpdates: Record<string, unknown> = {};
+          if (!book.publicationYear && locResult.year) locUpdates.publicationYear = locResult.year;
+
+          if (Object.keys(locUpdates).length > 0) {
+            locUpdates.updatedAt = new Date().toISOString();
+            await db.update(books).set(locUpdates).where(eq(books.id, bookId));
+            Object.assign(book, locUpdates);
+          }
+
+          // Add LoC subjects as genres if book has none
+          if (genreCount === 0 && locResult.subjects.length > 0) {
+            const normalizedSubjects = normalizeGenres(locResult.subjects);
+            for (const gn of normalizedSubjects.slice(0, 4)) {
+              const genre = await db.query.genres.findFirst({
+                where: eq(genres.name, gn),
+                columns: { id: true },
+              });
+              if (genre) {
+                await db.insert(bookGenres).values({ bookId, genreId: genre.id }).onConflictDoNothing();
+              }
+            }
+            if (normalizedSubjects.length > 0) {
+              console.log(`[enrichment] LoC genres added: ${normalizedSubjects.slice(0, 4).join(', ')}`);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn(`[enrichment] LoC error for "${book.title}":`, err);
       }
     }
   }
@@ -864,6 +988,22 @@ async function resolveBookCover(
       }
     } catch (err) {
       console.warn(`[enrichment] Brave cover search failed:`, err);
+    }
+  }
+
+  // Tier C.5: ISBNdb cover (if ISBN available)
+  if (!coverUrl && (book.isbn13 || book.isbn10)) {
+    try {
+      const isbndbBook = await searchISBNdb(book.isbn13 || book.isbn10!);
+      if (isbndbBook) {
+        const isbndbCover = getISBNdbCoverUrl(isbndbBook);
+        if (isbndbCover) {
+          coverUrl = isbndbCover;
+          console.log(`[enrichment] Cover found via ISBNdb for "${book.title}"`);
+        }
+      }
+    } catch (err) {
+      console.warn(`[enrichment] ISBNdb cover lookup failed:`, err);
     }
   }
 

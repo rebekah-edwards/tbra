@@ -45,7 +45,7 @@ npm run deploy:code   # Deploy code only
 - **Active task:** `nightly-enrichment-v2` — runs at 12:03 AM PT daily
   - Imports NYT bestsellers (auto-skips already-imported)
   - Runs full enrichment pipeline (Phases 1-4)
-  - Google Books capped at 800 queries (fallback only — skipped if OpenLibrary has covers)
+  - Google Books capped at 1,000 queries (fallback only — skipped if OpenLibrary has covers)
   - Syncs results to production Turso via `sync-incremental.sh push`
 - **When creating/replacing scheduled tasks:** Delete old tasks entirely rather than just disabling them. Disabled tasks clutter the sidebar. There should only ever be ONE active enrichment task.
 - **Task IDs in sidebar:** The task ID you create is what shows in the user's sidebar. Use clear, descriptive IDs.
@@ -53,7 +53,10 @@ npm run deploy:code   # Deploy code only
 
 ## Enrichment API Quotas
 - **Brave Search:** rate-limited, use sparingly. Primary metadata fallback after OpenLibrary.
-- **Google Books:** 1,000 queries/day free tier, resets midnight Pacific. Cap bulk runs at 800. Use `skipGoogleBooks` option in `enrichBook()` during bulk operations.
+- **Google Books:** 1,000 queries/day free tier, resets midnight Pacific. Cap bulk runs at 1,000. Use `skipGoogleBooks` option in `enrichBook()` during bulk operations.
+- **ISBNdb:** Premium plan, 15,000 queries/day, 3/sec rate limit. Primary metadata source after OL. Fills covers, pages, publisher, year, description, ISBN variants.
+- **Library of Congress:** Free, no key needed. Supplements genre/subject data. Rate limit ~20 req/sec.
+- **BookBrainz:** Free, no key needed. Backup only — used when OL + ISBNdb both fail for book identification.
 - **xAI (Grok):** used for AI-generated summaries. Monitor spend.
 - **ENRICHMENT_PAUSED** in `.env.local`: set to `"true"` to halt all enrichment when quotas are exhausted. Currently `false`.
 
