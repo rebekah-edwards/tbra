@@ -223,7 +223,24 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
     <>
       {/* Search icon trigger — always rendered */}
       <button
-        onClick={() => setExpanded(true)}
+        onClick={() => {
+          setExpanded(true);
+          // iOS/PWA: claim keyboard focus synchronously within the tap gesture
+          // by focusing a temporary input, then transfer to the real one once rendered
+          const tmp = document.createElement("input");
+          tmp.style.position = "fixed";
+          tmp.style.opacity = "0";
+          tmp.style.top = "0";
+          tmp.style.left = "0";
+          tmp.style.width = "1px";
+          tmp.style.height = "1px";
+          document.body.appendChild(tmp);
+          tmp.focus();
+          setTimeout(() => {
+            inputRef.current?.focus();
+            tmp.remove();
+          }, 350);
+        }}
         className="flex items-center justify-center rounded-full p-2 text-muted hover:text-foreground transition-colors"
         aria-label="Search"
       >
