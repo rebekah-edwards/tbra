@@ -18,11 +18,12 @@ export async function GET() {
   const now = new Date().toISOString();
 
   const sitemaps = [
-    // Main sitemap: static pages + authors + series + users
     `  <sitemap><loc>${BASE_URL}/sitemap.xml</loc><lastmod>${now}</lastmod></sitemap>`,
+    `  <sitemap><loc>${BASE_URL}/sitemap-authors</loc><lastmod>${now}</lastmod></sitemap>`,
+    `  <sitemap><loc>${BASE_URL}/sitemap-series</loc><lastmod>${now}</lastmod></sitemap>`,
+    `  <sitemap><loc>${BASE_URL}/sitemap-users</loc><lastmod>${now}</lastmod></sitemap>`,
   ];
 
-  // Book sitemaps: paginated
   for (let i = 1; i <= bookPages; i++) {
     sitemaps.push(`  <sitemap><loc>${BASE_URL}/sitemap-books/${i}</loc><lastmod>${now}</lastmod></sitemap>`);
   }
