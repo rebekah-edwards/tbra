@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import DOMPurify from "isomorphic-dompurify";
+import DOMPurify from "dompurify";
 
 interface BookDescriptionProps {
   description: string | null;

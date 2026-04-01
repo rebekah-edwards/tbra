@@ -9,7 +9,7 @@ import { MOODS, DIMENSION_SECTIONS } from "@/lib/review-constants";
 import { timeAgo } from "@/lib/date-utils";
 import { toggleHelpfulVote } from "@/lib/actions/helpful";
 import { formatRating } from "@/lib/text-utils";
-import DOMPurify from "isomorphic-dompurify";
+import DOMPurify from "dompurify";
 import type { BookReviewEntry } from "@/lib/queries/review";
 
 function getInitials(name: string | null): string {
