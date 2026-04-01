@@ -68,7 +68,15 @@ RULES:
 - Be comprehensive: rate ALL 12 categories, no exceptions.
 - Look carefully at the search results — content warnings sites, Goodreads reviews, and book discussion forums often mention specific scenes. Pay close attention to mentions of specific scenes, chapters, or plot points that indicate content presence.
 - Be descriptive, not prescriptive: describe what's in the book without judging it as good or bad.
-- LANGUAGE: Never use the words "transphobia", "homophobia", or other "-phobia" terms for hatred or bigotry — these are inaccurate (they are not fears). Instead use precise language: "trans hatred", "violence against trans people", "anti-trans bigotry", "anti-gay hatred", "queer persecution", etc. Describe what actually happens in the book.
+- LANGUAGE: NEVER use any "-phobia" or "-phobic" terms for social prejudice or bigotry (homophobia, transphobia, Islamophobia, xenophobia, fatphobia, biphobia, queerphobia, etc.). Use precise, descriptive alternatives instead:
+  - homophobia/homophobic → "anti-gay sentiment", "anti-gay slurs"
+  - transphobia → "anti-trans sentiment"
+  - biphobia → "anti-bisexual sentiment"
+  - Islamophobia → "anti-Muslim sentiment"
+  - xenophobia → "prejudice against outsiders"
+  - fatphobia → "anti-fat bias", "body shaming"
+  - queerphobia → "anti-LGBTQ+ sentiment"
+  Describe what actually happens in the book. Medical/literal phobias (claustrophobia, agoraphobia) are fine.
 - Notes are USER-FACING content labels shown on a mobile app. They MUST be concise:
   - Target 70-90 characters. Maximum 190 characters. Never exceed this.
   - When content IS present: describe WHAT specifically happens (e.g., "Graphic battle scenes with dismemberment; one extended torture sequence", "One primary character mentioned to be gay in passing").
