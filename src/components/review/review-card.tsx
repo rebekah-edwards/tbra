@@ -9,7 +9,7 @@ import { MOODS, DIMENSION_SECTIONS } from "@/lib/review-constants";
 import { timeAgo } from "@/lib/date-utils";
 import { toggleHelpfulVote } from "@/lib/actions/helpful";
 import { formatRating } from "@/lib/text-utils";
-import DOMPurify from "dompurify";
+import { sanitizeHtml } from "@/lib/sanitize";
 import type { BookReviewEntry } from "@/lib/queries/review";
 
 function getInitials(name: string | null): string {
@@ -164,7 +164,7 @@ export function ReviewCard({ review, bookId, isOwnReview = false }: { review: Bo
             ref={textInnerRef}
             className="text-sm text-foreground/90 leading-relaxed [&_p]:mb-2.5 [&_p:last-child]:mb-0 [&_b]:font-semibold [&_i]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 overflow-hidden transition-[max-height] duration-300"
             style={isTruncated && !textExpanded ? { maxHeight: `${TEXT_MAX_HEIGHT}px` } : undefined}
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(review.reviewText, {
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(review.reviewText, {
               ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 's', 'span', 'ul', 'ol', 'li', 'blockquote'],
               ALLOWED_ATTR: ['class', 'data-spoiler'],
               FORBID_ATTR: ['style', 'onclick', 'onerror', 'onload'],

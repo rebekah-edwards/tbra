@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import DOMPurify from "dompurify";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface BookAboutDetailsProps {
   description: string | null;
@@ -173,7 +173,7 @@ export function BookAboutDetails({
             <div>
               <div
                 className="text-sm leading-relaxed text-muted"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(`<p>${html}</p>`) }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(`<p>${html}</p>`) }}
               />
               {isLong && (
                 <button
@@ -197,7 +197,7 @@ export function BookAboutDetails({
           >About</h2>
           <div
             className="mt-2 text-sm leading-relaxed text-muted"
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(`<p>${html}</p>`) }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(`<p>${html}</p>`) }}
           />
           {isLong && (
             <button

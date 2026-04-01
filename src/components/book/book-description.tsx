@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import DOMPurify from "dompurify";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface BookDescriptionProps {
   description: string | null;
@@ -65,7 +65,7 @@ export function BookDescription({ description }: BookDescriptionProps) {
       <h2 className="section-heading text-xl">About</h2>
       <div
         className="mt-2 text-sm leading-relaxed text-muted"
-        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(`<p>${html}</p>`) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(`<p>${html}</p>`) }}
       />
       {isLong && (
         <button

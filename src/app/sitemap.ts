@@ -3,6 +3,11 @@ import { db } from "@/db";
 import { books, authors, series, users } from "@/db/schema";
 import { isNotNull, eq, and } from "drizzle-orm";
 
+// Force runtime generation — build-time static generation times out
+// because the DB queries take >60s across 40K+ books on Turso
+export const dynamic = "force-dynamic";
+export const revalidate = 3600; // cache for 1 hour
+
 const BASE_URL = "https://thebasedreader.app";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
