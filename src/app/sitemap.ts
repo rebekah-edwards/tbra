@@ -8,36 +8,43 @@ export const dynamic = "force-dynamic";
 export const revalidate = 3600; // cache for 1 hour
 
 const BASE_URL = "https://thebasedreader.app";
-const BOOKS_PER_SITEMAP = 5000;
+const PER_SITEMAP = 5000;
 
-/**
- * Generate sitemap index with multiple sub-sitemaps:
- *   /sitemap/0.xml — static pages + users + series + authors
- *   /sitemap/1.xml — books 0-4999
- *   /sitemap/2.xml — books 5000-9999
- *   etc.
- */
+// ID scheme:
+//   0        = static pages + user profiles
+//   100-199  = books (100 = first 5K, 101 = next 5K, etc.)
+//   200      = authors
+//   300      = series
+
 export async function generateSitemaps() {
-  const countRow = await db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(books)
-    .where(and(isNotNull(books.slug), eq(books.visibility, "public")));
+  const [bookCount, authorCount, seriesCount] = await Promise.all([
+    db.select({ count: sql<number>`COUNT(*)` }).from(books)
+      .where(and(isNotNull(books.slug), eq(books.visibility, "public"))),
+    db.select({ count: sql<number>`COUNT(*)` }).from(authors),
+    db.select({ count: sql<number>`COUNT(*)` }).from(series)
+      .where(isNotNull(series.slug)),
+  ]);
 
-  const bookCount = countRow[0]?.count ?? 0;
-  const bookSitemaps = Math.ceil(bookCount / BOOKS_PER_SITEMAP);
+  const numBooks = bookCount[0]?.count ?? 0;
+  const bookChunks = Math.ceil(numBooks / PER_SITEMAP);
 
-  // id 0 = static + authors + series + users
-  // id 1..N = book pages in chunks
-  const ids = [{ id: 0 }];
-  for (let i = 1; i <= bookSitemaps; i++) {
-    ids.push({ id: i });
+  const ids = [
+    { id: 0 },   // static + users
+    { id: 200 }, // authors
+    { id: 300 }, // series
+  ];
+
+  // Book chunks: 100, 101, 102, etc.
+  for (let i = 0; i < bookChunks; i++) {
+    ids.push({ id: 100 + i });
   }
+
   return ids;
 }
 
 export default async function sitemap({ id }: { id: number }): Promise<MetadataRoute.Sitemap> {
+  // ─── Static pages + user profiles ───
   if (id === 0) {
-    // Static pages + authors + series + users
     const staticPages: MetadataRoute.Sitemap = [
       { url: BASE_URL, lastModified: new Date(), changeFrequency: "daily", priority: 1.0 },
       { url: `${BASE_URL}/discover`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
@@ -47,32 +54,6 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
       { url: `${BASE_URL}/signup`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.4 },
     ];
 
-    // Authors (use slug if available, fallback to id)
-    const authorRows = await db
-      .select({ id: authors.id, slug: authors.slug })
-      .from(authors);
-
-    const authorPages: MetadataRoute.Sitemap = authorRows.map((a) => ({
-      url: `${BASE_URL}/author/${a.slug || a.id}`,
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    }));
-
-    // Series
-    const seriesRows = await db
-      .select({ slug: series.slug })
-      .from(series)
-      .where(isNotNull(series.slug));
-
-    const seriesPages: MetadataRoute.Sitemap = seriesRows
-      .filter((s) => s.slug)
-      .map((s) => ({
-        url: `${BASE_URL}/series/${s.slug}`,
-        changeFrequency: "weekly" as const,
-        priority: 0.7,
-      }));
-
-    // Users
     const userRows = await db
       .select({ username: users.username })
       .from(users)
@@ -86,24 +67,57 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
         priority: 0.4,
       }));
 
-    return [...staticPages, ...authorPages, ...seriesPages, ...userPages];
+    return [...staticPages, ...userPages];
   }
 
-  // Book sitemaps: paginated chunks of 5,000
-  const offset = (id - 1) * BOOKS_PER_SITEMAP;
-  const bookRows = await db
-    .select({ slug: books.slug })
-    .from(books)
-    .where(and(isNotNull(books.slug), eq(books.visibility, "public")))
-    .orderBy(books.slug)
-    .limit(BOOKS_PER_SITEMAP)
-    .offset(offset);
+  // ─── Books (paginated: id 100 = offset 0, 101 = offset 5000, etc.) ───
+  if (id >= 100 && id < 200) {
+    const offset = (id - 100) * PER_SITEMAP;
+    const bookRows = await db
+      .select({ slug: books.slug })
+      .from(books)
+      .where(and(isNotNull(books.slug), eq(books.visibility, "public")))
+      .orderBy(books.slug)
+      .limit(PER_SITEMAP)
+      .offset(offset);
 
-  return bookRows
-    .filter((b) => b.slug)
-    .map((b) => ({
-      url: `${BASE_URL}/book/${b.slug}`,
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
+    return bookRows
+      .filter((b) => b.slug)
+      .map((b) => ({
+        url: `${BASE_URL}/book/${b.slug}`,
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      }));
+  }
+
+  // ─── Authors ───
+  if (id === 200) {
+    const authorRows = await db
+      .select({ id: authors.id, slug: authors.slug })
+      .from(authors);
+
+    return authorRows.map((a) => ({
+      url: `${BASE_URL}/author/${a.slug || a.id}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
     }));
+  }
+
+  // ─── Series ───
+  if (id === 300) {
+    const seriesRows = await db
+      .select({ slug: series.slug })
+      .from(series)
+      .where(isNotNull(series.slug));
+
+    return seriesRows
+      .filter((s) => s.slug)
+      .map((s) => ({
+        url: `${BASE_URL}/series/${s.slug}`,
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      }));
+  }
+
+  return [];
 }
