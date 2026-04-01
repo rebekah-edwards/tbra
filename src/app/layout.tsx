@@ -38,6 +38,12 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://thebasedreader.app"),
   title: { default: "tbr*a", template: "%s" },
   description: "Detailed, structured content information for books.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "tbr*a",
+  },
   twitter: {
     card: "summary_large_image",
     site: "@thebasedreader",
@@ -46,6 +52,9 @@ export const metadata: Metadata = {
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
   ],
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export default async function RootLayout({
@@ -95,6 +104,11 @@ export default async function RootLayout({
       <body
         className={`${plusJakarta.variable} ${outfit.variable} ${spaceGrotesk.variable} antialiased bg-background text-foreground`}
       >
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js')})}`
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
