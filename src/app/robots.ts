@@ -19,6 +19,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: "https://thebasedreader.app/sitemap.xml",
+    sitemap: "https://thebasedreader.app/sitemap-index.xml",
   };
 }
