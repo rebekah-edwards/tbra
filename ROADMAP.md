@@ -39,15 +39,19 @@
 7. **Pacing-based recommendations** — Pacing aggregation and display built (stoplight-colored pills on book pages, beta_tester + super_admin pacing trusted). Once enough reviews include pacing data, add pacing filter to Discover and wire into recommendation scoring.
 8. **Comic/manga series parent pages** — Group high-volume series into season/arc/volume sub-series with parent page linking them.
 
-### Round 4 (needs Turso push)
-- **Follow Author + notifications**
-- **TBR Notes (Based Reader)**
-- **Pre-publication rating gates**
-- **Referral program**
-- **Admin notification broadcast**
-- **Shelf followed → notification**
-- **Review marked as helpful → notification**
-- **PWA (Progressive Web App)** — Installable from browser, offline fallback, service worker caching. Bridge distribution strategy until Amazon Creators API + app store packaging.
+### Round 4
+- ~~**Follow Author + notifications**~~ ✅ — Follow button on author pages, follower count, new-book notification script (2026-03-31)
+- ~~**TBR Notes (Based Reader)**~~ ✅ — Premium note editor inside state dropdown, note previews on library TBR grid (2026-03-31)
+- ~~**Pre-publication ARC review gates**~~ ✅ — ARC source dropdown + proof upload → admin review queue at `/admin/arc-reviews` → ARC badge on approved reviews (2026-03-31)
+- ~~**Admin notification broadcast**~~ ✅ — Super admin sends to all users via `/admin/broadcast` (2026-03-31)
+- ~~**Shelf following + discovery**~~ ✅ — "Other shelves with this book" in Shelves bottom sheet, My Shelves/Following tabs, shelf reorder with @dnd-kit (2026-03-31)
+- ~~**Shelf followed → notification**~~ ✅ — (2026-03-30)
+- ~~**Review marked as helpful → notification**~~ ✅ — (2026-03-30)
+- ~~**Book page button declutter**~~ ✅ — Conditional Up Next/Format, combined Top Shelf into Shelves bottom sheet, neon-blue Shelves button (2026-03-31)
+- ~~**Amazon affiliate disclosure**~~ ✅ — Confirmation dialog + FTC-compliant footer (2026-03-31)
+- ~~**Speed fixes**~~ ✅ — Cached heavy queries, added indexes, reduced revalidation blast radius (2026-03-31)
+- ~~**Referral program**~~ ✅ — Tracking only: unique referral codes, signup capture via ?ref=CODE, in-app notifications to referrer, profile card with copy link + count (2026-03-31)
+- ~~**PWA (Progressive Web App)**~~ ✅ — Installable from browser, offline fallback page, service worker with static asset caching, web app manifest, generated icons from logo. Bridge distribution until app store packaging. (2026-03-31)
 
 ### Later Phase
 9. **Buddy reads** — Social reading feature (much later)
@@ -63,6 +67,14 @@
 - ~~**Free vs. premium feature gating**~~ ✅ (2026-03-28)
 - ~~**Full data exports**~~ ✅ (2026-03-28)
 - ~~**New follower notifications**~~ ✅ (2026-03-28)
+- ~~**Follow Author + notifications**~~ ✅ (2026-03-31)
+- ~~**TBR Notes (Based Reader)**~~ ✅ (2026-03-31)
+- ~~**Pre-publication ARC review gates**~~ ✅ (2026-03-31)
+- ~~**Admin notification broadcast**~~ ✅ (2026-03-31)
+- ~~**Shelf following + discovery + reorder**~~ ✅ (2026-03-31)
+- ~~**Book page button declutter**~~ ✅ (2026-03-31)
+- ~~**Amazon affiliate disclosure**~~ ✅ (2026-03-31)
+- ~~**Speed optimizations (caching + indexes + revalidation)**~~ ✅ (2026-03-31)
 
 ## Completed (2026-03-28 Session)
 
