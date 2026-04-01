@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addToUpNext, removeFromUpNext } from "@/lib/actions/up-next";
+import { addToUpNext, removeFromUpNext, MAX_UP_NEXT } from "@/lib/actions/up-next";
 
 interface UpNextButtonProps {
   bookId: string;
@@ -30,7 +30,7 @@ export function UpNextButton({
         setCount((c) => Math.max(0, c - 1));
         onPositionChange?.(null);
       } else {
-        if (count >= 5) return; // Queue is full
+        if (count >= MAX_UP_NEXT) return; // Queue is full
         const result = await addToUpNext(bookId);
         if (result.success && result.position) {
           setPosition(result.position);
@@ -44,12 +44,12 @@ export function UpNextButton({
   return (
     <button
       onClick={handleClick}
-      disabled={isPending || (!isInQueue && count >= 5)}
+      disabled={isPending || (!isInQueue && count >= MAX_UP_NEXT)}
       title={
         isInQueue
           ? `Up Next #${position} — tap to remove`
-          : count >= 5
-            ? "Up Next is full (5 max)"
+          : count >= MAX_UP_NEXT
+            ? `Up Next is full (${MAX_UP_NEXT} max)`
             : "Add to Up Next"
       }
       className={`
@@ -62,7 +62,7 @@ export function UpNextButton({
           ? "bg-muted/15 text-foreground border-2 border-muted/50"
           : "bg-surface-alt text-muted border-2 border-border hover:border-muted/50 hover:text-foreground"
         }
-        ${!isInQueue && count >= 5 ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
+        ${!isInQueue && count >= MAX_UP_NEXT ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
       `}
     >
       {isPending ? (

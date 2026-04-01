@@ -8,6 +8,7 @@ import { eq, and, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { importFromOpenLibraryAndReturn } from "@/lib/actions/books";
 import { ensureReadingSession, pauseActiveSession } from "@/lib/actions/reading-session";
+import { removeFromUpNext } from "@/lib/actions/up-next";
 import { getActiveSession } from "@/lib/queries/reading-session";
 import type { OLSearchResult } from "@/lib/openlibrary";
 
@@ -59,6 +60,11 @@ export async function setBookState(bookId: string, state: string) {
       state,
       activeFormats,
     });
+  }
+
+  // Remove from Up Next when starting to read
+  if (state === "currently_reading") {
+    await removeFromUpNext(bookId);
   }
 
   // Sync reading session
@@ -255,6 +261,11 @@ export async function setBookStateWithImport(
       bookId: resolvedBookId,
       state,
     });
+  }
+
+  // Remove from Up Next when starting to read
+  if (state === "currently_reading") {
+    await removeFromUpNext(resolvedBookId);
   }
 
   revalidatePath(`/book/${resolvedBookId}`);

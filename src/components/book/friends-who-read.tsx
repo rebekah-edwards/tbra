@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import type { FriendWhoRead } from "@/lib/queries/follows";
 
@@ -84,12 +85,12 @@ interface FriendsWhoReadProps {
 }
 
 export function FriendsWhoRead({ friends, bookId, bookSlug }: FriendsWhoReadProps) {
+  const [expanded, setExpanded] = useState(false);
+
   if (friends.length === 0) return null;
 
   const withReviews = friends.filter((f) => f.reviewId);
   const reviewerIds = new Set(withReviews.map((f) => f.userId));
-
-  // Completed without a review (reviewers get their own row)
   const completedOnly = friends.filter((f) => f.state === "completed" && !reviewerIds.has(f.userId));
   const reading = friends.filter((f) => f.state === "currently_reading");
   const tbr = friends.filter((f) => f.state === "tbr");
@@ -101,6 +102,18 @@ export function FriendsWhoRead({ friends, bookId, bookSlug }: FriendsWhoReadProp
 
   const bookPath = bookSlug ? `/book/${bookSlug}` : `/book/${bookId}`;
 
+  // Build summary for collapsed view
+  const ratedFriends = friends.filter((f) => f.rating != null);
+  const avgRating = ratedFriends.length > 0
+    ? ratedFriends.reduce((s, f) => s + f.rating!, 0) / ratedFriends.length
+    : null;
+
+  const summaryParts: string[] = [];
+  if (ratedFriends.length > 0) summaryParts.push(`${ratedFriends.length} rated`);
+  if (reading.length > 0) summaryParts.push(`${reading.length} reading`);
+  if (tbr.length > 0) summaryParts.push(`${tbr.length} on TBR`);
+  const summaryText = summaryParts.join(" · ") || `${friends.length} friend${friends.length === 1 ? "" : "s"}`;
+
   const chevron = (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted/50">
       <polyline points="9 18 15 12 9 6" />
@@ -109,7 +122,6 @@ export function FriendsWhoRead({ friends, bookId, bookSlug }: FriendsWhoReadProp
 
   const rows: { key: string; avatars: FriendWhoRead[]; text: string; right: React.ReactNode; href?: string }[] = [];
 
-  // Reviews first — these are the richest interactions
   for (const friend of withReviews) {
     rows.push({
       key: `review-${friend.userId}`,
@@ -125,7 +137,6 @@ export function FriendsWhoRead({ friends, bookId, bookSlug }: FriendsWhoReadProp
     });
   }
 
-  // Completed (without review)
   if (completedOnly.length > 0) {
     rows.push({
       key: "completed",
@@ -167,25 +178,57 @@ export function FriendsWhoRead({ friends, bookId, bookSlug }: FriendsWhoReadProp
 
   return (
     <div className="mt-6">
-      <h2 className="section-heading text-sm mb-3">Friends&apos; Activity</h2>
-      <div className="space-y-1">
-        {rows.map((row) => {
-          const content = (
-            <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-surface-alt/50">
-              <StackedAvatars friends={row.avatars} />
-              <span className="flex-1 text-sm text-foreground/80">{row.text}</span>
-              {row.right && <span className="flex-shrink-0">{row.right}</span>}
-            </div>
-          );
+      {/* Collapsed header — always visible, tap to expand */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center gap-3 py-2 group"
+      >
+        <StackedAvatars friends={friends} max={5} />
+        <div className="flex-1 text-left">
+          <span className="text-sm font-medium text-foreground/80">{summaryText}</span>
+          {avgRating != null && !isNaN(avgRating) && (
+            <span className="ml-2 text-xs text-muted">· {avgRating.toFixed(1)} avg</span>
+          )}
+        </div>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`text-muted/50 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
 
-          return row.href ? (
-            <Link key={row.key} href={row.href} className="block">
-              {content}
-            </Link>
-          ) : (
-            <div key={row.key}>{content}</div>
-          );
-        })}
+      {/* Expanded detail rows */}
+      <div
+        className="overflow-hidden transition-all duration-200"
+        style={{ maxHeight: expanded ? `${rows.length * 52 + 16}px` : "0px", opacity: expanded ? 1 : 0 }}
+      >
+        <div className="space-y-1 pt-1">
+          {rows.map((row) => {
+            const content = (
+              <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-surface-alt/50">
+                <StackedAvatars friends={row.avatars} />
+                <span className="flex-1 text-sm text-foreground/80">{row.text}</span>
+                {row.right && <span className="flex-shrink-0">{row.right}</span>}
+              </div>
+            );
+
+            return row.href ? (
+              <Link key={row.key} href={row.href} className="block">
+                {content}
+              </Link>
+            ) : (
+              <div key={row.key}>{content}</div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

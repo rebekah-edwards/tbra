@@ -6,7 +6,7 @@ import { eq, and, gt, asc, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-const MAX_UP_NEXT = 5;
+export const MAX_UP_NEXT = 6;
 
 export async function addToUpNext(bookId: string): Promise<{ success: boolean; position?: number; error?: string }> {
   const user = await getCurrentUser();
@@ -25,7 +25,7 @@ export async function addToUpNext(bookId: string): Promise<{ success: boolean; p
     .select({ id: upNext.id })
     .from(upNext)
     .where(eq(upNext.userId, user.userId));
-  if (rows.length >= MAX_UP_NEXT) return { success: false, error: "Up Next is full (max 5)" };
+  if (rows.length >= MAX_UP_NEXT) return { success: false, error: `Up Next is full (max ${MAX_UP_NEXT})` };
 
   const newPosition = rows.length + 1;
   await db.insert(upNext).values({
