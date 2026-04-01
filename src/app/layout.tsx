@@ -164,7 +164,7 @@ export default async function RootLayout({
         />
         <ThemeProvider>
           <TextSizeInitializer />
-          <nav className="sticky top-0 z-50 overflow-visible border-b border-border bg-surface shadow-sm">
+          <nav className="sticky top-0 z-50 overflow-visible border-b border-border bg-surface shadow-sm pt-[env(safe-area-inset-top)]">
             <div className="mx-auto flex max-w-3xl lg:max-w-[1194px] items-center justify-between gap-4 px-6 py-3">
               <Link href="/" className="logo-gradient font-logo text-xl tracking-tight flex-shrink-0">
                 tbr*a
