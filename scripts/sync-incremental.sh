@@ -46,7 +46,8 @@ tables = ['users', 'books', 'authors', 'series', 'genres',
           'reading_goals', 'up_next', 'reported_issues', 'report_corrections',
           'enrichment_log', 'editions', 'links', 'user_hidden_books',
           'user_follows', 'author_follows', 'shelf_follows', 'tbr_notes',
-          'user_content_preferences', 'user_reading_preferences']
+          'user_content_preferences', 'user_reading_preferences',
+          'landing_page_books', 'landing_page_copy']
 
 print(f'{'Table':<35} {'Local':>8} {'Live':>8} {'Diff':>8}')
 print('-' * 65)
@@ -200,6 +201,9 @@ TABLES = [
     ("report_corrections",       ["id"],                    False),
     ("enrichment_log",           ["id"],                    False),
     ("rating_citations",         ["rating_id", "citation_id"], False),
+    # Landing page curation
+    ("landing_page_books",       ["id"],                    False),
+    ("landing_page_copy",        ["id"],                    False),
 ]
 
 total_inserted = 0
@@ -554,6 +558,55 @@ if new_books:
                 f.write(f"INSERT OR IGNORE INTO genres ({genre_col_list}) VALUES ({', '.join(vals)});\n")
         turso_shell(sql_file, is_file=True)
         print(f"    ✓ Pushed {len(genres_to_push)} new genres")
+
+    # ── Push landing page tables (full replace — admin-managed) ──
+    # Ensure tables exist on Turso before pushing
+    turso_shell("""
+        CREATE TABLE IF NOT EXISTS landing_page_books (
+            id TEXT PRIMARY KEY,
+            book_slug TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'parade',
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS landing_page_copy (
+            id TEXT PRIMARY KEY,
+            section_key TEXT NOT NULL UNIQUE,
+            section_label TEXT NOT NULL,
+            content TEXT NOT NULL,
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+    """)
+
+    for lp_table in ["landing_page_books", "landing_page_copy"]:
+        try:
+            lp_rows = cursor.execute(f"SELECT * FROM {lp_table}").fetchall()
+            lp_cols = [desc[0] for desc in cursor.description]
+            lp_col_list = ", ".join(lp_cols)
+        except:
+            continue
+
+        sql_file = os.path.join(TEMP_DIR, f"push_{lp_table}.sql")
+        with open(sql_file, "w", encoding="utf-8") as f:
+            f.write("PRAGMA foreign_keys=OFF;\n")
+            f.write(f"DELETE FROM {lp_table};\n")
+            for row in lp_rows:
+                vals = []
+                for v in row:
+                    if v is None:
+                        vals.append("NULL")
+                    elif isinstance(v, (int, float)):
+                        vals.append(str(v))
+                    else:
+                        escaped = str(v).replace("'", "''")
+                        vals.append(f"'{escaped}'")
+                f.write(f"INSERT INTO {lp_table} ({lp_col_list}) VALUES ({', '.join(vals)});\n")
+
+        result = turso_shell(sql_file, is_file=True)
+        if result.returncode != 0:
+            print(f"    ✗ {lp_table}: push failed ({result.stderr[:100]})")
+        else:
+            print(f"    ✓ Pushed {len(lp_rows)} rows to {lp_table}")
 
 print("\n  Push complete.")
 

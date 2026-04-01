@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { landingPageBooks, landingPageCopy, books } from "@/db/schema";
 import { eq, and, like, isNotNull, sql } from "drizzle-orm";
 import { getCurrentUser, isSuperAdmin } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export async function getLandingBooks() {
   return db
@@ -46,6 +46,7 @@ export async function addLandingBook(slug: string, type: string = "parade") {
     sortOrder: (maxOrder[0]?.max ?? -1) + 1,
   });
 
+  revalidateTag("landing-page");
   revalidatePath("/");
   revalidatePath("/admin/landing");
   return { success: true };
@@ -57,6 +58,7 @@ export async function removeLandingBook(id: string) {
 
   await db.delete(landingPageBooks).where(eq(landingPageBooks.id, id));
 
+  revalidateTag("landing-page");
   revalidatePath("/");
   revalidatePath("/admin/landing");
   return { success: true };
@@ -76,6 +78,7 @@ export async function setFeaturedBook(slug: string) {
     sortOrder: 0,
   });
 
+  revalidateTag("landing-page");
   revalidatePath("/");
   revalidatePath("/admin/landing");
   return { success: true };
@@ -123,6 +126,7 @@ export async function updateLandingCopy(sectionKey: string, content: string) {
     .set({ content, updatedAt: new Date().toISOString() })
     .where(eq(landingPageCopy.sectionKey, sectionKey));
 
+  revalidateTag("landing-page");
   revalidatePath("/");
   revalidatePath("/admin/landing");
   return { success: true };
@@ -132,5 +136,5 @@ export async function getLandingCopyMap(): Promise<Record<string, string>> {
   const rows = await db
     .select({ sectionKey: landingPageCopy.sectionKey, content: landingPageCopy.content })
     .from(landingPageCopy);
-  return Object.fromEntries(rows.map((r) => [r.sectionKey, r.content]));
+  return Object.fromEntries(rows.map((r: { sectionKey: string; content: string }) => [r.sectionKey, r.content]));
 }
