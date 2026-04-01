@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { books, authors, bookAuthors, narrators, bookNarrators, genres, bookGenres, blockedOlKeys } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { validateBookTitle } from "@/lib/book-validation";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import {
@@ -280,6 +281,14 @@ export async function importFromOpenLibrary(result: OLSearchResult) {
   }
   const bookTitle = normalizeTitleSanitize(rawTitle);
 
+  // Validate title — reject junk entries, clean parenthetical series info
+  const validation = validateBookTitle(bookTitle);
+  if (!validation.ok) {
+    console.log(`[import] Rejected "${bookTitle}": ${validation.reason}`);
+    redirect("/search");
+  }
+  const finalTitle = validation.title;
+
   // Sanitize description at import time (strip HTML/links/URLs, keep full length)
   const cleanDescription = work.description ? sanitizeDescription(work.description) : null;
 
@@ -287,7 +296,7 @@ export async function importFromOpenLibrary(result: OLSearchResult) {
   const [book] = await db
     .insert(books)
     .values({
-      title: bookTitle,
+      title: finalTitle,
       description: cleanDescription,
       publicationYear: result.first_publish_year ?? null,
       isbn13: result.isbn?.find((i) => i.length === 13) ?? null,
@@ -393,12 +402,21 @@ export async function importFromOpenLibraryAndReturn(result: OLSearchResult): Pr
     }
   }
   const bookTitle = normalizeTitleSanitize(rawTitle);
+
+  // Validate title — reject junk, clean parentheticals
+  const validation = validateBookTitle(bookTitle);
+  if (!validation.ok) {
+    console.log(`[import] Rejected "${bookTitle}": ${validation.reason}`);
+    return null;
+  }
+  const finalTitle = validation.title;
+
   const cleanDescription = work.description ? sanitizeDescription(work.description) : null;
 
   const [book] = await db
     .insert(books)
     .values({
-      title: bookTitle,
+      title: finalTitle,
       description: cleanDescription,
       publicationYear: result.first_publish_year ?? null,
       isbn13: result.isbn?.find((i) => i.length === 13) ?? null,
