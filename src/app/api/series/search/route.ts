@@ -36,10 +36,9 @@ export async function GET(request: Request) {
   }
 
   const queryLower = q.toLowerCase();
-  const prefix = queryLower.slice(0, 2);
-  const useFuzzy = queryLower.length >= 3;
+  const useFuzzy = queryLower.length >= 4;
 
-  // Fetch broader candidate set for fuzzy matching
+  // Always try exact substring first — catches most cases instantly
   const candidates = await db
     .select({
       id: series.id,
@@ -48,19 +47,36 @@ export async function GET(request: Request) {
     })
     .from(series)
     .leftJoin(bookSeries, eq(bookSeries.seriesId, series.id))
-    .where(
-      useFuzzy
-        ? sql`LOWER(${series.name}) LIKE ${`%${prefix}%`}`
-        : sql`LOWER(${series.name}) LIKE ${`%${queryLower}%`}`
-    )
+    .where(sql`LOWER(${series.name}) LIKE ${`%${queryLower}%`}`)
     .groupBy(series.id)
-    .limit(useFuzzy ? 30 : 10);
+    .limit(10);
+
+  // If too few exact matches and query is long enough, broaden with prefix for fuzzy
+  let fuzzyCandidates: typeof candidates = [];
+  if (useFuzzy && candidates.length < 3) {
+    const prefix = queryLower.slice(0, 3);
+    const exactIds = new Set(candidates.map((c) => c.id));
+    fuzzyCandidates = (await db
+      .select({
+        id: series.id,
+        name: series.name,
+        bookCount: sql<number>`count(${bookSeries.bookId})`,
+      })
+      .from(series)
+      .leftJoin(bookSeries, eq(bookSeries.seriesId, series.id))
+      .where(sql`LOWER(${series.name}) LIKE ${`%${prefix}%`}`)
+      .groupBy(series.id)
+      .limit(20)
+    ).filter((c) => !exactIds.has(c.id));
+  }
+
+  const allCandidates = [...candidates, ...fuzzyCandidates];
 
   // Score each candidate
   type ScoredSeries = (typeof candidates)[number] & { matchScore: number };
   const scored: ScoredSeries[] = [];
 
-  for (const s of candidates) {
+  for (const s of allCandidates) {
     const nameLower = s.name.toLowerCase();
     const isSubstring = nameLower.includes(queryLower);
 

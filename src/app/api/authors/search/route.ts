@@ -35,10 +35,9 @@ export async function GET(request: Request) {
   }
 
   const queryLower = q.toLowerCase();
-  const prefix = queryLower.slice(0, 2);
-  const useFuzzy = queryLower.length >= 3;
+  const useFuzzy = queryLower.length >= 4;
 
-  // Fetch a broader candidate set for fuzzy matching
+  // Always try exact substring first
   const candidates = await db
     .select({
       id: authors.id,
@@ -47,20 +46,38 @@ export async function GET(request: Request) {
     })
     .from(authors)
     .innerJoin(bookAuthors, eq(bookAuthors.authorId, authors.id))
-    .where(
-      useFuzzy
-        ? sql`LOWER(${authors.name}) LIKE ${`%${prefix}%`}`
-        : sql`LOWER(${authors.name}) LIKE ${`%${queryLower}%`}`
-    )
+    .where(sql`LOWER(${authors.name}) LIKE ${`%${queryLower}%`}`)
     .groupBy(authors.id)
     .orderBy(sql`count(${bookAuthors.bookId}) desc`)
-    .limit(useFuzzy ? 30 : 10);
+    .limit(10);
+
+  // Broaden with prefix for fuzzy if too few exact matches
+  let fuzzyCandidates: typeof candidates = [];
+  if (useFuzzy && candidates.length < 3) {
+    const prefix = queryLower.slice(0, 3);
+    const exactIds = new Set(candidates.map((c) => c.id));
+    fuzzyCandidates = (await db
+      .select({
+        id: authors.id,
+        name: authors.name,
+        bookCount: sql<number>`count(${bookAuthors.bookId})`,
+      })
+      .from(authors)
+      .innerJoin(bookAuthors, eq(bookAuthors.authorId, authors.id))
+      .where(sql`LOWER(${authors.name}) LIKE ${`%${prefix}%`}`)
+      .groupBy(authors.id)
+      .orderBy(sql`count(${bookAuthors.bookId}) desc`)
+      .limit(20)
+    ).filter((c) => !exactIds.has(c.id));
+  }
+
+  const allCandidates = [...candidates, ...fuzzyCandidates];
 
   // Score each candidate
   type ScoredAuthor = (typeof candidates)[number] & { matchScore: number };
   const scored: ScoredAuthor[] = [];
 
-  for (const author of candidates) {
+  for (const author of allCandidates) {
     const nameLower = author.name.toLowerCase();
     const isSubstring = nameLower.includes(queryLower);
 
