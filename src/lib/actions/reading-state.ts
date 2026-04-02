@@ -82,7 +82,7 @@ export async function setBookState(bookId: string, state: string) {
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");
-  revalidatePath("/library");
+  revalidatePath("/");
 }
 
 export async function removeBookState(bookId: string) {
@@ -130,6 +130,7 @@ export async function removeBookState(bookId: string) {
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");
+  revalidatePath("/");
 }
 
 export async function setOwnedFormats(bookId: string, formats: string[]) {
@@ -201,6 +202,7 @@ export async function setOwnedFormats(bookId: string, formats: string[]) {
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");
+  revalidatePath("/");
 }
 
 export async function setBookStateWithImport(
@@ -270,6 +272,7 @@ export async function setBookStateWithImport(
 
   revalidatePath(`/book/${resolvedBookId}`);
   revalidatePath("/library");
+  revalidatePath("/");
 
   return resolvedBookId;
 }
@@ -293,6 +296,7 @@ export async function setActiveFormats(bookId: string, formats: string[]) {
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");
+  revalidatePath("/");
 }
 
 export async function addToTbr(bookId: string) {
@@ -337,4 +341,5 @@ export async function removeFromLibrary(bookId: string) {
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");
+  revalidatePath("/");
 }
