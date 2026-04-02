@@ -66,7 +66,8 @@ export function StatsClient({
   const monthlyData = buildMonthlyData(booksByMonth, pagesByMonth, year, currentYear, monthNames);
   const maxMonthlyBooks = Math.max(...monthlyData.map((m) => m.books), 1);
   const maxRatingCount = Math.max(...ratingDistribution.map((r) => r.count), 1);
-  const totalGenreBooks = genreBreakdown.reduce((sum, g) => sum + g.count, 0);
+  const topGenres = genreBreakdown.slice(0, 6);
+  const totalGenreBooks = topGenres.reduce((sum, g) => sum + g.count, 0);
 
   return (
     <div className="space-y-6 lg:max-w-[60%] lg:mx-auto">
@@ -279,11 +280,10 @@ export function StatsClient({
               <div className="relative w-28 h-28 flex-shrink-0">
                 <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                   {(() => {
-                    const top = genreBreakdown.slice(0, 6);
                     const radius = 38;
                     const circumference = 2 * Math.PI * radius;
                     let offset = 0;
-                    return top.map((g, i) => {
+                    return topGenres.map((g, i) => {
                       const pct = totalGenreBooks > 0 ? g.count / totalGenreBooks : 0;
                       const dash = pct * circumference;
                       const gap = circumference - dash;
@@ -303,7 +303,7 @@ export function StatsClient({
                 </div>
               </div>
               <div className="flex-1 space-y-1.5">
-                {genreBreakdown.slice(0, 6).map((g, i) => (
+                {topGenres.map((g, i) => (
                   <div key={g.genre} className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                     <span className="text-xs truncate flex-1">{g.genre}</span>

@@ -426,7 +426,27 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => (isLastStep ? handleSave() : setStep(step + 1))}
+            onClick={() => {
+              if (isLastStep) {
+                // If user skipped through entire wizard without entering anything, close without saving
+                const hasAnyData =
+                  state.overallRating !== null ||
+                  state.didNotFinish ||
+                  (state.reviewText && state.reviewText.trim().length > 0) ||
+                  state.mood !== null ||
+                  Object.values(state.dimensionRatings).some((r) => r !== null) ||
+                  Object.values(state.dimensionTags).some((tags) => tags.length > 0) ||
+                  state.plotPacing !== null ||
+                  (state.contentComments && state.contentComments.trim().length > 0);
+                if (hasAnyData) {
+                  handleSave();
+                } else {
+                  onClose();
+                }
+              } else {
+                setStep(step + 1);
+              }
+            }}
             className="flex-1 text-sm text-muted hover:text-foreground py-3 transition-colors"
           >
             Skip

@@ -18,7 +18,7 @@ npm run deploy:code   # Deploy code only
 - Auth: bcryptjs + jose (JWT sessions), email verification via Resend
 - Blob storage: Vercel Blob (book covers, profile images)
 - AI: OpenAI (xAI endpoint) for enrichment summaries
-- Enrichment pipeline: OpenLibrary -> Brave Search -> Google Books (tiered fallback)
+- Enrichment pipeline: OpenLibrary → ISBNdb → Library of Congress → BookBrainz → Brave Search → Grok/xAI → Google Books (multi-source, tiered)
 
 ## Key Directories
 - `src/app/` — App Router pages (admin, book/[id], discover, library, profile, stats, etc.)
@@ -42,12 +42,11 @@ npm run deploy:code   # Deploy code only
 - `.env.local` must be loaded explicitly for standalone scripts (outside Next.js)
 
 ## Scheduled Tasks
-- **Active task:** `nightly-enrichment-v2` — runs at 12:03 AM PT daily
-  - Imports NYT bestsellers (auto-skips already-imported)
-  - Runs full enrichment pipeline (Phases 1-4)
-  - Google Books capped at 1,000 queries (fallback only — skipped if OpenLibrary has covers)
-  - Syncs results to production Turso via `sync-incremental.sh push`
-- **When creating/replacing scheduled tasks:** Delete old tasks entirely rather than just disabling them. Disabled tasks clutter the sidebar. There should only ever be ONE active enrichment task.
+- `nightly-enrichment-v2` — 12:03 AM PT: imports NYT bestsellers, runs full enrichment pipeline, syncs to Turso
+- `nightly-metadata-backfill` — 1:03 AM PT: ISBNdb/Google Books backfill for books with missing data (15K/night). Disable after full catalog is backfilled (~3 nights from 2026-04-01).
+- `nightly-book-cleanup` — 3:23 AM: catches audiobook splits, sessions, junk titles that slipped through import
+- `sitemap-threshold-check` — 9:17 AM: notifies user when book count crosses 5K threshold (new sitemap to submit in GSC)
+- **When creating/replacing scheduled tasks:** Delete old tasks entirely rather than just disabling them. Disabled tasks clutter the sidebar.
 - **Task IDs in sidebar:** The task ID you create is what shows in the user's sidebar. Use clear, descriptive IDs.
 - **New tasks don't appear in sidebar until triggered once.** After creating a new task, immediately do a manual "Run now" to make it visible and to pre-approve tool permissions so future automatic runs don't stall on permission prompts.
 

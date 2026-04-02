@@ -164,7 +164,38 @@ export async function GET(request: NextRequest) {
     fuzzyRows = broader.filter((r) => !exactIds.has(r.id));
   }
 
-  const rows = [...exactRows, ...fuzzyRows];
+  // Pass 3: author name match — find books where the author name matches the query.
+  // This ensures searching "Harlan Coben" returns his books even though
+  // the title doesn't contain "Harlan Coben".
+  let authorMatchRows: typeof exactRows = [];
+  if (trimmed.length >= 3) {
+    const titleIds = new Set([...exactRows, ...fuzzyRows].map((r) => r.id));
+    authorMatchRows = (await db
+      .select({
+        id: books.id,
+        slug: books.slug,
+        title: books.title,
+        coverImageUrl: books.coverImageUrl,
+        publicationYear: books.publicationYear,
+      })
+      .from(books)
+      .innerJoin(bookAuthors, eq(bookAuthors.bookId, books.id))
+      .innerJoin(authors, eq(bookAuthors.authorId, authors.id))
+      .where(
+        and(
+          sql`LOWER(${authors.name}) LIKE ${`%${trimmed}%`}`,
+          eq(books.visibility, "public"),
+          eq(books.isBoxSet, false)
+        )
+      )
+      .orderBy(sql`${books.publicationYear} DESC NULLS LAST`)
+      .limit(50)
+      .all()
+    ).filter((r) => !titleIds.has(r.id));
+  }
+
+  const rows = [...exactRows, ...fuzzyRows, ...authorMatchRows];
+  const authorMatchIds = new Set(authorMatchRows.map((r) => r.id));
 
   // For fuzzy matching, score each result by edit distance
   // between query and the title (or substring of the title)
@@ -227,7 +258,14 @@ export async function GET(request: NextRequest) {
     const authorNames = authorsByBook.get(row.id) ?? [];
     const hasRatings = booksWithRatings.has(row.id);
 
-    if (useFuzzy) {
+    // Books matched via author name search are already validated — always include them
+    const isAuthorMatch = authorMatchIds.has(row.id);
+
+    if (isAuthorMatch) {
+      // Author-matched books get a small penalty so title matches rank higher,
+      // but still appear in results
+      scored.push({ ...row, fuzzyScore: 5, hasRatings, authorNames });
+    } else if (useFuzzy) {
       // Check if title contains the query as substring (original behavior)
       const isSubstringMatch = titleLower.includes(trimmed);
 

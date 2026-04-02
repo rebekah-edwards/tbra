@@ -174,16 +174,25 @@ export async function getPagesByMonth(
   return rows;
 }
 
-/** Total audiobook minutes listened for completed sessions */
+/** Total audiobook minutes listened for completed sessions where user actually used audiobook format */
 export async function getMinutesListened(
   userId: string,
   year?: number
 ): Promise<number> {
   const rows = await db.all(sql`
-    WITH ${deduped(userId, year)}
+    WITH audio_sessions AS (
+      SELECT book_id, MAX(completion_date) as completion_date, completion_precision
+      FROM reading_sessions
+      WHERE user_id = ${userId}
+        AND state = 'completed'
+        AND completion_date IS NOT NULL
+        AND active_formats LIKE '%audiobook%'
+        ${yearFilter(year)}
+      GROUP BY book_id
+    )
     SELECT COALESCE(SUM(b.audio_length_minutes), 0) as total_minutes
-    FROM deduped_sessions ds
-    JOIN books b ON ds.book_id = b.id
+    FROM audio_sessions als
+    JOIN books b ON als.book_id = b.id
     WHERE b.audio_length_minutes IS NOT NULL
   `) as { total_minutes: number }[];
 
