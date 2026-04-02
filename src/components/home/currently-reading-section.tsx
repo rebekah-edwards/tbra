@@ -4,9 +4,11 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { setBookState, removeBookState } from "@/lib/actions/reading-state";
+import { setBookState, removeBookState, setBookStateWithCompletion } from "@/lib/actions/reading-state";
 import { addReadingNote } from "@/lib/actions/reading-notes";
 import { NoCover } from "@/components/no-cover";
+import { CompletionDatePicker } from "@/components/book/completion-date-picker";
+import { ReviewWizard } from "@/components/review/review-wizard";
 
 interface CurrentlyReadingBook {
   id: string;
@@ -16,6 +18,7 @@ interface CurrentlyReadingBook {
   authors: string[];
   activeFormats?: string[];
   progress?: number | null; // 0-100 percentage
+  pages?: number | null;
 }
 
 const MOODS = [
@@ -183,25 +186,48 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
   const [trackingBookId, setTrackingBookId] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ bookId: string; state: string; label: string } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [pendingCompleteState, setPendingCompleteState] = useState<"completed" | "dnf" | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const router = useRouter();
   const isAudiobook = book.activeFormats?.length === 1 && book.activeFormats[0] === "audiobook";
 
   function handleStateChange(bookId: string, newState: string) {
-    // Completed → navigate to book page to trigger full completion flow (date, review)
-    if (newState === "completed") {
-      router.push(`/book/${book.slug || book.id}?complete=true`);
+    // Completed/DNF → show date picker inline (no navigation)
+    if (newState === "completed" || newState === "dnf") {
+      setPendingCompleteState(newState as "completed" | "dnf");
+      setDatePickerOpen(true);
       return;
     }
-    // Require confirmation for destructive actions
-    if (newState === "dnf" || newState === "paused") {
+    // Require confirmation for paused
+    if (newState === "paused") {
       setConfirmAction({
         bookId,
         state: newState,
-        label: newState === "dnf" ? "Did Not Finish" : "Pause",
+        label: "Pause",
       });
       return;
     }
     executeStateChange(bookId, newState);
+  }
+
+  function handleDateConfirm(date: string | null, precision: "exact" | "month" | "year" | null) {
+    setDatePickerOpen(false);
+    if (!pendingCompleteState) return;
+    const finalState = pendingCompleteState;
+    setPendingCompleteState(null);
+    startTransition(async () => {
+      await setBookStateWithCompletion(book.id, finalState, date, precision);
+    });
+    // Open review wizard after completion
+    if (finalState === "completed") {
+      setReviewOpen(true);
+    }
+  }
+
+  function handleDateCancel() {
+    setDatePickerOpen(false);
+    setPendingCompleteState(null);
   }
 
   function executeStateChange(bookId: string, newState: string) {
@@ -340,6 +366,21 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
       {trackingBookId === book.id && (
         <TrackSheet book={book} onClose={() => setTrackingBookId(null)} />
       )}
+
+      {/* Inline completion flow — date picker + review wizard */}
+      <CompletionDatePicker
+        open={datePickerOpen}
+        onClose={handleDateCancel}
+        onConfirm={handleDateConfirm}
+        label={pendingCompleteState === "dnf" ? "When did you stop reading?" : "When did you finish?"}
+      />
+      <ReviewWizard
+        bookId={book.id}
+        bookPages={book.pages}
+        open={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        isExisting={false}
+      />
     </div>
   );
 }

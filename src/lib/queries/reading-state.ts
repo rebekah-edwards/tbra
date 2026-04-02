@@ -76,6 +76,7 @@ export async function getUserBooks(
       slug: books.slug,
       coverImageUrl: books.coverImageUrl,
       isFiction: books.isFiction,
+      pages: books.pages,
     })
     .from(userBookState)
     .innerJoin(books, eq(userBookState.bookId, books.id))
