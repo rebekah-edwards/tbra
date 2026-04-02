@@ -46,12 +46,15 @@ export interface EnrichOptions {
   /** Skip Google Books API calls (use during bulk re-enrichment to avoid rate limits) */
   skipGoogleBooks?: boolean;
   /** Skip Brave Search API calls (use when Brave quota is exhausted) */
-  skipBrave?: boolean;
+  skipBrave?: boolean; // DEFAULT TRUE — Brave has limited credits, only use when explicitly enabled
   /** Run only a specific enrichment step instead of the full pipeline */
   focus?: "full" | "cover" | "audio" | "description";
 }
 
 export async function enrichBook(bookId: string, options?: EnrichOptions): Promise<void> {
+  // Default skipBrave to true — Brave has limited monthly credits.
+  // Only pass skipBrave: false when explicitly approved by the user.
+  const opts = { skipBrave: true, ...options };
   // Auto-pause: skip if API was exhausted in the last hour (resets at midnight PST)
   if (process.env.ENRICHMENT_PAUSED === "true") {
     console.log(`[enrichment] PAUSED — skipping ${bookId}`);
@@ -69,7 +72,7 @@ export async function enrichBook(bookId: string, options?: EnrichOptions): Promi
 
   console.log(`[enrichment] Starting enrichment for book ${bookId}`);
   try {
-    await _enrichBookInner(bookId, options);
+    await _enrichBookInner(bookId, opts);
     // Log success
     await db.insert(enrichmentLog).values({
       bookId,
@@ -415,7 +418,7 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
 
   // ── Brave metadata search: fill author/pages/year/description if still missing ──
   const needsMetadata = !book.description || !book.pages || !book.publicationYear || authorNames.length === 0;
-  if (focus === "full" && needsMetadata && !options?.skipBrave) {
+  if (focus === "full" && needsMetadata && !opts.skipBrave) {
     try {
       const metaQuery = book.asin
         ? `"${book.title}" ASIN ${book.asin} book author pages published`
@@ -526,25 +529,34 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
 
   console.log(`[enrichment] Searching for: ${searchName}`);
 
-  // 2. Run Brave searches in parallel for deeper research
-  // Add a 5th search for description if book is missing one
-  const searches: Promise<{ title: string; url: string; description: string }[]>[] = [
-    braveSearch(`${searchName} content warnings trigger warnings`, 8),
-    braveSearch(`${searchName} book review content themes`, 8),
-    braveSearch(`${searchName} book series reading order synopsis Goodreads`, 6),
-    braveSearch(`${searchName} parent guide mature content sexual violence`, 5),
-  ];
-  if (!book.description) {
-    searches.push(
-      braveSearch(`${searchName} "about this book" OR "book description" OR "editorial reviews" site:amazon.com OR site:goodreads.com`, 5)
-    );
+  // 2. Run Brave searches in parallel for deeper research (ONLY if Brave is enabled)
+  let allResults: { title: string; url: string; description: string }[] = [];
+  let warningResults: typeof allResults = [];
+  let reviewResults: typeof allResults = [];
+  let detailResults: typeof allResults = [];
+  let parentGuideResults: typeof allResults = [];
+  let descriptionResults: typeof allResults = [];
+
+  if (!opts.skipBrave) {
+    const searches: Promise<typeof allResults>[] = [
+      braveSearch(`${searchName} content warnings trigger warnings`, 8),
+      braveSearch(`${searchName} book review content themes`, 8),
+      braveSearch(`${searchName} book series reading order synopsis Goodreads`, 6),
+      braveSearch(`${searchName} parent guide mature content sexual violence`, 5),
+    ];
+    if (!book.description) {
+      searches.push(
+        braveSearch(`${searchName} "about this book" OR "book description" OR "editorial reviews" site:amazon.com OR site:goodreads.com`, 5)
+      );
+    }
+
+    const searchResults = await Promise.all(searches);
+    [warningResults, reviewResults, detailResults, parentGuideResults] = searchResults;
+    descriptionResults = searchResults[4] ?? [];
+    allResults = [...warningResults, ...reviewResults, ...detailResults, ...parentGuideResults, ...descriptionResults];
+  } else {
+    console.log(`[enrichment] Skipping Brave searches (skipBrave=true)`);
   }
-
-  const searchResults = await Promise.all(searches);
-  const [warningResults, reviewResults, detailResults, parentGuideResults] = searchResults;
-  const descriptionResults = searchResults[4] ?? [];
-
-  const allResults = [...warningResults, ...reviewResults, ...detailResults, ...parentGuideResults, ...descriptionResults];
   console.log(`[enrichment] Found ${allResults.length} search results`);
 
   // 3. Analyze with Grok
@@ -960,8 +972,8 @@ async function resolveBookCover(
     if (coverUrl) console.log(`[enrichment] Cover found via ISBN-10 for "${book.title}"`);
   }
 
-  // Tier C: Brave Search for cover
-  if (!coverUrl) {
+  // Tier C: Brave Search for cover (only if Brave enabled)
+  if (!coverUrl && !opts.skipBrave) {
     try {
       const searchName = `"${book.title}" "${authorNames[0] ?? ""}"`;
       const coverResults = await braveSearch(`${searchName} book cover`, 5);
