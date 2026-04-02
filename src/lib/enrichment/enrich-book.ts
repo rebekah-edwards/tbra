@@ -114,7 +114,8 @@ export async function enrichBook(bookId: string, options?: EnrichOptions): Promi
 }
 
 async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promise<void> {
-  const focus = options?.focus ?? "full";
+  const opts = { skipBrave: true, ...options };
+  const focus = opts.focus ?? "full";
 
   // 1. Fetch book with authors and genres
   let book = await db.query.books.findFirst({
