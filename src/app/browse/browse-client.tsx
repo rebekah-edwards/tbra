@@ -64,6 +64,7 @@ export function BrowseClient({ isLoggedIn, hasFollows }: BrowseClientProps) {
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState(false);
   const offsetRef = useRef(0);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -84,8 +85,12 @@ export function BrowseClient({ isLoggedIn, hasFollows }: BrowseClientProps) {
 
   // Fetch books
   const fetchBooks = useCallback(async (offset: number, append: boolean) => {
-    if (offset === 0) setLoading(true);
-    else setLoadingMore(true);
+    if (offset === 0) {
+      setLoading(true);
+      setError(false);
+    } else {
+      setLoadingMore(true);
+    }
 
     try {
       const res = await fetch("/api/browse", {
@@ -98,15 +103,14 @@ export function BrowseClient({ isLoggedIn, hasFollows }: BrowseClientProps) {
           query: query || undefined, offset, limit: PAGE_SIZE,
         }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setBooks((prev) => append ? [...prev, ...data.books] : data.books);
-        setTotal(data.total);
-        setHasMore(data.hasMore);
-        offsetRef.current = offset + PAGE_SIZE;
-      }
+      if (!res.ok) throw new Error("API error");
+      const data = await res.json();
+      setBooks((prev) => append ? [...prev, ...data.books] : data.books);
+      setTotal(data.total);
+      setHasMore(data.hasMore);
+      offsetRef.current = offset + PAGE_SIZE;
     } catch {
-      // Silently fail
+      if (offset === 0) setError(true);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -341,7 +345,18 @@ export function BrowseClient({ isLoggedIn, hasFollows }: BrowseClientProps) {
       {/* Results */}
       {loading ? (
         <div className="py-12 text-center">
-          <p className="text-sm text-muted">Loading...</p>
+          <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-muted border-t-accent mb-2" />
+          <p className="text-sm text-muted">Loading books...</p>
+        </div>
+      ) : error ? (
+        <div className="rounded-xl border border-dashed border-border p-8 text-center">
+          <p className="text-sm text-muted">Something went wrong loading books.</p>
+          <button
+            onClick={() => fetchBooks(0, false)}
+            className="mt-3 rounded-lg border border-border bg-surface-alt px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-alt/80 transition-colors"
+          >
+            Try again
+          </button>
         </div>
       ) : books.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-8 text-center">

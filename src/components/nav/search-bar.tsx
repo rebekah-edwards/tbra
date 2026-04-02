@@ -190,7 +190,8 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
       setLoading(false);
       return;
     }
-    // Don't clear existing results — keep them visible while loading new ones
+    // Show loading immediately so skeleton appears during debounce
+    setLoading(true);
     debounceRef.current = setTimeout(() => search(value), 300);
   }
 
@@ -214,10 +215,11 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
   }
 
   const hasResults = seriesMatches.length > 0 || authorMatches.length > 0 || userResults.length > 0 || bookResults.length > 0;
-  // Show dropdown when we have results OR when loading has completed with no results
-  // Don't hide results while loading new ones (prevents flash/disappearing results)
-  const showDropdown = query.trim().length >= 2 && (hasResults || !loading);
-  const noResults = showDropdown && !hasResults && !loading;
+  const queryReady = query.trim().length >= 2;
+  // Show dropdown whenever query is long enough: skeleton while loading, results or "no results" after
+  const showDropdown = queryReady;
+  const showSkeleton = loading && !hasResults;
+  const noResults = queryReady && !hasResults && !loading;
 
   return (
     <>
@@ -354,7 +356,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
               </form>
 
               {/* Results dropdown — appears below the pill */}
-              {(hasResults || noResults) && (
+              {showDropdown && (
                 <div
                   className="mt-2 rounded-2xl border border-border bg-surface shadow-xl overflow-hidden transition-all duration-200 ease-out"
                   style={{
@@ -531,6 +533,21 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                         </Link>
                       ))}
                     </>
+                  )}
+
+                  {/* Loading skeleton */}
+                  {showSkeleton && (
+                    <div>
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center gap-3 px-4 py-2.5 border-b border-border/50 last:border-0">
+                          <div className="skeleton flex-shrink-0 w-10 h-[60px] rounded" />
+                          <div className="flex-1 min-w-0 space-y-2">
+                            <div className="skeleton h-3.5 w-3/4 rounded" />
+                            <div className="skeleton h-3 w-1/2 rounded" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
 
                   {/* No results state */}
