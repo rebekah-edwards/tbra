@@ -13,6 +13,7 @@ import { toggleSeriesCoverStyle, setSeriesCover } from "@/lib/actions/series";
 
 interface SeriesBook {
   id: string;
+  slug: string | null;
   title: string;
   coverImageUrl: string | null;
   openLibraryKey: string | null;
@@ -161,7 +162,7 @@ export function SeriesBooksView({ seriesName, seriesId, books, isLoggedIn, isAdm
             className="flex gap-4 rounded-lg border border-border bg-surface p-4"
           >
             <div className="relative flex-shrink-0">
-              <Link href={`/book/${book.id}`}>
+              <Link href={`/book/${book.slug || book.id}`}>
                 {book.coverImageUrl ? (
                   <Image
                     src={book.coverImageUrl}
@@ -219,7 +220,7 @@ export function SeriesBooksView({ seriesName, seriesId, books, isLoggedIn, isAdm
             </div>
             <div className="flex flex-1 flex-col justify-between">
               <div>
-                <Link href={`/book/${book.id}`}>
+                <Link href={`/book/${book.slug || book.id}`}>
                   <h3 className="font-medium leading-tight hover:text-link transition-colors">
                     {book.title}
                   </h3>

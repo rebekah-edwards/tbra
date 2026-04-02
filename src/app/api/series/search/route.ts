@@ -126,6 +126,7 @@ export async function GET(request: Request) {
     .select({
       seriesId: bookSeries.seriesId,
       bookId: books.id,
+      slug: books.slug,
       title: books.title,
       coverImageUrl: books.coverImageUrl,
       position: bookSeries.positionInSeries,
@@ -202,6 +203,7 @@ export async function GET(request: Request) {
         const stateInfo = stateMap.get(book.bookId);
         return {
           id: book.bookId,
+          slug: book.slug,
           title: book.title,
           coverImageUrl: book.coverImageUrl,
           position: book.position,

@@ -337,7 +337,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
                       key={book.id}
                       className="flex gap-3 rounded-lg border border-border bg-surface p-3"
                     >
-                      <Link href={`/book/${book.id}`} className="flex-shrink-0">
+                      <Link href={`/book/${book.slug || book.id}`} className="flex-shrink-0">
                         {book.coverImageUrl ? (
                           <Image
                             src={book.coverImageUrl}
@@ -352,7 +352,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
                       </Link>
                       <div className="flex flex-1 flex-col justify-between min-w-0">
                         <div>
-                          <Link href={`/book/${book.id}`}>
+                          <Link href={`/book/${book.slug || book.id}`}>
                             <h3 className="text-sm font-medium leading-tight hover:text-link transition-colors truncate">
                               {book.title}
                             </h3>
