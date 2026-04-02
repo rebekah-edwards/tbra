@@ -142,14 +142,20 @@ export function BookPageClient({
   // Auto-trigger completion flow when navigated from homepage with ?complete=true
   // This passes through to ReadingStateButton's autoComplete prop, which opens the
   // date picker first (same flow as tapping "Finished" on the book page itself)
-  const autoComplete = searchParams.get("complete") === "true" && currentState === "currently_reading";
-  const autoCompleteCleanedUp = useRef(false);
+  const [autoComplete, setAutoComplete] = useState(false);
+  const autoCompleteTriggered = useRef(false);
   useEffect(() => {
-    if (autoComplete && !autoCompleteCleanedUp.current) {
-      autoCompleteCleanedUp.current = true;
+    if (
+      !autoCompleteTriggered.current &&
+      searchParams.get("complete") === "true" &&
+      currentState === "currently_reading"
+    ) {
+      autoCompleteTriggered.current = true;
+      setAutoComplete(true);
+      // Clean up URL without losing the sticky state
       router.replace(`/book/${book.slug || book.id}`, { scroll: false });
     }
-  }, [autoComplete, book.slug, book.id, router]);
+  }, [searchParams, currentState, book.slug, book.id, router]);
 
   // Client-side fallback: trigger enrichment if server-side after() didn't fire
   useEffect(() => {
