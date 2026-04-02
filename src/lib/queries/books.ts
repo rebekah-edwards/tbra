@@ -42,11 +42,77 @@ export async function resolveBook(idOrSlug: string) {
  */
 export async function resolveSeries(idOrSlug: string) {
   if (UUID_PATTERN.test(idOrSlug)) {
-    const row = await db.select({ id: series.id, slug: series.slug }).from(series).where(eq(series.id, idOrSlug)).get();
+    const row = await db.select({ id: series.id, slug: series.slug, parentSeriesId: series.parentSeriesId }).from(series).where(eq(series.id, idOrSlug)).get();
     return row ? { series: row, isIdLookup: true } : null;
   }
-  const row = await db.select({ id: series.id, slug: series.slug, name: series.name }).from(series).where(eq(series.slug, idOrSlug)).get();
+  const row = await db.select({ id: series.id, slug: series.slug, name: series.name, parentSeriesId: series.parentSeriesId }).from(series).where(eq(series.slug, idOrSlug)).get();
   return row ? { series: row, isIdLookup: false } : null;
+}
+
+/**
+ * Get all child series for a franchise/parent series.
+ * Returns empty array for non-franchise series (indexed lookup, negligible cost).
+ */
+export async function getChildSeries(parentId: string) {
+  const children = await db
+    .select({
+      id: series.id,
+      name: series.name,
+      slug: series.slug,
+      bookCount: sql<number>`COUNT(${bookSeries.bookId})`,
+    })
+    .from(series)
+    .leftJoin(bookSeries, eq(bookSeries.seriesId, series.id))
+    .where(eq(series.parentSeriesId, parentId))
+    .groupBy(series.id)
+    .orderBy(series.name);
+
+  // Get a cover for each child (first book by position that has a cover)
+  const enriched = await Promise.all(
+    children.map(async (child) => {
+      const coverRow = await db
+        .select({ coverImageUrl: books.coverImageUrl })
+        .from(bookSeries)
+        .innerJoin(books, eq(books.id, bookSeries.bookId))
+        .where(
+          and(
+            eq(bookSeries.seriesId, child.id),
+            sql`${books.coverImageUrl} IS NOT NULL`
+          )
+        )
+        .orderBy(bookSeries.positionInSeries)
+        .limit(1)
+        .get();
+
+      return {
+        ...child,
+        coverImageUrl: coverRow?.coverImageUrl ?? null,
+      };
+    })
+  );
+
+  return enriched;
+}
+
+/**
+ * Get the parent franchise for a series, if it has one.
+ */
+export async function getParentSeries(seriesId: string) {
+  const row = await db
+    .select({ parentSeriesId: series.parentSeriesId })
+    .from(series)
+    .where(eq(series.id, seriesId))
+    .get();
+
+  if (!row?.parentSeriesId) return null;
+
+  const parent = await db
+    .select({ id: series.id, name: series.name, slug: series.slug })
+    .from(series)
+    .where(eq(series.id, row.parentSeriesId))
+    .get();
+
+  return parent ?? null;
 }
 
 async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
@@ -211,6 +277,12 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
   // Get series position for the current book
   const currentBookSeriesPosition = seriesRow.length > 0 ? seriesRow[0].position : null;
 
+  // Check if this series belongs to a franchise
+  let parentFranchise: { id: string; name: string; slug: string | null } | null = null;
+  if (seriesRow.length > 0) {
+    parentFranchise = await getParentSeries(seriesRow[0].seriesId);
+  }
+
   return {
     ...book,
     authors: bookAuthorRows,
@@ -221,6 +293,7 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
     links: bookLinks,
     seriesInfo,
     seriesPosition: currentBookSeriesPosition,
+    parentFranchise,
   };
 }
 

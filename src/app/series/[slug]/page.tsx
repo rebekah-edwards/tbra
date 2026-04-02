@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 export const revalidate = 60;
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser, isAdmin } from "@/lib/auth";
-import { getSeriesBooksBySlug, resolveSeries, getSeriesBooks } from "@/lib/queries/books";
+import { getSeriesBooksBySlug, resolveSeries, getSeriesBooks, getChildSeries } from "@/lib/queries/books";
 import { SeriesBooksView } from "@/app/search/series-books-view";
+import { FranchiseSeriesGrid } from "@/components/series/franchise-series-grid";
 
 export async function generateMetadata({
   params,
@@ -24,13 +25,21 @@ export async function generateMetadata({
     seriesName = data?.name ?? "Series";
   }
 
+  // Check if this is a franchise
+  const childSeries = await getChildSeries(resolved.series.id);
+  const isFranchise = childSeries.length > 0;
+
+  const description = isFranchise
+    ? `Explore all ${childSeries.length} series in the ${seriesName} franchise on tbr*a.`
+    : `View every book in ${seriesName}, filter by Core or All books, and add them to your tbr*a shelf.`;
+
   return {
     title: `${seriesName} | The Based Reader App`,
-    description: `View every book in ${seriesName}, filter by Core or All books, and add them to your tbr*a shelf.`,
+    description,
     alternates: { canonical: canonicalUrl },
     openGraph: {
       title: `${seriesName} | The Based Reader App`,
-      description: `View every book in ${seriesName}, filter by Core or All books, and add them to your tbr*a shelf.`,
+      description,
       url: canonicalUrl,
     },
   };
@@ -55,16 +64,39 @@ export default async function SeriesPage({
     redirect(`/series/${resolved.series.slug}`);
   }
 
-  // Get series data by slug
+  const seriesId = resolved.series.id;
+
+  // Check if this is a franchise (has child series)
+  const childSeries = await getChildSeries(seriesId);
+
+  if (childSeries.length > 0) {
+    // Franchise page — grid of sub-series
+    let seriesName = "name" in resolved.series ? resolved.series.name : "";
+    if (!seriesName) {
+      const data = await getSeriesBooks(seriesId, null);
+      seriesName = data?.name ?? "Series";
+    }
+
+    return (
+      <div>
+        <FranchiseSeriesGrid
+          franchiseName={seriesName}
+          franchiseId={seriesId}
+          childSeries={childSeries}
+          isAdmin={isAdmin(user)}
+        />
+      </div>
+    );
+  }
+
+  // Regular series page — book list
   const seriesData = resolved.isIdLookup
-    ? await getSeriesBooks(resolved.series.id, user?.userId ?? null)
+    ? await getSeriesBooks(seriesId, user?.userId ?? null)
     : await getSeriesBooksBySlug(slug, user?.userId ?? null);
 
   if (!seriesData) {
     notFound();
   }
-
-  const seriesId = resolved.series.id;
 
   return (
     <div>

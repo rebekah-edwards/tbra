@@ -88,8 +88,10 @@ export const series = sqliteTable("series", {
   name: text("name").notNull(),
   slug: text("slug"),
   coverStyle: text("cover_style").notNull().default("default"), // 'default' = base covers, 'format' = user format covers
+  parentSeriesId: text("parent_series_id"), // franchise hierarchy: null = standalone/franchise, set = child of franchise
 }, (table) => [
   index("idx_series_name").on(table.name),
+  index("idx_series_parent").on(table.parentSeriesId),
 ]);
 
 export const bookSeries = sqliteTable("book_series", {

@@ -302,6 +302,7 @@ export default async function BookPage({
           seriesSlug: book.seriesInfo?.slug ?? null,
           seriesId: book.seriesInfo?.id ?? null,
           positionInSeries: book.seriesPosition ?? null,
+          parentFranchise: book.parentFranchise ?? null,
         }}
         userState={{
           state: userState?.state ?? null,

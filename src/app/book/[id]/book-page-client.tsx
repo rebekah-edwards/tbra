@@ -50,6 +50,7 @@ interface BookPageClientProps {
     seriesSlug?: string | null;
     seriesId?: string | null;
     positionInSeries?: number | null;
+    parentFranchise?: { id: string; name: string; slug: string | null } | null;
   };
   userState: {
     state: string | null;
@@ -280,6 +281,7 @@ export function BookPageClient({
             seriesSlug={book.seriesSlug}
             seriesId={book.seriesId}
             positionInSeries={book.positionInSeries}
+            parentFranchise={book.parentFranchise}
             onCoverEditClick={isAdmin ? async () => {
               setEditingCover(true);
               setEditionCovers([]);

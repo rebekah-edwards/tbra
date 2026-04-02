@@ -7,6 +7,7 @@ import { CompactOwnedButton } from "@/components/compact-owned-button";
 import { StarRow } from "@/components/review/rounded-star";
 import { useState, useMemo } from "react";
 import { NoCover } from "@/components/no-cover";
+import { FranchiseAdminControls } from "@/components/series/franchise-admin-controls";
 
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { toggleSeriesCoverStyle, setSeriesCover } from "@/lib/actions/series";
@@ -332,6 +333,14 @@ export function SeriesBooksView({ seriesName, seriesId, books, isLoggedIn, isAdm
             </button>
           </div>
         </BottomSheet>
+      )}
+
+      {/* Admin: franchise assignment */}
+      {isAdmin && seriesId && (
+        <FranchiseAdminControls
+          seriesId={seriesId}
+          seriesName={seriesName}
+        />
       )}
     </div>
   );
