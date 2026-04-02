@@ -41,7 +41,7 @@ export function GlobalReportButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-50 w-11 h-11 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/25 hover:border-yellow-500/50 transition-all shadow-lg flex items-center justify-center"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+80px)] right-4 lg:bottom-6 lg:right-6 z-50 w-11 h-11 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/25 hover:border-yellow-500/50 transition-all shadow-lg flex items-center justify-center"
         title="Report an issue"
       >
         <svg

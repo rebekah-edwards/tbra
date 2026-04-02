@@ -24,7 +24,8 @@ export function BackButton() {
     pathname.startsWith("/u/") ||
     pathname.startsWith("/profile/") ||
     pathname.startsWith("/admin/") ||
-    pathname.startsWith("/import")
+    pathname.startsWith("/import") ||
+    pathname.startsWith("/library/")
   ) {
     return null;
   }

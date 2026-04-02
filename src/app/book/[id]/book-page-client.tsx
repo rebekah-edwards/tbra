@@ -17,6 +17,7 @@ import { Confetti } from "@/components/ui/confetti";
 import { ContentWarningBanner } from "@/components/book/content-warning-banner";
 import { BookSummary } from "@/components/book/book-summary";
 import { ReportIssueButton } from "@/components/book/report-issue-button";
+import { ShareButton } from "@/components/book/share-button";
 import type { UserReview } from "@/lib/queries/review";
 
 export type EditionSelection = {
@@ -51,6 +52,7 @@ interface BookPageClientProps {
     seriesId?: string | null;
     positionInSeries?: number | null;
     parentFranchise?: { id: string; name: string; slug: string | null } | null;
+    slug?: string | null;
   };
   userState: {
     state: string | null;
@@ -345,6 +347,13 @@ export function BookPageClient({
               onActiveFormatsChange={handleActiveFormatsChange}
               onEditionSelectionsChange={setEditionSelections}
             />
+            {/* Share button */}
+            <div className="flex justify-end -mt-1">
+              <ShareButton
+                url={`https://thebasedreader.app/book/${book.slug || book.id}`}
+                title={book.title}
+              />
+            </div>
             {/* Rating + review info */}
             <div className="space-y-1 lg:pt-2.5">
               {aggregate && aggregate.count > 0 ? (
@@ -404,6 +413,13 @@ export function BookPageClient({
           onActiveFormatsChange={handleActiveFormatsChange}
           onEditionSelectionsChange={setEditionSelections}
         />
+        {/* Share button */}
+        <div className="flex justify-end mt-1">
+          <ShareButton
+            url={`https://thebasedreader.app/book/${book.slug || book.id}`}
+            title={book.title}
+          />
+        </div>
       </div>
 
       {lastReadFormat && lastReadDate && (currentState === "completed" || currentState === "dnf" || currentState === "to_read" || !currentState) && (

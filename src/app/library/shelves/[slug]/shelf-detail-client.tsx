@@ -217,15 +217,29 @@ function AddBooksModal({
   shelfId,
   shelfBookIds,
   allBooks,
+  onBookAdded,
+  onBookRemoved,
 }: {
   open: boolean;
   onClose: () => void;
   shelfId: string;
   shelfBookIds: Set<string>;
   allBooks: UserBookWithDetails[];
+  onBookAdded?: (bookId: string) => void;
+  onBookRemoved?: (bookId: string) => void;
 }) {
   const [search, setSearch] = useState("");
   const [pending, startTransition] = useTransition();
+  // Local optimistic state that layers on top of the parent's shelfBookIds
+  const [localAdded, setLocalAdded] = useState<Set<string>>(new Set());
+  const [localRemoved, setLocalRemoved] = useState<Set<string>>(new Set());
+
+  // Effective membership: parent state + local optimistic adds - local optimistic removes
+  function isOnShelf(bookId: string): boolean {
+    if (localRemoved.has(bookId)) return false;
+    if (localAdded.has(bookId)) return true;
+    return shelfBookIds.has(bookId);
+  }
 
   const filtered = search.trim()
     ? allBooks.filter(
@@ -236,11 +250,24 @@ function AddBooksModal({
     : allBooks.slice(0, 50);
 
   function handleToggle(bookId: string) {
+    const currentlyOnShelf = isOnShelf(bookId);
+
+    // Optimistic update
+    if (currentlyOnShelf) {
+      setLocalAdded((prev) => { const next = new Set(prev); next.delete(bookId); return next; });
+      setLocalRemoved((prev) => new Set(prev).add(bookId));
+    } else {
+      setLocalRemoved((prev) => { const next = new Set(prev); next.delete(bookId); return next; });
+      setLocalAdded((prev) => new Set(prev).add(bookId));
+    }
+
     startTransition(async () => {
-      if (shelfBookIds.has(bookId)) {
+      if (currentlyOnShelf) {
         await removeBookFromShelf(shelfId, bookId);
+        onBookRemoved?.(bookId);
       } else {
         await addBookToShelf(shelfId, bookId);
+        onBookAdded?.(bookId);
       }
     });
   }
@@ -262,7 +289,7 @@ function AddBooksModal({
           <p className="text-sm text-muted text-center py-6">No books found</p>
         ) : (
           filtered.map((book) => {
-            const isOnShelf = shelfBookIds.has(book.id);
+            const bookOnShelf = isOnShelf(book.id);
             return (
               <button
                 key={book.id}
@@ -286,9 +313,9 @@ function AddBooksModal({
                   <p className="text-xs text-muted truncate">{book.authors.join(", ")}</p>
                 </div>
                 <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                  isOnShelf ? "bg-accent border-accent" : "border-border"
+                  bookOnShelf ? "bg-accent border-accent" : "border-border"
                 }`}>
-                  {isOnShelf && (
+                  {bookOnShelf && (
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="3">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
@@ -576,6 +603,29 @@ export function ShelfDetailClient({ shelf: initialShelf, allBooks, isPremium, us
         shelfId={shelf.id}
         shelfBookIds={shelfBookIds}
         allBooks={allBooks}
+        onBookAdded={(bookId) => {
+          const bookData = allBooks.find((b) => b.id === bookId);
+          if (bookData) {
+            setBooks((prev) => {
+              if (prev.some((b) => b.bookId === bookId)) return prev;
+              return [...prev, {
+                bookId,
+                title: bookData.title,
+                slug: bookData.slug,
+                coverImageUrl: bookData.coverImageUrl,
+                authors: bookData.authors,
+                position: prev.length + 1,
+                note: null,
+                state: bookData.state,
+                addedAt: new Date().toISOString(),
+                userRating: bookData.userRating,
+              }];
+            });
+          }
+        }}
+        onBookRemoved={(bookId) => {
+          setBooks((prev) => prev.filter((b) => b.bookId !== bookId));
+        }}
       />
     </div>
   );

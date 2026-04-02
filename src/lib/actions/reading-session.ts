@@ -73,6 +73,7 @@ export async function setBookStateWithCompletion(
       bookId,
       readNumber,
       state,
+      startedAt: new Date().toISOString(),
       completionDate,
       completionPrecision,
     });
@@ -112,6 +113,7 @@ export async function ensureReadingSession(
     bookId,
     readNumber,
     state: "currently_reading",
+    startedAt: new Date().toISOString(),
     activeFormats,
   });
 }
