@@ -163,6 +163,35 @@ export default async function RootLayout({
             ]),
           }}
         />
+        {/* PWA cold-start splash — renders instantly before React hydrates, then auto-hides */}
+        <div id="pwa-splash" style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "12px",
+          transition: "opacity 0.3s ease-out",
+        }}>
+          <style dangerouslySetInnerHTML={{ __html: `
+            #pwa-splash { background: var(--background, #0a0a0f); }
+            [data-theme="light"] #pwa-splash { background: var(--background, #fafbfc); }
+            #pwa-splash .splash-logo { font-family: var(--font-logo, 'Space Grotesk', sans-serif); font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+            #pwa-splash .splash-logo .accent { color: #a3e635; }
+            [data-theme="dark"] #pwa-splash .splash-logo { color: #e4e2ef; }
+            [data-theme="light"] #pwa-splash .splash-logo { color: #18181b; }
+            #pwa-splash .splash-spinner { width: 20px; height: 20px; border: 2px solid #a3e635; border-top-color: transparent; border-radius: 50%; animation: splash-spin 0.8s linear infinite; }
+            @keyframes splash-spin { to { transform: rotate(360deg); } }
+          `}} />
+          <span className="splash-logo">tbr<span className="accent">*</span>a</span>
+          <div className="splash-spinner" />
+        </div>
+        <script dangerouslySetInnerHTML={{ __html: `
+          // Hide splash once the app shell renders
+          requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+              var s = document.getElementById('pwa-splash');
+              if (s) { s.style.opacity = '0'; setTimeout(function() { s.remove(); }, 300); }
+            });
+          });
+        `}} />
+
         <ThemeProvider>
           <TextSizeInitializer />
           <nav className="sticky top-0 z-50 overflow-visible border-b border-border bg-surface shadow-sm pt-[env(safe-area-inset-top)]">
