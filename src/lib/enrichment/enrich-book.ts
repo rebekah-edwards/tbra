@@ -529,34 +529,26 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
 
   console.log(`[enrichment] Searching for: ${searchName}`);
 
-  // 2. Run Brave searches in parallel for deeper research (ONLY if Brave is enabled)
-  let allResults: { title: string; url: string; description: string }[] = [];
-  let warningResults: typeof allResults = [];
-  let reviewResults: typeof allResults = [];
-  let detailResults: typeof allResults = [];
-  let parentGuideResults: typeof allResults = [];
-  let descriptionResults: typeof allResults = [];
-
-  if (!opts.skipBrave) {
-    const searches: Promise<typeof allResults>[] = [
-      braveSearch(`${searchName} content warnings trigger warnings`, 8),
-      braveSearch(`${searchName} book review content themes`, 8),
-      braveSearch(`${searchName} book series reading order synopsis Goodreads`, 6),
-      braveSearch(`${searchName} parent guide mature content sexual violence`, 5),
-    ];
-    if (!book.description) {
-      searches.push(
-        braveSearch(`${searchName} "about this book" OR "book description" OR "editorial reviews" site:amazon.com OR site:goodreads.com`, 5)
-      );
-    }
-
-    const searchResults = await Promise.all(searches);
-    [warningResults, reviewResults, detailResults, parentGuideResults] = searchResults;
-    descriptionResults = searchResults[4] ?? [];
-    allResults = [...warningResults, ...reviewResults, ...detailResults, ...parentGuideResults, ...descriptionResults];
-  } else {
-    console.log(`[enrichment] Skipping Brave searches (skipBrave=true)`);
+  // 2. Run Brave searches for content analysis (Grok needs these for summaries + ratings)
+  // These 4-5 searches are ALWAYS run — they're essential for the app's core value prop.
+  // Other Brave calls (metadata, covers, audiobook) are gated by skipBrave.
+  const searches: Promise<{ title: string; url: string; description: string }[]>[] = [
+    braveSearch(`${searchName} content warnings trigger warnings`, 8),
+    braveSearch(`${searchName} book review content themes`, 8),
+    braveSearch(`${searchName} book series reading order synopsis Goodreads`, 6),
+    braveSearch(`${searchName} parent guide mature content sexual violence`, 5),
+  ];
+  if (!book.description) {
+    searches.push(
+      braveSearch(`${searchName} "about this book" OR "book description" OR "editorial reviews" site:amazon.com OR site:goodreads.com`, 5)
+    );
   }
+
+  const searchResults = await Promise.all(searches);
+  const [warningResults, reviewResults, detailResults, parentGuideResults] = searchResults;
+  const descriptionResults = searchResults[4] ?? [];
+
+  const allResults = [...warningResults, ...reviewResults, ...detailResults, ...parentGuideResults, ...descriptionResults];
   console.log(`[enrichment] Found ${allResults.length} search results`);
 
   // 3. Analyze with Grok
