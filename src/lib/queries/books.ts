@@ -16,7 +16,7 @@ import {
   editions,
   userBookState,
 } from "@/db/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, sql } from "drizzle-orm";
 import { getEffectiveCoverUrl } from "@/lib/covers";
 import { classifyGenres } from "@/lib/genre-taxonomy";
 
