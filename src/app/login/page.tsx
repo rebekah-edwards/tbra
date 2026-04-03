@@ -11,6 +11,15 @@ export default function LoginPage() {
   const resetSuccess = searchParams.get("reset") === "success";
 
   return (
+    <>
+    {/* Full-screen loading overlay during login + redirect */}
+    {pending && (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center flex-col gap-3 bg-background">
+        <span className="font-logo text-xl tracking-tight logo-gradient">tbr*a</span>
+        <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-muted">Signing you in...</p>
+      </div>
+    )}
     <div className="flex flex-col items-center py-16">
       <h1
         className="text-foreground text-3xl font-bold tracking-tight"
@@ -70,7 +79,12 @@ export default function LoginPage() {
           disabled={pending}
           className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-primary-dark disabled:opacity-50"
         >
-          {pending ? "Signing in..." : "Sign in"}
+          {pending ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+              Signing in...
+            </span>
+          ) : "Sign in"}
         </button>
 
         <div className="text-center space-y-2">
@@ -88,5 +102,6 @@ export default function LoginPage() {
         </div>
       </form>
     </div>
+    </>
   );
 }
