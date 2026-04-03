@@ -117,16 +117,29 @@ interface CandidateBook {
   seriesPosition: number | null;
 }
 
+// ─── Cached genre lookup (genres rarely change, no need to query every request) ───
+
+const getAllGenresCached = unstable_cache(
+  async () => {
+    return db
+      .select({ id: genres.id, name: genres.name })
+      .from(genres)
+      .all();
+  },
+  ["all-genres"],
+  { revalidate: 3600 } // 1 hour
+);
+
 // ─── Scoring weights ───
 
 const WEIGHTS = {
-  genreOverlap: 0.35,
+  genreOverlap: 0.40,        // Increased from 0.35 — user's actual taste is the strongest signal
   parentGenreMatch: 0.12,
   seriesContinuation: 0.15,
-  fictionAlignment: 0.10,
+  fictionAlignment: 0.08,    // Slightly reduced — mood filters handle this now
   contentCompatibility: 0.10,
-  lengthFit: 0.08,
-  dataQuality: 0.10,
+  lengthFit: 0.07,           // Slightly reduced
+  dataQuality: 0.08,         // Slightly reduced
 };
 
 // ─── Preference profile ───
@@ -1274,27 +1287,25 @@ export async function getDiscoverRecommendations(
     }
   }
 
-  // Build genre name → ID mapping for keyword matching
-  const allGenres = await db
-    .select({ id: genres.id, name: genres.name })
-    .from(genres)
-    .all();
+  // Build genre name → ID mapping for keyword matching (cached — genres rarely change)
+  const allGenres = await getAllGenresCached();
 
   const boostGenreIds = new Set<string>();
   const penaltyGenreIds = new Set<string>();
 
+  // Pre-lowercase all genre names once (not per-keyword)
+  const genresWithLower = allGenres.map((g) => ({ id: g.id, nameLower: g.name.toLowerCase() }));
+
   if (filters.boostKeywords?.length) {
-    for (const genre of allGenres) {
-      const nameLower = genre.name.toLowerCase();
-      if (filters.boostKeywords.some((kw) => nameLower.includes(kw))) {
+    for (const genre of genresWithLower) {
+      if (filters.boostKeywords.some((kw) => genre.nameLower.includes(kw))) {
         boostGenreIds.add(genre.id);
       }
     }
   }
   if (filters.penaltyKeywords?.length) {
-    for (const genre of allGenres) {
-      const nameLower = genre.name.toLowerCase();
-      if (filters.penaltyKeywords.some((kw) => nameLower.includes(kw))) {
+    for (const genre of genresWithLower) {
+      if (filters.penaltyKeywords.some((kw) => genre.nameLower.includes(kw))) {
         penaltyGenreIds.add(genre.id);
       }
     }
@@ -1407,33 +1418,53 @@ export async function getDiscoverRecommendations(
     return true;
   });
 
+  // Build genre name lookup map once (not per-book)
+  const genreNameMap = new Map(allGenres.map((g) => [g.id, g.name?.toLowerCase() ?? ""]));
+
+  // Count how many moods were selected (for intersection-lite logic)
+  const totalMoodKeywords = (filters.boostKeywords?.length ?? 0);
+  const multipleMoodsSelected = totalMoodKeywords > 5; // >5 keywords ≈ 2+ moods selected
+
   // Score with mood-aware adjustments
   const scored = filteredCandidates.map((c) => {
+    // Base score from user preference profile (0-100 range)
     let score = (profile && !filters.ignorePreferences)
       ? scoreCandidateBook(c, profile, seriesProgress, explicit, contentRatingsByBook.get(c.id))
       : 50; // Base score for anonymous users or when ignoring preferences
 
-    // Mood genre boost: +8 per matching boost genre, -5 per penalty genre
-    // Also track whether this book matches ANY mood genre
-    let hasMoodMatch = false;
+    // ── Mood genre scoring ──
+    // Count mood keyword matches for this book
+    let moodMatchCount = 0;
+    let penaltyCount = 0;
     for (const gid of c.genreIds) {
-      if (boostGenreIds.has(gid)) {
-        score += 8;
-        hasMoodMatch = true;
-      }
-      if (penaltyGenreIds.has(gid)) score -= 5;
+      if (boostGenreIds.has(gid)) moodMatchCount++;
+      if (penaltyGenreIds.has(gid)) penaltyCount++;
     }
-    // If moods were selected and this book matches NONE of them, heavy penalty
-    if (boostGenreIds.size > 0 && !hasMoodMatch) score -= 30;
+
+    if (boostGenreIds.size > 0) {
+      if (moodMatchCount === 0) {
+        // No mood match — mild penalty (was -30, now -8)
+        score -= 8;
+      } else if (multipleMoodsSelected && moodMatchCount === 1) {
+        // Multiple moods selected but only 1 keyword matched — partial credit
+        score += 4;
+      } else {
+        // Good mood match: +6 per match, capped at +24
+        score += Math.min(moodMatchCount * 6, 24);
+      }
+    }
+
+    // Penalty genres still reduce score
+    score -= penaltyCount * 5;
 
     // Fiction bias adjustment
     if (filters.fictionBias === "fiction" && !c.isFiction) score -= 15;
     if (filters.fictionBias === "nonfiction" && c.isFiction) score -= 15;
 
-    // Audience adjustment: boost matching audience, penalize mismatches
+    // Audience adjustment using pre-built genre name map (not per-book .find())
     if (filters.audience) {
       const genreNamesLower = c.genreIds
-        .map((gid) => allGenres.find((g) => g.id === gid)?.name?.toLowerCase() ?? "")
+        .map((gid) => genreNameMap.get(gid) ?? "")
         .filter(Boolean);
       const isYA = genreNamesLower.some((n) =>
         n.includes("young adult") || n.includes("ya ") || n === "ya"
@@ -1464,14 +1495,13 @@ export async function getDiscoverRecommendations(
       } else if (filters.lengthPreference === "long" && c.pages < 350) {
         score -= Math.min(10, (350 - c.pages) / 50);
       }
-      // "medium" is 200-400, penalize outside
       if (filters.lengthPreference === "medium" && (c.pages < 200 || c.pages > 400)) {
         score -= 5;
       }
     }
 
-    // Small jitter for variety
-    score += Math.random() * 10 - 5;
+    // Jitter for variety: ±15 so refreshes feel genuinely different (was ±5)
+    score += Math.random() * 30 - 15;
 
     return { ...c, score };
   });
