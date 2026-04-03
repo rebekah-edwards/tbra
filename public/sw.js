@@ -1,7 +1,7 @@
 // tbr*a Service Worker — v1
 // Minimal PWA: offline fallback + static asset caching
 
-const CACHE_VERSION = "tbra-v1";
+const CACHE_VERSION = "tbra-v2";
 const OFFLINE_URL = "/offline.html";
 
 // Pre-cache on install

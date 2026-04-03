@@ -180,7 +180,7 @@ export default async function RootLayout({
           <div className="splash-spinner" />
         </div>
         <script dangerouslySetInnerHTML={{ __html: `
-          // Hide splash after a minimum 800ms display + app shell render
+          // Hide splash after minimum 800ms + DOM ready (not window.load which waits for all resources)
           var splashStart = Date.now();
           function hideSplash() {
             var elapsed = Date.now() - splashStart;
@@ -190,8 +190,11 @@ export default async function RootLayout({
               if (s) { s.style.opacity = '0'; setTimeout(function() { s.remove(); }, 300); }
             }, delay);
           }
-          if (document.readyState === 'complete') hideSplash();
-          else window.addEventListener('load', hideSplash);
+          // Use DOMContentLoaded (fires when HTML parsed) not load (waits for all images/resources)
+          if (document.readyState !== 'loading') hideSplash();
+          else document.addEventListener('DOMContentLoaded', hideSplash);
+          // Safety net: always hide after 5 seconds max no matter what
+          setTimeout(hideSplash, 5000);
         `}} />
 
         <ThemeProvider>
