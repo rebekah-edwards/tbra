@@ -75,7 +75,7 @@ export function ReviewHistory({ reviews }: ReviewHistoryProps) {
       <div className="mt-3 text-center">
         <Link
           href="/profile/reviews"
-          className="text-xs text-link hover:text-link/80 font-medium"
+          className="text-xs text-neon-blue hover:text-neon-blue/80 font-medium"
         >
           View all reviews →
         </Link>

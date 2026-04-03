@@ -16,7 +16,7 @@ function StarRating({ rating }: { rating: number }) {
   const hasHalf = rating - fullStars >= 0.25;
 
   return (
-    <span className="text-xs text-link">
+    <span className="text-xs text-neon-blue">
       {"★".repeat(fullStars)}
       {hasHalf && "½"}
     </span>
@@ -206,7 +206,7 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
         <button
           type="button"
           onClick={() => setShowAll(true)}
-          className="mt-3 w-full text-center text-sm text-link hover:text-link/80 font-medium py-2"
+          className="mt-3 w-full text-center text-sm text-neon-blue hover:text-neon-blue/80 font-medium py-2"
         >
           Show all {filtered.length} reviews
         </button>
