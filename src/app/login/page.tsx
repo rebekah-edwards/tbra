@@ -15,7 +15,7 @@ export default function LoginPage() {
     {/* Full-screen loading overlay during login + redirect */}
     {pending && (
       <div className="fixed inset-0 z-[9999] flex items-center justify-center flex-col gap-3 bg-background">
-        <span className="font-logo text-xl tracking-tight logo-gradient">tbr*a</span>
+        <span className="logo-gradient font-logo text-2xl tracking-tight">tbr*a</span>
         <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
         <p className="text-sm text-muted">Signing you in...</p>
       </div>

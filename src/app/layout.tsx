@@ -172,14 +172,11 @@ export default async function RootLayout({
           <style dangerouslySetInnerHTML={{ __html: `
             #pwa-splash { background: var(--background, #0a0a0f); }
             [data-theme="light"] #pwa-splash { background: var(--background, #fafbfc); }
-            #pwa-splash .splash-logo { font-family: var(--font-logo, 'Space Grotesk', sans-serif); font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
-            #pwa-splash .splash-logo .accent { color: #a3e635; }
-            [data-theme="dark"] #pwa-splash .splash-logo { color: #e4e2ef; }
-            [data-theme="light"] #pwa-splash .splash-logo { color: #18181b; }
+            #pwa-splash .splash-logo { font-size: 28px; }
             #pwa-splash .splash-spinner { width: 20px; height: 20px; border: 2px solid #a3e635; border-top-color: transparent; border-radius: 50%; animation: splash-spin 0.8s linear infinite; }
             @keyframes splash-spin { to { transform: rotate(360deg); } }
           `}} />
-          <span className="splash-logo">tbr<span className="accent">*</span>a</span>
+          <span className="splash-logo logo-gradient font-logo tracking-tight">tbr*a</span>
           <div className="splash-spinner" />
         </div>
         <script dangerouslySetInnerHTML={{ __html: `
