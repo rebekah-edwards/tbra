@@ -110,7 +110,7 @@ export default async function ProfilePage() {
                   <span className="text-muted">·</span>
                   <Link
                     href={`/u/${user.username}`}
-                    className="text-sm text-muted hover:text-foreground transition-colors"
+                    className="text-sm text-link hover:text-link/80 transition-colors"
                   >
                     View public profile
                   </Link>

@@ -138,31 +138,18 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
       setLoading(true);
       try {
         const signal = controller.signal;
-        const [booksRes, seriesRes, authorRes, usersRes] = await Promise.all([
-          fetch(`/api/books/search?q=${encodeURIComponent(q.trim())}`, { signal }),
-          fetch(`/api/series/search?q=${encodeURIComponent(q.trim())}`, { signal }),
-          fetch(`/api/authors/search?q=${encodeURIComponent(q.trim())}`, { signal }),
-          fetch(`/api/users/search?q=${encodeURIComponent(q.trim())}`, { signal }),
-        ]);
+        // Single unified search endpoint — 1 HTTP request instead of 4
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`, { signal });
 
         // If a newer search has started, discard these results
         if (requestId !== searchIdRef.current) return;
 
-        if (booksRes.ok) {
-          const booksData: LocalBookResult[] = await booksRes.json();
-          setBookResults(booksData);
-        }
-        if (seriesRes.ok) {
-          const seriesData: SeriesMatch[] = await seriesRes.json();
-          setSeriesMatches(seriesData);
-        }
-        if (authorRes.ok) {
-          const authorData: AuthorMatch[] = await authorRes.json();
-          setAuthorMatches(authorData);
-        }
-        if (usersRes.ok) {
-          const userData: UserResult[] = await usersRes.json();
-          setUserResults(userData.slice(0, 3));
+        if (res.ok) {
+          const data = await res.json();
+          setBookResults(data.books ?? []);
+          setSeriesMatches(data.series ?? []);
+          setAuthorMatches(data.authors ?? []);
+          setUserResults((data.users ?? []).slice(0, 3));
         }
         setLoading(false);
       } catch (err) {
