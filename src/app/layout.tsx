@@ -183,13 +183,18 @@ export default async function RootLayout({
           <div className="splash-spinner" />
         </div>
         <script dangerouslySetInnerHTML={{ __html: `
-          // Hide splash once the app shell renders
-          requestAnimationFrame(function() {
-            requestAnimationFrame(function() {
+          // Hide splash after a minimum 800ms display + app shell render
+          var splashStart = Date.now();
+          function hideSplash() {
+            var elapsed = Date.now() - splashStart;
+            var delay = Math.max(0, 800 - elapsed);
+            setTimeout(function() {
               var s = document.getElementById('pwa-splash');
               if (s) { s.style.opacity = '0'; setTimeout(function() { s.remove(); }, 300); }
-            });
-          });
+            }, delay);
+          }
+          if (document.readyState === 'complete') hideSplash();
+          else window.addEventListener('load', hideSplash);
         `}} />
 
         <ThemeProvider>
