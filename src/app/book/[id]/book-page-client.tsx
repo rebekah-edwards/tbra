@@ -10,7 +10,7 @@ import { ReviewTrigger } from "@/components/review/review-trigger";
 import { PostCompletionSuggestions } from "@/components/book/post-completion-suggestions";
 import { getEffectiveCoverUrl } from "@/lib/covers";
 import { autoLinkFormatEdition } from "@/lib/actions/editions";
-import { setBookCover, uploadBookCover } from "@/lib/actions/books";
+import { setBookCover, uploadBookCover, setAudiobookCover } from "@/lib/actions/books";
 import { setBookState } from "@/lib/actions/reading-state";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Confetti } from "@/components/ui/confetti";
@@ -52,6 +52,7 @@ interface BookPageClientProps {
     seriesId?: string | null;
     positionInSeries?: number | null;
     parentFranchise?: { id: string; name: string; slug: string | null } | null;
+    audiobookCoverUrl?: string | null;
     slug?: string | null;
   };
   userState: {
@@ -203,8 +204,9 @@ export function BookPageClient({
       ownedFormats: userState.ownedFormats,
       isActivelyReading,
       size: "L",
+      audiobookCoverUrl: book.audiobookCoverUrl,
     });
-  }, [editionSelections, activeFormats, isActivelyReading, userState.ownedFormats, baseCoverUrl]);
+  }, [editionSelections, activeFormats, isActivelyReading, userState.ownedFormats, baseCoverUrl, book.audiobookCoverUrl]);
 
   // When formats change, auto-link editions for any format that doesn't have one yet
   const handleActiveFormatsChange = useCallback(
@@ -586,6 +588,41 @@ export function BookPageClient({
             {!loadingCovers && editionCovers.length === 0 && !book.openLibraryKey && (
               <p className="py-4 text-center text-xs text-muted">No Open Library editions available</p>
             )}
+
+            {/* Set Audiobook Cover (admin) */}
+            <div className="mb-4 pt-2 border-t border-border">
+              <label className="block text-xs font-medium uppercase tracking-wide text-muted mb-2">
+                Audiobook Cover (Admin Override)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="https://..."
+                  id="audiobook-cover-url-input"
+                  defaultValue={book.audiobookCoverUrl ?? ""}
+                  className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                />
+                <button
+                  onClick={async () => {
+                    const input = document.getElementById("audiobook-cover-url-input") as HTMLInputElement;
+                    const url = input?.value?.trim() || null;
+                    setSavingCover(true);
+                    const result = await setAudiobookCover(book.id, url);
+                    if (result.success) {
+                      setEditingCover(false);
+                    } else {
+                      alert(result.error || "Failed to set audiobook cover");
+                    }
+                    setSavingCover(false);
+                  }}
+                  disabled={savingCover}
+                  className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-background disabled:opacity-50"
+                >
+                  Set
+                </button>
+              </div>
+              <p className="mt-1 text-[10px] text-muted">Only shows when audiobook format is active. Leave empty to use default.</p>
+            </div>
 
             {/* Remove cover */}
             <button

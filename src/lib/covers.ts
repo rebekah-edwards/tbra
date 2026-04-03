@@ -21,8 +21,16 @@ export function getEffectiveCoverUrl(params: {
   ownedFormats: string[];
   isActivelyReading: boolean;
   size?: "S" | "M" | "L";
+  audiobookCoverUrl?: string | null;
 }): string | null {
-  const { baseCoverUrl, editionSelections, activeFormats, ownedFormats, isActivelyReading, size = "M" } = params;
+  const { baseCoverUrl, editionSelections, activeFormats, ownedFormats, isActivelyReading, size = "M", audiobookCoverUrl } = params;
+
+  // 0. Admin audiobook cover override (highest priority when audiobook format is active)
+  if (audiobookCoverUrl && (activeFormats.includes("audiobook") || ownedFormats.includes("audiobook"))) {
+    const isAudiobookActive = isActivelyReading && activeFormats.includes("audiobook");
+    const isAudiobookOwned = ownedFormats.includes("audiobook") && ownedFormats.length === 1;
+    if (isAudiobookActive || isAudiobookOwned) return audiobookCoverUrl;
+  }
 
   if (editionSelections.length === 0) return baseCoverUrl;
 

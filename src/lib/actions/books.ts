@@ -604,6 +604,40 @@ export async function setBookCover(
 }
 
 /**
+ * Set or clear the audiobook-specific cover for a book (admin only).
+ * This cover shows when a user is reading the audiobook format.
+ */
+export async function setAudiobookCover(
+  bookId: string,
+  coverUrl: string | null
+): Promise<{ success: boolean; error?: string }> {
+  const { getCurrentUser } = await import("@/lib/auth");
+  const session = await getCurrentUser();
+  if (session?.role !== "admin") return { success: false, error: "Unauthorized" };
+
+  if (coverUrl) {
+    try {
+      const parsed = new URL(coverUrl);
+      if (!["http:", "https:"].includes(parsed.protocol)) {
+        return { success: false, error: "URL must be http or https" };
+      }
+    } catch {
+      return { success: false, error: "Invalid URL" };
+    }
+  }
+
+  const { revalidatePath } = await import("next/cache");
+
+  await db
+    .update(books)
+    .set({ audiobookCoverUrl: coverUrl || null })
+    .where(eq(books.id, bookId));
+
+  revalidatePath(`/book/${bookId}`);
+  return { success: true };
+}
+
+/**
  * Upload a cover image file for a book (admin only).
  * Saves to /public/uploads/covers/ and sets coverImageUrl.
  */

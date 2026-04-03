@@ -26,6 +26,7 @@ export const books = sqliteTable("books", {
   coverVerified: integer("cover_verified", { mode: "boolean" }).notNull().default(false),
   coverSource: text("cover_source"), // 'openlibrary' | 'google_books' | 'amazon' | 'brave' | 'manual'
   seriesCoverUrl: text("series_cover_url"), // admin override for series views
+  audiobookCoverUrl: text("audiobook_cover_url"), // admin override for audiobook format cover
   needsReview: integer("needs_review", { mode: "boolean" }).notNull().default(false),
   reviewReason: text("review_reason"),
   pacing: text("pacing"), // 'slow' | 'medium' | 'fast' — aggregated from user reviews
