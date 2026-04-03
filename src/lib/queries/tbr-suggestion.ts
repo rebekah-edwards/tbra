@@ -35,6 +35,7 @@ export async function getRandomOwnedTbrBook(userId: string): Promise<TbrSuggesti
       slug: books.slug,
       title: books.title,
       coverImageUrl: books.coverImageUrl,
+      audiobookCoverUrl: books.audiobookCoverUrl,
       pages: books.pages,
       isBoxSet: books.isBoxSet,
       ownedFormats: userBookState.ownedFormats,
@@ -153,6 +154,7 @@ export async function getRandomOwnedTbrBook(userId: string): Promise<TbrSuggesti
 
   const effectiveCover = getEffectiveCoverUrl({
     baseCoverUrl: row.coverImageUrl,
+    audiobookCoverUrl: row.audiobookCoverUrl,
     editionSelections: editionRows,
     activeFormats: [],
     ownedFormats,

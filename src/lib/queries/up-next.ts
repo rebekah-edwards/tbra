@@ -33,6 +33,7 @@ export async function getUserUpNext(userId: string): Promise<UpNextItem[]> {
       title: books.title,
       slug: books.slug,
       coverImageUrl: books.coverImageUrl,
+      audiobookCoverUrl: books.audiobookCoverUrl,
       pages: books.pages,
       audioLengthMinutes: books.audioLengthMinutes,
     })
@@ -62,6 +63,7 @@ export async function getUserUpNext(userId: string): Promise<UpNextItem[]> {
 
     const effectiveCover = getEffectiveCoverUrl({
       baseCoverUrl: row.coverImageUrl,
+      audiobookCoverUrl: row.audiobookCoverUrl,
       editionSelections: editionsMap.get(row.bookId) ?? [],
       activeFormats,
       ownedFormats,

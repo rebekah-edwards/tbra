@@ -197,6 +197,7 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
         id: books.id,
         title: books.title,
         coverImageUrl: books.coverImageUrl,
+        audiobookCoverUrl: books.audiobookCoverUrl,
         seriesCoverUrl: books.seriesCoverUrl,
         isBoxSet: books.isBoxSet,
         position: bookSeries.positionInSeries,
@@ -243,6 +244,7 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
 
           effectiveCover = getEffectiveCoverUrl({
             baseCoverUrl: sb.coverImageUrl,
+            audiobookCoverUrl: sb.audiobookCoverUrl,
             editionSelections: editionRows,
             activeFormats,
             ownedFormats: ownedFmts,
@@ -333,6 +335,7 @@ export async function getSeriesBooks(seriesId: string, userId: string | null) {
       slug: books.slug,
       title: books.title,
       coverImageUrl: books.coverImageUrl,
+      audiobookCoverUrl: books.audiobookCoverUrl,
       seriesCoverUrl: books.seriesCoverUrl,
       openLibraryKey: books.openLibraryKey,
       position: bookSeries.positionInSeries,
@@ -395,6 +398,7 @@ export async function getSeriesBooks(seriesId: string, userId: string | null) {
 
         effectiveCover = getEffectiveCoverUrl({
           baseCoverUrl: sb.coverImageUrl,
+          audiobookCoverUrl: sb.audiobookCoverUrl,
           editionSelections: editionRows,
           activeFormats,
           ownedFormats,

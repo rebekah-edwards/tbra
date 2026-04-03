@@ -33,6 +33,7 @@ export async function getUserReviewsWithBooks(
       createdAt: userBookReviews.createdAt,
       title: books.title,
       coverImageUrl: books.coverImageUrl,
+      audiobookCoverUrl: books.audiobookCoverUrl,
     })
     .from(userBookReviews)
     .innerJoin(books, eq(userBookReviews.bookId, books.id))
@@ -88,6 +89,7 @@ export async function getUserReviewsWithBooks(
 
     const effectiveCover = getEffectiveCoverUrl({
       baseCoverUrl: review.coverImageUrl,
+      audiobookCoverUrl: review.audiobookCoverUrl,
       editionSelections: editionRows,
       activeFormats,
       ownedFormats,

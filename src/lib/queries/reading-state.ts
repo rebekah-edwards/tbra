@@ -75,6 +75,7 @@ export async function getUserBooks(
       title: books.title,
       slug: books.slug,
       coverImageUrl: books.coverImageUrl,
+      audiobookCoverUrl: books.audiobookCoverUrl,
       isFiction: books.isFiction,
       pages: books.pages,
     })
@@ -136,6 +137,7 @@ export async function getUserBooks(
       ownedFormats: parsedOwned,
       isActivelyReading,
       size: "M",
+      audiobookCoverUrl: row.audiobookCoverUrl,
     });
 
     return {
