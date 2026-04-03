@@ -16,7 +16,7 @@ function StarRating({ rating }: { rating: number }) {
   const hasHalf = rating - fullStars >= 0.25;
 
   return (
-    <span className="text-xs text-primary">
+    <span className="text-xs text-link">
       {"★".repeat(fullStars)}
       {hasHalf && "½"}
     </span>
@@ -116,7 +116,7 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
               onClick={() => { setActiveFilter("all"); setShowAll(false); }}
               className={`rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${
                 activeFilter === "all"
-                  ? "bg-primary/20 text-primary"
+                  ? "bg-primary/20 text-foreground"
                   : "bg-surface border border-border text-muted hover:text-foreground"
               }`}
             >
@@ -206,7 +206,7 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
         <button
           type="button"
           onClick={() => setShowAll(true)}
-          className="mt-3 w-full text-center text-sm text-primary hover:text-primary/80 font-medium py-2"
+          className="mt-3 w-full text-center text-sm text-link hover:text-link/80 font-medium py-2"
         >
           Show all {filtered.length} reviews
         </button>
