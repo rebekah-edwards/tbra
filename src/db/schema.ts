@@ -599,3 +599,53 @@ export const userNotifications = sqliteTable("user_notifications", {
 }, (table) => [
   index("user_notifications_user_idx").on(table.userId),
 ]);
+
+// ─── Buddy Reads ───
+
+export const buddyReads = sqliteTable("buddy_reads", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  bookId: text("book_id").notNull().references(() => books.id),
+  createdBy: text("created_by").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"), // 'active' | 'completed' | 'archived'
+  isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
+  inviteCode: text("invite_code").notNull(),
+  maxMembers: integer("max_members").notNull().default(20),
+  startDate: text("start_date"),
+  endDate: text("end_date"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("buddy_reads_slug_unique").on(table.slug),
+  uniqueIndex("buddy_reads_invite_code_unique").on(table.inviteCode),
+  index("buddy_reads_book_idx").on(table.bookId),
+  index("buddy_reads_created_by_idx").on(table.createdBy),
+  index("buddy_reads_status_idx").on(table.status),
+]);
+
+export const buddyReadMembers = sqliteTable("buddy_read_members", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  buddyReadId: text("buddy_read_id").notNull().references(() => buddyReads.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id),
+  role: text("role").notNull().default("member"), // 'host' | 'member'
+  status: text("status").notNull().default("invited"), // 'invited' | 'active' | 'declined' | 'left'
+  joinedAt: text("joined_at"),
+  premiumRewardClaimed: integer("premium_reward_claimed", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("buddy_read_members_unique").on(table.buddyReadId, table.userId),
+  index("buddy_read_members_user_idx").on(table.userId),
+]);
+
+export const buddyReadMessages = sqliteTable("buddy_read_messages", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  buddyReadId: text("buddy_read_id").notNull().references(() => buddyReads.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id),
+  message: text("message").notNull(),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  index("buddy_read_messages_read_idx").on(table.buddyReadId),
+  index("buddy_read_messages_read_created_idx").on(table.buddyReadId, table.createdAt),
+]);
