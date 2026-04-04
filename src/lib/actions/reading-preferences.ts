@@ -219,6 +219,9 @@ export async function updateContentPreference(
       .run();
 
     revalidatePath("/settings");
+    // Invalidate recommendation caches so content preferences take effect
+    const { revalidateTag } = await import("next/cache");
+    revalidateTag(`user-${user.userId}-recommendations`);
     return { success: true };
   } catch (err) {
     console.error("Failed to update content preference:", err);

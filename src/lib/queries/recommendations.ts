@@ -17,6 +17,7 @@ import {
   userGenrePreferences,
   userContentPreferences,
   userHiddenBooks,
+  taxonomyCategories,
 } from "@/db/schema";
 import { eq, sql, and, isNotNull, inArray } from "drizzle-orm";
 import { isEnglishTitle, looksLikeMidSeriesTitle } from "@/lib/queries/books";
@@ -64,6 +65,7 @@ export interface RecommendedBook {
   score: number;
   reason?: string;
   aggregateRating?: number | null;
+  contentWarnings?: { categoryName: string; bookIntensity: number; userMax: number }[];
 }
 
 interface UserPreferenceProfile {
@@ -133,13 +135,13 @@ const getAllGenresCached = unstable_cache(
 // ─── Scoring weights ───
 
 const WEIGHTS = {
-  genreOverlap: 0.40,        // Increased from 0.35 — user's actual taste is the strongest signal
+  genreOverlap: 0.35,
   parentGenreMatch: 0.12,
   seriesContinuation: 0.15,
-  fictionAlignment: 0.08,    // Slightly reduced — mood filters handle this now
-  contentCompatibility: 0.10,
-  lengthFit: 0.07,           // Slightly reduced
-  dataQuality: 0.08,         // Slightly reduced
+  fictionAlignment: 0.08,
+  contentCompatibility: 0.20,  // Doubled from 0.10 — content comfort is critical for user trust
+  lengthFit: 0.07,
+  dataQuality: 0.03,
 };
 
 // ─── Preference profile ───
@@ -642,6 +644,20 @@ function scoreCandidateBook(
     score += WEIGHTS.contentCompatibility * 100 * 0.5;
   }
 
+  // 5b. Absolute penalty for severe content violations (on top of weighted score)
+  // This ensures books with extreme violations drop significantly even with high genre match
+  if (explicit && explicit.contentTolerances.size > 0 && candidateContentRatings) {
+    for (const [categoryId, bookIntensity] of candidateContentRatings) {
+      const userMax = explicit.contentTolerances.get(categoryId);
+      if (userMax !== undefined && userMax < 4 && bookIntensity > userMax) {
+        const severity = bookIntensity - userMax;
+        if (severity >= 3) score -= 20;       // extreme violation (e.g. user: none, book: significant+)
+        else if (severity >= 2) score -= 12;  // moderate violation
+        else score -= 6;                      // mild violation
+      }
+    }
+  }
+
   // 6. Length/pace fit (8%) — penalize books outside preferred page range
   // [INTEGRATION #4 & #5] Page length and pace preference
   if (explicit && candidate.pages) {
@@ -1079,6 +1095,47 @@ function exceedsContentTolerance(
   return false;
 }
 
+// ─── Content warning utilities ───
+
+/**
+ * Cached category ID → display name map.
+ */
+const getCategoryNameMap = unstable_cache(
+  async (): Promise<Map<string, string>> => {
+    const rows = await db
+      .select({ id: taxonomyCategories.id, name: taxonomyCategories.name })
+      .from(taxonomyCategories)
+      .all();
+    return new Map(rows.map((r) => [r.id, r.name]));
+  },
+  ["category-name-map"],
+  { revalidate: 3600 }
+);
+
+/**
+ * Compute content warnings for a book given its ratings and the user's tolerances.
+ * Returns the same shape as contentConflicts on the book detail page.
+ */
+function computeContentWarnings(
+  bookRatings: Map<string, number> | undefined,
+  contentTolerances: Map<string, number>,
+  categoryNames: Map<string, string>
+): { categoryName: string; bookIntensity: number; userMax: number }[] {
+  if (!bookRatings || contentTolerances.size === 0) return [];
+  const warnings: { categoryName: string; bookIntensity: number; userMax: number }[] = [];
+  for (const [catId, intensity] of bookRatings) {
+    const userMax = contentTolerances.get(catId);
+    if (userMax !== undefined && userMax < 4 && intensity > userMax) {
+      warnings.push({
+        categoryName: categoryNames.get(catId) ?? catId,
+        bookIntensity: intensity,
+        userMax,
+      });
+    }
+  }
+  return warnings;
+}
+
 // ─── Anthology genre ID resolution (cached per request) ───
 
 const getAnthologyGenreIds = cache(async (): Promise<Set<string>> => {
@@ -1162,10 +1219,8 @@ async function getSmartDiscoveryBooksInternal(
 
   // Hard filter: content tolerance, disliked genres, series order
   const filteredCandidates = candidates.filter((c) => {
-    // Content tolerance: reject books exceeding user's max for any category
-    if (explicit && exceedsContentTolerance(contentRatingsByBook.get(c.id), explicit.contentTolerances)) {
-      return false;
-    }
+    // Content tolerance: no longer hard-filtered — deprioritized via scoring instead
+    // (see scoreCandidateBook absolute penalty + contentCompatibility weight 0.20)
     // Disliked genres: reject books with any explicitly disliked genre
     if (hasDislikedGenre(c.genreIds, dislikedGenreIds)) {
       return false;
@@ -1197,7 +1252,10 @@ async function getSmartDiscoveryBooksInternal(
   const diversified = diversifyResults(scored, limit);
 
   // Hydrate with author names — batch fetch instead of N+1
-  const authorNamesMap = await batchFetchBookAuthors(diversified.map((b) => b.id));
+  const [authorNamesMap, categoryNames] = await Promise.all([
+    batchFetchBookAuthors(diversified.map((b) => b.id)),
+    getCategoryNameMap(),
+  ]);
 
   return diversified.map((book) => ({
     id: book.id,
@@ -1206,6 +1264,9 @@ async function getSmartDiscoveryBooksInternal(
     coverImageUrl: book.coverImageUrl,
     authors: authorNamesMap.get(book.id) ?? [],
     score: book.score,
+    contentWarnings: explicit
+      ? computeContentWarnings(contentRatingsByBook.get(book.id), explicit.contentTolerances, categoryNames)
+      : [],
   }));
 }
 
@@ -1398,9 +1459,7 @@ export async function getDiscoverRecommendations(
   // Hard filter (skipped when ignorePreferences is set)
   const filteredCandidates = candidates.filter((c) => {
     if (!filters.ignorePreferences) {
-      if (mergedContentTolerances.size > 0 && exceedsContentTolerance(contentRatingsByBook.get(c.id), mergedContentTolerances)) {
-        return false;
-      }
+      // Content tolerance: deprioritized via scoring, not hard-filtered
       if (hasDislikedGenre(c.genreIds, dislikedGenreIds)) {
         return false;
       }
@@ -1509,8 +1568,11 @@ export async function getDiscoverRecommendations(
   scored.sort((a, b) => b.score - a.score);
   const diversified = diversifyResults(scored, limit);
 
-  // Batch fetch authors instead of N+1
-  const diversifiedAuthorMap = await batchFetchBookAuthors(diversified.map((b) => b.id));
+  // Batch fetch authors + category names in parallel
+  const [diversifiedAuthorMap, categoryNames] = await Promise.all([
+    batchFetchBookAuthors(diversified.map((b) => b.id)),
+    getCategoryNameMap(),
+  ]);
 
   const results: RecommendedBook[] = [];
   for (const book of diversified) {
@@ -1533,6 +1595,7 @@ export async function getDiscoverRecommendations(
       reason: matchedMoods.length > 0
         ? `Matches: ${matchedMoods.slice(0, 3).join(", ")}`
         : undefined,
+      contentWarnings: computeContentWarnings(contentRatingsByBook.get(book.id), mergedContentTolerances, categoryNames),
     });
   }
 
@@ -1629,9 +1692,7 @@ async function getSimilarBooksInner(
           return false;
         }
       }
-      if (explicit && exceedsContentTolerance(contentRatingsByBook.get(c.id), explicit.contentTolerances)) {
-        return false;
-      }
+      // Content tolerance: deprioritized via scoring, not hard-filtered
       return true;
     })
     .map((c) => {
@@ -2029,12 +2090,9 @@ async function findRecsForSeed(
 
   // Content tolerance filtering (if user has explicit prefs)
   let finalCandidates = filtered;
-  if (explicit && explicit.contentTolerances.size > 0) {
-    const contentRatings = await batchFetchContentRatings(filtered.map((b) => b.id));
-    finalCandidates = filtered.filter((b) =>
-      !exceedsContentTolerance(contentRatings.get(b.id), explicit.contentTolerances)
-    );
-  }
+  // Content tolerance: no longer hard-filtered — deprioritized via scoring
+  // (finalCandidates keeps all filtered books; scoring handles deprioritization)
+  finalCandidates = filtered;
 
   // Shuffle candidates so recommendations rotate across page loads
   for (let i = finalCandidates.length - 1; i > 0; i--) {
@@ -2043,7 +2101,11 @@ async function findRecsForSeed(
   }
 
   const topCandidates = finalCandidates.slice(0, booksPerSeed);
-  const authorNamesMap = await batchFetchBookAuthors(topCandidates.map((b) => b.id));
+  const [authorNamesMap, contentRatingsByBook, categoryNames] = await Promise.all([
+    batchFetchBookAuthors(topCandidates.map((b) => b.id)),
+    batchFetchContentRatings(topCandidates.map((b) => b.id)),
+    getCategoryNameMap(),
+  ]);
 
   return topCandidates.map((book) => ({
     id: book.id,
@@ -2051,6 +2113,9 @@ async function findRecsForSeed(
     coverImageUrl: book.coverImageUrl,
     authors: authorNamesMap.get(book.id) ?? [],
     score: 0,
+    contentWarnings: explicit
+      ? computeContentWarnings(contentRatingsByBook.get(book.id), explicit.contentTolerances, categoryNames)
+      : [],
   }));
 }
 
@@ -2241,8 +2306,7 @@ async function getPostCompletionSuggestionsInternal(
         if (hasDislikedGenre(genreIdsByBook.get(b.id) ?? [], dislikedGenreIds)) return false;
         // Series order
         if (!isSeriesBookAllowed(seriesIdsByBook.get(b.id) ?? [], seriesPositionByBook.get(b.id) ?? null, seriesProgress, b.title)) return false;
-        // Content tolerance
-        if (explicit && exceedsContentTolerance(contentRatings.get(b.id), explicit.contentTolerances)) return false;
+        // Content tolerance: deprioritized via scoring, not hard-filtered
         return true;
       });
 

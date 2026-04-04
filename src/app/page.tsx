@@ -68,13 +68,13 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 function HorizontalScroll({
   books,
 }: {
-  books: { id: string; slug?: string | null; title: string; coverImageUrl: string | null; authors: string[]; isFiction?: boolean | null; userRating?: number | null; aggregateRating?: number | null }[];
+  books: { id: string; slug?: string | null; title: string; coverImageUrl: string | null; authors: string[]; isFiction?: boolean | null; userRating?: number | null; aggregateRating?: number | null; contentWarnings?: { categoryName: string; bookIntensity: number; userMax: number }[] }[];
 }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2 pr-12 no-scrollbar mask-fade-right">
       {books.map((book) => (
         <div key={book.id} className="w-[130px] flex-shrink-0">
-          <BookCard {...book} />
+          <BookCard {...book} hasContentConflict={(book.contentWarnings?.length ?? 0) > 0} />
         </div>
       ))}
     </div>

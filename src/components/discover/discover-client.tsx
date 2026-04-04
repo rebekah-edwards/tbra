@@ -16,6 +16,7 @@ interface DiscoverResult {
   authors: string[];
   score: number;
   reason?: string;
+  contentWarnings?: { categoryName: string; bookIntensity: number; userMax: number }[];
 }
 
 const LENGTH_OPTIONS = [
@@ -416,6 +417,14 @@ export function DiscoverClient() {
                       />
                     ) : (
                       <NoCover title={book.title} className="w-full h-full" />
+                    )}
+                    {book.contentWarnings && book.contentWarnings.length > 0 && (
+                      <span
+                        className="absolute top-1.5 left-1.5 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-yellow-500/90 text-black text-[11px] font-bold shadow-sm"
+                        title={`Content flags: ${book.contentWarnings.map((w) => w.categoryName).join(", ")}`}
+                      >
+                        !
+                      </span>
                     )}
                   </div>
                   <h3 className="text-xs font-semibold leading-tight line-clamp-2 group-hover:text-accent transition-colors">

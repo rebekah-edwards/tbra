@@ -39,6 +39,7 @@ export function BecauseYouLiked({ suggestions }: BecauseYouLikedProps) {
                   coverImageUrl={book.coverImageUrl}
                   authors={book.authors}
                   aggregateRating={book.aggregateRating}
+                  hasContentConflict={(book.contentWarnings?.length ?? 0) > 0}
                 />
               </div>
             ))}
