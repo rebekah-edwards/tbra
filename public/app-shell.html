@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>tbr*a</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; }
+  .shell { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+  [data-theme="dark"] .shell, .shell { background: #0a0a0f; }
+  @media (prefers-color-scheme: light) { .shell { background: #fafbfc; } }
+  .logo { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; background: linear-gradient(90deg, #a3e635 0%, #38bdf8 50%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .spinner { width: 20px; height: 20px; border: 2px solid #a3e635; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <span class="logo">tbr*a</span>
+  <div class="spinner"></div>
+</div>
+</body>
+</html>

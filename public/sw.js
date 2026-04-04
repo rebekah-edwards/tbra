@@ -1,8 +1,9 @@
 // tbr*a Service Worker — v1
 // Minimal PWA: offline fallback + static asset caching
 
-const CACHE_VERSION = "tbra-v2";
+const CACHE_VERSION = "tbra-v3";
 const OFFLINE_URL = "/offline.html";
+const APP_SHELL_URL = "/app-shell.html";
 
 // Pre-cache on install
 self.addEventListener("install", (event) => {
@@ -10,6 +11,7 @@ self.addEventListener("install", (event) => {
     caches.open(CACHE_VERSION).then((cache) =>
       cache.addAll([
         OFFLINE_URL,
+        APP_SHELL_URL,
         "/icons/icon-192.png",
         "/icons/icon-512.png",
         "/icons/apple-touch-icon.png",
@@ -43,10 +45,31 @@ self.addEventListener("fetch", (event) => {
   // Only handle GET requests
   if (request.method !== "GET") return;
 
-  // Navigation requests (page loads): network-first, offline fallback
+  // Navigation requests (page loads): network-first with timeout fallback to app shell
+  // If Vercel cold start takes >3 seconds, serve the cached app shell which auto-refreshes.
+  // This prevents the 20+ second white screen on PWA cold starts.
   if (request.mode === "navigate") {
+    const timeoutMs = 3000;
     event.respondWith(
-      fetch(request).catch(() => caches.match(OFFLINE_URL))
+      Promise.race([
+        fetch(request),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), timeoutMs))
+      ]).catch(() => {
+        // Network failed or timed out — serve app shell with auto-refresh meta tag
+        return caches.match(APP_SHELL_URL).then((shell) => {
+          if (!shell) return caches.match(OFFLINE_URL);
+          // Clone and inject a meta refresh so the page auto-retries after 1 second
+          return shell.text().then((html) => {
+            const refreshHtml = html.replace(
+              "</head>",
+              '<meta http-equiv="refresh" content="2">\n</head>'
+            );
+            return new Response(refreshHtml, {
+              headers: { "Content-Type": "text/html" },
+            });
+          });
+        });
+      })
     );
     return;
   }
