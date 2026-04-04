@@ -71,9 +71,23 @@ export function DiscoverClient() {
   const [libraryFilter, setLibraryFilter] = useState<string | null>(() => searchParams.get("library"));
   const [seriesStarters, setSeriesStarters] = useState(() => searchParams.get("starters") === "1");
   const [ignorePreferences, setIgnorePreferences] = useState(() => searchParams.get("ignore") === "1");
-  const [results, setResults] = useState<DiscoverResult[]>([]);
+  const [results, setResults] = useState<DiscoverResult[]>(() => {
+    // Restore cached results from sessionStorage on mount (back navigation)
+    if (typeof window !== "undefined") {
+      try {
+        const cached = sessionStorage.getItem("discover-results");
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return [];
+  });
   const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
+  const [searched, setSearched] = useState(() => {
+    if (typeof window !== "undefined") {
+      return !!sessionStorage.getItem("discover-results");
+    }
+    return false;
+  });
   const resultsRef = useRef<HTMLDivElement>(null);
   const initialLoadDone = useRef(false);
 
@@ -94,9 +108,11 @@ export function DiscoverClient() {
   }, []);
 
   // Auto-restore results if URL has "searched" param (user navigated back)
+  // Skip if we already restored from sessionStorage
   useEffect(() => {
     if (initialLoadDone.current) return;
     initialLoadDone.current = true;
+    if (results.length > 0) return; // Already restored from cache
     if (searchParams.get("searched") === "1" && selectedMoods.length > 0) {
       handleDiscover(true);
     }
@@ -130,6 +146,8 @@ export function DiscoverClient() {
       const data: DiscoverResult[] = await res.json();
       setResults(data);
       setSearched(true);
+      // Cache results so back navigation restores them instantly
+      try { sessionStorage.setItem("discover-results", JSON.stringify(data)); } catch {}
 
       // Update URL with current filters + searched flag
       syncUrl(selectedMoods, lengthPref, fictionPref, audiencePref, libraryFilter, seriesStarters, ignorePreferences, true);
