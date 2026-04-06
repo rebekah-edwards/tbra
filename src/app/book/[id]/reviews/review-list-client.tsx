@@ -7,11 +7,12 @@ import type { BookReviewEntry } from "@/lib/queries/review";
 interface ReviewListClientProps {
   reviews: BookReviewEntry[];
   bookId: string;
+  bookSlug?: string | null;
   currentUserId?: string | null;
   sortBy?: "latest" | "helpful";
 }
 
-export function ReviewListClient({ reviews, bookId, currentUserId }: ReviewListClientProps) {
+export function ReviewListClient({ reviews, bookId, bookSlug, currentUserId }: ReviewListClientProps) {
   const [hideNoText, setHideNoText] = useState(false);
   const [dnfOnly, setDnfOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"latest" | "helpful">("latest");
@@ -136,7 +137,7 @@ export function ReviewListClient({ reviews, bookId, currentUserId }: ReviewListC
         </div>
       ) : (
         filtered.map((review) => (
-          <ReviewCard key={review.id} review={review} bookId={bookId} isOwnReview={!!currentUserId && review.userId === currentUserId} />
+          <ReviewCard key={review.id} review={review} bookId={bookId} bookSlug={bookSlug} isOwnReview={!!currentUserId && review.userId === currentUserId} />
         ))
       )}
     </div>

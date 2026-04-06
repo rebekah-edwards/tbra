@@ -74,7 +74,7 @@ export default async function RootLayout({
   const userIsAdmin = isAdmin(session);
   const userIsSuperAdmin = isSuperAdmin(session);
 
-  // Fetch avatar for bottom nav profile icon
+  // Fetch avatar for bottom nav profile icon — static imports are faster than dynamic
   let avatarUrl: string | null = null;
   let displayName: string | null = null;
   let isVerified = true;
@@ -91,6 +91,11 @@ export default async function RootLayout({
     displayName = row?.displayName ?? null;
     isVerified = row?.emailVerified ?? false;
   }
+
+  // NOTE: This DB query blocks layout render. The loading.tsx Suspense boundary
+  // streams page content, and the PWA splash stays visible until nav renders,
+  // preventing the white screen. A future optimization could move this query
+  // into a Suspense-wrapped async server component for true non-blocking nav.
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -180,21 +185,35 @@ export default async function RootLayout({
           <div className="splash-spinner" />
         </div>
         <script dangerouslySetInnerHTML={{ __html: `
-          // Hide splash after minimum 800ms + DOM ready (not window.load which waits for all resources)
+          // Hide splash once real content is visible (nav bar rendered), not just DOM parsed.
+          // This prevents the white flash between splash removal and React hydration.
+          // We use opacity + pointerEvents instead of remove() to avoid React removeChild errors.
           var splashStart = Date.now();
           function hideSplash() {
             var elapsed = Date.now() - splashStart;
-            var delay = Math.max(0, 800 - elapsed);
+            var delay = Math.max(0, 600 - elapsed);
             setTimeout(function() {
               var s = document.getElementById('pwa-splash');
-              if (s) { s.style.opacity = '0'; setTimeout(function() { s.remove(); }, 300); }
+              if (s) { s.style.opacity = '0'; s.style.pointerEvents = 'none'; }
             }, delay);
           }
-          // Use DOMContentLoaded (fires when HTML parsed) not load (waits for all images/resources)
-          if (document.readyState !== 'loading') hideSplash();
-          else document.addEventListener('DOMContentLoaded', hideSplash);
-          // Safety net: always hide after 5 seconds max no matter what
-          setTimeout(hideSplash, 5000);
+          // Poll for the nav element — it means layout HTML has streamed in
+          function waitForContent() {
+            if (document.querySelector('nav')) return hideSplash();
+            // Check every 100ms, give up after 8s
+            var checks = 0;
+            var interval = setInterval(function() {
+              checks++;
+              if (document.querySelector('nav') || checks > 80) {
+                clearInterval(interval);
+                hideSplash();
+              }
+            }, 100);
+          }
+          if (document.readyState === 'complete') waitForContent();
+          else window.addEventListener('load', waitForContent);
+          // Safety net: always hide after 8 seconds max no matter what
+          setTimeout(hideSplash, 8000);
         `}} />
 
         <ThemeProvider>

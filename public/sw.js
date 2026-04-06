@@ -1,7 +1,7 @@
 // tbr*a Service Worker — v1
 // Minimal PWA: offline fallback + static asset caching
 
-const CACHE_VERSION = "tbra-v3";
+const CACHE_VERSION = "tbra-v4";
 const OFFLINE_URL = "/offline.html";
 const APP_SHELL_URL = "/app-shell.html";
 
@@ -45,26 +45,41 @@ self.addEventListener("fetch", (event) => {
   // Only handle GET requests
   if (request.method !== "GET") return;
 
-  // Navigation requests (page loads): network-first with timeout fallback to app shell
-  // If Vercel cold start takes >3 seconds, serve the cached app shell which auto-refreshes.
-  // This prevents the 20+ second white screen on PWA cold starts.
+  // Navigation requests (page loads): network-first with generous timeout.
+  // Vercel cold starts + Turso can take 5-8 seconds. We wait up to 8s before
+  // falling back to the app shell. The app shell uses JS-based retry with
+  // exponential backoff instead of meta-refresh loops that hammer the server.
   if (request.mode === "navigate") {
-    const timeoutMs = 3000;
+    const timeoutMs = 8000;
     event.respondWith(
       Promise.race([
         fetch(request),
         new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), timeoutMs))
       ]).catch(() => {
-        // Network failed or timed out — serve app shell with auto-refresh meta tag
+        // Network failed or timed out — serve app shell with smart retry
         return caches.match(APP_SHELL_URL).then((shell) => {
           if (!shell) return caches.match(OFFLINE_URL);
-          // Clone and inject a meta refresh so the page auto-retries after 1 second
           return shell.text().then((html) => {
-            const refreshHtml = html.replace(
-              "</head>",
-              '<meta http-equiv="refresh" content="2">\n</head>'
-            );
-            return new Response(refreshHtml, {
+            // Inject JS-based retry with exponential backoff instead of meta refresh
+            const retryScript = `<script>
+              (function(){
+                var delay = 3000;
+                var maxDelay = 15000;
+                function retry() {
+                  fetch(location.href, {method:'HEAD'}).then(function(r){
+                    if(r.ok) location.reload();
+                    else schedule();
+                  }).catch(schedule);
+                }
+                function schedule() {
+                  setTimeout(retry, delay);
+                  delay = Math.min(delay * 1.5, maxDelay);
+                }
+                schedule();
+              })();
+            </script>`;
+            const retryHtml = html.replace("</body>", retryScript + "\n</body>");
+            return new Response(retryHtml, {
               headers: { "Content-Type": "text/html" },
             });
           });

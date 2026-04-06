@@ -196,6 +196,7 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
       .select({
         id: books.id,
         title: books.title,
+        slug: books.slug,
         coverImageUrl: books.coverImageUrl,
         audiobookCoverUrl: books.audiobookCoverUrl,
         seriesCoverUrl: books.seriesCoverUrl,
@@ -257,6 +258,7 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
       seriesBooks.push({
         id: sb.id,
         title: sb.title,
+        slug: sb.slug,
         coverImageUrl: effectiveCover,
         position: sb.position,
         userRating,
@@ -410,6 +412,7 @@ export async function getSeriesBooks(seriesId: string, userId: string | null) {
 
     enrichedBooks.push({
       id: sb.id,
+      slug: sb.slug,
       title: sb.title,
       coverImageUrl: effectiveCover,
       openLibraryKey: sb.openLibraryKey,

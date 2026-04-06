@@ -22,7 +22,8 @@ function getInitials(name: string | null): string {
     .slice(0, 2);
 }
 
-export function ReviewCard({ review, bookId, isOwnReview = false }: { review: BookReviewEntry; bookId: string; isOwnReview?: boolean }) {
+export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { review: BookReviewEntry; bookId: string; bookSlug?: string | null; isOwnReview?: boolean }) {
+  const bookPath = bookSlug ? `/book/${bookSlug}` : `/book/${bookId}`;
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const textInnerRef = useRef<HTMLDivElement>(null);
@@ -233,7 +234,7 @@ export function ReviewCard({ review, bookId, isOwnReview = false }: { review: Bo
       <div className="flex items-center justify-between pt-1">
         {isOwnReview ? (
           <Link
-            href={`/book/${bookId}`}
+            href={bookPath}
             className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full text-primary hover:bg-primary/10 transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -282,7 +283,7 @@ export function ReviewCard({ review, bookId, isOwnReview = false }: { review: Bo
         <button
           type="button"
           onClick={async () => {
-            const url = `${window.location.origin}/book/${bookId}/reviews`;
+            const url = `${window.location.origin}${bookPath}/reviews`;
             if (navigator.share) {
               try {
                 await navigator.share({

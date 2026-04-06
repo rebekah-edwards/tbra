@@ -26,12 +26,14 @@ export default async function ReviewsPage({
 
   const reviews = await getBookReviews(resolved.book.id, user?.userId);
 
+  const bookPath = resolved.book.slug ? `/book/${resolved.book.slug}` : `/book/${id}`;
+
   return (
     <div className="min-h-screen">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-border/50">
         <Link
-          href={`/book/${id}`}
+          href={bookPath}
           className="p-1 -m-1 text-foreground/60 hover:text-foreground transition-colors"
           aria-label="Back to book"
         >
@@ -61,7 +63,7 @@ export default async function ReviewsPage({
 
       {/* Review list */}
       <div className="px-4 py-4">
-        <ReviewListClient reviews={reviews} bookId={resolved.book.id} currentUserId={user?.userId ?? null} />
+        <ReviewListClient reviews={reviews} bookId={resolved.book.id} bookSlug={resolved.book.slug} currentUserId={user?.userId ?? null} />
       </div>
     </div>
   );

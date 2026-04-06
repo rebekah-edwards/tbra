@@ -373,7 +373,7 @@ export function BookPageClient({
                   ))}
                   <span className="text-sm text-foreground/70">{aggregate.average.toFixed(1)} avg.</span>
                   <span className="text-sm text-foreground/50">·</span>
-                  <a href={`/book/${book.id}/reviews`} className="text-sm text-neon-blue underline hover:text-neon-blue/80">{aggregate.count} {aggregate.count === 1 ? "review" : "reviews"}</a>
+                  <a href={`/book/${book.slug || book.id}/reviews`} className="text-sm text-neon-blue underline hover:text-neon-blue/80">{aggregate.count} {aggregate.count === 1 ? "review" : "reviews"}</a>
                 </div>
               ) : (
                 <p className="text-sm text-muted/60">No reviews yet</p>
@@ -441,6 +441,7 @@ export function BookPageClient({
       <div className="lg:[&>div:first-child]:hidden">
         <ReviewTrigger
           bookId={book.id}
+          bookSlug={book.slug}
           bookPages={book.pages}
           userReview={userReview}
           aggregate={aggregate}

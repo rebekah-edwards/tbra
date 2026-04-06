@@ -376,7 +376,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                             </svg>
                           </Link>
                           {/* Compact series books */}
-                          {s.books.length > 0 && (
+                          {s.books?.length > 0 && (
                             <div className="px-4 pb-2.5 flex gap-2 overflow-x-auto">
                               {s.books.slice(0, 6).map((book) => (
                                 <Link
@@ -493,7 +493,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                             <p className="text-sm font-medium text-foreground truncate">
                               {book.title}
                             </p>
-                            {book.authors.length > 0 && (
+                            {book.authors?.length > 0 && (
                               <p className="text-xs text-muted truncate">
                                 {book.authors.slice(0, 2).join(", ")}
                               </p>

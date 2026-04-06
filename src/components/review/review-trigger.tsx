@@ -11,6 +11,7 @@ import type { UserReview } from "@/lib/queries/review";
 
 interface ReviewTriggerProps {
   bookId: string;
+  bookSlug?: string | null;
   bookPages?: number | null;
   userReview: UserReview | null;
   aggregate: { average: number; count: number } | null;
@@ -22,6 +23,7 @@ interface ReviewTriggerProps {
 
 export function ReviewTrigger({
   bookId,
+  bookSlug,
   bookPages,
   userReview,
   aggregate,
@@ -30,6 +32,7 @@ export function ReviewTrigger({
   hasCompletedSession = false,
   prePublication = false,
 }: ReviewTriggerProps) {
+  const bookPath = bookSlug ? `/book/${bookSlug}` : `/book/${bookId}`;
   const [wizardOpen, setWizardOpen] = useState(autoOpen);
   const [arcFormOpen, setArcFormOpen] = useState(false);
   const [arcData, setArcData] = useState<ArcSourceData | null>(null);
@@ -69,7 +72,7 @@ export function ReviewTrigger({
       {/* Aggregate rating display — all clickable */}
       {aggregate && (
         <Link
-          href={`/book/${bookId}/reviews`}
+          href={`${bookPath}/reviews`}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
           <StarRow rating={aggregate.average} size={22} />

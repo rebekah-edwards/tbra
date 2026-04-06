@@ -159,7 +159,27 @@ async function searchSeries(query: string) {
     .orderBy(sql`count(${bookSeries.bookId}) DESC`)
     .limit(3);
 
-  return rows;
+  // Fetch first 7 books per series for the compact preview
+  const results = [];
+  for (const row of rows) {
+    const seriesBooks = await db
+      .select({
+        id: books.id,
+        slug: books.slug,
+        title: books.title,
+        coverImageUrl: books.coverImageUrl,
+        position: bookSeries.positionInSeries,
+      })
+      .from(bookSeries)
+      .innerJoin(books, eq(bookSeries.bookId, books.id))
+      .where(eq(bookSeries.seriesId, row.id))
+      .orderBy(bookSeries.positionInSeries)
+      .limit(7);
+
+    results.push({ ...row, books: seriesBooks });
+  }
+
+  return results;
 }
 
 // ─── Author search (simplified from /api/authors/search) ───

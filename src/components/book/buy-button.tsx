@@ -48,7 +48,7 @@ export function BuyButton({ bookTitle, amazonUrl, isbn13, asin }: BuyButtonProps
           <path d="M4 7h16a1 1 0 0 1 1 1v11a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a1 1 0 0 1 1-1z" />
           <path d="M8 7V5a4 4 0 0 1 8 0v2" />
         </svg>
-        <span className="text-[8px] text-muted/50 leading-none">Affiliate</span>
+        <span className="text-[8px] text-muted/50 leading-none">Buy</span>
       </button>
 
       {showDialog && (
