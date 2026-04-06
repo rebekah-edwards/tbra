@@ -70,7 +70,7 @@ export function JoinBuddyReadButton({
           type="button"
           onClick={handleDecline}
           disabled={isPending}
-          className={`rounded-full border border-border px-5 py-1.5 text-[11px] font-semibold text-secondary transition-all hover:bg-surface-hover ${
+          className={`rounded-full border border-border px-5 py-1.5 text-[11px] font-semibold text-muted transition-all hover:bg-surface-hover ${
             isPending ? "opacity-60" : ""
           }`}
         >

@@ -3,8 +3,15 @@
 import { useState, useTransition } from "react";
 import { addReadingNote } from "@/lib/actions/reading-notes";
 
+interface ActiveBuddyRead {
+  id: string;
+  bookId: string;
+  bookTitle: string;
+}
+
 interface ReadingNoteEntryProps {
   books: { id: string; title: string }[];
+  activeBuddyReads?: ActiveBuddyRead[];
 }
 
 const MOODS = [
@@ -25,7 +32,7 @@ const PACES = [
   { key: "flying", label: "Flying" },
 ];
 
-export function ReadingNoteEntry({ books }: ReadingNoteEntryProps) {
+export function ReadingNoteEntry({ books, activeBuddyReads = [] }: ReadingNoteEntryProps) {
   const [expanded, setExpanded] = useState(false);
   const [selectedBook, setSelectedBook] = useState(books[0]?.id ?? "");
   const [noteText, setNoteText] = useState("");
@@ -34,8 +41,12 @@ export function ReadingNoteEntry({ books }: ReadingNoteEntryProps) {
   const [mood, setMood] = useState<string | null>(null);
   const [pace, setPace] = useState<string | null>(null);
   const [showExtras, setShowExtras] = useState(false);
+  const [shareToBuddyRead, setShareToBuddyRead] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  // Check if the selected book has an active buddy read
+  const matchingBuddyRead = activeBuddyReads.find((br) => br.bookId === selectedBook);
 
   function handleSubmit() {
     if (!noteText.trim()) return;
@@ -51,6 +62,9 @@ export function ReadingNoteEntry({ books }: ReadingNoteEntryProps) {
     }
     if (mood) formData.set("mood", mood);
     if (pace) formData.set("pace", pace);
+    if (shareToBuddyRead && matchingBuddyRead) {
+      formData.set("buddyReadId", matchingBuddyRead.id);
+    }
 
     startTransition(async () => {
       const result = await addReadingNote(formData);
@@ -71,8 +85,8 @@ export function ReadingNoteEntry({ books }: ReadingNoteEntryProps) {
 
   if (success) {
     return (
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center">
-        <p className="text-sm text-primary font-medium">✓ Note saved</p>
+      <div className="rounded-xl border border-accent/20 bg-accent/5 p-3 text-center">
+        <p className="text-sm text-foreground font-medium">✓ Note saved</p>
       </div>
     );
   }
@@ -119,13 +133,13 @@ export function ReadingNoteEntry({ books }: ReadingNoteEntryProps) {
         <div className="flex rounded-lg border border-border overflow-hidden text-xs">
           <button
             onClick={() => setPageMode("page")}
-            className={`px-2.5 py-1 ${pageMode === "page" ? "bg-primary text-background" : "text-muted"}`}
+            className={`px-2.5 py-1 ${pageMode === "page" ? "bg-accent text-black" : "text-muted"}`}
           >
             Page
           </button>
           <button
             onClick={() => setPageMode("percent")}
-            className={`px-2.5 py-1 ${pageMode === "percent" ? "bg-primary text-background" : "text-muted"}`}
+            className={`px-2.5 py-1 ${pageMode === "percent" ? "bg-accent text-black" : "text-muted"}`}
           >
             %
           </button>
@@ -175,7 +189,7 @@ export function ReadingNoteEntry({ books }: ReadingNoteEntryProps) {
                 onClick={() => setPace(pace === p.key ? null : p.key)}
                 className={`rounded-full px-3 py-1 text-xs transition-all ${
                   pace === p.key
-                    ? "bg-primary/20 text-primary border border-primary/30"
+                    ? "bg-accent/20 text-accent border border-accent/30"
                     : "bg-surface-alt text-muted border border-transparent hover:text-foreground"
                 }`}
               >
@@ -186,12 +200,28 @@ export function ReadingNoteEntry({ books }: ReadingNoteEntryProps) {
         </div>
       )}
 
+      {/* Share to buddy read toggle */}
+      {matchingBuddyRead && (
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={shareToBuddyRead}
+            onChange={(e) => setShareToBuddyRead(e.target.checked)}
+            className="sr-only peer"
+          />
+          <div className="relative w-8 h-4 rounded-full bg-border peer-checked:bg-accent transition-colors">
+            <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${shareToBuddyRead ? "translate-x-4" : ""}`} />
+          </div>
+          <span className="text-xs text-muted">Share to buddy read</span>
+        </label>
+      )}
+
       {/* Actions */}
       <div className="flex items-center gap-2">
         <button
           onClick={handleSubmit}
           disabled={isPending || !noteText.trim()}
-          className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-background disabled:opacity-50"
+          className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
         >
           {isPending ? "Saving..." : "Save Note"}
         </button>

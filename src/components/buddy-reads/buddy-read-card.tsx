@@ -48,17 +48,16 @@ export function BuddyReadCard({
 
       {/* Details */}
       <div className="flex flex-col justify-center gap-1 min-w-0 flex-1">
-        <h3 className="font-heading text-sm font-semibold text-primary leading-tight line-clamp-1">
-          {name}
+        <h3 className="font-heading text-sm font-semibold text-neon-blue leading-tight line-clamp-1">
+          {bookTitle}
         </h3>
-        <p className="font-body text-xs text-secondary line-clamp-1">{bookTitle}</p>
-        <p className="font-body text-[11px] text-tertiary">
+        <p className="font-body text-[11px] text-muted">
           Hosted by {hostName}
         </p>
 
         <div className="flex items-center gap-2 mt-0.5">
           {/* Member count */}
-          <span className="font-body text-[11px] text-tertiary">
+          <span className="font-body text-[11px] text-muted/60">
             {memberCount} {memberCount === 1 ? "member" : "members"}
           </span>
 
@@ -68,7 +67,7 @@ export function BuddyReadCard({
               Active
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted/15 px-2 py-0.5 text-[10px] font-semibold text-tertiary">
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted/15 px-2 py-0.5 text-[10px] font-semibold text-muted/60">
               <svg
                 className="w-3 h-3"
                 fill="none"

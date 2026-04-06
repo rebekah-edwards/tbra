@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { readingNotes, userBookState } from "@/db/schema";
+import { readingNotes, userBookState, buddyReadMessages, buddyReadMembers, buddyReads } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
@@ -61,6 +61,35 @@ export async function addReadingNote(formData: FormData): Promise<{ success: boo
     pace: pace || null,
     isPrivate,
   });
+
+  // Optionally share to buddy read discussion
+  const buddyReadId = formData.get("buddyReadId") as string | null;
+  if (buddyReadId) {
+    try {
+      // Verify user is an active member
+      const membership = await db
+        .select({ status: buddyReadMembers.status })
+        .from(buddyReadMembers)
+        .where(and(eq(buddyReadMembers.buddyReadId, buddyReadId), eq(buddyReadMembers.userId, session.userId)))
+        .get();
+      if (membership?.status === "active") {
+        const parts: string[] = [];
+        if (pageNumber) parts.push(`p.${pageNumber}`);
+        if (percentComplete !== null) parts.push(`${percentComplete}%`);
+        const progressInfo = parts.length > 0 ? ` (${parts.join(", ")})` : "";
+        const message = `📖 Reading update${progressInfo}: ${noteText}`;
+        await db.insert(buddyReadMessages).values({
+          buddyReadId,
+          userId: session.userId,
+          message: message.slice(0, 2000),
+        });
+        const br = await db.select({ slug: buddyReads.slug }).from(buddyReads).where(eq(buddyReads.id, buddyReadId)).get();
+        if (br?.slug) revalidatePath(`/buddy-reads/${br.slug}`);
+      }
+    } catch {
+      // Don't fail the note creation if buddy read sharing fails
+    }
+  }
 
   revalidatePath("/library");
   revalidatePath(`/book/${bookId}`);

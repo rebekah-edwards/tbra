@@ -34,7 +34,6 @@ export function CreateBuddyReadClient({ prefillBook }: CreateBuddyReadClientProp
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Form fields
-  const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [startDate, setStartDate] = useState("");
@@ -98,15 +97,10 @@ export function CreateBuddyReadClient({ prefillBook }: CreateBuddyReadClientProp
       setError("Please select a book.");
       return;
     }
-    if (!name.trim()) {
-      setError("Please enter a name for your buddy read.");
-      return;
-    }
 
     startTransition(async () => {
       const result = await createBuddyRead(
         selectedBook.id,
-        name.trim(),
         description.trim() || undefined,
         isPublic,
         startDate || undefined,
@@ -205,22 +199,6 @@ export function CreateBuddyReadClient({ prefillBook }: CreateBuddyReadClientProp
             )}
           </div>
         )}
-      </div>
-
-      {/* Name */}
-      <div>
-        <label htmlFor="br-name" className="block text-sm font-semibold text-foreground mb-1.5">
-          Name
-        </label>
-        <input
-          id="br-name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Summer Fantasy Read"
-          maxLength={100}
-          className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-[#a3e635]/50"
-        />
       </div>
 
       {/* Description */}

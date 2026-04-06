@@ -415,3 +415,25 @@ export async function isBuddyReadMember(
   if (rows.length === 0) return null;
   return { role: rows[0].role, status: rows[0].status };
 }
+
+/**
+ * Get active buddy reads for a specific book where the user is an active member.
+ * Used to offer "Share to buddy read" toggle in reading note creation.
+ */
+export async function getActiveBuddyReadsForBook(
+  userId: string,
+  bookId: string,
+): Promise<{ id: string; bookTitle: string }[]> {
+  const rows = await db.all(sql`
+    SELECT br.id, b.title AS book_title
+    FROM buddy_reads br
+    JOIN buddy_read_members brm ON brm.buddy_read_id = br.id
+    JOIN books b ON b.id = br.book_id
+    WHERE br.book_id = ${bookId}
+      AND br.status = 'active'
+      AND brm.user_id = ${userId}
+      AND brm.status = 'active'
+  `) as { id: string; book_title: string }[];
+
+  return rows.map((r) => ({ id: r.id, bookTitle: r.book_title }));
+}

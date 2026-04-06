@@ -71,7 +71,7 @@ export function BuddyReadProgressTracker({ members }: BuddyReadProgressTrackerPr
           {/* Name + progress */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
-              <span className="font-body text-xs text-primary truncate">
+              <span className="font-body text-xs text-foreground truncate">
                 {member.displayName}
               </span>
 
@@ -93,11 +93,11 @@ export function BuddyReadProgressTracker({ members }: BuddyReadProgressTrackerPr
                   Done
                 </span>
               ) : member.readingState === "not_started" ? (
-                <span className="text-[10px] text-tertiary shrink-0 ml-2">
+                <span className="text-[10px] text-muted/60 shrink-0 ml-2">
                   Not started
                 </span>
               ) : (
-                <span className="text-[10px] text-secondary shrink-0 ml-2">
+                <span className="text-[10px] text-muted shrink-0 ml-2">
                   {member.percentComplete}%
                 </span>
               )}

@@ -232,9 +232,11 @@ export async function addBookToShelf(
 }
 
 async function notifyShelfFollowers(shelfId: string, shelfName: string, bookId: string) {
-  // Get book title for the notification
+  // Get book title and shelf slug for the notification
   const bookRow = await db.all(sql`SELECT title FROM books WHERE id = ${bookId}`) as { title: string }[];
   const bookTitle = bookRow[0]?.title || "a book";
+  const shelfRow = await db.all(sql`SELECT slug FROM shelves WHERE id = ${shelfId}`) as { slug: string }[];
+  const shelfSlug = shelfRow[0]?.slug;
 
   // Get all followers of this shelf
   const followers = await db.all(sql`
@@ -247,6 +249,7 @@ async function notifyShelfFollowers(shelfId: string, shelfName: string, bookId: 
       type: "shelf_update",
       title: `New book on "${shelfName}"`,
       message: `"${bookTitle}" was added to a shelf you follow.`,
+      linkUrl: `/library/shelves/${shelfSlug}`,
     });
   }
 }
@@ -431,6 +434,7 @@ export async function followShelf(shelfId: string): Promise<{ success: boolean; 
       type: "shelf_followed",
       title: "New shelf follower",
       message: `${followerName} started following your shelf "${shelf.name}"`,
+      linkUrl: `/library/shelves/${shelf.slug}`,
     });
   } catch {
     // Don't break the follow if notification fails

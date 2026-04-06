@@ -46,6 +46,7 @@ export function BuddyReadDetailClient({
       : "";
 
   function handleComplete() {
+    if (!window.confirm("This will end the buddy read for all members. It does not change anyone's personal reading progress. Continue?")) return;
     startTransition(async () => {
       await completeBuddyRead(detail.id);
       router.refresh();
@@ -118,14 +119,14 @@ export function BuddyReadDetailClient({
         </Link>
 
         <div className="min-w-0 flex-1">
-          <h1 className="neon-heading text-xl font-heading font-bold mb-1 truncate">
-            {detail.name}
+          <h1 className="text-xl font-heading font-bold text-foreground mb-1 truncate">
+            {detail.book.title}
           </h1>
           <Link
             href={detail.book.slug ? `/book/${detail.book.slug}` : "#"}
             className="text-sm text-neon-blue hover:underline truncate block"
           >
-            {detail.book.title}
+            View book details
           </Link>
           {detail.book.authors.length > 0 && (
             <p className="text-xs text-muted mt-0.5">
@@ -156,7 +157,7 @@ export function BuddyReadDetailClient({
             disabled={isPending}
             className="rounded-full bg-[#a3e635] px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {isPending ? "Completing..." : "Mark Complete"}
+            {isPending ? "Ending..." : "End Buddy Read"}
           </button>
           <button
             onClick={handleShare}
@@ -185,15 +186,18 @@ export function BuddyReadDetailClient({
           Progress
         </h2>
         <BuddyReadProgressTracker
-          members={detail.members.map((m) => ({
-            userId: m.userId,
-            displayName: m.displayName ?? m.username ?? "Reader",
-            username: m.username ?? "",
-            avatarUrl: m.avatarUrl,
-            readingState: (m.readingState as "not_started" | "currently_reading" | "finished") ?? "not_started",
-            percentComplete: m.percentComplete ?? 0,
-            completionDate: m.completionDate,
-          }))}
+          members={detail.members.map((m) => {
+            const state = (m.readingState as "not_started" | "currently_reading" | "finished") ?? "not_started";
+            return {
+              userId: m.userId,
+              displayName: m.displayName ?? m.username ?? "Reader",
+              username: m.username ?? "",
+              avatarUrl: m.avatarUrl,
+              readingState: state,
+              percentComplete: state === "finished" ? 100 : (m.percentComplete ?? 0),
+              completionDate: m.completionDate,
+            };
+          })}
         />
       </section>
 

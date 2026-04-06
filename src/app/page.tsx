@@ -226,10 +226,29 @@ export default async function Home() {
     }
   }
 
-  // Attach progress to currently-reading books
+  // Look up active buddy reads for currently-reading books
+  const buddyReadMap = new Map<string, string>();
+  if (currentlyReading.length > 0) {
+    const crBookIds = currentlyReading.map((b) => b.id);
+    const buddyReadRows = await db.all(sql`
+      SELECT br.id, br.book_id
+      FROM buddy_reads br
+      JOIN buddy_read_members brm ON brm.buddy_read_id = br.id
+      WHERE br.status = 'active'
+        AND brm.user_id = ${user.userId}
+        AND brm.status = 'active'
+        AND br.book_id IN (${sql.join(crBookIds.map((id) => sql`${id}`), sql`, `)})
+    `) as { id: string; book_id: string }[];
+    for (const row of buddyReadRows) {
+      buddyReadMap.set(row.book_id, row.id);
+    }
+  }
+
+  // Attach progress and buddy read to currently-reading books
   const currentlyReadingWithProgress = currentlyReading.map((b) => ({
     ...b,
     progress: progressMap.get(b.id) ?? null,
+    buddyReadId: buddyReadMap.get(b.id) ?? null,
   }));
 
   return (

@@ -20,6 +20,7 @@ interface CurrentlyReadingBook {
   activeFormats?: string[];
   progress?: number | null; // 0-100 percentage
   pages?: number | null;
+  buddyReadId?: string | null; // active buddy read for this book (if any)
 }
 
 const MOODS = [
@@ -42,9 +43,11 @@ const PACES = [
 
 function TrackSheet({
   book,
+  buddyReadId,
   onClose,
 }: {
   book: CurrentlyReadingBook;
+  buddyReadId?: string | null;
   onClose: () => void;
 }) {
   const [noteText, setNoteText] = useState("");
@@ -53,6 +56,7 @@ function TrackSheet({
   const [mood, setMood] = useState<string | null>(null);
   const [pace, setPace] = useState<string | null>(null);
   const [showExtras, setShowExtras] = useState(false);
+  const [shareToBuddyRead, setShareToBuddyRead] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
 
@@ -67,6 +71,7 @@ function TrackSheet({
     }
     if (mood) formData.set("mood", mood);
     if (pace) formData.set("pace", pace);
+    if (shareToBuddyRead && buddyReadId) formData.set("buddyReadId", buddyReadId);
 
     startTransition(async () => {
       const result = await addReadingNote(formData);
@@ -106,13 +111,13 @@ function TrackSheet({
         <div className="flex rounded-lg border border-border overflow-hidden text-xs">
           <button
             onClick={() => setPageMode("page")}
-            className={`px-2.5 py-1 ${pageMode === "page" ? "bg-primary text-background" : "text-muted"}`}
+            className={`px-2.5 py-1 ${pageMode === "page" ? "bg-accent text-black" : "text-muted"}`}
           >
             Page
           </button>
           <button
             onClick={() => setPageMode("percent")}
-            className={`px-2.5 py-1 ${pageMode === "percent" ? "bg-primary text-background" : "text-muted"}`}
+            className={`px-2.5 py-1 ${pageMode === "percent" ? "bg-accent text-black" : "text-muted"}`}
           >
             %
           </button>
@@ -169,11 +174,26 @@ function TrackSheet({
         </div>
       )}
 
+      {buddyReadId && (
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={shareToBuddyRead}
+            onChange={(e) => setShareToBuddyRead(e.target.checked)}
+            className="sr-only peer"
+          />
+          <div className="relative w-8 h-4 rounded-full bg-border peer-checked:bg-accent transition-colors">
+            <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${shareToBuddyRead ? "translate-x-4" : ""}`} />
+          </div>
+          <span className="text-xs text-muted">Share to buddy read</span>
+        </label>
+      )}
+
       <div className="flex items-center gap-2">
         <button
           onClick={handleSubmit}
           disabled={isPending || !noteText.trim()}
-          className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-background disabled:opacity-50"
+          className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
         >
           {isPending ? "Saving..." : "Save"}
         </button>
@@ -365,7 +385,7 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
         </div>
       )}
       {trackingBookId === book.id && (
-        <TrackSheet book={book} onClose={() => setTrackingBookId(null)} />
+        <TrackSheet book={book} buddyReadId={book.buddyReadId} onClose={() => setTrackingBookId(null)} />
       )}
 
       {/* Inline completion flow — date picker + review wizard */}

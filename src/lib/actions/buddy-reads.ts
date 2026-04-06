@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { buddyReads, buddyReadMembers, buddyReadMessages, userNotifications, users, userBookState } from "@/db/schema";
+import { buddyReads, buddyReadMembers, buddyReadMessages, userNotifications, users, userBookState, books } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
@@ -29,7 +29,6 @@ function generateSlug(name: string): string {
 
 export async function createBuddyRead(
   bookId: string,
-  name: string,
   description?: string,
   isPublic?: boolean,
   startDate?: string,
@@ -38,12 +37,12 @@ export async function createBuddyRead(
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
 
-  const trimmed = name.trim();
-  if (!trimmed || trimmed.length > 100) {
-    return { success: false, error: "Name must be 1-100 characters" };
-  }
+  // Look up book title to auto-name the buddy read
+  const book = await db.select({ title: books.title }).from(books).where(eq(books.id, bookId)).get();
+  if (!book) return { success: false, error: "Book not found" };
+  const trimmed = book.title.slice(0, 100);
 
-  // Generate unique slug
+  // Generate unique slug from book title
   const baseSlug = generateSlug(trimmed);
   let slug = baseSlug;
   let suffix = 2;
@@ -168,6 +167,7 @@ export async function inviteToBuddyRead(
       type: "buddy_read_invite",
       title: "Buddy read invitation",
       message: `${inviterName} invited you to a buddy read`,
+      linkUrl: `/buddy-reads/${buddyRead.slug}`,
     });
   } catch (err) {
     console.error("[buddy-reads] Failed to create invite notification:", err);
@@ -250,6 +250,7 @@ export async function joinBuddyRead(
       type: "buddy_read_joined",
       title: "New buddy read member",
       message: `${joinerName} joined your buddy read`,
+      linkUrl: `/buddy-reads/${buddyRead.slug}`,
     });
   } catch (err) {
     console.error("[buddy-reads] Failed to create join notification:", err);
@@ -352,6 +353,7 @@ export async function joinBuddyReadByCode(
       type: "buddy_read_joined",
       title: "New buddy read member",
       message: `${joinerName} joined your buddy read`,
+      linkUrl: `/buddy-reads/${buddyRead.slug}`,
     });
   } catch (err) {
     console.error("[buddy-reads] Failed to create join notification:", err);
@@ -456,6 +458,7 @@ export async function completeBuddyRead(
         type: "buddy_read_completed",
         title: "Buddy read completed",
         message: `"${buddyRead?.name}" has been marked as completed`,
+        linkUrl: buddyRead?.slug ? `/buddy-reads/${buddyRead.slug}` : undefined,
       });
     }
   } catch (err) {

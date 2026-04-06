@@ -50,6 +50,7 @@ export async function followUser(
       type: "new_follower",
       title: "New follower",
       message: `${followerName} started following you`,
+      linkUrl: follower?.username ? `/u/${follower.username}` : undefined,
     });
   } catch (err) {
     console.error("[follows] Failed to create notification:", err);

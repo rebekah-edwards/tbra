@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { reviewHelpfulVotes, userBookReviews, userNotifications, users } from "@/db/schema";
+import { reviewHelpfulVotes, userBookReviews, userNotifications, users, books } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
@@ -44,11 +44,13 @@ export async function toggleHelpfulVote(reviewId: string, bookId: string) {
         const voter = await db.select({ displayName: users.displayName, username: users.username })
           .from(users).where(eq(users.id, user.userId)).get();
         const voterName = voter?.displayName || voter?.username || "Someone";
+        const bookRow = await db.select({ slug: books.slug }).from(books).where(eq(books.id, bookId)).get();
         await db.insert(userNotifications).values({
           userId: review.userId,
           type: "review_helpful",
           title: "Review marked helpful",
           message: `${voterName} found your review helpful`,
+          linkUrl: bookRow?.slug ? `/book/${bookRow.slug}/reviews` : `/book/${bookId}/reviews`,
         });
       }
     } catch {

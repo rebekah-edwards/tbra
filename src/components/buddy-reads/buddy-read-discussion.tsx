@@ -82,7 +82,7 @@ export function BuddyReadDiscussion({
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 pb-3">
         {optimisticMessages.length === 0 && (
-          <p className="font-body text-sm text-tertiary text-center py-8">
+          <p className="font-body text-sm text-muted text-center py-8">
             No messages yet. Start the conversation!
           </p>
         )}
@@ -117,12 +117,12 @@ export function BuddyReadDiscussion({
               <div
                 className={`max-w-[75%] rounded-2xl px-3 py-2 ${
                   isOwn
-                    ? "bg-accent/15 text-primary"
-                    : "bg-surface-hover text-primary"
+                    ? "bg-accent/15 text-foreground"
+                    : "bg-surface-hover text-foreground"
                 }`}
               >
                 {!isOwn && (
-                  <p className="font-body text-[11px] font-semibold text-secondary mb-0.5">
+                  <p className="font-body text-[11px] font-semibold text-muted mb-0.5">
                     {msg.displayName}
                   </p>
                 )}
@@ -131,7 +131,7 @@ export function BuddyReadDiscussion({
                 </p>
                 <p
                   className={`font-body text-[10px] mt-1 ${
-                    isOwn ? "text-accent/60 text-right" : "text-tertiary"
+                    isOwn ? "text-accent/60 text-right" : "text-muted/60"
                   }`}
                 >
                   {timeAgo(msg.createdAt)}
@@ -152,7 +152,7 @@ export function BuddyReadDiscussion({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
-          className="flex-1 rounded-full border border-border bg-surface px-4 py-2 text-sm font-body text-primary placeholder:text-tertiary focus:outline-none focus:ring-1 focus:ring-accent"
+          className="flex-1 rounded-full border border-border bg-surface px-4 py-2 text-sm font-body text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-accent"
         />
         <button
           type="button"

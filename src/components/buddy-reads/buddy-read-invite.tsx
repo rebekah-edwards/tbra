@@ -104,13 +104,13 @@ export function BuddyReadInvite({
     <div className="flex flex-col gap-5">
       {/* Copy invite link */}
       <div>
-        <h4 className="font-heading text-sm font-semibold text-primary mb-2">
+        <h4 className="font-heading text-sm font-semibold text-foreground mb-2">
           Share invite link
         </h4>
         <button
           type="button"
           onClick={handleCopy}
-          className="w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-body text-primary transition-colors hover:bg-surface-hover"
+          className="w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-body text-foreground transition-colors hover:bg-surface-hover"
         >
           {copied ? (
             <>
@@ -132,7 +132,7 @@ export function BuddyReadInvite({
           ) : (
             <>
               <svg
-                className="w-4 h-4 text-secondary"
+                className="w-4 h-4 text-muted"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -152,7 +152,7 @@ export function BuddyReadInvite({
 
       {/* Search and invite users */}
       <div>
-        <h4 className="font-heading text-sm font-semibold text-primary mb-2">
+        <h4 className="font-heading text-sm font-semibold text-foreground mb-2">
           Invite a user
         </h4>
         <input
@@ -160,14 +160,14 @@ export function BuddyReadInvite({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name or username..."
-          className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-body text-primary placeholder:text-tertiary focus:outline-none focus:ring-1 focus:ring-accent"
+          className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-body text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-1 focus:ring-accent"
         />
 
         {/* Search results */}
         {(results.length > 0 || searching) && (
           <div className="mt-2 rounded-xl border border-border bg-surface overflow-hidden">
             {searching && results.length === 0 && (
-              <p className="px-4 py-3 text-xs text-tertiary font-body">
+              <p className="px-4 py-3 text-xs text-muted/60 font-body">
                 Searching...
               </p>
             )}
@@ -197,10 +197,10 @@ export function BuddyReadInvite({
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-body text-sm text-primary truncate">
+                      <p className="font-body text-sm text-foreground truncate">
                         {user.displayName}
                       </p>
-                      <p className="font-body text-[11px] text-tertiary">
+                      <p className="font-body text-[11px] text-muted/60">
                         @{user.username}
                       </p>
                     </div>
@@ -226,7 +226,7 @@ export function BuddyReadInvite({
       {/* Pending invites */}
       {pendingInvites.length > 0 && (
         <div>
-          <h4 className="font-heading text-sm font-semibold text-primary mb-2">
+          <h4 className="font-heading text-sm font-semibold text-foreground mb-2">
             Pending invites
           </h4>
           <div className="flex flex-col gap-2">
@@ -240,10 +240,10 @@ export function BuddyReadInvite({
                     {getInitials(member.displayName)}
                   </span>
                 </div>
-                <span className="font-body text-sm text-primary flex-1 truncate">
+                <span className="font-body text-sm text-foreground flex-1 truncate">
                   {member.displayName}
                 </span>
-                <span className="text-[10px] font-semibold text-tertiary rounded-full bg-muted/15 px-2 py-0.5">
+                <span className="text-[10px] font-semibold text-muted/60 rounded-full bg-muted/15 px-2 py-0.5">
                   Pending
                 </span>
               </div>

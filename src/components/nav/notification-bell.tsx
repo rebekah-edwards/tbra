@@ -1,17 +1,20 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 interface Notification {
   id: string;
   type: string;
   title: string;
   message: string;
+  linkUrl: string | null;
   read: boolean;
   createdAt: string;
 }
 
 export function NotificationBell() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [ringing, setRinging] = useState(false);
@@ -159,6 +162,10 @@ export function NotificationBell() {
                   key={n.id}
                   onClick={() => {
                     if (!n.read) markRead(n.id);
+                    if (n.linkUrl) {
+                      setOpen(false);
+                      router.push(n.linkUrl);
+                    }
                   }}
                   className={`w-full text-left px-3 py-2.5 border-b border-border/50 hover:bg-surface-alt/50 transition-colors ${
                     !n.read ? "bg-accent/5" : ""

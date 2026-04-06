@@ -594,6 +594,7 @@ export const userNotifications = sqliteTable("user_notifications", {
   type: text("type").notNull(), // 'import_complete' | 'enrichment_complete' | etc.
   title: text("title").notNull(),
   message: text("message").notNull(),
+  linkUrl: text("link_url"), // optional navigation target when notification is tapped
   read: integer("read", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
