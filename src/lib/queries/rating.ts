@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { userBookRatings } from "@/db/schema";
-import { eq, and, or, isNull, avg, count, inArray } from "drizzle-orm";
+import { eq, and, or, isNull, avg, count, inArray, sql } from "drizzle-orm";
 
 export async function getUserBookRating(
   userId: string,
@@ -46,38 +46,35 @@ export async function getBulkAggregateRatings(
 export async function getBookAggregateRating(
   bookId: string
 ): Promise<{ average: number; count: number } | null> {
-  let row;
+  // Use raw SQL with an INNER JOIN on users so ratings from deleted/missing
+  // users don't count. Previously this showed ghost counts on the book page
+  // (e.g. Beloved showing "3.8 avg · 6 reviews" from seed data whose users
+  // had been deleted) while the reviews list itself was empty.
+  let row: { average: number | null; count: number } | undefined;
   try {
-    // Filter out pending/rejected ARC reviews from aggregate
-    row = await db
-      .select({
-        average: avg(userBookRatings.rating),
-        count: count(userBookRatings.id),
-      })
-      .from(userBookRatings)
-      .where(
-        and(
-          eq(userBookRatings.bookId, bookId),
-          or(isNull(userBookRatings.arcStatus), eq(userBookRatings.arcStatus, "approved"))
-        )
-      )
-      .get();
+    const rows = await db.all(sql`
+      SELECT AVG(ubr.rating) AS average, COUNT(ubr.id) AS count
+      FROM user_book_ratings ubr
+      INNER JOIN users u ON u.id = ubr.user_id
+      WHERE ubr.book_id = ${bookId}
+        AND (ubr.arc_status IS NULL OR ubr.arc_status = 'approved')
+    `) as { average: number | null; count: number }[];
+    row = rows[0];
   } catch {
     // Fallback: arc_status column may not exist on production yet
-    row = await db
-      .select({
-        average: avg(userBookRatings.rating),
-        count: count(userBookRatings.id),
-      })
-      .from(userBookRatings)
-      .where(eq(userBookRatings.bookId, bookId))
-      .get();
+    const rows = await db.all(sql`
+      SELECT AVG(ubr.rating) AS average, COUNT(ubr.id) AS count
+      FROM user_book_ratings ubr
+      INNER JOIN users u ON u.id = ubr.user_id
+      WHERE ubr.book_id = ${bookId}
+    `) as { average: number | null; count: number }[];
+    row = rows[0];
   }
 
   if (!row || row.count === 0) return null;
 
   return {
-    average: Number(row.average),
+    average: Number(row.average ?? 0),
     count: row.count,
   };
 }

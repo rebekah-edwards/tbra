@@ -37,6 +37,8 @@ export const books = sqliteTable("books", {
   uniqueIndex("books_isbn13_unique").on(table.isbn13),
   uniqueIndex("books_ol_key_unique").on(table.openLibraryKey),
   index("idx_books_title").on(table.title),
+  // Sort by publication year (Browse "newest" sort)
+  index("books_publication_year_idx").on(table.publicationYear),
 ]);
 
 export const authors = sqliteTable("authors", {
@@ -82,6 +84,8 @@ export const bookGenres = sqliteTable("book_genres", {
 }, (table) => [
   index("book_genres_book_idx").on(table.bookId),
   index("book_genres_genre_idx").on(table.genreId),
+  // Covering index for genre-filter subqueries on Browse (genre → book lookup)
+  index("book_genres_genre_idx_v2").on(table.genreId, table.bookId),
 ]);
 
 export const series = sqliteTable("series", {
@@ -231,6 +235,8 @@ export const userBookRatings = sqliteTable("user_book_ratings", {
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   uniqueIndex("user_book_ratings_unique").on(table.userId, table.bookId),
+  // Aggregate lookups by book (Browse page, book page rating display)
+  index("user_book_ratings_book_idx").on(table.bookId),
 ]);
 
 // ─── Editions ───

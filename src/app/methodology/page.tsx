@@ -65,7 +65,7 @@ const CATEGORIES = [
     description: "Child abuse, domestic violence, animal abuse, slavery, and other forms of cruelty or systemic suffering.",
   },
   {
-    name: "User-added \u26A0\uFE0F",
+    name: "User-added",
     description: "Additional content warnings submitted by users that don't fit neatly into other categories.",
   },
 ];

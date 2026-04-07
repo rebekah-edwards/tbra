@@ -1,7 +1,7 @@
 // tbr*a Service Worker — v1
 // Minimal PWA: offline fallback + static asset caching
 
-const CACHE_VERSION = "tbra-v4";
+const CACHE_VERSION = "tbra-v5";
 const OFFLINE_URL = "/offline.html";
 const APP_SHELL_URL = "/app-shell.html";
 

@@ -112,17 +112,48 @@ export async function getBrowseBooks(
   )) as { total: number }[];
   const total = countResult[0]?.total ?? 0;
 
-  // Main query
-  const rows = await db.all(sql.raw(`
-    SELECT
-      b.id, b.slug, b.title, b.cover_image_url, b.publication_year, b.pages, b.is_fiction,
-      COALESCE((SELECT AVG(ubr.rating) FROM user_book_ratings ubr WHERE ubr.book_id = b.id), 0) as avg_rating,
-      COALESCE((SELECT COUNT(*) FROM user_book_ratings ubr2 WHERE ubr2.book_id = b.id), 0) as rating_count
-    FROM books b
-    WHERE ${whereClause}
-    ORDER BY ${orderBy}
-    LIMIT ${limit} OFFSET ${offset}
-  `)) as {
+  // Determine whether we need rating data in the ORDER BY.
+  // If not, we can skip the LEFT JOIN on the main query entirely and
+  // batch-fetch ratings for the visible slice (same approach as authors).
+  const needsRatingsForSort =
+    !filters.sort || filters.sort === "highest_rated" || filters.sort === "popular";
+
+  let mainSql: string;
+  if (needsRatingsForSort) {
+    // LEFT JOIN pre-aggregated ratings (single scan of user_book_ratings
+    // instead of 2 correlated subqueries per row).
+    // IMPORTANT: aggregate against the inner ratings table so we only
+    // see one row per book after the join.
+    mainSql = `
+      SELECT
+        b.id, b.slug, b.title, b.cover_image_url, b.publication_year, b.pages, b.is_fiction,
+        COALESCE(r.avg_rating, 0) AS avg_rating,
+        COALESCE(r.rating_count, 0) AS rating_count
+      FROM books b
+      LEFT JOIN (
+        SELECT book_id, AVG(rating) AS avg_rating, COUNT(*) AS rating_count
+        FROM user_book_ratings
+        GROUP BY book_id
+      ) r ON r.book_id = b.id
+      WHERE ${whereClause}
+      ORDER BY ${orderBy}
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else {
+    // No rating sort — skip the join entirely for speed. Ratings will be
+    // batch-fetched below for the visible slice only.
+    mainSql = `
+      SELECT
+        b.id, b.slug, b.title, b.cover_image_url, b.publication_year, b.pages, b.is_fiction,
+        0 AS avg_rating, 0 AS rating_count
+      FROM books b
+      WHERE ${whereClause}
+      ORDER BY ${orderBy}
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  }
+
+  const rows = await db.all(sql.raw(mainSql)) as {
     id: string; slug: string | null; title: string; cover_image_url: string | null;
     publication_year: number | null; pages: number | null; is_fiction: number | null;
     avg_rating: number; rating_count: number;
@@ -146,18 +177,38 @@ export async function getBrowseBooks(
     authorsByBook.set(a.book_id, arr);
   }
 
-  const books: BrowseBook[] = rows.map((r) => ({
-    id: r.id,
-    slug: r.slug,
-    title: r.title,
-    coverImageUrl: r.cover_image_url,
-    authors: authorsByBook.get(r.id) ?? [],
-    publicationYear: r.publication_year,
-    pages: r.pages,
-    isFiction: r.is_fiction === null ? null : !!r.is_fiction,
-    aggregateRating: r.avg_rating > 0 ? Math.round(r.avg_rating * 100) / 100 : null,
-    ratingCount: r.rating_count,
-  }));
+  // If we skipped ratings in the main query (non-rating sort), batch-fetch
+  // them now just for the visible slice.
+  const ratingsByBook = new Map<string, { avg: number; count: number }>();
+  if (!needsRatingsForSort) {
+    const ratingRows = await db.all(sql.raw(
+      `SELECT book_id, AVG(rating) AS avg_rating, COUNT(*) AS rating_count
+       FROM user_book_ratings
+       WHERE book_id IN (${inList})
+       GROUP BY book_id`
+    )) as { book_id: string; avg_rating: number; rating_count: number }[];
+    for (const r of ratingRows) {
+      ratingsByBook.set(r.book_id, { avg: r.avg_rating, count: r.rating_count });
+    }
+  }
+
+  const books: BrowseBook[] = rows.map((r) => {
+    const ratings = needsRatingsForSort
+      ? { avg: r.avg_rating, count: r.rating_count }
+      : ratingsByBook.get(r.id) ?? { avg: 0, count: 0 };
+    return {
+      id: r.id,
+      slug: r.slug,
+      title: r.title,
+      coverImageUrl: r.cover_image_url,
+      authors: authorsByBook.get(r.id) ?? [],
+      publicationYear: r.publication_year,
+      pages: r.pages,
+      isFiction: r.is_fiction === null ? null : !!r.is_fiction,
+      aggregateRating: ratings.avg > 0 ? Math.round(ratings.avg * 100) / 100 : null,
+      ratingCount: ratings.count,
+    };
+  });
 
   return { books, total, hasMore: offset + limit < total };
 }

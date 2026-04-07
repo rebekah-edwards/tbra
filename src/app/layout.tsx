@@ -168,20 +168,19 @@ export default async function RootLayout({
             ]),
           }}
         />
-        {/* PWA cold-start splash — renders instantly before React hydrates, then auto-hides */}
+        {/* PWA cold-start splash — renders instantly before React hydrates, then auto-hides.
+            Spinner-only (no logo) to avoid system-font vs Space Grotesk mismatch on the asterisk. */}
         <div id="pwa-splash" style={{
           position: "fixed", inset: 0, zIndex: 9999,
-          display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "12px",
+          display: "flex", alignItems: "center", justifyContent: "center",
           transition: "opacity 0.3s ease-out",
         }}>
           <style dangerouslySetInnerHTML={{ __html: `
             #pwa-splash { background: var(--background, #0a0a0f); }
             [data-theme="light"] #pwa-splash { background: var(--background, #fafbfc); }
-            #pwa-splash .splash-logo { font-size: 28px; }
-            #pwa-splash .splash-spinner { width: 20px; height: 20px; border: 2px solid #a3e635; border-top-color: transparent; border-radius: 50%; animation: splash-spin 0.8s linear infinite; }
+            #pwa-splash .splash-spinner { width: 24px; height: 24px; border: 2px solid #a3e635; border-top-color: transparent; border-radius: 50%; animation: splash-spin 0.8s linear infinite; }
             @keyframes splash-spin { to { transform: rotate(360deg); } }
           `}} />
-          <span className="splash-logo logo-gradient font-logo tracking-tight">tbr*a</span>
           <div className="splash-spinner" />
         </div>
         <script dangerouslySetInnerHTML={{ __html: `

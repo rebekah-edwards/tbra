@@ -5,7 +5,7 @@ import { getFollowedUserIds } from "@/lib/queries/follows";
 import { BrowseClient } from "./browse-client";
 
 export const metadata: Metadata = {
-  title: "Browse Library | tbr*a",
+  title: "Browse All Books on tbr*a",
   description: "Browse the full tbr*a book catalog. Filter by genre, rating, and more.",
 };
 

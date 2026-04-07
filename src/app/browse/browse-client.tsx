@@ -157,7 +157,7 @@ export function BrowseClient({ isLoggedIn, hasFollows }: BrowseClientProps) {
     <div className="lg:max-w-[60%] lg:mx-auto">
       {/* Header */}
       <h1 className="text-foreground text-2xl font-bold tracking-tight mb-1">
-        Browse Library
+        Browse All Books on tbr*a
       </h1>
       <p className="text-xs text-muted mb-4">
         {total.toLocaleString()} books

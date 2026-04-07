@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -210,8 +210,23 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [pendingCompleteState, setPendingCompleteState] = useState<"completed" | "dnf" | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [openStateDropdown, setOpenStateDropdown] = useState<string | null>(null);
+  const stateDropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const router = useRouter();
   const isAudiobook = book.activeFormats?.length === 1 && book.activeFormats[0] === "audiobook";
+
+  // Close state dropdown on outside click
+  useEffect(() => {
+    if (!openStateDropdown) return;
+    function handleClick(e: MouseEvent) {
+      const ref = stateDropdownRefs.current[openStateDropdown!];
+      if (ref && !ref.contains(e.target as Node)) {
+        setOpenStateDropdown(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [openStateDropdown]);
 
   function handleStateChange(bookId: string, newState: string) {
     // Completed/DNF → show date picker inline (no navigation)
@@ -275,7 +290,7 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
         {!book.coverImageUrl && (
           <div className="absolute inset-0 bg-gradient-to-br from-primary-dark to-primary rounded-xl" />
         )}
-        <div className="relative z-10 flex items-center gap-4 p-4">
+        <div className="relative z-10 flex items-start gap-4 p-4">
           <Link href={`/book/${book.slug || book.id}`} className="flex-shrink-0 relative">
             {book.coverImageUrl ? (
               <Image
@@ -295,68 +310,61 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
               </span>
             )}
           </Link>
-          <div className="min-w-0 flex-1">
-            <Link href={`/book/${book.slug || book.id}`}>
-              <h3 className="text-base font-bold book-header-text leading-tight line-clamp-2">{book.title}</h3>
-            </Link>
-            {book.authors.length > 0 && (
-              <p className="mt-0.5 text-sm book-header-text-muted line-clamp-1">{book.authors.join(", ")}</p>
-            )}
-            {book.activeFormats && book.activeFormats.length > 0 && (
-              <div className="hidden lg:flex gap-1.5 mt-1.5">
-                {book.activeFormats.map((fmt) => (
-                  <span key={fmt} className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 book-header-text-muted capitalize">
-                    {fmt}
-                  </span>
-                ))}
+          <div className="min-w-0 flex-1 flex flex-col gap-2">
+            <div className="min-w-0">
+              <Link href={`/book/${book.slug || book.id}`}>
+                <h3 className="text-base font-bold book-header-text leading-snug line-clamp-3">{book.title}</h3>
+              </Link>
+              {book.authors.length > 0 && (
+                <p className="mt-1 text-sm book-header-text-muted line-clamp-1">{book.authors.join(", ")}</p>
+              )}
+            </div>
+            {/* Action buttons — two full-width rows */}
+            <div className={`flex flex-col gap-1.5 ${isPending ? "opacity-50" : ""}`}>
+              {/* Row 1: Notes & Progress (blue, fully opaque) */}
+              <button
+                onClick={() => setTrackingBookId(trackingBookId === book.id ? null : book.id)}
+                className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-neon-blue px-3 py-2 text-sm font-semibold text-black shadow-sm hover:brightness-110 active:scale-[0.98] transition-all"
+                title="Notes & progress"
+              >
+                <span>📝</span>
+                <span>Notes &amp; Progress</span>
+              </button>
+              {/* Row 2: Reading state dropdown (green, opaque, Finished/Paused/DNF only) */}
+              <div className="relative" ref={(el) => { stateDropdownRefs.current[book.id] = el; }}>
+                <button
+                  onClick={() => setOpenStateDropdown(openStateDropdown === book.id ? null : book.id)}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-black shadow-sm hover:brightness-110 active:scale-[0.98] transition-all"
+                  title="Change reading state"
+                >
+                  <span>Reading Now</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+                {openStateDropdown === book.id && (
+                  <div className="absolute right-0 top-full mt-1 z-20 w-full min-w-[140px] rounded-lg border border-border bg-surface shadow-lg overflow-hidden">
+                    <button
+                      onClick={() => { setOpenStateDropdown(null); handleStateChange(book.id, "completed"); }}
+                      className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-surface-alt transition-colors border-b border-border/50"
+                    >
+                      Finished
+                    </button>
+                    <button
+                      onClick={() => { setOpenStateDropdown(null); handleStateChange(book.id, "paused"); }}
+                      className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-surface-alt transition-colors border-b border-border/50"
+                    >
+                      Paused
+                    </button>
+                    <button
+                      onClick={() => { setOpenStateDropdown(null); handleStateChange(book.id, "dnf"); }}
+                      className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-surface-alt transition-colors"
+                    >
+                      DNF
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          {/* Action buttons */}
-          <div className={`flex flex-col gap-1.5 flex-shrink-0 ${isPending ? "opacity-50" : ""}`}>
-            {/* Track (journal) */}
-            <button
-              onClick={() => setTrackingBookId(trackingBookId === book.id ? null : book.id)}
-              className="flex flex-col items-center gap-0.5 rounded-lg book-action-btn px-2 py-1.5 hover:brightness-110 transition-all backdrop-blur-sm"
-              title="Track reading"
-            >
-              <span className="text-sm">📝</span>
-              <span className="text-[9px] font-semibold">Track</span>
-            </button>
-            {/* Quick state icons row */}
-            <div className="flex gap-1">
-              {/* Finished (check) */}
-              <button
-                onClick={() => handleStateChange(book.id, "completed")}
-                className="flex h-7 w-7 items-center justify-center rounded-md book-action-btn hover:brightness-110 transition-colors backdrop-blur-sm"
-                title="Mark as finished"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </button>
-              {/* Pause */}
-              <button
-                onClick={() => handleStateChange(book.id, "paused")}
-                className="flex h-7 w-7 items-center justify-center rounded-md book-action-btn hover:brightness-110 transition-colors backdrop-blur-sm"
-                title="Pause"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="6" y="4" width="4" height="16" rx="1" />
-                  <rect x="14" y="4" width="4" height="16" rx="1" />
-                </svg>
-              </button>
-              {/* DNF (flag) */}
-              <button
-                onClick={() => handleStateChange(book.id, "dnf")}
-                className="flex h-7 w-7 items-center justify-center rounded-md book-action-btn hover:brightness-110 transition-colors backdrop-blur-sm"
-                title="Did not finish"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                  <line x1="4" y1="22" x2="4" y2="15" />
-                </svg>
-              </button>
             </div>
           </div>
         </div>

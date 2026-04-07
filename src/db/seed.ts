@@ -84,7 +84,7 @@ const categories = [
   },
   {
     key: "user_added",
-    name: "User-added \u26A0\uFE0F",
+    name: "User-added",
     description:
       "Additional content warnings submitted by users that don't fit neatly into other categories.",
   },

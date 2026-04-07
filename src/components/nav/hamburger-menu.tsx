@@ -18,7 +18,6 @@ interface HamburgerMenuProps {
 const MENU_ITEMS = [
   { label: "Buddy Reads", href: "/buddy-reads", icon: "buddy-reads", authRequired: true },
   { label: "Browse All Books", href: "/browse", icon: "browse" },
-  { label: "Settings", href: "/settings", icon: "settings" },
   { label: "Import Your Library", href: "/import", icon: "import" },
   { label: "Contact Us", href: "/contact", icon: "mail" },
 ];
@@ -223,6 +222,15 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
                   </svg>
                 </span>
                 View Profile
+              </Link>
+              <Link
+                href="/settings"
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-alt transition-colors"
+              >
+                <span className="text-muted">
+                  <MenuIcon icon="settings" />
+                </span>
+                Settings
               </Link>
               <div className="border-t border-border my-1" />
               {MENU_ITEMS.map((item) => (
