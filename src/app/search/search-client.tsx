@@ -82,23 +82,25 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
       try {
-        // Search OL, local series, and authors in parallel
+        // Phase 1: Fast local-only searches in parallel (books, series, authors)
         const [res, seriesRes, authorRes] = await Promise.all([
           fetch(`/api/openlibrary/search?q=${encodeURIComponent(query.trim())}`),
           fetch(`/api/series/search?q=${encodeURIComponent(query.trim())}`),
           fetch(`/api/authors/search?q=${encodeURIComponent(query.trim())}`),
         ]);
-        const data: OLSearchResult[] = await res.json();
+        const localData: OLSearchResult[] = await res.json();
         const seriesData: SeriesMatch[] = await seriesRes.json();
         const authorData: AuthorMatch[] = await authorRes.json();
-        setResults(data);
+        // Show local results immediately
+        setResults(localData);
         setSeriesMatches(seriesData);
         setAuthorMatches(authorData);
         setSearched(true);
+        setLoading(false);
 
         // Check which books are already imported
-        if (data.length > 0) {
-          const keys = data.map((r) => r.key);
+        if (localData.length > 0) {
+          const keys = localData.map((r) => r.key);
           const checkRes = await fetch("/api/books/check", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -112,12 +114,41 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         } else {
           setExistingBooks({});
         }
+
+        // Phase 2: Only fetch external (ISBNdb) results if local is sparse.
+        // This keeps the ISBNdb quota usage low — we reserve the 15K/day budget
+        // primarily for enrichment.
+        const LOCAL_THRESHOLD = 5;
+        if (
+          localData.length < LOCAL_THRESHOLD &&
+          query.trim().length >= 3
+        ) {
+          try {
+            const extRes = await fetch(
+              `/api/search/external?q=${encodeURIComponent(query.trim())}`,
+            );
+            if (extRes.ok) {
+              const extData = await extRes.json();
+              const extResults: OLSearchResult[] = extData.results ?? [];
+              if (extResults.length > 0) {
+                // Append external results after local ones, deduping by title
+                const seen = new Set(localData.map((r) => r.title.toLowerCase()));
+                const merged = [
+                  ...localData,
+                  ...extResults.filter((r) => !seen.has(r.title.toLowerCase())),
+                ];
+                setResults(merged);
+              }
+            }
+          } catch {
+            // External search failures should NEVER break local results
+          }
+        }
       } catch {
         setResults([]);
-      } finally {
         setLoading(false);
       }
-    }, 300);
+    }, 400);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -166,8 +197,24 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
     const currentState = bookStates[result.key] ?? null;
     const localCoverUrl = (result as Record<string, unknown>)._localCoverUrl as string | undefined;
     const localSlug = (result as Record<string, unknown>)._localSlug as string | undefined;
-    const effectiveCover = coverUrl || localCoverUrl;
+    const externalCoverUrl = (result as Record<string, unknown>)._externalCoverUrl as string | undefined;
+    const source = (result as Record<string, unknown>)._source as string | undefined;
+    const isbn13 = (result as Record<string, unknown>)._isbn13 as string | undefined;
+    const effectiveCover = coverUrl || localCoverUrl || externalCoverUrl;
     const bookHref = existingId ? `/book/${localSlug || existingId}` : undefined;
+
+    // Build the externalImport payload for ISBNdb-sourced results
+    const externalImport = source === "isbndb" && !existingId
+      ? {
+          source: "isbndb" as const,
+          isbn: isbn13 || result.isbn?.[0] || "",
+          title: result.title,
+          authors: result.author_name ?? [],
+          coverUrl: externalCoverUrl ?? null,
+          publicationYear: result.first_publish_year ?? null,
+          pages: result.number_of_pages_median ?? null,
+        }
+      : null;
 
     const coverElement = effectiveCover ? (
       <Image
@@ -220,7 +267,8 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           <div className="mt-2 flex items-center gap-2">
             <ReadingStateButton
               bookId={existingId ?? undefined}
-              olResult={existingId ? undefined : result}
+              olResult={existingId || externalImport ? undefined : result}
+              externalImport={externalImport}
               currentState={currentState}
               isLoggedIn={isLoggedIn}
               compact

@@ -781,3 +781,77 @@ export async function removeBookGenre(
   revalidatePath(`/book/${bookId}`);
   return { success: true };
 }
+
+/**
+ * Import a book from an ISBNdb search result and return the local book ID.
+ * Used by the search page when the user picks a result that came from
+ * /api/search/external (ISBNdb-sourced).
+ *
+ * Strategy: minimal book row insert (title + authors + isbn + cover), then
+ * trigger enrichment in the background to fill in the rest. This keeps the
+ * search → click → state-change flow snappy.
+ */
+export async function importFromISBNdbAndReturn(params: {
+  isbn: string;
+  title: string;
+  authors: string[];
+  coverUrl?: string | null;
+  publicationYear?: number | null;
+  pages?: number | null;
+}): Promise<string | null> {
+  const { isbn, title, authors: authorNames, coverUrl, publicationYear, pages } = params;
+
+  // 1. Dedup by ISBN — book might already be in our DB
+  const isbn13 = isbn.length === 13 ? isbn : null;
+  const isbn10 = isbn.length === 10 ? isbn : null;
+
+  if (isbn13) {
+    const existing = await db.query.books.findFirst({ where: eq(books.isbn13, isbn13) });
+    if (existing) return existing.id;
+  }
+  if (isbn10) {
+    const existing = await db.query.books.findFirst({ where: eq(books.isbn10, isbn10) });
+    if (existing) return existing.id;
+  }
+
+  // 2. Fuzzy dedup by title + first author
+  const fuzzyMatch = await findExistingByTitleAndAuthor(title, authorNames[0] ?? null);
+  if (fuzzyMatch) return fuzzyMatch;
+
+  // 3. Validate title — reject junk
+  const validation = validateBookTitle(title);
+  if (!validation.ok) {
+    console.log(`[isbndb-import] Rejected "${title}": ${validation.reason}`);
+    return null;
+  }
+  const finalTitle = validation.title;
+
+  // 4. Insert minimal book row
+  const [book] = await db
+    .insert(books)
+    .values({
+      title: finalTitle,
+      isbn13,
+      isbn10,
+      publicationYear: publicationYear ?? null,
+      pages: pages ?? null,
+      coverImageUrl: coverUrl ?? null,
+      // isFiction defaults to true; enrichment will refine
+    })
+    .returning();
+
+  // 5. Link authors
+  for (const name of authorNames) {
+    if (!name?.trim()) continue;
+    const authorId = await findOrCreateAuthor(name.trim());
+    await db.insert(bookAuthors).values({ bookId: book.id, authorId });
+  }
+
+  // 6. Generate slug
+  await assignBookSlug(book.id, finalTitle, authorNames[0] ?? "");
+
+  // 7. Trigger enrichment in the background to fill description, genres, ratings, etc.
+  after(() => triggerEnrichment(book.id));
+
+  return book.id;
+}

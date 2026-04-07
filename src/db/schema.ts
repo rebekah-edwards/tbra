@@ -587,6 +587,18 @@ export const blockedOlKeys = sqliteTable("blocked_ol_keys", {
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 
+// ─── API quota tracking ───
+// Daily counter per API (e.g. 'isbndb_search'), used to enforce hard daily limits.
+// Primary key is (api_name, date) so we can atomically increment.
+
+export const apiQuotaUsage = sqliteTable("api_quota_usage", {
+  apiName: text("api_name").notNull(),
+  date: text("date").notNull(), // YYYY-MM-DD in UTC
+  count: integer("count").notNull().default(0),
+}, (table) => [
+  uniqueIndex("api_quota_usage_name_date").on(table.apiName, table.date),
+]);
+
 // ─── User notifications ───
 
 export const userNotifications = sqliteTable("user_notifications", {

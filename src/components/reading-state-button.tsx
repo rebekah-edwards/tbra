@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { setBookState, removeBookState, setBookStateWithImport, removeFromLibrary } from "@/lib/actions/reading-state";
+import { setBookState, removeBookState, setBookStateWithImport, removeFromLibrary, type ExternalBookImportInput } from "@/lib/actions/reading-state";
 import { setBookStateWithCompletion } from "@/lib/actions/reading-session";
 import { CompletionDatePicker } from "@/components/book/completion-date-picker";
 import { TbrNoteEditor } from "@/components/book/tbr-note-editor";
@@ -64,6 +64,8 @@ interface ReadingStateButtonProps {
   bookId?: string;
   bookSlug?: string | null;
   olResult?: OLSearchResult;
+  /** For results sourced from ISBNdb (via /api/search/external) */
+  externalImport?: ExternalBookImportInput | null;
   currentState: string | null;
   isLoggedIn: boolean;
   compact?: boolean;
@@ -78,6 +80,7 @@ export function ReadingStateButton({
   bookId,
   bookSlug,
   olResult,
+  externalImport,
   currentState,
   isLoggedIn,
   compact = false,
@@ -183,6 +186,12 @@ export function ReadingStateButton({
           onStateChange?.(state);
           showToast(state);
           onImported?.(olResult.key, newId);
+        } else if (externalImport) {
+          // ISBNdb-sourced result — import via ISBNdb instead of OL
+          const newId = await setBookStateWithImport(null, null, state, externalImport);
+          onStateChange?.(state);
+          showToast(state);
+          onImported?.(`isbndb:${externalImport.isbn}`, newId);
         }
       }
     });

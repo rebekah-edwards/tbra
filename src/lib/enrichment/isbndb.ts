@@ -128,6 +128,42 @@ export async function searchISBNdbByTitle(
 }
 
 /**
+ * General-purpose ISBNdb search. Returns up to `limit` books matching the query.
+ * Unlike searchISBNdbByTitle which scores and picks the single best match,
+ * this returns the raw list — suitable for search UI result lists.
+ *
+ * Each call consumes ONE ISBNdb quota unit. Caller is responsible for
+ * quota enforcement via consumeApiQuota().
+ */
+export async function searchISBNdbMulti(
+  query: string,
+  limit = 10,
+): Promise<ISBNdbBook[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  const res = await rateLimitedFetch(
+    `${ISBNDB_BASE}/books/${encodeURIComponent(trimmed)}?pageSize=${limit}`
+  );
+  if (!res) return [];
+
+  try {
+    const data = await res.json();
+    const books: ISBNdbBook[] = data.books ?? [];
+    // Filter: require title + at least one ISBN so we can import later
+    return books.filter((b) => {
+      if (!b.title) return false;
+      if (!b.isbn13 && !b.isbn10 && !b.isbn) return false;
+      // Skip placeholder/test entries
+      if (b.title.toLowerCase().includes("placeholder")) return false;
+      return true;
+    });
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Extract a usable cover URL from ISBNdb result.
  * Returns the standard (non-original) image URL, or null.
  */

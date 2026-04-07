@@ -205,10 +205,26 @@ export async function setOwnedFormats(bookId: string, formats: string[]) {
   revalidatePath("/");
 }
 
+/**
+ * External search result from ISBNdb.
+ * Passed to setBookStateWithImport when the user clicks a state button on a
+ * book that came from /api/search/external.
+ */
+export interface ExternalBookImportInput {
+  source: "isbndb";
+  isbn: string;
+  title: string;
+  authors: string[];
+  coverUrl?: string | null;
+  publicationYear?: number | null;
+  pages?: number | null;
+}
+
 export async function setBookStateWithImport(
   bookId: string | null,
   olResult: OLSearchResult | null,
-  state: string
+  state: string,
+  externalImport?: ExternalBookImportInput | null,
 ): Promise<string> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -231,8 +247,21 @@ export async function setBookStateWithImport(
     }
   }
 
+  // Or from ISBNdb if that's the source
+  if (!resolvedBookId && externalImport?.source === "isbndb") {
+    const { importFromISBNdbAndReturn } = await import("@/lib/actions/books");
+    resolvedBookId = await importFromISBNdbAndReturn({
+      isbn: externalImport.isbn,
+      title: externalImport.title,
+      authors: externalImport.authors,
+      coverUrl: externalImport.coverUrl,
+      publicationYear: externalImport.publicationYear,
+      pages: externalImport.pages,
+    });
+  }
+
   if (!resolvedBookId) {
-    throw new Error("No book ID and no OL result provided");
+    throw new Error("No book ID and no import source provided");
   }
 
   // Now set the state
