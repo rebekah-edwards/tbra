@@ -7,6 +7,7 @@ import { ReadingStateSelector } from "@/components/book/reading-state-selector";
 
 import { BuyButton } from "@/components/book/buy-button";
 import { ReviewTrigger } from "@/components/review/review-trigger";
+import { StarRow } from "@/components/review/rounded-star";
 import { PostCompletionSuggestions } from "@/components/book/post-completion-suggestions";
 import { getEffectiveCoverUrl } from "@/lib/covers";
 import { autoLinkFormatEdition } from "@/lib/actions/editions";
@@ -381,11 +382,7 @@ export function BookPageClient({
             <div className="space-y-1 lg:pt-2.5">
               {aggregate && aggregate.count > 0 ? (
                 <div className="flex items-center gap-2">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <svg key={i} width="18" height="18" viewBox="0 0 24 24" fill={i < Math.round(aggregate.average) ? "#facc15" : "none"} stroke="#facc15" strokeWidth="2">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                    </svg>
-                  ))}
+                  <StarRow rating={aggregate.average} size={18} />
                   <span className="text-sm text-foreground/70">{aggregate.average.toFixed(1)} avg.</span>
                   <span className="text-sm text-foreground/50">·</span>
                   <a href={`/book/${book.slug || book.id}/reviews`} className="text-sm text-neon-blue underline hover:text-neon-blue/80">{aggregate.count} {aggregate.count === 1 ? "review" : "reviews"}</a>

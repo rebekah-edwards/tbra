@@ -32,8 +32,8 @@ export function sanitizeDescription(raw: string): string | null {
     .replace(/&#x27;/g, "'")
     .replace(/&nbsp;/g, " ");
 
-  // Strip "Product Description " prefix (Amazon leftover)
-  text = text.replace(/^Product Description\s+/i, "");
+  // Strip "Product Description" prefix (Amazon leftover, with optional colon/period)
+  text = text.replace(/^Product Description\s*[:.]?\s*/i, "");
 
   // Strip leading wiki nav: "Preceded by X", "BOOK TWO of Y"
   const lines = text.split(/\n+/);
@@ -80,11 +80,19 @@ export function sanitizeDescription(raw: string): string | null {
   // Reject if it STARTS as a pure author bio
   if (/^[A-Z][\w\s.]{2,40} is the (?:[\w\s#]+?)?(?:bestselling|award-winning) author of\b/.test(text)) return null;
   if (/^[A-Z][\w\s.]{2,40} is the author of\b/.test(text)) return null;
+  if (/^[A-Z][\w\s.]{1,30} is (?:a|an) [\w\s.,]{2,100} and (?:the|a|an)?\s*(?:author|writer) of\b/.test(text.slice(0, 200))) return null;
+  if (/^[A-Z][\w.\s]{2,50} is the (?:Executive |Managing |Senior |Assistant )?(?:Production )?(?:Editor|Director|Producer|Publisher|Founder|CEO|President|Creator|Illustrator|Translator) (?:at|of|for)/i.test(text.slice(0, 200))) return null;
+  if (/^[A-Z][\w\s.]{2,40} has (?:written|authored|published)\b/.test(text.slice(0, 200))) return null;
   if (/^(?:[A-Z][\w\s.]+ )?was born in\b/.test(text.slice(0, 100))) return null;
 
   // Reject if it's a user review
   if (/^In the (?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\d+(?:st|nd|rd|th)) (?:book|installment|entry|novel) (?:of|in)/i.test(text)) return null;
   if (/^I (?:loved|hated|couldn'?t put|was (?:blown|hooked))/i.test(text)) return null;
+
+  // Reject if it's a series listing dump
+  if (/^Also (?:available |in )(?:the |from )?(?:series )?[A-Z]/i.test(text.slice(0, 200))) return null;
+  const hashCount = (text.slice(0, 300).match(/#\d+\b/g) ?? []).length;
+  if (hashCount >= 3) return null;
 
   // Reject digitization / SparkNotes / excerpt boilerplate
   if (/^This work has been selected by scholars as being culturally important/i.test(text)) return null;

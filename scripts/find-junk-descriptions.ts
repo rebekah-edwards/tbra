@@ -41,6 +41,7 @@ type PatternType =
   | "toc_dump"
   | "author_bio"
   | "user_review"
+  | "series_listing"
   | "broken_layout"
   | "empty_or_tiny";
 
@@ -127,15 +128,32 @@ function detectTocDump(desc: string): boolean {
 
 /** Detect author bio posing as description */
 function detectAuthorBio(desc: string): boolean {
-  const first150 = desc.slice(0, 150);
+  const first200 = desc.slice(0, 200);
   // "X is the New York Times bestselling author of..."
-  if (/\bis the (?:[\w\s#]+?)?(?:bestselling|award-winning) author of\b/i.test(first150)) return true;
+  if (/\bis the (?:[\w\s#]+?)?(?:bestselling|award-winning) author of\b/i.test(first200)) return true;
   // "X is the author of..."
-  if (/^[A-Z][\w\s.]{2,40} is the author of\b/i.test(first150)) return true;
+  if (/^[A-Z][\w\s.]{2,40} is the author of\b/i.test(first200)) return true;
+  // "X is a [profession] and the author of..." — "Clair is a citizen of the Muscogee Nation and the author of..."
+  if (/^[A-Z][\w\s.]{1,30} is (?:a|an) [\w\s.,]{2,100} and (?:the|a|an)?\s*(?:author|writer) of\b/i.test(first200)) return true;
+  // "X [NAME] is the Executive Production Editor / Managing Editor / Editor at..." — staff bio
+  if (/^[A-Z][\w.\s]{2,50} is the (?:Executive |Managing |Senior |Assistant )?(?:Production )?(?:Editor|Director|Producer|Publisher|Founder|CEO|President|Creator|Illustrator|Translator) (?:at|of|for)/i.test(first200)) return true;
   // "X was born in..."
-  if (/^(?:[A-Z][\w\s.]+ )?was born in\b/i.test(first150)) return true;
+  if (/^(?:[A-Z][\w\s.]+ )?was born in\b/i.test(first200)) return true;
   // "X lives in..."
-  if (/^[A-Z][\w\s.]{2,40} lives in\b/i.test(first150)) return true;
+  if (/^[A-Z][\w\s.]{2,40} lives in\b/i.test(first200)) return true;
+  // "X has written N books"
+  if (/^[A-Z][\w\s.]{2,40} has (?:written|authored|published)\b/i.test(first200)) return true;
+  return false;
+}
+
+/** Detect a series listing dump ("Also in the X series: #1 Y #2 Z") */
+function detectSeriesListing(desc: string): boolean {
+  const first200 = desc.slice(0, 200);
+  // "Also in the X series #1 Y #2 Z..."
+  if (/^Also (?:available |in )(?:the |from )?(?:series )?[A-Z]/i.test(first200)) return true;
+  // Contains multiple "#N" entries in quick succession — listing of series entries
+  const hashCount = (first200.match(/#\d+\b/g) ?? []).length;
+  if (hashCount >= 3) return true;
   return false;
 }
 
@@ -186,8 +204,8 @@ function trySalvage(desc: string, title: string): string | null {
     .replace(/&#x27;/g, "'")
     .replace(/&nbsp;/g, " ");
 
-  // 1. Strip leading "Product Description " prefix
-  cleaned = cleaned.replace(/^Product Description\s+/i, "");
+  // 1. Strip leading "Product Description" prefix (with optional colon/period)
+  cleaned = cleaned.replace(/^Product Description\s*[:.]?\s*/i, "");
 
   // 2. Strip leading wiki navigation lines ("Preceded by...", "BOOK TWO of...").
   // Also skip blank lines between nav entries.
@@ -380,6 +398,15 @@ function detectJunk(desc: string | null, title: string): Omit<JunkMatch, "id" | 
     return {
       pattern: "user_review",
       reason: "Starts with a user review ('In the Nth installment of...', etc.)",
+      snippet: description.slice(0, 180),
+      cleaned: null,
+    };
+  }
+
+  if (detectSeriesListing(description)) {
+    return {
+      pattern: "series_listing",
+      reason: "Description is a listing of other books in the series",
       snippet: description.slice(0, 180),
       cleaned: null,
     };
