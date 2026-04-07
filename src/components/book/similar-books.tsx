@@ -7,6 +7,7 @@ import { NoCover } from "@/components/no-cover";
 
 interface SimilarBook {
   id: string;
+  slug: string | null;
   title: string;
   coverImageUrl: string | null;
   authors: string[];
@@ -62,7 +63,7 @@ export function SimilarBooks({ bookId }: { bookId: string }) {
       <h2 className="section-heading text-xl">
         Similar Books
       </h2>
-      <div className="mt-4 flex gap-3 overflow-x-auto pb-2 scrollbar-thin lg:grid lg:grid-cols-8 lg:gap-3 lg:overflow-visible lg:pb-0">
+      <div className="mt-4 flex gap-3 overflow-x-auto pb-2 pr-12 no-scrollbar mask-fade-right lg:grid lg:grid-cols-8 lg:gap-3 lg:overflow-visible lg:pb-0 lg:pr-0">
         {books.map((book) => (
           <Link
             key={book.id}
