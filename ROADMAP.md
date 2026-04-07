@@ -1,5 +1,58 @@
 # tbr*a Beta Launch Roadmap
 
+## Round 6 (2026-04-07) ✅ — Pre-beta bug bash + search rewrite
+
+### Critical fixes
+- **Amazon affiliate button** visible for logged-out users (unblocks Amazon Associates approval — was rejected twice). Renamed from "Affiliate" to "Buy".
+- **UUID URLs no longer leak to Google** — all internal links use slugs, `robots.txt` disallows UUID-pattern paths.
+- **PWA white screen (20s)** — added `src/app/loading.tsx` for streaming, splash waits for `<nav>` element, SW uses exponential backoff retry (was meta-refresh loop).
+- **Search crash on live** — `/api/search` `searchSeries()` now fetches books per series and client has defensive optional chaining.
+- **CRON_SECRET env var whitespace** had been silently blocking all Vercel deploys for 3 days — no code had actually been shipping. Fixed.
+
+### Buddy Reads overhaul
+- Removed custom "buddy read name" field — auto-names from book title
+- Progress shows 100% for finished books (was stuck at last note percentage)
+- "Mark Complete" → "End Buddy Read" with confirmation dialog
+- All 10 notification types now have `link_url` for clickable navigation
+- "Share to buddy read" toggle on reading notes posts formatted update to discussion
+- Full color sweep (`text-primary` → `text-foreground`, undefined `text-secondary`/`text-tertiary` → `text-muted`)
+- New `getActiveBuddyReadsForBook()` query
+
+### Review wizard, reading history, and dates
+- Keyboard layout fixed via `100dvh` on root container (was pushing header off-screen on mobile)
+- Step 2 mood pill color fixed (`text-primary` → `text-accent` so global light-mode override applies)
+- New `reading_sessions.started_at_explicit` column tracks user-specified start dates
+- `formatDate()` respects `completionPrecision` — year-only shows "2024", month/year shows "Apr 2026"
+- Default finish date to today ONLY when transitioning from `currently_reading` → `completed`; leave null for direct TBR → Finished skips
+- Re-read finish no longer auto-opens review wizard (gated on `!hasCompleted`)
+- Finish date dialog uses `createPortal` + `z-[200]` to escape stacking contexts
+- Friends' feed reviews link directly to `/book/{slug}/reviews#review-{id}`
+
+### Classification & taxonomy
+- `classifyGenres()` takes `isFiction` and filters whitelist (nonfiction books like Jesus Revolution no longer pick "Christian Fiction" primary)
+- Added "Christian Nonfiction", "Christian Living" to `NONFICTION_GENRES`
+- **Graphic novel backfill:** ~3,276 books tagged based on publisher match (Marvel, DC, Image, IDW, Dark Horse, Vertigo, Viz Media, Kodansha, Tokyopop, Yen Press, Seven Seas, Idea & Design Works, Boom Studios, Vault Comics, etc.). Both local and Turso.
+- LGBTQIA+ → LGBTQ+ sitewide (seed, taxonomy, methodology, onboarding, settings, enrichment)
+
+### Search rewrite ⚡
+- **Full search page now queries local DB only** — 20-80ms typical (was 5-30 seconds)
+- Previously made up to 11 sequential OpenLibrary HTTP calls per query
+- ISBNdb fallback only fires when local returns fewer than 5 results
+- **Hard daily cap: 2,000 ISBNdb search calls** via new `api_quota_usage` table (atomic `INSERT ... ON CONFLICT`). Enrichment gets the rest of the 15K/day premium budget.
+- In-memory LRU cache (200 entries, 5-min TTL) per query on `/api/search/external`
+- New `importFromISBNdbAndReturn()` creates minimal book row + generates SEO slug + triggers background enrichment
+- `ReadingStateButton` + `setBookStateWithImport` accept `externalImport` prop to route ISBNdb-sourced clicks through the new import path
+
+### SEO regression fix
+- Book page title restored to `What's Inside {book} | tbr*a` (was silently changed to `{book} by {author} | tbr*a` on March 30 in the "Performance overhaul" round)
+- Audited all 29 `generateMetadata`/metadata files sitewide — no other templates were changed from the original SEO plan
+- Mixed `tbr*a` vs `The Based Reader App` brand naming is intentional (short UI pages vs conversion/landing pages)
+
+### Schema migrations applied (local + Turso)
+- `user_notifications.link_url TEXT` (nullable)
+- `reading_sessions.started_at_explicit INTEGER NOT NULL DEFAULT 0` (backfilled to 1 for all existing rows)
+- `api_quota_usage (api_name, date, count)` with unique index
+
 ## Tier 1: Must-Have Before Beta Launch ✅ COMPLETE
 
 1. ~~**Account types & admin access**~~ ✅ — Super admin sharing (Seth Cordle added), beta tester type with report access and pacing trust, account type dropdown on admin Users page

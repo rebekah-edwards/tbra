@@ -35,11 +35,14 @@ npm run deploy:code   # Deploy code only
 - Theme: `data-theme` attribute ("dark"/"light"), NOT Tailwind `dark:` prefix
 - Accent color: ALWAYS `#a3e635` (lime-400). NEVER darken to olive/muted green.
   - **Opaque green backgrounds** (solid buttons, solid pills): ALWAYS black text (`#18181b`), both light AND dark mode
-  - **Translucent green backgrounds** (10-20% opacity pills/badges): black text in light mode; green text (`var(--primary)`) in dark mode
-  - When in doubt: black text on green. Never white, never gray.
+  - **Translucent green backgrounds** (10-20% opacity pills/badges): use `text-accent` — the global override at `globals.css:184` forces black in light mode. Tailwind opacity variants like `text-accent/60` do NOT get the override because they compile to unique class names; use `text-foreground/50` or `text-muted/60` instead.
+  - **NEVER use `text-primary`** for text — it resolves to `#a3e635` (lime) which is unreadable on light backgrounds. Use `text-foreground` for body text, `text-neon-blue` for tappable text.
+  - **NEVER use `text-secondary` or `text-tertiary`** — they aren't defined in the theme CSS and render as browser default. Use `text-muted` or `text-muted/60`.
 - Fonts: Source Sans 3 (body), Literata (headings), Space Grotesk (logo only) via CSS vars `font-body`, `font-heading`, `font-logo`
 - Pill/badge styles: translucent backgrounds, never solid fills
 - `.env.local` must be loaded explicitly for standalone scripts (outside Next.js)
+- **SEO book page title must always be `What's Inside {book} | tbr*a`** — do not change the format. This is the documented SEO plan.
+- **Brand name inconsistency is intentional:** short UI pages (buddy reads, author, user profile, book) use `tbr*a`. Conversion/landing pages (library, stats, discover, methodology, auth) use `The Based Reader App` for Google discoverability. Do NOT unify without explicit instruction.
 
 ## Scheduled Tasks
 - `nightly-enrichment-v2` — 12:03 AM PT: imports NYT bestsellers, runs full enrichment pipeline, syncs to Turso
@@ -54,10 +57,21 @@ npm run deploy:code   # Deploy code only
 - **Brave Search:** rate-limited, use sparingly. Primary metadata fallback after OpenLibrary.
 - **Google Books:** 1,000 queries/day free tier, resets midnight Pacific. Cap bulk runs at 1,000. Use `skipGoogleBooks` option in `enrichBook()` during bulk operations.
 - **ISBNdb:** Premium plan, 15,000 queries/day, 3/sec rate limit. Primary metadata source after OL. Fills covers, pages, publisher, year, description, ISBN variants.
+  - **Search-driven calls are hard-capped at 2,000/day** via `api_quota_usage` table (see `src/lib/api-quota.ts`). Enrichment gets the rest.
 - **Library of Congress:** Free, no key needed. Supplements genre/subject data. Rate limit ~20 req/sec.
 - **BookBrainz:** Free, no key needed. Backup only — used when OL + ISBNdb both fail for book identification.
 - **xAI (Grok):** used for AI-generated summaries. Monitor spend.
 - **ENRICHMENT_PAUSED** in `.env.local`: set to `"true"` to halt all enrichment when quotas are exhausted. Currently `false`.
+
+## Search Architecture (as of 2026-04-07)
+- **Local-first, ISBNdb fallback.** The full search page queries only the local DB via `/api/openlibrary/search` (~20-80ms). If fewer than 5 results, the client fetches `/api/search/external` (ISBNdb-backed) to supplement.
+- **Never call OpenLibrary search from user-facing endpoints.** `searchOpenLibrary()` is still used internally by the enrichment pipeline (`enrich-book.ts`, `discover-author.ts`, `backfill`, `import enrich-batch`) but NOT for UI search — it cascades up to 11 sequential HTTP calls and was causing 5-30s search latency.
+- **`/api/search/external` quota enforcement:**
+  - Hard daily cap of `DAILY_LIMIT = 2000` in the route file (hardcoded const, not env var)
+  - Atomic increment via `consumeApiQuota()` in `src/lib/api-quota.ts`
+  - 5-minute in-memory LRU cache (200 entries) to eliminate backspace/retype burn
+- **ISBNdb-sourced imports:** `importFromISBNdbAndReturn()` in `src/lib/actions/books.ts` handles creating a minimal book row from ISBN+title+authors, generates the SEO slug via `assignBookSlug`, then triggers background enrichment. `ReadingStateButton` accepts an `externalImport` prop; `setBookStateWithImport` routes ISBNdb-sourced clicks through the new import path.
+- **Unified nav search** (`/api/search`) is separate and queries local DB for books/series/authors/users in parallel. Used by `SearchBar` component in the nav, not the full search page.
 
 ## Import System
 - **Two-phase import:** Phase 1 (fast, no API calls) creates/matches books and sets states. Phase 2 (background) runs OL search + enrichment for new books.
@@ -87,14 +101,20 @@ Local SQLite (`data/tbra.db`) and production Turso (`tbra-web-app`) can diverge.
 - **NEVER rewrite, reset, or bulk-modify the production database without explicit instruction from the user.** The book database (62MB, thousands of curated entries) has been cleaned, deduplicated, and enriched over many iterations. Schema migrations are fine; mass data operations are not.
 - **ALWAYS take a screenshot to verify visual changes before telling the user it's done.** Never confirm a UI change is complete without visually confirming it yourself via screenshot. Zoom in on the affected area if the change is subtle.
 - **ALWAYS verify CSS changes are actually applied** by checking the computed styles via JavaScript (`getComputedStyle` or inspecting `className` on the element). The Next.js dev server (Turbopack) frequently serves stale cached code — a hard refresh alone is NOT sufficient. If the computed styles don't match your code changes, kill the server (`lsof -ti:3000 | xargs kill -9`), delete `.next` (`rm -rf .next`), and restart (`npm run dev`). Do this BEFORE telling the user the change is live.
+- **ALWAYS check `vercel ls` after every `git push`** to confirm the deploy reaches `Ready` status. Never trust that a push succeeded just because git accepted it. A broken env var (e.g. whitespace in `CRON_SECRET`) can silently fail all builds for days — this actually happened on 2026-04-04 and blocked ~3 days of deploys.
+- **New schema columns must land on Turso BEFORE deploying code** that references them. Apply via `turso db shell tbra-web-app "ALTER TABLE ..."` first, then deploy.
 - **Intensity labels are standardized:** None / Mild / Moderate / Significant / Extreme. Never use "Heavy", "Intense", or "Strong".
 - **Super admins need BOTH `account_type = 'super_admin'` AND `role = 'admin'`** for the Admin Edit panel to show on book pages. When changing account types, always set both fields.
 - **Import enrichment is deferred:** The import process does NOT call `enrichBook()` inline. New books get enriched by Phase 2 background call or the nightly task.
+- **The user can't run commands** — dev server, deploys, scripts, CLI, DB operations all must happen from the agent side.
+- **Never resize the browser window** — always ask the user to do it manually for mobile UI review (target: 390x844 for iPhone 14/15).
+- **Port 3000 = tbr*a only.** Lion Publishing uses port 3333. Never fall back to 3000 for other projects.
 - Database is SQLite — no concurrent writes. Scripts that modify DB should not run in parallel.
 - `globals.css` has many carefully tuned opacity values — never use `replace_all` on opacity
 - Hero card light mode vibrancy settings are hand-tuned — do not change without verifying visually
 - See `docs/BRANDING.md` for full design system rules
 - See `ROADMAP.md` for beta launch priorities and completed work
+- See `project_session_progress.md` in Claude memory for the running log of recent session work
 
 <!-- VERCEL BEST PRACTICES START -->
 ## Best practices for developing on Vercel
