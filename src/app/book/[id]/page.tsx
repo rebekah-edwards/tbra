@@ -109,7 +109,8 @@ export async function generateMetadata({
     ? `https://thebasedreader.app/book/${slug}`
     : `https://thebasedreader.app/book/${resolved.book.id}`;
 
-  // Build author string for description
+  // Build author string for description (NOT used in title — per SEO plan, title is
+  // "What's Inside {book} | tbr*a" regardless of author count)
   const authorNames = book.authors.filter(a => a.role === "author").map(a => a.name);
   let authorStr = "";
   if (authorNames.length === 1) {
@@ -120,7 +121,7 @@ export async function generateMetadata({
     authorStr = ` by ${authorNames[0]} et al.`;
   }
 
-  const titleStr = `${book.title}${authorStr} | tbr*a`;
+  const titleStr = `What's Inside ${book.title} | tbr*a`;
   const descriptionRaw = book.summary || book.description || "";
   const description = descriptionRaw
     ? descriptionRaw.slice(0, 155).replace(/\s+\S*$/, "…")
