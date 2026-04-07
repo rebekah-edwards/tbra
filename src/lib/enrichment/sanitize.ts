@@ -5,8 +5,12 @@
 
 // ── Description Sanitization ──
 
-/** Strip HTML tags, markdown links, and bare URLs from a description. Preserves full text length. */
-export function sanitizeDescription(raw: string): string {
+/**
+ * Strip HTML, markdown, URLs, and common junk patterns from a description.
+ * Returns null if the result isn't a usable book description (e.g., pure author bio,
+ * Amazon product page, SparkNotes boilerplate, table of contents, etc).
+ */
+export function sanitizeDescription(raw: string): string | null {
   let text = raw;
 
   // Strip HTML tags (e.g., <b>bold</b> → bold, <a href="...">link</a> → link)
@@ -18,9 +22,6 @@ export function sanitizeDescription(raw: string): string {
   // Strip bare URLs
   text = text.replace(/https?:\/\/[^\s)<]+/g, "");
 
-  // Collapse multiple spaces/newlines
-  text = text.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
-
   // Decode common HTML entities
   text = text
     .replace(/&amp;/g, "&")
@@ -28,7 +29,70 @@ export function sanitizeDescription(raw: string): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
     .replace(/&nbsp;/g, " ");
+
+  // Strip "Product Description " prefix (Amazon leftover)
+  text = text.replace(/^Product Description\s+/i, "");
+
+  // Strip leading wiki nav: "Preceded by X", "BOOK TWO of Y"
+  const lines = text.split(/\n+/);
+  while (lines.length > 0) {
+    const line = lines[0].trim();
+    if (
+      /^(?:Preceeded|Preceded) by\s/i.test(line) ||
+      /^Sequel to\s/i.test(line) ||
+      /^Prequel to\s/i.test(line) ||
+      /^BOOK (?:ONE|TWO|THREE|FOUR|FIVE|SIX|\d+) of/i.test(line)
+    ) {
+      lines.shift();
+    } else {
+      break;
+    }
+  }
+  text = lines.join("\n");
+
+  // Cut at TOC start if there's real content before it
+  const tocIdx = text.search(/\bContents\s*[:\n]/i);
+  if (tocIdx > 80) text = text.slice(0, tocIdx);
+  else if (tocIdx >= 0) return null; // TOC-only, unsalvageable
+
+  // Cut at "Kindle edition by..." — Amazon listing text
+  const kindleIdx = text.search(/\s*[-–—]?\s*Kindle edition by\b/i);
+  if (kindleIdx >= 0) text = text.slice(0, kindleIdx);
+
+  // Strip trailing Goodreads sidebar: "GenresFantasyRomance..." and "Published ... by..."
+  text = text.replace(/\s*\.?\s*Genres(?:[A-Z][a-z]+){3,}.*$/s, "");
+  text = text.replace(/\s*(?:First )?[Pp]ublished\s+[A-Z][a-z]+\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}.*$/s, "");
+
+  // Strip trailing author bio ("X is the bestselling author of Y")
+  const bioMatch = text.match(/\.\s+[A-Z][\w\s.]{2,40} is the (?:[\w\s#]+?)?(?:bestselling|award-winning) author of/);
+  if (bioMatch && bioMatch.index !== undefined && bioMatch.index > 100) {
+    text = text.slice(0, bioMatch.index + 1);
+  }
+
+  // Collapse whitespace
+  text = text.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+
+  // Reject if too short
+  if (text.length < 60) return null;
+
+  // Reject if it STARTS as a pure author bio
+  if (/^[A-Z][\w\s.]{2,40} is the (?:[\w\s#]+?)?(?:bestselling|award-winning) author of\b/.test(text)) return null;
+  if (/^[A-Z][\w\s.]{2,40} is the author of\b/.test(text)) return null;
+  if (/^(?:[A-Z][\w\s.]+ )?was born in\b/.test(text.slice(0, 100))) return null;
+
+  // Reject if it's a user review
+  if (/^In the (?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\d+(?:st|nd|rd|th)) (?:book|installment|entry|novel) (?:of|in)/i.test(text)) return null;
+  if (/^I (?:loved|hated|couldn'?t put|was (?:blown|hooked))/i.test(text)) return null;
+
+  // Reject digitization / SparkNotes / excerpt boilerplate
+  if (/^This work has been selected by scholars as being culturally important/i.test(text)) return null;
+  if (/Created by Harvard students for students everywhere, SparkNotes/i.test(text)) return null;
+  if (/^Excerpt from\b/i.test(text)) return null;
+
+  // Reject if it contains concatenated CamelCase genre dumps
+  if (/(?:[A-Z][a-z]{2,}){4,}/.test(text)) return null;
 
   return text;
 }

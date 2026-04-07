@@ -211,23 +211,53 @@ export function getISBNdbDescription(book: ISBNdbBook): string | null {
     .replace(/\s+/g, " ")
     .trim();
 
+  // Strip "Product Description " prefix if present
+  clean = clean.replace(/^Product Description\s+/i, "");
+
+  // Cut at "Kindle edition by..." if present — Amazon listing text
+  const kindleIdx = clean.search(/\s*[-–—]?\s*Kindle edition by\b/i);
+  if (kindleIdx >= 0) clean = clean.slice(0, kindleIdx).trim();
+
+  // Cut at TOC marker if there's real content before it
+  const tocIdx = clean.search(/\bContents\s*[:\n]/i);
+  if (tocIdx > 80) clean = clean.slice(0, tocIdx).trim();
+  else if (tocIdx >= 0) return null; // TOC-only
+
+  // Strip trailing Goodreads sidebar dump
+  clean = clean.replace(/\s*\.?\s*Genres(?:[A-Z][a-z]+){3,}.*$/s, "").trim();
+  clean = clean.replace(/\s*(?:First )?[Pp]ublished\s+[A-Z][a-z]+\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}.*$/s, "").trim();
+
   // Remove leading/trailing fragments that look like junk
   clean = clean.replace(/^[\s.,;:|]+/, "").replace(/[\s.,;:|]+$/, "").trim();
 
   // Reject author bios masquerading as descriptions
   if (/^(?:but )?during his|^he (?:has had|is the author)|^she (?:has had|is the author)|^born in/i.test(clean)) return null;
+  if (/^[A-Z][\w\s.]{2,40} is the (?:[\w\s#]+?)?(?:bestselling|award-winning) author of\b/.test(clean)) return null;
+  if (/^[A-Z][\w\s.]{2,40} is the author of\b/.test(clean)) return null;
+
+  // Reject user reviews masquerading as descriptions
+  if (/^In the (?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\d+(?:st|nd|rd|th)) (?:book|installment|entry|novel) (?:of|in)/i.test(clean)) return null;
+  if (/^I (?:loved|hated|couldn'?t put|was (?:blown|hooked))/i.test(clean)) return null;
 
   // Reject Amazon product page text
   if (/^Amazon\.com:|^\d{10,13}:|: Books$/i.test(clean)) return null;
 
+  // Reject digitization / SparkNotes / Excerpt boilerplate
+  if (/^This work has been selected by scholars as being culturally important/i.test(clean)) return null;
+  if (/Created by Harvard students for students everywhere, SparkNotes/i.test(clean)) return null;
+  if (/^Excerpt from\b/i.test(clean)) return null;
+
   // Reject if it still contains HTML tags after stripping
   if (/<strong>|<em>|<br>/i.test(clean)) return null;
+
+  // Reject concatenated CamelCase clusters (scraped Goodreads sidebar)
+  if (/(?:[A-Z][a-z]{2,}){4,}/.test(clean)) return null;
 
   // Cap at 2000 chars — anything longer is likely a full book contents dump
   if (clean.length > 2000) clean = clean.slice(0, 2000).replace(/\s\S*$/, "...");
 
   // Must be substantial content
-  return clean.length > 40 ? clean : null;
+  return clean.length > 60 ? clean : null;
 }
 
 /**

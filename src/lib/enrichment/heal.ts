@@ -193,7 +193,7 @@ async function healDescription(book: BookRow, result: HealResult): Promise<void>
     const olDesc = await fetchWorkDescription(book.openLibraryKey);
     if (olDesc) {
       const cleaned = sanitizeDescription(olDesc);
-      if (cleaned.length >= 50 && !looksNonEnglish(cleaned)) {
+      if (cleaned && cleaned.length >= 50 && !looksNonEnglish(cleaned)) {
         await db
           .update(books)
           .set({ description: cleaned, updatedAt: new Date().toISOString() })
@@ -216,16 +216,23 @@ async function healDescription(book: BookRow, result: HealResult): Promise<void>
     return;
   }
 
-  // Sanitize HTML/links/URLs — keep full length (no truncation)
-  let desc = book.description;
+  // Sanitize HTML/links/URLs + junk patterns. Null result means unsalvageable.
+  const desc = book.description;
   const sanitized = sanitizeDescription(desc);
-  if (sanitized !== desc) {
-    desc = sanitized;
+  if (sanitized === null) {
     await db
       .update(books)
-      .set({ description: desc, updatedAt: new Date().toISOString() })
+      .set({ description: null, updatedAt: new Date().toISOString() })
       .where(eq(books.id, book.id));
-    result.fixes.push(`Description: sanitized (${book.description.length} → ${desc.length} chars)`);
+    result.fixes.push(`Description: nulled junk description (${desc.length} chars)`);
+    return;
+  }
+  if (sanitized !== desc) {
+    await db
+      .update(books)
+      .set({ description: sanitized, updatedAt: new Date().toISOString() })
+      .where(eq(books.id, book.id));
+    result.fixes.push(`Description: sanitized (${desc.length} → ${sanitized.length} chars)`);
   }
 
   // Detect truncated descriptions: end mid-sentence without proper punctuation,

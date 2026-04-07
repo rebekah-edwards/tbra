@@ -635,15 +635,20 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     );
   }
 
-  // Write publisher description if we found one and the book doesn't have one
-  // Apply sanitization to strip HTML/links/URLs before storing
+  // Write publisher description if we found one and the book doesn't have one.
+  // Apply sanitization to strip HTML/links/URLs + junk patterns before storing.
+  // sanitizeDescription returns null for unsalvageable junk.
   if (!book.description && result.description) {
     const cleanDesc = sanitizeDescription(result.description);
-    await db
-      .update(books)
-      .set({ description: cleanDesc, updatedAt: new Date().toISOString() })
-      .where(eq(books.id, bookId));
-    console.log(`[enrichment] Set publisher description (${cleanDesc.length} chars) for "${book.title}"`);
+    if (cleanDesc) {
+      await db
+        .update(books)
+        .set({ description: cleanDesc, updatedAt: new Date().toISOString() })
+        .where(eq(books.id, bookId));
+      console.log(`[enrichment] Set publisher description (${cleanDesc.length} chars) for "${book.title}"`);
+    } else {
+      console.log(`[enrichment] Rejected junk publisher description for "${book.title}"`);
+    }
   }
 
   // If description-only mode, skip the rest (genres, ratings, series, audio, cover)

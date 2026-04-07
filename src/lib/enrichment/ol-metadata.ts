@@ -36,8 +36,10 @@ export async function fetchOLMetadata(
     if (!work) return result;
 
     // Extract description (fetchOpenLibraryWork returns description as string | null)
+    // sanitizeDescription returns null if the text is unsalvageable junk
     if (work.description) {
-      result.description = sanitizeDescription(work.description);
+      const cleaned = sanitizeDescription(work.description);
+      if (cleaned) result.description = cleaned;
     }
 
     // Extract genres from subjects
