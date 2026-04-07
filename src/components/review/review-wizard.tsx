@@ -103,20 +103,23 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
   }
 }
 
-function makeInitialState(existing?: {
-  overallRating: number | null;
-  didNotFinish: boolean;
-  dnfPercentComplete: number | null;
-  reviewText: string | null;
-  moodIntensity: number | null;
-  mood: string | null;
-  isAnonymous?: boolean;
-  dimensionRatings: Record<string, number | null>;
-  dimensionTags: Record<string, string[]>;
-  plotPacing?: "slow" | "medium" | "fast" | null;
-  customContentWarning?: string;
-  contentComments?: string;
-} | null): ReviewState {
+function makeInitialState(
+  existing?: {
+    overallRating: number | null;
+    didNotFinish: boolean;
+    dnfPercentComplete: number | null;
+    reviewText: string | null;
+    moodIntensity: number | null;
+    mood: string | null;
+    isAnonymous?: boolean;
+    dimensionRatings: Record<string, number | null>;
+    dimensionTags: Record<string, string[]>;
+    plotPacing?: "slow" | "medium" | "fast" | null;
+    customContentWarning?: string;
+    contentComments?: string;
+  } | null,
+  seeds?: { initialDnf?: boolean; initialDnfPercent?: number | null },
+): ReviewState {
   if (existing) {
     return {
       overallRating: existing.overallRating,
@@ -135,8 +138,8 @@ function makeInitialState(existing?: {
   }
   return {
     overallRating: null,
-    didNotFinish: false,
-    dnfPercentComplete: null,
+    didNotFinish: seeds?.initialDnf ?? false,
+    dnfPercentComplete: seeds?.initialDnf ? (seeds.initialDnfPercent ?? null) : null,
     dnfMode: "percent",
     reviewText: null,
     isAnonymous: false,
@@ -186,27 +189,37 @@ interface ReviewWizardProps {
     customContentWarning?: string;
     contentComments?: string;
   } | null;
+  /** Pre-seed the wizard in DNF mode (used when the DNF flow opens the wizard directly) */
+  initialDnf?: boolean;
+  /** Pre-fill the "how far did you get?" value — percent, 0–100 */
+  initialDnfPercent?: number | null;
 }
 
-export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, existingReview, arcData }: ReviewWizardProps) {
+export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, existingReview, arcData, initialDnf, initialDnfPercent }: ReviewWizardProps) {
   const [step, setStep] = useReducer(
     (_: number, next: number) => Math.max(0, Math.min(TOTAL_STEPS - 1, next)),
     0
   );
-  const [state, dispatch] = useReducer(reviewReducer, existingReview, makeInitialState);
+  const [state, dispatch] = useReducer(
+    reviewReducer,
+    existingReview,
+    (existing) => makeInitialState(existing, { initialDnf, initialDnfPercent }),
+  );
   const [isPending, startTransition] = useTransition();
   const [isDeletePending, startDeleteTransition] = useTransition();
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const initialStateRef = useRef<ReviewState>(makeInitialState(existingReview));
+  const initialStateRef = useRef<ReviewState>(
+    makeInitialState(existingReview, { initialDnf, initialDnfPercent }),
+  );
 
   // Animate in/out — reset state each time wizard opens
   useEffect(() => {
     if (open) {
       setVisible(true);
-      const fresh = makeInitialState(existingReview);
+      const fresh = makeInitialState(existingReview, { initialDnf, initialDnfPercent });
       initialStateRef.current = fresh;
       dispatch({ type: "RESET", state: fresh });
       setShowDeleteConfirm(false);
@@ -220,7 +233,7 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
       const timer = setTimeout(() => setVisible(false), 300);
       return () => clearTimeout(timer);
     }
-  }, [open, existingReview]);
+  }, [open, existingReview, initialDnf, initialDnfPercent]);
 
   // Lock body scroll
   useEffect(() => {
@@ -374,6 +387,7 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
             <StepReviewText
               text={state.reviewText}
               isAnonymous={state.isAnonymous}
+              didNotFinish={state.didNotFinish}
               onChange={(t) => dispatch({ type: "SET_REVIEW_TEXT", text: t })}
               onAnonymousChange={(a) => dispatch({ type: "SET_ANONYMOUS", anonymous: a })}
             />
@@ -460,7 +474,7 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
               isPending ? "bg-primary/50" : "bg-foreground hover:bg-foreground/90 active:scale-[0.98]"
             }`}
           >
-            {isPending ? "Posting..." : isLastStep ? "Post Review" : "Next"}
+            {isPending ? "Posting..." : isLastStep ? (state.didNotFinish ? "Save" : "Post Review") : "Next"}
           </button>
         </div>
       </div>

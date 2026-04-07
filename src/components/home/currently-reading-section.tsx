@@ -210,6 +210,7 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [pendingCompleteState, setPendingCompleteState] = useState<"completed" | "dnf" | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewAsDnf, setReviewAsDnf] = useState(false);
   const [openStateDropdown, setOpenStateDropdown] = useState<string | null>(null);
   const stateDropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const router = useRouter();
@@ -255,8 +256,13 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
     startTransition(async () => {
       await setBookStateWithCompletion(book.id, finalState, date, precision);
     });
-    // Open review wizard after completion
+    // Open review wizard after completion OR DNF — DNFs use the wizard in
+    // DNF mode so the user can leave an explanation and flag content details
     if (finalState === "completed") {
+      setReviewAsDnf(false);
+      setReviewOpen(true);
+    } else if (finalState === "dnf") {
+      setReviewAsDnf(true);
       setReviewOpen(true);
     }
   }
@@ -416,6 +422,8 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
         open={reviewOpen}
         onClose={() => setReviewOpen(false)}
         isExisting={false}
+        initialDnf={reviewAsDnf}
+        initialDnfPercent={reviewAsDnf ? (book.progress ?? null) : null}
       />
     </div>
   );

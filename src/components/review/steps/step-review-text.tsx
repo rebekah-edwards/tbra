@@ -7,6 +7,7 @@ const MAX_CHARS = 10000;
 interface StepReviewTextProps {
   text: string | null;
   isAnonymous: boolean;
+  didNotFinish?: boolean;
   onChange: (text: string | null) => void;
   onAnonymousChange: (anonymous: boolean) => void;
 }
@@ -41,7 +42,7 @@ function ToolbarBtn({
   );
 }
 
-export function StepReviewText({ text, isAnonymous, onChange, onAnonymousChange }: StepReviewTextProps) {
+export function StepReviewText({ text, isAnonymous, didNotFinish, onChange, onAnonymousChange }: StepReviewTextProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef(onChange);
   const mountedRef = useRef(false);
@@ -154,14 +155,16 @@ export function StepReviewText({ text, isAnonymous, onChange, onAnonymousChange 
       <div className={`transition-all duration-300 ease-out overflow-hidden ${focused ? "max-h-0 opacity-0" : "max-h-[200px] opacity-100"}`}>
         <div className="flex items-center justify-center gap-2.5 pb-3">
           <h2 className="font-heading text-2xl font-bold text-center">
-            Share your thoughts
+            {didNotFinish ? "Why did you stop reading?" : "Share your thoughts"}
           </h2>
           <span className="text-[10px] font-medium uppercase tracking-wide text-muted px-2 py-0.5 rounded-full border border-border/50">
             optional
           </span>
         </div>
         <p className="text-base text-muted text-center pb-4 px-2 leading-relaxed">
-          Let other readers know how you felt about this book. What did you enjoy? What didn&apos;t you love? How did you feel when reading?
+          {didNotFinish
+            ? "Help other readers understand what didn\u2019t work for you. Pacing? Content? Just not your thing? Your reasoning helps others decide."
+            : "Let other readers know how you felt about this book. What did you enjoy? What didn\u2019t you love? How did you feel when reading?"}
         </p>
       </div>
 
@@ -249,7 +252,7 @@ export function StepReviewText({ text, isAnonymous, onChange, onAnonymousChange 
         onPaste={handlePaste}
         onFocus={() => setFocused(true)}
         className="w-full flex-1 rounded-b-xl border border-border bg-surface-alt p-4 text-sm text-foreground resize-none focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary overflow-y-auto review-editor spoiler-editor empty:before:content-[attr(data-placeholder)] empty:before:text-muted"
-        data-placeholder="Tap here and start typing."
+        data-placeholder={didNotFinish ? "What made you put it down?" : "Tap here and start typing."}
       />
 
       {/* Character count + anonymous toggle row */}

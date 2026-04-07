@@ -19,6 +19,10 @@ interface ReviewTriggerProps {
   autoOpen?: boolean;
   hasCompletedSession?: boolean;
   prePublication?: boolean;
+  /** When auto-opening the wizard, pre-seed DNF mode (book was just marked DNF) */
+  autoOpenAsDnf?: boolean;
+  /** Pre-fill "how far did you get?" percent when auto-opening as DNF */
+  autoOpenDnfPercent?: number | null;
 }
 
 export function ReviewTrigger({
@@ -31,6 +35,8 @@ export function ReviewTrigger({
   autoOpen = false,
   hasCompletedSession = false,
   prePublication = false,
+  autoOpenAsDnf = false,
+  autoOpenDnfPercent = null,
 }: ReviewTriggerProps) {
   const bookPath = bookSlug ? `/book/${bookSlug}` : `/book/${bookId}`;
   const [wizardOpen, setWizardOpen] = useState(autoOpen);
@@ -135,6 +141,8 @@ export function ReviewTrigger({
         isExisting={!!userReview}
         existingReview={userReview}
         arcData={arcData}
+        initialDnf={autoOpenAsDnf && !userReview}
+        initialDnfPercent={autoOpenAsDnf ? autoOpenDnfPercent : null}
       />
     </div>
   );

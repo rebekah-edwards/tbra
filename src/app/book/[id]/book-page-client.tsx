@@ -120,6 +120,7 @@ export function BookPageClient({
   const [activeFormats, setActiveFormats] = useState(userState.activeFormats);
   const [editionSelections, setEditionSelections] = useState(initialEditionSelections);
   const [autoOpenReview, setAutoOpenReview] = useState(false);
+  const [autoOpenAsDnf, setAutoOpenAsDnf] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [hasCompleted, setHasCompleted] = useState(initialHasCompleted);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -264,6 +265,14 @@ export function BookPageClient({
     // Auto-open review wizard ONLY on first completion with no existing review.
     // Skip for re-reads (hasCompleted means user already finished a previous read).
     if (newState === "completed" && !userReview && !hasCompleted) {
+      setAutoOpenAsDnf(false);
+      setAutoOpenReview(true);
+    }
+    // DNF — auto-open the wizard in DNF mode so the user can leave a reason
+    // and flag content details. Same gating as completed: skip if they already
+    // have a review for this book.
+    if (newState === "dnf" && !userReview) {
+      setAutoOpenAsDnf(true);
       setAutoOpenReview(true);
     }
     // Show post-completion suggestions and celebration
@@ -459,6 +468,7 @@ export function BookPageClient({
           aggregate={aggregate}
           isLoggedIn={isLoggedIn}
           autoOpen={autoOpenReview}
+          autoOpenAsDnf={autoOpenAsDnf}
           hasCompletedSession={hasCompleted}
           prePublication={prePublication}
         />
