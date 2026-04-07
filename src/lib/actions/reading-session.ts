@@ -55,22 +55,23 @@ export async function setBookStateWithCompletion(
   const activeSession = await getActiveSession(user.userId, bookId);
 
   if (activeSession) {
-    // Complete the active session — preserve activeFormats as a record of how it was read
+    // Complete the active session — preserve activeFormats as a record of how it was read.
+    // Since the user was actively reading, default the finish date to today if they
+    // didn't pick one (they most likely just finished today).
+    const today = new Date().toISOString().split("T")[0];
     await db
       .update(readingSessions)
       .set({
         state,
-        completionDate,
-        completionPrecision,
+        completionDate: completionDate ?? today,
+        completionPrecision: completionPrecision ?? "exact",
         updatedAt: new Date().toISOString(),
       })
       .where(eq(readingSessions.id, activeSession.id));
   } else {
-    // No active session — create one (e.g., user clicked "Finished" directly without "Reading Now" first)
-    // Mark startedAt as not explicit since the user never specified when they started.
-    // Default the completion date to today if the user didn't pick one.
+    // No active session — create one (e.g., user clicked "Finished" directly without "Reading Now" first).
+    // The user never indicated a start OR finish date; leave both unspecified if they skipped.
     const readNumber = await getNextReadNumber(user.userId, bookId);
-    const today = new Date().toISOString().split("T")[0];
     await db.insert(readingSessions).values({
       userId: user.userId,
       bookId,
@@ -78,8 +79,8 @@ export async function setBookStateWithCompletion(
       state,
       startedAt: new Date().toISOString(),
       startedAtExplicit: false,
-      completionDate: completionDate ?? today,
-      completionPrecision: completionPrecision ?? "exact",
+      completionDate,
+      completionPrecision,
     });
   }
 
