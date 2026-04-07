@@ -694,7 +694,7 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
       .where(and(eq(bookGenres.bookId, targetBookId), eq(bookGenres.genreId, genre.id)))
       .limit(1);
     if (existing.length === 0) {
-      await db.insert(bookGenres).values({ bookId: targetBookId, genreId: genre.id });
+      await db.insert(bookGenres).values({ bookId: targetBookId, genreId: genre.id }).onConflictDoNothing();
     }
     // Also link parent genre if this genre has one
     if (genre.parentGenreId) {
@@ -708,7 +708,7 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
           .where(and(eq(bookGenres.bookId, targetBookId), eq(bookGenres.genreId, parent.id)))
           .limit(1);
         if (parentLinked.length === 0) {
-          await db.insert(bookGenres).values({ bookId: targetBookId, genreId: parent.id });
+          await db.insert(bookGenres).values({ bookId: targetBookId, genreId: parent.id }).onConflictDoNothing();
           console.log(`[enrichment] Auto-linked parent tag: ${parent.name}`);
         }
       }
@@ -858,7 +858,7 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
         bookId,
         seriesId: seriesRow.id,
         positionInSeries: result.series.position,
-      });
+      }).onConflictDoNothing();
       console.log(
         `[enrichment] Added to series: ${seriesRow.name} #${result.series.position ?? "?"}`
       );
@@ -1528,7 +1528,7 @@ export async function discoverSeriesBooks(
         bookId: newBook.id,
         seriesId,
         positionInSeries: null, // Enrichment will fill this
-      });
+      }).onConflictDoNothing();
 
       // Generate SEO slug
       const { assignBookSlug } = await import("@/lib/utils/slugify");

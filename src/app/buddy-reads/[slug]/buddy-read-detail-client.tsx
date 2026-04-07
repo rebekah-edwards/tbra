@@ -187,14 +187,24 @@ export function BuddyReadDetailClient({
         </h2>
         <BuddyReadProgressTracker
           members={detail.members.map((m) => {
-            const state = (m.readingState as "not_started" | "currently_reading" | "finished") ?? "not_started";
+            // DB reading state is 'completed' / 'currently_reading' / 'tbr' / 'paused' / 'dnf'.
+            // Map to the tracker's simpler three-state model, and auto-force
+            // percentComplete to 100 once the book is completed/dnf so a stale
+            // reading note at e.g. 90% doesn't keep showing when the book is finished.
+            const raw = m.readingState;
+            const isFinished = raw === "completed" || raw === "dnf";
+            const trackerState: "not_started" | "currently_reading" | "finished" = isFinished
+              ? "finished"
+              : raw === "currently_reading" || raw === "paused"
+                ? "currently_reading"
+                : "not_started";
             return {
               userId: m.userId,
               displayName: m.displayName ?? m.username ?? "Reader",
               username: m.username ?? "",
               avatarUrl: m.avatarUrl,
-              readingState: state,
-              percentComplete: state === "finished" ? 100 : (m.percentComplete ?? 0),
+              readingState: trackerState,
+              percentComplete: isFinished ? 100 : (m.percentComplete ?? 0),
               completionDate: m.completionDate,
             };
           })}

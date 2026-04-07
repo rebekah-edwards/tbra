@@ -57,9 +57,9 @@ export function TbrSuggestionCard({ initialBook }: TbrSuggestionCardProps) {
         )}
         <div className="min-w-0 flex-1">
           {book.reason ? (
-            <p className="text-[10px] font-medium uppercase tracking-wider text-primary mb-1">{book.reason}</p>
+            <p className="tbr-reason-tag text-[10px] font-medium uppercase tracking-wider mb-1">{book.reason}</p>
           ) : (
-            <p className="text-[10px] font-medium uppercase tracking-wider text-primary mb-1">From Your TBR</p>
+            <p className="tbr-reason-tag text-[10px] font-medium uppercase tracking-wider mb-1">From Your TBR</p>
           )}
           <h3 className="text-base font-bold leading-tight line-clamp-2">{book.title}</h3>
           {book.authors.length > 0 && (

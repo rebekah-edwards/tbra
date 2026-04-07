@@ -170,6 +170,10 @@ h1, h2, h3, .font-heading {
 .read-more-link { color: #a3e635; }
 [data-theme="light"] .read-more-link { color: var(--neon-purple); }
 
+/* TBR suggestion reason tag: green in dark mode, purple in light mode */
+.tbr-reason-tag { color: #a3e635; }
+[data-theme="light"] .tbr-reason-tag { color: var(--neon-purple); }
+
 /* Verified badge: subtle/translucent on both modes to match other pills */
 .verified-badge { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); }
 [data-theme="light"] .verified-badge { background: color-mix(in srgb, var(--accent) 20%, transparent); color: #18181b; }

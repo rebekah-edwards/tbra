@@ -277,9 +277,15 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
     });
   }
 
+  const isDropdownOpen = openStateDropdown === book.id;
+
   return (
-    <div>
-      <div className="relative rounded-xl overflow-hidden">
+    <div className={`relative ${isDropdownOpen ? "z-50" : ""}`}>
+      {/* NOTE: outer wrapper intentionally does NOT use overflow-hidden so the
+          reading-state dropdown can render outside the card bounds. The
+          background image below has its own rounded clip. Outer wrapper gets
+          z-50 when dropdown is open so it paints above the next sibling card. */}
+      <div className="relative rounded-xl">
         {book.coverImageUrl && (
           <div className="absolute inset-0 overflow-hidden rounded-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -290,7 +296,7 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
         {!book.coverImageUrl && (
           <div className="absolute inset-0 bg-gradient-to-br from-primary-dark to-primary rounded-xl" />
         )}
-        <div className="relative z-10 flex items-start gap-4 p-4">
+        <div className="relative z-10 flex items-center gap-4 p-4">
           <Link href={`/book/${book.slug || book.id}`} className="flex-shrink-0 relative">
             {book.coverImageUrl ? (
               <Image
@@ -310,61 +316,62 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
               </span>
             )}
           </Link>
-          <div className="min-w-0 flex-1 flex flex-col gap-2">
-            <div className="min-w-0">
-              <Link href={`/book/${book.slug || book.id}`}>
-                <h3 className="text-base font-bold book-header-text leading-snug line-clamp-3">{book.title}</h3>
-              </Link>
-              {book.authors.length > 0 && (
-                <p className="mt-1 text-sm book-header-text-muted line-clamp-1">{book.authors.join(", ")}</p>
-              )}
-            </div>
-            {/* Action buttons — two full-width rows */}
-            <div className={`flex flex-col gap-1.5 ${isPending ? "opacity-50" : ""}`}>
-              {/* Row 1: Notes & Progress (blue, fully opaque) */}
-              <button
-                onClick={() => setTrackingBookId(trackingBookId === book.id ? null : book.id)}
-                className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-neon-blue px-3 py-2 text-sm font-semibold text-black shadow-sm hover:brightness-110 active:scale-[0.98] transition-all"
-                title="Notes & progress"
-              >
-                <span>📝</span>
-                <span>Notes &amp; Progress</span>
-              </button>
-              {/* Row 2: Reading state dropdown (green, opaque, Finished/Paused/DNF only) */}
-              <div className="relative" ref={(el) => { stateDropdownRefs.current[book.id] = el; }}>
-                <button
-                  onClick={() => setOpenStateDropdown(openStateDropdown === book.id ? null : book.id)}
-                  className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-black shadow-sm hover:brightness-110 active:scale-[0.98] transition-all"
-                  title="Change reading state"
-                >
-                  <span>Reading Now</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </button>
-                {openStateDropdown === book.id && (
-                  <div className="absolute right-0 top-full mt-1 z-20 w-full min-w-[140px] rounded-lg border border-border bg-surface shadow-lg overflow-hidden">
-                    <button
-                      onClick={() => { setOpenStateDropdown(null); handleStateChange(book.id, "completed"); }}
-                      className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-surface-alt transition-colors border-b border-border/50"
-                    >
-                      Finished
-                    </button>
-                    <button
-                      onClick={() => { setOpenStateDropdown(null); handleStateChange(book.id, "paused"); }}
-                      className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-surface-alt transition-colors border-b border-border/50"
-                    >
-                      Paused
-                    </button>
-                    <button
-                      onClick={() => { setOpenStateDropdown(null); handleStateChange(book.id, "dnf"); }}
-                      className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-surface-alt transition-colors"
-                    >
-                      DNF
-                    </button>
-                  </div>
-                )}
+          <div className="min-w-0 flex-1">
+            <Link href={`/book/${book.slug || book.id}`}>
+              <h3 className="text-base font-bold book-header-text leading-snug">{book.title}</h3>
+            </Link>
+            {book.authors.length > 0 && (
+              <p className="mt-1 text-sm book-header-text-muted line-clamp-2">{book.authors.join(", ")}</p>
+            )}
+          </div>
+          {/* Action buttons — stacked on the right, equal width, fully opaque.
+              Visual language matches book page: rounded-xl with 2px border.
+              Narrow column (104px) so title/author have room to breathe. */}
+          <div className={`flex flex-col gap-1.5 flex-shrink-0 w-[104px] ${isPending ? "opacity-50" : ""}`}>
+            {/* Track Progress — solid blue rounded-xl */}
+            <button
+              onClick={() => setTrackingBookId(trackingBookId === book.id ? null : book.id)}
+              className="w-full rounded-xl bg-neon-blue border-2 border-neon-blue px-2 py-1.5 text-[11px] font-semibold text-black shadow-sm hover:brightness-110 active:scale-[0.98] transition-all whitespace-nowrap"
+              title="Track progress"
+            >
+              Track Progress
+            </button>
+            {/* Reading state split button — rounded-xl to match book page */}
+            <div className="relative flex w-full" ref={(el) => { stateDropdownRefs.current[book.id] = el; }}>
+              <div className="flex-1 min-w-0 rounded-l-xl bg-accent border-2 border-accent border-r-0 px-2 py-1.5 text-[11px] font-semibold text-black text-center whitespace-nowrap flex items-center justify-center">
+                Reading
               </div>
+              <button
+                onClick={() => setOpenStateDropdown(openStateDropdown === book.id ? null : book.id)}
+                className="flex-shrink-0 rounded-r-xl bg-accent text-black border-2 border-accent border-l border-l-black/20 px-2 py-1.5 hover:brightness-110 active:scale-[0.98] transition-all"
+                title="Change reading state"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              {openStateDropdown === book.id && (
+                <div className="absolute right-0 top-full mt-2 z-50 w-full rounded-xl border border-border bg-surface shadow-xl overflow-hidden">
+                  <button
+                    onClick={() => { setOpenStateDropdown(null); handleStateChange(book.id, "completed"); }}
+                    className="w-full px-3 py-2 text-left text-[13px] font-medium text-foreground hover:bg-surface-alt transition-colors border-b border-border/50"
+                  >
+                    Finished
+                  </button>
+                  <button
+                    onClick={() => { setOpenStateDropdown(null); handleStateChange(book.id, "paused"); }}
+                    className="w-full px-3 py-2 text-left text-[13px] font-medium text-foreground hover:bg-surface-alt transition-colors border-b border-border/50"
+                  >
+                    Paused
+                  </button>
+                  <button
+                    onClick={() => { setOpenStateDropdown(null); handleStateChange(book.id, "dnf"); }}
+                    className="w-full px-3 py-2 text-left text-[13px] font-medium text-foreground hover:bg-surface-alt transition-colors"
+                  >
+                    DNF
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

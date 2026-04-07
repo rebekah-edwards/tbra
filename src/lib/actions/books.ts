@@ -318,7 +318,8 @@ export async function importFromOpenLibrary(result: OLSearchResult) {
       const authorId = await findOrCreateAuthor(name, olKey);
       await db
         .insert(bookAuthors)
-        .values({ bookId: book.id, authorId });
+        .values({ bookId: book.id, authorId })
+        .onConflictDoNothing();
       if (olKey) authorOlKeys.push(olKey);
     }
   }
@@ -334,7 +335,8 @@ export async function importFromOpenLibrary(result: OLSearchResult) {
     }
     await db
       .insert(bookGenres)
-      .values({ bookId: book.id, genreId: genre.id });
+      .values({ bookId: book.id, genreId: genre.id })
+      .onConflictDoNothing();
   }
 
   // Generate SEO slug
@@ -437,7 +439,8 @@ export async function importFromOpenLibraryAndReturn(result: OLSearchResult): Pr
       const authorId = await findOrCreateAuthor(name, olKey);
       await db
         .insert(bookAuthors)
-        .values({ bookId: book.id, authorId });
+        .values({ bookId: book.id, authorId })
+        .onConflictDoNothing();
       if (olKey) authorOlKeys.push(olKey);
     }
   }
@@ -452,7 +455,8 @@ export async function importFromOpenLibraryAndReturn(result: OLSearchResult): Pr
     }
     await db
       .insert(bookGenres)
-      .values({ bookId: book.id, genreId: genre.id });
+      .values({ bookId: book.id, genreId: genre.id })
+      .onConflictDoNothing();
   }
 
   // Generate SEO slug
@@ -527,7 +531,8 @@ export async function createBookManually(formData: FormData) {
     const authorId = await findOrCreateAuthor(authorName.trim());
     await db
       .insert(bookAuthors)
-      .values({ bookId: book.id, authorId });
+      .values({ bookId: book.id, authorId })
+      .onConflictDoNothing();
   }
 
   if (narratorName?.trim()) {
@@ -844,7 +849,7 @@ export async function importFromISBNdbAndReturn(params: {
   for (const name of authorNames) {
     if (!name?.trim()) continue;
     const authorId = await findOrCreateAuthor(name.trim());
-    await db.insert(bookAuthors).values({ bookId: book.id, authorId });
+    await db.insert(bookAuthors).values({ bookId: book.id, authorId }).onConflictDoNothing();
   }
 
   // 6. Generate slug

@@ -58,6 +58,9 @@ export const bookAuthors = sqliteTable("book_authors", {
 }, (table) => [
   index("book_authors_book_idx").on(table.bookId),
   index("book_authors_author_idx").on(table.authorId),
+  // Prevent duplicate (book, author, role) inserts — enrichment used to
+  // silently accumulate duplicate rows on every re-run.
+  uniqueIndex("book_authors_unique").on(table.bookId, table.authorId, table.role),
 ]);
 
 export const narrators = sqliteTable("narrators", {
@@ -86,6 +89,8 @@ export const bookGenres = sqliteTable("book_genres", {
   index("book_genres_genre_idx").on(table.genreId),
   // Covering index for genre-filter subqueries on Browse (genre → book lookup)
   index("book_genres_genre_idx_v2").on(table.genreId, table.bookId),
+  // Prevent duplicate (book, genre) inserts
+  uniqueIndex("book_genres_unique").on(table.bookId, table.genreId),
 ]);
 
 export const series = sqliteTable("series", {
@@ -106,6 +111,8 @@ export const bookSeries = sqliteTable("book_series", {
 }, (table) => [
   index("book_series_book_idx").on(table.bookId),
   index("book_series_series_idx").on(table.seriesId),
+  // Prevent duplicate (book, series) inserts
+  uniqueIndex("book_series_unique").on(table.bookId, table.seriesId),
 ]);
 
 export const links = sqliteTable("links", {
