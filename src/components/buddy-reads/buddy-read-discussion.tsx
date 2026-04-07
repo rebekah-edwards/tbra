@@ -131,7 +131,7 @@ export function BuddyReadDiscussion({
                 </p>
                 <p
                   className={`font-body text-[10px] mt-1 ${
-                    isOwn ? "text-accent/60 text-right" : "text-muted/60"
+                    isOwn ? "text-foreground/50 text-right" : "text-muted/60"
                   }`}
                 >
                   {timeAgo(msg.createdAt)}

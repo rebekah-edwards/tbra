@@ -72,11 +72,11 @@ export function BuddyReadDetailClient({
   }
 
   const statusBadge = detail.status === "completed" ? (
-    <span className="inline-flex items-center rounded-full bg-[#a3e635]/15 px-2.5 py-0.5 text-xs font-semibold text-[#a3e635] data-[theme=light]:text-black">
+    <span className="inline-flex items-center rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-accent">
       Completed
     </span>
   ) : (
-    <span className="inline-flex items-center rounded-full bg-[#a3e635]/15 px-2.5 py-0.5 text-xs font-semibold text-[#a3e635] data-[theme=light]:text-black">
+    <span className="inline-flex items-center rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-accent">
       Active
     </span>
   );
