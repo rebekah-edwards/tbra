@@ -139,8 +139,9 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
     .innerJoin(genres, eq(bookGenres.genreId, genres.id))
     .where(eq(bookGenres.bookId, bookId));
 
-  // Classify genres using the curated taxonomy
-  const { primaryGenre: topLevelGenre, ageCategory, displayGenres: classifiedGenres } = classifyGenres(bookGenreRows);
+  // Classify genres using the curated taxonomy.
+  // Pass isFiction so the primary respects the fiction/nonfiction toggle.
+  const { primaryGenre: topLevelGenre, ageCategory, displayGenres: classifiedGenres } = classifyGenres(bookGenreRows, book.isFiction);
 
   const displayGenres = classifiedGenres;
 

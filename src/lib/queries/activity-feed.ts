@@ -18,6 +18,7 @@ export interface ActivityItem {
   };
   rating?: number | null;
   reviewPreview?: string | null;
+  reviewId?: string | null;
   timestamp: string;
 }
 
@@ -52,7 +53,8 @@ export async function getFollowedUsersActivity(
         u.id as user_id, u.display_name, u.username, u.avatar_url,
         b.id as book_id, b.slug, b.title, b.cover_image_url,
         ubr.created_at as timestamp,
-        ubr.overall_rating as rating, SUBSTR(ubr.review_text, 1, 100) as review_preview
+        ubr.overall_rating as rating, SUBSTR(ubr.review_text, 1, 100) as review_preview,
+        ubr.id as review_id
       FROM user_book_reviews ubr
       INNER JOIN users u ON ubr.user_id = u.id
       INNER JOIN books b ON ubr.book_id = b.id
@@ -161,6 +163,7 @@ export async function getFollowedUsersActivity(
     },
     rating: r.rating,
     reviewPreview: r.review_preview,
+    reviewId: r.review_id ?? null,
     timestamp: r.timestamp ?? "",
   }));
 }
@@ -178,4 +181,5 @@ interface RawActivityRow {
   timestamp: string | null;
   rating: number | null;
   review_preview: string | null;
+  review_id?: string | null;
 }

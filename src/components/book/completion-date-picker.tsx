@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 type Precision = "exact" | "month" | "year";
 
@@ -208,9 +209,11 @@ export function CompletionDatePicker({
     onConfirm(null, null);
   }
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60"
+      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -306,6 +309,7 @@ export function CompletionDatePicker({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

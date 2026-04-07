@@ -8,7 +8,7 @@ import {
 } from "@/lib/actions/reading-session";
 import type { ReadingSession } from "@/lib/queries/reading-session";
 
-function formatDate(dateStr: string | null): string {
+function formatDate(dateStr: string | null, precision?: string | null): string {
   if (!dateStr) return "";
   // Handle ISO datetime strings — extract date part
   const datePart = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
@@ -20,6 +20,13 @@ function formatDate(dateStr: string | null): string {
   if (isNaN(year) || year < 1900 || year > 2100) return "";
   const date = new Date(year, Number(m) - 1, Number(d));
   if (isNaN(date.getTime())) return "";
+  // Respect precision: only show what the user actually specified
+  if (precision === "year") {
+    return String(year);
+  }
+  if (precision === "month") {
+    return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  }
   return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -132,7 +139,7 @@ function SessionRow({
               className="hover:text-foreground transition-colors underline decoration-dotted underline-offset-2"
               title="Edit start date"
             >
-              {formatDate(session.startedAt) || "No start date"}
+              {session.startedAtExplicit ? formatDate(session.startedAt) : "No start date"}
             </button>
           )}
 
@@ -199,7 +206,7 @@ function SessionRow({
               className="hover:text-foreground transition-colors underline decoration-dotted underline-offset-2"
               title="Edit finish date"
             >
-              {formatDate(session.completionDate) || "No finish date"}
+              {formatDate(session.completionDate, session.completionPrecision) || "No finish date"}
             </button>
           )}
         </div>

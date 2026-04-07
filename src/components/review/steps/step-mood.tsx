@@ -24,12 +24,12 @@ export function StepMood({ selected, onSelect }: StepMoodProps) {
               onClick={() => onSelect(isSelected ? null : mood.key)}
               className={`flex flex-col items-center gap-0.5 rounded-2xl py-2.5 px-2 transition-all ${
                 isSelected
-                  ? "bg-primary/20 ring-2 ring-primary scale-105"
+                  ? "bg-accent/20 ring-2 ring-accent scale-105"
                   : "bg-surface-alt hover:bg-surface-alt/80"
               }`}
             >
               <span className="text-2xl">{mood.emoji}</span>
-              <span className={`text-[11px] font-medium ${isSelected ? "text-primary" : "text-foreground/70"}`}>
+              <span className={`text-[11px] font-medium ${isSelected ? "text-accent" : "text-foreground/70"}`}>
                 {mood.label}
               </span>
             </button>

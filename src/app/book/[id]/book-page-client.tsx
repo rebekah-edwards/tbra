@@ -158,6 +158,20 @@ export function BookPageClient({
     }
   }, [searchParams, currentState, book.slug, book.id, router]);
 
+  // ?review=true → open the review wizard (used after marking finished from search)
+  const reviewTriggered = useRef(false);
+  useEffect(() => {
+    if (
+      !reviewTriggered.current &&
+      searchParams.get("review") === "true" &&
+      !userReview
+    ) {
+      reviewTriggered.current = true;
+      setAutoOpenReview(true);
+      router.replace(`/book/${book.slug || book.id}`, { scroll: false });
+    }
+  }, [searchParams, userReview, book.slug, book.id, router]);
+
   // Client-side fallback: trigger enrichment if server-side after() didn't fire
   useEffect(() => {
     if (!isRecentlyImported) return;
@@ -246,8 +260,9 @@ export function BookPageClient({
     if (newState === "completed" || newState === "dnf") {
       setHasCompleted(true);
     }
-    // Auto-open review wizard when marking as completed
-    if (newState === "completed" && !userReview) {
+    // Auto-open review wizard ONLY on first completion with no existing review.
+    // Skip for re-reads (hasCompleted means user already finished a previous read).
+    if (newState === "completed" && !userReview && !hasCompleted) {
       setAutoOpenReview(true);
     }
     // Show post-completion suggestions and celebration
@@ -256,7 +271,7 @@ export function BookPageClient({
       // Small delay so review wizard opens first
       setTimeout(() => setShowSuggestions(true), 500);
     }
-  }, [userReview]);
+  }, [userReview, hasCompleted]);
 
   return (
     <>
@@ -379,7 +394,7 @@ export function BookPageClient({
                 <p className="text-sm text-muted/60">No reviews yet</p>
               )}
               {userReview ? (
-                <button type="button" onClick={() => setAutoOpenReview(true)} className="text-sm text-primary hover:text-primary/80 font-medium">
+                <button type="button" onClick={() => setAutoOpenReview(true)} className="text-sm text-neon-blue hover:text-neon-blue/80 font-medium">
                   Edit your review
                 </button>
               ) : currentState === "completed" || currentState === "dnf" ? (

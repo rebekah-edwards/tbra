@@ -278,12 +278,13 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-50 flex flex-col bg-background transition-transform duration-300 ease-out pt-[env(safe-area-inset-top)] ${
+      className={`fixed inset-x-0 top-0 z-50 flex flex-col bg-background transition-transform duration-300 ease-out pt-[env(safe-area-inset-top)] ${
         animating ? "translate-y-0" : "translate-y-full"
       }`}
+      style={{ height: "100dvh" }}
     >
     {/* Desktop: constrain to 60% width centered */}
-    <div className="flex flex-col h-full w-full md:max-w-[60%] md:mx-auto">
+    <div className="flex flex-col h-full w-full md:max-w-[60%] md:mx-auto min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         {step > 0 ? (

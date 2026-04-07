@@ -53,6 +53,8 @@ export const NONFICTION_GENRES = new Set([
   "Politics",
   "Religion",
   "Spirituality",
+  "Christian Nonfiction",
+  "Christian Living",
   "Christianity",
   "Islam",
   "Judaism",
@@ -272,12 +274,20 @@ export const GENRE_TO_TOP_LEVEL: Record<string, string> = {
  * 2. Mapped match (genre maps to a whitelist entry via GENRE_TO_TOP_LEVEL)
  */
 export function classifyGenres(
-  genreRows: { genreId: string; name: string; parentGenreId: string | null }[]
+  genreRows: { genreId: string; name: string; parentGenreId: string | null }[],
+  isFiction: boolean | null = null,
 ): {
   primaryGenre: string | null;
   ageCategory: string | null;
   displayGenres: string[];
 } {
+  // Filter the whitelist by fiction/nonfiction when known
+  const allowedSet =
+    isFiction === true
+      ? FICTION_GENRES
+      : isFiction === false
+        ? NONFICTION_GENRES
+        : TOP_LEVEL_WHITELIST;
   const linkedIds = new Set(genreRows.map((g) => g.genreId));
   let ageCategory: string | null = null;
 
@@ -309,7 +319,7 @@ export function classifyGenres(
     if (CHILDRENS_AGE_CATEGORIES.has(g.name)) continue;
     const mapped = GENRE_TO_TOP_LEVEL[g.name];
 
-    if (TOP_LEVEL_WHITELIST.has(g.name)) {
+    if (allowedSet.has(g.name)) {
       // Direct match — take the first one
       if (!primaryGenre) {
         primaryGenre = g.name;
@@ -318,7 +328,7 @@ export function classifyGenres(
       if (g.name === "LitRPG" && (primaryGenre === "Sci-Fi" || primaryGenre === "Fantasy")) {
         primaryGenre = "LitRPG";
       }
-    } else if (mapped && TOP_LEVEL_WHITELIST.has(mapped) && !CHILDRENS_AGE_CATEGORIES.has(mapped)) {
+    } else if (mapped && allowedSet.has(mapped) && !CHILDRENS_AGE_CATEGORIES.has(mapped)) {
       // Mapped match — lower priority, only used if no direct match found
       if (!fallbackPrimary) {
         fallbackPrimary = mapped;

@@ -67,15 +67,19 @@ export async function setBookStateWithCompletion(
       .where(eq(readingSessions.id, activeSession.id));
   } else {
     // No active session — create one (e.g., user clicked "Finished" directly without "Reading Now" first)
+    // Mark startedAt as not explicit since the user never specified when they started.
+    // Default the completion date to today if the user didn't pick one.
     const readNumber = await getNextReadNumber(user.userId, bookId);
+    const today = new Date().toISOString().split("T")[0];
     await db.insert(readingSessions).values({
       userId: user.userId,
       bookId,
       readNumber,
       state,
       startedAt: new Date().toISOString(),
-      completionDate,
-      completionPrecision,
+      startedAtExplicit: false,
+      completionDate: completionDate ?? today,
+      completionPrecision: completionPrecision ?? "exact",
     });
   }
 
@@ -107,6 +111,7 @@ export async function ensureReadingSession(
   }
 
   // No active session — create a new one
+  // User clicked "Reading Now" so the start date is explicitly today
   const readNumber = await getNextReadNumber(userId, bookId);
   await db.insert(readingSessions).values({
     userId,
@@ -114,6 +119,7 @@ export async function ensureReadingSession(
     readNumber,
     state: "currently_reading",
     startedAt: new Date().toISOString(),
+    startedAtExplicit: true,
     activeFormats,
   });
 }
@@ -189,12 +195,14 @@ export async function updateReadingSession(
     throw new Error("Session not found");
   }
 
-  const updates: Record<string, string | null> = {
+  const updates: Record<string, string | number | null> = {
     updatedAt: new Date().toISOString(),
   };
 
   if (data.startedAt !== undefined) {
+    // User explicitly edited the start date — mark as explicit
     updates.startedAt = data.startedAt;
+    updates.startedAtExplicit = 1;
   }
   if (data.completionDate !== undefined) {
     updates.completionDate = data.completionDate;
@@ -233,6 +241,7 @@ export async function addRereadSession(
     readNumber,
     state: "completed",
     startedAt: data.startedAt || now,
+    startedAtExplicit: !!data.startedAt,
     completionDate: data.completionDate || null,
     completionPrecision: data.completionDate ? "exact" : null,
   });

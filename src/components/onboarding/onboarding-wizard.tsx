@@ -79,7 +79,7 @@ const CONTENT_CATEGORIES = [
   { key: "dd567829-ccf2-43a4-b2e2-9bc1946313a8", name: "Religious content" },
   { key: "895cee59-f605-49b5-9e8a-905cfe36c455", name: "Witchcraft / occult" },
   { key: "81076008-d213-45b0-bf7e-2509d75191b2", name: "Political & ideological" },
-  { key: "ca67197a-61d3-4f2a-9441-5c23757b1515", name: "LGBTQIA+ representation" },
+  { key: "ca67197a-61d3-4f2a-9441-5c23757b1515", name: "LGBTQ+ representation" },
 ];
 
 const TOLERANCE_LABELS = [

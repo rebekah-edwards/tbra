@@ -19,9 +19,9 @@ const db = drizzle(sqlite);
 const categories = [
   {
     key: "lgbtqia_representation",
-    name: "LGBTQIA+ representation",
+    name: "LGBTQ+ representation",
     description:
-      "Presence and centrality of LGBTQIA+ characters, relationships, and identity themes.",
+      "Presence and centrality of LGBTQ+ characters, relationships, and identity themes.",
   },
   {
     key: "religious_content",

@@ -116,7 +116,7 @@ type R = { categoryKey: string; intensity: number; notes: string; evidence: stri
 
 const SAMPLE_RATINGS: Record<string, R[]> = {
   "Beloved": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 1, notes: "Spiritual themes, baby ghost/haunting with religious undertones", evidence: "ai_inferred" },
     { categoryKey: "witchcraft_occult", intensity: 2, notes: "Supernatural haunting, ghost possession central to plot", evidence: "cited" },
     { categoryKey: "sexual_content", intensity: 1, notes: "Some sexual content, mostly implied", evidence: "ai_inferred" },
@@ -130,7 +130,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "The Great Gatsby": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No explicit LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No explicit LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 0, notes: "No religious content", evidence: "ai_inferred" },
     { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
     { categoryKey: "sexual_content", intensity: 1, notes: "Implied affairs, nothing explicit", evidence: "ai_inferred" },
@@ -144,7 +144,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "The Hunger Games": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 0, notes: "No religious content", evidence: "ai_inferred" },
     { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
     { categoryKey: "sexual_content", intensity: 0, notes: "Kissing only, no sexual content", evidence: "ai_inferred" },
@@ -158,7 +158,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Dune": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 3, notes: "Messianic prophecy, religious manipulation, Bene Gesserit as quasi-religious order", evidence: "human_verified" },
     { categoryKey: "witchcraft_occult", intensity: 2, notes: "Prescience, Voice, Bene Gesserit abilities border on mystical", evidence: "ai_inferred" },
     { categoryKey: "sexual_content", intensity: 1, notes: "Implied sexual relationships, concubinage, nothing explicit", evidence: "ai_inferred" },
@@ -172,7 +172,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Pride and Prejudice": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 1, notes: "Mr. Collins is a clergyman; church attendance is part of social life", evidence: "ai_inferred" },
     { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
     { categoryKey: "sexual_content", intensity: 0, notes: "No sexual content; Lydia's elopement is the scandal", evidence: "ai_inferred" },
@@ -186,7 +186,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "The Fault in Our Stars": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 1, notes: "Characters discuss God and meaning of suffering", evidence: "ai_inferred" },
     { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
     { categoryKey: "sexual_content", intensity: 2, notes: "One sex scene, tastefully written but present", evidence: "cited" },
@@ -200,7 +200,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Circe": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 1, notes: "Greek gods are characters, but treated as mythology not devotion", evidence: "ai_inferred" },
     { categoryKey: "witchcraft_occult", intensity: 3, notes: "Witchcraft is central — Circe is a witch who practices pharmakeia", evidence: "human_verified" },
     { categoryKey: "sexual_content", intensity: 2, notes: "Some romantic/sexual scenes, not highly explicit", evidence: "ai_inferred" },
@@ -214,7 +214,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "The Road": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 1, notes: "Subtle spiritual themes — the boy as a symbol of hope/goodness", evidence: "ai_inferred" },
     { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
     { categoryKey: "sexual_content", intensity: 0, notes: "No sexual content", evidence: "ai_inferred" },
@@ -228,7 +228,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Brave New World": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 2, notes: "Ford as deity replacement; organized religion abolished in-world", evidence: "cited" },
     { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
     { categoryKey: "sexual_content", intensity: 3, notes: "Casual sex is a societal norm, discussed openly and frequently", evidence: "cited" },
@@ -242,7 +242,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Slaughterhouse-Five": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 1, notes: "Brief religious references, prayer", evidence: "ai_inferred" },
     { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content (alien abduction is sci-fi)", evidence: "ai_inferred" },
     { categoryKey: "sexual_content", intensity: 2, notes: "Some sexual scenes including alien zoo scenario", evidence: "cited" },
@@ -256,7 +256,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Jane Eyre": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 2, notes: "St. John Rivers' missionary zeal; Jane's personal faith; Brocklehurst's hypocrisy", evidence: "cited" },
     { categoryKey: "witchcraft_occult", intensity: 1, notes: "Gothic atmosphere, mysterious voices, but no actual occult", evidence: "ai_inferred" },
     { categoryKey: "sexual_content", intensity: 1, notes: "Passionate but restrained; Victorian sensibility", evidence: "ai_inferred" },
@@ -270,7 +270,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Kindred": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 0, notes: "No significant religious content", evidence: "ai_inferred" },
     { categoryKey: "witchcraft_occult", intensity: 0, notes: "Time travel is unexplained but not occult", evidence: "ai_inferred" },
     { categoryKey: "sexual_content", intensity: 1, notes: "Interracial marriage discussed; some implied sexuality", evidence: "ai_inferred" },
@@ -284,7 +284,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Mexican Gothic": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 1, notes: "Catholic references in Mexican setting", evidence: "ai_inferred" },
     { categoryKey: "witchcraft_occult", intensity: 3, notes: "Mycological horror, mind control, eugenics rituals, supernatural possession", evidence: "human_verified" },
     { categoryKey: "sexual_content", intensity: 2, notes: "Some sexual content and disturbing sexual imagery in hallucinations", evidence: "cited" },
@@ -298,7 +298,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "An American Marriage": [
-    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQIA+ content", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 0, notes: "No LGBTQ+ content", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 1, notes: "Southern church culture referenced", evidence: "ai_inferred" },
     { categoryKey: "witchcraft_occult", intensity: 0, notes: "No occult content", evidence: "ai_inferred" },
     { categoryKey: "sexual_content", intensity: 2, notes: "Sexual scenes between married and extramarital partners", evidence: "cited" },
@@ -326,7 +326,7 @@ const SAMPLE_RATINGS: Record<string, R[]> = {
     { categoryKey: "user_added", intensity: 0, notes: "No user-added content warnings yet", evidence: "ai_inferred" },
   ],
   "Dungeon Crawler Carl": [
-    { categoryKey: "lgbtqia_representation", intensity: 1, notes: "Minor LGBTQIA+ side characters", evidence: "ai_inferred" },
+    { categoryKey: "lgbtqia_representation", intensity: 1, notes: "Minor LGBTQ+ side characters", evidence: "ai_inferred" },
     { categoryKey: "religious_content", intensity: 0, notes: "No religious content", evidence: "ai_inferred" },
     { categoryKey: "witchcraft_occult", intensity: 1, notes: "Fantasy/game magic system, not occult framing", evidence: "ai_inferred" },
     { categoryKey: "sexual_content", intensity: 1, notes: "Occasional innuendo, nothing explicit", evidence: "ai_inferred" },

@@ -62,6 +62,7 @@ const STATES = [
 
 interface ReadingStateButtonProps {
   bookId?: string;
+  bookSlug?: string | null;
   olResult?: OLSearchResult;
   currentState: string | null;
   isLoggedIn: boolean;
@@ -75,6 +76,7 @@ interface ReadingStateButtonProps {
 
 export function ReadingStateButton({
   bookId,
+  bookSlug,
   olResult,
   currentState,
   isLoggedIn,
@@ -196,6 +198,13 @@ export function ReadingStateButton({
     setPendingState(null);
     startTransition(async () => {
       await setBookStateWithCompletion(bookId, finalState, date, precision);
+      // In compact mode (search results), navigate to the book page so the
+      // user can leave a review. The book page picks up ?review=true and
+      // auto-opens the review wizard.
+      if (compact && finalState === "completed") {
+        router.push(`/book/${bookSlug || bookId}?review=true`);
+        return;
+      }
     });
     // Fire OUTSIDE transition so parent state updates (e.g., autoOpenReview)
     // aren't deferred by React's transition batching
@@ -233,7 +242,7 @@ export function ReadingStateButton({
             disabled={isPending}
             className={`rounded-l-full px-5 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
               isActive
-                ? "bg-primary text-background border border-primary border-r-0"
+                ? "bg-accent text-black border border-accent border-r-0"
                 : "bg-accent/20 text-foreground border-2 border-accent/60 border-r-0 hover:bg-accent/30"
             } ${isPending ? "opacity-60" : ""}`}
           >
@@ -256,7 +265,7 @@ export function ReadingStateButton({
             disabled={isPending}
             className={`rounded-r-full px-2 py-1.5 transition-colors border-l ${
               isActive
-                ? "bg-primary text-background border border-primary border-l-background/20"
+                ? "bg-accent text-black border border-accent border-l-black/20"
                 : "bg-accent/20 text-foreground border-2 border-accent/60 border-l-accent/40 hover:bg-accent/30"
             } ${isPending ? "opacity-60" : ""}`}
           >

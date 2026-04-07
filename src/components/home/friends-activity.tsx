@@ -98,13 +98,18 @@ export function FriendsActivity({ activity }: FriendsActivityProps) {
 
   return (
     <div className="flex gap-3 lg:gap-4 overflow-x-auto pb-2 -mx-2 px-2 pr-12 no-scrollbar mask-fade-right">
-      {activity.map((item, i) => (
+      {activity.map((item, i) => {
+        const bookPath = `/book/${item.book.slug || item.book.id}`;
+        const cardLink = item.type === "review" && item.reviewId
+          ? `${bookPath}/reviews#review-${item.reviewId}`
+          : bookPath;
+        return (
         <div
           key={`${item.user.id}-${item.book.id}-${i}`}
           className="w-[200px] lg:w-[260px] flex-shrink-0 rounded-xl border border-border bg-surface overflow-hidden hover:border-border/80 transition-colors"
         >
           {/* Book cover as top banner */}
-          <Link href={`/book/${item.book.slug || item.book.id}`} className="block relative h-16 lg:h-20 overflow-hidden">
+          <Link href={cardLink} className="block relative h-16 lg:h-20 overflow-hidden">
             {item.book.coverImageUrl ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -150,9 +155,11 @@ export function FriendsActivity({ activity }: FriendsActivityProps) {
 
             {/* Review snippet */}
             {item.reviewPreview && (
-              <p className="text-[11px] lg:text-xs text-muted line-clamp-2 leading-relaxed italic">
-                &ldquo;{item.reviewPreview}{item.reviewPreview.length >= 100 ? "..." : ""}&rdquo;
-              </p>
+              <Link href={cardLink} className="block hover:underline">
+                <p className="text-[11px] lg:text-xs text-muted line-clamp-2 leading-relaxed italic">
+                  &ldquo;{item.reviewPreview}{item.reviewPreview.length >= 100 ? "..." : ""}&rdquo;
+                </p>
+              </Link>
             )}
 
             {/* User attribution */}
@@ -167,7 +174,8 @@ export function FriendsActivity({ activity }: FriendsActivityProps) {
             </Link>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

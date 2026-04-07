@@ -207,6 +207,7 @@ export const readingSessions = sqliteTable("reading_sessions", {
   readNumber: integer("read_number").notNull(), // 1, 2, 3... for re-reads
   state: text("state").notNull(), // 'currently_reading' | 'completed' | 'paused' | 'dnf'
   startedAt: text("started_at").notNull().default(sql`(datetime('now'))`),
+  startedAtExplicit: integer("started_at_explicit", { mode: "boolean" }).notNull().default(false), // true if user explicitly set the start date (vs auto-filled)
   completionDate: text("completion_date"), // ISO date '2026-03-14' or null
   completionPrecision: text("completion_precision"), // 'exact' | 'month' | 'year' | null
   activeFormats: text("active_formats"), // JSON array

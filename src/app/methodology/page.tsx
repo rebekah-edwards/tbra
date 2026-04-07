@@ -37,8 +37,8 @@ const CATEGORIES = [
     description: "Alcohol and drug use — glamorized vs cautionary portrayal, addiction themes.",
   },
   {
-    name: "LGBTQIA+ representation",
-    description: "Presence and centrality of LGBTQIA+ characters, relationships, and identity themes.",
+    name: "LGBTQ+ representation",
+    description: "Presence and centrality of LGBTQ+ characters, relationships, and identity themes.",
   },
   {
     name: "Religious content",

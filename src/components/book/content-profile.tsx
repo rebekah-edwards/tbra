@@ -340,9 +340,9 @@ function RatingCard({
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium">{displayName}</span>
-        <div className="flex items-center gap-1.5">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs font-medium pr-2">{displayName}</span>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {badge && (
             <span
               className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${badge.className}`}

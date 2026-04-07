@@ -7,6 +7,7 @@ export interface ReadingSession {
   readNumber: number;
   state: string;
   startedAt: string;
+  startedAtExplicit: boolean;
   completionDate: string | null;
   completionPrecision: string | null;
   activeFormats: string[];
@@ -21,6 +22,7 @@ function parseSession(row: typeof readingSessions.$inferSelect): ReadingSession 
     readNumber: row.readNumber,
     state: row.state,
     startedAt: row.startedAt,
+    startedAtExplicit: row.startedAtExplicit ?? false,
     completionDate: row.completionDate,
     completionPrecision: row.completionPrecision,
     activeFormats: row.activeFormats ? JSON.parse(row.activeFormats) : [],

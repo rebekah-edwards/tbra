@@ -91,7 +91,7 @@ export function ReviewTrigger({
         <button
           type="button"
           onClick={handleOpen}
-          className="text-sm text-primary hover:text-primary/80 font-medium"
+          className="text-sm text-neon-blue hover:text-neon-blue/80 font-medium"
         >
           Edit your review
         </button>
@@ -99,7 +99,7 @@ export function ReviewTrigger({
         <button
           type="button"
           onClick={handleOpen}
-          className="text-sm text-primary hover:text-primary/80 font-medium"
+          className="text-sm text-neon-blue hover:text-neon-blue/80 font-medium"
         >
           Review this book
         </button>
@@ -111,7 +111,7 @@ export function ReviewTrigger({
         <button
           type="button"
           onClick={handleOpen}
-          className="text-sm text-primary hover:text-primary/80 font-medium"
+          className="text-sm text-neon-blue hover:text-neon-blue/80 font-medium"
         >
           Log in to review
         </button>

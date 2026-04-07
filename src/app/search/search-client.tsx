@@ -26,6 +26,7 @@ interface SearchClientProps {
 
 interface SeriesBookResult {
   id: string;
+  slug: string | null;
   title: string;
   coverImageUrl: string | null;
   position: number | null;
@@ -298,7 +299,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           <p className="text-sm text-muted">No results found.</p>
           <Link
             href="/search/add"
-            className="mt-2 inline-block text-sm text-link hover:text-link/80"
+            className="mt-2 inline-block text-sm text-neon-blue hover:text-neon-blue/80"
           >
             Can&apos;t find your book? Manually add it to your shelf.
           </Link>
@@ -370,6 +371,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
                         <div className="mt-1.5 flex items-center gap-2">
                           <ReadingStateButton
                             bookId={book.id}
+                            bookSlug={book.slug ?? null}
                             currentState={book.currentState}
                             isLoggedIn={isLoggedIn}
                             compact

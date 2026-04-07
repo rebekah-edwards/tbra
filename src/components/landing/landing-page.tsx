@@ -184,11 +184,11 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
                       <div key={rating.categoryKey} className="flex items-center gap-3">
                         <span className="text-xs text-muted w-32 lg:w-40 flex-shrink-0 truncate">{name}</span>
                         <div className="flex-1 flex items-center gap-1.5">
-                          {[0, 1, 2, 3, 4].map((level) => (
+                          {[0, 1, 2, 3].map((level) => (
                             <div
                               key={level}
                               className={`h-2.5 flex-1 rounded-full ${
-                                level <= rating.intensity
+                                level < rating.intensity
                                   ? INTENSITY_COLORS[rating.intensity]
                                   : "bg-border/50"
                               }`}

@@ -12,7 +12,7 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   substance_use:
     "Alcohol and drug use — glamorized vs cautionary portrayal, addiction themes.",
   lgbtqia_representation:
-    "Presence and centrality of LGBTQIA+ characters, relationships, and identity themes.",
+    "Presence and centrality of LGBTQ+ characters, relationships, and identity themes.",
   religious_content:
     "Overt religiosity, clergy/rituals, conversion themes, devotional framing.",
   witchcraft_occult:
