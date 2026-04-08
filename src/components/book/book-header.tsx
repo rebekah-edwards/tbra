@@ -222,7 +222,11 @@ export function BookHeader({
             </div>
 
             {(genres.length > 0 || isManuallyAdded || pacing) && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
+              <div
+                className={`mt-3 flex flex-wrap gap-1.5 ${
+                  shareButton ? "pr-14 sm:pr-16" : ""
+                }`}
+              >
                 {genres.map((genre) => (
                   <Link
                     key={genre}
