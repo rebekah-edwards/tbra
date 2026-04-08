@@ -121,12 +121,14 @@ export function BookHeader({
           )}
         </div>
 
-        {/* Share button — centered on the card's bottom-right edge via
-            translate-y-1/2 so it straddles the boundary (half inside, half
-            outside) regardless of exact pixel math. Higher z-index than the
-            card content so it renders on top of the fade gradient. */}
+        {/* Share button — anchored to the bottom-LEFT of the card and
+            translated down by 3/4 of its height. That hangs ~3/4 of the
+            button below the card edge while keeping ~1/4 overlapping, and
+            guarantees the button's top sits below the cover image's bottom
+            edge even on tight mobile layouts where the cover fills the full
+            content area (16px bottom padding > 10px top-of-button inset). */}
         {shareButton && (
-          <div className="absolute bottom-0 right-4 translate-y-1/2 z-30">
+          <div className="absolute bottom-0 left-4 translate-y-3/4 z-30">
             {shareButton}
           </div>
         )}
@@ -222,11 +224,7 @@ export function BookHeader({
             </div>
 
             {(genres.length > 0 || isManuallyAdded || pacing) && (
-              <div
-                className={`mt-3 flex flex-wrap gap-1.5 ${
-                  shareButton ? "pr-14 sm:pr-16" : ""
-                }`}
-              >
+              <div className="mt-3 flex flex-wrap gap-1.5">
                 {genres.map((genre) => (
                   <Link
                     key={genre}
