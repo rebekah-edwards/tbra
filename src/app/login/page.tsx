@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { login } from "@/lib/actions/auth";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(login, {});
@@ -63,13 +64,11 @@ export default function LoginPage() {
           <label htmlFor="password" className="block text-sm font-medium mb-1">
             Password
           </label>
-          <input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             required
             autoComplete="current-password"
-            className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-foreground placeholder:text-muted focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
             placeholder="Your password"
           />
         </div>

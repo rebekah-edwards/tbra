@@ -4,6 +4,7 @@ import { useActionState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { resetPassword } from "@/lib/actions/auth";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
@@ -57,14 +58,12 @@ export default function ResetPasswordPage() {
           <label htmlFor="password" className="block text-sm font-medium mb-1">
             New password
           </label>
-          <input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             required
             minLength={8}
             autoComplete="new-password"
-            className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-foreground placeholder:text-muted focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
             placeholder="At least 8 characters"
           />
         </div>
@@ -76,14 +75,12 @@ export default function ResetPasswordPage() {
           >
             Confirm new password
           </label>
-          <input
+          <PasswordInput
             id="confirmPassword"
             name="confirmPassword"
-            type="password"
             required
             minLength={8}
             autoComplete="new-password"
-            className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-foreground placeholder:text-muted focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
             placeholder="Confirm your password"
           />
         </div>

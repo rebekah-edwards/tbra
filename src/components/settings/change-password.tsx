@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { changePassword } from "@/lib/actions/auth";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export function ChangePassword() {
   const [state, action, pending] = useActionState(changePassword, {});
@@ -30,13 +31,11 @@ export function ChangePassword() {
           >
             Current password
           </label>
-          <input
+          <PasswordInput
             id="currentPassword"
             name="currentPassword"
-            type="password"
             required
             autoComplete="current-password"
-            className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-foreground placeholder:text-muted focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
             placeholder="Your current password"
           />
         </div>
@@ -48,14 +47,12 @@ export function ChangePassword() {
           >
             New password
           </label>
-          <input
+          <PasswordInput
             id="newPassword"
             name="newPassword"
-            type="password"
             required
             minLength={8}
             autoComplete="new-password"
-            className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-foreground placeholder:text-muted focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
             placeholder="At least 8 characters"
           />
         </div>
@@ -67,14 +64,12 @@ export function ChangePassword() {
           >
             Confirm new password
           </label>
-          <input
+          <PasswordInput
             id="confirmNewPassword"
             name="confirmNewPassword"
-            type="password"
             required
             minLength={8}
             autoComplete="new-password"
-            className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-foreground placeholder:text-muted focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
             placeholder="Confirm your new password"
           />
         </div>
