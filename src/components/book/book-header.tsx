@@ -121,14 +121,15 @@ export function BookHeader({
           )}
         </div>
 
-        {/* Share button — anchored to the bottom-LEFT of the card and
-            translated down by 3/4 of its height. That hangs ~3/4 of the
-            button below the card edge while keeping ~1/4 overlapping, and
-            guarantees the button's top sits below the cover image's bottom
-            edge even on tight mobile layouts where the cover fills the full
-            content area (16px bottom padding > 10px top-of-button inset). */}
+        {/* Share button — anchored to the bottom-LEFT of the card, centered
+            exactly on the card's bottom edge (translate-y-1/2). Half inside,
+            half outside the card. The info column is typically the height
+            driver on books with multiple genre pills, so the cover image
+            ends up vertically centered with headroom below — the button's
+            top at card_bottom - 20 sits in that gap without overlapping
+            the cover. */}
         {shareButton && (
-          <div className="absolute bottom-0 left-4 translate-y-3/4 z-30">
+          <div className="absolute bottom-0 left-4 translate-y-1/2 z-30">
             {shareButton}
           </div>
         )}
