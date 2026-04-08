@@ -200,6 +200,25 @@ export const users = sqliteTable("users", {
   uniqueIndex("users_referral_code_unique").on(table.referralCode),
 ]);
 
+/**
+ * Tracks previous usernames so that old `/u/{oldhandle}` links keep working
+ * after a user renames their handle. On handle change, the old username is
+ * inserted here pointing at the user's id; the `/u/[username]` route falls
+ * back to this table when the current-username lookup misses, then 301
+ * redirects to the user's current handle.
+ *
+ * If a different user later claims an old handle, the row for that username
+ * is deleted (the new owner takes it over — no silent shadowing).
+ */
+export const userPreviousUsernames = sqliteTable("user_previous_usernames", {
+  /** The previous username, lowercase — primary key gives O(1) lookup */
+  username: text("username").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  changedAt: text("changed_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  index("idx_user_previous_usernames_user").on(table.userId),
+]);
+
 export const userBookState = sqliteTable("user_book_state", {
   userId: text("user_id").notNull().references(() => users.id),
   bookId: text("book_id").notNull().references(() => books.id),

@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { users, userPreviousUsernames } from "@/db/schema";
+import { eq, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { del } from "@vercel/blob";
 import { unlink } from "fs/promises";
@@ -92,6 +92,26 @@ export async function updateProfile(formData: FormData) {
   }
 
   const usernameChanged = username && currentUser?.username !== username;
+
+  // Record the old handle so /u/{oldhandle} links keep working.
+  // Also: if another user had 'username' reserved as a previous handle of
+  // theirs, clear that row so we don't silently shadow this new owner.
+  if (usernameChanged) {
+    if (currentUser?.username) {
+      await db
+        .insert(userPreviousUsernames)
+        .values({ username: currentUser.username, userId: user.userId })
+        .onConflictDoUpdate({
+          target: userPreviousUsernames.username,
+          set: { userId: user.userId, changedAt: sql`(datetime('now'))` },
+        });
+    }
+    // If the user is reclaiming a handle that was someone else's previous
+    // handle, drop that old mapping — the new active owner wins.
+    await db
+      .delete(userPreviousUsernames)
+      .where(eq(userPreviousUsernames.username, username));
+  }
 
   await db
     .update(users)

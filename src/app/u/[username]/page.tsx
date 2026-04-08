@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { db } from "@/db";
+import { users, userPreviousUsernames } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { getUserByUsername, getUserStats } from "@/lib/queries/profile";
 import { getUserFavorites } from "@/lib/queries/favorites";
 import { getUserReviewsWithBooks } from "@/lib/queries/user-reviews";
@@ -14,13 +17,51 @@ import { SocialIcons } from "@/components/profile/social-icons";
 import { AccountBadge } from "@/components/profile/account-badge";
 import { FollowButton } from "@/components/profile/follow-button";
 
+/**
+ * Look up a handle — first in the current users table, then in
+ * user_previous_usernames (for users who changed their handle). Returns
+ * { kind: 'current', user } if it matches a live username, or
+ * { kind: 'redirect', username } if it matches an old username that should
+ * redirect to the owner's new handle, or null if nothing matched.
+ */
+async function resolveHandle(
+  rawHandle: string,
+): Promise<
+  | { kind: "current"; user: Awaited<ReturnType<typeof getUserByUsername>> }
+  | { kind: "redirect"; username: string }
+  | null
+> {
+  const handle = rawHandle.toLowerCase();
+  const user = await getUserByUsername(handle);
+  if (user) return { kind: "current", user };
+
+  // Fall back to previous usernames — single JOIN to fetch the owner's
+  // current handle in one round trip.
+  const row = await db
+    .select({ currentUsername: users.username })
+    .from(userPreviousUsernames)
+    .innerJoin(users, eq(userPreviousUsernames.userId, users.id))
+    .where(eq(userPreviousUsernames.username, handle))
+    .get();
+  if (row?.currentUsername && row.currentUsername !== handle) {
+    return { kind: "redirect", username: row.currentUsername };
+  }
+  return null;
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-  const user = await getUserByUsername(username);
+  const resolved = await resolveHandle(username);
+  if (!resolved || resolved.kind === "redirect") {
+    // Redirect target — minimal metadata. The actual redirect happens in the
+    // page body so the metadata never gets rendered for a redirected URL.
+    return { title: "User Not Found | tbr*a" };
+  }
+  const user = resolved.user;
   if (!user) return { title: "User Not Found | tbr*a" };
 
   const displayName = user.displayName || user.username || user.email.split("@")[0];
@@ -41,8 +82,18 @@ export default async function PublicProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const user = await getUserByUsername(username);
+  const resolved = await resolveHandle(username);
 
+  if (!resolved) {
+    notFound();
+  }
+  if (resolved.kind === "redirect") {
+    // 308 redirect old handle -> current handle so bookmarks and old links
+    // survive. Next's redirect() issues a 307/308 which is preserved by
+    // search engines as a permanent move.
+    redirect(`/u/${resolved.username}`);
+  }
+  const user = resolved.user;
   if (!user) {
     notFound();
   }

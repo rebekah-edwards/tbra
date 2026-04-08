@@ -1739,6 +1739,14 @@ async function getSimilarBooksInner(
     explicit = await getExplicitPreferences(userId);
   }
 
+  // Batch-fetch custom-warning review flags. Parallel with nothing else here
+  // so it just costs one extra query per similar-books call (only when the
+  // user has set a topics-to-avoid list — otherwise zero work).
+  const customWarningFlagsByBook = await batchFetchCustomWarningFlags(
+    candidateIds,
+    explicit?.customContentWarnings ?? [],
+  );
+
   // Get genre names for building reason strings
   const allGenreIds = new Set<string>([...seedGenreIds]);
   for (const c of candidates) {
@@ -1804,6 +1812,23 @@ async function getSimilarBooksInner(
       // Data quality
       if (c.coverImageUrl) score += 5;
       if (c.hasDescription) score += 3;
+
+      // Custom content warning penalty — mirror the main recommendations
+      // scorer so "similar books" also downranks titles flagged for topics
+      // the user explicitly asked to avoid. Tiered (1+ flag → -10, 3+ → -20)
+      // and capped at -40 total across all warnings. Skips entirely when
+      // the user has no avoid list.
+      if (explicit?.customContentWarnings.length) {
+        const flags = customWarningFlagsByBook.get(c.id);
+        if (flags && flags.size > 0) {
+          let penalty = 0;
+          for (const warning of explicit.customContentWarnings) {
+            const n = flags.get(warning) ?? 0;
+            if (n > 0) penalty += Math.min(20, 5 + n * 5);
+          }
+          score -= Math.min(40, penalty);
+        }
+      }
 
       // Jitter
       score += Math.random() * 6 - 3;
