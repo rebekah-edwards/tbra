@@ -44,7 +44,7 @@ export function ShareButton({ url, title }: ShareButtonProps) {
   return (
     <button
       onClick={handleShare}
-      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-surface/40 backdrop-blur-md text-foreground/80 hover:text-foreground hover:bg-surface/70 hover:border-white/30 transition-all shadow-lg relative"
+      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/10 backdrop-blur-md text-foreground/90 hover:text-foreground hover:bg-white/20 hover:border-white/40 transition-all shadow-lg relative"
       title="Share this book"
       aria-label="Share this book"
     >

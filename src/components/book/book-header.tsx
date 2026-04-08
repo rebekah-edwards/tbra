@@ -121,10 +121,12 @@ export function BookHeader({
           )}
         </div>
 
-        {/* Share button — hangs off the bottom-right corner of the card so
-            it doesn't overlap genre pills inside the card */}
+        {/* Share button — centered on the card's bottom-right edge via
+            translate-y-1/2 so it straddles the boundary (half inside, half
+            outside) regardless of exact pixel math. Higher z-index than the
+            card content so it renders on top of the fade gradient. */}
         {shareButton && (
-          <div className="absolute -bottom-5 right-4 z-30">
+          <div className="absolute bottom-0 right-4 translate-y-1/2 z-30">
             {shareButton}
           </div>
         )}
