@@ -5,8 +5,11 @@ import {
   userReadingPreferences,
   userGenrePreferences,
   userContentPreferences,
+  bookCategoryRatings,
+  taxonomyCategories,
 } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql, isNotNull } from "drizzle-orm";
+import { scanTextForCanonicals } from "@/lib/content-warnings/vocabulary";
 
 export interface ReadingPreferencesData {
   fictionPreference: string | null;
@@ -109,22 +112,33 @@ export async function getUserContentSensitivities(
   };
 }
 
+export interface BookContentWarningMatches {
+  /** Canonical warnings matched by reviewer-tagged custom warnings */
+  tagMatches: { canonicalId: string; count: number }[];
+  /** Canonical warnings matched by aliases appearing in admin-curated category notes */
+  noteMatches: { canonicalId: string; categoryName: string }[];
+}
+
 /**
- * Count how many reviews for a single book have flagged each canonical
- * custom warning the user asked to avoid. Returns a list of matches —
- * empty if the user has no custom warnings OR none of them are present
- * on the book's reviews.
+ * Find all matches for a user's "topics to avoid" list against a single book,
+ * across BOTH evidence sources we have:
  *
- * Called from the book page alongside other data fetches, so it runs in
- * parallel with them inside the `Promise.all`. One query, filtered by
- * bookId + tag IN (...), grouped by tag. Zero work for users who haven't
- * set any topics to avoid.
+ *   1. Reviewer-tagged custom warnings (review_descriptor_tags rows tagged
+ *      `custom:{canonical_id}`).
+ *   2. Admin-curated bookCategoryRatings notes — free-text notes describing
+ *      what the rating covers, scanned for any alias of the user's avoid list
+ *      via the in-memory canonical vocabulary.
+ *
+ * Both the prefs read and the data fetches happen in parallel where possible
+ * to keep the book page's TTFB cost as small as it was before this feature
+ * was added. Returns early with empty arrays if the user has no avoid list,
+ * so this entire path is free for users who don't use it.
  */
-export async function getBookCustomWarningFlagsForUser(
+export async function getBookContentWarningMatchesForUser(
   userId: string,
   bookId: string,
-): Promise<{ canonicalId: string; count: number }[]> {
-  // Pull the user's canonical avoid list inline — cheap single-row read.
+): Promise<BookContentWarningMatches> {
+  // Pull the user's canonical avoid list — cheap single-row read.
   const prefsRow = await db
     .select({ customContentWarnings: userReadingPreferences.customContentWarnings })
     .from(userReadingPreferences)
@@ -133,22 +147,73 @@ export async function getBookCustomWarningFlagsForUser(
   const avoid: string[] = prefsRow?.customContentWarnings
     ? JSON.parse(prefsRow.customContentWarnings)
     : [];
-  if (avoid.length === 0) return [];
+  if (avoid.length === 0) return { tagMatches: [], noteMatches: [] };
 
+  // Run the two evidence-gathering queries in PARALLEL — same round trip cost
+  // as the old single-query helper.
   const wantedTags = avoid.map((id) => `custom:${id}`);
-  const rows = await db.all<{ tag: string; count: number }>(sql`
-    SELECT rdt.tag AS tag, COUNT(*) AS count
-    FROM review_descriptor_tags rdt
-    INNER JOIN user_book_reviews ubr ON rdt.review_id = ubr.id
-    WHERE ubr.book_id = ${bookId}
-      AND rdt.tag IN (${sql.join(wantedTags.map((t) => sql`${t}`), sql`, `)})
-    GROUP BY rdt.tag
-  `);
+  const [tagRows, noteRows] = await Promise.all([
+    db.all<{ tag: string; count: number }>(sql`
+      SELECT rdt.tag AS tag, COUNT(*) AS count
+      FROM review_descriptor_tags rdt
+      INNER JOIN user_book_reviews ubr ON rdt.review_id = ubr.id
+      WHERE ubr.book_id = ${bookId}
+        AND rdt.tag IN (${sql.join(wantedTags.map((t) => sql`${t}`), sql`, `)})
+      GROUP BY rdt.tag
+    `),
+    db
+      .select({
+        notes: bookCategoryRatings.notes,
+        categoryName: taxonomyCategories.name,
+      })
+      .from(bookCategoryRatings)
+      .innerJoin(
+        taxonomyCategories,
+        eq(bookCategoryRatings.categoryId, taxonomyCategories.id),
+      )
+      .where(
+        and(
+          eq(bookCategoryRatings.bookId, bookId),
+          isNotNull(bookCategoryRatings.notes),
+        ),
+      )
+      .all(),
+  ]);
 
-  return rows.map((r) => ({
+  const tagMatches = tagRows.map((r) => ({
     canonicalId: r.tag.startsWith("custom:") ? r.tag.slice(7) : r.tag,
     count: r.count,
   }));
+
+  // Scan each notes blob for any alias of the user's avoid list. Aliases live
+  // in memory (vocabulary.ts), so this is O(notes_chars * num_aliases) with
+  // no DB work. Dedupe by (canonicalId, categoryName) so we don't render the
+  // same row twice if a notes blob mentions an alias multiple times.
+  const seen = new Set<string>();
+  const noteMatches: { canonicalId: string; categoryName: string }[] = [];
+  for (const row of noteRows) {
+    const hits = scanTextForCanonicals(row.notes, avoid);
+    for (const canonicalId of hits) {
+      const key = `${canonicalId}|${row.categoryName}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      noteMatches.push({ canonicalId, categoryName: row.categoryName });
+    }
+  }
+
+  return { tagMatches, noteMatches };
+}
+
+/**
+ * @deprecated kept as a thin wrapper for back-compat — prefer
+ * `getBookContentWarningMatchesForUser()` which returns both evidence sources.
+ */
+export async function getBookCustomWarningFlagsForUser(
+  userId: string,
+  bookId: string,
+): Promise<{ canonicalId: string; count: number }[]> {
+  const matches = await getBookContentWarningMatchesForUser(userId, bookId);
+  return matches.tagMatches;
 }
 
 export async function hasCompletedOnboarding(userId: string): Promise<boolean> {

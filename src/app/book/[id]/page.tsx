@@ -12,7 +12,7 @@ import { isBookInUpNext, getUpNextCount } from "@/lib/queries/up-next";
 import { isBookFavorited } from "@/lib/queries/favorites";
 import { getBookReadingNotes } from "@/lib/queries/reading-notes";
 import { getBookSessions } from "@/lib/queries/reading-session";
-import { getUserContentSensitivities, getBookCustomWarningFlagsForUser } from "@/lib/queries/reading-preferences";
+import { getUserContentSensitivities, getBookContentWarningMatchesForUser } from "@/lib/queries/reading-preferences";
 import { getCurrentUser, isAdmin, isPremium } from "@/lib/auth";
 import { isBookHidden } from "@/lib/actions/hidden-books";
 import { getUserShelves, getBookShelves, getOtherShelvesWithBook } from "@/lib/queries/shelves";
@@ -202,7 +202,7 @@ export default async function BookPage({
     bookShelfMemberships,
     tbrNote,
     otherShelves,
-    customWarningMatches,
+    contentWarningMatches,
   ] = await Promise.all([
     user ? getUserBookState(user.userId, bookId) : null,
     user ? getUserOwnedEditions(user.userId, bookId) : Promise.resolve([]),
@@ -223,7 +223,9 @@ export default async function BookPage({
     user ? getBookShelves(user.userId, bookId) : Promise.resolve([]),
     user ? getTbrNote(user.userId, bookId) : null,
     user ? getOtherShelvesWithBook(bookId, user.userId) : Promise.resolve([]),
-    user ? getBookCustomWarningFlagsForUser(user.userId, bookId) : Promise.resolve([]),
+    user
+      ? getBookContentWarningMatchesForUser(user.userId, bookId)
+      : Promise.resolve({ tagMatches: [], noteMatches: [] }),
   ]);
 
   const editionSelections = rawEditions.map((e) => ({
@@ -354,20 +356,22 @@ export default async function BookPage({
         isRecentlyImported={needsEnrichment}
         isHidden={isHidden}
         contentConflicts={contentConflicts}
-        customWarningMatches={customWarningMatches}
-        noteWarningMatches={noteWarningMatches}
+        customWarningMatches={contentWarningMatches.tagMatches}
+        noteWarningMatches={contentWarningMatches.noteMatches}
         isPremium={isPremium({ accountType: user?.accountType })}
         initialTbrNote={tbrNote ?? null}
         prePublication={isBookPrePublication(book.publicationDate, book.publicationYear)}
       />
 
       {/* Content warning — mobile only here, desktop version goes under reviews */}
-      {(contentConflicts.length > 0 || customWarningMatches.length > 0 || noteWarningMatches.length > 0) && (
+      {(contentConflicts.length > 0 ||
+        contentWarningMatches.tagMatches.length > 0 ||
+        contentWarningMatches.noteMatches.length > 0) && (
         <div className="px-4 lg:hidden">
           <ContentWarningBanner
             conflicts={contentConflicts}
-            customWarningMatches={customWarningMatches}
-            noteWarningMatches={noteWarningMatches}
+            customWarningMatches={contentWarningMatches.tagMatches}
+            noteWarningMatches={contentWarningMatches.noteMatches}
           />
         </div>
       )}
