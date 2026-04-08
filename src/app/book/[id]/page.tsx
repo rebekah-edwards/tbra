@@ -35,6 +35,7 @@ import { BookSummary } from "@/components/book/book-summary";
 import { HideBookButton } from "@/components/book/hide-book-button";
 import { ReadingHistory } from "@/components/book/reading-history";
 import { getFollowedUsersWhoRead } from "@/lib/queries/follows";
+import { scanTextForCanonicals } from "@/lib/content-warnings/vocabulary";
 
 function buildBookJsonLd(
   book: {
@@ -251,6 +252,29 @@ export default async function BookPage({
     }
   }
 
+  // Scan admin-curated content detail notes for canonical warning hits.
+  // Uses the same canonical vocabulary as reviewer custom warnings, so the
+  // user's "topics to avoid" list catches both reviewer-flagged and
+  // admin-noted content. Zero DB work — notes are already loaded with the
+  // book. Only runs for logged-in users with avoid preferences set.
+  const noteWarningMatches: { canonicalId: string; categoryName: string }[] = [];
+  if (userSensitivities?.customContentWarnings.length && book.ratings.length > 0) {
+    const avoidList = userSensitivities.customContentWarnings;
+    const seen = new Set<string>(); // dedupe by canonicalId — show the first category that mentions it
+    for (const rating of book.ratings) {
+      if (!rating.notes) continue;
+      const hits = scanTextForCanonicals(rating.notes, avoidList);
+      for (const canonicalId of hits) {
+        if (seen.has(canonicalId)) continue;
+        seen.add(canonicalId);
+        noteWarningMatches.push({
+          canonicalId,
+          categoryName: rating.categoryName,
+        });
+      }
+    }
+  }
+
   // Detect unenriched books and trigger enrichment on visit
   const needsEnrichment = book.ratings.length === 0 && !book.summary;
 
@@ -331,15 +355,20 @@ export default async function BookPage({
         isHidden={isHidden}
         contentConflicts={contentConflicts}
         customWarningMatches={customWarningMatches}
+        noteWarningMatches={noteWarningMatches}
         isPremium={isPremium({ accountType: user?.accountType })}
         initialTbrNote={tbrNote ?? null}
         prePublication={isBookPrePublication(book.publicationDate, book.publicationYear)}
       />
 
       {/* Content warning — mobile only here, desktop version goes under reviews */}
-      {(contentConflicts.length > 0 || customWarningMatches.length > 0) && (
+      {(contentConflicts.length > 0 || customWarningMatches.length > 0 || noteWarningMatches.length > 0) && (
         <div className="px-4 lg:hidden">
-          <ContentWarningBanner conflicts={contentConflicts} customWarningMatches={customWarningMatches} />
+          <ContentWarningBanner
+            conflicts={contentConflicts}
+            customWarningMatches={customWarningMatches}
+            noteWarningMatches={noteWarningMatches}
+          />
         </div>
       )}
 

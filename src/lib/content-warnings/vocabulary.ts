@@ -301,3 +301,45 @@ export function getCanonicalWarning(id: string): CanonicalWarning | null {
 export function getWarningLabel(idOrRaw: string): string {
   return CANONICAL_BY_ID.get(idOrRaw)?.label ?? idOrRaw;
 }
+
+/**
+ * Scan a free-text string (e.g. an admin-curated bookCategoryRatings.notes
+ * description) for any alias of the given canonical warning IDs.
+ *
+ * Returns the set of canonical IDs whose aliases appear as word-level
+ * substrings in the text. Used to surface "X mentioned in content notes"
+ * on book pages — no DB work, no regex compilation per call.
+ *
+ * Match rule: alias must be >= 4 chars AND appear as an isolated token or
+ * substring (bounded by non-letter chars) so "war" doesn't match "toward".
+ */
+export function scanTextForCanonicals(
+  text: string | null | undefined,
+  wantedCanonicalIds: string[],
+): Set<string> {
+  const hits = new Set<string>();
+  if (!text || wantedCanonicalIds.length === 0) return hits;
+  const lower = text.toLowerCase();
+
+  for (const canonicalId of wantedCanonicalIds) {
+    const w = CANONICAL_BY_ID.get(canonicalId);
+    if (!w) continue;
+    // Match any alias with reasonable specificity
+    const candidates = [w.id, ...w.aliases];
+    for (const alias of candidates) {
+      if (alias.length < 4) continue;
+      const idx = lower.indexOf(alias);
+      if (idx === -1) continue;
+      // Boundary check: character before must be non-letter or start,
+      // character after must be non-letter or end. Prevents "war" matching
+      // "toward" or "forward" and "sui" matching random Asian place names.
+      const before = idx === 0 ? "" : lower[idx - 1];
+      const after = idx + alias.length >= lower.length ? "" : lower[idx + alias.length];
+      const isLetter = (c: string) => /[a-z]/.test(c);
+      if (isLetter(before) || isLetter(after)) continue;
+      hits.add(canonicalId);
+      break; // one hit per canonical is enough
+    }
+  }
+  return hits;
+}

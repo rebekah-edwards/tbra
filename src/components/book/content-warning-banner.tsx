@@ -20,9 +20,20 @@ export interface CustomWarningMatch {
   count: number;
 }
 
+/**
+ * Canonical warning detected inside the admin-curated notes of a
+ * bookCategoryRatings row (e.g. notes on "Sexual content" that mention
+ * "adultery"). Same vocabulary, different evidence source.
+ */
+export interface NoteWarningMatch {
+  canonicalId: string;
+  categoryName: string;
+}
+
 interface ContentWarningBannerProps {
   conflicts: ContentConflict[];
   customWarningMatches?: CustomWarningMatch[];
+  noteWarningMatches?: NoteWarningMatch[];
 }
 
 const INTENSITY_LABELS: Record<number, string> = {
@@ -39,10 +50,23 @@ const TOLERANCE_LABELS: Record<number, string> = {
   2: "moderate",
 };
 
-export function ContentWarningBanner({ conflicts, customWarningMatches = [] }: ContentWarningBannerProps) {
+export function ContentWarningBanner({
+  conflicts,
+  customWarningMatches = [],
+  noteWarningMatches = [],
+}: ContentWarningBannerProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const totalFlags = conflicts.length + customWarningMatches.length;
+  // De-dupe: if the same canonical warning appears in both reviewer flags AND
+  // admin notes, count it once and prefer showing the reviewer row (it has a
+  // concrete count). Note matches still render for any canonical not covered
+  // by a reviewer flag so the user sees every hit exactly once.
+  const reviewerWarningIds = new Set(customWarningMatches.map((m) => m.canonicalId));
+  const uniqueNoteMatches = noteWarningMatches.filter(
+    (n) => !reviewerWarningIds.has(n.canonicalId),
+  );
+
+  const totalFlags = conflicts.length + customWarningMatches.length + uniqueNoteMatches.length;
   if (totalFlags === 0) return null;
 
   return (
@@ -103,6 +127,17 @@ export function ContentWarningBanner({ conflicts, customWarningMatches = [] }: C
               <span className="font-medium text-foreground">{getWarningLabel(m.canonicalId)}</span>
               <span className="content-flag-text text-right whitespace-nowrap">
                 {m.count} {m.count === 1 ? "reviewer" : "reviewers"} flagged &middot; you asked to avoid
+              </span>
+            </div>
+          ))}
+          {uniqueNoteMatches.map((m) => (
+            <div
+              key={m.canonicalId}
+              className="flex items-center justify-between text-xs rounded-lg bg-yellow-500/5 px-3 py-2"
+            >
+              <span className="font-medium text-foreground">{getWarningLabel(m.canonicalId)}</span>
+              <span className="content-flag-text text-right whitespace-nowrap">
+                noted in {m.categoryName} &middot; you asked to avoid
               </span>
             </div>
           ))}
