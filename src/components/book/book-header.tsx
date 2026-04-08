@@ -121,9 +121,10 @@ export function BookHeader({
           )}
         </div>
 
-        {/* Share button — anchored at bottom-right of the card */}
+        {/* Share button — hangs off the bottom-right corner of the card so
+            it doesn't overlap genre pills inside the card */}
         {shareButton && (
-          <div className="absolute bottom-2 right-2 z-20">
+          <div className="absolute -bottom-5 right-4 z-30">
             {shareButton}
           </div>
         )}

@@ -44,8 +44,9 @@ export function ShareButton({ url, title }: ShareButtonProps) {
   return (
     <button
       onClick={handleShare}
-      className="p-2 rounded-lg hover:bg-surface-alt transition-colors text-muted hover:text-foreground relative"
+      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-surface/40 backdrop-blur-md text-foreground/80 hover:text-foreground hover:bg-surface/70 hover:border-white/30 transition-all shadow-lg relative"
       title="Share this book"
+      aria-label="Share this book"
     >
       {copied ? (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
