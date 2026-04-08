@@ -10,6 +10,11 @@ import {
 import { FICTION_GENRES, NONFICTION_GENRES } from "@/lib/genre-taxonomy";
 import type { ReadingPreferencesData } from "@/lib/queries/reading-preferences";
 import Link from "next/link";
+import {
+  CANONICAL_WARNINGS,
+  canonicalizeWarning,
+  getWarningLabel,
+} from "@/lib/content-warnings/vocabulary";
 
 // ─── Constants (shared with onboarding) ───
 
@@ -219,20 +224,42 @@ export function ReadingPreferencesEditor({
   const [customWarnings, setCustomWarnings] = useState<string[]>(initialPrefs.customContentWarnings);
   const [warningInput, setWarningInput] = useState("");
 
+  // Filter suggestions against the current input — simple substring match over
+  // canonical labels + aliases, capped at 6 results. Hidden when input is empty.
+  const warningSuggestions = (() => {
+    const q = warningInput.trim().toLowerCase();
+    if (!q || q.length < 2) return [];
+    const matches: { id: string; label: string }[] = [];
+    for (const w of CANONICAL_WARNINGS) {
+      if (customWarnings.includes(w.id)) continue;
+      const hit =
+        w.label.toLowerCase().includes(q) ||
+        w.id.includes(q) ||
+        w.aliases.some((a) => a.includes(q));
+      if (hit) matches.push({ id: w.id, label: w.label });
+      if (matches.length >= 6) break;
+    }
+    return matches;
+  })();
+
   function handleStyleUpdate(updates: Parameters<typeof updateReadingStyle>[0]) {
     startTransition(async () => {
       await updateReadingStyle(updates);
     });
   }
 
+  function addWarning(rawOrCanonical: string) {
+    const canonical = canonicalizeWarning(rawOrCanonical) ?? rawOrCanonical.trim().toLowerCase();
+    if (!canonical || customWarnings.includes(canonical)) return;
+    const updated = [...customWarnings, canonical];
+    setCustomWarnings(updated);
+    setWarningInput("");
+    handleStyleUpdate({ customContentWarnings: updated });
+  }
+
   function handleAddWarning() {
     const trimmed = warningInput.trim();
-    if (trimmed && !customWarnings.includes(trimmed.toLowerCase())) {
-      const updated = [...customWarnings, trimmed.toLowerCase()];
-      setCustomWarnings(updated);
-      setWarningInput("");
-      handleStyleUpdate({ customContentWarnings: updated });
-    }
+    if (trimmed) addWarning(trimmed);
   }
 
   function handleRemoveWarning(warning: string) {
@@ -551,27 +578,57 @@ export function ReadingPreferencesEditor({
 
           {/* Custom warnings */}
           <div>
-            <h4 className="text-xs font-semibold mb-2">Custom topics to avoid</h4>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={warningInput}
-                onChange={(e) => setWarningInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleAddWarning();
-                  }
-                }}
-                placeholder="e.g. infidelity, animal death"
-                className="flex-1 rounded-lg bg-surface-alt px-3 py-2 text-xs text-foreground placeholder:text-muted border border-transparent focus:border-accent/40 focus:outline-none transition-colors"
-              />
-              <button
-                onClick={handleAddWarning}
-                className="rounded-lg bg-surface-alt px-3 py-2 text-xs font-medium text-muted hover:text-foreground transition-colors"
-              >
-                Add
-              </button>
+            <h4 className="text-xs font-semibold mb-1">Custom topics to avoid</h4>
+            <p className="text-[11px] text-muted mb-2 leading-relaxed">
+              Type to see suggestions. Matched topics get compared against reviews
+              so books that many readers flagged for the same topic get downranked
+              in your recommendations.
+            </p>
+            <div className="relative">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={warningInput}
+                  onChange={(e) => setWarningInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      // Enter picks the first suggestion if one exists, otherwise
+                      // adds the raw free text (still canonicalized on save).
+                      if (warningSuggestions.length > 0) {
+                        addWarning(warningSuggestions[0].id);
+                      } else {
+                        handleAddWarning();
+                      }
+                    }
+                  }}
+                  placeholder="e.g. infidelity, animal death"
+                  className="flex-1 rounded-lg bg-surface-alt px-3 py-2 text-xs text-foreground placeholder:text-muted border border-transparent focus:border-accent/40 focus:outline-none transition-colors"
+                />
+                <button
+                  onClick={handleAddWarning}
+                  className="rounded-lg bg-surface-alt px-3 py-2 text-xs font-medium text-muted hover:text-foreground transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+              {warningSuggestions.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1 z-20 rounded-lg border border-border bg-surface shadow-lg overflow-hidden">
+                  {warningSuggestions.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        addWarning(s.id);
+                      }}
+                      className="block w-full text-left px-3 py-2 text-xs text-foreground hover:bg-surface-alt transition-colors border-b border-border/40 last:border-b-0"
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             {customWarnings.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
@@ -580,7 +637,7 @@ export function ReadingPreferencesEditor({
                     key={w}
                     className="inline-flex items-center gap-1 rounded-full bg-destructive/10 border border-destructive/20 px-2.5 py-0.5 text-[10px] font-medium text-destructive"
                   >
-                    {w}
+                    {getWarningLabel(w)}
                     <button
                       onClick={() => handleRemoveWarning(w)}
                       className="hover:text-destructive/70 transition-colors"

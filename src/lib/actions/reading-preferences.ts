@@ -9,6 +9,25 @@ import {
 import { eq, and } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { canonicalizeWarning } from "@/lib/content-warnings/vocabulary";
+
+/**
+ * Canonicalize a list of user-entered content warnings.
+ * Each raw entry is run through the vocabulary: a match returns the
+ * canonical ID (stored so recommendations can compare exactly against
+ * review tags), a miss returns the raw lowercased text (so the user
+ * doesn't lose their entry). Duplicates are removed.
+ */
+function canonicalizeWarnings(raw: string[]): string[] {
+  const out = new Set<string>();
+  for (const entry of raw) {
+    const trimmed = entry.trim();
+    if (!trimmed) continue;
+    const canonical = canonicalizeWarning(trimmed);
+    out.add(canonical ?? trimmed.toLowerCase());
+  }
+  return Array.from(out);
+}
 
 // ─── Types ───
 
@@ -35,6 +54,8 @@ export async function saveOnboardingPreferences(
   if (!user) return { success: false, error: "Not logged in" };
 
   try {
+    const canonicalWarnings = canonicalizeWarnings(data.customContentWarnings);
+
     // Upsert main preferences row
     await db.insert(userReadingPreferences)
       .values({
@@ -47,7 +68,7 @@ export async function saveOnboardingPreferences(
         storyFocus: data.storyFocus,
         characterTropes: JSON.stringify(data.characterTropes),
         dislikedTropes: JSON.stringify(data.dislikedTropes ?? []),
-        customContentWarnings: JSON.stringify(data.customContentWarnings),
+        customContentWarnings: JSON.stringify(canonicalWarnings),
         onboardingCompleted: 1,
       })
       .onConflictDoUpdate({
@@ -61,7 +82,7 @@ export async function saveOnboardingPreferences(
           storyFocus: data.storyFocus,
           characterTropes: JSON.stringify(data.characterTropes),
           dislikedTropes: JSON.stringify(data.dislikedTropes ?? []),
-          customContentWarnings: JSON.stringify(data.customContentWarnings),
+          customContentWarnings: JSON.stringify(canonicalWarnings),
           onboardingCompleted: 1,
         },
       })
@@ -140,7 +161,7 @@ export async function updateReadingStyle(data: {
     if (data.dislikedTropes !== undefined)
       updateFields.dislikedTropes = JSON.stringify(data.dislikedTropes);
     if (data.customContentWarnings !== undefined)
-      updateFields.customContentWarnings = JSON.stringify(data.customContentWarnings);
+      updateFields.customContentWarnings = JSON.stringify(canonicalizeWarnings(data.customContentWarnings));
 
     // Ensure row exists first
     await db.insert(userReadingPreferences)

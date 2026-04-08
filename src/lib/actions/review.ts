@@ -16,6 +16,7 @@ import {
 import { eq, and, count, like } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { CW_TO_TAXONOMY } from "@/lib/review-constants";
+import { canonicalizeWarning } from "@/lib/content-warnings/vocabulary";
 
 interface ReviewPayload {
   bookId: string;
@@ -151,12 +152,18 @@ export async function saveReview(payload: ReviewPayload) {
     });
   }
 
-  // Store custom content warning as a special tag
+  // Store custom content warning as a special tag — run it through the
+  // canonical vocabulary so we can match against readers' "topics to avoid"
+  // at recommendation time with exact string comparisons (no fuzzy matching
+  // in the hot path). Raw text is preserved in the tag when no canonical
+  // form is found, so nothing the reviewer typed gets lost.
   if (customContentWarning && customContentWarning.trim()) {
+    const rawTrimmed = customContentWarning.trim();
+    const canonicalId = canonicalizeWarning(rawTrimmed);
     await db.insert(reviewDescriptorTags).values({
       reviewId,
       dimension: "content_details",
-      tag: `custom:${customContentWarning.trim()}`,
+      tag: `custom:${canonicalId ?? rawTrimmed.toLowerCase()}`,
     });
   }
 

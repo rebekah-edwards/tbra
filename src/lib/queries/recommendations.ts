@@ -494,7 +494,11 @@ function scoreCandidateBook(
   profile: UserPreferenceProfile,
   seriesProgress?: UserSeriesProgress,
   explicit?: ExplicitPreferences | null,
-  candidateContentRatings?: Map<string, number>
+  candidateContentRatings?: Map<string, number>,
+  /** Map of canonical warning id → number of reviews for this book that flagged it.
+   *  Only contains keys the user explicitly asked to avoid — computed once per
+   *  recommendations call from a single batched query (see fetchCustomWarningFlagCounts). */
+  candidateCustomWarningFlags?: Map<string, number>
 ): number {
   let score = 0;
 
@@ -714,10 +718,26 @@ function scoreCandidateBook(
   //   if (explicit?.characterTropes.length && candidate has matching tropes) score += bonus;
   // These fields exist on ExplicitPreferences but need book-level equivalents to compare.
 
-  // [SCAFFOLD #7] Custom content warnings
-  // Once books have free-text content tags, compare against explicit.customContentWarnings.
-  // e.g. if book has tag "infidelity" and user listed "infidelity" as a warning → penalize.
-  // Requires a text-matching or tagging system on the book content profile.
+  // Custom content warnings — penalize books that reviewers have flagged for
+  // topics the user explicitly asked to avoid. Both sides are already stored
+  // as canonical IDs (see lib/content-warnings/vocabulary.ts), so matching is
+  // an exact string comparison. Counts are pre-fetched in a single batched
+  // query, so this path adds zero DB work per candidate.
+  //
+  // Scoring: any match is a real signal. 1 flag = light penalty, 3+ = heavy.
+  // Caps out so a single highly-reviewed book can't swamp the rest of the
+  // score — the most we can subtract for all warnings combined is 40 pts.
+  if (explicit?.customContentWarnings.length && candidateCustomWarningFlags) {
+    let penalty = 0;
+    for (const warning of explicit.customContentWarnings) {
+      const flags = candidateCustomWarningFlags.get(warning) ?? 0;
+      if (flags > 0) {
+        // 1 flag -> 10, 2 flags -> 15, 3+ flags -> 20 (then caps at 20 per warning)
+        penalty += Math.min(20, 5 + flags * 5);
+      }
+    }
+    score -= Math.min(40, penalty);
+  }
 
   // 7. Data quality (10%) — prefer books with covers and descriptions
   let qualityScore = 0;
@@ -915,6 +935,48 @@ async function fetchCandidateBooks(
  * Batch-fetch content category ratings (max intensity per category) for a set of books.
  * Returns Map<bookId, Map<categoryId, intensity>>
  */
+/**
+ * Batch-count how many reviews per candidate book flagged each of the user's
+ * "topics to avoid". ONE query, regardless of candidate count — exactly the
+ * shape we need for scoreCandidateBook without any per-book round-trip.
+ *
+ * Returns a nested map: bookId -> (canonicalWarningId -> review count).
+ * Only keys in `avoidWarnings` are included. Returns an empty map if the user
+ * has no custom warnings set (so the whole code path short-circuits).
+ */
+async function batchFetchCustomWarningFlags(
+  bookIds: string[],
+  avoidWarnings: string[]
+): Promise<Map<string, Map<string, number>>> {
+  if (bookIds.length === 0 || avoidWarnings.length === 0) return new Map();
+
+  // Reviewers store canonical warnings as `custom:{canonical_id}` tags on
+  // review_descriptor_tags, linked to user_book_reviews.book_id. Count rows
+  // grouped by (bookId, tag) with a single IN / IN filter.
+  const wantedTags = avoidWarnings.map((id) => `custom:${id}`);
+  const rows = await db.all<{ bookId: string; tag: string; count: number }>(sql`
+    SELECT ubr.book_id AS bookId, rdt.tag AS tag, COUNT(*) AS count
+    FROM review_descriptor_tags rdt
+    INNER JOIN user_book_reviews ubr ON rdt.review_id = ubr.id
+    WHERE ubr.book_id IN (${sql.join(bookIds.map((id) => sql`${id}`), sql`, `)})
+      AND rdt.tag IN (${sql.join(wantedTags.map((t) => sql`${t}`), sql`, `)})
+    GROUP BY ubr.book_id, rdt.tag
+  `);
+
+  const result = new Map<string, Map<string, number>>();
+  for (const row of rows) {
+    // Strip the "custom:" prefix back off — scorer uses the canonical id
+    const canonicalId = row.tag.startsWith("custom:") ? row.tag.slice(7) : row.tag;
+    let bookMap = result.get(row.bookId);
+    if (!bookMap) {
+      bookMap = new Map();
+      result.set(row.bookId, bookMap);
+    }
+    bookMap.set(canonicalId, row.count);
+  }
+  return result;
+}
+
 async function batchFetchContentRatings(
   bookIds: string[]
 ): Promise<Map<string, Map<string, number>>> {
@@ -1214,6 +1276,14 @@ async function getSmartDiscoveryBooksInternal(
   const candidateIds = candidates.map((c) => c.id);
   const contentRatingsByBook = await batchFetchContentRatings(candidateIds);
 
+  // Batch-fetch custom-warning review flags for books in the candidate pool —
+  // skipped entirely if the user hasn't set any "topics to avoid" so the
+  // hot path adds zero work for users who don't use this feature.
+  const customWarningFlagsByBook = await batchFetchCustomWarningFlags(
+    candidateIds,
+    explicit?.customContentWarnings ?? [],
+  );
+
   // Resolve disliked genre IDs for hard-filtering
   const dislikedGenreIds = await resolveDislikedGenreIds(explicit);
 
@@ -1242,7 +1312,8 @@ async function getSmartDiscoveryBooksInternal(
       profile,
       seriesProgress,
       explicit,
-      contentRatingsByBook.get(c.id)
+      contentRatingsByBook.get(c.id),
+      customWarningFlagsByBook.get(c.id),
     ) + (Math.random() * 16 - 8),
   }));
 
@@ -1431,6 +1502,10 @@ export async function getDiscoverRecommendations(
 
   const candidateIds = candidates.map((c) => c.id);
   const contentRatingsByBook = await batchFetchContentRatings(candidateIds);
+  const customWarningFlagsByBook = await batchFetchCustomWarningFlags(
+    candidateIds,
+    explicit?.customContentWarnings ?? [],
+  );
   const dislikedGenreIds = await resolveDislikedGenreIds(explicit);
 
   // Merge mood content maxima with user's explicit content tolerances
@@ -1488,7 +1563,7 @@ export async function getDiscoverRecommendations(
   const scored = filteredCandidates.map((c) => {
     // Base score from user preference profile (0-100 range)
     let score = (profile && !filters.ignorePreferences)
-      ? scoreCandidateBook(c, profile, seriesProgress, explicit, contentRatingsByBook.get(c.id))
+      ? scoreCandidateBook(c, profile, seriesProgress, explicit, contentRatingsByBook.get(c.id), customWarningFlagsByBook.get(c.id))
       : 50; // Base score for anonymous users or when ignoring preferences
 
     // ── Mood genre scoring ──
