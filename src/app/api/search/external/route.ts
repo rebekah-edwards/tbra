@@ -104,9 +104,19 @@ export async function GET(request: NextRequest) {
   // 3. Query ISBNdb
   const isbndbBooks = await searchISBNdbMulti(trimmed, 10);
 
-  // 4. Filter out books we already have locally (by ISBN) so we don't show dupes
+  // 4. Filter out books we already have locally (by ISBN) so we don't show dupes.
+  // Normalize ISBNs to digits-only before the comparison — ISBNdb sometimes
+  // returns hyphenated forms while our DB stores unhyphenated (or vice versa),
+  // so exact equality was missing matches and causing Hell's Heart-style
+  // duplicate-insert attempts downstream.
+  const normalizeIsbn = (s: string | null | undefined): string | null => {
+    if (!s) return null;
+    const cleaned = s.replace(/[^0-9Xx]/g, "").toUpperCase();
+    return cleaned.length >= 10 ? cleaned : null;
+  };
+
   const isbns = isbndbBooks
-    .map((b) => b.isbn13 || b.isbn10 || b.isbn)
+    .map((b) => normalizeIsbn(b.isbn13) || normalizeIsbn(b.isbn10) || normalizeIsbn(b.isbn))
     .filter(Boolean) as string[];
 
   let existingIsbns = new Set<string>();
@@ -116,19 +126,19 @@ export async function GET(request: NextRequest) {
       .from(books)
       .where(or(...isbns.flatMap((i) => [eq(books.isbn13, i), eq(books.isbn10, i)])));
     existingIsbns = new Set(
-      rows.flatMap((r) => [r.isbn13, r.isbn10].filter(Boolean) as string[])
+      rows.flatMap((r) => [normalizeIsbn(r.isbn13), normalizeIsbn(r.isbn10)].filter(Boolean) as string[])
     );
   }
 
   // 5. Transform + filter
   const results: ExternalSearchResult[] = [];
   for (const book of isbndbBooks) {
-    const isbn13 = book.isbn13 ?? null;
-    const isbn10 = book.isbn10 ?? null;
-    const isbn = isbn13 || isbn10 || book.isbn;
+    const isbn13 = normalizeIsbn(book.isbn13);
+    const isbn10 = normalizeIsbn(book.isbn10);
+    const isbn = isbn13 || isbn10 || normalizeIsbn(book.isbn);
     if (!isbn) continue;
 
-    // Skip if we already have this book locally
+    // Skip if we already have this book locally (compare against normalized set)
     if (existingIsbns.has(isbn)) continue;
 
     // Same junk/box-set filters we use for OL results

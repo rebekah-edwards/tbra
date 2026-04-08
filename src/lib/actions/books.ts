@@ -806,10 +806,16 @@ export async function importFromISBNdbAndReturn(params: {
 }): Promise<string | null> {
   const { isbn, title, authors: authorNames, coverUrl, publicationYear, pages } = params;
 
-  // 1. Dedup by ISBN — book might already be in our DB
-  const isbn13 = isbn.length === 13 ? isbn : null;
-  const isbn10 = isbn.length === 10 ? isbn : null;
+  // 1. Normalize the ISBN to digits-only (with optional trailing 'X' for
+  // ISBN-10 checksum). ISBNdb and other sources return ISBNs in wildly
+  // inconsistent formats — "978-1250394958", "9781250394958", "978-1-250-
+  // 39495-8", etc. Our dedup check needs a canonical form to reliably
+  // match against what's already in the DB.
+  const cleaned = isbn.replace(/[^0-9Xx]/g, "").toUpperCase();
+  const isbn13 = cleaned.length === 13 ? cleaned : null;
+  const isbn10 = cleaned.length === 10 ? cleaned : null;
 
+  // Dedup by ISBN — book might already be in our DB under either format
   if (isbn13) {
     const existing = await db.query.books.findFirst({ where: eq(books.isbn13, isbn13) });
     if (existing) return existing.id;
@@ -819,8 +825,11 @@ export async function importFromISBNdbAndReturn(params: {
     if (existing) return existing.id;
   }
 
-  // 2. Fuzzy dedup by title + first author
-  const fuzzyMatch = await findExistingByTitleAndAuthor(title, authorNames[0] ?? null);
+  // 2. Fuzzy dedup by title + first author. Normalize curly quotes before
+  // the match so "Hell's Heart" (straight) still matches "Hell\u2019s Heart"
+  // (curly) in the DB.
+  const titleForFuzzy = title.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
+  const fuzzyMatch = await findExistingByTitleAndAuthor(titleForFuzzy, authorNames[0] ?? null);
   if (fuzzyMatch) return fuzzyMatch;
 
   // 3. Validate title — reject junk
@@ -831,19 +840,36 @@ export async function importFromISBNdbAndReturn(params: {
   }
   const finalTitle = validation.title;
 
-  // 4. Insert minimal book row
-  const [book] = await db
-    .insert(books)
-    .values({
-      title: finalTitle,
-      isbn13,
-      isbn10,
-      publicationYear: publicationYear ?? null,
-      pages: pages ?? null,
-      coverImageUrl: coverUrl ?? null,
-      // isFiction defaults to true; enrichment will refine
-    })
-    .returning();
+  // 4. Insert minimal book row. Wrap in try/catch so a UNIQUE-constraint
+  // collision (book with the same ISBN is already on Turso, just missed
+  // by the dedup step above due to format drift) doesn't crash the import
+  // — we retry the lookup and return the existing book id instead.
+  let book;
+  try {
+    [book] = await db
+      .insert(books)
+      .values({
+        title: finalTitle,
+        isbn13,
+        isbn10,
+        publicationYear: publicationYear ?? null,
+        pages: pages ?? null,
+        coverImageUrl: coverUrl ?? null,
+        // isFiction defaults to true; enrichment will refine
+      })
+      .returning();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("UNIQUE constraint failed: books.isbn_13") && isbn13) {
+      const existing = await db.query.books.findFirst({ where: eq(books.isbn13, isbn13) });
+      if (existing) return existing.id;
+    }
+    if (msg.includes("UNIQUE constraint failed: books.isbn_10") && isbn10) {
+      const existing = await db.query.books.findFirst({ where: eq(books.isbn10, isbn10) });
+      if (existing) return existing.id;
+    }
+    throw err;
+  }
 
   // 5. Link authors
   for (const name of authorNames) {
