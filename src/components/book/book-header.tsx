@@ -20,6 +20,8 @@ interface BookHeaderProps {
   seriesId?: string | null;
   positionInSeries?: number | null;
   parentFranchise?: { id: string; name: string; slug: string | null } | null;
+  /** Optional slot rendered absolutely at the bottom-right corner of the card */
+  shareButton?: React.ReactNode;
 }
 
 const PACING_CONFIG: Record<string, { label: string; style: string }> = {
@@ -47,6 +49,7 @@ export function BookHeader({
   seriesId,
   positionInSeries,
   parentFranchise,
+  shareButton,
 }: BookHeaderProps) {
   const formatMeta = showAudioLength
     ? (audioLengthMinutes
@@ -117,6 +120,13 @@ export function BookHeader({
             </>
           )}
         </div>
+
+        {/* Share button — anchored at bottom-right of the card */}
+        {shareButton && (
+          <div className="absolute bottom-2 right-2 z-20">
+            {shareButton}
+          </div>
+        )}
 
         {/* Side-by-side layout: cover left, info right */}
         <div className="relative z-10 flex gap-4 sm:gap-6 p-4 sm:p-6">

@@ -321,6 +321,12 @@ export function BookPageClient({
             seriesId={book.seriesId}
             positionInSeries={book.positionInSeries}
             parentFranchise={book.parentFranchise}
+            shareButton={
+              <ShareButton
+                url={`https://thebasedreader.app/book/${book.slug || book.id}`}
+                title={book.title}
+              />
+            }
             onCoverEditClick={isAdmin ? async () => {
               setEditingCover(true);
               setEditionCovers([]);
@@ -384,13 +390,6 @@ export function BookPageClient({
               onActiveFormatsChange={handleActiveFormatsChange}
               onEditionSelectionsChange={setEditionSelections}
             />
-            {/* Share button */}
-            <div className="flex justify-end -mt-1">
-              <ShareButton
-                url={`https://thebasedreader.app/book/${book.slug || book.id}`}
-                title={book.title}
-              />
-            </div>
             {/* Rating + review info */}
             <div className="space-y-1 lg:pt-2.5">
               {aggregate && aggregate.count > 0 ? (
@@ -450,13 +449,6 @@ export function BookPageClient({
           onActiveFormatsChange={handleActiveFormatsChange}
           onEditionSelectionsChange={setEditionSelections}
         />
-        {/* Share button */}
-        <div className="flex justify-end mt-1">
-          <ShareButton
-            url={`https://thebasedreader.app/book/${book.slug || book.id}`}
-            title={book.title}
-          />
-        </div>
       </div>
 
       {lastReadFormat && lastReadDate && (currentState === "completed" || currentState === "dnf" || currentState === "to_read" || !currentState) && (
