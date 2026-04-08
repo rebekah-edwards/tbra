@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getWarningLabel } from "@/lib/content-warnings/vocabulary";
 
 interface ContentConflict {
   categoryName: string;
@@ -8,8 +9,20 @@ interface ContentConflict {
   userMax: number;
 }
 
+/**
+ * Reviewer-flagged custom warning that matches a user's "topics to avoid"
+ * preference. Distinct from ContentConflict — those come from admin-curated
+ * taxonomy categories, these come from individual reviewers typing custom
+ * content warnings on their reviews.
+ */
+export interface CustomWarningMatch {
+  canonicalId: string;
+  count: number;
+}
+
 interface ContentWarningBannerProps {
   conflicts: ContentConflict[];
+  customWarningMatches?: CustomWarningMatch[];
 }
 
 const INTENSITY_LABELS: Record<number, string> = {
@@ -26,10 +39,11 @@ const TOLERANCE_LABELS: Record<number, string> = {
   2: "moderate",
 };
 
-export function ContentWarningBanner({ conflicts }: ContentWarningBannerProps) {
+export function ContentWarningBanner({ conflicts, customWarningMatches = [] }: ContentWarningBannerProps) {
   const [expanded, setExpanded] = useState(false);
 
-  if (conflicts.length === 0) return null;
+  const totalFlags = conflicts.length + customWarningMatches.length;
+  if (totalFlags === 0) return null;
 
   return (
     <div className="mt-4 rounded-xl border border-yellow-500/30 bg-yellow-500/5 overflow-hidden">
@@ -53,7 +67,7 @@ export function ContentWarningBanner({ conflicts }: ContentWarningBannerProps) {
           <line x1="12" x2="12.01" y1="17" y2="17" />
         </svg>
         <span className="text-sm font-medium content-flag-text">
-          {conflicts.length} content {conflicts.length === 1 ? "flag" : "flags"} for your settings
+          {totalFlags} content {totalFlags === 1 ? "flag" : "flags"} for your settings
         </span>
         <svg
           width="14"
@@ -81,21 +95,34 @@ export function ContentWarningBanner({ conflicts }: ContentWarningBannerProps) {
               </span>
             </div>
           ))}
-          <button
-            type="button"
-            onClick={() => {
-              setExpanded(false);
-              requestAnimationFrame(() => {
-                const el = document.getElementById("whats-inside");
-                if (el) {
-                  el.scrollIntoView({ behavior: "smooth", block: "start" });
-                }
-              });
-            }}
-            className="mt-2 text-xs text-link hover:text-link/80 transition-colors"
-          >
-            See all content details &darr;
-          </button>
+          {customWarningMatches.map((m) => (
+            <div
+              key={m.canonicalId}
+              className="flex items-center justify-between text-xs rounded-lg bg-yellow-500/5 px-3 py-2"
+            >
+              <span className="font-medium text-foreground">{getWarningLabel(m.canonicalId)}</span>
+              <span className="content-flag-text text-right whitespace-nowrap">
+                {m.count} {m.count === 1 ? "reviewer" : "reviewers"} flagged &middot; you asked to avoid
+              </span>
+            </div>
+          ))}
+          {conflicts.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setExpanded(false);
+                requestAnimationFrame(() => {
+                  const el = document.getElementById("whats-inside");
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                });
+              }}
+              className="mt-2 text-xs text-link hover:text-link/80 transition-colors"
+            >
+              See all content details &darr;
+            </button>
+          )}
         </div>
       )}
     </div>

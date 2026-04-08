@@ -6,7 +6,7 @@ import {
   userGenrePreferences,
   userContentPreferences,
 } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export interface ReadingPreferencesData {
   fictionPreference: string | null;
@@ -107,6 +107,48 @@ export async function getUserContentSensitivities(
       ? JSON.parse(prefs.customContentWarnings)
       : [],
   };
+}
+
+/**
+ * Count how many reviews for a single book have flagged each canonical
+ * custom warning the user asked to avoid. Returns a list of matches —
+ * empty if the user has no custom warnings OR none of them are present
+ * on the book's reviews.
+ *
+ * Called from the book page alongside other data fetches, so it runs in
+ * parallel with them inside the `Promise.all`. One query, filtered by
+ * bookId + tag IN (...), grouped by tag. Zero work for users who haven't
+ * set any topics to avoid.
+ */
+export async function getBookCustomWarningFlagsForUser(
+  userId: string,
+  bookId: string,
+): Promise<{ canonicalId: string; count: number }[]> {
+  // Pull the user's canonical avoid list inline — cheap single-row read.
+  const prefsRow = await db
+    .select({ customContentWarnings: userReadingPreferences.customContentWarnings })
+    .from(userReadingPreferences)
+    .where(eq(userReadingPreferences.userId, userId))
+    .get();
+  const avoid: string[] = prefsRow?.customContentWarnings
+    ? JSON.parse(prefsRow.customContentWarnings)
+    : [];
+  if (avoid.length === 0) return [];
+
+  const wantedTags = avoid.map((id) => `custom:${id}`);
+  const rows = await db.all<{ tag: string; count: number }>(sql`
+    SELECT rdt.tag AS tag, COUNT(*) AS count
+    FROM review_descriptor_tags rdt
+    INNER JOIN user_book_reviews ubr ON rdt.review_id = ubr.id
+    WHERE ubr.book_id = ${bookId}
+      AND rdt.tag IN (${sql.join(wantedTags.map((t) => sql`${t}`), sql`, `)})
+    GROUP BY rdt.tag
+  `);
+
+  return rows.map((r) => ({
+    canonicalId: r.tag.startsWith("custom:") ? r.tag.slice(7) : r.tag,
+    count: r.count,
+  }));
 }
 
 export async function hasCompletedOnboarding(userId: string): Promise<boolean> {

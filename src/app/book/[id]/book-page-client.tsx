@@ -77,6 +77,7 @@ interface BookPageClientProps {
   isHidden?: boolean;
   canReport?: boolean;
   contentConflicts?: { categoryName: string; bookIntensity: number; userMax: number }[];
+  customWarningMatches?: { canonicalId: string; count: number }[];
   isPremium?: boolean;
   initialTbrNote?: string | null;
   prePublication?: boolean;
@@ -112,6 +113,7 @@ export function BookPageClient({
   isHidden: initialIsHidden = false,
   canReport = false,
   contentConflicts = [],
+  customWarningMatches = [],
   isPremium: userIsPremium = false,
   initialTbrNote = null,
   prePublication = false,
@@ -411,8 +413,8 @@ export function BookPageClient({
                 <span className="text-sm text-muted/60">Finish reading to leave a review</span>
               ) : null}
             </div>
-            {contentConflicts.length > 0 && (
-              <ContentWarningBanner conflicts={contentConflicts} />
+            {(contentConflicts.length > 0 || customWarningMatches.length > 0) && (
+              <ContentWarningBanner conflicts={contentConflicts} customWarningMatches={customWarningMatches} />
             )}
           </div>
         </div>
