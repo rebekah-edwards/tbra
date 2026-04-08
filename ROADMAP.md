@@ -1,5 +1,73 @@
 # tbr*a Beta Launch Roadmap
 
+## Round 7 (2026-04-08) ✅ — UX polish + custom content warnings + metadata sync
+
+### DNF review flow
+- Marking a book DNF from the home Reading Now card or the book page now opens the ReviewWizard pre-seeded with `didNotFinish=true` and the tracked progress prefilled as "how far did you get?"
+- Step 4 heading swaps to "Why did you stop reading?" with a matching placeholder
+- Footer button reads "Save" instead of "Post Review" for DNFs
+- Content details step (step 5) unchanged — DNFs can flag content details the same way a finished review can
+- Gated on `!userReview` so users who already reviewed a book aren't re-prompted
+
+### Custom content warnings pipeline 🎯
+- New `src/lib/content-warnings/vocabulary.ts` — static 35-entry canonical vocabulary across 8 categories (relationships, violence, death & loss, mental health, identity, body, religion, other). Each canonical has 3–6 aliases. Zero DB round trips.
+- `canonicalizeWarning()` runs on save for BOTH sides: user's "topics to avoid" preferences AND reviewer-tagged custom warnings (`custom:{canonical_id}` in `review_descriptor_tags`)
+- `scanTextForCanonicals()` scans free-text with word-boundary checks (prevents "war" matching "toward", etc.) — used to scan admin-curated `bookCategoryRatings.notes`
+- Recommendations: new `batchFetchCustomWarningFlags()` runs one SQL count per recommendations call, only when user has avoid list set. Penalty tiered per warning (5 + flags*5, capped at 20 each), max 40 total
+- Book page: new `getBookContentWarningMatchesForUser()` returns tag matches + note matches in one parallel call. Surfaces in the existing `ContentWarningBanner` as "Infidelity / cheating — 3 reviewers flagged · you asked to avoid" or "noted in Sexual content · you asked to avoid"
+- Settings UI: autocomplete suggestions as user types, substring match against canonical ID + label + aliases. Free text still accepted and canonicalized on save. Pills display canonical labels instead of raw IDs.
+- `ContentWarningBanner` layout rewrite: stacked rows (label on top, detail below) with `break-words` — fixes mobile overflow when both sides are long. "See all content details" link now always shown when expanded.
+
+### Home page + UX polish
+- **Reading Now card redesign:** buttons on the right side (smaller text), Track Progress (neon blue) + Reading state dropdown (green split button matching book page style). Title/author now vertically centered with breathing room. Dropdown paints above next sibling card via z-50 when open (was being clipped).
+- **Purple "FROM YOUR TBR" tag on Pick From Your Shelf card in light mode** (was unreadable green), green in dark mode. Uses new `.tbr-reason-tag` helper class following `.read-more-link` pattern.
+- **Emoji removed from "User-added" content detail label** sitewide
+- **Hamburger menu: Settings moved up under View Profile** for faster access
+- **"Browse Library" renamed to "Browse All Books on tbr*a"**
+- **Buddy read progress now shows 100% for `completed`/`dnf`** states (prior fix only checked `finished`, missed the DB's actual state names)
+- **Password show/hide toggle** on all four auth forms (signup, login, reset-password, settings change-password). Each field has its own independent toggle for sanity-checking new+confirm pairs.
+
+### Performance — killing N+1 queries
+- **`/profile/reviews`** was running 4 subqueries per review (authors, rating, editions, state) plus a correlated completion date subquery. For a 10,000-review user that's 40,000 sequential SQL round-trips → page hung. Rewrote to 6 batched queries with `inArray()` lookups. Also added missing `bookSlug` field to returned interface so "View all reviews" links use slugs directly.
+- **Browse page** — pre-existing rewrite carried over. LEFT JOIN against pre-aggregated rating subselect replaces N+1 correlated subqueries. `needsRatingsForSort` flag batch-fetches ratings only for visible slice when sort doesn't need them.
+- **Join table dedup:** added unique indexes on `book_authors`, `book_genres`, `book_series` (local + Turso + `schema.ts`). Added `.onConflictDoNothing()` to every join-table insert call site in actions/books.ts and enrichment/enrich-book.ts so enrichment re-runs can't reintroduce dupes.
+- **Ghost reviews:** Beloved was showing 6 reviews / 3.8 avg with nothing visible. Root cause: orphan `user_book_ratings` and `user_book_reviews` rows from deleted seed-reviewer-001 through -006 users. Cleaned 12 ratings + 6 reviews + 17 dim ratings + 28 descriptor tags. Updated `getBookAggregateRating()` to INNER JOIN users as a safety rail.
+
+### Metadata backfill push to Turso
+- The nightly `nightly-metadata-backfill` task only wrote to local SQLite per its skill file. Production had accumulated ~10k missing covers / ~8k missing descriptions / ~7.5k missing summaries.
+- **One-shot catch-up:** new `scripts/push-metadata-backfill-to-turso.ts` pushed 13,961 books to Turso. Only fills blank fields (COALESCE-style CASE guards), never overwrites live data. Idempotent — rerun is safe.
+- **Before → after on Turso:** missing descriptions 17,841 → 9,573 · missing summaries 14,201 → 6,614 · missing covers 12,071 → 1,966. Remaining gaps match local (asymptote of what ISBNdb + Google Books can provide).
+- **Nightly skill updated:** `nightly-metadata-backfill` SKILL.md now runs the push script after every local backfill. Gap won't recur.
+
+### Hell's Heart ISBN bug
+- Adding a book via the ISBNdb fallback would crash with a 500 when the book already existed on Turso under a different ISBN format. Reproduced with Hell's Heart (`978-1250394958`): existing row was `9781250394958` without hyphens, dedup exact-match missed it, INSERT hit UNIQUE constraint.
+- **Three layers of defense added** in `importFromISBNdbAndReturn()`:
+  1. Normalize incoming ISBNs to digits-only before dedup + insert
+  2. Normalize curly quotes to straight in fuzzy title match
+  3. Wrap INSERT in try/catch — if UNIQUE fires anyway, do a targeted SELECT and return the existing book id
+- External search dedup filter in `/api/search/external` also normalizes ISBNs on both sides
+
+### Book page share button
+- Moved from standalone mount under the action buttons into the BookHeader card itself via new `shareButton` slot prop
+- Styled as a translucent glass circle (40×40, `bg-white/10` + `backdrop-blur-md` + `border-white/25`)
+- Positioned at bottom-LEFT of the card with `translate-y-1/2` so it straddles the edge 50/50
+- Removed the two prior standalone mounts (mobile + desktop)
+
+### Misc
+- **Odyssey merge:** canonical slug `the-odyssey-homer`, deduped hidden duplicate, migrated Rebekah's TBR entry
+- **Legends & Lattes duplicate:** hidden the dup, kept the canonical
+- **Star rating halves:** `StarRow` fractional-fill fix for `.5` ratings that were rendering as full stars
+- **Similar Books scroll fade mask:** restored accidentally removed CSS mask
+- **Junk book descriptions:** wider detection patterns + local scan/cleanup script
+
+### Schema migrations applied (local + Turso)
+- `books_publication_year_idx` on books
+- `user_book_ratings_book_idx` on user_book_ratings
+- `book_genres_genre_idx_v2` on book_genres
+- `book_authors_unique` unique index
+- `book_genres_unique` unique index
+- `book_series_unique` unique index
+
 ## Round 6 (2026-04-07) ✅ — Pre-beta bug bash + search rewrite
 
 ### Critical fixes
