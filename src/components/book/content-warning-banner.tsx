@@ -111,10 +111,12 @@ export function ContentWarningBanner({
           {conflicts.map((c) => (
             <div
               key={c.categoryName}
-              className="flex items-center justify-between text-xs rounded-lg bg-yellow-500/5 px-3 py-2"
+              className="flex flex-col gap-0.5 text-xs rounded-lg bg-yellow-500/5 px-3 py-2"
             >
-              <span className="font-medium text-foreground">{c.categoryName}</span>
-              <span className="content-flag-text text-right whitespace-nowrap">
+              <span className="font-medium text-foreground leading-snug break-words">
+                {c.categoryName}
+              </span>
+              <span className="content-flag-text text-[11px] leading-snug break-words">
                 {INTENSITY_LABELS[c.bookIntensity] ?? "present"} · max {TOLERANCE_LABELS[c.userMax] ?? "limited"}
               </span>
             </div>
@@ -122,10 +124,12 @@ export function ContentWarningBanner({
           {customWarningMatches.map((m) => (
             <div
               key={m.canonicalId}
-              className="flex items-center justify-between text-xs rounded-lg bg-yellow-500/5 px-3 py-2"
+              className="flex flex-col gap-0.5 text-xs rounded-lg bg-yellow-500/5 px-3 py-2"
             >
-              <span className="font-medium text-foreground">{getWarningLabel(m.canonicalId)}</span>
-              <span className="content-flag-text text-right whitespace-nowrap">
+              <span className="font-medium text-foreground leading-snug break-words">
+                {getWarningLabel(m.canonicalId)}
+              </span>
+              <span className="content-flag-text text-[11px] leading-snug break-words">
                 {m.count} {m.count === 1 ? "reviewer" : "reviewers"} flagged &middot; you asked to avoid
               </span>
             </div>
@@ -133,31 +137,31 @@ export function ContentWarningBanner({
           {uniqueNoteMatches.map((m) => (
             <div
               key={m.canonicalId}
-              className="flex items-center justify-between text-xs rounded-lg bg-yellow-500/5 px-3 py-2"
+              className="flex flex-col gap-0.5 text-xs rounded-lg bg-yellow-500/5 px-3 py-2"
             >
-              <span className="font-medium text-foreground">{getWarningLabel(m.canonicalId)}</span>
-              <span className="content-flag-text text-right whitespace-nowrap">
+              <span className="font-medium text-foreground leading-snug break-words">
+                {getWarningLabel(m.canonicalId)}
+              </span>
+              <span className="content-flag-text text-[11px] leading-snug break-words">
                 noted in {m.categoryName} &middot; you asked to avoid
               </span>
             </div>
           ))}
-          {conflicts.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                setExpanded(false);
-                requestAnimationFrame(() => {
-                  const el = document.getElementById("whats-inside");
-                  if (el) {
-                    el.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }
-                });
-              }}
-              className="mt-2 text-xs text-link hover:text-link/80 transition-colors"
-            >
-              See all content details &darr;
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => {
+              setExpanded(false);
+              requestAnimationFrame(() => {
+                const el = document.getElementById("whats-inside");
+                if (el) {
+                  el.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+              });
+            }}
+            className="mt-2 text-xs text-link hover:text-link/80 transition-colors"
+          >
+            See all content details &darr;
+          </button>
         </div>
       )}
     </div>
