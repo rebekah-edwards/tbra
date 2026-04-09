@@ -145,6 +145,71 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+/**
+ * Clean ISBNdb synopsis — strip HTML, remove Amazon/Goodreads/review junk,
+ * reject descriptions that are actually user reviews or author bios.
+ * Returns null if the content is junk.
+ */
+function cleanISBNdbSynopsis(synopsis: string): string | null {
+  let clean = stripHtml(synopsis);
+
+  // Remove "Product Description" prefix
+  clean = clean.replace(/^Product Description\s+/i, "");
+
+  // Cut at "Kindle edition by..."
+  const kindleIdx = clean.search(/\s*[-–—]?\s*Kindle edition by\b/i);
+  if (kindleIdx >= 0) clean = clean.slice(0, kindleIdx).trim();
+
+  // Reject reviews
+  if (/\bI (?:really )?(?:enjoy|loved|hated|liked|couldn'?t put|was (?:blown|hooked|disappointed))/i.test(clean)) return null;
+  if (/\bI (?:would |highly )?recommend/i.test(clean)) return null;
+  if (/\bmy favou?rite?\b/i.test(clean)) return null;
+  if (/\bone of my\b/i.test(clean)) return null;
+  if (/\b(?:great|good|excellent|amazing|wonderful|terrible|awful|boring) (?:book|read|story|novel)\b/i.test(clean)) return null;
+  if (/\b\d(?:\/5|\/10|\s*(?:out of|stars?))\b/i.test(clean)) return null;
+  if (/\bhighly recommend/i.test(clean)) return null;
+  if (/\bmust[- ]?read\b/i.test(clean)) return null;
+  if (/\bpage[- ]?turner\b/i.test(clean)) return null;
+  if (/\bworth (?:the |a )?read\b/i.test(clean)) return null;
+  if (/\bcheck(?:ing)? (?:this|it) (?:one )?out\b/i.test(clean)) return null;
+  if (/\bno brainer\b/i.test(clean)) return null;
+  if (/\bcan'?t wait (?:for|to read)\b/i.test(clean)) return null;
+  if (/\bcouldn'?t (?:stop|put (?:it|this) down)\b/i.test(clean)) return null;
+  if (/\bif you (?:like|enjoy|love|haven'?t read)\b/i.test(clean)) return null;
+
+  // Reject Amazon product page text
+  if (/\*FREE\* shipping/i.test(clean)) return null;
+  if (/qualifying offers/i.test(clean)) return null;
+  if (/\bon Amazon\.com\b/i.test(clean)) return null;
+  if (/\bby .+?\(Author\)/i.test(clean)) return null;
+  if (/\bAdd to Cart\b/i.test(clean)) return null;
+  if (/\bCustomers who bought\b/i.test(clean)) return null;
+  if (/\bPrevious slide of product details\b/i.test(clean)) return null;
+  if (/\bCurrently Unavailable\b/i.test(clean)) return null;
+  if (/\bwith this product or seller\b/i.test(clean)) return null;
+  if (/\bBooks\s*›\s*/.test(clean)) return null;
+
+  // Reject Goodreads sidebar dumps
+  if (/(?:[A-Z][a-z]{2,}){5,}/.test(clean)) return null;
+
+  // Reject author bios
+  if (/^[A-Z][\w\s.]{2,40} is (?:the )?(?:[\w\s#]+?)?(?:bestselling|award-winning|New York Times) author/i.test(clean)) return null;
+  if (/^[A-Z][\w\s.]{2,40} is the author of\b/i.test(clean)) return null;
+  if (/^(?:Born|He|She) (?:in \d{4}|was born|has written|is a (?:New York|bestselling))/i.test(clean)) return null;
+
+  // Reject other junk
+  if (/^This work has been selected by scholars/i.test(clean)) return null;
+  if (/SparkNotes/i.test(clean)) return null;
+  if (/^Excerpt from\b/i.test(clean)) return null;
+  if (/^\d{10,13}:/i.test(clean)) return null;
+
+  // Cap length
+  if (clean.length > 2000) clean = clean.slice(0, 2000).replace(/\s\S*$/, "...");
+
+  // Must be substantial
+  return clean.length > 60 ? clean : null;
+}
+
 async function main() {
   const books = getBooksToBacfill();
   console.log(`Found ${books.length} books to backfill${coversOnly ? " (covers only)" : ""}`);
@@ -197,8 +262,8 @@ async function main() {
           coversFound++;
         }
         if (!book.description && isbndb.synopsis) {
-          const desc = stripHtml(isbndb.synopsis);
-          if (desc.length > 20) {
+          const desc = cleanISBNdbSynopsis(isbndb.synopsis);
+          if (desc) {
             updates.description = desc;
             descriptionsFound++;
           }
