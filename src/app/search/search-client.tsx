@@ -9,16 +9,6 @@ import { ReadingStateButton } from "@/components/reading-state-button";
 import { CompactOwnedButton } from "@/components/compact-owned-button";
 import { NoCover } from "@/components/no-cover";
 
-type SearchTab = "books" | "people";
-
-interface UserSearchResult {
-  id: string;
-  displayName: string | null;
-  username: string | null;
-  avatarUrl: string | null;
-  bio: string | null;
-}
-
 interface SearchClientProps {
   isLoggedIn: boolean;
   initialQuery?: string;
@@ -52,11 +42,9 @@ interface AuthorMatch {
 
 export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientProps) {
   const [query, setQuery] = useState(initialQuery ?? "");
-  const [activeTab, setActiveTab] = useState<SearchTab>("books");
   const [results, setResults] = useState<OLSearchResult[]>([]);
   const [seriesMatches, setSeriesMatches] = useState<SeriesMatch[]>([]);
   const [authorMatches, setAuthorMatches] = useState<AuthorMatch[]>([]);
-  const [peopleResults, setPeopleResults] = useState<UserSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [navigating, setNavigating] = useState<string | null>(null);
@@ -65,7 +53,6 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
   const [bookOwnedFormats, setBookOwnedFormats] = useState<Record<string, string[]>>({});
   const [bookCovers, setBookCovers] = useState<Record<string, string>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const peopleDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -154,36 +141,6 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query]);
-
-  // People search effect
-  useEffect(() => {
-    if (activeTab !== "people") return;
-    if (peopleDebounceRef.current) clearTimeout(peopleDebounceRef.current);
-
-    if (query.trim().length < 2) {
-      setPeopleResults([]);
-      setSearched(false);
-      return;
-    }
-
-    setLoading(true);
-    peopleDebounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/users/search?q=${encodeURIComponent(query.trim())}`);
-        const data: UserSearchResult[] = await res.json();
-        setPeopleResults(data);
-        setSearched(true);
-      } catch {
-        setPeopleResults([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 300);
-
-    return () => {
-      if (peopleDebounceRef.current) clearTimeout(peopleDebounceRef.current);
-    };
-  }, [query, activeTab]);
 
   async function handleNavigateToBook(result: OLSearchResult) {
     setNavigating(result.key);
@@ -304,37 +261,11 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
 
   return (
     <div>
-      {/* Tabs */}
-      <div className="flex gap-1 mb-4 rounded-lg bg-surface-alt p-1">
-        <button
-          type="button"
-          onClick={() => { setActiveTab("books"); setSearched(false); }}
-          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            activeTab === "books"
-              ? "bg-surface text-foreground shadow-sm"
-              : "text-muted hover:text-foreground"
-          }`}
-        >
-          Books
-        </button>
-        <button
-          type="button"
-          onClick={() => { setActiveTab("people"); setSearched(false); }}
-          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            activeTab === "people"
-              ? "bg-surface text-foreground shadow-sm"
-              : "text-muted hover:text-foreground"
-          }`}
-        >
-          People
-        </button>
-      </div>
-
       <input
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder={activeTab === "books" ? "Search by title, author, or ISBN..." : "Search by name or username..."}
+        placeholder="Search by title, author, or series..."
         className="w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm placeholder-muted focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
       />
 
@@ -342,7 +273,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         <p className="mt-6 text-center text-sm text-muted">Searching...</p>
       )}
 
-      {!loading && searched && activeTab === "books" && results.length === 0 && seriesMatches.length === 0 && authorMatches.length === 0 && (
+      {!loading && searched && results.length === 0 && seriesMatches.length === 0 && authorMatches.length === 0 && (
         <div className="mt-8 text-center">
           <p className="text-sm text-muted">No results found.</p>
           <Link
@@ -354,7 +285,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         </div>
       )}
 
-      {!loading && activeTab === "books" && seriesMatches.length > 0 && (
+      {!loading && seriesMatches.length > 0 && (
         <div className="mt-6 space-y-4">
           {seriesMatches.map((s) => (
             <div key={s.id}>
@@ -450,7 +381,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         </div>
       )}
 
-      {!loading && activeTab === "books" && authorMatches.length > 0 && (
+      {!loading && authorMatches.length > 0 && (
         <div className="mt-6 space-y-3">
           {authorMatches.map((a) => (
             <Link
@@ -494,7 +425,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         </div>
       )}
 
-      {!loading && activeTab === "books" && results.length > 0 && (() => {
+      {!loading && results.length > 0 && (() => {
         // Split results into local (in tbra library) and OL (external) groups
         const localResults = results.filter((r) => (r as Record<string, unknown>)._localBookId || existingBooks[r.key]);
         const olResults = results.filter((r) => !(r as Record<string, unknown>)._localBookId && !existingBooks[r.key]);
@@ -523,7 +454,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         );
       })()}
 
-      {!loading && activeTab === "books" && results.length > 0 && (
+      {!loading && results.length > 0 && (
         <div className="pt-2 text-center">
           <Link
             href="/search/add"
@@ -531,50 +462,6 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           >
             Can&apos;t find your book? Manually add it to your shelf.
           </Link>
-        </div>
-      )}
-
-      {/* People search results */}
-      {!loading && activeTab === "people" && searched && peopleResults.length === 0 && (
-        <div className="mt-8 text-center">
-          <p className="text-sm text-muted">No people found.</p>
-        </div>
-      )}
-
-      {!loading && activeTab === "people" && peopleResults.length > 0 && (
-        <div className="mt-6 space-y-2">
-          {peopleResults.map((user) => (
-            <Link
-              key={user.id}
-              href={user.username ? `/u/${user.username}` : "#"}
-              className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3 hover:bg-surface-alt transition-colors"
-            >
-              <div
-                className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold overflow-hidden ${
-                  user.avatarUrl ? "" : "text-black"
-                }`}
-                style={!user.avatarUrl ? { backgroundColor: "#a3e635" } : undefined}
-              >
-                {user.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  (user.displayName?.[0] ?? "?").toUpperCase()
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  {user.displayName ?? "Unknown"}
-                </p>
-                {user.username && (
-                  <p className="text-xs text-muted truncate">@{user.username}</p>
-                )}
-              </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted flex-shrink-0">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </Link>
-          ))}
         </div>
       )}
 
