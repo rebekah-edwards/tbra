@@ -494,6 +494,10 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           Type at least 2 characters to search.
         </p>
       )}
+
+      {/* Extra breathing room at the bottom so the "add manually" link
+          doesn't butt up against the mobile nav bar */}
+      <div className="h-24 lg:h-8" />
     </div>
   );
 }

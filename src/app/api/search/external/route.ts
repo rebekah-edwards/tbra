@@ -163,7 +163,42 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // 6. Cache and return
-  cacheSet(trimmed, results);
-  return NextResponse.json({ results, quotaRemaining: DAILY_LIMIT });
+  // 6. Deduplicate ISBNdb results by normalized title + primary author.
+  // ISBNdb returns multiple editions (hardcover, paperback, Kindle, audiobook)
+  // of the same book, each with a different ISBN. Without dedup, searching
+  // "coded justice" returns 8 copies of the same book. Keep the best edition
+  // per unique title: prefer one with a cover, then most pages.
+  const deduped: typeof results = [];
+  const seenTitles = new Map<string, number>(); // normalized key → index in deduped
+  for (const r of results) {
+    const normTitle = r.title
+      .toLowerCase()
+      .replace(/\s*[:([\-–—].*/g, "")  // strip subtitles
+      .replace(/[^a-z0-9]/g, "");
+    const normAuthor = (r.author_name?.[0] ?? "")
+      .toLowerCase()
+      .replace(/[^a-z]/g, "");
+    const key = `${normTitle}::${normAuthor}`;
+
+    const existingIdx = seenTitles.get(key);
+    if (existingIdx !== undefined) {
+      // Replace if the new one has a cover and the old one doesn't,
+      // or if the new one has more pages (likely the main print edition)
+      const existing = deduped[existingIdx];
+      const newHasCover = !!r._externalCoverUrl;
+      const oldHasCover = !!existing._externalCoverUrl;
+      const newPages = r.number_of_pages_median ?? 0;
+      const oldPages = existing.number_of_pages_median ?? 0;
+      if ((newHasCover && !oldHasCover) || (newPages > oldPages && (!oldHasCover || newHasCover))) {
+        deduped[existingIdx] = r;
+      }
+    } else {
+      seenTitles.set(key, deduped.length);
+      deduped.push(r);
+    }
+  }
+
+  // 7. Cache and return
+  cacheSet(trimmed, deduped);
+  return NextResponse.json({ results: deduped, quotaRemaining: DAILY_LIMIT });
 }
