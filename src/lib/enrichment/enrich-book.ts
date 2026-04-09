@@ -126,6 +126,29 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     return;
   }
 
+  // Normalize ISBNs upfront — users can enter hyphenated ISBNs from Amazon
+  // (e.g. "978-1635575637") which break all downstream exact-match lookups
+  // against OpenLibrary, ISBNdb, and cover APIs. Strip non-digits (plus
+  // trailing X for ISBN-10 checksums) and persist the clean form immediately.
+  const normalizeIsbn = (raw: string | null): string | null => {
+    if (!raw) return null;
+    const cleaned = raw.replace(/[^0-9Xx]/g, "").toUpperCase();
+    return cleaned.length >= 10 ? cleaned : null;
+  };
+  const cleanIsbn13 = normalizeIsbn(book.isbn13);
+  const cleanIsbn10 = normalizeIsbn(book.isbn10);
+  if (
+    (book.isbn13 && cleanIsbn13 !== book.isbn13) ||
+    (book.isbn10 && cleanIsbn10 !== book.isbn10)
+  ) {
+    const isbnFixes: Record<string, string | null> = {};
+    if (book.isbn13 && cleanIsbn13 !== book.isbn13) isbnFixes.isbn13 = cleanIsbn13;
+    if (book.isbn10 && cleanIsbn10 !== book.isbn10) isbnFixes.isbn10 = cleanIsbn10;
+    await db.update(books).set({ ...isbnFixes, updatedAt: new Date().toISOString() }).where(eq(books.id, bookId));
+    Object.assign(book, isbnFixes);
+    console.log(`[enrichment] Normalized ISBNs for "${book.title}": ${JSON.stringify(isbnFixes)}`);
+  }
+
   // Skip non-English books — don't waste API calls
   // But never hide books that a user has explicitly added to their library
   const isNonEnglishLang = book.language && book.language !== "English" && book.language !== "";

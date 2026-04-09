@@ -481,8 +481,17 @@ export async function createBookManually(formData: FormData) {
   const authorName = formData.get("author") as string;
   const description = (formData.get("description") as string) || null;
   const yearStr = formData.get("year") as string;
-  const isbn13 = (formData.get("isbn13") as string) || null;
-  const isbn10 = (formData.get("isbn10") as string) || null;
+  // Normalize ISBNs immediately — users paste hyphenated ISBNs from Amazon
+  // (e.g. "978-1635575637") which break all downstream OL/ISBNdb lookups.
+  const rawIsbn13 = (formData.get("isbn13") as string) || null;
+  const rawIsbn10 = (formData.get("isbn10") as string) || null;
+  const normalizeIsbn = (raw: string | null): string | null => {
+    if (!raw) return null;
+    const cleaned = raw.replace(/[^0-9Xx]/g, "").toUpperCase();
+    return cleaned.length >= 10 ? cleaned : null;
+  };
+  const isbn13 = normalizeIsbn(rawIsbn13);
+  const isbn10 = normalizeIsbn(rawIsbn10);
   const pagesStr = formData.get("pages") as string;
   let coverImageUrl = (formData.get("coverImageUrl") as string) || null;
   const audioLengthStr = formData.get("audioLengthMinutes") as string;
