@@ -15,7 +15,7 @@ interface BuyButtonProps {
  * with affiliate disclosure before navigating to Amazon.
  */
 export function BuyButton({ bookTitle, amazonUrl, isbn13, asin }: BuyButtonProps) {
-  const ASSOCIATE_TAG = "tbra-20";
+  const ASSOCIATE_TAG = "tbra08-20";
   const [showDialog, setShowDialog] = useState(false);
 
   const getAmazonLink = () => {
