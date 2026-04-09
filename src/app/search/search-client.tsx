@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { buildCoverUrl, type OLSearchResult } from "@/lib/openlibrary";
-import { importFromOpenLibrary } from "@/lib/actions/books";
+import { importFromOpenLibrary, importFromISBNdbAndReturn } from "@/lib/actions/books";
+import { useRouter } from "next/navigation";
 import { ReadingStateButton } from "@/components/reading-state-button";
 import { CompactOwnedButton } from "@/components/compact-owned-button";
 import { NoCover } from "@/components/no-cover";
@@ -41,6 +42,7 @@ interface AuthorMatch {
 }
 
 export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientProps) {
+  const router = useRouter();
   const [query, setQuery] = useState(initialQuery ?? "");
   const [results, setResults] = useState<OLSearchResult[]>([]);
   const [seriesMatches, setSeriesMatches] = useState<SeriesMatch[]>([]);
@@ -144,8 +146,30 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
 
   async function handleNavigateToBook(result: OLSearchResult) {
     setNavigating(result.key);
-    // importFromOpenLibrary imports then redirects to /book/[id]
-    await importFromOpenLibrary(result);
+    const source = (result as Record<string, unknown>)._source as string | undefined;
+
+    if (source === "isbndb") {
+      // ISBNdb results use a different import path — importFromOpenLibrary
+      // would fail because the key is "isbndb:..." not a valid OL work key.
+      const isbn13 = (result as Record<string, unknown>)._isbn13 as string | undefined;
+      const isbn = isbn13 || result.isbn?.[0] || "";
+      const coverUrl = (result as Record<string, unknown>)._externalCoverUrl as string | undefined;
+      const bookId = await importFromISBNdbAndReturn({
+        isbn,
+        title: result.title,
+        authors: result.author_name ?? [],
+        coverUrl: coverUrl ?? null,
+        publicationYear: result.first_publish_year ?? null,
+        pages: result.number_of_pages_median ?? null,
+      });
+      if (bookId) {
+        router.push(`/book/${bookId}`);
+      }
+      setNavigating(null);
+    } else {
+      // OpenLibrary results — importFromOpenLibrary imports then redirects
+      await importFromOpenLibrary(result);
+    }
   }
 
   function renderBookCard(result: OLSearchResult) {
