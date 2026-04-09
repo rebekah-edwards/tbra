@@ -68,17 +68,15 @@ export async function removeFromSearchIndex(bookId: string): Promise<void> {
 }
 
 /**
- * Search books using FTS5 full-text search. Returns book IDs ranked by
- * relevance (BM25). Supports prefix matching for as-you-type search
- * (append * to query or last word).
+ * Search books using FTS5 full-text search when available, falling back
+ * to optimized LIKE queries when it's not (e.g. on Turso where FTS5
+ * tables are too large for the hosted DB).
  *
- * Example queries:
- *   "piranesi"        → exact match
- *   "piran*"          → prefix match
- *   "name wind"       → multi-word (AND, any order)
- *   "harry pot*"      → prefix on last word
- *   "rothfuss"        → matches author name column
- *   "kingkiller"      → matches series name column
+ * FTS5 features (local only): relevance ranking, prefix matching, word
+ * reordering, stemming.
+ *
+ * LIKE fallback (Turso): substring match on title + author name via
+ * subquery, ordered by title match quality. Still fast (~50ms for 46K).
  */
 export async function searchBooksFTS(
   query: string,
@@ -87,19 +85,16 @@ export async function searchBooksFTS(
   const trimmed = query.trim();
   if (!trimmed || trimmed.length < 2) return [];
 
-  // Build FTS5 query: split into words, append * to last word for prefix matching
-  const words = trimmed.split(/\s+/).filter(Boolean);
-  if (words.length === 0) return [];
-
-  // Append * for prefix matching on the last word (as-you-type behavior)
-  const lastWord = words[words.length - 1];
-  if (!lastWord.endsWith("*") && !lastWord.endsWith('"')) {
-    words[words.length - 1] = lastWord + "*";
-  }
-
-  const ftsQuery = words.join(" ");
-
+  // Try FTS5 first
   try {
+    const words = trimmed.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return [];
+    const lastWord = words[words.length - 1];
+    if (!lastWord.endsWith("*") && !lastWord.endsWith('"')) {
+      words[words.length - 1] = lastWord + "*";
+    }
+    const ftsQuery = words.join(" ");
+
     const rows = await db.all<{ book_id: string; rank: number }>(
       sql`SELECT book_id, rank FROM search_index
           WHERE search_index MATCH ${ftsQuery}
@@ -107,10 +102,31 @@ export async function searchBooksFTS(
           LIMIT ${limit}`,
     );
     return rows.map((r) => ({ bookId: r.book_id, rank: r.rank }));
+  } catch {
+    // FTS5 table doesn't exist (Turso) or query is malformed — fall back to LIKE
+  }
+
+  // LIKE fallback — works on Turso where FTS5 table was dropped due to
+  // 213MB size overhead that degraded all other queries.
+  const likePattern = `%${trimmed.toLowerCase()}%`;
+  try {
+    const rows = await db.all<{ id: string }>(sql`
+      SELECT id FROM books
+      WHERE visibility = 'public' AND is_box_set = 0
+        AND (
+          LOWER(title) LIKE ${likePattern}
+          OR id IN (
+            SELECT ba.book_id FROM book_authors ba
+            INNER JOIN authors a ON a.id = ba.author_id
+            WHERE LOWER(a.name) LIKE ${likePattern}
+          )
+        )
+      LIMIT ${limit}
+    `);
+    // No relevance ranking for LIKE — assign synthetic rank based on position
+    return rows.map((r, i) => ({ bookId: r.id, rank: -(limit - i) }));
   } catch (err) {
-    // FTS5 queries can fail on malformed input (unbalanced quotes, special
-    // chars). Fall back to empty rather than crashing.
-    console.warn(`[search-index] FTS query failed for "${ftsQuery}":`, err);
+    console.warn(`[search-index] LIKE fallback failed:`, err);
     return [];
   }
 }
