@@ -953,6 +953,15 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
   }
 
   console.log(`[enrichment] Enrichment complete for "${book.title}"`);
+
+  // Update the FTS5 search index so the book is immediately searchable
+  // by its (potentially new) title, authors, and series membership.
+  try {
+    const { updateSearchIndex } = await import("@/lib/search/search-index");
+    await updateSearchIndex(bookId);
+  } catch {
+    // Best-effort — don't let index update failure break enrichment
+  }
 }
 
 /**

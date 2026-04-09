@@ -562,6 +562,10 @@ export async function createBookManually(formData: FormData) {
   // Generate SEO slug
   const slug = await assignBookSlug(book.id, title.trim(), authorName?.trim() ?? "");
 
+  // Update FTS search index immediately so the book is searchable
+  const { updateSearchIndex } = await import("@/lib/search/search-index");
+  await updateSearchIndex(book.id);
+
   // Enrich with content ratings, summary, tags
   after(() => triggerEnrichment(book.id));
 
@@ -890,7 +894,11 @@ export async function importFromISBNdbAndReturn(params: {
   // 6. Generate slug
   await assignBookSlug(book.id, finalTitle, authorNames[0] ?? "");
 
-  // 7. Trigger enrichment in the background to fill description, genres, ratings, etc.
+  // 7. Update FTS search index so the book is searchable immediately
+  const { updateSearchIndex } = await import("@/lib/search/search-index");
+  await updateSearchIndex(book.id);
+
+  // 8. Trigger enrichment in the background to fill description, genres, ratings, etc.
   after(() => triggerEnrichment(book.id));
 
   return book.id;

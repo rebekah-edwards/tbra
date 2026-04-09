@@ -179,7 +179,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
     }
     // Show loading immediately so skeleton appears during debounce
     setLoading(true);
-    debounceRef.current = setTimeout(() => search(value), 300);
+    debounceRef.current = setTimeout(() => search(value), 150);
   }
 
   function handleSubmit(e: React.FormEvent) {

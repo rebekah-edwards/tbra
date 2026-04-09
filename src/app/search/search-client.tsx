@@ -148,7 +148,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         setResults([]);
         setLoading(false);
       }
-    }, 400);
+    }, 200);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
