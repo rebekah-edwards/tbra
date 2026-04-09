@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { reportedIssues, books } from "@/db/schema";
+import { reportedIssues, books, series } from "@/db/schema";
 import { eq, sql, or } from "drizzle-orm";
 import { getCurrentUser, isAdmin } from "@/lib/auth";
 
@@ -9,6 +9,7 @@ export async function submitIssue(data: {
   bookId?: string;
   bookSlug?: string;
   seriesId?: string;
+  seriesSlug?: string;
   pageUrl: string;
   description: string;
 }): Promise<{ success: boolean; error?: string }> {
@@ -30,10 +31,21 @@ export async function submitIssue(data: {
     bookId = book?.id ?? null;
   }
 
+  // Resolve seriesId from slug if not provided directly
+  let seriesId = data.seriesId ?? null;
+  if (!seriesId && data.seriesSlug) {
+    const s = await db
+      .select({ id: series.id })
+      .from(series)
+      .where(or(eq(series.slug, data.seriesSlug), eq(series.id, data.seriesSlug)))
+      .get();
+    seriesId = s?.id ?? null;
+  }
+
   await db.insert(reportedIssues).values({
     userId: user.userId,
     bookId,
-    seriesId: data.seriesId ?? null,
+    seriesId,
     pageUrl: data.pageUrl,
     description: data.description.trim(),
   });
