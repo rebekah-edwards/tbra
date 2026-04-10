@@ -1,5 +1,53 @@
 # tbr*a Beta Launch Roadmap
 
+## Round 8 (2026-04-09) ✅ — Search overhaul + report triage + data integrity
+
+### Search overhaul
+- **FTS5 full-text search** built and benchmarked at 3ms for 46K books — but dropped from Turso after discovering it added 213MB to the DB and degraded ALL queries (COUNT(*) went from <100ms to 3 seconds). Kept on local only; production falls back to optimized LIKE with graceful degradation.
+- **ISBNdb external search restored** — `ISBNDB_API_KEY` was never added to Vercel env vars, so external search silently returned empty since launch. Added + deployed.
+- **ISBNdb click-through fixed** — clicking ISBNdb results called `importFromOpenLibrary()` which failed on `isbndb:` keys. Now detects source and routes through `importFromISBNdbAndReturn()` + navigates to the new book page.
+- **ISBNdb result dedup** — multiple editions (hardcover, paperback, Kindle, etc.) of the same book collapsed into one result by normalized title + primary author. Keeps best edition (prefers cover, then most pages).
+- **Debounce reduced** — nav: 300ms→150ms, full page: 400ms→200ms
+- **Books/People tabs removed** from full search page — user search belongs elsewhere
+- **`/search` blocked in robots.txt** — belt-and-suspenders with existing `noindex` meta tag. Prevents crawl budget waste on `?q=` URLs.
+- **Bottom scroll padding** added on mobile search page so "add manually" button isn't butted against nav bar
+
+### Report triage (22 open reports + I Hate Fairyland + series requests)
+- **Data corrections:** Moon title caps, Great Alone/Name of the Wind wrong extra authors, Gorp pub year, Black Sun duplicate hidden, Ascension Factor title/description/slug fixed, Anatomy of an Alibi slug assigned, How It Unfolds page count confirmed
+- **Junk descriptions cleared:** Hell's Heart (Star Trek, then reverted after I wrongly overwrote it), RE-ROLL, Can I Say That? (Amazon scrapes → clean blurbs)
+- **Authors fixed:** Worlds to Come (Heinlein → Damon Knight editor), Gorp ("Ross, Dave" → "Dave Ross"), Can I Say That? (Brenna Blain added), Hell's Heart (John Jackson Miller added)
+- **Non-English/junk entries hidden:** The Habbit, Acto de Crear (Spanish), Verdadera Historia (Spanish), BadAsstronauts (Spanish ISBN edition)
+- **Piranesi:** linked Susanna Clarke as author, year fixed 2015→2020, cover set from OL ISBN API (enrichment had failed due to hyphenated ISBN + missing OL key)
+- **I Hate Fairyland cleanup:** 10 entries hidden (individual issues, all-caps junk, duplicate "Book 1"), series consolidated from 2 rows to 1, Vol 1-6 positions set, pub year fixed
+- **Series verified:** All the Dust That Falls 2-4, Noobtown 2-9, New Realm Online 2-7 all already existed. Noob Returns (book 9) + 6 New Realm Online books created by agent. Enrichment triggered for all coverless books.
+- **Green Lantern: Sleepers** filled out completely (3 books, correct titles/authors/descriptions/years) per user request with Goodreads screenshot
+- **Report button bug fixed:** `GlobalReportButton` now passes `seriesSlug` from `/series/` pages. `submitIssue` resolves `seriesId` from slug. Previously 144 reports from series pages had null `book_id` + null `series_id`.
+
+### ISBN normalization (systemic fix)
+- **Manual add form** (`createBookManually`) now strips hyphens/spaces from ISBNs before insert — users paste hyphenated ISBNs from Amazon which broke all downstream lookups
+- **Enrichment pipeline** (`enrichBook`) normalizes ISBNs as first step — catches any existing books with bad ISBNs, fixes them before lookups
+- **Import path** (`importFromISBNdbAndReturn`) already had normalization from the earlier Hell's Heart fix
+- **Retroactive cleanup:** found and fixed 15 books with hyphenated ISBNs locally + 13 on Turso
+
+### Junk description cleanup (4,906 books)
+- **Root cause:** nightly `backfill-metadata.ts` was writing raw ISBNdb `synopsis` to `description` with only `stripHtml()` + `length > 20` — no review/Amazon/Goodreads junk detection
+- **Cleanup script** (`clean-junk-descriptions.ts`) scanned all descriptions with 50+ regex patterns: Amazon scrapes (3,496), user reviews (983), Goodreads dumps (158), other junk (154), author bios (115). All NULLed for re-enrichment through proper OL-first pipeline.
+- **Backfill script fixed** — `backfill-metadata.ts` now uses `cleanISBNdbSynopsis()` with full review/Amazon/Goodreads/bio detection. Returns null for junk so it never gets written.
+
+### Handle change redirects
+- New `user_previous_usernames` table tracks old handles
+- `updateProfile()` records old handle on rename; clears stale entries when new user claims an old handle
+- `/u/[username]` page falls back to previous-usernames table with JOIN, then 308-redirects to current handle
+
+### Amazon Associates tag updated
+- Changed from `tbra-20` to `tbra08-20` (reapplied account) in `buy-button.tsx`
+
+### isbn_13 Turso push
+- 8,086 isbn_13 values pushed safely (collision-checked) via `push-isbn13-to-turso.ts`. 8 collisions skipped (genuine cross-catalog dupes).
+
+### Similar books scorer parity
+- `getSimilarBooksInner()` now applies custom content warning penalty (same tiered formula as main recommendations)
+
 ## Round 7 (2026-04-08) ✅ — UX polish + custom content warnings + metadata sync
 
 ### DNF review flow
