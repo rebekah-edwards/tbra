@@ -451,6 +451,7 @@ export default async function BookPage({
               bookId={book.id}
               bookTitle={book.title}
               openLibraryKey={book.openLibraryKey}
+              authors={book.authors.filter(a => a.role === "author").map(a => a.name)}
               currentValues={{
                 coverImageUrl: book.coverImageUrl,
                 title: book.title,

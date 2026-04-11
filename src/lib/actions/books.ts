@@ -595,6 +595,7 @@ export async function setBookCover(
         lowerHost.includes("books.google.com") ||
         lowerHost.includes("images-na.ssl-images-amazon.com") ||
         lowerHost.includes("m.media-amazon.com") ||
+        lowerHost.includes("images.isbndb.com") ||
         lowerHost.includes("i.imgur.com");
       const hasImageExtension = /\.(jpe?g|png|webp|gif|avif)(\?.*)?$/i.test(lowerPath);
       const isAmazonProductPage = lowerHost.includes("amazon.com") && lowerPath.includes("/dp/");

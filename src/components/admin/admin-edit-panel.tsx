@@ -15,6 +15,7 @@ interface AdminEditPanelProps {
   bookId: string;
   bookTitle: string;
   openLibraryKey: string | null;
+  authors: string[];
   currentValues: {
     coverImageUrl: string | null;
     title: string;
@@ -70,7 +71,7 @@ function PencilIcon({ className = "" }: { className?: string }) {
   );
 }
 
-export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, currentValues }: AdminEditPanelProps) {
+export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, currentValues }: AdminEditPanelProps) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState<EditingField>(null);
   const [editValue, setEditValue] = useState<string>("");
@@ -79,7 +80,9 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, currentValue
   const [showGenreSheet, setShowGenreSheet] = useState(false);
   const [newGenre, setNewGenre] = useState("");
   const [editionCovers, setEditionCovers] = useState<{ coverId: number; title: string; format?: string; year?: string }[]>([]);
+  const [externalCovers, setExternalCovers] = useState<{ url: string; source: string; label: string }[]>([]);
   const [loadingCovers, setLoadingCovers] = useState(false);
+  const [loadingExternal, setLoadingExternal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -120,7 +123,10 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, currentValue
   async function openCoverEditor() {
     setShowCoverSheet(true);
     setEditionCovers([]);
-    if (openLibraryKey) {
+    setExternalCovers([]);
+
+    // Fetch OL editions and external covers (ISBNdb + Google Books) in parallel
+    const olPromise = openLibraryKey ? (async () => {
       setLoadingCovers(true);
       try {
         const res = await fetch(`/api/openlibrary/editions?workKey=${encodeURIComponent(openLibraryKey)}&limit=100`);
@@ -147,7 +153,26 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, currentValue
         }
       } catch { /* ignore */ }
       setLoadingCovers(false);
-    }
+    })() : Promise.resolve();
+
+    const extPromise = (async () => {
+      setLoadingExternal(true);
+      try {
+        const params = new URLSearchParams();
+        if (currentValues.isbn13) params.set("isbn13", currentValues.isbn13);
+        if (currentValues.isbn10) params.set("isbn10", currentValues.isbn10);
+        if (currentValues.title) params.set("title", currentValues.title);
+        if (authors.length > 0) params.set("authors", authors.join(", "));
+        const res = await fetch(`/api/admin/covers?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          setExternalCovers(data.covers ?? []);
+        }
+      } catch { /* ignore */ }
+      setLoadingExternal(false);
+    })();
+
+    await Promise.all([olPromise, extPromise]);
   }
 
   async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -457,6 +482,61 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, currentValue
                       />
                       <span className="text-[9px] text-muted leading-tight text-center line-clamp-1">
                         {[ec.format, ec.year].filter(Boolean).join(" · ") || ec.title}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* ISBNdb + Google Books covers */}
+            {loadingExternal && (
+              <div className="flex items-center justify-center py-4">
+                <div className="w-5 h-5 border-2 border-muted/30 border-t-foreground rounded-full animate-spin" />
+                <span className="ml-2 text-xs text-muted">Searching ISBNdb & Google Books...</span>
+              </div>
+            )}
+            {!loadingExternal && externalCovers.length > 0 && (
+              <>
+                <label className="block text-xs font-medium uppercase tracking-wide text-muted mb-2 mt-4">
+                  ISBNdb & Google Books ({externalCovers.length})
+                </label>
+                <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto">
+                  {externalCovers.map((ec, i) => (
+                    <button
+                      key={`${ec.source}-${i}`}
+                      onClick={async () => {
+                        setSaving(true);
+                        try {
+                          const result = await setBookCover(bookId, ec.url);
+                          if (!result.success) {
+                            alert(result.error || "Failed to set cover");
+                            return;
+                          }
+                          setShowCoverSheet(false);
+                          router.refresh();
+                        } catch (err) {
+                          console.error("Failed to set cover:", err);
+                          alert("Failed to set cover. Please try again.");
+                        } finally {
+                          setSaving(false);
+                        }
+                      }}
+                      disabled={saving}
+                      className="flex flex-col items-center gap-0.5 rounded-lg p-1 hover:bg-surface-alt transition-colors disabled:opacity-50"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={ec.url}
+                        alt="Cover option"
+                        className="w-full aspect-[2/3] rounded object-cover border border-border"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                      <span className="text-[9px] text-muted leading-tight text-center line-clamp-2">
+                        {ec.label}
                       </span>
                     </button>
                   ))}
