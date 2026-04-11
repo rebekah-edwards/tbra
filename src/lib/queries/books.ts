@@ -209,54 +209,80 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
       .where(eq(bookSeries.seriesId, seriesId))
       .orderBy(asc(bookSeries.positionInSeries));
 
-    // Enrich with user ratings and (optionally) effective covers
-    const seriesBooks = [];
-    for (const sb of seriesBooksRaw) {
-      let userRating: number | null = null;
-      // Use admin series cover override if set, otherwise base cover
-      let effectiveCover = sb.seriesCoverUrl ?? sb.coverImageUrl;
+    // Batch-enrich with user ratings and (optionally) effective covers
+    // Previously this was N+1 (per-book queries); now batched to 2-3 total queries
+    const seriesBookIds = seriesBooksRaw.map((sb) => sb.id);
+    const ratingMap = new Map<string, number>();
+    const stateMap = new Map<string, { state: string; ownedFormats: string[]; activeFormats: string[] }>();
+    const editionMap = new Map<string, { coverId: number | null; format: string }[]>();
 
-      if (userId) {
-        // Get user rating
-        const rating = await db
-          .select({ rating: userBookRatings.rating })
-          .from(userBookRatings)
-          .where(and(eq(userBookRatings.userId, userId), eq(userBookRatings.bookId, sb.id)))
-          .get();
-        userRating = rating?.rating ?? null;
+    if (userId && seriesBookIds.length > 0) {
+      // Batch: all ratings for series books
+      const ratingRows = await db
+        .select({ bookId: userBookRatings.bookId, rating: userBookRatings.rating })
+        .from(userBookRatings)
+        .where(and(
+          eq(userBookRatings.userId, userId),
+          sql`${userBookRatings.bookId} IN (${sql.join(seriesBookIds.map((id) => sql`${id}`), sql`, `)})`,
+        ))
+        .all();
+      for (const r of ratingRows) ratingMap.set(r.bookId, r.rating);
 
-        // Only apply edition cover cascade if series is set to 'format' mode
-        if (useFormatCovers) {
-          const editionRows = await db
-            .select({ coverId: editions.coverId, format: userOwnedEditions.format })
+      if (useFormatCovers) {
+        // Batch: all edition selections + states for series books
+        const [editionRows, stateRows] = await Promise.all([
+          db.select({ bookId: userOwnedEditions.bookId, coverId: editions.coverId, format: userOwnedEditions.format })
             .from(userOwnedEditions)
             .innerJoin(editions, eq(userOwnedEditions.editionId, editions.id))
-            .where(and(eq(userOwnedEditions.userId, userId), eq(userOwnedEditions.bookId, sb.id)))
-            .all();
-
-          const stateRow = await db
-            .select({ state: userBookState.state, ownedFormats: userBookState.ownedFormats, activeFormats: userBookState.activeFormats })
+            .where(and(
+              eq(userOwnedEditions.userId, userId),
+              sql`${userOwnedEditions.bookId} IN (${sql.join(seriesBookIds.map((id) => sql`${id}`), sql`, `)})`,
+            ))
+            .all(),
+          db.select({ bookId: userBookState.bookId, state: userBookState.state, ownedFormats: userBookState.ownedFormats, activeFormats: userBookState.activeFormats })
             .from(userBookState)
-            .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, sb.id)))
-            .get();
+            .where(and(
+              eq(userBookState.userId, userId),
+              sql`${userBookState.bookId} IN (${sql.join(seriesBookIds.map((id) => sql`${id}`), sql`, `)})`,
+            ))
+            .all(),
+        ]);
 
-          const isActivelyReading = stateRow?.state === "currently_reading" || stateRow?.state === "paused";
-          const activeFormats = stateRow?.activeFormats ? JSON.parse(stateRow.activeFormats) as string[] : [];
-          const ownedFmts = stateRow?.ownedFormats ? JSON.parse(stateRow.ownedFormats) as string[] : [];
-
-          effectiveCover = getEffectiveCoverUrl({
-            baseCoverUrl: sb.coverImageUrl,
-            audiobookCoverUrl: sb.audiobookCoverUrl,
-            editionSelections: editionRows,
-            activeFormats,
-            ownedFormats: ownedFmts,
-            isActivelyReading,
-            size: "M",
+        for (const ed of editionRows) {
+          const list = editionMap.get(ed.bookId) ?? [];
+          list.push({ coverId: ed.coverId, format: ed.format });
+          editionMap.set(ed.bookId, list);
+        }
+        for (const st of stateRows) {
+          stateMap.set(st.bookId, {
+            state: st.state,
+            ownedFormats: st.ownedFormats ? JSON.parse(st.ownedFormats) : [],
+            activeFormats: st.activeFormats ? JSON.parse(st.activeFormats) : [],
           });
         }
       }
+    }
 
-      seriesBooks.push({
+    const seriesBooks = seriesBooksRaw.map((sb) => {
+      const userRating = ratingMap.get(sb.id) ?? null;
+      let effectiveCover = sb.seriesCoverUrl ?? sb.coverImageUrl;
+
+      if (userId && useFormatCovers) {
+        const stInfo = stateMap.get(sb.id);
+        const isActivelyReading = stInfo?.state === "currently_reading" || stInfo?.state === "paused";
+
+        effectiveCover = getEffectiveCoverUrl({
+          baseCoverUrl: sb.coverImageUrl,
+          audiobookCoverUrl: sb.audiobookCoverUrl,
+          editionSelections: editionMap.get(sb.id) ?? [],
+          activeFormats: stInfo?.activeFormats ?? [],
+          ownedFormats: stInfo?.ownedFormats ?? [],
+          isActivelyReading: isActivelyReading ?? false,
+          size: "M",
+        });
+      }
+
+      return {
         id: sb.id,
         title: sb.title,
         slug: sb.slug,
@@ -264,8 +290,8 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
         position: sb.position,
         userRating,
         isBoxSet: sb.isBoxSet ?? false,
-      });
-    }
+      };
+    });
 
     // Deduplicate: keep one book per position (prefer the one with a cover)
     // Also filter out entries with no position that look like box sets

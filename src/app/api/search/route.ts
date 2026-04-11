@@ -117,9 +117,59 @@ export async function GET(request: NextRequest) {
   });
 }
 
-// ─── Series search (LIKE — only 7.6K rows, fast enough) ───
+// ─── Series search — Meilisearch with DB fallback ───
 async function searchSeries(query: string) {
-  const rows = await db
+  let rows: { id: string; name: string; slug: string | null; bookCount: number }[];
+
+  if (process.env.MEILISEARCH_HOST && process.env.MEILISEARCH_SEARCH_KEY) {
+    try {
+      const { searchSeriesMeilisearch } = await import("@/lib/search/meilisearch");
+      const meiliResults = await searchSeriesMeilisearch(query, 3);
+      // Meilisearch doesn't have slug — fetch from DB
+      if (meiliResults.length > 0) {
+        const ids = meiliResults.map((r) => r.id);
+        const dbRows = await db
+          .select({ id: series.id, slug: series.slug })
+          .from(series)
+          .where(sql`${series.id} IN (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})`);
+        const slugMap = new Map(dbRows.map((r) => [r.id, r.slug]));
+        rows = meiliResults.map((r) => ({ ...r, slug: slugMap.get(r.id) ?? null }));
+      } else {
+        rows = [];
+      }
+    } catch {
+      rows = await searchSeriesDB(query);
+    }
+  } else {
+    rows = await searchSeriesDB(query);
+  }
+
+  if (rows.length === 0) return [];
+
+  // Batch fetch all books for matched series in ONE query (fixes N+1)
+  const seriesIds = rows.map((r) => r.id);
+  const allSeriesBooks = await db
+    .select({
+      seriesId: bookSeries.seriesId,
+      id: books.id,
+      slug: books.slug,
+      title: books.title,
+      coverImageUrl: books.coverImageUrl,
+      position: bookSeries.positionInSeries,
+    })
+    .from(bookSeries)
+    .innerJoin(books, eq(bookSeries.bookId, books.id))
+    .where(sql`${bookSeries.seriesId} IN (${sql.join(seriesIds.map((id) => sql`${id}`), sql`, `)})`)
+    .orderBy(bookSeries.positionInSeries);
+
+  return rows.map((row) => ({
+    ...row,
+    books: allSeriesBooks.filter((b) => b.seriesId === row.id).slice(0, 7),
+  }));
+}
+
+async function searchSeriesDB(query: string) {
+  return db
     .select({
       id: series.id,
       name: series.name,
@@ -132,31 +182,28 @@ async function searchSeries(query: string) {
     .groupBy(series.id)
     .orderBy(sql`count(${bookSeries.bookId}) DESC`)
     .limit(3);
-
-  const results = [];
-  for (const row of rows) {
-    const seriesBooks = await db
-      .select({
-        id: books.id,
-        slug: books.slug,
-        title: books.title,
-        coverImageUrl: books.coverImageUrl,
-        position: bookSeries.positionInSeries,
-      })
-      .from(bookSeries)
-      .innerJoin(books, eq(bookSeries.bookId, books.id))
-      .where(eq(bookSeries.seriesId, row.id))
-      .orderBy(bookSeries.positionInSeries)
-      .limit(7);
-
-    results.push({ ...row, books: seriesBooks });
-  }
-
-  return results;
 }
 
-// ─── Author search (LIKE — only 5K rows, fast enough) ───
+// ─── Author search — Meilisearch with DB fallback ───
 async function searchAuthors(query: string) {
+  if (process.env.MEILISEARCH_HOST && process.env.MEILISEARCH_SEARCH_KEY) {
+    try {
+      const { searchAuthorsMeilisearch } = await import("@/lib/search/meilisearch");
+      const meiliResults = await searchAuthorsMeilisearch(query, 3);
+      if (meiliResults.length > 0) {
+        const ids = meiliResults.map((r) => r.id);
+        const dbRows = await db
+          .select({ id: authors.id, slug: authors.slug })
+          .from(authors)
+          .where(sql`${authors.id} IN (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})`);
+        const slugMap = new Map(dbRows.map((r) => [r.id, r.slug]));
+        return meiliResults.map((r) => ({ ...r, slug: slugMap.get(r.id) ?? null }));
+      }
+      return [];
+    } catch {
+      // Fall through to DB
+    }
+  }
   return db
     .select({
       id: authors.id,

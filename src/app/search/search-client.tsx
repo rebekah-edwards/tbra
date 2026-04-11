@@ -55,11 +55,16 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
   const [bookOwnedFormats, setBookOwnedFormats] = useState<Record<string, string[]>>({});
   const [bookCovers, setBookCovers] = useState<Record<string, string>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const searchIdRef = useRef(0);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (query.trim().length < 2) {
+      // Cancel in-flight requests
+      if (abortRef.current) abortRef.current.abort();
+      searchIdRef.current++;
       setResults([]);
       setSeriesMatches([]);
       setAuthorMatches([]);
@@ -70,74 +75,54 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
 
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
+      // Cancel any in-flight request
+      if (abortRef.current) abortRef.current.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const requestId = ++searchIdRef.current;
+
       try {
-        // Phase 1: Fast local-only searches in parallel (books, series, authors)
-        const [res, seriesRes, authorRes] = await Promise.all([
-          fetch(`/api/openlibrary/search?q=${encodeURIComponent(query.trim())}`),
-          fetch(`/api/series/search?q=${encodeURIComponent(query.trim())}`),
-          fetch(`/api/authors/search?q=${encodeURIComponent(query.trim())}`),
-        ]);
-        const localData: OLSearchResult[] = await res.json();
-        const seriesData: SeriesMatch[] = await seriesRes.json();
-        const authorData: AuthorMatch[] = await authorRes.json();
-        // Show local results immediately
-        setResults(localData);
-        setSeriesMatches(seriesData);
-        setAuthorMatches(authorData);
-        setSearched(true);
-        setLoading(false);
+        // Single unified request — books, series, authors, ISBNdb fallback,
+        // and book-check (states/covers/formats) all in one serverless call
+        const res = await fetch(
+          `/api/search/full?q=${encodeURIComponent(query.trim())}`,
+          { signal: controller.signal },
+        );
 
-        // Check which books are already imported
-        if (localData.length > 0) {
-          const keys = localData.map((r) => r.key);
-          const checkRes = await fetch("/api/books/check", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ keys }),
-          });
-          const checkData = await checkRes.json();
-          setExistingBooks(checkData.existing ?? {});
-          setBookStates((prev) => ({ ...prev, ...(checkData.states ?? {}) }));
-          setBookOwnedFormats((prev) => ({ ...prev, ...(checkData.ownedFormats ?? {}) }));
-          setBookCovers((prev) => ({ ...prev, ...(checkData.covers ?? {}) }));
-        } else {
-          setExistingBooks({});
-        }
+        // Discard stale responses
+        if (requestId !== searchIdRef.current) return;
 
-        // Phase 2: Only fetch external (ISBNdb) results if local is sparse.
-        // This keeps the ISBNdb quota usage low — we reserve the 15K/day budget
-        // primarily for enrichment.
-        const LOCAL_THRESHOLD = 5;
-        if (
-          localData.length < LOCAL_THRESHOLD &&
-          query.trim().length >= 3
-        ) {
-          try {
-            const extRes = await fetch(
-              `/api/search/external?q=${encodeURIComponent(query.trim())}`,
-            );
-            if (extRes.ok) {
-              const extData = await extRes.json();
-              const extResults: OLSearchResult[] = extData.results ?? [];
-              if (extResults.length > 0) {
-                // Append external results after local ones, deduping by title
-                const seen = new Set(localData.map((r) => r.title.toLowerCase()));
-                const merged = [
-                  ...localData,
-                  ...extResults.filter((r) => !seen.has(r.title.toLowerCase())),
-                ];
-                setResults(merged);
-              }
-            }
-          } catch {
-            // External search failures should NEVER break local results
-          }
+        if (res.ok) {
+          const data = await res.json();
+          const localBooks: OLSearchResult[] = data.books ?? [];
+          const extBooks: OLSearchResult[] = data.external ?? [];
+
+          // Merge local + external results (external already deduped server-side)
+          const merged = extBooks.length > 0
+            ? [...localBooks, ...extBooks]
+            : localBooks;
+
+          setResults(merged);
+          setSeriesMatches(data.series ?? []);
+          setAuthorMatches(data.authors ?? []);
+          setSearched(true);
+
+          // Apply book-check data (states, formats, covers)
+          const check = data.check ?? {};
+          setExistingBooks(check.existing ?? {});
+          setBookStates((prev) => ({ ...prev, ...(check.states ?? {}) }));
+          setBookOwnedFormats((prev) => ({ ...prev, ...(check.ownedFormats ?? {}) }));
+          setBookCovers((prev) => ({ ...prev, ...(check.covers ?? {}) }));
         }
-      } catch {
-        setResults([]);
         setLoading(false);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        if (requestId === searchIdRef.current) {
+          setResults([]);
+          setLoading(false);
+        }
       }
-    }, 200);
+    }, 150);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);

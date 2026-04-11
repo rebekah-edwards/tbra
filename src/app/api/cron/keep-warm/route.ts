@@ -27,12 +27,17 @@ export async function GET(request: Request) {
       signal: AbortSignal.timeout(10000),
     }).catch(() => {});
 
-    // Warm the search endpoint
+    // Warm the nav search endpoint
     await fetch(`${baseUrl}/api/search?q=the`, {
       signal: AbortSignal.timeout(5000),
     }).catch(() => {});
 
-    return NextResponse.json({ ok: true, warmed: ["home", "search"] });
+    // Warm the full search endpoint (used by /search page)
+    await fetch(`${baseUrl}/api/search/full?q=the`, {
+      signal: AbortSignal.timeout(5000),
+    }).catch(() => {});
+
+    return NextResponse.json({ ok: true, warmed: ["home", "search", "search-full"] });
   } catch {
     return NextResponse.json({ ok: false });
   }

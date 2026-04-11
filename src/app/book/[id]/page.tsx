@@ -7,11 +7,10 @@ import { getUserOwnedEditions } from "@/lib/queries/editions";
 import { getBookAggregateRating } from "@/lib/queries/rating";
 import { getUserReview } from "@/lib/queries/review";
 import { getBookReviewSummaryData } from "@/lib/queries/review-summary";
-import { hasCompletedSession, getLastCompletedSession } from "@/lib/queries/reading-session";
+import { getBookSessionData } from "@/lib/queries/reading-session";
 import { isBookInUpNext, getUpNextCount } from "@/lib/queries/up-next";
 import { isBookFavorited } from "@/lib/queries/favorites";
 import { getBookReadingNotes } from "@/lib/queries/reading-notes";
-import { getBookSessions } from "@/lib/queries/reading-session";
 import { getUserContentSensitivities, getBookContentWarningMatchesForUser } from "@/lib/queries/reading-preferences";
 import { getCurrentUser, isAdmin, isPremium } from "@/lib/auth";
 import { isBookHidden } from "@/lib/actions/hidden-books";
@@ -182,17 +181,16 @@ export default async function BookPage({
     notFound();
   }
   // Run all independent queries in parallel for better performance
+  // Run all independent queries in parallel — combined session data replaces 3 queries with 1
   const [
     userState,
     rawEditions,
     userReview,
-    hasCompleted,
-    lastSession,
+    sessionData,
     upNextPosition,
     upNextCount,
     isFavoritedResult,
     readingNotes,
-    bookSessions,
     isHidden,
     friendsWhoRead,
     aggregate,
@@ -207,13 +205,11 @@ export default async function BookPage({
     user ? getUserBookState(user.userId, bookId) : null,
     user ? getUserOwnedEditions(user.userId, bookId) : Promise.resolve([]),
     user ? getUserReview(user.userId, bookId) : null,
-    user ? hasCompletedSession(user.userId, bookId) : false,
-    user ? getLastCompletedSession(user.userId, bookId) : null,
+    user ? getBookSessionData(user.userId, bookId) : Promise.resolve({ sessions: [], hasCompleted: false, lastCompletedSession: null }),
     user ? isBookInUpNext(user.userId, bookId) : null,
     user ? getUpNextCount(user.userId) : 0,
     user ? isBookFavorited(user.userId, bookId) : null,
     user ? getBookReadingNotes(user.userId, bookId) : Promise.resolve([]),
-    user ? getBookSessions(user.userId, bookId) : Promise.resolve([]),
     user ? isBookHidden(user.userId, bookId) : false,
     user ? getFollowedUsersWhoRead(user.userId, bookId) : Promise.resolve([]),
     getBookAggregateRating(bookId),
@@ -227,6 +223,9 @@ export default async function BookPage({
       ? getBookContentWarningMatchesForUser(user.userId, bookId)
       : Promise.resolve({ tagMatches: [], noteMatches: [] }),
   ]);
+
+  // Destructure combined session data
+  const { sessions: bookSessions, hasCompleted, lastCompletedSession: lastSession } = sessionData;
 
   const editionSelections = rawEditions.map((e) => ({
     editionId: e.editionId,

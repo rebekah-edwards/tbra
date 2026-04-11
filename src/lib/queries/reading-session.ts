@@ -166,6 +166,36 @@ export async function getLastCompletedSession(
   return row ? parseSession(row) : null;
 }
 
+/**
+ * Combined session data for book page — replaces 3 separate queries
+ * (getBookSessions + hasCompletedSession + getLastCompletedSession)
+ * with a single DB query.
+ */
+export async function getBookSessionData(
+  userId: string,
+  bookId: string,
+): Promise<{
+  sessions: ReadingSession[];
+  hasCompleted: boolean;
+  lastCompletedSession: ReadingSession | null;
+}> {
+  const rows = await db
+    .select()
+    .from(readingSessions)
+    .where(and(eq(readingSessions.userId, userId), eq(readingSessions.bookId, bookId)))
+    .orderBy(readingSessions.readNumber)
+    .all();
+
+  const sessions = rows.map(parseSession);
+  const completedOrDnf = sessions.filter((s) => s.state === "completed" || s.state === "dnf");
+  const hasCompleted = completedOrDnf.length > 0;
+  const lastCompletedSession = completedOrDnf.length > 0
+    ? completedOrDnf[completedOrDnf.length - 1]
+    : null;
+
+  return { sessions, hasCompleted, lastCompletedSession };
+}
+
 /** Get the next read number for a new session */
 export async function getNextReadNumber(
   userId: string,

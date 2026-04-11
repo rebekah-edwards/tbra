@@ -68,15 +68,10 @@ export async function removeFromSearchIndex(bookId: string): Promise<void> {
 }
 
 /**
- * Search books using FTS5 full-text search when available, falling back
- * to optimized LIKE queries when it's not (e.g. on Turso where FTS5
- * tables are too large for the hosted DB).
- *
- * FTS5 features (local only): relevance ranking, prefix matching, word
- * reordering, stemming.
- *
- * LIKE fallback (Turso): substring match on title + author name via
- * subquery, ordered by title match quality. Still fast (~50ms for 46K).
+ * Search books using the best available backend:
+ * 1. Meilisearch Cloud (production — relevance ranking, typo tolerance, 10-30ms)
+ * 2. FTS5 full-text search (local dev — relevance ranking, prefix matching, ~3ms)
+ * 3. LIKE fallback (Turso without Meilisearch — no ranking, ~50ms)
  */
 export async function searchBooksFTS(
   query: string,
@@ -85,7 +80,17 @@ export async function searchBooksFTS(
   const trimmed = query.trim();
   if (!trimmed || trimmed.length < 2) return [];
 
-  // Try FTS5 first
+  // Try Meilisearch first (production)
+  if (process.env.MEILISEARCH_HOST && process.env.MEILISEARCH_SEARCH_KEY) {
+    try {
+      const { searchBooksMeilisearch } = await import("./meilisearch");
+      return await searchBooksMeilisearch(trimmed, limit);
+    } catch (err) {
+      console.warn("[search-index] Meilisearch failed, falling back:", err);
+    }
+  }
+
+  // Try FTS5 (local dev)
   try {
     const words = trimmed.split(/\s+/).filter(Boolean);
     if (words.length === 0) return [];
