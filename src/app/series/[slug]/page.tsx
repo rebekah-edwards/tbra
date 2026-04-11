@@ -18,15 +18,13 @@ export async function generateMetadata({
   const seriesSlug = resolved.series.slug || slug;
   const canonicalUrl = `https://thebasedreader.app/series/${seriesSlug}`;
 
-  // We need the series name — for UUID lookups, get from the data
+  // Fetch series name + child series in parallel (not sequentially)
   let seriesName = "name" in resolved.series ? resolved.series.name : "";
-  if (!seriesName) {
-    const data = await getSeriesBooks(resolved.series.id, null);
-    seriesName = data?.name ?? "Series";
-  }
-
-  // Check if this is a franchise
-  const childSeries = await getChildSeries(resolved.series.id);
+  const [seriesData, childSeries] = await Promise.all([
+    !seriesName ? getSeriesBooks(resolved.series.id, null) : null,
+    getChildSeries(resolved.series.id),
+  ]);
+  if (!seriesName) seriesName = seriesData?.name ?? "Series";
   const isFranchise = childSeries.length > 0;
 
   const description = isFranchise

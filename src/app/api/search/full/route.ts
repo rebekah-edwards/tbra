@@ -141,13 +141,20 @@ export async function GET(request: NextRequest) {
   // Book check: compute states, owned formats, effective covers for local results
   const bookCheck = await computeBookCheck(finalBookResults, user?.userId ?? null);
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     books: finalBookResults,
     series: enrichedSeries,
     authors: enrichedAuthors,
     external: externalResults,
     check: bookCheck,
   });
+
+  // Cache anonymous search results at the edge for 30s (no user-specific data)
+  if (!user) {
+    response.headers.set("Cache-Control", "public, s-maxage=30, stale-while-revalidate=60");
+  }
+
+  return response;
 }
 
 // ─── Book search (FTS/LIKE → hydrate) ───

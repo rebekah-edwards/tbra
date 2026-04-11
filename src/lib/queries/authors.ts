@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "@/db";
 import { authors, bookAuthors, books, bookSeries, series } from "@/db/schema";
 import { eq, asc, and, ne } from "drizzle-orm";
@@ -30,15 +31,16 @@ export async function getAuthorWithBooks(authorId: string) {
 
 /**
  * Resolve an author by UUID or slug.
+ * Wrapped in React cache() so generateMetadata + page component share the result.
  */
-export async function resolveAuthor(idOrSlug: string) {
+export const resolveAuthor = cache(async function resolveAuthor(idOrSlug: string) {
   if (UUID_PATTERN.test(idOrSlug)) {
     const author = await db.query.authors.findFirst({ where: eq(authors.id, idOrSlug) });
     return author ? { author, isIdLookup: true } : null;
   }
   const author = await db.query.authors.findFirst({ where: eq(authors.slug, idOrSlug) });
   return author ? { author, isIdLookup: false } : null;
-}
+});
 
 /**
  * Get an author by slug with all their books (excluding box sets),

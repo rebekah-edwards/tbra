@@ -87,6 +87,8 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
                 src={book.coverImageUrl}
                 alt=""
                 aria-hidden
+                width={120}
+                height={180}
                 className="w-full h-full object-cover"
                 loading={i < 10 ? "eager" : "lazy"}
               />
@@ -166,6 +168,8 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
                 <img
                   src={featuredBook.coverImageUrl}
                   alt={featuredBook.title}
+                  width={100}
+                  height={150}
                   className="h-40 lg:h-52 rounded-lg object-cover shadow-lg"
                 />
               </Link>
@@ -254,6 +258,8 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
               <img
                 src={book.coverImageUrl}
                 alt={book.title}
+                width={96}
+                height={144}
                 className="h-36 lg:h-44 rounded-lg object-cover shadow-md hover:scale-105 transition-transform"
                 loading="lazy"
               />

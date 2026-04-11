@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { db } from "@/db";
 import {
@@ -40,14 +41,14 @@ export async function resolveBook(idOrSlug: string) {
 /**
  * Look up a series by either UUID or slug.
  */
-export async function resolveSeries(idOrSlug: string) {
+export const resolveSeries = cache(async function resolveSeries(idOrSlug: string) {
   if (UUID_PATTERN.test(idOrSlug)) {
     const row = await db.select({ id: series.id, slug: series.slug, parentSeriesId: series.parentSeriesId }).from(series).where(eq(series.id, idOrSlug)).get();
     return row ? { series: row, isIdLookup: true } : null;
   }
   const row = await db.select({ id: series.id, slug: series.slug, name: series.name, parentSeriesId: series.parentSeriesId }).from(series).where(eq(series.slug, idOrSlug)).get();
   return row ? { series: row, isIdLookup: false } : null;
-}
+});
 
 /**
  * Get all child series for a franchise/parent series.
