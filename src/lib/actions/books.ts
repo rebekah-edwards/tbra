@@ -649,7 +649,6 @@ export async function setBookCover(
     .where(eq(books.id, bookId));
 
   revalidatePath(`/book/${bookId}`);
-  revalidatePath("/"); // Refresh homepage recommendations that show this cover
   return { success: true };
 }
 
