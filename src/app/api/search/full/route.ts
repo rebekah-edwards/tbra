@@ -101,10 +101,22 @@ export async function GET(request: NextRequest) {
     hydrateAuthors(authorResults),
   ]);
 
-  // ISBNdb fallback: start if local book results are sparse
+  // ISBNdb fallback: trigger if local results are sparse OR if none of the local
+  // results are a strong title match (e.g. searching "the amalfi curse" returns
+  // books about curses generally but not the specific book)
   let externalResults: ISBNdbResult[] = [];
-  if (bookResults.length < 5 && trimmed.length >= 3) {
-    externalResults = await fetchISBNdbResults(queryLower, bookResults);
+  if (trimmed.length >= 3) {
+    const queryWords = queryLower.split(/\s+/).filter((w) =>
+      !["the", "a", "an", "and", "of", "in", "to", "for", "is", "on", "by"].includes(w)
+    );
+    const hasStrongMatch = bookResults.some((b) => {
+      const titleLower = b.title.toLowerCase();
+      return queryWords.length > 0 && queryWords.every((w) => titleLower.includes(w));
+    });
+
+    if (bookResults.length < 5 || !hasStrongMatch) {
+      externalResults = await fetchISBNdbResults(queryLower, bookResults);
+    }
   }
 
   // Book check: compute states, owned formats, effective covers for local results

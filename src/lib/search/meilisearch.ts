@@ -18,6 +18,10 @@ function getClient(): Meilisearch {
 /**
  * Search books via Meilisearch Cloud.
  * Returns book IDs ranked by relevance (typo-tolerant, prefix-matching).
+ *
+ * Uses "frequency" matching strategy to drop common words (like "the")
+ * and focus on discriminating terms. This prevents "the amalfi curse"
+ * from returning 20 results that only match "the".
  */
 export async function searchBooksMeilisearch(
   query: string,
@@ -27,6 +31,7 @@ export async function searchBooksMeilisearch(
   const results = await index.search(query, {
     limit,
     attributesToRetrieve: ["id"],
+    matchingStrategy: "frequency",
   });
 
   return results.hits.map((hit, i) => ({
@@ -47,6 +52,7 @@ export async function searchSeriesMeilisearch(
   const results = await index.search(query, {
     limit,
     attributesToRetrieve: ["id", "name", "bookCount"],
+    matchingStrategy: "frequency",
   });
 
   return results.hits.map((hit) => ({
@@ -67,6 +73,7 @@ export async function searchAuthorsMeilisearch(
   const results = await index.search(query, {
     limit,
     attributesToRetrieve: ["id", "name", "bookCount"],
+    matchingStrategy: "frequency",
   });
 
   return results.hits.map((hit) => ({

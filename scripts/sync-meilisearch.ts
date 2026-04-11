@@ -45,6 +45,7 @@ async function syncBooksIndex() {
     filterableAttributes: ["visibility", "isBoxSet"],
     sortableAttributes: ["publicationYear", "title"],
     rankingRules: ["words", "typo", "proximity", "attribute", "sort", "exactness"],
+    stopWords: ["the", "a", "an", "and", "of", "in", "to", "for", "is", "on", "by"],
     typoTolerance: {
       enabled: true,
       minWordSizeForTypos: { oneTypo: 4, twoTypos: 8 },
