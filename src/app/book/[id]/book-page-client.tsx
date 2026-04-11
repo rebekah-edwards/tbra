@@ -297,7 +297,7 @@ export function BookPageClient({
           <div className="flex flex-col items-center gap-4 px-8 text-center">
             <div className="w-10 h-10 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
             <p className="text-base text-white/90 max-w-sm leading-relaxed">
-              This book is currently being added to our database. Please wait 5&ndash;10 seconds for content details to be added.
+              This book is currently being added to our database. Please wait 10&ndash;20 seconds for content details to be added.
             </p>
           </div>
         </div>
