@@ -167,31 +167,36 @@ export async function GET(request: NextRequest) {
   // ISBNdb returns multiple editions (hardcover, paperback, Kindle, audiobook)
   // of the same book, each with a different ISBN. Without dedup, searching
   // "coded justice" returns 8 copies of the same book. Keep the best edition
-  // per unique title: prefer one with a cover, then most pages.
-  const deduped: typeof results = [];
-  const seenTitles = new Map<string, number>(); // normalized key → index in deduped
-  for (const r of results) {
-    const normTitle = r.title
-      .toLowerCase()
-      .replace(/\s*[:([\-–—].*/g, "")  // strip subtitles
+  // per unique title: prefer cover → shortest/cleanest title → most pages.
+  const TITLE_SUFFIXES = /\s+(?:a (?:novel|memoir|thriller|romance|novella|story|mystery|fantasy|[\w]+ (?:novel|tale|story|memoir|mystery|thriller))\b.*|the (?:new york times|#1|no\.?\s*1|international|sunday times|usa today|washington post|wall street journal).*|book \d+.*|volume \d+.*|(?:the )?(?:complete|unabridged|illustrated|deluxe|special|anniversary|collector'?s?) (?:edition|collection).*)/i;
+  function normalizeTitle(title: string): string {
+    return title.toLowerCase()
+      .replace(/\s*[:([\-–—].*/g, "")
+      .replace(TITLE_SUFFIXES, "")
       .replace(/[^a-z0-9]/g, "");
-    const normAuthor = (r.author_name?.[0] ?? "")
-      .toLowerCase()
-      .replace(/[^a-z]/g, "");
+  }
+
+  const deduped: typeof results = [];
+  const seenTitles = new Map<string, number>();
+  for (const r of results) {
+    const normTitle = normalizeTitle(r.title);
+    const normAuthor = (r.author_name?.[0] ?? "").toLowerCase().replace(/[^a-z]/g, "");
     const key = `${normTitle}::${normAuthor}`;
 
     const existingIdx = seenTitles.get(key);
     if (existingIdx !== undefined) {
-      // Replace if the new one has a cover and the old one doesn't,
-      // or if the new one has more pages (likely the main print edition)
       const existing = deduped[existingIdx];
       const newHasCover = !!r._externalCoverUrl;
       const oldHasCover = !!existing._externalCoverUrl;
+      const newTitleLen = r.title.length;
+      const oldTitleLen = existing.title.length;
       const newPages = r.number_of_pages_median ?? 0;
       const oldPages = existing.number_of_pages_median ?? 0;
-      if ((newHasCover && !oldHasCover) || (newPages > oldPages && (!oldHasCover || newHasCover))) {
-        deduped[existingIdx] = r;
-      }
+      const newBetter =
+        (newHasCover && !oldHasCover) ||
+        (newHasCover === oldHasCover && newTitleLen < oldTitleLen) ||
+        (newHasCover === oldHasCover && newTitleLen === oldTitleLen && newPages > oldPages);
+      if (newBetter) deduped[existingIdx] = r;
     } else {
       seenTitles.set(key, deduped.length);
       deduped.push(r);

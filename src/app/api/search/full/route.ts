@@ -104,14 +104,18 @@ export async function GET(request: NextRequest) {
   // ISBNdb fallback: trigger if local results are sparse OR if none of the local
   // results are a strong title match (e.g. searching "the amalfi curse" returns
   // books about curses generally but not the specific book)
+  const STOP_WORDS = new Set(["the", "a", "an", "and", "of", "in", "to", "for", "is", "on", "by"]);
+  const queryWords = queryLower.split(/\s+/).filter((w) => !STOP_WORDS.has(w));
+
   let externalResults: ISBNdbResult[] = [];
+  let hasStrongMatch = false;
   if (trimmed.length >= 3) {
-    const queryWords = queryLower.split(/\s+/).filter((w) =>
-      !["the", "a", "an", "and", "of", "in", "to", "for", "is", "on", "by"].includes(w)
-    );
-    const hasStrongMatch = bookResults.some((b) => {
+    hasStrongMatch = bookResults.some((b) => {
+      // Check if all query words appear in the title OR in title+author combined
       const titleLower = b.title.toLowerCase();
-      return queryWords.length > 0 && queryWords.every((w) => titleLower.includes(w));
+      const authorLower = (b.author_name ?? []).join(" ").toLowerCase();
+      const combined = `${titleLower} ${authorLower}`;
+      return queryWords.length > 0 && queryWords.every((w) => combined.includes(w));
     });
 
     if (bookResults.length < 5 || !hasStrongMatch) {
@@ -119,11 +123,19 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // When ISBNdb returned results and no local book is a strong match,
+  // truncate weak local results so the actual match isn't buried under
+  // 20 "curse"-only books when the user searched "the amalfi curse"
+  let finalBookResults = bookResults;
+  if (externalResults.length > 0 && !hasStrongMatch && bookResults.length > 3) {
+    finalBookResults = bookResults.slice(0, 3);
+  }
+
   // Book check: compute states, owned formats, effective covers for local results
-  const bookCheck = await computeBookCheck(bookResults, user?.userId ?? null);
+  const bookCheck = await computeBookCheck(finalBookResults, user?.userId ?? null);
 
   return NextResponse.json({
-    books: bookResults,
+    books: finalBookResults,
     series: enrichedSeries,
     authors: enrichedAuthors,
     external: externalResults,
@@ -501,21 +513,49 @@ async function fetchISBNdbResults(
   }
 
   // Deduplicate editions (hardcover, paperback, Kindle, audiobook of same book)
+  // ISBNdb titles often have marketing suffixes appended without punctuation:
+  //   "The Amalfi Curse A Novel"
+  //   "The Amalfi Curse A Bewitching Tale of Sunken Treasure..."
+  //   "The Amalfi Curse The New York Times Bestseller"
+  // Strip marketing suffixes ISBNdb appends without punctuation:
+  //   "The Amalfi Curse A Novel" → "The Amalfi Curse"
+  //   "The Amalfi Curse A Bewitching Tale of..." → "The Amalfi Curse"
+  //   "The Amalfi Curse The New York Times Bestseller" → "The Amalfi Curse"
+  const TITLE_SUFFIXES = /\s+(?:a (?:novel|memoir|thriller|romance|novella|story|mystery|fantasy|[\w]+ (?:novel|tale|story|memoir|mystery|thriller))\b.*|the (?:new york times|#1|no\.?\s*1|international|sunday times|usa today|washington post|wall street journal).*|book \d+.*|volume \d+.*|(?:the )?(?:complete|unabridged|illustrated|deluxe|special|anniversary|collector'?s?) (?:edition|collection).*)/i;
+
+  function normalizeISBNdbTitle(title: string): string {
+    return title
+      .toLowerCase()
+      .replace(/\s*[:([\-–—].*/g, "")   // strip after punctuation separators
+      .replace(TITLE_SUFFIXES, "")        // strip bare marketing suffixes
+      .replace(/[^a-z0-9]/g, "");
+  }
+
   const deduped: ISBNdbResult[] = [];
   const seenTitles = new Map<string, number>();
   for (const r of results) {
-    const normTitle = r.title.toLowerCase().replace(/\s*[:([\-–—].*/g, "").replace(/[^a-z0-9]/g, "");
+    const normTitle = normalizeISBNdbTitle(r.title);
     const normAuthor = (r.author_name?.[0] ?? "").toLowerCase().replace(/[^a-z]/g, "");
     const key = `${normTitle}::${normAuthor}`;
 
     const existingIdx = seenTitles.get(key);
     if (existingIdx !== undefined) {
+      // Replace if the new edition is better: prefer cover, then cleanest title, then most pages
       const existing = deduped[existingIdx];
       const newHasCover = !!r._externalCoverUrl;
       const oldHasCover = !!existing._externalCoverUrl;
+      const newTitleLen = r.title.length;
+      const oldTitleLen = existing.title.length;
       const newPages = r.number_of_pages_median ?? 0;
       const oldPages = existing.number_of_pages_median ?? 0;
-      if ((newHasCover && !oldHasCover) || (newPages > oldPages && (!oldHasCover || newHasCover))) {
+
+      // Prefer: has cover > shorter/cleaner title > more pages
+      const newBetter =
+        (newHasCover && !oldHasCover) ||
+        (newHasCover === oldHasCover && newTitleLen < oldTitleLen) ||
+        (newHasCover === oldHasCover && newTitleLen === oldTitleLen && newPages > oldPages);
+
+      if (newBetter) {
         deduped[existingIdx] = r;
       }
     } else {
