@@ -41,16 +41,13 @@ export function ReviewSummary({
               <div className="flex items-center gap-2.5">
                 <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold overflow-hidden ${
                   review.isAnonymous
-                    ? "bg-muted/20 text-muted"
+                    ? "bg-surface-alt"
                     : review.avatarUrl
                       ? ""
                       : "text-black"
                 }`} style={!review.isAnonymous && !review.avatarUrl ? { backgroundColor: "#a3e635" } : undefined}>
                   {review.isAnonymous ? (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
+                    <Image src="/logo.png" alt="tbr*a" width={28} height={28} className="w-full h-full object-cover" />
                   ) : review.avatarUrl ? (
                     <Image src={review.avatarUrl} alt="" width={28} height={28} className="w-full h-full object-cover" loading="lazy" />
                   ) : (
@@ -60,7 +57,9 @@ export function ReviewSummary({
                 <span className={`text-sm font-medium truncate flex-1 ${
                   review.isAnonymous ? "text-muted italic" : "text-foreground"
                 }`}>
-                  {review.isAnonymous ? "Anonymous" : (review.displayName || "tbr*a reader")}
+                  {review.isAnonymous
+                    ? "Anonymous"
+                    : review.displayName || (review.username ? `@${review.username}` : "tbr*a reader")}
                 </span>
                 {review.overallRating != null && (
                   <div className="flex items-center gap-1.5 flex-shrink-0">

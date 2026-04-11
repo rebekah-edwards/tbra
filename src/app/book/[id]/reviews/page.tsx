@@ -4,6 +4,7 @@ import { resolveBook, getBookWithDetails } from "@/lib/queries/books";
 import { getBookReviews } from "@/lib/queries/review";
 import { getCurrentUser } from "@/lib/auth";
 import { ReviewListClient } from "./review-list-client";
+import { BackButton } from "@/components/ui/back-button";
 
 export default async function ReviewsPage({
   params,
@@ -31,34 +32,27 @@ export default async function ReviewsPage({
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-border/50">
-        <Link
-          href={bookPath}
-          className="p-1 -m-1 text-foreground/60 hover:text-foreground transition-colors"
-          aria-label="Back to book"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+      <div className="px-4 py-4 border-b border-border/50">
+        <div className="flex items-center gap-2 mb-2">
+          <BackButton />
+          <Link
+            href={bookPath}
+            className="text-xs text-neon-blue hover:text-neon-blue/80 transition-colors"
           >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-foreground text-lg font-bold truncate">
-            Reviews
-          </h1>
-          <p className="text-xs text-muted truncate">{book.title}</p>
+            View Book Details
+          </Link>
         </div>
-        <span className="text-sm text-muted flex-shrink-0">
-          {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
-        </span>
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-foreground text-lg font-bold truncate">
+              Reviews
+            </h1>
+            <p className="text-xs text-muted truncate">{book.title}</p>
+          </div>
+          <span className="text-sm text-muted flex-shrink-0">
+            {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
+          </span>
+        </div>
       </div>
 
       {/* Review list */}

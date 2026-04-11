@@ -12,6 +12,7 @@ import { MOODS } from "@/lib/review-constants";
 export interface CompactReview {
   id: string;
   displayName: string | null;
+  username: string | null;
   avatarUrl: string | null;
   isAnonymous: boolean;
   overallRating: number | null;
@@ -106,6 +107,7 @@ export async function getBookReviewSummaryData(
     .select({
       id: userBookReviews.id,
       displayName: users.displayName,
+      username: users.username,
       avatarUrl: users.avatarUrl,
       isAnonymous: userBookReviews.isAnonymous,
       overallRating: userBookReviews.overallRating,
@@ -126,6 +128,7 @@ export async function getBookReviewSummaryData(
     .map((r) => ({
       id: r.id,
       displayName: r.isAnonymous ? null : r.displayName,
+      username: r.isAnonymous ? null : r.username,
       avatarUrl: r.isAnonymous ? null : r.avatarUrl,
       isAnonymous: r.isAnonymous,
       overallRating: r.overallRating,
