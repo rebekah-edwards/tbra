@@ -503,7 +503,7 @@ export async function createBookManually(formData: FormData) {
     throw new Error("Title is required");
   }
 
-  // Handle cover file upload
+  // Handle cover file upload — use Vercel Blob in production, local filesystem in dev
   const coverFile = formData.get("coverFile") as File | null;
   if (coverFile && coverFile.size > 0) {
     const ext = coverFile.name.split(".").pop()?.toLowerCase() || "jpg";
@@ -511,12 +511,33 @@ export async function createBookManually(formData: FormData) {
     if (!allowedExts.includes(ext)) throw new Error("Invalid image type");
     if (coverFile.size > 1024 * 1024) throw new Error("Cover image must be under 1 MB");
 
-    const filename = `cover-${Date.now()}.${ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "covers");
-    await mkdir(uploadDir, { recursive: true });
-    const buffer = Buffer.from(await coverFile.arrayBuffer());
-    await writeFile(path.join(uploadDir, filename), buffer);
-    coverImageUrl = `/uploads/covers/${filename}`;
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      // Production: upload to Vercel Blob
+      const { put } = await import("@vercel/blob");
+      const filename = `covers/cover-${Date.now()}.${ext}`;
+      const blob = await put(filename, coverFile, { access: "public" });
+      coverImageUrl = blob.url;
+    } else {
+      // Local dev: save to filesystem
+      const filename = `cover-${Date.now()}.${ext}`;
+      const uploadDir = path.join(process.cwd(), "public", "uploads", "covers");
+      await mkdir(uploadDir, { recursive: true });
+      const buffer = Buffer.from(await coverFile.arrayBuffer());
+      await writeFile(path.join(uploadDir, filename), buffer);
+      coverImageUrl = `/uploads/covers/${filename}`;
+    }
+  }
+
+  // Check if a book with this ISBN already exists (prevents UNIQUE constraint crash)
+  if (isbn13 || isbn10) {
+    const existing = isbn13
+      ? await db.query.books.findFirst({ where: eq(books.isbn13, isbn13), columns: { id: true, slug: true } })
+      : isbn10
+        ? await db.query.books.findFirst({ where: eq(books.isbn10, isbn10), columns: { id: true, slug: true } })
+        : null;
+    if (existing) {
+      redirect(`/book/${existing.slug || existing.id}`);
+    }
   }
 
   const [book] = await db
@@ -560,11 +581,20 @@ export async function createBookManually(formData: FormData) {
   }
 
   // Generate SEO slug
-  const slug = await assignBookSlug(book.id, title.trim(), authorName?.trim() ?? "");
+  let slug = "";
+  try {
+    slug = await assignBookSlug(book.id, title.trim(), authorName?.trim() ?? "");
+  } catch (err) {
+    console.error("[createBookManually] Slug assignment failed:", err);
+  }
 
-  // Update FTS search index immediately so the book is searchable
-  const { updateSearchIndex } = await import("@/lib/search/search-index");
-  await updateSearchIndex(book.id);
+  // Update search index (best-effort)
+  try {
+    const { updateSearchIndex } = await import("@/lib/search/search-index");
+    await updateSearchIndex(book.id);
+  } catch (err) {
+    console.error("[createBookManually] Search index update failed:", err);
+  }
 
   // Enrich with content ratings, summary, tags
   after(() => triggerEnrichment(book.id));
