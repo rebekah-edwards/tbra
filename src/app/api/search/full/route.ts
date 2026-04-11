@@ -111,12 +111,19 @@ export async function GET(request: NextRequest) {
   let hasStrongMatch = false;
   if (trimmed.length >= 3) {
     hasStrongMatch = bookResults.some((b) => {
-      // Check if all query words appear in the title OR in title+author combined
+      // Check if all query words appear in title + author + series combined
       const titleLower = b.title.toLowerCase();
       const authorLower = (b.author_name ?? []).join(" ").toLowerCase();
       const combined = `${titleLower} ${authorLower}`;
       return queryWords.length > 0 && queryWords.every((w) => combined.includes(w));
     });
+    // Also check series names for strong match (e.g. "mistborn era 2")
+    if (!hasStrongMatch && enrichedSeries.length > 0) {
+      hasStrongMatch = enrichedSeries.some((s) => {
+        const nameLower = s.name.toLowerCase();
+        return queryWords.length > 0 && queryWords.every((w) => nameLower.includes(w));
+      });
+    }
 
     if (bookResults.length < 5 || !hasStrongMatch) {
       externalResults = await fetchISBNdbResults(queryLower, bookResults);

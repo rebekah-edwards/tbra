@@ -862,13 +862,9 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
       );
 
       if (!seriesRow) {
-        // No fuzzy match — create new (generate slug from name)
-        const seriesSlug = result.series.name
-          .toLowerCase()
-          .trim()
-          .replace(/[^a-z0-9\s-]/g, "")
-          .replace(/\s+/g, "-")
-          .replace(/-+/g, "-");
+        // No fuzzy match — create new (use shared slug generator)
+        const { generateSeriesSlug } = await import("@/lib/utils/slugify");
+        const seriesSlug = generateSeriesSlug(result.series.name);
         const [created] = await db
           .insert(series)
           .values({ name: result.series.name, slug: seriesSlug })
