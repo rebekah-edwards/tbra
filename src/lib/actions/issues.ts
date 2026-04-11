@@ -42,15 +42,19 @@ export async function submitIssue(data: {
     seriesId = s?.id ?? null;
   }
 
-  await db.insert(reportedIssues).values({
-    userId: user.userId,
-    bookId,
-    seriesId,
-    pageUrl: data.pageUrl,
-    description: data.description.trim(),
-  });
-
-  return { success: true };
+  try {
+    await db.insert(reportedIssues).values({
+      userId: user.userId,
+      bookId,
+      seriesId,
+      pageUrl: data.pageUrl,
+      description: data.description.trim(),
+    });
+    return { success: true };
+  } catch (err) {
+    console.error("[submitIssue] Failed to save report:", err);
+    return { success: false, error: "Failed to save report. Please try again." };
+  }
 }
 
 export async function resolveIssue(
