@@ -60,6 +60,7 @@ export const metadata: Metadata = {
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
   ],
   icons: {
+    icon: "/icon",
     apple: "/icons/apple-touch-icon.png",
   },
 };
