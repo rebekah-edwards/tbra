@@ -344,9 +344,13 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
             </button>
             {/* Reading state split button — rounded-xl to match book page */}
             <div className="relative flex w-full" ref={(el) => { stateDropdownRefs.current[book.id] = el; }}>
-              <div className="flex-1 min-w-0 rounded-l-xl bg-accent border-2 border-accent border-r-0 px-2 py-1.5 text-[11px] font-semibold text-black text-center whitespace-nowrap flex items-center justify-center">
+              <button
+                onClick={() => setOpenStateDropdown(openStateDropdown === book.id ? null : book.id)}
+                className="flex-1 min-w-0 rounded-l-xl bg-accent border-2 border-accent border-r-0 px-2 py-1.5 text-[11px] font-semibold text-black text-center whitespace-nowrap flex items-center justify-center hover:brightness-110 active:scale-[0.98] transition-all"
+                title="Change reading state"
+              >
                 Reading
-              </div>
+              </button>
               <button
                 onClick={() => setOpenStateDropdown(openStateDropdown === book.id ? null : book.id)}
                 className="flex-shrink-0 rounded-r-xl bg-accent text-black border-2 border-accent border-l border-l-black/20 px-2 py-1.5 hover:brightness-110 active:scale-[0.98] transition-all"
