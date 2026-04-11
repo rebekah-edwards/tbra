@@ -132,7 +132,9 @@ export function BookPageClient({
   const [mounted, setMounted] = useState(false);
   const [editingCover, setEditingCover] = useState(false);
   const [editionCovers, setEditionCovers] = useState<{ coverId: number; title: string; format?: string; year?: string }[]>([]);
+  const [externalCovers, setExternalCovers] = useState<{ url: string; source: string; label: string }[]>([]);
   const [loadingCovers, setLoadingCovers] = useState(false);
+  const [loadingExternal, setLoadingExternal] = useState(false);
   const [savingCover, setSavingCover] = useState(false);
   const [baseCoverUrl, setBaseCoverUrl] = useState(book.coverImageUrl);
   const router = useRouter();
@@ -330,10 +332,13 @@ export function BookPageClient({
             onCoverEditClick={isAdmin ? async () => {
               setEditingCover(true);
               setEditionCovers([]);
-              if (book.openLibraryKey) {
+              setExternalCovers([]);
+
+              // Fetch OL editions and external covers (ISBNdb + Google Books) in parallel
+              const olPromise = book.openLibraryKey ? (async () => {
                 setLoadingCovers(true);
                 try {
-                  const res = await fetch(`/api/openlibrary/editions?workKey=${encodeURIComponent(book.openLibraryKey)}&limit=100`);
+                  const res = await fetch(`/api/openlibrary/editions?workKey=${encodeURIComponent(book.openLibraryKey!)}&limit=100`);
                   if (res.ok) {
                     const data = await res.json();
                     const covers: { coverId: number; title: string; format?: string; year?: string }[] = [];
@@ -343,12 +348,7 @@ export function BookPageClient({
                         for (const cid of ed.covers) {
                           if (cid > 0 && !seenIds.has(cid)) {
                             seenIds.add(cid);
-                            covers.push({
-                              coverId: cid,
-                              title: ed.title,
-                              format: ed.physical_format,
-                              year: ed.publish_date,
-                            });
+                            covers.push({ coverId: cid, title: ed.title, format: ed.physical_format, year: ed.publish_date });
                           }
                         }
                       }
@@ -357,7 +357,26 @@ export function BookPageClient({
                   }
                 } catch { /* ignore */ }
                 setLoadingCovers(false);
-              }
+              })() : Promise.resolve();
+
+              const extPromise = (async () => {
+                setLoadingExternal(true);
+                try {
+                  const params = new URLSearchParams();
+                  if (book.isbn13) params.set("isbn13", book.isbn13);
+                  params.set("title", book.title);
+                  const authorNames = book.authors.filter(a => a.role === "author").map(a => a.name);
+                  if (authorNames.length > 0) params.set("authors", authorNames.join(", "));
+                  const res = await fetch(`/api/admin/covers?${params.toString()}`);
+                  if (res.ok) {
+                    const data = await res.json();
+                    setExternalCovers(data.covers ?? []);
+                  }
+                } catch { /* ignore */ }
+                setLoadingExternal(false);
+              })();
+
+              await Promise.all([olPromise, extPromise]);
             } : undefined}
           />
 
@@ -610,6 +629,59 @@ export function BookPageClient({
             )}
             {!loadingCovers && editionCovers.length === 0 && !book.openLibraryKey && (
               <p className="py-4 text-center text-xs text-muted">No Open Library editions available</p>
+            )}
+
+            {/* ISBNdb + Google Books covers */}
+            {loadingExternal && (
+              <div className="flex items-center justify-center py-4">
+                <div className="w-5 h-5 border-2 border-muted/30 border-t-foreground rounded-full animate-spin" />
+                <span className="ml-2 text-xs text-muted">Searching ISBNdb & Google Books...</span>
+              </div>
+            )}
+            {!loadingExternal && externalCovers.length > 0 && (
+              <>
+                <label className="block text-xs font-medium uppercase tracking-wide text-muted mb-2 mt-4">
+                  ISBNdb & Google Books ({externalCovers.length})
+                </label>
+                <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto">
+                  {externalCovers.map((ec, i) => (
+                    <button
+                      key={`${ec.source}-${i}`}
+                      onClick={async () => {
+                        setSavingCover(true);
+                        try {
+                          const result = await setBookCover(book.id, ec.url);
+                          if (result.success) {
+                            setBaseCoverUrl(ec.url);
+                          } else {
+                            alert(result.error || "Failed to set cover");
+                          }
+                        } catch (err) {
+                          console.error("Failed to set cover:", err);
+                          alert("Failed to set cover. Please try again.");
+                        } finally {
+                          setSavingCover(false);
+                          setEditingCover(false);
+                        }
+                      }}
+                      disabled={savingCover}
+                      className="flex flex-col items-center gap-0.5 rounded-lg p-1 hover:bg-surface-alt transition-colors disabled:opacity-50"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={ec.url}
+                        alt="Cover option"
+                        className="w-full aspect-[2/3] rounded object-cover border border-border"
+                        loading="lazy"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                      <span className="text-[9px] text-muted leading-tight text-center line-clamp-2">
+                        {ec.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
 
             {/* Set Audiobook Cover (admin) */}
