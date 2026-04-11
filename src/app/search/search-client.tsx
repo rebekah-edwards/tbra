@@ -252,7 +252,8 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
             />
             <CompactOwnedButton
               bookId={existingId ?? undefined}
-              olResult={existingId ? undefined : result}
+              olResult={existingId || externalImport ? undefined : result}
+              externalImport={externalImport}
               currentFormats={bookOwnedFormats[result.key] ?? []}
               isLoggedIn={isLoggedIn}
               onFormatsChange={(formats) => {

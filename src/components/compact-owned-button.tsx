@@ -2,8 +2,8 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { setOwnedFormats } from "@/lib/actions/reading-state";
-import { importFromOpenLibraryAndReturn } from "@/lib/actions/books";
+import { setOwnedFormats, type ExternalBookImportInput } from "@/lib/actions/reading-state";
+import { importFromOpenLibraryAndReturn, importFromISBNdbAndReturn } from "@/lib/actions/books";
 import { FormatIcon } from "@/components/format-button";
 import type { OLSearchResult } from "@/lib/openlibrary";
 
@@ -19,6 +19,8 @@ const BOX_SET_FORMAT = { value: "set", label: "Box Set" } as const;
 interface CompactOwnedButtonProps {
   bookId?: string;
   olResult?: OLSearchResult;
+  /** For results sourced from ISBNdb (via /api/search/external) */
+  externalImport?: ExternalBookImportInput | null;
   currentFormats: string[];
   isLoggedIn: boolean;
   isBoxSet?: boolean;
@@ -29,6 +31,7 @@ interface CompactOwnedButtonProps {
 export function CompactOwnedButton({
   bookId,
   olResult,
+  externalImport,
   currentFormats,
   isLoggedIn,
   isBoxSet = false,
@@ -81,6 +84,23 @@ export function CompactOwnedButton({
         setResolvedBookId(newBookId);
         onImported?.(olResult.key, newBookId);
         setOpen(true);
+      } catch {
+        // import failed — don't open
+      }
+      setImporting(false);
+      return;
+    }
+
+    // ISBNdb-sourced result — import via ISBNdb path
+    if (!resolvedBookId && externalImport) {
+      setImporting(true);
+      try {
+        const newBookId = await importFromISBNdbAndReturn(externalImport);
+        if (newBookId) {
+          setResolvedBookId(newBookId);
+          onImported?.(`isbndb:${externalImport.isbn}`, newBookId);
+          setOpen(true);
+        }
       } catch {
         // import failed — don't open
       }
