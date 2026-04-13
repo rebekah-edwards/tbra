@@ -203,14 +203,15 @@ function TrackSheet({
   );
 }
 
-function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
+function ReadingBookCard({ book, onReviewOpen }: {
+  book: CurrentlyReadingBook;
+  onReviewOpen: (bookId: string, pages: number | null, isDnf: boolean, dnfPercent: number | null) => void;
+}) {
   const [trackingBookId, setTrackingBookId] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ bookId: string; state: string; label: string } | null>(null);
   const [isPending, startTransition] = useTransition();
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [pendingCompleteState, setPendingCompleteState] = useState<"completed" | "dnf" | null>(null);
-  const [reviewOpen, setReviewOpen] = useState(false);
-  const [reviewAsDnf, setReviewAsDnf] = useState(false);
   const [openStateDropdown, setOpenStateDropdown] = useState<string | null>(null);
   const stateDropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const router = useRouter();
@@ -256,14 +257,11 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
     startTransition(async () => {
       await setBookStateWithCompletion(book.id, finalState, date, precision);
     });
-    // Open review wizard after completion OR DNF — DNFs use the wizard in
-    // DNF mode so the user can leave an explanation and flag content details
+    // Open review wizard via parent (survives this card's unmount)
     if (finalState === "completed") {
-      setReviewAsDnf(false);
-      setReviewOpen(true);
+      onReviewOpen(book.id, book.pages ?? null, false, null);
     } else if (finalState === "dnf") {
-      setReviewAsDnf(true);
-      setReviewOpen(true);
+      onReviewOpen(book.id, book.pages ?? null, true, book.progress ?? null);
     }
   }
 
@@ -420,15 +418,6 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
         onConfirm={handleDateConfirm}
         label={pendingCompleteState === "dnf" ? "When did you stop reading?" : "When did you finish?"}
       />
-      <ReviewWizard
-        bookId={book.id}
-        bookPages={book.pages}
-        open={reviewOpen}
-        onClose={() => setReviewOpen(false)}
-        isExisting={false}
-        initialDnf={reviewAsDnf}
-        initialDnfPercent={reviewAsDnf ? (book.progress ?? null) : null}
-      />
     </div>
   );
 }
@@ -436,6 +425,13 @@ function ReadingBookCard({ book }: { book: CurrentlyReadingBook }) {
 export function CurrentlyReadingSection({ books }: { books: CurrentlyReadingBook[] }) {
   const [showAll, setShowAll] = useState(false);
   const displayBooks = showAll ? books : books.slice(0, 3);
+
+  // Review wizard state lifted here so it survives card unmount
+  // (when a book becomes "completed", the card unmounts but the wizard must stay open)
+  const [reviewBookId, setReviewBookId] = useState<string | null>(null);
+  const [reviewBookPages, setReviewBookPages] = useState<number | null>(null);
+  const [reviewDnf, setReviewDnf] = useState(false);
+  const [reviewDnfPercent, setReviewDnfPercent] = useState<number | null>(null);
 
   if (books.length === 0) {
     return (
@@ -454,7 +450,16 @@ export function CurrentlyReadingSection({ books }: { books: CurrentlyReadingBook
   return (
     <div className="space-y-3">
       {displayBooks.map((book) => (
-        <ReadingBookCard key={book.id} book={book} />
+        <ReadingBookCard
+          key={book.id}
+          book={book}
+          onReviewOpen={(bookId, pages, isDnf, dnfPercent) => {
+            setReviewBookId(bookId);
+            setReviewBookPages(pages);
+            setReviewDnf(isDnf);
+            setReviewDnfPercent(dnfPercent);
+          }}
+        />
       ))}
       {!showAll && books.length > 3 && (
         <button
@@ -463,6 +468,18 @@ export function CurrentlyReadingSection({ books }: { books: CurrentlyReadingBook
         >
           Show all ({books.length})
         </button>
+      )}
+      {/* Review wizard rendered at section level so it survives card unmount */}
+      {reviewBookId && (
+        <ReviewWizard
+          bookId={reviewBookId}
+          bookPages={reviewBookPages}
+          open={!!reviewBookId}
+          onClose={() => setReviewBookId(null)}
+          isExisting={false}
+          initialDnf={reviewDnf}
+          initialDnfPercent={reviewDnf ? reviewDnfPercent : null}
+        />
       )}
     </div>
   );
