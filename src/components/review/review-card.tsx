@@ -160,10 +160,10 @@ export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { 
         <div ref={textRef} className="relative">
           <div
             ref={textInnerRef}
-            className="text-sm text-foreground/90 leading-relaxed [&_p]:mb-2.5 [&_p:last-child]:mb-0 [&_b]:font-semibold [&_i]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 overflow-hidden transition-[max-height] duration-300"
+            className="text-sm text-foreground/90 leading-relaxed [&_p]:mb-2.5 [&_p:last-child]:mb-0 [&_div]:mb-2.5 [&_div:last-child]:mb-0 [&_br+br]:block [&_br+br]:content-[''] [&_br+br]:mb-2 [&_b]:font-semibold [&_i]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 overflow-hidden transition-[max-height] duration-300"
             style={isTruncated && !textExpanded ? { maxHeight: `${TEXT_MAX_HEIGHT}px` } : undefined}
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(review.reviewText, {
-              ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 's', 'span', 'ul', 'ol', 'li', 'blockquote'],
+              ALLOWED_TAGS: ['p', 'br', 'div', 'strong', 'em', 'u', 's', 'span', 'ul', 'ol', 'li', 'blockquote'],
               ALLOWED_ATTR: ['class', 'data-spoiler'],
               FORBID_ATTR: ['style', 'onclick', 'onerror', 'onload'],
             }) }}
