@@ -5,6 +5,7 @@ import { DiscoverClient } from "@/components/discover/discover-client";
 export const metadata: Metadata = {
   title: "Find Your Next Read | The Based Reader App",
   description: "Search by mood, genre, and reading preferences to find books you'll love on tbr*a.",
+  alternates: { canonical: "https://thebasedreader.app/discover" },
   openGraph: {
     title: "Find Your Next Read | The Based Reader App",
     description: "Search by mood, genre, and reading preferences to find books you'll love on tbr*a.",

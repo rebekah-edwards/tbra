@@ -5,6 +5,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "How We Rate Books | The Based Reader App",
   description: "Learn how tbr*a rates books across content categories with our transparent methodology, intensity scale, and evidence-based approach.",
+  alternates: { canonical: "https://thebasedreader.app/methodology" },
   openGraph: {
     title: "How We Rate Books | The Based Reader App",
     description: "Learn how tbr*a rates books across content categories with our transparent methodology, intensity scale, and evidence-based approach.",

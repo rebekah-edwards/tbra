@@ -66,12 +66,16 @@ export async function generateMetadata({
 
   const displayName = user.displayName || user.username || user.email.split("@")[0];
 
+  const canonicalUrl = `https://thebasedreader.app/u/${user.username}`;
+
   return {
     title: `Follow ${displayName} on tbr*a | Top Shelf Reads, Reviews & More`,
     description: `Check out ${displayName}'s reading profile on tbr*a. See their top shelf reads, reviews, and what they're reading now.`,
+    alternates: { canonical: canonicalUrl },
     openGraph: {
       title: `Follow ${displayName} on tbr*a | Top Shelf Reads, Reviews & More`,
       description: `Check out ${displayName}'s reading profile on tbr*a. See their top shelf reads, reviews, and what they're reading now.`,
+      url: canonicalUrl,
     },
   };
 }

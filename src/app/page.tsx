@@ -8,6 +8,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "tbr*a — Know what's in a book before you read it",
   description: "Track your reading, discover books you ACTUALLY want to read, and DNF fewer books with comprehensive content details.",
+  alternates: { canonical: "https://thebasedreader.app/" },
   openGraph: {
     title: "tbr*a — Know what's in a book before you read it",
     description: "Track your reading, discover books you ACTUALLY want to read, and DNF fewer books with comprehensive content details.",
