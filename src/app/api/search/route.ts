@@ -156,16 +156,20 @@ async function searchSeries(query: string) {
       title: books.title,
       coverImageUrl: books.coverImageUrl,
       position: bookSeries.positionInSeries,
+      isBoxSet: books.isBoxSet,
     })
     .from(bookSeries)
     .innerJoin(books, eq(bookSeries.bookId, books.id))
     .where(sql`${bookSeries.seriesId} IN (${sql.join(seriesIds.map((id) => sql`${id}`), sql`, `)})`)
     .orderBy(bookSeries.positionInSeries);
 
-  return rows.map((row) => ({
-    ...row,
-    books: allSeriesBooks.filter((b) => b.seriesId === row.id).slice(0, 7),
-  }));
+  return rows.map((row) => {
+    // Show core books only (integer positions, no box sets) as thumbnails
+    const core = allSeriesBooks.filter((b) =>
+      b.seriesId === row.id && b.position != null && Number.isInteger(b.position) && !b.isBoxSet
+    );
+    return { ...row, books: core.slice(0, 7) };
+  });
 }
 
 async function searchSeriesDB(query: string) {
