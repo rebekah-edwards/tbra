@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import {
   books, bookAuthors, authors, series, bookSeries,
-  userBookState, userOwnedEditions, editions,
+  userBookState, userOwnedEditions, editions, users,
 } from "@/db/schema";
 import { eq, sql, and, inArray, isNotNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
   const useMeilisearch = !!(process.env.MEILISEARCH_HOST && process.env.MEILISEARCH_SEARCH_KEY);
 
   // Run all searches + auth check in parallel
-  const [ftsResults, seriesResults, authorResults, user] = await Promise.all([
+  const [ftsResults, seriesResults, authorResults, userResults, user] = await Promise.all([
     searchBooksFTS(trimmed, 30),
     useMeilisearch
       ? searchSeriesViaMeilisearch(trimmed)
@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
     useMeilisearch
       ? searchAuthorsViaMeilisearch(trimmed)
       : searchAuthorCandidates(queryLower).then((c) => scoreFuzzyMatches(c, trimmed, 3)),
+    searchUsers(queryLower),
     getCurrentUser(),
   ]);
 
@@ -160,6 +161,9 @@ export async function GET(request: NextRequest) {
   const bestAuthorScore = enrichedAuthors.length > 0
     ? Math.max(...enrichedAuthors.map((a) => relevanceScore(a.name)))
     : 0;
+  const bestPeopleScore = userResults.length > 0
+    ? Math.max(...userResults.map((u) => relevanceScore(u.displayName || u.username || "")))
+    : 0;
 
   // Book check: compute states, owned formats, effective covers for local results
   const bookCheck = await computeBookCheck(finalBookResults, user?.userId ?? null);
@@ -168,13 +172,14 @@ export async function GET(request: NextRequest) {
     books: finalBookResults,
     series: enrichedSeries,
     authors: enrichedAuthors,
+    people: userResults,
     external: externalResults,
     check: bookCheck,
-    // Section ordering: client uses these to decide which section to show first
     sectionOrder: [
       { type: "series", score: bestSeriesScore },
       { type: "authors", score: bestAuthorScore },
       { type: "books", score: bestBookScore },
+      { type: "people", score: bestPeopleScore },
     ].sort((a, b) => b.score - a.score).map((s) => s.type),
   });
 
@@ -415,6 +420,24 @@ async function hydrateSeries(
 }
 
 // ─── Author search (LIKE → fuzzy candidates → sample books) ───
+
+// ─── User/people search ───
+
+async function searchUsers(queryLower: string) {
+  if (queryLower.length < 2) return [];
+  const likePattern = `%${queryLower}%`;
+  return db
+    .select({
+      id: users.id,
+      displayName: users.displayName,
+      username: users.username,
+      avatarUrl: users.avatarUrl,
+    })
+    .from(users)
+    .where(sql`(LOWER(${users.displayName}) LIKE ${likePattern} OR LOWER(${users.username}) LIKE ${likePattern})`)
+    .limit(5)
+    .all();
+}
 
 async function searchAuthorCandidates(queryLower: string) {
   const useFuzzy = queryLower.length >= 4;

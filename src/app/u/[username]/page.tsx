@@ -189,7 +189,13 @@ export default async function PublicProfilePage({
             {/* Follower/following counts + follow button */}
             <div className="flex items-center gap-3 mt-1.5">
               <p className="text-xs text-muted">
-                {followerCount} {followerCount === 1 ? "follower" : "followers"} · {followingCount} following
+                <Link href={`/u/${user.username}/followers`} className="hover:text-foreground transition-colors">
+                  {followerCount} {followerCount === 1 ? "follower" : "followers"}
+                </Link>
+                {" · "}
+                <Link href={`/u/${user.username}/following`} className="hover:text-foreground transition-colors">
+                  {followingCount} following
+                </Link>
               </p>
               {!isOwner && session && (
                 <FollowButton

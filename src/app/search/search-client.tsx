@@ -41,12 +41,20 @@ interface AuthorMatch {
   sampleBooks: { id: string; title: string; coverImageUrl: string | null }[];
 }
 
+interface PersonResult {
+  id: string;
+  displayName: string | null;
+  username: string | null;
+  avatarUrl: string | null;
+}
+
 export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientProps) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery ?? "");
   const [results, setResults] = useState<OLSearchResult[]>([]);
   const [seriesMatches, setSeriesMatches] = useState<SeriesMatch[]>([]);
   const [authorMatches, setAuthorMatches] = useState<AuthorMatch[]>([]);
+  const [peopleResults, setPeopleResults] = useState<PersonResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [sectionOrder, setSectionOrder] = useState<string[]>(["series", "authors", "books"]);
@@ -106,7 +114,8 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           setResults(merged);
           setSeriesMatches(data.series ?? []);
           setAuthorMatches(data.authors ?? []);
-          setSectionOrder(data.sectionOrder ?? ["series", "authors", "books"]);
+          setPeopleResults(data.people ?? []);
+          setSectionOrder(data.sectionOrder ?? ["series", "authors", "books", "people"]);
           setSearched(true);
 
           // Apply book-check data (states, formats, covers)
@@ -389,6 +398,40 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
                     )}
                   </div>
                 )}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted flex-shrink-0">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </Link>
+            ))}
+          </div>
+        );
+
+        if (section === "people" && peopleResults.length > 0) return (
+          <div key="people" className="mt-6 space-y-3">
+            {peopleResults.map((person) => (
+              <Link
+                key={person.id}
+                href={person.username ? `/u/${person.username}` : "#"}
+                className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3 hover:bg-surface-alt transition-colors"
+              >
+                <div
+                  className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold overflow-hidden text-black"
+                  style={{ backgroundColor: person.avatarUrl ? undefined : "#a3e635" }}
+                >
+                  {person.avatarUrl ? (
+                    <img src={person.avatarUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    (person.displayName?.[0] ?? "?").toUpperCase()
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold leading-tight truncate">
+                    {person.displayName ?? person.username ?? "Unknown"}
+                  </p>
+                  {person.username && (
+                    <p className="text-xs text-muted truncate">@{person.username}</p>
+                  )}
+                </div>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted flex-shrink-0">
                   <polyline points="9 18 15 12 9 6" />
                 </svg>

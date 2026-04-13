@@ -94,9 +94,23 @@ export default async function ProfilePage() {
               Member since {memberSince}
             </p>
             <div className="flex items-center gap-3 mt-1 text-sm">
-              <span className="text-foreground"><strong>{followerCount}</strong> <span className="text-muted">followers</span></span>
-              <span className="text-muted">·</span>
-              <span className="text-foreground"><strong>{followingCount}</strong> <span className="text-muted">following</span></span>
+              {user.username ? (
+                <>
+                  <Link href={`/u/${user.username}/followers`} className="text-foreground hover:text-neon-blue transition-colors">
+                    <strong>{followerCount}</strong> <span className="text-muted">followers</span>
+                  </Link>
+                  <span className="text-muted">·</span>
+                  <Link href={`/u/${user.username}/following`} className="text-foreground hover:text-neon-blue transition-colors">
+                    <strong>{followingCount}</strong> <span className="text-muted">following</span>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <span className="text-foreground"><strong>{followerCount}</strong> <span className="text-muted">followers</span></span>
+                  <span className="text-muted">·</span>
+                  <span className="text-foreground"><strong>{followingCount}</strong> <span className="text-muted">following</span></span>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-3 mt-1.5">
               <Link
