@@ -49,6 +49,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
   const [authorMatches, setAuthorMatches] = useState<AuthorMatch[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [sectionOrder, setSectionOrder] = useState<string[]>(["series", "authors", "books"]);
   const [navigating, setNavigating] = useState<string | null>(null);
   const [existingBooks, setExistingBooks] = useState<Record<string, string>>({});
   const [bookStates, setBookStates] = useState<Record<string, string>>({});
@@ -105,6 +106,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           setResults(merged);
           setSeriesMatches(data.series ?? []);
           setAuthorMatches(data.authors ?? []);
+          setSectionOrder(data.sectionOrder ?? ["series", "authors", "books"]);
           setSearched(true);
 
           // Apply book-check data (states, formats, covers)
@@ -295,147 +297,109 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         </div>
       )}
 
-      {!loading && seriesMatches.length > 0 && (
-        <div className="mt-6 space-y-4">
-          {seriesMatches.map((s) => (
-            <div key={s.id}>
-              {/* Series header card */}
-              <Link
-                href={`/search?series=${encodeURIComponent(s.id)}`}
-                className="flex items-center gap-3 rounded-lg border border-accent/30 bg-accent/5 p-3 hover:bg-accent/10 transition-colors"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/15 text-accent">
+      {/* Render sections in relevance order (server-computed sectionOrder) */}
+      {!loading && searched && sectionOrder.map((section) => {
+        if (section === "series" && seriesMatches.length > 0) return (
+          <div key="series" className="mt-6 space-y-4">
+            {seriesMatches.map((s) => (
+              <div key={s.id}>
+                <Link
+                  href={`/search?series=${encodeURIComponent(s.id)}`}
+                  className="flex items-center gap-3 rounded-lg border border-accent/30 bg-accent/5 p-3 hover:bg-accent/10 transition-colors"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/15 text-accent">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                      <path d="M8 7h6" />
+                    </svg>
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold leading-tight">{s.name}</p>
+                    <p className="text-xs text-muted">{s.bookCount} book{s.bookCount !== 1 ? "s" : ""} in series</p>
+                  </div>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted flex-shrink-0">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </Link>
+                {s.books.length > 0 && (
+                  <div className="mt-2 space-y-2 pl-2">
+                    {s.books.map((book) => (
+                      <div key={book.id} className="flex gap-3 rounded-lg border border-border bg-surface p-3">
+                        <Link href={`/book/${book.slug || book.id}`} className="flex-shrink-0">
+                          {book.coverImageUrl ? (
+                            <Image src={book.coverImageUrl} alt={`Cover of ${book.title}`} width={48} height={72} className="h-[72px] w-[48px] rounded object-cover hover:opacity-80 transition-opacity" />
+                          ) : (
+                            <NoCover title={book.title} className="h-[72px] w-[48px]" size="sm" />
+                          )}
+                        </Link>
+                        <div className="flex flex-1 flex-col justify-between min-w-0">
+                          <div>
+                            <Link href={`/book/${book.slug || book.id}`}>
+                              <h3 className="text-sm font-medium leading-tight hover:text-link transition-colors truncate">{book.title}</h3>
+                            </Link>
+                            <p className="text-xs text-muted">
+                              {[
+                                book.position != null ? (Number.isInteger(book.position) ? `Book ${book.position}` : `Novella ${book.position}`) : null,
+                                book.authors.length > 0 ? book.authors.join(", ") : null,
+                                book.publicationYear,
+                              ].filter(Boolean).join(" · ")}
+                            </p>
+                          </div>
+                          <div className="mt-1.5 flex items-center gap-2">
+                            <ReadingStateButton bookId={book.id} bookSlug={book.slug ?? null} currentState={book.currentState} isLoggedIn={isLoggedIn} compact onStateChange={() => {}} />
+                            <CompactOwnedButton bookId={book.id} currentFormats={book.ownedFormats} isLoggedIn={isLoggedIn} onFormatsChange={() => {}} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {s.bookCount > s.books.length && (
+                      <Link href={`/search?series=${encodeURIComponent(s.id)}`} className="block text-center text-xs font-medium text-link py-1.5 hover:text-link/80 transition-colors">
+                        View all {s.bookCount} books in series →
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+
+        if (section === "authors" && authorMatches.length > 0) return (
+          <div key="authors" className="mt-6 space-y-3">
+            {authorMatches.map((a) => (
+              <Link key={a.id} href={`/author/${a.id}`} className="flex items-center gap-3 rounded-lg border border-neon-blue/30 bg-neon-blue/5 p-3 hover:bg-neon-blue/10 transition-colors">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-neon-blue/15 text-neon-blue">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-                    <path d="M8 7h6" />
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
                   </svg>
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold leading-tight">{s.name}</p>
-                  <p className="text-xs text-muted">{s.bookCount} book{s.bookCount !== 1 ? "s" : ""} in series</p>
+                  <p className="text-sm font-semibold leading-tight">{a.name}</p>
+                  <p className="text-xs text-muted">{a.bookCount} book{a.bookCount !== 1 ? "s" : ""} in library</p>
                 </div>
+                {a.sampleBooks.length > 0 && (
+                  <div className="flex -space-x-2">
+                    {a.sampleBooks.slice(0, 3).map((book) =>
+                      book.coverImageUrl ? (
+                        <Image key={book.id} src={book.coverImageUrl} alt={book.title} width={28} height={42} className="h-[42px] w-[28px] rounded object-cover border-2 border-surface" />
+                      ) : (
+                        <NoCover key={book.id} title={book.title} className="h-[42px] w-[28px] border-2 border-surface" size="sm" />
+                      )
+                    )}
+                  </div>
+                )}
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted flex-shrink-0">
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </Link>
+            ))}
+          </div>
+        );
 
-              {/* Series books */}
-              {s.books.length > 0 && (
-                <div className="mt-2 space-y-2 pl-2">
-                  {s.books.map((book) => (
-                    <div
-                      key={book.id}
-                      className="flex gap-3 rounded-lg border border-border bg-surface p-3"
-                    >
-                      <Link href={`/book/${book.slug || book.id}`} className="flex-shrink-0">
-                        {book.coverImageUrl ? (
-                          <Image
-                            src={book.coverImageUrl}
-                            alt={`Cover of ${book.title}`}
-                            width={48}
-                            height={72}
-                            className="h-[72px] w-[48px] rounded object-cover hover:opacity-80 transition-opacity"
-                          />
-                        ) : (
-                          <NoCover title={book.title} className="h-[72px] w-[48px]" size="sm" />
-                        )}
-                      </Link>
-                      <div className="flex flex-1 flex-col justify-between min-w-0">
-                        <div>
-                          <Link href={`/book/${book.slug || book.id}`}>
-                            <h3 className="text-sm font-medium leading-tight hover:text-link transition-colors truncate">
-                              {book.title}
-                            </h3>
-                          </Link>
-                          <p className="text-xs text-muted">
-                            {[
-                              book.position != null
-                                ? Number.isInteger(book.position) ? `Book ${book.position}` : `Novella ${book.position}`
-                                : null,
-                              book.authors.length > 0 ? book.authors.join(", ") : null,
-                              book.publicationYear,
-                            ].filter(Boolean).join(" · ")}
-                          </p>
-                        </div>
-                        <div className="mt-1.5 flex items-center gap-2">
-                          <ReadingStateButton
-                            bookId={book.id}
-                            bookSlug={book.slug ?? null}
-                            currentState={book.currentState}
-                            isLoggedIn={isLoggedIn}
-                            compact
-                            onStateChange={() => {}}
-                          />
-                          <CompactOwnedButton
-                            bookId={book.id}
-                            currentFormats={book.ownedFormats}
-                            isLoggedIn={isLoggedIn}
-                            onFormatsChange={() => {}}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {s.bookCount > s.books.length && (
-                    <Link
-                      href={`/search?series=${encodeURIComponent(s.id)}`}
-                      className="block text-center text-xs font-medium text-link py-1.5 hover:text-link/80 transition-colors"
-                    >
-                      View all {s.bookCount} books in series →
-                    </Link>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {!loading && authorMatches.length > 0 && (
-        <div className="mt-6 space-y-3">
-          {authorMatches.map((a) => (
-            <Link
-              key={a.id}
-              href={`/author/${a.id}`}
-              className="flex items-center gap-3 rounded-lg border border-neon-blue/30 bg-neon-blue/5 p-3 hover:bg-neon-blue/10 transition-colors"
-            >
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-neon-blue/15 text-neon-blue">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold leading-tight">{a.name}</p>
-                <p className="text-xs text-muted">{a.bookCount} book{a.bookCount !== 1 ? "s" : ""} in library</p>
-              </div>
-              {a.sampleBooks.length > 0 && (
-                <div className="flex -space-x-2">
-                  {a.sampleBooks.slice(0, 3).map((book) =>
-                    book.coverImageUrl ? (
-                      <Image
-                        key={book.id}
-                        src={book.coverImageUrl}
-                        alt={book.title}
-                        width={28}
-                        height={42}
-                        className="h-[42px] w-[28px] rounded object-cover border-2 border-surface"
-                      />
-                    ) : (
-                      <NoCover key={book.id} title={book.title} className="h-[42px] w-[28px] border-2 border-surface" size="sm" />
-                    )
-                  )}
-                </div>
-              )}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted flex-shrink-0">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {!loading && results.length > 0 && (() => {
+        if (section === "books" && results.length > 0) return (
+          <div key="books">
+            {(() => {
         // Split results into local (in tbra library) and OL (external) groups
         const localResults = results.filter((r) => (r as Record<string, unknown>)._localBookId || existingBooks[r.key]);
         const olResults = results.filter((r) => !(r as Record<string, unknown>)._localBookId && !existingBooks[r.key]);
@@ -463,8 +427,13 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           </>
         );
       })()}
+          </div>
+        );
 
-      {!loading && results.length > 0 && (
+        return null;
+      })}
+
+      {!loading && searched && results.length > 0 && (
         <div className="pt-2 text-center">
           <Link
             href="/search/add"

@@ -138,6 +138,29 @@ export async function GET(request: NextRequest) {
     finalBookResults = bookResults.slice(0, 3);
   }
 
+  // Score each result type by relevance to the query so the client can
+  // interleave sections in the right order (not always series→authors→books)
+  function relevanceScore(name: string): number {
+    const nameLower = name.toLowerCase();
+    if (nameLower === queryLower) return 100;                        // exact match
+    if (nameLower.startsWith(queryLower)) return 90;                 // starts with query
+    if (queryWords.length > 0 && queryWords.every((w) => nameLower.includes(w))) return 80; // all words match
+    if (queryWords.length > 0 && queryWords.some((w) => nameLower.includes(w))) return 50;  // some words match
+    return 20;
+  }
+
+  // Books get a +1 tiebreaker since they're more specific/actionable
+  // than a series or author result when relevance is equal
+  const bestBookScore = finalBookResults.length > 0
+    ? Math.max(...finalBookResults.slice(0, 3).map((b) => relevanceScore(b.title))) + 1
+    : 0;
+  const bestSeriesScore = enrichedSeries.length > 0
+    ? Math.max(...enrichedSeries.map((s) => relevanceScore(s.name)))
+    : 0;
+  const bestAuthorScore = enrichedAuthors.length > 0
+    ? Math.max(...enrichedAuthors.map((a) => relevanceScore(a.name)))
+    : 0;
+
   // Book check: compute states, owned formats, effective covers for local results
   const bookCheck = await computeBookCheck(finalBookResults, user?.userId ?? null);
 
@@ -147,6 +170,12 @@ export async function GET(request: NextRequest) {
     authors: enrichedAuthors,
     external: externalResults,
     check: bookCheck,
+    // Section ordering: client uses these to decide which section to show first
+    sectionOrder: [
+      { type: "series", score: bestSeriesScore },
+      { type: "authors", score: bestAuthorScore },
+      { type: "books", score: bestBookScore },
+    ].sort((a, b) => b.score - a.score).map((s) => s.type),
   });
 
   // Cache anonymous search results at the edge for 30s (no user-specific data)
