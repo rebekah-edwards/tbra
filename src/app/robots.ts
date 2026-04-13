@@ -17,8 +17,6 @@ export default function robots(): MetadataRoute.Robots {
           "/profile/reviews",
           "/search",
           "/search/add",
-          "/book/*-*-*-*-*",
-          "/author/*-*-*-*-*",
         ],
       },
     ],
