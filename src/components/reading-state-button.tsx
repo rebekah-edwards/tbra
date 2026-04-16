@@ -233,12 +233,13 @@ export function ReadingStateButton({
 
   function handleConfirmRemove() {
     setShowRemoveConfirm(false);
+    if (!bookId) return;
     startTransition(async () => {
-      if (bookId) {
-        await removeFromLibrary(bookId);
-        onStateChange?.(null);
-      }
+      await removeFromLibrary(bookId);
     });
+    // Fire OUTSIDE transition so parent state updates aren't deferred by
+    // React's transition batching — same pattern as the completion flow.
+    onStateChange?.(null);
   }
 
   // Compact mode for search results

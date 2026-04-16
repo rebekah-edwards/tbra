@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
 import { getFollowedUserIds } from "./follows";
+import { stripHtml, truncate } from "@/lib/text-utils";
 
 export interface ActivityItem {
   type: "completed" | "review" | "rating" | "currently_reading" | "tbr" | "reading_note";
@@ -53,7 +54,7 @@ export async function getFollowedUsersActivity(
         u.id as user_id, u.display_name, u.username, u.avatar_url,
         b.id as book_id, b.slug, b.title, b.cover_image_url,
         ubr.created_at as timestamp,
-        ubr.overall_rating as rating, SUBSTR(ubr.review_text, 1, 100) as review_preview,
+        ubr.overall_rating as rating, ubr.review_text as review_preview,
         ubr.id as review_id
       FROM user_book_reviews ubr
       INNER JOIN users u ON ubr.user_id = u.id
@@ -111,7 +112,7 @@ export async function getFollowedUsersActivity(
         b.id as book_id, b.slug, b.title, b.cover_image_url,
         rn.created_at as timestamp,
         NULL as rating,
-        CASE WHEN rn.is_private = 0 THEN SUBSTR(rn.note_text, 1, 100) ELSE NULL END as review_preview
+        CASE WHEN rn.is_private = 0 THEN rn.note_text ELSE NULL END as review_preview
       FROM reading_notes rn
       INNER JOIN users u ON rn.user_id = u.id
       INNER JOIN books b ON rn.book_id = b.id
@@ -147,25 +148,29 @@ export async function getFollowedUsersActivity(
     .sort((a, b) => (b.timestamp ?? "").localeCompare(a.timestamp ?? ""))
     .slice(0, limit);
 
-  return deduped.map((r) => ({
-    type: r.type as ActivityItem["type"],
-    user: {
-      id: r.user_id,
-      displayName: r.display_name,
-      username: r.username,
-      avatarUrl: r.avatar_url,
-    },
-    book: {
-      id: r.book_id,
-      slug: r.slug ?? null,
-      title: r.title,
-      coverImageUrl: r.cover_image_url,
-    },
-    rating: r.rating,
-    reviewPreview: r.review_preview,
-    reviewId: r.review_id ?? null,
-    timestamp: r.timestamp ?? "",
-  }));
+  return deduped.map((r) => {
+    const stripped = r.review_preview ? stripHtml(r.review_preview) : null;
+    const preview = stripped ? truncate(stripped, 100) : null;
+    return {
+      type: r.type as ActivityItem["type"],
+      user: {
+        id: r.user_id,
+        displayName: r.display_name,
+        username: r.username,
+        avatarUrl: r.avatar_url,
+      },
+      book: {
+        id: r.book_id,
+        slug: r.slug ?? null,
+        title: r.title,
+        coverImageUrl: r.cover_image_url,
+      },
+      rating: r.rating,
+      reviewPreview: preview,
+      reviewId: r.review_id ?? null,
+      timestamp: r.timestamp ?? "",
+    };
+  });
 }
 
 interface RawActivityRow {

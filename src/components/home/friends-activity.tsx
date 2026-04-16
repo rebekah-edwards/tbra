@@ -157,7 +157,7 @@ export function FriendsActivity({ activity }: FriendsActivityProps) {
             {item.reviewPreview && (
               <Link href={cardLink} className="block hover:underline">
                 <p className="text-[11px] lg:text-xs text-muted line-clamp-2 leading-relaxed italic">
-                  &ldquo;{item.reviewPreview}{item.reviewPreview.length >= 100 ? "..." : ""}&rdquo;
+                  &ldquo;{item.reviewPreview}&rdquo;
                 </p>
               </Link>
             )}

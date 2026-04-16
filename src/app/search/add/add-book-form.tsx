@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { createBookManually } from "@/lib/actions/books";
 
 const inputClass =
@@ -9,6 +9,8 @@ const inputClass =
 export function AddBookForm() {
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [coverMode, setCoverMode] = useState<"url" | "upload">("url");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -27,7 +29,9 @@ export function AddBookForm() {
     setCoverPreview(url || null);
   }
 
-  async function handleSubmit(formData: FormData) {
+  function handleSubmit(formData: FormData) {
+    setErrorMsg(null);
+
     // Combine hours + minutes into audioLengthMinutes
     const hours = parseInt(formData.get("audioHours") as string) || 0;
     const minutes = parseInt(formData.get("audioMinutes") as string) || 0;
@@ -47,15 +51,24 @@ export function AddBookForm() {
       formData.set("isbn10", isbn);
     }
 
-    // Handle cover image file upload — convert to data URL for server action
-    const coverFile = formData.get("coverFile") as File;
-    if (coverFile && coverFile.size > 0) {
-      // Keep the file in formData for server to handle
-    } else {
+    // Drop empty cover file so server doesn't try to process it
+    const coverFile = formData.get("coverFile") as File | null;
+    if (!coverFile || coverFile.size === 0) {
       formData.delete("coverFile");
     }
 
-    await createBookManually(formData);
+    startTransition(async () => {
+      try {
+        await createBookManually(formData);
+      } catch (err) {
+        // NEXT_REDIRECT is expected on success — let it propagate
+        if (err && typeof err === "object" && "digest" in err && typeof (err as { digest: unknown }).digest === "string" && (err as { digest: string }).digest.startsWith("NEXT_REDIRECT")) {
+          throw err;
+        }
+        console.error("[AddBookForm] submit failed:", err);
+        setErrorMsg(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      }
+    });
   }
 
   return (
@@ -112,7 +125,7 @@ export function AddBookForm() {
             onClick={() => setCoverMode("url")}
             className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               coverMode === "url"
-                ? "bg-primary text-background"
+                ? "bg-accent text-black"
                 : "bg-surface-alt text-muted hover:text-foreground"
             }`}
           >
@@ -123,7 +136,7 @@ export function AddBookForm() {
             onClick={() => setCoverMode("upload")}
             className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               coverMode === "upload"
-                ? "bg-primary text-background"
+                ? "bg-accent text-black"
                 : "bg-surface-alt text-muted hover:text-foreground"
             }`}
           >
@@ -232,7 +245,7 @@ export function AddBookForm() {
                 defaultChecked
                 className="peer sr-only"
               />
-              <div className="peer-checked:bg-primary peer-checked:text-background py-2.5 text-center text-sm font-medium text-muted transition-colors hover:bg-surface-alt">
+              <div className="peer-checked:bg-accent peer-checked:text-black py-2.5 text-center text-sm font-medium text-muted transition-colors hover:bg-surface-alt">
                 Fiction
               </div>
             </label>
@@ -243,7 +256,7 @@ export function AddBookForm() {
                 value="nonfiction"
                 className="peer sr-only"
               />
-              <div className="peer-checked:bg-primary peer-checked:text-background py-2.5 text-center text-sm font-medium text-muted transition-colors hover:bg-surface-alt">
+              <div className="peer-checked:bg-accent peer-checked:text-black py-2.5 text-center text-sm font-medium text-muted transition-colors hover:bg-surface-alt">
                 Nonfiction
               </div>
             </label>
@@ -295,11 +308,16 @@ export function AddBookForm() {
         <p className="mt-1 text-xs text-muted">Amazon identifier (for Kindle/Audible-only books).</p>
       </div>
 
+      {errorMsg && (
+        <p className="text-sm text-intensity-4" role="alert">{errorMsg}</p>
+      )}
+
       <button
         type="submit"
-        className="lime-glow-box rounded-full border border-accent/60 bg-transparent px-6 py-2.5 text-sm font-medium text-accent hover:border-accent hover:bg-accent/10 hover:shadow-[0_0_16px_rgba(163,230,53,0.2)] transition-all"
+        disabled={isPending}
+        className="lime-glow-box rounded-full border border-accent/60 bg-transparent px-6 py-2.5 text-sm font-medium text-accent hover:border-accent hover:bg-accent/10 hover:shadow-[0_0_16px_rgba(163,230,53,0.2)] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        Add Book
+        {isPending ? "Adding…" : "Add Book"}
       </button>
     </form>
   );

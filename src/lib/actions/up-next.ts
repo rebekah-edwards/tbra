@@ -20,14 +20,18 @@ export async function addToUpNext(bookId: string): Promise<{ success: boolean; p
     .limit(1);
   if (existing.length > 0) return { success: true, position: existing[0].position };
 
-  // Get current count
-  const rows = await db
-    .select({ id: upNext.id })
+  // Get current count + highest position (using max avoids UNIQUE collisions
+  // when positions aren't contiguous, e.g. after a race or partial cleanup).
+  const [stats] = await db
+    .select({
+      count: sql<number>`count(*)`,
+      maxPos: sql<number>`COALESCE(MAX(${upNext.position}), 0)`,
+    })
     .from(upNext)
     .where(eq(upNext.userId, user.userId));
-  if (rows.length >= MAX_UP_NEXT) return { success: false, error: `Up Next is full (max ${MAX_UP_NEXT})` };
+  if (stats.count >= MAX_UP_NEXT) return { success: false, error: `Up Next is full (max ${MAX_UP_NEXT})` };
 
-  const newPosition = rows.length + 1;
+  const newPosition = stats.maxPos + 1;
   await db.insert(upNext).values({
     userId: user.userId,
     bookId,
