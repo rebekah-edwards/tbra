@@ -315,7 +315,7 @@ export function AddBookForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="lime-glow-box rounded-full border border-accent/60 bg-transparent px-6 py-2.5 text-sm font-medium text-accent hover:border-accent hover:bg-accent/10 hover:shadow-[0_0_16px_rgba(163,230,53,0.2)] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+        className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-black hover:brightness-110 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {isPending ? "Adding…" : "Add Book"}
       </button>
