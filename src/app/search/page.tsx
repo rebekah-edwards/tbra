@@ -45,7 +45,8 @@ export default async function SearchPage({
   }
 
   return (
-    <div>
+    <div className="pt-14 lg:pt-0">
+      {/* Mobile pt-14 clears the fixed BackButton overlay (top ≈ 68px + 40px) */}
       <h1 className="text-foreground text-2xl font-bold tracking-tight">Search</h1>
       <p className="mt-2 text-muted">
         Search for books by title, author, or series.

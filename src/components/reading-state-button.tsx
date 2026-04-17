@@ -250,10 +250,10 @@ export function ReadingStateButton({
           <button
             onClick={handleMainClick}
             disabled={isPending}
-            className={`rounded-l-full px-5 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
+            className={`rounded-l-full py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
               isActive
-                ? "bg-accent text-black border border-accent border-r-0"
-                : "bg-accent/20 text-foreground border-2 border-accent/60 border-r-0 hover:bg-accent/30"
+                ? "px-3 bg-accent text-black border border-accent border-r-0"
+                : "px-5 bg-accent/20 text-foreground border-2 border-accent/60 border-r-0 hover:bg-accent/30"
             } ${isPending ? "opacity-60" : ""}`}
           >
             {isPending ? "..." : isActive ? mainLabel : (
