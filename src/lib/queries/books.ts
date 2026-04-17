@@ -379,9 +379,9 @@ export async function getSeriesBooks(seriesId: string, userId: string | null) {
 
   const enrichedBooks = [];
   for (const sb of seriesBooksRaw) {
-    // Get authors
+    // Get authors (include slug/id so the series page can link to author pages)
     const bookAuthorRows = await db
-      .select({ name: authors.name })
+      .select({ id: authors.id, name: authors.name, slug: authors.slug })
       .from(bookAuthors)
       .innerJoin(authors, eq(bookAuthors.authorId, authors.id))
       .where(eq(bookAuthors.bookId, sb.id))
@@ -446,7 +446,7 @@ export async function getSeriesBooks(seriesId: string, userId: string | null) {
       openLibraryKey: sb.openLibraryKey,
       position: sb.position,
       publicationYear: sb.publicationYear,
-      authors: bookAuthorRows.map((a) => a.name),
+      authors: bookAuthorRows.map((a) => ({ id: a.id, name: a.name, slug: a.slug })),
       userRating,
       currentState,
       ownedFormats,

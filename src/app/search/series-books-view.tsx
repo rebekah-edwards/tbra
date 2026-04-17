@@ -20,7 +20,7 @@ interface SeriesBook {
   openLibraryKey: string | null;
   position: number | null;
   publicationYear: number | null;
-  authors: string[];
+  authors: { id: string; name: string; slug: string | null }[];
   userRating: number | null;
   currentState: string | null;
   ownedFormats: string[];
@@ -238,7 +238,18 @@ export function SeriesBooksView({ seriesName, seriesId, books, isLoggedIn, isAdm
                 )}
                 {book.authors.length > 0 && (
                   <p className="mt-0.5 text-sm text-muted">
-                    {book.authors.join(", ")}
+                    {book.authors.map((a, i) => (
+                      <span key={a.id}>
+                        {i > 0 && ", "}
+                        <Link
+                          href={`/author/${a.slug || a.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="hover:text-neon-blue hover:underline transition-colors"
+                        >
+                          {a.name}
+                        </Link>
+                      </span>
+                    ))}
                   </p>
                 )}
                 {book.userRating != null && book.userRating > 0 && (

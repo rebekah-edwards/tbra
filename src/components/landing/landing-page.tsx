@@ -251,16 +251,18 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
         <p className="text-muted mb-6">
           {c("parade_subheading", "From bestsellers to hidden gems — every one has content details.")}
         </p>
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 pr-12 no-scrollbar mask-fade-right">
+        <div className="flex items-end gap-3 overflow-x-auto pb-2 -mx-4 px-4 pr-12 no-scrollbar mask-fade-right">
           {coverBooks.slice(0, 16).map((book) => (
             <Link key={book.id} href={`/book/${book.slug || book.id}`} className="flex-shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={book.coverImageUrl}
                 alt={book.title}
-                width={96}
-                height={144}
-                className="h-36 lg:h-44 rounded-lg object-cover shadow-md hover:scale-105 transition-transform"
+                // Fix the HEIGHT, let width follow the cover's own aspect ratio.
+                // Previously width+height were both fixed with object-cover, which
+                // stratified everything to 96×144 and chopped off covers whose
+                // native ratio wasn't exactly 2:3.
+                className="h-36 lg:h-44 w-auto rounded-lg shadow-md hover:scale-105 transition-transform"
                 loading="lazy"
               />
             </Link>

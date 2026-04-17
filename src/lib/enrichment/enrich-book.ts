@@ -280,7 +280,12 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     const olMeta = await fetchOLMetadata(book.openLibraryKey, book.isbn13, book.isbn10);
     const olUpdates: Record<string, unknown> = {};
 
-    if (!book.description && olMeta.description) olUpdates.description = olMeta.description;
+    // Treat stale-flagged descriptions as missing so enrichment refreshes them.
+    const needsDescription = !book.description || book.descriptionStale;
+    if (needsDescription && olMeta.description) {
+      olUpdates.description = olMeta.description;
+      olUpdates.descriptionStale = false;
+    }
     if (!book.pages && olMeta.pages) olUpdates.pages = olMeta.pages;
     if (!book.publicationYear && olMeta.publicationYear) olUpdates.publicationYear = olMeta.publicationYear;
     if (!book.publicationDate && olMeta.publicationDate) olUpdates.publicationDate = olMeta.publicationDate;
@@ -343,9 +348,12 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
               isbnUpdates.coverVerified = true;
             }
           }
-          if (!book.description) {
+          if (!book.description || book.descriptionStale) {
             const desc = getISBNdbDescription(isbndbResult);
-            if (desc) isbnUpdates.description = desc;
+            if (desc) {
+              isbnUpdates.description = desc;
+              isbnUpdates.descriptionStale = false;
+            }
           }
           if (!book.pages && isbndbResult.pages && isbndbResult.pages > 20) {
             isbnUpdates.pages = isbndbResult.pages;
@@ -517,13 +525,14 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
         }
 
         // Extract description from Amazon/Goodreads snippets
-        if (!book.description) {
+        if (!book.description || book.descriptionStale) {
           const JUNK_DESC_PATTERNS = /\b(books\s*\|\s*\d+\s*friends|edit\s*data|browse\s*history|viewing\s*product\s*detail|sign\s*in\s*to|add\s*to\s*cart|buy\s*now|free\s*shipping|your\s*browsing\s*history|grew\s*up\s*exploring|currently\s*working\s*on\s*the\s*\w+\s*book|you\s*can\s*often\s*find\s*him|reside[sd]?\s*in)/i;
           for (const r of metaResults) {
             if (r.description.length > 100
                 && !r.description.match(/^(Buy|Shop|Free shipping)/i)
                 && !JUNK_DESC_PATTERNS.test(r.description)) {
               metaUpdates.description = r.description.slice(0, 500);
+              metaUpdates.descriptionStale = false;
               break;
             }
           }
@@ -661,12 +670,12 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
   // Write publisher description if we found one and the book doesn't have one.
   // Apply sanitization to strip HTML/links/URLs + junk patterns before storing.
   // sanitizeDescription returns null for unsalvageable junk.
-  if (!book.description && result.description) {
+  if ((!book.description || book.descriptionStale) && result.description) {
     const cleanDesc = sanitizeDescription(result.description);
     if (cleanDesc) {
       await db
         .update(books)
-        .set({ description: cleanDesc, updatedAt: new Date().toISOString() })
+        .set({ description: cleanDesc, descriptionStale: false, updatedAt: new Date().toISOString() })
         .where(eq(books.id, bookId));
       console.log(`[enrichment] Set publisher description (${cleanDesc.length} chars) for "${book.title}"`);
     } else {

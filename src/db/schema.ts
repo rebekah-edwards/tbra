@@ -7,6 +7,10 @@ export const books = sqliteTable("books", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   title: text("title").notNull(),
   description: text("description"),
+  /** Marks the current description as edition/catalog promo rather than real
+      book content. Enrichment pipelines should re-fetch a fresh description
+      when they encounter a book with this set. */
+  descriptionStale: integer("description_stale", { mode: "boolean" }).notNull().default(false),
   summary: text("summary"),
   publicationYear: integer("publication_year"),
   isbn10: text("isbn_10"),
