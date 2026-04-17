@@ -168,9 +168,8 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
                 <img
                   src={featuredBook.coverImageUrl}
                   alt={featuredBook.title}
-                  width={100}
-                  height={150}
-                  className="h-40 lg:h-52 rounded-lg object-cover shadow-lg"
+                  // Height-locked, auto-width preserves cover's native ratio.
+                  className="h-40 lg:h-52 w-auto rounded-lg shadow-lg"
                 />
               </Link>
               <p className="mt-3 text-sm font-semibold text-foreground text-center">{featuredBook.title}</p>
@@ -258,11 +257,11 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
               <img
                 src={book.coverImageUrl}
                 alt={book.title}
-                // Fix the HEIGHT, let width follow the cover's own aspect ratio.
-                // Previously width+height were both fixed with object-cover, which
-                // stratified everything to 96×144 and chopped off covers whose
-                // native ratio wasn't exactly 2:3.
-                className="h-36 lg:h-44 w-auto rounded-lg shadow-md hover:scale-105 transition-transform"
+                // Fix the HEIGHT, let width follow the cover's own aspect
+                // ratio. `min-w-24` (96px) stops the img from collapsing
+                // to 0px while loading — that collapse is what produced
+                // the "random extra space" between covers.
+                className="h-36 lg:h-44 w-auto min-w-24 rounded-lg shadow-md hover:scale-105 transition-transform"
                 loading="lazy"
               />
             </Link>
