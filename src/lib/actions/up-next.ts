@@ -8,6 +8,37 @@ import { revalidatePath } from "next/cache";
 
 const MAX_UP_NEXT = 6;
 
+/**
+ * Normalize a user's up_next rows so positions are strictly 1..N with
+ * no gaps, preserving current visual order. Uses the two-phase
+ * "negative positions first" trick to avoid tripping the
+ * UNIQUE(user_id, position) constraint mid-update.
+ *
+ * Called at the start of every mutation (add / remove / reorder) so
+ * positions are never left non-contiguous — fixes the class of bug
+ * where bulk shifts left users with rows like [1, 3, 5, 6].
+ */
+async function compactUpNext(userId: string): Promise<{ id: string; position: number }[]> {
+  const rows = await db
+    .select({ id: upNext.id, position: upNext.position })
+    .from(upNext)
+    .where(eq(upNext.userId, userId))
+    .orderBy(asc(upNext.position));
+
+  const needsCompact = rows.some((r, i) => r.position !== i + 1);
+  if (!needsCompact) return rows;
+
+  // Phase 1: move everyone to negative slots (can't collide with positives).
+  for (let i = 0; i < rows.length; i++) {
+    await db.update(upNext).set({ position: -(i + 1) }).where(eq(upNext.id, rows[i].id));
+  }
+  // Phase 2: back to contiguous 1..N.
+  for (let i = 0; i < rows.length; i++) {
+    await db.update(upNext).set({ position: i + 1 }).where(eq(upNext.id, rows[i].id));
+  }
+  return rows.map((r, i) => ({ id: r.id, position: i + 1 }));
+}
+
 export async function addToUpNext(bookId: string): Promise<{ success: boolean; position?: number; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
@@ -20,28 +51,13 @@ export async function addToUpNext(bookId: string): Promise<{ success: boolean; p
     .limit(1);
   if (existing.length > 0) return { success: true, position: existing[0].position };
 
-  // Read current positions. Positions can be non-contiguous (e.g. user
-  // has rows at [1, 3, 5, 6] after a sequence of adds/removes where
-  // shift-down didn't run). Pick the LOWEST available slot in 1..MAX
-  // to safely fill gaps and avoid UNIQUE collisions.
-  const currentRows = await db
-    .select({ position: upNext.position })
-    .from(upNext)
-    .where(eq(upNext.userId, user.userId));
-  if (currentRows.length >= MAX_UP_NEXT) {
+  // Ensure existing rows are contiguous 1..N before appending.
+  const current = await compactUpNext(user.userId);
+  if (current.length >= MAX_UP_NEXT) {
     return { success: false, error: `Up Next is full (max ${MAX_UP_NEXT})` };
   }
 
-  const occupied = new Set(currentRows.map((r) => r.position));
-  let newPosition = -1;
-  for (let p = 1; p <= MAX_UP_NEXT; p++) {
-    if (!occupied.has(p)) { newPosition = p; break; }
-  }
-  if (newPosition === -1) {
-    // Defensive — shouldn't happen given the count check above
-    return { success: false, error: `Up Next is full (max ${MAX_UP_NEXT})` };
-  }
-
+  const newPosition = current.length + 1;
   await db.insert(upNext).values({
     userId: user.userId,
     bookId,
@@ -57,27 +73,12 @@ export async function removeFromUpNext(bookId: string): Promise<void> {
   const user = await getCurrentUser();
   if (!user) return;
 
-  // Delete the entry
   await db
     .delete(upNext)
     .where(and(eq(upNext.userId, user.userId), eq(upNext.bookId, bookId)));
 
-  // Compact remaining positions to 1..N. Previously this was a single
-  // bulk UPDATE with `position = position - 1` which could hit UNIQUE
-  // constraint violations mid-statement on libSQL, leaving users with
-  // non-contiguous rows like [1, 3, 5, 6]. Use the same two-phase
-  // negative-positions trick as reorderUpNext().
-  const remaining = await db
-    .select({ id: upNext.id, position: upNext.position })
-    .from(upNext)
-    .where(eq(upNext.userId, user.userId))
-    .orderBy(asc(upNext.position));
-  for (let i = 0; i < remaining.length; i++) {
-    await db.update(upNext).set({ position: -(i + 1) }).where(eq(upNext.id, remaining[i].id));
-  }
-  for (let i = 0; i < remaining.length; i++) {
-    await db.update(upNext).set({ position: i + 1 }).where(eq(upNext.id, remaining[i].id));
-  }
+  // Always re-compact so positions stay 1..N contiguous.
+  await compactUpNext(user.userId);
 
   revalidatePath("/library");
   revalidatePath(`/book/${bookId}`);
@@ -87,6 +88,9 @@ export async function reorderUpNext(bookId: string, newPosition: number): Promis
   const user = await getCurrentUser();
   if (!user) return;
   if (newPosition < 1 || newPosition > MAX_UP_NEXT) return;
+
+  // Compact first so newPosition maps cleanly to the visible order.
+  await compactUpNext(user.userId);
 
   // Read all items in current order
   const allItems = await db
