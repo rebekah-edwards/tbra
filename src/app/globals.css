@@ -111,6 +111,8 @@ body {
   color: var(--foreground);
   font-family: var(--font-body), system-ui, sans-serif;
   min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height — prevents iOS PWA
+                         fixed-element jumps when the URL bar hides/shows. */
   position: relative;
   overflow-x: hidden;
 }

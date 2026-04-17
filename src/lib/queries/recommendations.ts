@@ -2120,6 +2120,7 @@ async function findRecsForSeed(
 
   // Hydrate with full book info for filtering
   const currentYear = new Date().getFullYear();
+  const todayIso = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
   const bookRows = await db
     .select({
       id: books.id,
@@ -2127,6 +2128,7 @@ async function findRecsForSeed(
       coverImageUrl: books.coverImageUrl,
       language: books.language,
       publicationYear: books.publicationYear,
+      publicationDate: books.publicationDate,
       isBoxSet: books.isBoxSet,
     })
     .from(books)
@@ -2181,6 +2183,10 @@ async function findRecsForSeed(
     if (!isEnglishTitle(b.title)) return false;
     if (b.isBoxSet) return false;
     if (b.publicationYear && b.publicationYear > currentYear) return false;
+    // Filter books whose precise publication_date is in the future
+    // (handles pre-orders like "Adversary to the Villain" — year 2026 but
+    // released later in the year). Compare as ISO strings to avoid timezone issues.
+    if (b.publicationDate && b.publicationDate.length >= 7 && b.publicationDate > todayIso) return false;
     if (looksLikeAnthologyTitle(b.title)) return false;
     if (hasAnthologyGenre(genreIdsByBook.get(b.id) ?? [], anthologyGenreIds)) return false;
     if (hasDislikedGenre(genreIdsByBook.get(b.id) ?? [], dislikedGenreIds)) return false;
@@ -2333,6 +2339,7 @@ async function getPostCompletionSuggestionsInternal(
     // Hydrate with full book info + language for filtering
     if (candidateIds.length > 0) {
       const currentYear = new Date().getFullYear();
+      const todayIso = new Date().toISOString().slice(0, 10);
       const bookRows = await db
         .select({
           id: books.id,
@@ -2340,6 +2347,7 @@ async function getPostCompletionSuggestionsInternal(
           coverImageUrl: books.coverImageUrl,
           language: books.language,
           publicationYear: books.publicationYear,
+          publicationDate: books.publicationDate,
           isBoxSet: books.isBoxSet,
         })
         .from(books)
@@ -2397,8 +2405,9 @@ async function getPostCompletionSuggestionsInternal(
         if (b.language && b.language !== "English") return false;
         if (!isEnglishTitle(b.title)) return false;
         if (b.isBoxSet) return false;
-        // Exclude unreleased books
+        // Exclude unreleased books — check both year and precise date
         if (b.publicationYear && b.publicationYear > currentYear) return false;
+        if (b.publicationDate && b.publicationDate.length >= 7 && b.publicationDate > todayIso) return false;
         // Exclude anthologies / short story collections (by title and genre)
         if (looksLikeAnthologyTitle(b.title)) return false;
         if (hasAnthologyGenre(genreIdsByBook.get(b.id) ?? [], anthologyGenreIds)) return false;

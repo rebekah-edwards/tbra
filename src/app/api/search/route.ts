@@ -8,7 +8,8 @@ import { searchBooksFTS } from "@/lib/search/search-index";
 /**
  * Unified search endpoint for the nav search bar.
  * Returns books (via FTS5), series (LIKE), and authors (LIKE).
- * User search removed — belongs in a dedicated "Find People" section.
+ * User search is intentionally NOT included here — reader discovery
+ * has its own dedicated entry point (/people).
  */
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q");
@@ -168,7 +169,19 @@ async function searchSeries(query: string) {
     const core = allSeriesBooks.filter((b) =>
       b.seriesId === row.id && b.position != null && Number.isInteger(b.position) && !b.isBoxSet
     );
-    return { ...row, books: core.slice(0, 7) };
+    // Compute the displayed "books in series" count the same way the
+    // series page dedupes: one entry per unique position (+ books without
+    // a position). Meilisearch's bookCount counts raw book_series rows and
+    // over-counts when duplicate books share a position.
+    const seriesBooks = allSeriesBooks.filter((b) => b.seriesId === row.id && !b.isBoxSet);
+    const uniquePositions = new Set<number>();
+    let unpositioned = 0;
+    for (const b of seriesBooks) {
+      if (b.position != null) uniquePositions.add(b.position);
+      else unpositioned += 1;
+    }
+    const accurateBookCount = uniquePositions.size + unpositioned;
+    return { ...row, bookCount: accurateBookCount, books: core.slice(0, 7) };
   });
 }
 

@@ -91,7 +91,17 @@ export function BottomTabs({ isLoggedIn, avatarUrl }: BottomTabsProps) {
   }
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 border-t border-border bg-surface/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)] lg:hidden">
+    <nav
+      className="fixed left-0 right-0 z-50 border-t border-border bg-surface/95 backdrop-blur-sm lg:hidden"
+      style={{
+        // Explicit `bottom: 0` plus safe-area padding — works around an iOS
+        // PWA quirk where Tailwind's `bottom-0` + arbitrary `pb-[env()]`
+        // occasionally computes to a stale value mid-scroll, leaving the
+        // nav floating above the viewport edge.
+        bottom: 0,
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
+    >
       <div className="mx-auto grid grid-cols-5 max-w-3xl items-center px-2">
         {tabs.map((tab) => {
           const active = isActive(tab.href);

@@ -170,22 +170,27 @@ export function StatsClient({
         {monthlyData.length > 0 && (
           <section className="rounded-2xl border border-border bg-surface p-5 lg:col-span-2">
             <h2 className="section-heading text-xs mb-4">Monthly Reading</h2>
-            <div className="flex items-end gap-1 h-32">
-              {monthlyData.map((m) => {
-                const pct = (m.books / maxMonthlyBooks) * 100;
-                return (
-                  <div key={m.label} className="flex-1 flex flex-col items-center gap-1 group relative">
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-[9px] px-2 py-1 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                      {m.books} book{m.books !== 1 ? "s" : ""} · {m.pages.toLocaleString()} pages
+            <div className="-mx-2 overflow-x-auto px-2 pb-1">
+              <div
+                className="flex items-end gap-1 h-32"
+                style={{ minWidth: `${monthlyData.length * 20}px` }}
+              >
+                {monthlyData.map((m) => {
+                  const pct = (m.books / maxMonthlyBooks) * 100;
+                  return (
+                    <div key={m.label} className="flex-1 min-w-[18px] flex flex-col items-center gap-1 group relative">
+                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-[9px] px-2 py-1 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                        {m.books} book{m.books !== 1 ? "s" : ""} · {m.pages.toLocaleString()} pages
+                      </div>
+                      <div className="w-full flex justify-center" style={{ height: "100px", alignItems: "flex-end", display: "flex" }}>
+                        <div className="w-3/4 rounded-t-md transition-all duration-300"
+                          style={{ height: `${Math.max(pct, m.books > 0 ? 6 : 0)}%`, background: "linear-gradient(to top, var(--accent), var(--neon-blue))" }} />
+                      </div>
+                      <span className="text-[9px] text-muted">{m.label}</span>
                     </div>
-                    <div className="w-full flex justify-center" style={{ height: "100px", alignItems: "flex-end", display: "flex" }}>
-                      <div className="w-3/4 rounded-t-md transition-all duration-300"
-                        style={{ height: `${Math.max(pct, m.books > 0 ? 6 : 0)}%`, background: "linear-gradient(to top, var(--accent), var(--neon-blue))" }} />
-                    </div>
-                    <span className="text-[9px] text-muted">{m.label}</span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </section>
         )}

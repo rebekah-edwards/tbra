@@ -16,6 +16,7 @@ interface HamburgerMenuProps {
 }
 
 const MENU_ITEMS = [
+  { label: "Find Readers", href: "/people", icon: "people", authRequired: true },
   { label: "Buddy Reads", href: "/buddy-reads", icon: "buddy-reads", authRequired: true },
   { label: "Browse All Books", href: "/browse", icon: "browse" },
   { label: "Import Your Library", href: "/import", icon: "import" },
@@ -31,6 +32,15 @@ function MenuIcon({ icon }: { icon: string }) {
           <circle cx="9" cy="7" r="4" />
           <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
           <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      );
+    case "people":
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+          <circle cx="18" cy="10" r="2.5" />
+          <path d="m17 17 4 4" />
         </svg>
       );
     case "browse":

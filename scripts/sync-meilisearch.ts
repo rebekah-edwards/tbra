@@ -40,15 +40,20 @@ async function syncBooksIndex() {
   const index = client.index("books");
 
   // Configure index settings
+  // — Ranking rules: `exactness` moved ahead of `typo`/`proximity` so exact
+  //   title matches beat fuzzy ones. Previously exactness was last, which
+  //   let "The Hate U Give" outrank "The Giver" on typo-based ranking.
+  // — Typo tolerance tightened: short words (< 6 chars like "Giver", "Dune",
+  //   "Carl") now require exact match. Was causing "Give" to match "Giver".
   await index.updateSettings({
     searchableAttributes: ["title", "authorNames", "seriesName"],
     filterableAttributes: ["visibility", "isBoxSet"],
     sortableAttributes: ["publicationYear", "title"],
-    rankingRules: ["words", "typo", "proximity", "attribute", "sort", "exactness"],
+    rankingRules: ["words", "exactness", "typo", "proximity", "attribute", "sort"],
     stopWords: ["the", "a", "an", "and", "of", "in", "to", "for", "is", "on", "by"],
     typoTolerance: {
       enabled: true,
-      minWordSizeForTypos: { oneTypo: 4, twoTypos: 8 },
+      minWordSizeForTypos: { oneTypo: 6, twoTypos: 10 },
     },
   });
 
@@ -123,10 +128,10 @@ async function syncAuthorsIndex() {
   await index.updateSettings({
     searchableAttributes: ["name"],
     sortableAttributes: ["bookCount", "name"],
-    rankingRules: ["words", "typo", "proximity", "attribute", "sort", "exactness"],
+    rankingRules: ["words", "exactness", "typo", "proximity", "attribute", "sort"],
     typoTolerance: {
       enabled: true,
-      minWordSizeForTypos: { oneTypo: 4, twoTypos: 8 },
+      minWordSizeForTypos: { oneTypo: 6, twoTypos: 10 },
     },
   });
 
@@ -156,10 +161,10 @@ async function syncSeriesIndex() {
   await index.updateSettings({
     searchableAttributes: ["name"],
     sortableAttributes: ["bookCount", "name"],
-    rankingRules: ["words", "typo", "proximity", "attribute", "sort", "exactness"],
+    rankingRules: ["words", "exactness", "typo", "proximity", "attribute", "sort"],
     typoTolerance: {
       enabled: true,
-      minWordSizeForTypos: { oneTypo: 3, twoTypos: 7 },
+      minWordSizeForTypos: { oneTypo: 6, twoTypos: 10 },
     },
   });
 

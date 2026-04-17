@@ -39,20 +39,12 @@ interface AuthorMatch {
   bookCount: number;
 }
 
-interface UserResult {
-  id: string;
-  displayName: string | null;
-  username: string | null;
-  avatarUrl: string | null;
-}
-
 export function SearchBar({ isLoggedIn }: SearchBarProps) {
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
   const [bookResults, setBookResults] = useState<LocalBookResult[]>([]);
   const [seriesMatches, setSeriesMatches] = useState<SeriesMatch[]>([]);
   const [authorMatches, setAuthorMatches] = useState<AuthorMatch[]>([]);
-  const [userResults, setUserResults] = useState<UserResult[]>([]);
   const [loading, setLoading] = useState(false);
   // Track animation state for enter/exit transitions
   const [animating, setAnimating] = useState(false);
@@ -110,7 +102,6 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
       setBookResults([]);
       setSeriesMatches([]);
       setAuthorMatches([]);
-      setUserResults([]);
     }, 250);
   }
 
@@ -120,7 +111,6 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
         setBookResults([]);
         setSeriesMatches([]);
         setAuthorMatches([]);
-        setUserResults([]);
         setLoading(false);
         return;
       }
@@ -149,7 +139,6 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
           setBookResults(data.books ?? []);
           setSeriesMatches(data.series ?? []);
           setAuthorMatches(data.authors ?? []);
-          setUserResults((data.users ?? []).slice(0, 3));
         }
         setLoading(false);
       } catch (err) {
@@ -173,7 +162,6 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
       setBookResults([]);
       setSeriesMatches([]);
       setAuthorMatches([]);
-      setUserResults([]);
       setLoading(false);
       return;
     }
@@ -201,7 +189,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
     }
   }
 
-  const hasResults = seriesMatches.length > 0 || authorMatches.length > 0 || userResults.length > 0 || bookResults.length > 0;
+  const hasResults = seriesMatches.length > 0 || authorMatches.length > 0 || bookResults.length > 0;
   const queryReady = query.trim().length >= 2;
   // Show dropdown whenever query is long enough: skeleton while loading, results or "no results" after
   const showDropdown = queryReady;
@@ -429,38 +417,6 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{a.name}</p>
                             <p className="text-xs text-muted">{a.bookCount} book{a.bookCount !== 1 ? "s" : ""}</p>
-                          </div>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40 flex-shrink-0">
-                            <polyline points="9 18 15 12 9 6" />
-                          </svg>
-                        </Link>
-                      ))}
-                      {/* People results */}
-                      {userResults.map((user) => (
-                        <Link
-                          key={user.id}
-                          href={user.username ? `/u/${user.username}` : "#"}
-                          onClick={collapse}
-                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-alt transition-colors border-b border-border/50"
-                        >
-                          <div
-                            className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold overflow-hidden text-black"
-                            style={{ backgroundColor: user.avatarUrl ? undefined : "#a3e635" }}
-                          >
-                            {user.avatarUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              (user.displayName?.[0] ?? "?").toUpperCase()
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">
-                              {user.displayName ?? "Unknown"}
-                            </p>
-                            {user.username && (
-                              <p className="text-xs text-muted truncate">@{user.username}</p>
-                            )}
                           </div>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40 flex-shrink-0">
                             <polyline points="9 18 15 12 9 6" />
