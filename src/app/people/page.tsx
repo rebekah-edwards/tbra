@@ -8,12 +8,13 @@ export const metadata: Metadata = {
 
 export default function PeoplePage() {
   return (
-    <div className="mx-auto max-w-2xl pt-14 lg:pt-0">
-      {/* Mobile pt-14 clears the fixed BackButton overlay (top ≈ 68px + 40px) */}
-      <h1 className="text-foreground text-2xl font-bold tracking-tight">
+    <div className="mx-auto max-w-2xl">
+      {/* Mobile pl-14 on heading + subtitle pushes text right of the fixed
+          BackButton (left-4, w-10) without adding vertical space. */}
+      <h1 className="text-foreground text-2xl font-bold tracking-tight pl-14 lg:pl-0">
         Find Readers
       </h1>
-      <p className="mt-2 text-sm text-muted">
+      <p className="mt-2 text-sm text-muted pl-14 lg:pl-0">
         Search by name or @username to follow other readers.
       </p>
       <PeopleSearchClient />

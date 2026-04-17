@@ -45,10 +45,12 @@ export default async function SearchPage({
   }
 
   return (
-    <div className="pt-14 lg:pt-0">
-      {/* Mobile pt-14 clears the fixed BackButton overlay (top ≈ 68px + 40px) */}
-      <h1 className="text-foreground text-2xl font-bold tracking-tight">Search</h1>
-      <p className="mt-2 text-muted">
+    <div>
+      {/* Mobile pl-14 on heading pushes text right of the fixed BackButton
+          (which sits at left-4, w-10). Only the heading needs the shift —
+          the rest of the page content can use the full width. */}
+      <h1 className="text-foreground text-2xl font-bold tracking-tight pl-14 lg:pl-0">Search</h1>
+      <p className="mt-2 text-muted pl-14 lg:pl-0">
         Search for books by title, author, or series.
       </p>
       <div className="mt-6">
