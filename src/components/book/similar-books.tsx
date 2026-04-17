@@ -65,8 +65,10 @@ export function SimilarBooks({ bookId }: { bookId: string }) {
       </h2>
       {/* Mobile = scroll + fade hint. Any viewport wide enough to fit
           the grid (md:+) drops the fade and right padding so the last
-          column is fully visible. */}
-      <div className="mt-4 flex gap-3 overflow-x-auto pb-2 pr-12 no-scrollbar mask-fade-right md:grid md:grid-cols-6 md:gap-3 md:overflow-visible md:pb-0 md:pr-0 md:[mask-image:none] md:[-webkit-mask-image:none] lg:grid-cols-8">
+          column is fully visible. The `!` forces the override above the
+          .mask-fade-right custom class, which CSS ordering otherwise
+          lets win. */}
+      <div className="mt-4 flex gap-3 overflow-x-auto pb-2 pr-12 no-scrollbar mask-fade-right md:grid md:grid-cols-6 md:gap-3 md:overflow-visible md:pb-0 md:pr-0 md:![mask-image:none] md:![-webkit-mask-image:none] lg:grid-cols-8">
         {books.map((book) => (
           <Link
             key={book.id}
