@@ -413,21 +413,26 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
         </svg>
       </Link>
 
-      {/* Top-tier segments */}
-      <div className="flex gap-1 rounded-xl bg-surface-alt p-1 mb-4">
-        {GROUPS.map((group) => (
-          <button
-            key={group.key}
-            onClick={() => handleGroupChange(group.key)}
-            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
-              validGroup === group.key
-                ? "bg-accent text-black shadow-sm"
-                : "text-muted hover:text-foreground"
-            }`}
-          >
-            {group.label}
-          </button>
-        ))}
+      {/* Top-tier tabs — underline style matches the newer section tabs
+          in the review wizard + stats page. Keeps the segmented/full-width
+          feel on mobile (flex-1) without the heavy grey chip container. */}
+      <div className="flex border-b border-border mb-4">
+        {GROUPS.map((group) => {
+          const active = validGroup === group.key;
+          return (
+            <button
+              key={group.key}
+              onClick={() => handleGroupChange(group.key)}
+              className={`flex-1 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                active
+                  ? "border-accent text-foreground"
+                  : "border-transparent text-muted hover:text-foreground hover:border-border"
+              }`}
+            >
+              {group.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Sub-filter pills */}
