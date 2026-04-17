@@ -365,10 +365,10 @@ export function ReadingStateButton({
         <button
           onClick={handleMainClick}
           disabled={isPending}
-          className={`flex-1 min-w-0 rounded-l-xl h-[52px] flex items-center justify-center text-base font-semibold tracking-wide transition-all border-2 ${
+          className={`flex-1 min-w-0 rounded-l-xl h-[52px] flex items-center justify-center text-base font-semibold tracking-wide transition-all border-2 border-r-0 ${
             isActive
               ? "bg-accent text-black border-accent shadow-[0_0_20px_rgba(163,230,53,0.25)]"
-              : "bg-accent/20 text-foreground border-accent/60 border-r-0 hover:bg-accent/30"
+              : "bg-accent/20 text-foreground border-accent/60 hover:bg-accent/30"
           } ${isPending ? "opacity-60" : ""}`}
         >
           {isPending ? "..." : isActive ? mainLabel : (
