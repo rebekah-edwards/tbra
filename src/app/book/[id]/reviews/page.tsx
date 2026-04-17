@@ -30,7 +30,7 @@ export default async function ReviewsPage({
   const bookPath = resolved.book.slug ? `/book/${resolved.book.slug}` : `/book/${id}`;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen lg:max-w-[60%] lg:mx-auto">
       {/* Header */}
       <div className="px-4 py-4 border-b border-border/50">
         <div className="flex items-center gap-2 mb-2">
