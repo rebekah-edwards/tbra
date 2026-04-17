@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { StarRow } from "./rounded-star";
 import { SpoilerParticles } from "./spoiler-particles";
-import { MOODS, DIMENSION_SECTIONS } from "@/lib/review-constants";
+import { MOODS, ALL_DIMENSIONS } from "@/lib/review-constants";
 import { timeAgo } from "@/lib/date-utils";
 import { toggleHelpfulVote } from "@/lib/actions/helpful";
 import { formatRating } from "@/lib/text-utils";
@@ -61,8 +61,9 @@ export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { 
 
   const mood = MOODS.find((m) => m.key === review.mood);
 
-  // Collect dimensions that have ratings or tags
-  const dimensionsWithData = DIMENSION_SECTIONS.filter(
+  // Collect dimensions that have ratings or tags (fiction + nonfiction —
+  // whichever apply to this specific review).
+  const dimensionsWithData = ALL_DIMENSIONS.filter(
     (d) =>
       review.dimensionRatings[d.key] != null ||
       (review.dimensionTags[d.key] && review.dimensionTags[d.key].length > 0)

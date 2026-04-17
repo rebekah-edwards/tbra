@@ -10,13 +10,20 @@ import {
   userBookRatings,
   bookCategoryRatings,
   taxonomyCategories,
+  reportCorrections,
   books,
   users,
 } from "@/db/schema";
-import { eq, and, count, like } from "drizzle-orm";
+import { eq, and, count, like, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { CW_TO_TAXONOMY } from "@/lib/review-constants";
 import { canonicalizeWarning } from "@/lib/content-warnings/vocabulary";
+
+interface ProposedCorrectionInput {
+  categoryKey: string;
+  intensity: number; // 0-4
+  note: string;
+}
 
 interface ReviewPayload {
   bookId: string;
@@ -34,6 +41,10 @@ interface ReviewPayload {
   arcSource?: string | null;
   arcSourceDetail?: string | null;
   arcProofUrl?: string | null;
+  /** Per-category intensity proposals from the final review step. */
+  proposedCorrections?: ProposedCorrectionInput[];
+  /** User-added trigger warning lines that don't fit an existing category. */
+  userAddedWarnings?: string[];
 }
 
 export async function saveReview(payload: ReviewPayload) {
@@ -56,6 +67,8 @@ export async function saveReview(payload: ReviewPayload) {
     arcSource,
     arcSourceDetail,
     arcProofUrl,
+    proposedCorrections = [],
+    userAddedWarnings = [],
   } = payload;
 
   // Determine ARC status: if ARC data provided, mark as pending for admin review
@@ -195,11 +208,64 @@ export async function saveReview(payload: ReviewPayload) {
   }
 
   // Process content warnings → What's Inside aggregation
+  // (Legacy path for reviews that still carry the old 18 content_details tags —
+  // new reviews populate proposedCorrections + userAddedWarnings instead.)
   const cwTags = dimensionTags["content_details"] ?? [];
   await aggregateContentWarnings(bookId, cwTags);
 
   // Process pacing → book-level pacing aggregation
   await aggregatePacing(bookId);
+
+  // Record per-category intensity proposals as report_corrections rows.
+  // These do NOT mutate book_category_ratings — they land in the admin
+  // queue at /admin/corrections for review before anything goes live.
+  if (proposedCorrections.length > 0) {
+    const keys = proposedCorrections.map((p) => p.categoryKey);
+    const categoryRows = await db
+      .select({ id: taxonomyCategories.id, key: taxonomyCategories.key })
+      .from(taxonomyCategories)
+      .where(inArray(taxonomyCategories.key, keys));
+    const keyToId = new Map(categoryRows.map((r) => [r.key, r.id]));
+    for (const p of proposedCorrections) {
+      const categoryId = keyToId.get(p.categoryKey);
+      if (!categoryId) continue;
+      if (p.intensity < 0 || p.intensity > 4) continue;
+      await db.insert(reportCorrections).values({
+        userId: user.userId,
+        bookId,
+        categoryId,
+        proposedIntensity: p.intensity,
+        proposedNotes: p.note || null,
+        message: `Reviewer proposed intensity ${p.intensity} for ${p.categoryKey}${p.note ? `: ${p.note}` : ""}`,
+        status: "new",
+      });
+    }
+  }
+
+  // Record user-added trigger warnings against the "user_added" taxonomy
+  // category so admins can aggregate them into a single user-added note.
+  if (userAddedWarnings.length > 0) {
+    const userAddedCat = await db
+      .select({ id: taxonomyCategories.id })
+      .from(taxonomyCategories)
+      .where(eq(taxonomyCategories.key, "user_added"))
+      .get();
+    if (userAddedCat) {
+      for (const raw of userAddedWarnings) {
+        const text = raw.slice(0, 120).trim();
+        if (!text) continue;
+        await db.insert(reportCorrections).values({
+          userId: user.userId,
+          bookId,
+          categoryId: userAddedCat.id,
+          proposedIntensity: null,
+          proposedNotes: null,
+          message: `User-added trigger warning: ${text}`,
+          status: "new",
+        });
+      }
+    }
+  }
 
   revalidatePath(`/book/${bookId}`);
 }

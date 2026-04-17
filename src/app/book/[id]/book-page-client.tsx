@@ -483,6 +483,7 @@ export function BookPageClient({
           bookId={book.id}
           bookSlug={book.slug}
           bookPages={book.pages}
+          isFiction={book.isFiction}
           userReview={userReview}
           aggregate={aggregate}
           isLoggedIn={isLoggedIn}

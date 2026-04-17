@@ -27,18 +27,45 @@ export function getMoodLabel(key: string): string {
 
 // ─── Dimension definitions (excludes content_details — now a separate step) ───
 
-export type ReviewDimension = "characters" | "plot" | "setting" | "prose";
+export type FictionDimension = "characters" | "plot" | "setting" | "prose";
+export type NonfictionDimension = "substance" | "evidence" | "clarity" | "voice";
+export type ReviewDimension = FictionDimension | NonfictionDimension;
 
-export const DIMENSION_SECTIONS: { key: ReviewDimension; label: string }[] = [
+export const FICTION_DIMENSIONS: { key: FictionDimension; label: string }[] = [
   { key: "characters", label: "Characters" },
   { key: "plot", label: "Plot" },
   { key: "setting", label: "Setting" },
   { key: "prose", label: "Prose" },
 ];
 
+export const NONFICTION_DIMENSIONS: { key: NonfictionDimension; label: string }[] = [
+  { key: "substance", label: "Substance" },
+  { key: "evidence", label: "Evidence" },
+  { key: "clarity", label: "Clarity" },
+  { key: "voice", label: "Voice" },
+];
+
+/** Returns the dimension set for the given book category. */
+export function dimensionsFor(isFiction: boolean | null): { key: ReviewDimension; label: string }[] {
+  // Default to fiction when we genuinely don't know, since fiction is the
+  // far more common catalogue shape on tbr*a.
+  return isFiction === false ? NONFICTION_DIMENSIONS : FICTION_DIMENSIONS;
+}
+
+/**
+ * Combined list of every dimension across fiction + nonfiction — useful
+ * for rendering a saved review where we don't branch on isFiction but
+ * still want to show only the dimensions that actually have data.
+ */
+export const ALL_DIMENSIONS: { key: ReviewDimension; label: string }[] = [
+  ...FICTION_DIMENSIONS,
+  ...NONFICTION_DIMENSIONS,
+];
+
 // ─── Descriptor tags per dimension ───
 
 export const DIMENSION_TAGS: Record<ReviewDimension, string[]> = {
+  // Fiction
   characters: [
     "Relatable",
     "Lovable",
@@ -111,33 +138,66 @@ export const DIMENSION_TAGS: Record<ReviewDimension, string[]> = {
     "Witty",
     "Flat",
   ],
+
+  // Nonfiction — Substance: how much the reader came away with.
+  substance: [
+    "Illuminating",
+    "Surface-level",
+    "Paradigm-shifting",
+    "Repetitive",
+    "Actionable",
+    "Dense",
+    "Hand-wavy",
+    "Thought-provoking",
+    "Quotable",
+    "Forgettable",
+    "Life-changing",
+  ],
+  // Nonfiction — Evidence: how claims are supported.
+  evidence: [
+    "Well-sourced",
+    "Cherry-picked",
+    "Peer-reviewed",
+    "Lived-experience",
+    "Opinion-heavy",
+    "Balanced",
+    "Inflammatory",
+    "Data-driven",
+    "Under-researched",
+    "Primary sources",
+    "Credible",
+  ],
+  // Nonfiction — Clarity: how accessible for the target reader.
+  clarity: [
+    "Jargon-heavy",
+    "Beginner-friendly",
+    "Over-simplified",
+    "Technical",
+    "Plain-spoken",
+    "Meandering",
+    "Well-organized",
+    "Circuitous",
+    "Crystal clear",
+    "Dense",
+  ],
+  // Nonfiction — Voice: the author's presence on the page.
+  voice: [
+    "Academic",
+    "Warm",
+    "Urgent",
+    "Dry",
+    "Memoir-like",
+    "Sermonizing",
+    "Witty",
+    "Self-indulgent",
+    "Humble",
+    "Confrontational",
+    "Conversational",
+    "Detached",
+  ],
 };
 
-// ─── Content Details tags (separate step) ───
-
-export const CONTENT_DETAILS_TAGS = [
-  "Domestic violence",
-  "Animal abuse",
-  "Child abuse",
-  "Child loss",
-  "Parent loss",
-  "Death",
-  "Explicit sexual content",
-  "Eating disorders",
-  "Grief",
-  "Murder",
-  "Self-harm",
-  "Substance abuse",
-  "Violence/gore",
-  "War",
-  "Strong political ideology",
-  "Religious themes",
-  "Witchcraft/occult themes",
-  "LGBTQ+ representation",
-  "Feminism",
-];
-
-// ─── Blocked keywords for custom content warnings ───
+// ─── Blocked keywords for user-added trigger warnings ───
 
 export const BLOCKED_CW_KEYWORDS = [
   "slur",
@@ -147,8 +207,9 @@ export const BLOCKED_CW_KEYWORDS = [
   "kill yourself",
 ];
 
-// ─── Content Details → What's Inside taxonomy mapping ───
-
+// ─── Legacy content-tag → taxonomy mapping ───
+// Kept for the aggregator that still processes historical reviews with
+// the old 18 content_details tags. New reviews no longer populate these.
 export const CW_TO_TAXONOMY: Record<string, string> = {
   "Violence/gore": "violence_gore",
   "War": "violence_gore",

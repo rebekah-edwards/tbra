@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useEffect, useId, forwardRef } from "react";
-import { DIMENSION_SECTIONS, DIMENSION_TAGS, type ReviewDimension } from "@/lib/review-constants";
+import { dimensionsFor, DIMENSION_TAGS, type ReviewDimension } from "@/lib/review-constants";
 
 const STAR_PATH =
   "M12 1.5c.4 0 .8.2 1 .6l2.5 5.2 5.7.8c.4.06.7.3.9.7.1.3.0.7-.2 1l-4.1 4 1 5.7c.06.4-.1.8-.4 1-.3.2-.7.3-1.1.1L12 18.1l-5.1 2.7c-.4.2-.8.1-1.1-.1-.3-.2-.5-.6-.4-1l1-5.7-4.1-4c-.3-.3-.4-.7-.2-1 .1-.3.5-.6.9-.7l5.7-.8L11 2.1c.2-.4.6-.6 1-.6z";
@@ -65,6 +65,7 @@ function PacingControl({
 }
 
 interface StepDimensionsProps {
+  isFiction: boolean | null;
   dimensionRatings: Record<string, number | null>;
   dimensionTags: Record<string, string[]>;
   plotPacing: "slow" | "medium" | "fast" | null;
@@ -74,6 +75,7 @@ interface StepDimensionsProps {
 }
 
 export function StepDimensions({
+  isFiction,
   dimensionRatings,
   dimensionTags,
   plotPacing,
@@ -81,21 +83,22 @@ export function StepDimensions({
   onDimensionTagToggle,
   onPlotPacingChange,
 }: StepDimensionsProps) {
+  const sections = dimensionsFor(isFiction);
   const scrollRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const activeRef = useRef<string>("characters");
+  const activeRef = useRef<string>(sections[0]?.key ?? "characters");
 
   useEffect(() => {
     const scrollEl = scrollRef.current;
     if (!scrollEl) return;
 
     const handleScroll = () => {
-      let closest = "characters";
+      let closest = sections[0]?.key ?? "characters";
       let closestDist = Infinity;
       const scrollTop = scrollEl.scrollTop + 100;
 
-      for (const section of DIMENSION_SECTIONS) {
+      for (const section of sections) {
         const el = sectionRefs.current[section.key];
         if (!el) continue;
         const dist = Math.abs(el.offsetTop - scrollTop);
@@ -122,7 +125,7 @@ export function StepDimensions({
 
     scrollEl.addEventListener("scroll", handleScroll, { passive: true });
     return () => scrollEl.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [sections]);
 
   const scrollToSection = (key: string) => {
     const el = sectionRefs.current[key];
@@ -146,7 +149,7 @@ export function StepDimensions({
         ref={navRef}
         className="flex justify-center gap-1 border-b border-surface-alt px-2 sticky top-0 bg-background z-10"
       >
-        {DIMENSION_SECTIONS.map((section, i) => (
+        {sections.map((section, i) => (
           <button
             key={section.key}
             type="button"
@@ -164,7 +167,7 @@ export function StepDimensions({
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4">
-        {DIMENSION_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <DimensionSection
             key={section.key}
             ref={(el) => { sectionRefs.current[section.key] = el; }}

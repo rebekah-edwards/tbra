@@ -13,6 +13,8 @@ interface ReviewTriggerProps {
   bookId: string;
   bookSlug?: string | null;
   bookPages?: number | null;
+  /** Passed through to the review wizard so step 3 picks the right dimension set. */
+  isFiction?: boolean | null;
   userReview: UserReview | null;
   aggregate: { average: number; count: number } | null;
   isLoggedIn: boolean;
@@ -29,6 +31,7 @@ export function ReviewTrigger({
   bookId,
   bookSlug,
   bookPages,
+  isFiction = null,
   userReview,
   aggregate,
   isLoggedIn,
@@ -136,6 +139,7 @@ export function ReviewTrigger({
       <ReviewWizard
         bookId={bookId}
         bookPages={bookPages}
+        isFiction={isFiction}
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}
         isExisting={!!userReview}

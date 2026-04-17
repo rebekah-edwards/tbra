@@ -20,6 +20,7 @@ interface CurrentlyReadingBook {
   activeFormats?: string[];
   progress?: number | null; // 0-100 percentage
   pages?: number | null;
+  isFiction?: boolean | null;
   buddyReadId?: string | null; // active buddy read for this book (if any)
 }
 
@@ -205,7 +206,7 @@ function TrackSheet({
 
 function ReadingBookCard({ book, onReviewOpen }: {
   book: CurrentlyReadingBook;
-  onReviewOpen: (bookId: string, pages: number | null, isDnf: boolean, dnfPercent: number | null) => void;
+  onReviewOpen: (bookId: string, pages: number | null, isFiction: boolean | null, isDnf: boolean, dnfPercent: number | null) => void;
 }) {
   const [trackingBookId, setTrackingBookId] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ bookId: string; state: string; label: string } | null>(null);
@@ -259,9 +260,9 @@ function ReadingBookCard({ book, onReviewOpen }: {
     });
     // Open review wizard via parent (survives this card's unmount)
     if (finalState === "completed") {
-      onReviewOpen(book.id, book.pages ?? null, false, null);
+      onReviewOpen(book.id, book.pages ?? null, book.isFiction ?? null, false, null);
     } else if (finalState === "dnf") {
-      onReviewOpen(book.id, book.pages ?? null, true, book.progress ?? null);
+      onReviewOpen(book.id, book.pages ?? null, book.isFiction ?? null, true, book.progress ?? null);
     }
   }
 
@@ -430,6 +431,7 @@ export function CurrentlyReadingSection({ books }: { books: CurrentlyReadingBook
   // (when a book becomes "completed", the card unmounts but the wizard must stay open)
   const [reviewBookId, setReviewBookId] = useState<string | null>(null);
   const [reviewBookPages, setReviewBookPages] = useState<number | null>(null);
+  const [reviewBookIsFiction, setReviewBookIsFiction] = useState<boolean | null>(null);
   const [reviewDnf, setReviewDnf] = useState(false);
   const [reviewDnfPercent, setReviewDnfPercent] = useState<number | null>(null);
 
@@ -453,9 +455,10 @@ export function CurrentlyReadingSection({ books }: { books: CurrentlyReadingBook
         <ReadingBookCard
           key={book.id}
           book={book}
-          onReviewOpen={(bookId, pages, isDnf, dnfPercent) => {
+          onReviewOpen={(bookId, pages, isFiction, isDnf, dnfPercent) => {
             setReviewBookId(bookId);
             setReviewBookPages(pages);
+            setReviewBookIsFiction(isFiction);
             setReviewDnf(isDnf);
             setReviewDnfPercent(dnfPercent);
           }}
@@ -474,6 +477,7 @@ export function CurrentlyReadingSection({ books }: { books: CurrentlyReadingBook
         <ReviewWizard
           bookId={reviewBookId}
           bookPages={reviewBookPages}
+          isFiction={reviewBookIsFiction}
           open={!!reviewBookId}
           onClose={() => setReviewBookId(null)}
           isExisting={false}

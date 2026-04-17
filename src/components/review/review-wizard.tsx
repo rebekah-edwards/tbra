@@ -12,6 +12,13 @@ import type { ArcSourceData } from "@/components/book/arc-source-form";
 
 const TOTAL_STEPS = 5;
 
+export interface ProposedCorrection {
+  /** Intensity 0-4, or null to clear (no change proposed) */
+  intensity: number | null;
+  /** Optional reviewer note explaining the proposed change */
+  note: string;
+}
+
 interface ReviewState {
   overallRating: number | null;
   didNotFinish: boolean;
@@ -25,6 +32,10 @@ interface ReviewState {
   plotPacing: "slow" | "medium" | "fast" | null;
   customContentWarning: string;
   contentComments: string;
+  /** Per-category intensity proposals keyed by taxonomy category key. */
+  proposedCorrections: Record<string, ProposedCorrection>;
+  /** Free-text user-added trigger warnings (newline-separated). */
+  userAddedWarnings: string;
 }
 
 type ReviewAction =
@@ -37,10 +48,9 @@ type ReviewAction =
   | { type: "SET_DIMENSION_RATING"; dimension: string; rating: number | null }
   | { type: "TOGGLE_DIMENSION_TAG"; dimension: string; tag: string }
   | { type: "SET_PLOT_PACING"; pacing: "slow" | "medium" | "fast" | null }
-  | { type: "TOGGLE_CONTENT_TAG"; tag: string }
   | { type: "SET_ANONYMOUS"; anonymous: boolean }
-  | { type: "SET_CUSTOM_CW"; text: string }
-  | { type: "SET_CONTENT_COMMENTS"; text: string }
+  | { type: "SET_PROPOSED_CORRECTION"; categoryKey: string; proposal: ProposedCorrection | null }
+  | { type: "SET_USER_ADDED_WARNINGS"; text: string }
   | { type: "RESET"; state: ReviewState };
 
 function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
@@ -79,23 +89,17 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
       return { ...state, plotPacing: action.pacing };
     case "SET_ANONYMOUS":
       return { ...state, isAnonymous: action.anonymous };
-    case "TOGGLE_CONTENT_TAG": {
-      const current = state.dimensionTags["content_details"] ?? [];
-      const has = current.includes(action.tag);
-      return {
-        ...state,
-        dimensionTags: {
-          ...state.dimensionTags,
-          content_details: has
-            ? current.filter((t) => t !== action.tag)
-            : [...current, action.tag],
-        },
-      };
+    case "SET_PROPOSED_CORRECTION": {
+      const next = { ...state.proposedCorrections };
+      if (action.proposal === null) {
+        delete next[action.categoryKey];
+      } else {
+        next[action.categoryKey] = action.proposal;
+      }
+      return { ...state, proposedCorrections: next };
     }
-    case "SET_CUSTOM_CW":
-      return { ...state, customContentWarning: action.text };
-    case "SET_CONTENT_COMMENTS":
-      return { ...state, contentComments: action.text };
+    case "SET_USER_ADDED_WARNINGS":
+      return { ...state, userAddedWarnings: action.text };
     case "RESET":
       return action.state;
     default:
@@ -134,6 +138,9 @@ function makeInitialState(
       plotPacing: existing.plotPacing ?? null,
       customContentWarning: existing.customContentWarning ?? "",
       contentComments: existing.contentComments ?? "",
+      // Proposals are per-submission, never pre-filled from an existing review.
+      proposedCorrections: {},
+      userAddedWarnings: "",
     };
   }
   return {
@@ -149,6 +156,8 @@ function makeInitialState(
     plotPacing: null,
     customContentWarning: "",
     contentComments: "",
+    proposedCorrections: {},
+    userAddedWarnings: "",
   };
 }
 
@@ -163,14 +172,18 @@ function statesEqual(a: ReviewState, b: ReviewState): boolean {
     a.plotPacing === b.plotPacing &&
     a.customContentWarning === b.customContentWarning &&
     a.contentComments === b.contentComments &&
+    a.userAddedWarnings === b.userAddedWarnings &&
     JSON.stringify(a.dimensionRatings) === JSON.stringify(b.dimensionRatings) &&
-    JSON.stringify(a.dimensionTags) === JSON.stringify(b.dimensionTags)
+    JSON.stringify(a.dimensionTags) === JSON.stringify(b.dimensionTags) &&
+    JSON.stringify(a.proposedCorrections) === JSON.stringify(b.proposedCorrections)
   );
 }
 
 interface ReviewWizardProps {
   bookId: string;
   bookPages?: number | null;
+  /** Determines which dimension set (fiction vs nonfiction) is shown on step 3. */
+  isFiction: boolean | null;
   open: boolean;
   onClose: () => void;
   isExisting: boolean;
@@ -195,7 +208,7 @@ interface ReviewWizardProps {
   initialDnfPercent?: number | null;
 }
 
-export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, existingReview, arcData, initialDnf, initialDnfPercent }: ReviewWizardProps) {
+export function ReviewWizard({ bookId, bookPages, isFiction, open, onClose, isExisting, existingReview, arcData, initialDnf, initialDnfPercent }: ReviewWizardProps) {
   const [step, setStep] = useReducer(
     (_: number, next: number) => Math.max(0, Math.min(TOTAL_STEPS - 1, next)),
     0
@@ -245,6 +258,19 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
 
   const handleSave = useCallback(() => {
     startTransition(async () => {
+      // Build the proposed-corrections payload from wizard state.
+      const proposedCorrections = Object.entries(state.proposedCorrections)
+        .filter(([, p]) => p.intensity !== null)
+        .map(([categoryKey, p]) => ({
+          categoryKey,
+          intensity: p.intensity as number,
+          note: p.note.trim(),
+        }));
+      const userAddedWarnings = state.userAddedWarnings
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
       await saveReview({
         bookId,
         overallRating: state.overallRating,
@@ -261,6 +287,8 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
         arcSource: arcData?.arcSource ?? null,
         arcSourceDetail: arcData?.arcSourceDetail ?? null,
         arcProofUrl: arcData?.arcProofUrl ?? null,
+        proposedCorrections,
+        userAddedWarnings,
       });
       onClose();
     });
@@ -371,6 +399,7 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
           )}
           {step === 2 && (
             <StepDimensions
+              isFiction={isFiction}
               dimensionRatings={state.dimensionRatings}
               dimensionTags={state.dimensionTags}
               plotPacing={state.plotPacing}
@@ -394,12 +423,15 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
           )}
           {step === 4 && (
             <StepContentDetails
-              selectedTags={state.dimensionTags["content_details"] ?? []}
-              customContentWarning={state.customContentWarning}
-              contentComments={state.contentComments}
-              onTagToggle={(tag) => dispatch({ type: "TOGGLE_CONTENT_TAG", tag })}
-              onCustomWarningChange={(t) => dispatch({ type: "SET_CUSTOM_CW", text: t })}
-              onContentCommentsChange={(t) => dispatch({ type: "SET_CONTENT_COMMENTS", text: t })}
+              bookId={bookId}
+              proposedCorrections={state.proposedCorrections}
+              userAddedWarnings={state.userAddedWarnings}
+              onProposalChange={(categoryKey, proposal) =>
+                dispatch({ type: "SET_PROPOSED_CORRECTION", categoryKey, proposal })
+              }
+              onUserAddedWarningsChange={(t) =>
+                dispatch({ type: "SET_USER_ADDED_WARNINGS", text: t })
+              }
             />
           )}
         </div>
@@ -452,6 +484,8 @@ export function ReviewWizard({ bookId, bookPages, open, onClose, isExisting, exi
                   Object.values(state.dimensionRatings).some((r) => r !== null) ||
                   Object.values(state.dimensionTags).some((tags) => tags.length > 0) ||
                   state.plotPacing !== null ||
+                  Object.values(state.proposedCorrections).some((p) => p.intensity !== null) ||
+                  state.userAddedWarnings.trim().length > 0 ||
                   (state.contentComments && state.contentComments.trim().length > 0);
                 if (hasAnyData) {
                   handleSave();
