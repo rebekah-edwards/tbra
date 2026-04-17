@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { upNext } from "@/db/schema";
-import { eq, and, gt, asc, sql } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
@@ -20,18 +20,28 @@ export async function addToUpNext(bookId: string): Promise<{ success: boolean; p
     .limit(1);
   if (existing.length > 0) return { success: true, position: existing[0].position };
 
-  // Get current count + highest position (using max avoids UNIQUE collisions
-  // when positions aren't contiguous, e.g. after a race or partial cleanup).
-  const [stats] = await db
-    .select({
-      count: sql<number>`count(*)`,
-      maxPos: sql<number>`COALESCE(MAX(${upNext.position}), 0)`,
-    })
+  // Read current positions. Positions can be non-contiguous (e.g. user
+  // has rows at [1, 3, 5, 6] after a sequence of adds/removes where
+  // shift-down didn't run). Pick the LOWEST available slot in 1..MAX
+  // to safely fill gaps and avoid UNIQUE collisions.
+  const currentRows = await db
+    .select({ position: upNext.position })
     .from(upNext)
     .where(eq(upNext.userId, user.userId));
-  if (stats.count >= MAX_UP_NEXT) return { success: false, error: `Up Next is full (max ${MAX_UP_NEXT})` };
+  if (currentRows.length >= MAX_UP_NEXT) {
+    return { success: false, error: `Up Next is full (max ${MAX_UP_NEXT})` };
+  }
 
-  const newPosition = stats.maxPos + 1;
+  const occupied = new Set(currentRows.map((r) => r.position));
+  let newPosition = -1;
+  for (let p = 1; p <= MAX_UP_NEXT; p++) {
+    if (!occupied.has(p)) { newPosition = p; break; }
+  }
+  if (newPosition === -1) {
+    // Defensive — shouldn't happen given the count check above
+    return { success: false, error: `Up Next is full (max ${MAX_UP_NEXT})` };
+  }
+
   await db.insert(upNext).values({
     userId: user.userId,
     bookId,
@@ -47,26 +57,27 @@ export async function removeFromUpNext(bookId: string): Promise<void> {
   const user = await getCurrentUser();
   if (!user) return;
 
-  // Get the position being removed
-  const row = await db
-    .select({ position: upNext.position })
-    .from(upNext)
-    .where(and(eq(upNext.userId, user.userId), eq(upNext.bookId, bookId)))
-    .limit(1);
-  if (row.length === 0) return;
-
-  const removedPosition = row[0].position;
-
   // Delete the entry
   await db
     .delete(upNext)
     .where(and(eq(upNext.userId, user.userId), eq(upNext.bookId, bookId)));
 
-  // Shift positions down for items after the removed one
-  await db
-    .update(upNext)
-    .set({ position: sql`${upNext.position} - 1` })
-    .where(and(eq(upNext.userId, user.userId), gt(upNext.position, removedPosition)));
+  // Compact remaining positions to 1..N. Previously this was a single
+  // bulk UPDATE with `position = position - 1` which could hit UNIQUE
+  // constraint violations mid-statement on libSQL, leaving users with
+  // non-contiguous rows like [1, 3, 5, 6]. Use the same two-phase
+  // negative-positions trick as reorderUpNext().
+  const remaining = await db
+    .select({ id: upNext.id, position: upNext.position })
+    .from(upNext)
+    .where(eq(upNext.userId, user.userId))
+    .orderBy(asc(upNext.position));
+  for (let i = 0; i < remaining.length; i++) {
+    await db.update(upNext).set({ position: -(i + 1) }).where(eq(upNext.id, remaining[i].id));
+  }
+  for (let i = 0; i < remaining.length; i++) {
+    await db.update(upNext).set({ position: i + 1 }).where(eq(upNext.id, remaining[i].id));
+  }
 
   revalidatePath("/library");
   revalidatePath(`/book/${bookId}`);
