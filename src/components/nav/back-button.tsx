@@ -35,7 +35,7 @@ export function BackButton() {
   return (
     <button
       onClick={() => router.back()}
-      className="lg:hidden fixed top-[calc(env(safe-area-inset-top)+68px)] left-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/10 backdrop-blur-md text-foreground/90 hover:text-foreground hover:bg-white/20 hover:border-white/40 transition-all shadow-lg"
+      className="lg:hidden fixed top-[calc(env(safe-area-inset-top)+71px)] left-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/10 backdrop-blur-md text-foreground/90 hover:text-foreground hover:bg-white/20 hover:border-white/40 transition-all shadow-lg"
       aria-label="Go back"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
