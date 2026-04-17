@@ -16,6 +16,7 @@ export function BackButton() {
     pathname === "/settings" ||
     pathname === "/browse" ||
     pathname === "/buddy-reads" ||
+    pathname === "/people" ||
     pathname === "/signup" ||
     pathname === "/login" ||
     // Sub-pages with their own navigation headers
