@@ -63,11 +63,12 @@ export function SimilarBooks({ bookId }: { bookId: string }) {
       <h2 className="section-heading text-xl">
         Similar Books
       </h2>
-      {/* Always a single horizontally-scrolling row. The fade hint is
-          only useful on mobile; on md:+ we drop it so the trailing
-          books don't visually clip. `!` forces the override above the
-          .mask-fade-right custom class. */}
-      <div className="mt-4 flex gap-3 overflow-x-auto pb-2 no-scrollbar mask-fade-right md:![mask-image:none] md:![-webkit-mask-image:none] pr-12 md:pr-0">
+      {/* Single horizontally-scrolling row with fade hint on every
+          viewport. The trailing padding must exceed the fade zone
+          (15% of the visible container width). Mobile cards are
+          narrow so pr-12 is enough; tablet/desktop cards are much
+          wider so the fade zone balloons — bump to pr-32 at md:+. */}
+      <div className="mt-4 flex gap-3 overflow-x-auto pb-2 no-scrollbar mask-fade-right pr-12 md:pr-32">
         {books.map((book) => (
           <Link
             key={book.id}
