@@ -11,6 +11,7 @@ import { getReadingGoal } from "@/lib/queries/reading-goals";
 import { getReadingStreak } from "@/lib/queries/reading-streak";
 import {
   getCompletedBooksByMonth,
+  getCompletedBooksByYear,
   getPagesByMonth,
   getGenreBreakdown,
   getRatingDistribution,
@@ -39,6 +40,7 @@ export default async function StatsPage({
     goal,
     streak,
     booksByMonth,
+    booksByYear,
     pagesByMonth,
     genreBreakdown,
     ratingDistribution,
@@ -51,6 +53,10 @@ export default async function StatsPage({
     getReadingGoal(session.userId, selectedYear ?? currentYear),
     getReadingStreak(session.userId, selectedYear ?? undefined),
     getCompletedBooksByMonth(session.userId, selectedYear),
+    // Only fetch the yearly aggregation when All Time is selected.
+    selectedYear === undefined
+      ? getCompletedBooksByYear(session.userId)
+      : Promise.resolve([]),
     getPagesByMonth(session.userId, selectedYear),
     getGenreBreakdown(session.userId, selectedYear),
     getRatingDistribution(session.userId, selectedYear),
@@ -68,6 +74,7 @@ export default async function StatsPage({
       goal={goal}
       streak={streak}
       booksByMonth={booksByMonth}
+      booksByYear={booksByYear}
       pagesByMonth={pagesByMonth}
       genreBreakdown={genreBreakdown}
       ratingDistribution={ratingDistribution}

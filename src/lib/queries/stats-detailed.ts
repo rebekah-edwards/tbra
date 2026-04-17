@@ -46,6 +46,59 @@ export async function getCompletedBooksByMonth(
   return rows;
 }
 
+/**
+ * All-time view: books completed grouped by year, plus a "No Year"
+ * bucket for completions with no tracked date. Used when the stats
+ * page is in "All Time" mode — one bar per year reads much cleaner
+ * than one bar per month across a multi-year span.
+ */
+export async function getCompletedBooksByYear(
+  userId: string,
+): Promise<{ year: string | null; count: number; pages: number }[]> {
+  const tracked = await db.all(sql`
+    WITH dedup AS (
+      SELECT book_id, MAX(completion_date) as completion_date
+      FROM reading_sessions
+      WHERE user_id = ${userId}
+        AND state = 'completed'
+        AND completion_date IS NOT NULL
+      GROUP BY book_id
+    )
+    SELECT substr(d.completion_date, 1, 4) as year,
+           count(*) as count,
+           COALESCE(SUM(b.pages), 0) as pages
+    FROM dedup d
+    JOIN books b ON b.id = d.book_id
+    GROUP BY substr(d.completion_date, 1, 4)
+    ORDER BY year
+  `) as { year: string; count: number; pages: number }[];
+
+  const untracked = await db.all(sql`
+    WITH dedup AS (
+      SELECT book_id
+      FROM reading_sessions
+      WHERE user_id = ${userId}
+        AND state = 'completed'
+        AND completion_date IS NULL
+      GROUP BY book_id
+    )
+    SELECT count(*) as count, COALESCE(SUM(b.pages), 0) as pages
+    FROM dedup d
+    JOIN books b ON b.id = d.book_id
+  `) as { count: number; pages: number }[];
+
+  const result: { year: string | null; count: number; pages: number }[] = tracked;
+  const untrackedCount = untracked[0]?.count ?? 0;
+  if (untrackedCount > 0) {
+    result.push({
+      year: null,
+      count: untrackedCount,
+      pages: untracked[0]?.pages ?? 0,
+    });
+  }
+  return result;
+}
+
 /** Genre breakdown for completed books — rolls up child genres to parent categories */
 export async function getGenreBreakdown(
   userId: string,

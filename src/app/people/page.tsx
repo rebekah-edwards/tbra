@@ -8,7 +8,8 @@ export const metadata: Metadata = {
 
 export default function PeoplePage() {
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl pt-14 lg:pt-0">
+      {/* Mobile pt-14 clears the fixed BackButton overlay (top ≈ 68px + 40px) */}
       <h1 className="text-foreground text-2xl font-bold tracking-tight">
         Find Readers
       </h1>

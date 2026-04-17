@@ -11,6 +11,7 @@ interface StatsClientProps {
   goal: ReadingGoalProgress | null;
   streak: ReadingStreak;
   booksByMonth: { month: string; count: number }[];
+  booksByYear: { year: string | null; count: number; pages: number }[];
   pagesByMonth: { month: string; pages: number }[];
   genreBreakdown: { genre: string; count: number }[];
   ratingDistribution: { bucket: string; count: number }[];
@@ -45,6 +46,7 @@ export function StatsClient({
   goal,
   streak,
   booksByMonth,
+  booksByYear,
   pagesByMonth,
   genreBreakdown,
   ratingDistribution,
@@ -63,8 +65,17 @@ export function StatsClient({
 
   const totalFictionNonfiction = fictionSplit.fiction + fictionSplit.nonfiction;
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const monthlyData = buildMonthlyData(booksByMonth, pagesByMonth, year, currentYear, monthNames);
-  const maxMonthlyBooks = Math.max(...monthlyData.map((m) => m.books), 1);
+  const isAllTime = year === "all";
+  // All Time shows one bar per tracked year (plus "No Year" for completions
+  // with no date). Year-specific views show one bar per month.
+  const chartData = isAllTime
+    ? booksByYear.map((r) => ({
+        label: r.year ?? "No Year",
+        books: r.count,
+        pages: r.pages,
+      }))
+    : buildMonthlyData(booksByMonth, pagesByMonth, year, currentYear, monthNames);
+  const maxMonthlyBooks = Math.max(...chartData.map((m) => m.books), 1);
   const maxRatingCount = Math.max(...ratingDistribution.map((r) => r.count), 1);
   const topGenres = genreBreakdown.slice(0, 6);
   const totalGenreBooks = topGenres.reduce((sum, g) => sum + g.count, 0);
@@ -167,20 +178,23 @@ export function StatsClient({
             </div>
           </section>
         )}
-        {monthlyData.length > 0 && (
+        {chartData.length > 0 && (
           <section className="rounded-2xl border border-border bg-surface p-5 lg:col-span-2">
-            <h2 className="section-heading text-xs mb-4">Monthly Reading</h2>
+            <h2 className="section-heading text-xs mb-4">
+              {isAllTime ? "Yearly Reading" : "Monthly Reading"}
+            </h2>
             <div className="-mx-2 overflow-x-auto px-2 pb-1">
               <div
                 className="flex items-end gap-1 h-32"
-                style={{ minWidth: `${monthlyData.length * 20}px` }}
+                style={{ minWidth: isAllTime ? undefined : `${chartData.length * 20}px` }}
               >
-                {monthlyData.map((m) => {
+                {chartData.map((m) => {
                   const pct = (m.books / maxMonthlyBooks) * 100;
+                  const unit = isAllTime ? "year" : "month";
                   return (
-                    <div key={m.label} className="flex-1 min-w-[18px] flex flex-col items-center gap-1 group relative">
+                    <div key={m.label} className={`flex-1 ${isAllTime ? "min-w-[40px]" : "min-w-[18px]"} flex flex-col items-center gap-1 group relative`}>
                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-[9px] px-2 py-1 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                        {m.books} book{m.books !== 1 ? "s" : ""} · {m.pages.toLocaleString()} pages
+                        {m.books} book{m.books !== 1 ? "s" : ""} · {m.pages.toLocaleString()} pages{isAllTime && m.label === "No Year" ? ` (${unit} untracked)` : ""}
                       </div>
                       <div className="w-full flex justify-center" style={{ height: "100px", alignItems: "flex-end", display: "flex" }}>
                         <div className="w-3/4 rounded-t-md transition-all duration-300"
@@ -322,7 +336,7 @@ export function StatsClient({
       </div>
 
       {/* Empty state */}
-      {booksByMonth.length === 0 && genreBreakdown.length === 0 && ratingDistribution.length === 0 && (
+      {booksByMonth.length === 0 && booksByYear.length === 0 && genreBreakdown.length === 0 && ratingDistribution.length === 0 && (
         <div className="rounded-2xl border border-border bg-surface p-12 text-center">
           <span className="text-4xl mb-3 block">📖</span>
           <p className="text-sm font-medium mb-1">No reading data yet</p>
