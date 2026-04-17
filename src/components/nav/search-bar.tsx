@@ -45,6 +45,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
   const [bookResults, setBookResults] = useState<LocalBookResult[]>([]);
   const [seriesMatches, setSeriesMatches] = useState<SeriesMatch[]>([]);
   const [authorMatches, setAuthorMatches] = useState<AuthorMatch[]>([]);
+  const [sectionOrder, setSectionOrder] = useState<string[]>(["books", "series", "authors"]);
   const [loading, setLoading] = useState(false);
   // Track animation state for enter/exit transitions
   const [animating, setAnimating] = useState(false);
@@ -139,6 +140,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
           setBookResults(data.books ?? []);
           setSeriesMatches(data.series ?? []);
           setAuthorMatches(data.authors ?? []);
+          setSectionOrder(data.sectionOrder ?? ["books", "series", "authors"]);
         }
         setLoading(false);
       } catch (err) {
@@ -341,140 +343,137 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                 >
                   {hasResults && (
                     <>
-                      {/* Series matches with books */}
-                      {seriesMatches.map((s) => (
-                        <div key={s.id} className="border-b border-border/50">
+                      {sectionOrder.map((section) => {
+                        if (section === "series") return seriesMatches.map((s) => (
+                          <div key={`series-${s.id}`} className="border-b border-border/50">
+                            <Link
+                              href={`/search?series=${encodeURIComponent(s.id)}`}
+                              onClick={collapse}
+                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-alt transition-colors"
+                            >
+                              <div className="flex-shrink-0 w-10 h-[60px] rounded overflow-hidden bg-primary/10 flex items-center justify-center">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                                  <path d="M8 7h6" />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">{s.name}</p>
+                                <p className="text-xs text-muted">{s.bookCount} book{s.bookCount !== 1 ? "s" : ""} in series</p>
+                              </div>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40 flex-shrink-0">
+                                <polyline points="9 18 15 12 9 6" />
+                              </svg>
+                            </Link>
+                            {s.books?.length > 0 && (
+                              <div className="px-4 pb-2.5 flex gap-2 overflow-x-auto">
+                                {s.books.slice(0, 6).map((book) => (
+                                  <Link
+                                    key={book.id}
+                                    href={`/book/${book.slug || book.id}`}
+                                    onClick={collapse}
+                                    className="flex-shrink-0 group"
+                                    title={book.title}
+                                  >
+                                    {book.coverImageUrl ? (
+                                      <img
+                                        src={book.coverImageUrl}
+                                        alt=""
+                                        className="w-[40px] h-[60px] rounded object-cover group-hover:opacity-80 transition-opacity"
+                                      />
+                                    ) : (
+                                      <div className="w-[40px] h-[60px] rounded bg-surface-alt flex items-center justify-center text-[7px] text-muted leading-tight text-center px-0.5">
+                                        {book.position != null ? `#${book.position}` : "?"}
+                                      </div>
+                                    )}
+                                  </Link>
+                                ))}
+                                {s.books.length > 6 && (
+                                  <Link
+                                    href={`/search?series=${encodeURIComponent(s.id)}`}
+                                    onClick={collapse}
+                                    className="flex-shrink-0 w-[40px] h-[60px] rounded bg-surface-alt/50 flex items-center justify-center text-[10px] text-muted hover:text-foreground transition-colors"
+                                  >
+                                    +{s.books.length - 6}
+                                  </Link>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ));
+
+                        if (section === "authors") return authorMatches.map((a) => (
                           <Link
-                            href={`/search?series=${encodeURIComponent(s.id)}`}
+                            key={`author-${a.id}`}
+                            href={`/author/${a.id}`}
                             onClick={collapse}
-                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-alt transition-colors"
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-alt transition-colors border-b border-border/50"
                           >
-                            <div className="flex-shrink-0 w-10 h-[60px] rounded overflow-hidden bg-primary/10 flex items-center justify-center">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-                                <path d="M8 7h6" />
+                            <div className="flex-shrink-0 w-10 h-[60px] rounded overflow-hidden bg-neon-blue/10 flex items-center justify-center">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-foreground truncate">{s.name}</p>
-                              <p className="text-xs text-muted">{s.bookCount} book{s.bookCount !== 1 ? "s" : ""} in series</p>
+                              <p className="text-sm font-medium text-foreground truncate">{a.name}</p>
+                              <p className="text-xs text-muted">{a.bookCount} book{a.bookCount !== 1 ? "s" : ""}</p>
                             </div>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40 flex-shrink-0">
                               <polyline points="9 18 15 12 9 6" />
                             </svg>
                           </Link>
-                          {/* Compact series books */}
-                          {s.books?.length > 0 && (
-                            <div className="px-4 pb-2.5 flex gap-2 overflow-x-auto">
-                              {s.books.slice(0, 6).map((book) => (
-                                <Link
-                                  key={book.id}
-                                  href={`/book/${book.slug || book.id}`}
-                                  onClick={collapse}
-                                  className="flex-shrink-0 group"
-                                  title={book.title}
-                                >
-                                  {book.coverImageUrl ? (
-                                    <img
-                                      src={book.coverImageUrl}
-                                      alt=""
-                                      className="w-[40px] h-[60px] rounded object-cover group-hover:opacity-80 transition-opacity"
-                                    />
-                                  ) : (
-                                    <div className="w-[40px] h-[60px] rounded bg-surface-alt flex items-center justify-center text-[7px] text-muted leading-tight text-center px-0.5">
-                                      {book.position != null ? `#${book.position}` : "?"}
-                                    </div>
-                                  )}
-                                </Link>
-                              ))}
-                              {s.books.length > 6 && (
-                                <Link
-                                  href={`/search?series=${encodeURIComponent(s.id)}`}
-                                  onClick={collapse}
-                                  className="flex-shrink-0 w-[40px] h-[60px] rounded bg-surface-alt/50 flex items-center justify-center text-[10px] text-muted hover:text-foreground transition-colors"
-                                >
-                                  +{s.books.length - 6}
-                                </Link>
+                        ));
+
+                        if (section === "books") return bookResults.map((book) => (
+                          <Link
+                            key={`book-${book.id}`}
+                            href={`/book/${book.slug || book.id}`}
+                            onClick={collapse}
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-alt transition-colors border-b border-border/50 last:border-0"
+                          >
+                            <div className="flex-shrink-0 w-10 h-[60px] rounded overflow-hidden bg-surface-alt">
+                              {book.coverImageUrl ? (
+                                <img
+                                  src={book.coverImageUrl}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <NoCover title={book.title} className="w-full h-full" size="sm" />
                               )}
                             </div>
-                          )}
-                        </div>
-                      ))}
-                      {/* Author matches */}
-                      {authorMatches.map((a) => (
-                        <Link
-                          key={a.id}
-                          href={`/author/${a.id}`}
-                          onClick={collapse}
-                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-alt transition-colors border-b border-border/50"
-                        >
-                          <div className="flex-shrink-0 w-10 h-[60px] rounded overflow-hidden bg-neon-blue/10 flex items-center justify-center">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue">
-                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                              <circle cx="12" cy="7" r="4" />
-                            </svg>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">{a.name}</p>
-                            <p className="text-xs text-muted">{a.bookCount} book{a.bookCount !== 1 ? "s" : ""}</p>
-                          </div>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40 flex-shrink-0">
-                            <polyline points="9 18 15 12 9 6" />
-                          </svg>
-                        </Link>
-                      ))}
-                      {/* Local book results — each links directly to the book page */}
-                      {bookResults.map((book) => (
-                        <Link
-                          key={book.id}
-                          href={`/book/${book.slug || book.id}`}
-                          onClick={collapse}
-                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-alt transition-colors border-b border-border/50 last:border-0"
-                        >
-                          {/* Cover */}
-                          <div className="flex-shrink-0 w-10 h-[60px] rounded overflow-hidden bg-surface-alt">
-                            {book.coverImageUrl ? (
-                              <img
-                                src={book.coverImageUrl}
-                                alt=""
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <NoCover title={book.title} className="w-full h-full" size="sm" />
-                            )}
-                          </div>
-
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">
-                              {book.title}
-                            </p>
-                            {book.authors?.length > 0 && (
-                              <p className="text-xs text-muted truncate">
-                                {book.authors.slice(0, 2).join(", ")}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground truncate">
+                                {book.title}
                               </p>
-                            )}
-                            {book.publicationYear && (
-                              <p className="text-xs text-muted/60">
-                                {book.publicationYear}
-                              </p>
-                            )}
-                          </div>
+                              {book.authors?.length > 0 && (
+                                <p className="text-xs text-muted truncate">
+                                  {book.authors.slice(0, 2).join(", ")}
+                                </p>
+                              )}
+                              {book.publicationYear && (
+                                <p className="text-xs text-muted/60">
+                                  {book.publicationYear}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex-shrink-0">
+                              {book.state ? (
+                                <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                  {stateLabel(book.state)}
+                                </span>
+                              ) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40">
+                                  <polyline points="9 18 15 12 9 6" />
+                                </svg>
+                              )}
+                            </div>
+                          </Link>
+                        ));
 
-                          {/* Status badge */}
-                          <div className="flex-shrink-0">
-                            {book.state ? (
-                              <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                                {stateLabel(book.state)}
-                              </span>
-                            ) : (
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted/40">
-                                <polyline points="9 18 15 12 9 6" />
-                              </svg>
-                            )}
-                          </div>
-                        </Link>
-                      ))}
+                        return null;
+                      })}
                     </>
                   )}
 

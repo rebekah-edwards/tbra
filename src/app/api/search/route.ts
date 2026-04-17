@@ -111,10 +111,37 @@ export async function GET(request: NextRequest) {
     bookResults = bookResults.slice(0, 8);
   }
 
+  // Compute section order so the nav dropdown can surface whatever the
+  // user most likely wanted first. An exact-title / prefix-title book
+  // match beats a fuzzy series/author match on "attribute relevance".
+  const qLower = trimmed.toLowerCase();
+  const relevanceScore = (s: string) => {
+    const lower = (s ?? "").toLowerCase();
+    if (lower === qLower) return 100;
+    if (lower.startsWith(qLower)) return 70;
+    if (lower.includes(qLower)) return 40;
+    return 10;
+  };
+  const bestBookScore = bookResults.length > 0
+    ? Math.max(...bookResults.slice(0, 3).map((b) => relevanceScore(b.title))) + 1
+    : 0;
+  const bestSeriesScore = seriesResults.length > 0
+    ? Math.max(...seriesResults.map((s) => relevanceScore(s.name)))
+    : 0;
+  const bestAuthorScore = authorResults.length > 0
+    ? Math.max(...authorResults.map((a) => relevanceScore(a.name)))
+    : 0;
+  const sectionOrder = [
+    { type: "books", score: bestBookScore },
+    { type: "series", score: bestSeriesScore },
+    { type: "authors", score: bestAuthorScore },
+  ].sort((a, b) => b.score - a.score).map((s) => s.type);
+
   return NextResponse.json({
     books: bookResults,
     series: seriesResults,
     authors: authorResults,
+    sectionOrder,
   });
 }
 
