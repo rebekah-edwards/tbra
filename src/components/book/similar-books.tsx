@@ -63,7 +63,9 @@ export function SimilarBooks({ bookId }: { bookId: string }) {
       <h2 className="section-heading text-xl">
         Similar Books
       </h2>
-      <div className="mt-4 flex gap-3 overflow-x-auto pb-2 pr-12 no-scrollbar mask-fade-right lg:grid lg:grid-cols-8 lg:gap-3 lg:overflow-visible lg:pb-0 lg:pr-0">
+      {/* Horizontal scroll on mobile with fade hint; clean grid with full
+          last column visible on desktop (no mask-fade, no right pad). */}
+      <div className="mt-4 flex gap-3 overflow-x-auto pb-2 pr-12 no-scrollbar mask-fade-right lg:grid lg:grid-cols-8 lg:gap-3 lg:overflow-visible lg:pb-0 lg:pr-0 lg:[mask-image:none] lg:[-webkit-mask-image:none]">
         {books.map((book) => (
           <Link
             key={book.id}

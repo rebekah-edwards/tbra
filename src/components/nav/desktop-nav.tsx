@@ -54,18 +54,19 @@ export function DesktopNav({ isLoggedIn, avatarUrl, displayName }: DesktopNavPro
             <Link
               key={tab.label}
               href={href}
-              className={`
-                relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
-                ${active
-                  ? "text-foreground bg-black/5 dark:bg-white/10 backdrop-blur-md border border-black/10 dark:border-white/15 shadow-[0_0_12px_rgba(163,230,53,0.15)]"
-                  : "text-muted hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:backdrop-blur-sm"
-                }
-              `}
+              className={`relative px-3 py-2 text-sm font-medium transition-colors ${
+                active
+                  ? "text-foreground"
+                  : "text-muted hover:text-foreground"
+              }`}
             >
+              {tab.label}
               {active && (
-                <span className="absolute inset-0 rounded-full bg-gradient-to-r from-accent/10 via-neon-blue/5 to-neon-purple/10 pointer-events-none" />
+                <span
+                  aria-hidden
+                  className="absolute left-3 right-3 -bottom-0.5 h-[2px] rounded-full bg-accent"
+                />
               )}
-              <span className="relative">{tab.label}</span>
             </Link>
           );
         })}
