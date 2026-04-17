@@ -223,42 +223,63 @@ function StarFilter({ value, onChange }: { value: number; onChange: (v: number) 
 /* ─── Main Component ─── */
 
 export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWithDetails[]; contentPrefs?: Record<string, number> }) {
-  const searchParams = useSearchParams();
+  const initialParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Read state from URL params
-  const activeGroup = (searchParams.get("tab") as GroupKey) || "tbr";
-  const activeSubFilter = searchParams.get("filter") || SUB_FILTERS[activeGroup]?.[0]?.key || "all";
-  const sort = (searchParams.get("sort") as SortKey) || "recent";
-  const yearFilter = searchParams.get("year") || "";
-  const genreFilter = searchParams.get("genre") || "";
-  const minRating = parseInt(searchParams.get("rating") || "0", 10);
-  const fictionFilter = searchParams.get("fiction") || "";
-  const formatFilter = searchParams.get("format") || "";
+  // Seed from the URL once, then own the state locally. Calling
+  // `router.replace` repeatedly was leaving the tab/filter UI wedged on
+  // desktop — clicks stopped updating the URL on a warm page. Switching
+  // to local state + native `history.replaceState` for the URL sync
+  // keeps the visible UI responsive regardless of what the Next.js
+  // router is doing under the hood.
+  const [params, setParams] = useState<Record<string, string>>(() => {
+    const out: Record<string, string> = {};
+    initialParams.forEach((v, k) => { if (v) out[k] = v; });
+    return out;
+  });
+
+  const activeGroup = (params.tab as GroupKey) || "tbr";
+  const activeSubFilter = params.filter || SUB_FILTERS[activeGroup]?.[0]?.key || "all";
+  const sort = (params.sort as SortKey) || "recent";
+  const yearFilter = params.year || "";
+  const genreFilter = params.genre || "";
+  const minRating = parseInt(params.rating || "0", 10);
+  const fictionFilter = params.fiction || "";
+  const formatFilter = params.format || "";
   const [filtersOpen, setFiltersOpen] = useState(() => {
-    // Auto-open if any advanced filters are active from URL
     return !!(yearFilter || genreFilter || minRating || fictionFilter || formatFilter);
   });
 
-  // Validate group key
+  // Keep the URL in sync as state changes so shared/bookmarked links work,
+  // but drive the UI off local state to avoid a router-induced hang.
+  useEffect(() => {
+    const qs = new URLSearchParams(params).toString();
+    const url = `${pathname}${qs ? `?${qs}` : ""}`;
+    if (typeof window !== "undefined" && window.location.pathname + window.location.search !== url) {
+      window.history.replaceState(window.history.state, "", url);
+    }
+  }, [params, pathname]);
+  // Keep router / pathname imports live for any other routing use below.
+  void router;
+
   const validGroup = GROUPS.some((g) => g.key === activeGroup) ? activeGroup : "tbr";
 
-  // Update URL params helper
   const updateParams = useCallback(
     (updates: Record<string, string | null>) => {
-      const params = new URLSearchParams(searchParams.toString());
-      for (const [key, val] of Object.entries(updates)) {
-        if (val === null || val === "" || val === "0") {
-          params.delete(key);
-        } else {
-          params.set(key, val);
+      setParams((prev) => {
+        const next = { ...prev };
+        for (const [key, val] of Object.entries(updates)) {
+          if (val === null || val === "" || val === "0") {
+            delete next[key];
+          } else {
+            next[key] = val;
+          }
         }
-      }
-      const qs = params.toString();
-      router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+        return next;
+      });
     },
-    [searchParams, router, pathname]
+    []
   );
 
   // Compute summary stats
