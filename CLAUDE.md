@@ -58,6 +58,14 @@ npm run deploy:code   # Deploy code only
 - **Task IDs in sidebar:** The task ID you create is what shows in the user's sidebar. Use clear, descriptive IDs.
 - **New tasks don't appear in sidebar until triggered once.** After creating a new task, immediately do a manual "Run now" to make it visible and to pre-approve tool permissions so future automatic runs don't stall on permission prompts.
 
+## Cover Management (2026-04-17)
+Auto-refill is **off** for existing books. Enrichment's Phase 4 cover cascade only runs when `cover_source IS NULL` — meaning the book has never been through the cascade. Subsequent enrichment runs skip Phase 4 for any book with a `cover_source` value.
+
+- **Fresh import** → Phase 4 runs → `cover_source` set to whatever succeeded, or `'none-found'` if cascade came back empty.
+- **nightly-cover-rescue** clears ISBNdb placeholder covers and sets `cover_source='isbndb-placeholder-cleared'`. Book then waits for manual review.
+- **`/admin/covers`** — admin dashboard lists every book with a missing cover. 3 tabs: Priority (has_user_activity) / All pending / Abandon candidates (zero activity). Paste an Amazon URL → Save sets `cover_source='manual'`, `cover_verified=1`. Archive sets `visibility='hidden'`.
+- **Never re-enable auto-refill for existing books** unless the user explicitly asks. The `/admin/covers` queue is the source of truth.
+
 ## Enrichment API Quotas
 - **Brave Search:** rate-limited, use sparingly. Primary metadata fallback after OpenLibrary.
 - **Google Books:** 1,000 queries/day free tier, resets midnight Pacific. Cap bulk runs at 1,000. Use `skipGoogleBooks` option in `enrichBook()` during bulk operations.
