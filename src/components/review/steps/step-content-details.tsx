@@ -46,7 +46,7 @@ export function StepContentDetails({
       .then((r) => (r.ok ? r.json() : { ratings: [] }))
       .then((data) => {
         if (active) {
-          setRatings((data.ratings ?? []).filter((r: CategoryRating) => r.categoryKey !== "user_added"));
+          setRatings((data.ratings ?? []).filter((r: CategoryRating) => r.categoryKey !== "other"));
           setLoading(false);
         }
       })

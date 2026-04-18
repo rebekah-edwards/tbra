@@ -3,8 +3,8 @@ import type { BookContext, EnrichmentResult } from "./types";
 import { TAXONOMY_KEYS } from "./types";
 
 const CATEGORY_DESCRIPTIONS: Record<string, string> = {
-  sexual_content:
-    "On-page vs fade-to-black sexual scenes, explicitness, and frequency.",
+  romance_sex:
+    "On-page vs fade-to-black romantic and sexual content, including explicitness and frequency. Include sexual-assault context when relevant (e.g., graphic on-page depictions).",
   violence_gore:
     "Body horror, torture, graphic depictions, and the intensity of violent scenes.",
   profanity_language:
@@ -15,18 +15,18 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
     "Presence and centrality of LGBTQ+ characters, relationships, and identity themes.",
   religious_content:
     "Overt religiosity, clergy/rituals, conversion themes, devotional framing.",
-  witchcraft_occult:
-    "Magic-as-occult framing vs fantasy spellcasting; rituals, summoning, demonology.",
+  magic_witchcraft:
+    "Fantasy magic, witchcraft, and spellcasting as story elements (e.g., Harry Potter). Does NOT include real-world occult content — see occult_demonology.",
+  occult_demonology:
+    "Real-world occult content: Wicca, demons, demonology, séances, tarot, divination, ritual magic, demonic possession, Satanism. Distinct from fantasy magic. A book can have BOTH magic_witchcraft and occult_demonology if it contains elements of each.",
   political_ideological:
     "Political, social, or cultural messaging — descriptive, not evaluative.",
   self_harm_suicide:
     "Ideation vs attempt, on-page depiction of self-harm or suicide.",
-  sexual_assault_coercion:
-    "Threat, coercion, assault, and aftermath.",
   abuse_suffering:
-    "Child abuse, domestic violence, animal abuse, slavery, and other forms of cruelty or systemic suffering.",
-  user_added:
-    "Additional content warnings that don't fit neatly into other categories.",
+    "Child abuse, domestic violence, animal abuse, slavery, sexual assault/coercion, and other forms of cruelty or systemic suffering. Sexual-assault themes and aftermath are captured here.",
+  other:
+    "Additional content details and trigger warnings that don't fit the other categories (e.g., eating disorders, anti-obesity content, medical trauma, religious trauma).",
 };
 
 function buildPrompt(context: BookContext): string {
@@ -83,7 +83,7 @@ RULES:
   - When content is ABSENT: use a short phrase ONLY (e.g., "No religious themes present", "No substance use depicted"). Do NOT explain why it is absent.
   - NEVER reference the research process, search results, sources, reviews, or how you found information. Write as if you read the book yourself.
   - NEVER say "sources confirm", "reviews mention", "no information found in research", "research consistently lacks", etc.
-- For the "user_added" category, always rate 0 with notes "No information found" — this is reserved for user submissions.
+- For the "other" category, always rate 0 with notes "No information found" — this is reserved for user submissions and content that doesn't fit elsewhere.
 - The summary MUST be 1-2 SHORT sentences, MAX 190 characters total. This is a hard limit — count your characters. Think tagline, not synopsis. NEVER include spoilers — focus on the premise and tone, not plot twists or endings. You may mention themes or how readers interpret the book. Example: "A rogue librarian opens an illegal spellshop on a remote island, juggling stolen magic, local woes, and an unexpected romance." Capture premise and tone in the tightest possible phrasing. Never exceed 190 characters.
 - For supplementalTags, suggest UP TO 3 community genre labels not already in the existing genres (e.g., LitRPG, progression fantasy, cozy mystery, dark academia, romantasy, grimdark). Pick only the most distinctive tags — ones that help a reader decide if this book is for them. Avoid redundancy: do not add "Dark Humor" if "Humor" is already a genre, do not add "Adventure" if specific tags like "LitRPG" cover it. Total tags (existing + supplemental) should be 3-6. Return an empty array if existing genres suffice.
 - Verify the fiction/nonfiction classification is correct.

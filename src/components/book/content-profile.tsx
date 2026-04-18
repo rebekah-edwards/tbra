@@ -23,26 +23,28 @@ interface ContentProfileProps {
 
 // Display order for categories
 const CATEGORY_ORDER = [
-  "sexual_content",
+  "romance_sex",
   "violence_gore",
   "profanity_language",
   "substance_use",
   "lgbtqia_representation",
   "religious_content",
-  "witchcraft_occult",
+  "magic_witchcraft",
+  "occult_demonology",
   "political_ideological",
   "self_harm_suicide",
-  "sexual_assault_coercion",
   "abuse_suffering",
-  "user_added",
+  "other",
 ];
 
 // Short display names for mobile-friendly single-line rendering
 const SHORT_NAMES: Record<string, string> = {
+  "romance_sex": "Romance & sex",
   "lgbtqia_representation": "LGBTQ+ Rep.",
   "profanity_language": "Profanity",
   "political_ideological": "Political content",
-  "sexual_assault_coercion": "Sexual assault",
+  "magic_witchcraft": "Magic & witchcraft",
+  "occult_demonology": "Occult / demonology",
   "abuse_suffering": "Abuse & suffering",
 };
 

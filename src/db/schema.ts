@@ -508,7 +508,7 @@ export const userGenrePreferences = sqliteTable("user_genre_preferences", {
 
 export const userContentPreferences = sqliteTable("user_content_preferences", {
   userId: text("user_id").notNull().references(() => users.id),
-  categoryId: text("category_id").notNull(), // e.g. 'violence_gore', 'sexual_content'
+  categoryId: text("category_id").notNull(), // e.g. 'violence_gore', 'romance_sex'
   maxTolerance: integer("max_tolerance").notNull(), // 0=none, 1=mild, 2=moderate, 3=heavy, 4=no limit
 }, (table) => [
   uniqueIndex("user_content_pref_unique").on(table.userId, table.categoryId),

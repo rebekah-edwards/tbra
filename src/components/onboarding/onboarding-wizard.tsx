@@ -67,7 +67,7 @@ const CHARACTER_TROPES = [
   { key: "fish-out-of-water", label: "Fish out of water" },
 ];
 
-// Content categories matching seed data (excluding user_added)
+// Content categories matching seed data (excluding "other")
 const CONTENT_CATEGORIES = [
   { key: "42ad1bfb-09dc-4ffd-aafe-bf6cef50ab6f", name: "Violence & gore" },
   { key: "4ba66d94-2d8b-4558-858c-5643c5ae9864", name: "Sexual content" },

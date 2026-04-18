@@ -146,7 +146,7 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
 
   const displayGenres = classifiedGenres;
 
-  // Get category ratings with category info
+  // Get category ratings with category info (active categories only)
   const ratings = await db
     .select({
       categoryId: taxonomyCategories.id,
@@ -161,7 +161,12 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
       taxonomyCategories,
       eq(bookCategoryRatings.categoryId, taxonomyCategories.id)
     )
-    .where(eq(bookCategoryRatings.bookId, bookId));
+    .where(
+      and(
+        eq(bookCategoryRatings.bookId, bookId),
+        eq(taxonomyCategories.active, true),
+      ),
+    );
 
   // Get links
   const bookLinks = await db

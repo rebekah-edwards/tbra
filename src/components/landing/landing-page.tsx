@@ -37,22 +37,24 @@ const INTENSITY_COLORS = [
 ];
 
 const SHORT_NAMES: Record<string, string> = {
+  romance_sex: "Romance & sex",
   lgbtqia_representation: "LGBTQ+ Rep.",
   profanity_language: "Profanity",
   political_ideological: "Political content",
-  sexual_assault_coercion: "Sexual assault",
+  magic_witchcraft: "Magic & witchcraft",
+  occult_demonology: "Occult / demonology",
   abuse_suffering: "Abuse & suffering",
 };
 
-// Categories to show in the landing page showcase (skip user_added, skip 0-intensity)
+// Categories to show in the landing page showcase (skip "other", skip 0-intensity)
 const SHOWCASE_CATEGORIES = [
-  "sexual_content",
+  "romance_sex",
   "violence_gore",
   "profanity_language",
   "substance_use",
   "religious_content",
   "self_harm_suicide",
-  "sexual_assault_coercion",
+  "occult_demonology",
   "abuse_suffering",
 ];
 

@@ -242,13 +242,13 @@ export async function saveReview(payload: ReviewPayload) {
     }
   }
 
-  // Record user-added trigger warnings against the "user_added" taxonomy
-  // category so admins can aggregate them into a single user-added note.
+  // Record user-added trigger warnings against the "other" taxonomy
+  // category so admins can aggregate them into a single note.
   if (userAddedWarnings.length > 0) {
     const userAddedCat = await db
       .select({ id: taxonomyCategories.id })
       .from(taxonomyCategories)
-      .where(eq(taxonomyCategories.key, "user_added"))
+      .where(eq(taxonomyCategories.key, "other"))
       .get();
     if (userAddedCat) {
       for (const raw of userAddedWarnings) {

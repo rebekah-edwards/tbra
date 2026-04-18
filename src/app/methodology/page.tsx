@@ -22,8 +22,8 @@ const INTENSITY_LEVELS = [
 
 const CATEGORIES = [
   {
-    name: "Sexual content",
-    description: "On-page vs fade-to-black sexual scenes, explicitness, and frequency.",
+    name: "Romance & sex",
+    description: "On-page vs fade-to-black romantic and sexual content, including explicitness and frequency. Notes may describe sexual-assault context where relevant.",
   },
   {
     name: "Violence & gore",
@@ -46,8 +46,12 @@ const CATEGORIES = [
     description: "Overt religiosity, clergy/rituals, conversion themes, devotional framing.",
   },
   {
-    name: "Witchcraft / occult",
-    description: "Magic-as-occult framing vs fantasy spellcasting; rituals, summoning, demonology.",
+    name: "Magic & witchcraft",
+    description: "Fantasy magic, witchcraft, and spellcasting as story elements (e.g., Harry Potter). Distinct from real-world occult content — see Occult / Demonology.",
+  },
+  {
+    name: "Occult / demonology",
+    description: "Real-world occult content, Wicca, demons, demonology, séances, divination, or ritual magic. Distinct from fantasy magic.",
   },
   {
     name: "Political & ideological content",
@@ -58,16 +62,12 @@ const CATEGORIES = [
     description: "Ideation vs attempt, on-page depiction of self-harm or suicide.",
   },
   {
-    name: "Sexual assault / coercion",
-    description: "Threat, coercion, assault, and aftermath.",
-  },
-  {
     name: "Abuse & suffering",
-    description: "Child abuse, domestic violence, animal abuse, slavery, and other forms of cruelty or systemic suffering.",
+    description: "Child abuse, domestic violence, animal abuse, slavery, sexual assault, and other forms of cruelty or systemic suffering.",
   },
   {
-    name: "User-added",
-    description: "Additional content warnings submitted by users that don't fit neatly into other categories.",
+    name: "Other",
+    description: "Additional content details and trigger warnings that don't fit the other categories (e.g., eating disorders, anti-obesity content, medical trauma).",
   },
 ];
 

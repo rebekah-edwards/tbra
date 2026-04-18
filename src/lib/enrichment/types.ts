@@ -31,16 +31,16 @@ export interface EnrichmentResult {
 }
 
 export const TAXONOMY_KEYS = [
-  "sexual_content",
+  "romance_sex",
   "violence_gore",
   "profanity_language",
   "substance_use",
   "lgbtqia_representation",
   "religious_content",
-  "witchcraft_occult",
+  "magic_witchcraft",
+  "occult_demonology",
   "political_ideological",
   "self_harm_suicide",
-  "sexual_assault_coercion",
   "abuse_suffering",
-  "user_added",
+  "other",
 ] as const;

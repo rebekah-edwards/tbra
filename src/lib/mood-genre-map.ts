@@ -27,7 +27,7 @@ export const DISCOVER_MOODS: MoodDefinition[] = [
     emoji: "☕",
     genreKeywords: ["cozy", "comfort", "heartwarming", "wholesome", "feel-good", "light", "clean", "sweet", "gentle"],
     antiKeywords: ["horror", "thriller", "dark", "grim", "dystop", "war", "crime", "gore"],
-    contentHints: { violence_gore: 1, sexual_assault_coercion: 0, self_harm_suicide: 0 },
+    contentHints: { violence_gore: 1, abuse_suffering: 0, self_harm_suicide: 0 },
     fictionBias: "fiction",
   },
   {
