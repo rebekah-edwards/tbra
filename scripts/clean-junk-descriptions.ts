@@ -88,6 +88,17 @@ const OTHER_JUNK_PATTERNS = [
   /^A Stepping Stone Book/i,
   /^\d{10,13}:/,  // ISBN as description start
   /^(?:Hardcover|Paperback|Mass Market|Board Book)/i,
+  // Amazon reseller box-set dispatch boilerplate (added 2026-04-17)
+  /As Per Original(?: UK)? ISBN/i,
+  /dispatched as per the original(?: UK)? ISBN/i,
+  /shall be Dispatched Collectively/i,
+  // Amazon bullet-separated metadata dumps
+  /\s·\s*ISBN-1[03]\s*·/,
+  // Copyright page excerpts / TOC listings
+  /^Copyright\s*©/i,
+  /All rights reserved\.\s*ISBN:/i,
+  // Textbook instructor access listings
+  /Please check the ISBN that your instructor/i,
 ];
 
 // Amazon product-page section headers (anywhere in text)

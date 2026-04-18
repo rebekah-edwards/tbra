@@ -23,7 +23,8 @@ const local = new Database(path.join(process.cwd(), 'data', 'tbra.db'));
 const UPDATE_FIELDS = [
   'summary', 'description', 'publication_year', 'pages', 'publisher',
   'cover_image_url', 'is_fiction', 'is_box_set', 'pacing',
-  'audiobook_cover_url', 'cover_verified', 'cover_source', 'updated_at',
+  'audiobook_cover_url', 'cover_verified', 'cover_source',
+  'description_stale', 'updated_at',
 ];
 
 const BATCH_SIZE = 100;

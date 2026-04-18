@@ -49,7 +49,7 @@ npm run deploy:code   # Deploy code only
 - `nightly-discovery` — 12:21 AM PT: `nightly-import.ts` with `TARGET_BOOKS=500`, Christian weighted 2×
 - `nightly-junk-sweep` — 1:40 AM PT: flags box-sets + study guides into `/admin/issues`
 - `nightly-report-triage` — 2:34 AM PT: `process-reports.ts` (direct on Turso)
-- `nightly-cover-rescue` — 3:19 AM PT: clears ISBNdb placeholder covers (hash `56c3e12f…`, size 3736); flagged books go to admin review dashboard for manual replace
+- `nightly-placeholder-clear` — 3:15 AM PT: detects + clears known cover placeholders (ISBNdb `56c3e12f…` / 3736 bytes; Google Books `12557f8948b8…` / 15567 bytes). Does NOT auto-replace — cleared books land on `/admin/covers` for manual fix. (Renamed from `nightly-cover-rescue` on 2026-04-17 for clarity.)
 - `nightly-description-refresh` — 4:04 AM PT: re-enriches `description_stale=1`
 - `nightly-content-ratings-backfill` — 4:54 AM PT: 700 Grok enrichments/night
 - `sitemap-threshold-check` — 5:36 AM PT: alerts on 5K book-count boundary
