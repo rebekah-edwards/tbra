@@ -927,9 +927,15 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
 
   // 7. Resolve cover if missing or not yet verified — multi-tier cascade
   // NEVER overwrite manually-set covers (cover_source = 'manual' or Amazon URLs)
+  // Also skip re-fetching for books that have already been through the cascade
+  // once — any existing cover_source value means "already attempted." This
+  // keeps existing books out of the auto-refill loop so they land in the
+  // /admin/covers review queue instead. Brand-new imports always have
+  // cover_source = NULL, so they still go through Phase 4 normally.
   const isManualCover = book.coverSource === 'manual' ||
     (book.coverImageUrl && book.coverImageUrl.includes('m.media-amazon.com'));
-  if ((!book.coverImageUrl || !book.coverVerified) && !isManualCover) {
+  const alreadyAttempted = book.coverSource != null;
+  if ((!book.coverImageUrl || !book.coverVerified) && !isManualCover && !alreadyAttempted) {
     await resolveBookCover(book, authorNames, options);
   }
 
@@ -1103,7 +1109,16 @@ async function resolveBookCover(
       })
       .where(eq(books.id, book.id));
   } else {
-    console.log(`[enrichment] No cover found across all tiers for "${book.title}"`);
+    // Mark as attempted-but-empty so subsequent enrichment runs skip Phase 4
+    // and the book lands in the /admin/covers manual-review queue instead.
+    await db
+      .update(books)
+      .set({
+        coverSource: "none-found",
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(books.id, book.id));
+    console.log(`[enrichment] No cover found across all tiers for "${book.title}" — marked for manual review`);
   }
 }
 

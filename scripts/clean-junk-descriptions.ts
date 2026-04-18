@@ -90,6 +90,47 @@ const OTHER_JUNK_PATTERNS = [
   /^(?:Hardcover|Paperback|Mass Market|Board Book)/i,
 ];
 
+// Amazon product-page section headers (anywhere in text)
+const AMAZON_SECTION_PATTERNS = [
+  /\bProduct Description\b/i,
+  /\bFrom the Publisher\b/i,
+  /\bFrom the (?:Inside Flap|Back Cover)\b/i,
+  /\bEditorial Reviews?\b/i,
+  /\bAbout the Author\b/i,
+  /\bAbout AuthorBrother\b/i, // specific ISBNdb artifact
+  /\bPraise for\b/i,
+];
+
+// Review/promo taglines (Scholastic, PW, Kirkus when used as a prefix)
+const REVIEW_TAGLINE_PATTERNS = [
+  /^Scholastic (?:says|Press|Book)/i,
+  /^Publishers Weekly\b/i,
+  /^From Publishers Weekly\b/i,
+  /^Kirkus Reviews?\b/i,
+  /^From Kirkus\b/i,
+  /^From Booklist\b/i,
+  /—\s*Publishers Weekly\s*$/i,
+];
+
+// Raw ISBN label mid-description (ISBNdb artifact)
+const ISBN_LABEL_PATTERNS = [
+  /\bISBN(?:-1[03])?\s*:?\s*\d{10,13}\b/,
+  /\bEAN\s*:\s*\d{13}\b/,
+];
+
+// Structural junk: too short, equals title, wrong-book indicators
+function isStructurallyJunk(desc: string, title: string): { junk: boolean; reason: string } {
+  const trimmed = desc.trim();
+  if (trimmed.length < 30) return { junk: true, reason: 'struct: too short' };
+  if (trimmed.toLowerCase() === title.trim().toLowerCase()) return { junk: true, reason: 'struct: equals title' };
+  // Foreign language: high ratio of non-ASCII letters (>15%) for a long description usually = French/Spanish/etc.
+  const nonAscii = (trimmed.match(/[À-ÿ]/g) || []).length;
+  if (trimmed.length > 100 && nonAscii / trimmed.length > 0.08) {
+    return { junk: true, reason: 'struct: non-English' };
+  }
+  return { junk: false, reason: '' };
+}
+
 interface DbLike {
   label: string;
   exec(sql: string, args?: unknown[]): Promise<{ rows: Record<string, unknown>[] }>;
@@ -118,18 +159,30 @@ function wrapRemote(client: Client): DbLike {
   };
 }
 
-function isJunkDescription(desc: string): { junk: boolean; reason: string } {
+function isJunkDescription(desc: string, title = ''): { junk: boolean; reason: string } {
+  const struct = isStructurallyJunk(desc, title);
+  if (struct.junk) return struct;
+
   for (const p of REVIEW_PATTERNS) {
     if (p.test(desc)) return { junk: true, reason: `review: ${p.source.slice(0, 40)}` };
   }
   for (const p of AMAZON_PATTERNS) {
     if (p.test(desc)) return { junk: true, reason: `amazon: ${p.source.slice(0, 40)}` };
   }
+  for (const p of AMAZON_SECTION_PATTERNS) {
+    if (p.test(desc)) return { junk: true, reason: `amzsection: ${p.source.slice(0, 40)}` };
+  }
   for (const p of GOODREADS_PATTERNS) {
     if (p.test(desc)) return { junk: true, reason: `goodreads: ${p.source.slice(0, 40)}` };
   }
   for (const p of AUTHOR_BIO_PATTERNS) {
     if (p.test(desc)) return { junk: true, reason: `bio: ${p.source.slice(0, 40)}` };
+  }
+  for (const p of REVIEW_TAGLINE_PATTERNS) {
+    if (p.test(desc)) return { junk: true, reason: `tagline: ${p.source.slice(0, 40)}` };
+  }
+  for (const p of ISBN_LABEL_PATTERNS) {
+    if (p.test(desc)) return { junk: true, reason: `isbn-label: ${p.source.slice(0, 40)}` };
   }
   for (const p of OTHER_JUNK_PATTERNS) {
     if (p.test(desc)) return { junk: true, reason: `junk: ${p.source.slice(0, 40)}` };
@@ -149,7 +202,8 @@ async function clean(db: DbLike) {
 
   for (const row of rows.rows) {
     const desc = row.description as string;
-    const check = isJunkDescription(desc);
+    const title = (row.title as string) || '';
+    const check = isJunkDescription(desc, title);
     if (check.junk) {
       junkBooks.push({
         id: row.id as string,
@@ -186,11 +240,12 @@ async function clean(db: DbLike) {
     return;
   }
 
-  // NULL out junk descriptions (and summary if it matches)
+  // NULL out junk descriptions (and summary if it matches). Bump updated_at
+  // so the next sync-push picks these up even if local is being cleared.
   let cleaned = 0;
   for (const b of junkBooks) {
     await db.exec(
-      `UPDATE books SET description = NULL, summary = CASE WHEN summary = description THEN NULL ELSE summary END WHERE id = ?`,
+      `UPDATE books SET description = NULL, summary = CASE WHEN summary = description THEN NULL ELSE summary END, updated_at = datetime('now') WHERE id = ?`,
       [b.id],
     );
     cleaned++;

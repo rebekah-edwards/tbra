@@ -95,7 +95,7 @@ export function BottomTabs({ isLoggedIn, avatarUrl }: BottomTabsProps) {
       className="fixed left-0 right-0 z-50 border-t border-border bg-surface/95 backdrop-blur-sm lg:hidden"
       style={{
         // Explicit `bottom: 0` plus safe-area padding — works around an iOS
-        // PWA quirk where Tailwind's `bottom-0` + arbitrary `pb-[env()]`
+        // PWA quirk where Tailwind's `bottom-0` + arbitrary pb-env-safe-area
         // occasionally computes to a stale value mid-scroll, leaving the
         // nav floating above the viewport edge.
         bottom: 0,

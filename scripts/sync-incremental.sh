@@ -86,9 +86,16 @@ conn.close()
 
 # ─── PULL: Fetch live changes into local ───────────────────────────
 pull)
-  echo -e "${BLUE}Pulling live changes into local database...${NC}"
+  echo -e "${BLUE}Pulling live changes into local database via @libsql/client (sync-pull.ts)...${NC}"
   echo ""
 
+  # NOTE (2026-04-16): Original Python pull below used `turso db shell tbra-web-app` via the
+  # broken CLI (authed to tbra-rebekah-edwards, not production). sync-pull.ts talks to Turso
+  # directly via .env.vercel.local credentials. Same semantics: insert new rows, update when
+  # live.updated_at > local.updated_at, always sync covers live → local (authoritative).
+  exec npx tsx "$SCRIPT_DIR/sync-pull.ts"
+
+  # ── Legacy Python path kept below for reference; unreachable ──
   python3 << 'PYEOF'
 import sqlite3, subprocess, sys, json, os
 
@@ -326,9 +333,20 @@ PYEOF
 # ─── PUSH: Send local changes to live ─────────────────────────────
 push)
   echo -e "${YELLOW}⚠  Have you run 'pull' first? Live edits will be overwritten otherwise.${NC}"
-  echo -e "${BLUE}Pushing new/changed rows to live...${NC}"
+  echo -e "${BLUE}Pushing new/changed rows to live via @libsql/client (sync-push.ts)...${NC}"
   echo ""
 
+  # NOTE (2026-04-16): The original Python push path below used `turso db shell tbra-web-app`
+  # via the Turso CLI. That CLI is authed to `tbra-rebekah-edwards`, not the production DB
+  # `tbra-web-app-thebasedreaderapp`, so every CLI call fails. Pushes were silently no-op for
+  # an unknown stretch because the batched-push print statements don't check returncode.
+  #
+  # sync-push.ts reads TURSO_DATABASE_URL + TURSO_AUTH_TOKEN from .env.vercel.local and talks
+  # to Turso directly. Same semantics: INSERT OR IGNORE for new rows, never touches existing
+  # book/user data. Landing-page tables still get full DELETE+INSERT (admin-managed).
+  exec npx tsx "$SCRIPT_DIR/sync-push.ts"
+
+  # ── Legacy Python path kept below for reference; unreachable ──
   python3 << 'PYEOF'
 import sqlite3, subprocess, sys, os, tempfile
 

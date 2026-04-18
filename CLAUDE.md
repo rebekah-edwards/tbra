@@ -45,10 +45,15 @@ npm run deploy:code   # Deploy code only
 - **Brand name inconsistency is intentional:** short UI pages (buddy reads, author, user profile, book) use `tbr*a`. Conversion/landing pages (library, stats, discover, methodology, auth) use `The Based Reader App` for Google discoverability. Do NOT unify without explicit instruction.
 
 ## Scheduled Tasks
-- `nightly-enrichment-v2` — 12:03 AM PT: imports NYT bestsellers, runs full enrichment pipeline, syncs to Turso
-- `nightly-metadata-backfill` — 1:03 AM PT: ISBNdb/Google Books backfill for books with missing data (15K/night). Disable after full catalog is backfilled (~3 nights from 2026-04-01).
-- `nightly-book-cleanup` — 3:23 AM: catches audiobook splits, sessions, junk titles that slipped through import
-- `sitemap-threshold-check` — 9:17 AM: notifies user when book count crosses 5K threshold (new sitemap to submit in GSC)
+**Redesigned 2026-04-17. All write tasks use pull → run → push. Effective times post-jitter:**
+- `nightly-discovery` — 12:21 AM PT: `nightly-import.ts` with `TARGET_BOOKS=500`, Christian weighted 2×
+- `nightly-junk-sweep` — 1:40 AM PT: flags box-sets + study guides into `/admin/issues`
+- `nightly-report-triage` — 2:34 AM PT: `process-reports.ts` (direct on Turso)
+- `nightly-cover-rescue` — 3:19 AM PT: clears ISBNdb placeholder covers (hash `56c3e12f…`, size 3736); flagged books go to admin review dashboard for manual replace
+- `nightly-description-refresh` — 4:04 AM PT: re-enriches `description_stale=1`
+- `nightly-content-ratings-backfill` — 4:54 AM PT: 700 Grok enrichments/night
+- `sitemap-threshold-check` — 5:36 AM PT: alerts on 5K book-count boundary
+- Legacy `process-reported-issues` — disabled, manual only
 - **When creating/replacing scheduled tasks:** Delete old tasks entirely rather than just disabling them. Disabled tasks clutter the sidebar.
 - **Task IDs in sidebar:** The task ID you create is what shows in the user's sidebar. Use clear, descriptive IDs.
 - **New tasks don't appear in sidebar until triggered once.** After creating a new task, immediately do a manual "Run now" to make it visible and to pre-approve tool permissions so future automatic runs don't stall on permission prompts.
@@ -84,25 +89,59 @@ npm run deploy:code   # Deploy code only
 ## Deduplication
 - **Run `npx tsx scripts/dedup-books.ts`** to find and merge duplicate books. Supports `--dry-run` flag.
 - **The script:** normalizes titles (strips parentheticals, subtitles, "A Novel"), groups by normalized title + author, scores each entry (cover, ratings, clean title), merges all user data into the canonical entry, then deletes dupes.
-- **After running locally:** must also delete the removed book IDs from live Turso. The sync push script only adds new books, never deletes.
-- **Live covers are authoritative:** The sync pull script always overwrites local covers with live versions. Manual cover fixes on live are never lost.
+- **After running locally:** must also delete the removed book IDs from live Turso. The sync push script never deletes rows — it only inserts/updates.
+- **Live covers are authoritative:** The sync pull script always overwrites local covers with live values. Manual cover fixes on live are never lost.
 
-## Database Sync Rules
-Local SQLite (`data/tbra.db`) and production Turso (`tbra-web-app`) can diverge. Always sync both directions before deploying.
+## Database Sync Architecture (rewritten 2026-04-16)
+Local SQLite (`data/tbra.db`) and production Turso (`tbra-web-app-thebasedreaderapp`) can diverge. The sync scripts now talk to Turso via `@libsql/client` directly (NOT the `turso` CLI, which is authed to the wrong account — see note under "Watch Out For").
 
-- **NEVER nuke-and-replace live data.** The old `deploy.sh` used to DELETE all live data and re-insert from local — this destroyed user activity (reading sessions, notes, states) created between the last pull and the deploy. `deploy.sh` now uses `sync-incremental.sh` which only adds/updates, never deletes.
-- **Before any deploy:** run `./scripts/sync-incremental.sh pull` (Turso → local) then `./scripts/sync-incremental.sh push` (local → Turso) to reconcile. `deploy.sh --db-only` does both automatically.
-- **User-facing tables that change on BOTH sides:** `up_next`, `user_book_state`, `user_book_ratings`, `user_book_reviews`, `user_favorite_books`, `user_follows`, `reading_goals`, `reading_sessions`, `reading_notes`, `report_corrections`, `reported_issues`, `users`. These MUST be synced bidirectionally.
-- **Book/enrichment tables that change locally:** `books`, `authors`, `book_authors`, `book_genres`, `editions`, `enrichment_log`, etc. These are typically pushed local → Turso after enrichment runs.
-- **Never assume local = production.** Live users create accounts, write reviews, and update reading states directly on Turso. Local enrichment scripts add/update book metadata on the local SQLite. Both sides have unique changes.
-- **The nightly task syncs automatically:** The `nightly-enrichment` scheduled task runs import → enrich → push at 12:03 AM PT. But if deploying mid-day, always pull first.
+**Scripts:**
+- `./scripts/sync-incremental.sh pull` → delegates to `scripts/sync-pull.ts`
+- `./scripts/sync-incremental.sh push` → delegates to `scripts/sync-push.ts`
+- Both read credentials from `.env.vercel.local` (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`). Run `npx vercel env pull` if that file is missing.
+
+**`sync-pull.ts` (Turso → local):**
+- For each table: INSERTs new rows (by primary key).
+- For tables with `updated_at`: UPDATEs local when live timestamp is newer.
+- Always overwrites local `cover_image_url` with the live value (live covers are authoritative).
+- NEVER deletes local rows.
+
+**`sync-push.ts` (local → Turso), 7 steps:**
+1. **Local hygiene pre-pass** — deletes orphaned junction rows (book_authors/book_genres/book_series/book_category_ratings/enrichment_log where the referenced book/author/genre/series no longer exists locally). Prevents FK failures downstream.
+2. NEW BOOKS — INSERT OR IGNORE books whose id isn't on Turso.
+3. NEW AUTHORS — full diff, push all local authors not on Turso.
+4. NEW SERIES — full diff.
+5. NEW GENRES — full diff.
+6. JOIN TABLES for new books (book_authors/book_genres/book_series/book_category_ratings/enrichment_log).
+7. **5b. UPDATE existing books where local `updated_at` is newer** — pushes metadata fields (summary, description, publication_year, pages, publisher, cover_image_url, is_fiction, is_box_set, pacing, audiobook_cover_url, cover_verified, cover_source). NEVER touches id, slug, visibility, needs_review, created_at.
+8. **5c. NEW JUNCTION ROWS for existing books** — enrichment adds new book_authors/book_genres/book_series/book_category_ratings for books that already exist on Turso. Pre-filters against live author/series/genre id sets to avoid FK failures.
+9. LANDING PAGE tables (`landing_page_books`, `landing_page_copy`) — full replace (admin-curated, small tables).
+
+**Targeted push scripts** (used by specific nightly tasks; don't run `sync-push.ts` end-to-end):
+- `scripts/push-content-ratings-to-turso.ts` — used by `nightly-content-ratings-backfill`. Pushes `book_category_ratings` rows updated in last 2h plus the book's `summary`/`is_fiction`/`pacing`. DELETE + re-INSERT per book to avoid PK conflicts.
+- `scripts/push-metadata-backfill-to-turso.ts` — used by `nightly-metadata-backfill`. Fills blank fields only (description, summary, cover_image_url, pages, publisher, publication_year). Never overwrites.
+
+**User-facing tables that change on BOTH sides** (bidirectional sync required): `up_next`, `user_book_state`, `user_book_ratings`, `user_book_reviews`, `user_favorite_books`, `user_follows`, `reading_goals`, `reading_sessions`, `reading_notes`, `report_corrections`, `reported_issues`, `users`.
+
+**Book/enrichment tables that change locally** (pushed via `sync-push.ts`): `books`, `authors`, `series`, `genres`, `book_authors`, `book_genres`, `book_series`, `book_category_ratings`, `editions`, `enrichment_log`.
+
+**Deploy flow:**
+- Before any deploy: `./scripts/sync-incremental.sh pull` then `./scripts/sync-incremental.sh push`. `deploy.sh --db-only` does both.
+- NEVER nuke-and-replace live data. The old `deploy.sh` used to DELETE all live data and re-insert — this destroyed user activity created between pull and deploy. The current script only adds/updates, never deletes.
+
+**The nightly tasks sync automatically:**
+- `nightly-enrichment-v2` (12:08 AM PT) — NYT bestsellers import + enrichment + `sync-incremental.sh push`.
+- `nightly-metadata-backfill` (5:12 AM PT) — ISBNdb/Google Books + `push-metadata-backfill-to-turso.ts`.
+- `nightly-content-ratings-backfill` (3:45 AM PT) — Grok content ratings for 700 books + `push-content-ratings-to-turso.ts`.
+- `nightly-report-triage` (2:27 AM PT) — resolves user reports.
+- `nightly-book-cleanup` (3:24 AM PT) — junk title cleanup.
 
 ## Watch Out For
 - **NEVER rewrite, reset, or bulk-modify the production database without explicit instruction from the user.** The book database (62MB, thousands of curated entries) has been cleaned, deduplicated, and enriched over many iterations. Schema migrations are fine; mass data operations are not.
 - **ALWAYS take a screenshot to verify visual changes before telling the user it's done.** Never confirm a UI change is complete without visually confirming it yourself via screenshot. Zoom in on the affected area if the change is subtle.
 - **ALWAYS verify CSS changes are actually applied** by checking the computed styles via JavaScript (`getComputedStyle` or inspecting `className` on the element). The Next.js dev server (Turbopack) frequently serves stale cached code — a hard refresh alone is NOT sufficient. If the computed styles don't match your code changes, kill the server (`lsof -ti:3000 | xargs kill -9`), delete `.next` (`rm -rf .next`), and restart (`npm run dev`). Do this BEFORE telling the user the change is live.
 - **ALWAYS check `vercel ls` after every `git push`** to confirm the deploy reaches `Ready` status. Never trust that a push succeeded just because git accepted it. A broken env var (e.g. whitespace in `CRON_SECRET`) can silently fail all builds for days — this actually happened on 2026-04-04 and blocked ~3 days of deploys.
-- **New schema columns must land on Turso BEFORE deploying code** that references them. Apply via `turso db shell tbra-web-app "ALTER TABLE ..."` first, then deploy.
+- **New schema columns must land on Turso BEFORE deploying code** that references them. The local `turso` CLI is authed to the wrong database (`tbra-rebekah-edwards`, not production `tbra-web-app-thebasedreaderapp`), so `turso db shell tbra-web-app "ALTER TABLE ..."` does NOT work. Apply via `@libsql/client` using `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` from `.env.vercel.local` instead. See `scripts/sync-push.ts` for the pattern.
 - **Intensity labels are standardized:** None / Mild / Moderate / Significant / Extreme. Never use "Heavy", "Intense", or "Strong".
 - **Super admins need BOTH `account_type = 'super_admin'` AND `role = 'admin'`** for the Admin Edit panel to show on book pages. When changing account types, always set both fields.
 - **Import enrichment is deferred:** The import process does NOT call `enrichBook()` inline. New books get enriched by Phase 2 background call or the nightly task.

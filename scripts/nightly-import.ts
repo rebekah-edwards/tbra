@@ -354,6 +354,114 @@ const CHRISTIAN_FICTION_QUERIES = [
   "Under the Magnolias T I Lowe",
 ];
 
+// Christian NONFICTION — added 2026-04-17 for Christian-priority discovery
+const CHRISTIAN_NONFICTION_QUERIES = [
+  // C.S. Lewis
+  "Mere Christianity C.S. Lewis",
+  "The Screwtape Letters C.S. Lewis",
+  "The Great Divorce C.S. Lewis",
+  "The Problem of Pain C.S. Lewis",
+  "Miracles C.S. Lewis",
+  "The Four Loves C.S. Lewis",
+  "Surprised by Joy C.S. Lewis",
+  "The Weight of Glory C.S. Lewis",
+  "Reflections on the Psalms C.S. Lewis",
+  // Tim Keller
+  "The Reason for God Tim Keller",
+  "The Prodigal God Tim Keller",
+  "Prayer Tim Keller",
+  "Counterfeit Gods Tim Keller",
+  "Every Good Endeavor Tim Keller",
+  "Walking with God Tim Keller",
+  "Forgive Tim Keller",
+  "Hope in Times of Fear Tim Keller",
+  "Making Sense of God Tim Keller",
+  // John Piper
+  "Desiring God John Piper",
+  "Don't Waste Your Life John Piper",
+  "Future Grace John Piper",
+  "Coronavirus and Christ John Piper",
+  "Providence John Piper",
+  "A Peculiar Glory John Piper",
+  // Max Lucado
+  "Traveling Light Max Lucado",
+  "Anxious for Nothing Max Lucado",
+  "Fearless Max Lucado",
+  "In the Eye of the Storm Max Lucado",
+  "God Came Near Max Lucado",
+  "Help Is Here Max Lucado",
+  "Begin Again Max Lucado",
+  // Ann Voskamp
+  "One Thousand Gifts Ann Voskamp",
+  "The Broken Way Ann Voskamp",
+  "WayMaker Ann Voskamp",
+  // Beth Moore
+  "So Long Insecurity Beth Moore",
+  "Breaking Free Beth Moore",
+  "Believing God Beth Moore",
+  "Chasing Vines Beth Moore",
+  // Jen Wilkin
+  "Women of the Word Jen Wilkin",
+  "In His Image Jen Wilkin",
+  // Henry Cloud
+  "Boundaries Henry Cloud",
+  "Changes That Heal Henry Cloud",
+  "Necessary Endings Henry Cloud",
+  "Integrity Henry Cloud",
+  // Oswald Chambers / A.W. Tozer / Bonhoeffer classics
+  "My Utmost for His Highest Oswald Chambers",
+  "The Pursuit of God A.W. Tozer",
+  "The Knowledge of the Holy A.W. Tozer",
+  "The Cost of Discipleship Dietrich Bonhoeffer",
+  "Life Together Dietrich Bonhoeffer",
+  // Lee Strobel
+  "The Case for Christ Lee Strobel",
+  "The Case for Faith Lee Strobel",
+  "The Case for a Creator Lee Strobel",
+  // John Eldredge
+  "Wild at Heart John Eldredge",
+  "Captivating John Eldredge",
+  "The Sacred Romance John Eldredge",
+  "Walking with God John Eldredge",
+  // Philip Yancey
+  "What's So Amazing About Grace Philip Yancey",
+  "The Jesus I Never Knew Philip Yancey",
+  "Disappointment with God Philip Yancey",
+  "Where is God When it Hurts Philip Yancey",
+  // Rick Warren
+  "The Purpose Driven Life Rick Warren",
+  "The Purpose Driven Church Rick Warren",
+  // Paul David Tripp
+  "New Morning Mercies Paul David Tripp",
+  "Parenting Paul David Tripp",
+  "Suffering Paul David Tripp",
+  // Kevin DeYoung
+  "Just Do Something Kevin DeYoung",
+  "Crazy Busy Kevin DeYoung",
+  // Randy Alcorn
+  "Heaven Randy Alcorn",
+  "Safely Home Randy Alcorn",
+  "The Treasure Principle Randy Alcorn",
+  // Louie Giglio
+  "Don't Give the Enemy a Seat at Your Table Louie Giglio",
+  // Nancy Guthrie
+  "Even Better than Eden Nancy Guthrie",
+  "Seeing Jesus in the Old Testament Nancy Guthrie",
+  // Christine Caine
+  "Unashamed Christine Caine",
+  "Unexpected Christine Caine",
+  // Lysa TerKeurst
+  "Uninvited Lysa TerKeurst",
+  "It's Not Supposed to Be This Way Lysa TerKeurst",
+  "Forgiving What You Can't Forget Lysa TerKeurst",
+  "I Want to Trust You Lysa TerKeurst",
+  // Priscilla Shirer
+  "Fervent Priscilla Shirer",
+  "The Armor of God Priscilla Shirer",
+  // Tim Challies
+  "Seasons of Sorrow Tim Challies",
+];
+
 async function findOrCreateAuthor(name: string, olKey?: string): Promise<string> {
   let author = await db.query.authors.findFirst({
     where: eq(authors.name, name),
@@ -476,27 +584,54 @@ async function importBook(query: string): Promise<boolean> {
   }
 }
 
+/**
+ * Deterministic shuffle seeded by today's date — so a run is idempotent
+ * within a day (same query order for retries/resumes), but rotates nightly.
+ */
+function seededShuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  const today = new Date().toISOString().slice(0, 10);
+  const crypto = require("crypto");
+  let seed = crypto.createHash("md5").update(today).digest().readUInt32LE(0);
+  for (let i = out.length - 1; i > 0; i--) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    const j = seed % (i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 async function main() {
   const startTime = Date.now();
-  const MAX_RUNTIME_MS = 5 * 60 * 60 * 1000; // 5 hours max
+  const MAX_RUNTIME_MS = 5 * 60 * 60 * 1000; // 5 hours safety cap
 
-  // Combine all queries and shuffle for variety
-  const allQueries = [...BESTSELLER_QUERIES, ...CLASSICS_QUERIES, ...EDUCATION_QUERIES, ...CHRISTIAN_FICTION_QUERIES];
-  // Simple shuffle
-  for (let i = allQueries.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [allQueries[i], allQueries[j]] = [allQueries[j], allQueries[i]];
-  }
+  // Volume cap — override via env TARGET_BOOKS
+  const TARGET_BOOKS = Number(process.env.TARGET_BOOKS) || 500;
+
+  // Christian queries get double-weight per user direction (prioritize
+  // Christian fiction + nonfiction in discovery). Other pools are single-weight.
+  const allQueries = seededShuffle([
+    ...BESTSELLER_QUERIES,
+    ...CLASSICS_QUERIES,
+    ...EDUCATION_QUERIES,
+    ...CHRISTIAN_FICTION_QUERIES,
+    ...CHRISTIAN_FICTION_QUERIES,        // 2× weight
+    ...CHRISTIAN_NONFICTION_QUERIES,
+    ...CHRISTIAN_NONFICTION_QUERIES,     // 2× weight
+  ]);
 
   let imported = 0;
   let skipped = 0;
   let failed = 0;
 
-  console.log(`[nightly] Starting import of ${allQueries.length} queries`);
+  console.log(`[nightly] Target: ${TARGET_BOOKS} books; query pool size: ${allQueries.length}`);
   console.log(`[nightly] Current book count: ${(await db.select({ id: books.id }).from(books)).length}`);
 
   for (const query of allQueries) {
-    // Check runtime
+    if (imported >= TARGET_BOOKS) {
+      console.log(`[nightly] Hit target ${TARGET_BOOKS}, stopping`);
+      break;
+    }
     if (Date.now() - startTime > MAX_RUNTIME_MS) {
       console.log(`[nightly] Hit max runtime, stopping`);
       break;

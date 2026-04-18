@@ -203,11 +203,44 @@ function cleanISBNdbSynopsis(synopsis: string): string | null {
   if (/^Excerpt from\b/i.test(clean)) return null;
   if (/^\d{10,13}:/i.test(clean)) return null;
 
+  // Reject Amazon product-page section headers (anywhere in text)
+  if (/\bProduct Description\b/.test(clean)) return null;
+  if (/\bFrom the Publisher\b/.test(clean)) return null;
+  if (/\bFrom the (?:Inside Flap|Back Cover)\b/.test(clean)) return null;
+  if (/\bEditorial Reviews?\b/i.test(clean)) return null;
+  if (/\bAbout the Author\b/i.test(clean)) return null;
+  if (/\bPraise for\b/.test(clean)) return null;
+
+  // Reject review taglines
+  if (/^Scholastic (?:says|Press|Book)/i.test(clean)) return null;
+  if (/^Publishers Weekly\b/i.test(clean)) return null;
+  if (/^Kirkus Reviews?\b/i.test(clean)) return null;
+
+  // Reject raw ISBN labels embedded in description
+  if (/\bISBN(?:-1[03])?\s*:?\s*\d{10,13}\b/.test(clean)) return null;
+  if (/\bEAN\s*:\s*\d{13}\b/.test(clean)) return null;
+
+  // Reject non-English (high non-ASCII-letter ratio)
+  if (clean.length > 100) {
+    const nonAscii = (clean.match(/[À-ÿ]/g) || []).length;
+    if (nonAscii / clean.length > 0.08) return null;
+  }
+
   // Cap length
   if (clean.length > 2000) clean = clean.slice(0, 2000).replace(/\s\S*$/, "...");
 
   // Must be substantial
   return clean.length > 60 ? clean : null;
+}
+
+/**
+ * Filter a description from any source (Google Books, OL, etc.) — runs the
+ * same junk checks as cleanISBNdbSynopsis but without ISBNdb-specific prep.
+ * Returns null if the content is junk.
+ */
+function filterDescription(desc: string): string | null {
+  if (!desc) return null;
+  return cleanISBNdbSynopsis(desc);
 }
 
 async function main() {
@@ -303,10 +336,13 @@ async function main() {
             coversFound++;
           }
         }
-        // Also grab description/pages/year from Google if still missing
+        // Also grab description/pages/year from Google if still missing (filtered for junk)
         if (!book.description && !updates.description && gbook.description) {
-          updates.description = gbook.description;
-          descriptionsFound++;
+          const cleanDesc = filterDescription(gbook.description);
+          if (cleanDesc) {
+            updates.description = cleanDesc;
+            descriptionsFound++;
+          }
         }
         if (!book.pages && !updates.pages && gbook.pageCount) updates.pages = gbook.pageCount;
         if (!book.publication_year && !updates.publication_year && gbook.publishedDate) {
