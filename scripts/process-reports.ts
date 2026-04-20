@@ -46,6 +46,72 @@ async function resolveReport(reportId: string, resolution: string) {
   );
 }
 
+// ─── Auto-action helpers (2026-04-20) ───
+
+function slugify(s: string): string {
+  return s
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9\s]/g, "")
+    .replace(/\s+/g, " ").trim().toLowerCase()
+    .replace(/\s/g, "-");
+}
+
+async function getBookAuthorName(bookId: string): Promise<string | null> {
+  const r = await query(
+    `SELECT a.name FROM authors a JOIN book_authors ba ON ba.author_id = a.id WHERE ba.book_id = ? ORDER BY a.name LIMIT 1`,
+    [bookId],
+  );
+  return r.rows.length > 0 ? (r.rows[0].name as string) : null;
+}
+
+async function regenerateSlug(bookId: string, title: string): Promise<string | null> {
+  const authorName = await getBookAuthorName(bookId);
+  if (!authorName) return null;
+  const base = `${slugify(title)}-${slugify(authorName)}`;
+  if (!base || base === "-") return null;
+  let slug = base;
+  let suffix = 2;
+  while (true) {
+    const r = await query(`SELECT id FROM books WHERE slug = ?`, [slug]);
+    if (r.rows.length === 0 || r.rows[0].id === bookId) break;
+    slug = `${base}-${suffix}`;
+    suffix++;
+  }
+  await query(
+    `UPDATE books SET slug = ?, updated_at = datetime('now') WHERE id = ?`,
+    [slug, bookId],
+  );
+  return slug;
+}
+
+// Award / blurb phrases commonly scraped into descriptions from marketing
+const AWARD_STRIP_PATTERNS: RegExp[] = [
+  /\b(?:winner|shortlisted|longlisted|nominee|finalist)\s+(?:of|for)\s+(?:the\s+)?[^.]+?(?:award|prize|medal)[^.]*?\.\s*/gi,
+  /\b(?:#1\s+)?(?:New York Times|NYT|USA Today|Sunday Times|Wall Street Journal)\s+(?:Bestselling|bestseller|No\.?\s*1)[^.]*?\.\s*/gi,
+  /\b(?:Goodreads|Amazon)\s+(?:Choice\s+Award|Readers'\s+Choice|Best\s+Book)[^.]*?\.\s*/gi,
+  /\b(?:Booker|Pulitzer|Hugo|Nebula|Locus|World Fantasy|Bram Stoker|Edgar|Newbery|Caldecott|National Book)\s+(?:Award|Prize)[^.]*?\.\s*/gi,
+  /\b(?:instant|immediate)\s+(?:international\s+)?(?:#1\s+)?bestseller[^.]*?\.\s*/gi,
+  /"[^"]+"\s*\u2014\s*[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3}\s*,\s*[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s*\.\s*/g,
+];
+
+async function stripAwardsFromDescription(bookId: string, currentDesc: string): Promise<{ cleaned: string; changed: boolean }> {
+  let cleaned = currentDesc;
+  for (const rx of AWARD_STRIP_PATTERNS) cleaned = cleaned.replace(rx, "");
+  cleaned = cleaned.replace(/\s+/g, " ").trim();
+  const changed = cleaned !== currentDesc && cleaned.length >= 100;
+  if (changed) {
+    await query(
+      `UPDATE books SET description = ?, updated_at = datetime('now') WHERE id = ?`,
+      [cleaned, bookId],
+    );
+  }
+  return { cleaned, changed };
+}
+
+function isUserOnlyRequest(desc: string): boolean {
+  return /\b(?:ask\s+me|explain\s+(?:in\s+)?(?:greater\s+)?detail|next\s+session)\b/i.test(desc);
+}
+
 async function main() {
   // Fetch open reports
   const result = await query(`
@@ -76,6 +142,19 @@ async function main() {
     console.log(`Processing: ${bookTitle || r.series_name || 'N/A'} (users: ${userCount})`);
     console.log(`  Desc: ${r.description}`);
 
+    const rawDesc = r.description as string;
+
+    // === SKIP: user asked to be consulted directly ===
+    if (isUserOnlyRequest(rawDesc)) {
+      console.log(`  -> SKIP (user requested consultation)`);
+      needsInput.push({
+        id,
+        desc: rawDesc,
+        book: `${bookTitle || r.series_name || 'N/A'} (${userCount} users) — ${r.page_url}`,
+      });
+      continue;
+    }
+
     // === AUTO-FIXABLE: Junk entries with 0 users ===
     if (userCount === 0 && bookId && (
       desc.includes("junk") || desc.includes("delete") || desc.includes("non-english") || desc.includes("non english") ||
@@ -84,6 +163,45 @@ async function main() {
       console.log(`  -> DELETING junk book (0 users)`);
       await deleteBook(bookId);
       await resolveReport(id, "Deleted junk/duplicate/non-English book entry (0 users)");
+      fixed++;
+      continue;
+    }
+
+    // === AUTO-FIXABLE: Non-English WITH users — hide from search, keep for users ===
+    if (bookId && userCount > 0 && (desc.includes("non-english") || desc.includes("non english"))) {
+      console.log(`  -> MARKING import_only (non-English with ${userCount} users)`);
+      await query(`UPDATE books SET visibility = 'import_only', updated_at = datetime('now') WHERE id = ?`, [bookId]);
+      await resolveReport(id, `Auto-fixed: visibility=import_only (non-English, has ${userCount} users)`);
+      fixed++;
+      continue;
+    }
+
+    // === AUTO-FIXABLE: Box set flag (title has " / ", or explicit keywords) ===
+    if (bookId && (
+      /probable\s+box\s?set/i.test(rawDesc) ||
+      /\bbox\s?set\b/i.test(rawDesc) ||
+      /\bset\s+of\s+\d+\s+books?\b/i.test(rawDesc) ||
+      /\b\d+[- ]book\s+(?:combo|set|bundle)\b/i.test(rawDesc) ||
+      (bookTitle && / \/ /.test(bookTitle))
+    )) {
+      console.log(`  -> SETTING is_box_set=1`);
+      await query(`UPDATE books SET is_box_set = 1, updated_at = datetime('now') WHERE id = ?`, [bookId]);
+      await resolveReport(id, "Auto-fixed: is_box_set=1");
+      fixed++;
+      continue;
+    }
+
+    // === AUTO-FIXABLE: Ancillary product (from junk-sweep AUTO-FLAG) ===
+    if (bookId && /ancillary\s+product\s+pattern/i.test(rawDesc)) {
+      if (userCount === 0) {
+        console.log(`  -> DELETING ancillary product (0 users)`);
+        await deleteBook(bookId);
+        await resolveReport(id, "Auto-deleted: 0-user ancillary product (workbook/guide/coloring)");
+      } else {
+        console.log(`  -> HIDING ancillary product (${userCount} users)`);
+        await query(`UPDATE books SET visibility = 'hidden', updated_at = datetime('now') WHERE id = ?`, [bookId]);
+        await resolveReport(id, `Auto-fixed: visibility=hidden (ancillary product with ${userCount} users)`);
+      }
       fixed++;
       continue;
     }
@@ -125,6 +243,53 @@ async function main() {
       await resolveReport(id, "Deleted 'Sneak Peek' entry (0 users, likely a preview excerpt not a real book)");
       fixed++;
       continue;
+    }
+
+    // === AUTO-FIXABLE: Description/summary too long → flag stale for re-enrichment ===
+    if (bookId && (
+      /(?:summary|description)\s+(?:is\s+)?(?:way+y*\s+)?too\s+long/i.test(rawDesc) ||
+      /re-?summariz/i.test(rawDesc) ||
+      /needs\s+(?:to\s+be\s+)?(?:trimmed|truncat(?:ed|ion))\s+to/i.test(rawDesc) ||
+      /\d+\s*char(?:acters?)?\s*(?:or\s+fewer|limit|max)/i.test(rawDesc)
+    )) {
+      console.log(`  -> FLAGGING description_stale=1 (too long)`);
+      await query(`UPDATE books SET description_stale = 1, updated_at = datetime('now') WHERE id = ?`, [bookId]);
+      await resolveReport(id, "Auto-fixed: description_stale=1 (nightly-description-refresh will re-enrich shorter)");
+      fixed++;
+      continue;
+    }
+
+    // === AUTO-FIXABLE: Author missing from slug → regenerate ===
+    if (bookId && /(?:author\s+(?:not\s+)?(?:listed\s+)?in\s+slug|missing\s+from\s+slug)/i.test(rawDesc)) {
+      const newSlug = await regenerateSlug(bookId, bookTitle || "");
+      if (newSlug) {
+        console.log(`  -> SLUG regenerated: ${newSlug}`);
+        await resolveReport(id, `Auto-fixed: slug regenerated → ${newSlug}`);
+        fixed++;
+        continue;
+      } else {
+        console.log(`  -> SLUG fix failed (no author row)`);
+      }
+    }
+
+    // === AUTO-FIXABLE: Strip award / blurb marketing from description ===
+    if (bookId && /\b(?:strip|remove)\b.*?\bawards?\b/i.test(rawDesc)) {
+      const bookDesc = r.book_desc as string | null;
+      if (bookDesc) {
+        const result = await stripAwardsFromDescription(bookId, bookDesc);
+        if (result.changed) {
+          console.log(`  -> STRIPPED awards (${bookDesc.length - result.cleaned.length} chars removed)`);
+          await resolveReport(id, `Auto-fixed: stripped award/blurb text (${bookDesc.length - result.cleaned.length} chars removed)`);
+          fixed++;
+          continue;
+        } else {
+          console.log(`  -> No award pattern matched — falling back to stale-flag for re-enrichment`);
+          await query(`UPDATE books SET description_stale = 1, updated_at = datetime('now') WHERE id = ?`, [bookId]);
+          await resolveReport(id, "Auto-fixed: no award patterns matched — flagged description_stale for re-enrichment");
+          fixed++;
+          continue;
+        }
+      }
     }
 
     // === AUTO-FIXABLE: Test reports ===
