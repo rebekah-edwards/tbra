@@ -32,7 +32,8 @@ export function ReadingJournal({ notes }: ReadingJournalProps) {
     );
   }
 
-  // Group notes by bookId
+  // Group notes by bookId (insertion order preserved — notes come in most-recent-first
+  // from getRecentNotes, so the first 3 groups are the 3 most recently noted books)
   const bookGroups = new Map<string, { title: string; slug: string | null; coverUrl: string | null; notes: ReadingNoteWithBook[] }>();
   for (const note of notes) {
     const existing = bookGroups.get(note.bookId);
@@ -48,13 +49,17 @@ export function ReadingJournal({ notes }: ReadingJournalProps) {
     }
   }
 
+  const MAX_BOOKS = 3;
+  const displayedGroups = Array.from(bookGroups.entries()).slice(0, MAX_BOOKS);
+  const hasMoreBooks = bookGroups.size > MAX_BOOKS;
+
   return (
     <section>
       <h2 className="section-heading text-sm mb-3">
         Reading Journal ({notes.length})
       </h2>
       <div className="space-y-4">
-        {Array.from(bookGroups.entries()).map(([bookId, group]) => {
+        {displayedGroups.map(([bookId, group]) => {
           const topNote = group.notes[0];
           const peekCount = Math.min(group.notes.length - 1, 2);
           const linkTarget = `/book/${group.slug || bookId}/notes`;
@@ -114,7 +119,7 @@ export function ReadingJournal({ notes }: ReadingJournalProps) {
           );
         })}
       </div>
-      {notes.length > 5 && (
+      {(hasMoreBooks || notes.length > 5) && (
         <div className="mt-4 text-center">
           <Link
             href="/profile/journal"

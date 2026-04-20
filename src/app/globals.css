@@ -191,6 +191,22 @@ h1, h2, h3, .font-heading {
 [data-theme="light"] .bg-accent { color: #000000; }
 [data-theme="light"] .border-accent { color: #000000; }
 
+/* Track Progress button (Reading Now cards): black text in dark mode, white in light. */
+[data-theme="light"] .track-progress-btn { color: #ffffff !important; }
+
+/* Currently-reading card: subtle tinted gradient behind the blurred cover so
+   the card never renders fully white if the cover image stalls or fails. */
+.currently-reading-card-base {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--accent) 8%, var(--surface-alt)),
+    color-mix(in srgb, var(--neon-purple) 6%, var(--surface-alt)));
+}
+[data-theme="light"] .currently-reading-card-base {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--accent) 18%, white),
+    color-mix(in srgb, var(--neon-purple) 12%, white));
+}
+
 /* In light mode, accent-colored text gets a subtle lime glow */
 [data-theme="light"] .lime-glow {
   text-shadow: 0 0 14px rgba(163, 230, 53, 0.4);

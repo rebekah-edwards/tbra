@@ -164,7 +164,7 @@ function TrackSheet({
                 onClick={() => setPace(pace === p.key ? null : p.key)}
                 className={`rounded-full px-3 py-1 text-xs transition-all ${
                   pace === p.key
-                    ? "bg-accent/20 text-accent-dark border border-accent/30"
+                    ? "bg-accent/20 text-foreground border border-accent/30"
                     : "bg-surface-alt text-muted border border-transparent hover:text-foreground"
                 }`}
               >
@@ -290,11 +290,11 @@ function ReadingBookCard({ book, onReviewOpen }: {
           reading-state dropdown can render outside the card bounds. The
           background image below has its own rounded clip. Outer wrapper gets
           z-50 when dropdown is open so it paints above the next sibling card. */}
-      <div className="relative rounded-xl">
+      <div className="relative rounded-xl currently-reading-card-base">
         {book.coverImageUrl && (
           <div className="absolute inset-0 overflow-hidden rounded-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={book.coverImageUrl} alt="" aria-hidden className="book-card-bg-img absolute inset-0 h-full w-full scale-150 object-cover" />
+            <img src={book.coverImageUrl} alt="" aria-hidden loading="eager" fetchPriority="high" decoding="async" className="book-card-bg-img absolute inset-0 h-full w-full scale-150 object-cover" />
             <div className="absolute inset-0 currently-reading-overlay" />
           </div>
         )}
@@ -333,10 +333,11 @@ function ReadingBookCard({ book, onReviewOpen }: {
               Visual language matches book page: rounded-xl with 2px border.
               Narrow column (104px) so title/author have room to breathe. */}
           <div className={`flex flex-col gap-1.5 flex-shrink-0 w-[104px] ${isPending ? "opacity-50" : ""}`}>
-            {/* Track Progress — solid blue rounded-xl */}
+            {/* Track Progress — solid blue rounded-xl. text-black in dark mode,
+                white in light mode (see globals.css `.track-progress-btn` override). */}
             <button
               onClick={() => setTrackingBookId(trackingBookId === book.id ? null : book.id)}
-              className="w-full rounded-xl bg-neon-blue border-2 border-neon-blue px-2 py-1.5 text-[11px] font-semibold text-black shadow-sm hover:brightness-110 active:scale-[0.98] transition-all whitespace-nowrap"
+              className="track-progress-btn w-full rounded-xl bg-neon-blue border-2 border-neon-blue px-2 py-1.5 text-[11px] font-semibold text-black shadow-sm hover:brightness-110 active:scale-[0.98] transition-all whitespace-nowrap"
               title="Track progress"
             >
               Track Progress

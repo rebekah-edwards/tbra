@@ -47,7 +47,7 @@ export default async function ProfilePage() {
 
 
   return (
-    <div className="space-y-6 lg:max-w-[60%] lg:mx-auto">
+    <div className="space-y-6 pb-24 lg:pb-8 lg:max-w-[60%] lg:mx-auto">
       {/* Profile header — desktop: 2 columns (info left, stats right) */}
       <div className="lg:flex lg:items-start lg:gap-8">
         {/* Left: avatar + info */}

@@ -189,7 +189,7 @@ export function ReadingNoteEntry({ books, activeBuddyReads = [] }: ReadingNoteEn
                 onClick={() => setPace(pace === p.key ? null : p.key)}
                 className={`rounded-full px-3 py-1 text-xs transition-all ${
                   pace === p.key
-                    ? "bg-accent/20 text-accent border border-accent/30"
+                    ? "bg-accent/20 text-foreground border border-accent/30"
                     : "bg-surface-alt text-muted border border-transparent hover:text-foreground"
                 }`}
               >
