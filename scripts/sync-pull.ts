@@ -15,6 +15,33 @@ require('dotenv').config({ path: '.env.vercel.local' });
 const { createClient } = require('@libsql/client');
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
+
+// ─── PID lockfile: prevent parallel sync-pull runs ───
+// See the 2026-04-20 postmortem: multiple concurrent sync-pull/sync-push
+// processes saturated Turso connections and degraded live-site responsiveness.
+const LOCK_PATH = '/tmp/tbra-sync-pull.lock';
+(function acquireLock() {
+  try {
+    const existing = fs.readFileSync(LOCK_PATH, 'utf8').trim();
+    const pid = parseInt(existing, 10);
+    if (pid && Number.isFinite(pid)) {
+      try {
+        process.kill(pid, 0);
+        console.error(`ERROR: sync-pull already running (PID ${pid}). Remove ${LOCK_PATH} to override.`);
+        process.exit(2);
+      } catch {
+        console.log(`Stale lockfile (PID ${pid} no longer running). Taking over.`);
+      }
+    }
+  } catch { /* no lockfile */ }
+  fs.writeFileSync(LOCK_PATH, String(process.pid));
+  const cleanup = () => { try { fs.unlinkSync(LOCK_PATH); } catch {} };
+  process.on('exit', cleanup);
+  process.on('SIGINT',  () => { cleanup(); process.exit(130); });
+  process.on('SIGTERM', () => { cleanup(); process.exit(143); });
+  process.on('uncaughtException', (e: Error) => { console.error(e); cleanup(); process.exit(1); });
+})();
 
 if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) {
   console.error('ERROR: TURSO_DATABASE_URL or TURSO_AUTH_TOKEN missing from .env.vercel.local');
