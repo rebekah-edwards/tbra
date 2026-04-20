@@ -1014,7 +1014,7 @@ async function resolveBookCover(
   }
 
   // Tier C: Brave Search for cover (only if Brave enabled)
-  if (!coverUrl && !opts.skipBrave) {
+  if (!coverUrl && options?.skipBrave === false) {
     try {
       const searchName = `"${book.title}" "${authorNames[0] ?? ""}"`;
       const coverResults = await braveSearch(`${searchName} book cover`, 5);
