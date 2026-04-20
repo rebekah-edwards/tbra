@@ -285,7 +285,7 @@ export function ReadingStateButton({
           </button>
 
           {open && (
-            <div className="absolute top-full left-0 mt-1 w-40 rounded-lg border border-border bg-surface shadow-lg z-50 popover-enter">
+            <div className="absolute top-full left-0 mt-1 w-44 rounded-lg border border-border bg-surface shadow-lg z-50 popover-enter">
               {STATES.map((s) => (
                 <button
                   key={s.value}
@@ -302,6 +302,23 @@ export function ReadingStateButton({
                   )}
                 </button>
               ))}
+              {bookId && (
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    router.push(`/buddy-reads/new?bookId=${bookId}`);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-surface-alt transition-colors inline-flex items-center gap-2 border-t border-border"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                  Buddy Read
+                </button>
+              )}
               {isActive && (
                 <button
                   onClick={handleRemove}
@@ -421,6 +438,23 @@ export function ReadingStateButton({
               <div className="border-t border-border px-3 py-2">
                 <TbrNoteEditor bookId={bookId} initialNote={initialTbrNote} isPremium={isPremium} />
               </div>
+            )}
+            {bookId && (
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  router.push(`/buddy-reads/new?bookId=${bookId}`);
+                }}
+                className="w-full px-5 py-3 text-left text-sm font-medium text-foreground hover:bg-surface-alt transition-colors inline-flex items-center gap-2 border-t border-border"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                Buddy Read
+              </button>
             )}
             {isActive && (
               <button

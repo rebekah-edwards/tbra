@@ -158,6 +158,11 @@ export function CreateBuddyReadClient({ prefillBook }: CreateBuddyReadClientProp
               type="text"
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
+              onFocus={(e) => {
+                // On mobile, keep the input (and dropdown below it) above the
+                // on-screen keyboard so the book suggestions aren't hidden.
+                setTimeout(() => e.target.scrollIntoView({ block: "start", behavior: "smooth" }), 150);
+              }}
               placeholder="Search for a book..."
               className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-[#a3e635]/50"
             />
@@ -240,30 +245,42 @@ export function CreateBuddyReadClient({ prefillBook }: CreateBuddyReadClientProp
         </button>
       </div>
 
-      {/* Dates */}
+      {/* Dates — min-w-0 on the cells prevents the wide iOS native date
+          control from overflowing its grid column and overlapping its sibling.
+          Each input also shows a Clear button once a value is set. */}
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="br-start" className="block text-sm font-semibold text-foreground mb-1.5">
-            Start date <span className="text-muted font-normal">(optional)</span>
-          </label>
+        <div className="min-w-0">
+          <div className="flex items-baseline justify-between mb-1.5">
+            <label htmlFor="br-start" className="block text-sm font-semibold text-foreground">
+              Start date <span className="text-muted font-normal">(optional)</span>
+            </label>
+            {startDate && (
+              <button type="button" onClick={() => setStartDate("")} className="text-xs text-muted hover:text-foreground">Clear</button>
+            )}
+          </div>
           <input
             id="br-start"
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#a3e635]/50"
+            className="block w-full min-w-0 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#a3e635]/50"
           />
         </div>
-        <div>
-          <label htmlFor="br-end" className="block text-sm font-semibold text-foreground mb-1.5">
-            End date <span className="text-muted font-normal">(optional)</span>
-          </label>
+        <div className="min-w-0">
+          <div className="flex items-baseline justify-between mb-1.5">
+            <label htmlFor="br-end" className="block text-sm font-semibold text-foreground">
+              End date <span className="text-muted font-normal">(optional)</span>
+            </label>
+            {endDate && (
+              <button type="button" onClick={() => setEndDate("")} className="text-xs text-muted hover:text-foreground">Clear</button>
+            )}
+          </div>
           <input
             id="br-end"
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#a3e635]/50"
+            className="block w-full min-w-0 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#a3e635]/50"
           />
         </div>
       </div>

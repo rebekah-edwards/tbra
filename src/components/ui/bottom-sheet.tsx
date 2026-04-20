@@ -49,6 +49,30 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
     }
   }, [shouldRender]);
 
+  // Lift the panel above the on-screen keyboard on mobile. Without this, when
+  // the user focuses an input inside the sheet, iOS slides the keyboard over
+  // the sheet and hides the search results / choices below it. We track the
+  // visualViewport (which shrinks when the keyboard appears) and translate
+  // the panel upward by exactly the keyboard height.
+  useEffect(() => {
+    if (!shouldRender) return;
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    if (!vv) return;
+    const update = () => {
+      const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      const panel = panelRef.current;
+      if (!panel) return;
+      panel.style.setProperty("--kb-lift", `${keyboardHeight}px`);
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, [shouldRender]);
+
   // Swipe-to-dismiss handlers
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     dragStartY.current = e.touches[0].clientY;
@@ -100,10 +124,13 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         onClick={onClose}
       />
 
-      {/* Panel */}
+      {/* Panel — `--kb-lift` is set by the visualViewport effect above when
+          the mobile keyboard shows; `bottom: var(--kb-lift, 0px)` lifts the
+          panel above the keyboard so inputs/results remain visible. */}
       <div
         ref={panelRef}
-        className={`absolute bottom-0 left-0 right-0 mx-auto max-w-[600px] max-h-[85vh] bg-surface border-t border-border rounded-t-2xl flex flex-col transition-transform duration-250 ease-out will-change-transform ${
+        style={{ bottom: "var(--kb-lift, 0px)" }}
+        className={`absolute left-0 right-0 mx-auto max-w-[600px] max-h-[85vh] bg-surface border-t border-border rounded-t-2xl flex flex-col transition-transform duration-250 ease-out will-change-transform ${
           visible ? "translate-y-0" : "translate-y-full"
         }`}
       >

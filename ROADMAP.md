@@ -1,5 +1,12 @@
 # tbr*a Beta Launch Roadmap
 
+## Deferred / Backlog
+
+Items we've acknowledged but haven't scheduled yet. Promote to a round when ready.
+
+- **Cover "coming soon" placeholder sweep** — similar to the ISBNdb + Google Books placeholder hashes already handled by `nightly-placeholder-clear`. Need to fingerprint the "cover coming soon" variant, add it to `scripts/cover-rescue.ts` `PLACEHOLDERS` array, run a cleanup pass, and land on `/admin/covers` queue. Surfaced 2026-04-20 via `/book/the-ending-writes-itself` which had the placeholder and a slug missing author (slug fix already handled by triage rewrite).
+- **Reviews summary visualization** — StoryGraph-style reviews overview at the top of a book's reviews list: star histogram, average, % Did-Not-Finish, written-reviews filter, latest/oldest sort. Reference screenshot captured 2026-04-20. Replaces / sits above the current flat list. Not a functional blocker; design polish when review volume warrants it.
+
 ## Round 8 (2026-04-09) ✅ — Search overhaul + report triage + data integrity
 
 ### Search overhaul

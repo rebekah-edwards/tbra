@@ -12,6 +12,7 @@ interface SimilarBook {
   coverImageUrl: string | null;
   authors: string[];
   reason?: string;
+  contentWarnings?: { categoryName: string; bookIntensity: number; userMax: number }[];
 }
 
 export function SimilarBooks({ bookId }: { bookId: string }) {
@@ -87,6 +88,11 @@ export function SimilarBooks({ bookId }: { bookId: string }) {
                 />
               ) : (
                 <NoCover title={book.title} className="w-full h-full" />
+              )}
+              {(book.contentWarnings?.length ?? 0) > 0 && (
+                <span className="absolute top-1.5 left-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-yellow-500/90 text-black text-[11px] font-bold shadow-sm" title="Contains flagged content for your settings">
+                  !
+                </span>
               )}
             </div>
             {book.reason && (

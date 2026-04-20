@@ -190,12 +190,15 @@ export default async function RootLayout({
           // We use opacity + pointerEvents instead of remove() to avoid React removeChild errors.
           var splashStart = Date.now();
           function hideSplash() {
+            var s = document.getElementById('pwa-splash');
+            if (!s) return;
+            // Stop intercepting clicks IMMEDIATELY. React hydration may still be
+            // running during the fade-out; without this, nav taps fall through
+            // to the invisible splash for up to 600ms on cold PWA start.
+            s.style.pointerEvents = 'none';
             var elapsed = Date.now() - splashStart;
             var delay = Math.max(0, 600 - elapsed);
-            setTimeout(function() {
-              var s = document.getElementById('pwa-splash');
-              if (s) { s.style.opacity = '0'; s.style.pointerEvents = 'none'; }
-            }, delay);
+            setTimeout(function() { s.style.opacity = '0'; }, delay);
           }
           // Poll for the nav element — it means layout HTML has streamed in
           function waitForContent() {

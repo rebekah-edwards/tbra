@@ -1856,8 +1856,18 @@ async function getSimilarBooksInner(
   scored.sort((a, b) => b.score - a.score);
   const diversified = diversifyResults(scored, limit);
 
-  // Batch fetch authors instead of N+1
-  const pcAuthorMap = await batchFetchBookAuthors(diversified.map((b) => b.id));
+  // Batch fetch authors instead of N+1; also fetch category names so we can
+  // populate contentWarnings — the similar-books tile renders a warning flag
+  // when contentWarnings is non-empty (same convention as BookCard elsewhere).
+  const [pcAuthorMap, categoryNames] = await Promise.all([
+    batchFetchBookAuthors(diversified.map((b) => b.id)),
+    (async () => {
+      const rows = await db.select({ id: taxonomyCategories.id, name: taxonomyCategories.name }).from(taxonomyCategories).all();
+      const m = new Map<string, string>();
+      for (const r of rows) m.set(r.id, r.name);
+      return m;
+    })(),
+  ]);
 
   const results: RecommendedBook[] = [];
   for (const book of diversified) {
@@ -1869,6 +1879,9 @@ async function getSimilarBooksInner(
       authors: pcAuthorMap.get(book.id) ?? [],
       score: book.score,
       reason: (book as typeof book & { reason: string }).reason,
+      contentWarnings: explicit
+        ? computeContentWarnings(contentRatingsByBook.get(book.id), explicit.contentTolerances, categoryNames)
+        : [],
     });
   }
 

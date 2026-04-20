@@ -10,12 +10,12 @@ export interface EditionCoverInfo {
  *
  * Priority:
  * 1. Admin audiobook cover override (when actively listening or audiobook is the only owned format)
- * 2. Active reading format edition cover (only when currently_reading or paused that format)
- * 3. Base cover URL (book.coverImageUrl) — admin-set cover ALWAYS wins for browsing
- *
- * Owned-format edition covers are NO LONGER used as a passive override. The base cover
- * (set by enrichment or admin) is authoritative when the user isn't actively reading.
- * This prevents user_owned_editions auto-import from hijacking admin cover updates.
+ * 2. Owned-edition cover — user explicitly picked an edition with its own cover.
+ *    If actively reading, the active format's edition wins; otherwise the first
+ *    owned format's edition is used. This matches the user expectation that
+ *    "I picked this edition, show me its cover."
+ * 3. Base cover URL (book.coverImageUrl) — admin-set cover, used when there's
+ *    no owned-edition selection (or the selected edition has no coverId).
  */
 export function getEffectiveCoverUrl(params: {
   baseCoverUrl: string | null;
@@ -35,14 +35,19 @@ export function getEffectiveCoverUrl(params: {
     if (isAudiobookActive || isAudiobookOwned) return audiobookCoverUrl;
   }
 
-  // 2. Active format override (only during currently_reading / paused with that format)
-  if (isActivelyReading && activeFormats.length > 0 && editionSelections.length > 0) {
-    for (const fmt of activeFormats) {
+  // 2. Owned-edition cover: active-reading format wins when available, otherwise
+  //    use the first owned format that has an edition with a coverId.
+  if (editionSelections.length > 0) {
+    const priorityFormats = isActivelyReading && activeFormats.length > 0
+      ? [...activeFormats, ...ownedFormats.filter((f) => !activeFormats.includes(f))]
+      : ownedFormats;
+    for (const fmt of priorityFormats) {
       const match = editionSelections.find((e) => e.format === fmt && e.coverId);
       if (match) return buildCoverUrl(match.coverId, size) ?? baseCoverUrl;
     }
   }
 
-  // 3. Base cover (admin-set or enrichment-set) — authoritative for all other cases
+  // 3. Base cover (admin-set or enrichment-set) — fallback when no owned edition
+  //    has a usable cover.
   return baseCoverUrl;
 }
