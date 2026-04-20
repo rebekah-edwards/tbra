@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 const ARC_SOURCE_LABELS: Record<string, string> = {
   netgalley: "NetGalley",
@@ -91,7 +92,17 @@ export function ArcReviewQueue({ reviews, statusCounts, activeStatus }: ArcRevie
                     {review.bookTitle}
                   </Link>
                   <p className="text-xs text-muted mt-0.5">
-                    by {review.userDisplayName || review.userUsername || review.userEmail}
+                    by{" "}
+                    {review.userUsername ? (
+                      <Link
+                        href={`/u/${review.userUsername}`}
+                        className="text-neon-blue hover:underline"
+                      >
+                        {review.userDisplayName || review.userUsername}
+                      </Link>
+                    ) : (
+                      review.userDisplayName || review.userEmail
+                    )}
                     {review.overallRating && ` · ${review.overallRating} ★`}
                   </p>
                   <p className="text-xs text-muted/60 mt-0.5">
@@ -113,7 +124,10 @@ export function ArcReviewQueue({ reviews, statusCounts, activeStatus }: ArcRevie
                   {review.reviewText && (
                     <div>
                       <p className="text-xs font-medium text-muted uppercase tracking-wide mb-1">Review</p>
-                      <p className="text-sm text-foreground whitespace-pre-wrap">{review.reviewText}</p>
+                      <div
+                        className="text-sm text-foreground prose prose-sm max-w-none [&_p]:mb-2 [&_div]:mb-2 [&_br]:leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(review.reviewText) }}
+                      />
                     </div>
                   )}
                   {review.arcProofUrl && (
