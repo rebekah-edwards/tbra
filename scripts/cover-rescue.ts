@@ -22,36 +22,16 @@ config({ path: ".env.local" });
 import Database from "better-sqlite3";
 import path from "path";
 import { createHash } from "crypto";
+// Single source of truth for placeholder fingerprints — shared with the
+// enrichment pipeline's reject-at-write-time check. Add new placeholders there.
+import { PLACEHOLDERS, type PlaceholderFingerprint } from "../src/lib/cover-placeholders";
+
+type Placeholder = PlaceholderFingerprint;
 
 const DB_PATH = path.join(process.cwd(), "data", "tbra.db");
 const db = new Database(DB_PATH);
 
-type Placeholder = {
-  label: string;
-  size: number;
-  hash: string;
-  urlPattern: string; // LIKE pattern
-  sourceField: string | null; // value to set cover_source to when cleared
-};
-
-const PLACEHOLDERS: Placeholder[] = [
-  {
-    label: "isbndb",
-    size: 3736,
-    hash: "56c3e12f87260f78db39b9deeb0d04194e110c99702e6483963f2ab009bfea15",
-    urlPattern: "https://images.isbndb.com/covers/%",
-    sourceField: "isbndb-placeholder-cleared",
-  },
-  {
-    label: "google-books",
-    size: 15567,
-    hash: "12557f8948b8bdc6af436e3a8b3adddd45f7f7d2b67c5832e799cdf4686f72bb",
-    urlPattern: "https://books.google.com/books/content%",
-    sourceField: "gbooks-placeholder-cleared",
-  },
-];
-
-const BATCH_SIZE = 1000;
+const BATCH_SIZE = 5000;
 const CONCURRENCY = 8;
 const FETCH_TIMEOUT_MS = 10_000;
 
@@ -70,7 +50,7 @@ function selectBatchFor(placeholder: Placeholder): Row[] {
        ORDER BY updated_at DESC
        LIMIT ?`,
     )
-    .all(placeholder.urlPattern, BATCH_SIZE) as Row[];
+    .all(placeholder.urlPatternLike, BATCH_SIZE) as Row[];
 }
 
 async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {

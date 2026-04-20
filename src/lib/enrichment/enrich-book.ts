@@ -34,6 +34,7 @@ import {
 import { isEnglishTitle } from "@/lib/queries/books";
 import { findGoogleBooksCover } from "@/lib/google-books";
 import { findAmazonCover } from "@/lib/amazon-covers";
+import { isKnownPlaceholderCover } from "@/lib/cover-placeholders";
 import { sanitizeDescription, normalizeTitle as normalizeTitleSanitize, titleCaseGenre, truncateSummary } from "./sanitize";
 import { verifyIdentity } from "./identity";
 import { findDuplicateBook } from "./dedup";
@@ -342,10 +343,12 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
 
           if (!book.coverImageUrl) {
             const cover = getISBNdbCoverUrl(isbndbResult);
-            if (cover) {
+            if (cover && !(await isKnownPlaceholderCover(cover))) {
               isbnUpdates.coverImageUrl = cover;
               isbnUpdates.coverSource = "isbndb";
               isbnUpdates.coverVerified = true;
+            } else if (cover) {
+              console.log(`[enrichment] Rejected ISBNdb placeholder cover for "${book.title}"`);
             }
           }
           if (!book.description || book.descriptionStale) {
@@ -1050,9 +1053,11 @@ async function resolveBookCover(
       const isbndbBook = await searchISBNdb(book.isbn13 || book.isbn10!);
       if (isbndbBook) {
         const isbndbCover = getISBNdbCoverUrl(isbndbBook);
-        if (isbndbCover) {
+        if (isbndbCover && !(await isKnownPlaceholderCover(isbndbCover))) {
           coverUrl = isbndbCover;
           console.log(`[enrichment] Cover found via ISBNdb for "${book.title}"`);
+        } else if (isbndbCover) {
+          console.log(`[enrichment] Rejected ISBNdb placeholder cover for "${book.title}"`);
         }
       }
     } catch (err) {
@@ -1063,14 +1068,19 @@ async function resolveBookCover(
   // Tier D: Google Books (non-bulk only)
   if (!coverUrl && !options?.skipGoogleBooks) {
     try {
-      coverUrl = await findGoogleBooksCover({
+      const gbookCover = await findGoogleBooksCover({
         title: book.title,
         authors: authorNames,
         isbn13: book.isbn13,
         isbn10: book.isbn10,
         asin: book.asin,
       });
-      if (coverUrl) console.log(`[enrichment] Cover found via Google Books for "${book.title}"`);
+      if (gbookCover && !(await isKnownPlaceholderCover(gbookCover))) {
+        coverUrl = gbookCover;
+        console.log(`[enrichment] Cover found via Google Books for "${book.title}"`);
+      } else if (gbookCover) {
+        console.log(`[enrichment] Rejected Google Books placeholder cover for "${book.title}"`);
+      }
     } catch (err) {
       console.warn(`[enrichment] Google Books cover lookup failed:`, err);
     }

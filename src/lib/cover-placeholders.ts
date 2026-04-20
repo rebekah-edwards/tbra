@@ -1,0 +1,59 @@
+/**
+ * Shared fingerprints + detector for known "no cover available" placeholders.
+ * Used by enrich-book.ts (reject at write time) and scripts/cover-rescue.ts
+ * (nightly sweep of already-written placeholders).
+ */
+import { createHash } from "crypto";
+
+export interface PlaceholderFingerprint {
+  label: string;
+  urlPatternLike: string;       // SQL LIKE for cover-rescue
+  urlPatternRegex: RegExp;      // runtime check
+  size: number;
+  hash: string;
+  sourceField: string;          // what cover_source gets set to on clear
+}
+
+export const PLACEHOLDERS: PlaceholderFingerprint[] = [
+  {
+    label: "isbndb",
+    urlPatternLike: "https://images.isbndb.com/covers/%",
+    urlPatternRegex: /^https:\/\/images\.isbndb\.com\/covers\//,
+    size: 3736,
+    hash: "56c3e12f87260f78db39b9deeb0d04194e110c99702e6483963f2ab009bfea15",
+    sourceField: "isbndb-placeholder-cleared",
+  },
+  {
+    label: "google-books",
+    urlPatternLike: "https://books.google.com/books/content%",
+    urlPatternRegex: /^https:\/\/books\.google\.com\/books\/content/,
+    size: 15567,
+    hash: "12557f8948b8bdc6af436e3a8b3adddd45f7f7d2b67c5832e799cdf4686f72bb",
+    sourceField: "gbooks-placeholder-cleared",
+  },
+];
+
+/** Returns true when the URL resolves to a known placeholder image.
+ *  Returns false on network error — callers should prefer writing the cover
+ *  over rejecting it when we can't decide. The nightly sweep catches stragglers.
+ */
+export async function isKnownPlaceholderCover(url: string, timeoutMs = 5000): Promise<boolean> {
+  const candidate = PLACEHOLDERS.find((p) => p.urlPatternRegex.test(url));
+  if (!candidate) return false;
+
+  try {
+    const head = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(timeoutMs) });
+    if (!head.ok) return false;
+    const len = Number(head.headers.get("content-length"));
+    if (!Number.isFinite(len) || len !== candidate.size) return false;
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+    if (!res.ok) return false;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length !== candidate.size) return false;
+    const hash = createHash("sha256").update(buf).digest("hex");
+    return hash === candidate.hash;
+  } catch {
+    return false;
+  }
+}
