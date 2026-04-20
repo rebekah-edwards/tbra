@@ -551,17 +551,20 @@ export function ReadingPreferencesEditor({
         <div className="space-y-4">
           <div className="space-y-2">
             {CONTENT_CATEGORIES.map((cat) => (
+              // Stack label on top + buttons full-width on mobile so the 5
+              // tolerance options (None/Mild/Moderate/Significant/Any) can
+              // space evenly without overflowing. Switch to inline on sm:+.
               <div
                 key={cat.key}
-                className="flex items-center justify-between rounded-lg bg-surface-alt px-3 py-2.5"
+                className="rounded-lg bg-surface-alt px-3 py-2.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
               >
-                <span className="text-xs font-medium">{cat.name}</span>
-                <div className="flex gap-1">
+                <span className="text-xs font-medium flex-shrink-0">{cat.name}</span>
+                <div className="flex gap-1 w-full sm:w-auto">
                   {TOLERANCE_LABELS.map((tl) => (
                     <button
                       key={tl.value}
                       onClick={() => handleContentChange(cat.key, tl.value)}
-                      className={`rounded-md px-2 py-0.5 text-[10px] font-medium transition-all ${
+                      className={`flex-1 sm:flex-none rounded-md px-2 py-1 text-[10px] font-medium transition-all text-center ${
                         contentPrefs[cat.key] === tl.value
                           ? tl.value === 0
                             ? "bg-destructive/20 text-destructive"
@@ -569,7 +572,9 @@ export function ReadingPreferencesEditor({
                               ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
                               : tl.value === 2
                                 ? "bg-orange-500/20 text-orange-600 dark:text-orange-400"
-                                : "bg-accent/20 text-accent-dark"
+                                : tl.value === 3
+                                  ? "bg-orange-600/20 text-orange-700 dark:text-orange-300"
+                                  : "bg-accent/20 text-foreground"
                           : "text-muted hover:text-foreground"
                       }`}
                     >
