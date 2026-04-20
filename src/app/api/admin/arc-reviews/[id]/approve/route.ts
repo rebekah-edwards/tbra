@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser, isAdmin } from "@/lib/auth";
 import { db } from "@/db";
-import { userBookReviews } from "@/db/schema";
+import { userBookReviews, books } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { notifyReviewerOfArcDecision } from "@/lib/notifications/arc";
 
 export async function POST(
   req: NextRequest,
@@ -15,10 +16,33 @@ export async function POST(
 
   const { id } = await params;
 
+  // Fetch before updating so we can notify the reviewer with the book context.
+  const review = await db
+    .select({
+      userId: userBookReviews.userId,
+      bookId: userBookReviews.bookId,
+      bookTitle: books.title,
+      bookSlug: books.slug,
+    })
+    .from(userBookReviews)
+    .leftJoin(books, eq(books.id, userBookReviews.bookId))
+    .where(eq(userBookReviews.id, id))
+    .get();
+
   await db
     .update(userBookReviews)
     .set({ arcStatus: "approved", updatedAt: new Date().toISOString() })
     .where(eq(userBookReviews.id, id));
+
+  if (review) {
+    await notifyReviewerOfArcDecision({
+      reviewerId: review.userId,
+      bookId: review.bookId,
+      bookTitle: review.bookTitle ?? "your book",
+      bookSlug: review.bookSlug ?? null,
+      approved: true,
+    });
+  }
 
   return NextResponse.json({ success: true });
 }

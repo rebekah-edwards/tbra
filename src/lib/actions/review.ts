@@ -18,6 +18,7 @@ import { eq, and, count, like, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { CW_TO_TAXONOMY } from "@/lib/review-constants";
 import { canonicalizeWarning } from "@/lib/content-warnings/vocabulary";
+import { notifyAdminsOfArcSubmission } from "@/lib/notifications/arc";
 
 interface ProposedCorrectionInput {
   categoryKey: string;
@@ -128,6 +129,29 @@ export async function saveReview(payload: ReviewPayload) {
       arcSourceDetail: arcSourceDetail ?? null,
       arcProofUrl: arcProofUrl ?? null,
       arcStatus: arcStatus,
+    });
+  }
+
+  // Ping every super_admin when a new ARC review lands in the pending queue.
+  // Only fires on fresh submissions (not edits of existing reviews) to avoid
+  // spamming admins when a user tweaks review text.
+  if (arcStatus === "pending" && !existing && arcSource) {
+    const book = await db
+      .select({ title: books.title })
+      .from(books)
+      .where(eq(books.id, bookId))
+      .get();
+    const reviewer = await db
+      .select({ displayName: users.displayName, username: users.username })
+      .from(users)
+      .where(eq(users.id, user.userId))
+      .get();
+    await notifyAdminsOfArcSubmission({
+      reviewerId: user.userId,
+      reviewerDisplayName: reviewer?.displayName ?? null,
+      reviewerUsername: reviewer?.username ?? null,
+      bookTitle: book?.title ?? "a book",
+      arcSource,
     });
   }
 
