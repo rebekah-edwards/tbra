@@ -22,11 +22,15 @@ type BookRow = {
 };
 
 async function loadBooks(tab: Tab, offset: number): Promise<BookRow[]> {
+  // Wrap in a CTE so `users` (a correlated-subquery column alias) can be
+  // filtered with WHERE in the outer query. Previously used HAVING without
+  // GROUP BY — local SQLite permits it, but Turso's libsql parser rejects
+  // it as a syntax error (digest 1944237793).
   const activityFilter =
     tab === "priority"
-      ? "HAVING users > 0"
+      ? "WHERE users > 0"
       : tab === "abandon"
-      ? "HAVING users = 0"
+      ? "WHERE users = 0"
       : "";
 
   const rows = await db.all<{
@@ -39,26 +43,29 @@ async function loadBooks(tab: Tab, offset: number): Promise<BookRow[]> {
     users: number;
     author_names: string | null;
   }>(sql.raw(`
-    SELECT
-      b.id,
-      b.title,
-      b.slug,
-      b.cover_image_url,
-      b.cover_source,
-      b.created_at,
-      (SELECT count(DISTINCT user_id) FROM user_book_state WHERE book_id = b.id) as users,
-      (
-        SELECT group_concat(a.name, '|')
-        FROM book_authors ba
-        JOIN authors a ON a.id = ba.author_id
-        WHERE ba.book_id = b.id
-        ORDER BY ba.author_order
-      ) as author_names
-    FROM books b
-    WHERE b.visibility = 'public'
-      AND (b.cover_image_url IS NULL OR b.cover_image_url = '')
+    WITH candidates AS (
+      SELECT
+        b.id,
+        b.title,
+        b.slug,
+        b.cover_image_url,
+        b.cover_source,
+        b.created_at,
+        (SELECT count(DISTINCT user_id) FROM user_book_state WHERE book_id = b.id) as users,
+        (
+          SELECT group_concat(a.name, '|')
+          FROM book_authors ba
+          JOIN authors a ON a.id = ba.author_id
+          WHERE ba.book_id = b.id
+        ) as author_names
+      FROM books b
+      WHERE b.visibility = 'public'
+        AND (b.cover_image_url IS NULL OR b.cover_image_url = '')
+    )
+    SELECT id, title, slug, cover_image_url, cover_source, created_at, users, author_names
+    FROM candidates
     ${activityFilter}
-    ORDER BY users DESC, b.created_at DESC
+    ORDER BY users DESC, created_at DESC
     LIMIT ${PAGE_SIZE} OFFSET ${offset}
   `));
 
