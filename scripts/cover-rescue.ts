@@ -38,6 +38,11 @@ const FETCH_TIMEOUT_MS = 10_000;
 type Row = { id: string; title: string; cover_image_url: string };
 
 function selectBatchFor(placeholder: Placeholder): Row[] {
+  // ORDER BY updated_at ASC: process the oldest-touched books first. This
+  // matters because cleared books drop out of the filter (cover_source gets
+  // set to 'isbndb-placeholder-cleared'), but UNCHANGED books keep their
+  // updated_at and stay in the pool. DESC ordering churned on the same recent
+  // books every night; ASC reaches older imports (Pale Dreamer etc.) directly.
   return db
     .prepare(
       `SELECT id, title, cover_image_url
@@ -47,7 +52,7 @@ function selectBatchFor(placeholder: Placeholder): Row[] {
               OR cover_source = 'isbndb'
               OR cover_source = 'google_books'
               OR cover_source = 'openlibrary')
-       ORDER BY updated_at DESC
+       ORDER BY updated_at ASC
        LIMIT ?`,
     )
     .all(placeholder.urlPatternLike, BATCH_SIZE) as Row[];
