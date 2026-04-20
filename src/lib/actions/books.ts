@@ -540,6 +540,25 @@ export async function createBookManually(formData: FormData) {
     }
   }
 
+  // Slug-collision guard (systemic prevention for the Midnight-Is-the-Darkest-
+  // Hour pattern): compute what slug THIS book would get and check if a
+  // matching one already exists. Protects against the case where the user
+  // doesn't supply an ISBN, so the ISBN check above passes, and they'd
+  // otherwise spawn a duplicate book sharing the canonical slug.
+  if (authorName?.trim()) {
+    const { generateBookSlug } = await import("@/lib/utils/slugify");
+    const expectedSlug = generateBookSlug(title.trim(), authorName.trim());
+    if (expectedSlug) {
+      const existing = await db.query.books.findFirst({
+        where: eq(books.slug, expectedSlug),
+        columns: { id: true, slug: true },
+      });
+      if (existing) {
+        redirect(`/book/${existing.slug || existing.id}`);
+      }
+    }
+  }
+
   const [book] = await db
     .insert(books)
     .values({

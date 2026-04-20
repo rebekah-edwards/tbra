@@ -262,7 +262,12 @@ export default async function RootLayout({
           </nav>
           <BackButton />
           <PullToRefresh>
-            <main className="relative z-0 mx-auto max-w-3xl lg:max-w-[1194px] px-6 pt-8 pb-24 lg:pb-8">{children}</main>
+            {/* pb-32 on mobile (128px) clears the fixed bottom nav (~52px)
+                + iPhone home indicator / safe-area-inset-bottom (~34px) with
+                breathing room. Was pb-24 previously which was too tight on
+                devices with the home bar; user reported content running up
+                against the nav on multiple pages. */}
+            <main className="relative z-0 mx-auto max-w-3xl lg:max-w-[1194px] px-6 pt-8 pb-32 lg:pb-8">{children}</main>
           </PullToRefresh>
           <footer className="hidden lg:block mx-auto max-w-3xl lg:max-w-[1194px] px-6 pb-6 pt-2">
             <p className="text-[10px] text-muted/40 text-center">

@@ -56,6 +56,36 @@ const remote = createClient({
 const local = new Database(path.join(process.cwd(), 'data', 'tbra.db'));
 local.pragma('foreign_keys = OFF');
 
+// ─── Per-query timeout + stall detector (mirror of sync-push) ───
+const QUERY_TIMEOUT_MS = 30_000;
+const STALL_TIMEOUT_MS = 5 * 60_000;
+let lastProgressMs = Date.now();
+function markProgress() { lastProgressMs = Date.now(); }
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`sync-pull ${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (v) => { clearTimeout(t); markProgress(); resolve(v); },
+      (e) => { clearTimeout(t); reject(e); },
+    );
+  });
+}
+const _origExecute = remote.execute.bind(remote);
+remote.execute = ((arg: any) => withTimeout(_origExecute(arg), QUERY_TIMEOUT_MS, 'execute')) as typeof remote.execute;
+const _origBatch = remote.batch.bind(remote);
+remote.batch = ((args: any, mode?: any) => withTimeout(_origBatch(args, mode), QUERY_TIMEOUT_MS, 'batch')) as typeof remote.batch;
+
+const stallInterval = setInterval(() => {
+  const idle = Date.now() - lastProgressMs;
+  if (idle > STALL_TIMEOUT_MS) {
+    console.error(`FATAL: sync-pull stalled — no progress for ${Math.round(idle / 1000)}s. Aborting.`);
+    try { require('fs').unlinkSync('/tmp/tbra-sync-pull.lock'); } catch {}
+    process.exit(3);
+  }
+}, 30_000).unref();
+void stallInterval;
+
 // Tables to sync in order — (table, pk_columns, has_updated_at)
 const TABLES: Array<[string, string[], boolean]> = [
   ['users',                    ['id'],                    false],

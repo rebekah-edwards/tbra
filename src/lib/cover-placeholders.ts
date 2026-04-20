@@ -16,11 +16,22 @@ export interface PlaceholderFingerprint {
 
 export const PLACEHOLDERS: PlaceholderFingerprint[] = [
   {
-    label: "isbndb",
+    label: "isbndb-v1",
     urlPatternLike: "https://images.isbndb.com/covers/%",
     urlPatternRegex: /^https:\/\/images\.isbndb\.com\/covers\//,
     size: 3736,
     hash: "56c3e12f87260f78db39b9deeb0d04194e110c99702e6483963f2ab009bfea15",
+    sourceField: "isbndb-placeholder-cleared",
+  },
+  {
+    // Added 2026-04-20 — second ISBNdb "no cover" variant found via
+    // /book/the-ending-writes-itself. Same hostname as v1 but a different
+    // placeholder image (12008 bytes, 350x500 px progressive JPEG).
+    label: "isbndb-v2",
+    urlPatternLike: "https://images.isbndb.com/covers/%",
+    urlPatternRegex: /^https:\/\/images\.isbndb\.com\/covers\//,
+    size: 12008,
+    hash: "a5f722c897cdc916e8bde0dd045d56bc29e78400871c61479e6a6493f1fe0f49",
     sourceField: "isbndb-placeholder-cleared",
   },
   {

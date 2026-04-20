@@ -19,6 +19,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { CW_TO_TAXONOMY } from "@/lib/review-constants";
 import { canonicalizeWarning } from "@/lib/content-warnings/vocabulary";
 import { notifyAdminsOfArcSubmission } from "@/lib/notifications/arc";
+import { notifyAdminsOfProposedEdits } from "@/lib/notifications/proposed-edits";
 
 interface ProposedCorrectionInput {
   categoryKey: string;
@@ -289,6 +290,39 @@ export async function saveReview(payload: ReviewPayload) {
         });
       }
     }
+  }
+
+  // Ping super_admins if this review included proposed edits (intensity
+  // corrections or user-added trigger warnings). Bundled once per submit so
+  // the queue at /admin/corrections gets a single notification covering
+  // everything the reviewer touched, even if they proposed edits to multiple
+  // categories. Fires for BOTH new reviews and edits — admins want to know
+  // whenever a user touches the metadata, not just on first submit.
+  const proposalCount = proposedCorrections.length;
+  const userAddedWarningCount = userAddedWarnings.filter((w) => w.trim().length > 0).length;
+  if (proposalCount > 0 || userAddedWarningCount > 0) {
+    const [book, reviewer] = await Promise.all([
+      db
+        .select({ title: books.title, slug: books.slug })
+        .from(books)
+        .where(eq(books.id, bookId))
+        .get(),
+      db
+        .select({ displayName: users.displayName, username: users.username })
+        .from(users)
+        .where(eq(users.id, user.userId))
+        .get(),
+    ]);
+    await notifyAdminsOfProposedEdits({
+      reviewerId: user.userId,
+      reviewerDisplayName: reviewer?.displayName ?? null,
+      reviewerUsername: reviewer?.username ?? null,
+      bookTitle: book?.title ?? "a book",
+      bookSlug: book?.slug ?? null,
+      bookId,
+      proposalCount,
+      userAddedWarningCount,
+    });
   }
 
   revalidatePath(`/book/${bookId}`);
