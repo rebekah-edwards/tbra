@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { db } from "@/db";
+import { taxonomyCategories } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export const metadata: Metadata = {
   robots: { index: false },
@@ -23,11 +26,18 @@ export default async function SettingsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [prefs, notifPrefs, hiddenBooks] = await Promise.all([
+  const [prefs, notifPrefs, hiddenBooks, activeCategoriesRaw] = await Promise.all([
     getUserReadingPreferences(user.userId),
     getNotificationPreferences(user.userId),
     getHiddenBooks(user.userId),
+    db
+      .select({ id: taxonomyCategories.id, key: taxonomyCategories.key, name: taxonomyCategories.name })
+      .from(taxonomyCategories)
+      .where(eq(taxonomyCategories.active, true))
+      .all(),
   ]);
+  // Stable sort: match the historical ordering + alphabetical tiebreak
+  const activeCategories = [...activeCategoriesRaw].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="space-y-6 lg:w-[60%] lg:mx-auto">
@@ -38,7 +48,7 @@ export default async function SettingsPage() {
         </p>
       </div>
 
-      <ReadingPreferencesEditor initialPrefs={prefs} />
+      <ReadingPreferencesEditor initialPrefs={prefs} activeCategories={activeCategories} />
 
       {/* Display */}
       <div>
@@ -67,13 +77,20 @@ export default async function SettingsPage() {
 
       <ExportSection isPremium={isPremium(user)} />
 
-      <div>
-        <h2 className="section-heading text-lg mb-3">Hidden Books</h2>
-        <p className="text-xs text-muted mb-3">
+      {/* Hidden Books — collapsed by default so the list doesn't force the
+          user to scroll past it. Uses native <details> for zero-JS toggle. */}
+      <details className="group">
+        <summary className="flex items-center justify-between cursor-pointer list-none">
+          <h2 className="section-heading text-lg">Hidden Books {hiddenBooks.length > 0 && (<span className="text-xs font-normal text-muted ml-2">({hiddenBooks.length})</span>)}</h2>
+          <svg className="w-4 h-4 text-muted transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </summary>
+        <p className="text-xs text-muted mt-3 mb-3">
           Books hidden from all recommendations. Unhide to see them again.
         </p>
         <HiddenBooksManager initialBooks={hiddenBooks} />
-      </div>
+      </details>
 
       <ChangePassword />
 

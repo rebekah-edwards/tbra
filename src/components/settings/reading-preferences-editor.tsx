@@ -79,24 +79,18 @@ const CHARACTER_TROPES = [
   { key: "fish-out-of-water", label: "Fish out of water" },
 ];
 
-const CONTENT_CATEGORIES = [
-  { key: "42ad1bfb-09dc-4ffd-aafe-bf6cef50ab6f", name: "Violence & gore" },
-  { key: "4ba66d94-2d8b-4558-858c-5643c5ae9864", name: "Sexual content" },
-  { key: "3c766289-4965-4222-a555-50325c8be015", name: "Profanity / language" },
-  { key: "65867b4b-8b92-4a1a-8c1c-b454d8b06fd8", name: "Substance use" },
-  { key: "6e027cc3-9ad2-431f-9fc0-89c997c33b3e", name: "Self-harm / suicide" },
-  { key: "4b8dc655-d645-4fec-b177-3a4fd4568134", name: "Sexual assault / coercion" },
-  { key: "be479980-2b8a-4693-9ac9-ca22b7a46183", name: "Abuse & suffering" },
-  { key: "dd567829-ccf2-43a4-b2e2-9bc1946313a8", name: "Religious content" },
-  { key: "895cee59-f605-49b5-9e8a-905cfe36c455", name: "Witchcraft / occult" },
-  { key: "81076008-d213-45b0-bf7e-2509d75191b2", name: "Political & ideological" },
-  { key: "ca67197a-61d3-4f2a-9441-5c23757b1515", name: "LGBTQ+ representation" },
-];
+// Category list is now passed in as `activeCategories` prop from the server
+// component — sourced from taxonomy_categories WHERE active=true. Keeps the
+// Settings UI automatically in sync with book-side taxonomy migrations.
 
+// Tolerance scale matches book content-rating intensities (0-4) 1:1 so users
+// can target Significant without being forced to accept Extreme. The "Any"
+// option stays for the "no cap, don't filter" case.
 const TOLERANCE_LABELS = [
   { value: 0, label: "None" },
   { value: 1, label: "Mild" },
   { value: 2, label: "Moderate" },
+  { value: 3, label: "Significant" },
   { value: 4, label: "Any" },
 ];
 
@@ -120,11 +114,22 @@ function getLengthKey(min: number | null, max: number | null): string | null {
 
 // ─── Component ───
 
+interface ActiveCategory {
+  id: string;
+  key: string;
+  name: string;
+}
+
 export function ReadingPreferencesEditor({
   initialPrefs,
+  activeCategories,
 }: {
   initialPrefs: ReadingPreferencesData | null;
+  activeCategories: ActiveCategory[];
 }) {
+  // Rename + reshape to match the rest of the component (uses `.key` as the
+  // UUID). Historical shape; avoids a large rename below.
+  const CONTENT_CATEGORIES = activeCategories.map((c) => ({ key: c.id, name: c.name }));
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
