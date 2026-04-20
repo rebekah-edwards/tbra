@@ -62,9 +62,17 @@ export function ContentWarningBanner({
   // concrete count). Note matches still render for any canonical not covered
   // by a reviewer flag so the user sees every hit exactly once.
   const reviewerWarningIds = new Set(customWarningMatches.map((m) => m.canonicalId));
-  const uniqueNoteMatches = noteWarningMatches.filter(
-    (n) => !reviewerWarningIds.has(n.canonicalId),
-  );
+  // Collapse repeated canonicals across categories into a single entry with
+  // the category list merged — previously a warning noted in both
+  // "Romance & sex" and "Other" rendered as two separate rows.
+  const noteMergedMap = new Map<string, { canonicalId: string; categoryNames: string[] }>();
+  for (const n of noteWarningMatches) {
+    if (reviewerWarningIds.has(n.canonicalId)) continue;
+    const entry = noteMergedMap.get(n.canonicalId) ?? { canonicalId: n.canonicalId, categoryNames: [] };
+    if (!entry.categoryNames.includes(n.categoryName)) entry.categoryNames.push(n.categoryName);
+    noteMergedMap.set(n.canonicalId, entry);
+  }
+  const uniqueNoteMatches = Array.from(noteMergedMap.values());
 
   const totalFlags = conflicts.length + customWarningMatches.length + uniqueNoteMatches.length;
   if (totalFlags === 0) return null;
@@ -143,7 +151,7 @@ export function ContentWarningBanner({
                 {getWarningLabel(m.canonicalId)}
               </span>
               <span className="content-flag-text text-[11px] leading-snug break-words">
-                noted in {m.categoryName} &middot; you asked to avoid
+                noted in {m.categoryNames.join(", ")} &middot; you asked to avoid
               </span>
             </div>
           ))}

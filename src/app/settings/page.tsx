@@ -36,8 +36,13 @@ export default async function SettingsPage() {
       .where(eq(taxonomyCategories.active, true))
       .all(),
   ]);
-  // Stable sort: match the historical ordering + alphabetical tiebreak
-  const activeCategories = [...activeCategoriesRaw].sort((a, b) => a.name.localeCompare(b.name));
+  // Exclude "Other" from the comfort zone list — it's a catch-all bucket,
+  // not a meaningful thing to filter on. Users who want to avoid specific
+  // things use the "Custom topics to avoid" input below, which scans reviews
+  // + note blobs across ALL categories (including Other) automatically.
+  const activeCategories = activeCategoriesRaw
+    .filter((c) => c.key !== "other")
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="space-y-6 lg:w-[60%] lg:mx-auto">
