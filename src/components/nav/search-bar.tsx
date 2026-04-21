@@ -194,9 +194,11 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
       setLoading(false);
       return;
     }
-    // Show loading immediately so skeleton appears during debounce
+    // Show loading immediately so skeleton appears during debounce.
+    // 250ms gives slower typists room to finish a word — 150ms was firing
+    // mid-word ("the bone") before the user typed "yard".
     setLoading(true);
-    debounceRef.current = setTimeout(() => search(value), 150);
+    debounceRef.current = setTimeout(() => search(value), 250);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -379,6 +381,77 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                 >
                   {hasResults && (
                     <>
+                      {/* External (ISBNdb) results — when present, they're
+                          the user's most likely target since the server only
+                          fires ISBNdb when local has no strong match.
+                          Render FIRST so the user sees them without scrolling. */}
+                      {externalResults.length > 0 && (
+                        <>
+                          <div className="px-4 pt-2.5 pb-1 text-[10px] uppercase tracking-wider text-muted/70 font-medium">
+                            Not in our library yet — tap Add to import
+                          </div>
+                          {externalResults.map((ext) => (
+                            <button
+                              key={`ext-top-${ext.key}`}
+                              type="button"
+                              disabled={importingKey === ext.key}
+                              onClick={async () => {
+                                if (importingKey) return;
+                                setImportingKey(ext.key);
+                                try {
+                                  const isbn = ext._isbn13 || ext.isbn?.[0] || "";
+                                  const bookId = await importFromISBNdbAndReturn({
+                                    isbn,
+                                    title: ext.title,
+                                    authors: ext.author_name ?? [],
+                                    coverUrl: ext._externalCoverUrl ?? null,
+                                    publicationYear: ext.first_publish_year ?? null,
+                                    pages: ext.number_of_pages_median ?? null,
+                                  });
+                                  if (bookId) {
+                                    collapse();
+                                    router.push(`/book/${bookId}`);
+                                  }
+                                } catch (err) {
+                                  console.warn("[search] ISBNdb import failed:", err);
+                                } finally {
+                                  setImportingKey(null);
+                                }
+                              }}
+                              className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-surface-alt transition-colors border-b border-border/50 disabled:opacity-60"
+                            >
+                              <div className="flex-shrink-0 w-10 h-[60px] rounded overflow-hidden bg-surface-alt">
+                                {ext._externalCoverUrl ? (
+                                  <img src={ext._externalCoverUrl} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <NoCover title={ext.title} className="w-full h-full" size="sm" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">{ext.title}</p>
+                                {(ext.author_name?.length ?? 0) > 0 && (
+                                  <p className="text-xs text-muted truncate">
+                                    {ext.author_name!.slice(0, 2).join(", ")}
+                                  </p>
+                                )}
+                                {ext.first_publish_year && (
+                                  <p className="text-xs text-muted/60">{ext.first_publish_year}</p>
+                                )}
+                              </div>
+                              <div className="flex-shrink-0">
+                                {importingKey === ext.key ? (
+                                  <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
+                                ) : (
+                                  <span className="text-[10px] font-medium text-neon-blue bg-neon-blue/10 px-2 py-0.5 rounded-full">
+                                    Add
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
+
                       {sectionOrder.map((section) => {
                         if (section === "series") return seriesMatches.map((s) => (
                           <div key={`series-${s.id}`} className="border-b border-border/50">
@@ -510,77 +583,6 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
 
                         return null;
                       })}
-
-                      {/* External (ISBNdb) results — only populated by the
-                          server when local strict-filter returned nothing,
-                          so these appear as the sole matches in the dropdown.
-                          Clicking imports the book, then navigates. */}
-                      {externalResults.length > 0 && (
-                        <>
-                          <div className="px-4 pt-2.5 pb-1 text-[10px] uppercase tracking-wider text-muted/70 font-medium">
-                            Not in our library yet
-                          </div>
-                          {externalResults.map((ext) => (
-                            <button
-                              key={`ext-${ext.key}`}
-                              type="button"
-                              disabled={importingKey === ext.key}
-                              onClick={async () => {
-                                if (importingKey) return;
-                                setImportingKey(ext.key);
-                                try {
-                                  const isbn = ext._isbn13 || ext.isbn?.[0] || "";
-                                  const bookId = await importFromISBNdbAndReturn({
-                                    isbn,
-                                    title: ext.title,
-                                    authors: ext.author_name ?? [],
-                                    coverUrl: ext._externalCoverUrl ?? null,
-                                    publicationYear: ext.first_publish_year ?? null,
-                                    pages: ext.number_of_pages_median ?? null,
-                                  });
-                                  if (bookId) {
-                                    collapse();
-                                    router.push(`/book/${bookId}`);
-                                  }
-                                } catch (err) {
-                                  console.warn("[search] ISBNdb import failed:", err);
-                                } finally {
-                                  setImportingKey(null);
-                                }
-                              }}
-                              className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-surface-alt transition-colors border-b border-border/50 last:border-0 disabled:opacity-60"
-                            >
-                              <div className="flex-shrink-0 w-10 h-[60px] rounded overflow-hidden bg-surface-alt">
-                                {ext._externalCoverUrl ? (
-                                  <img src={ext._externalCoverUrl} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                  <NoCover title={ext.title} className="w-full h-full" size="sm" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-foreground truncate">{ext.title}</p>
-                                {(ext.author_name?.length ?? 0) > 0 && (
-                                  <p className="text-xs text-muted truncate">
-                                    {ext.author_name!.slice(0, 2).join(", ")}
-                                  </p>
-                                )}
-                                {ext.first_publish_year && (
-                                  <p className="text-xs text-muted/60">{ext.first_publish_year}</p>
-                                )}
-                              </div>
-                              <div className="flex-shrink-0">
-                                {importingKey === ext.key ? (
-                                  <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
-                                ) : (
-                                  <span className="text-[10px] font-medium text-neon-blue bg-neon-blue/10 px-2 py-0.5 rounded-full">
-                                    Add
-                                  </span>
-                                )}
-                              </div>
-                            </button>
-                          ))}
-                        </>
-                      )}
                     </>
                   )}
 
