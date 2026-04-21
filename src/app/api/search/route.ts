@@ -4,6 +4,8 @@ import { books, bookAuthors, authors, series, bookSeries, userBookState } from "
 import { eq, sql, and } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { searchBooksFTS } from "@/lib/search/search-index";
+import { tokenizeQuery, matchesAllDiscriminatingTokens } from "@/lib/search/relevance";
+import { fetchISBNdbFallback, type ISBNdbResult } from "@/lib/search/isbndb-fallback";
 
 /**
  * Unified search endpoint for the nav search bar.
@@ -73,12 +75,40 @@ export async function GET(request: NextRequest) {
       authorsByBook.set(row.bookId, list);
     }
 
-    // Dedup by normalized title + primary author, preserving FTS rank order
+    // Dedup by normalized title + primary author, preserving FTS rank order.
+    // Also drop any result that doesn't contain EVERY discriminating query
+    // token (i.e. every non-stopword) in title + authors + series. This is
+    // what stops a search for "god of malice" from showing "Music and
+    // Malice in Hurricane Town" just because it matches "malice".
+    const { discriminating } = tokenizeQuery(trimmed);
+    const seriesByBookId = new Map<string, string[]>();
+    if (discriminating.length >= 2) {
+      const seriesRows = await db
+        .select({ bookId: bookSeries.bookId, name: series.name })
+        .from(bookSeries)
+        .innerJoin(series, eq(series.id, bookSeries.seriesId))
+        .where(sql`${bookSeries.bookId} IN (${sql.join(bookIds.map((id) => sql`${id}`), sql`, `)})`)
+        .all();
+      for (const row of seriesRows) {
+        const list = seriesByBookId.get(row.bookId) ?? [];
+        list.push(row.name);
+        seriesByBookId.set(row.bookId, list);
+      }
+    }
+
     const seen = new Set<string>();
     for (const ftsRow of ftsResults) {
       const book = bookMap.get(ftsRow.bookId);
       if (!book) continue;
       const authorNames = authorsByBook.get(book.id) ?? [];
+
+      // Strict all-tokens check (multi-word queries only)
+      if (discriminating.length >= 2) {
+        const seriesNames = seriesByBookId.get(book.id) ?? [];
+        const combined = `${book.title} ${authorNames.join(" ")} ${seriesNames.join(" ")}`;
+        if (!matchesAllDiscriminatingTokens(combined, discriminating)) continue;
+      }
+
       const normTitle = book.title.toLowerCase().replace(/\s*\(.*\)$/, "").replace(/[^a-z0-9]/g, "");
       const primaryAuthor = (authorNames[0] ?? "").toLowerCase().replace(/[^a-z]/g, "");
       const key = `${normTitle}::${primaryAuthor}`;
@@ -111,6 +141,17 @@ export async function GET(request: NextRequest) {
     bookResults = bookResults.slice(0, 8);
   }
 
+  // Filter series + author results the same way: a multi-word query
+  // requires every discriminating token to appear in the series/author
+  // name. "god of malice" won't return a series called just "Malice".
+  const { discriminating: qTokens } = tokenizeQuery(trimmed);
+  const filteredSeries = qTokens.length >= 2
+    ? seriesResults.filter((s) => matchesAllDiscriminatingTokens(s.name, qTokens))
+    : seriesResults;
+  const filteredAuthors = qTokens.length >= 2
+    ? authorResults.filter((a) => matchesAllDiscriminatingTokens(a.name, qTokens))
+    : authorResults;
+
   // Compute section order so the nav dropdown can surface whatever the
   // user most likely wanted first. An exact-title / prefix-title book
   // match beats a fuzzy series/author match on "attribute relevance".
@@ -125,11 +166,11 @@ export async function GET(request: NextRequest) {
   const bestBookScore = bookResults.length > 0
     ? Math.max(...bookResults.slice(0, 3).map((b) => relevanceScore(b.title))) + 1
     : 0;
-  const bestSeriesScore = seriesResults.length > 0
-    ? Math.max(...seriesResults.map((s) => relevanceScore(s.name)))
+  const bestSeriesScore = filteredSeries.length > 0
+    ? Math.max(...filteredSeries.map((s) => relevanceScore(s.name)))
     : 0;
-  const bestAuthorScore = authorResults.length > 0
-    ? Math.max(...authorResults.map((a) => relevanceScore(a.name)))
+  const bestAuthorScore = filteredAuthors.length > 0
+    ? Math.max(...filteredAuthors.map((a) => relevanceScore(a.name)))
     : 0;
   const sectionOrder = [
     { type: "books", score: bestBookScore },
@@ -137,10 +178,29 @@ export async function GET(request: NextRequest) {
     { type: "authors", score: bestAuthorScore },
   ].sort((a, b) => b.score - a.score).map((s) => s.type);
 
+  // ISBNdb fallback — ONLY when the strict-filter nav dropdown would
+  // otherwise show nothing. This keeps type-ahead fast in the common case
+  // (our DB has the book) and only pays the 200-500ms latency when the
+  // user is clearly searching for something we don't carry.
+  let external: ISBNdbResult[] = [];
+  const localEmpty =
+    bookResults.length === 0 && filteredSeries.length === 0 && filteredAuthors.length === 0;
+  if (localEmpty && trimmed.length >= 3) {
+    try {
+      external = await fetchISBNdbFallback(
+        trimmed.toLowerCase(),
+        bookResults.map((b) => b.title),
+      );
+    } catch (err) {
+      console.warn("[search] ISBNdb fallback failed:", err);
+    }
+  }
+
   return NextResponse.json({
     books: bookResults,
-    series: seriesResults,
-    authors: authorResults,
+    series: filteredSeries,
+    authors: filteredAuthors,
+    external,
     sectionOrder,
   });
 }

@@ -10,10 +10,10 @@ import { searchBooksFTS } from "@/lib/search/search-index";
 import { scoreFuzzyMatches } from "@/lib/search/fuzzy";
 import { isJunkTitle } from "@/lib/openlibrary";
 import { isBoxSetTitle, isEnglishTitle } from "@/lib/queries/books";
-import { searchISBNdbMulti, getISBNdbCoverUrl } from "@/lib/enrichment/isbndb";
-import { consumeApiQuota } from "@/lib/api-quota";
 import { getEffectiveCoverUrl } from "@/lib/covers";
 import { searchSeriesMeilisearch, searchAuthorsMeilisearch } from "@/lib/search/meilisearch";
+import { tokenizeQuery, matchesAllDiscriminatingTokens } from "@/lib/search/relevance";
+import { fetchISBNdbFallback, type ISBNdbResult } from "@/lib/search/isbndb-fallback";
 
 /**
  * Unified search endpoint for the full search page.
@@ -21,49 +21,6 @@ import { searchSeriesMeilisearch, searchAuthorsMeilisearch } from "@/lib/search/
  * ISBNdb fallback, and book-check (states/covers/formats) all in a single
  * serverless invocation — eliminating 3-4 separate cold starts per keystroke.
  */
-
-const ISBNDB_DAILY_LIMIT = 2000;
-const ISBNDB_QUOTA_KEY = "isbndb_search";
-
-// In-memory LRU cache for ISBNdb results (per-instance, reset on cold start)
-const CACHE_SIZE = 200;
-const CACHE_TTL_MS = 5 * 60 * 1000;
-
-interface CacheEntry {
-  data: ISBNdbResult[];
-  expires: number;
-}
-
-const isbndbCache = new Map<string, CacheEntry>();
-
-function cacheGet(key: string): ISBNdbResult[] | null {
-  const entry = isbndbCache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expires) { isbndbCache.delete(key); return null; }
-  isbndbCache.delete(key);
-  isbndbCache.set(key, entry);
-  return entry.data;
-}
-
-function cacheSet(key: string, data: ISBNdbResult[]) {
-  if (isbndbCache.size >= CACHE_SIZE) {
-    const oldestKey = isbndbCache.keys().next().value;
-    if (oldestKey) isbndbCache.delete(oldestKey);
-  }
-  isbndbCache.set(key, { data, expires: Date.now() + CACHE_TTL_MS });
-}
-
-interface ISBNdbResult {
-  key: string;
-  title: string;
-  author_name?: string[];
-  first_publish_year?: number;
-  isbn?: string[];
-  number_of_pages_median?: number;
-  _externalCoverUrl?: string;
-  _source: "isbndb";
-  _isbn13?: string | null;
-}
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q");
@@ -106,39 +63,54 @@ export async function GET(request: NextRequest) {
   // ISBNdb fallback: trigger if local results are sparse OR if none of the local
   // results are a strong title match (e.g. searching "the amalfi curse" returns
   // books about curses generally but not the specific book)
-  const STOP_WORDS = new Set(["the", "a", "an", "and", "of", "in", "to", "for", "is", "on", "by"]);
-  const queryWords = queryLower.split(/\s+/).filter((w) => !STOP_WORDS.has(w));
+  const { discriminating: queryWords } = tokenizeQuery(trimmed);
+
+  // Enforce the strict ALL-tokens rule on local book results. A search for
+  // "god of malice" should not surface "Music and Malice in Hurricane Town".
+  // Single-token queries are unaffected (the Meilisearch/FTS layer handles them).
+  const strictLocalBooks = queryWords.length >= 2
+    ? bookResults.filter((b) => {
+        const seriesHint = ""; // series names aren't on the book result — handled below
+        const combined = `${b.title} ${(b.author_name ?? []).join(" ")} ${seriesHint}`;
+        return matchesAllDiscriminatingTokens(combined, queryWords);
+      })
+    : bookResults;
 
   let externalResults: ISBNdbResult[] = [];
   let hasStrongMatch = false;
   if (trimmed.length >= 3) {
-    hasStrongMatch = bookResults.some((b) => {
-      // Check if all query words appear in title + author + series combined
-      const titleLower = b.title.toLowerCase();
-      const authorLower = (b.author_name ?? []).join(" ").toLowerCase();
-      const combined = `${titleLower} ${authorLower}`;
-      return queryWords.length > 0 && queryWords.every((w) => combined.includes(w));
-    });
-    // Also check series names for strong match (e.g. "mistborn era 2")
+    hasStrongMatch = strictLocalBooks.length > 0;
+    // Also count a strong series match ("mistborn era 2") as a hit
     if (!hasStrongMatch && enrichedSeries.length > 0) {
-      hasStrongMatch = enrichedSeries.some((s) => {
-        const nameLower = s.name.toLowerCase();
-        return queryWords.length > 0 && queryWords.every((w) => nameLower.includes(w));
-      });
+      hasStrongMatch = enrichedSeries.some((s) =>
+        queryWords.length > 0 && matchesAllDiscriminatingTokens(s.name, queryWords)
+      );
     }
 
-    if (bookResults.length < 5 || !hasStrongMatch) {
-      externalResults = await fetchISBNdbResults(queryLower, bookResults);
+    if (strictLocalBooks.length < 5 || !hasStrongMatch) {
+      externalResults = await fetchISBNdbFallback(
+        queryLower,
+        bookResults.map((b) => b.title),
+      );
     }
   }
 
-  // When ISBNdb returned results and no local book is a strong match,
-  // truncate weak local results so the actual match isn't buried under
-  // 20 "curse"-only books when the user searched "the amalfi curse"
-  let finalBookResults = bookResults;
-  if (externalResults.length > 0 && !hasStrongMatch && bookResults.length > 3) {
-    finalBookResults = bookResults.slice(0, 3);
+  // Use the strict list when we have a multi-word query — otherwise fall back
+  // to the unfiltered list (single-word queries, queries with no discriminating
+  // tokens). When external results exist and local has no strong match,
+  // truncate local to 3 so the ISBNdb match surfaces.
+  let finalBookResults = queryWords.length >= 2 ? strictLocalBooks : bookResults;
+  if (externalResults.length > 0 && !hasStrongMatch && finalBookResults.length > 3) {
+    finalBookResults = finalBookResults.slice(0, 3);
   }
+
+  // Filter series + author results the same way
+  const filteredSeries = queryWords.length >= 2
+    ? enrichedSeries.filter((s) => matchesAllDiscriminatingTokens(s.name, queryWords))
+    : enrichedSeries;
+  const filteredAuthors = queryWords.length >= 2
+    ? enrichedAuthors.filter((a) => matchesAllDiscriminatingTokens(a.name, queryWords))
+    : enrichedAuthors;
 
   // Score each result type by relevance to the query so the client can
   // interleave sections in the right order (not always series→authors→books)
@@ -156,19 +128,19 @@ export async function GET(request: NextRequest) {
   const bestBookScore = finalBookResults.length > 0
     ? Math.max(...finalBookResults.slice(0, 3).map((b) => relevanceScore(b.title))) + 1
     : 0;
-  const bestSeriesScore = enrichedSeries.length > 0
-    ? Math.max(...enrichedSeries.map((s) => relevanceScore(s.name)))
+  const bestSeriesScore = filteredSeries.length > 0
+    ? Math.max(...filteredSeries.map((s) => relevanceScore(s.name)))
     : 0;
-  const bestAuthorScore = enrichedAuthors.length > 0
-    ? Math.max(...enrichedAuthors.map((a) => relevanceScore(a.name)))
+  const bestAuthorScore = filteredAuthors.length > 0
+    ? Math.max(...filteredAuthors.map((a) => relevanceScore(a.name)))
     : 0;
   // Book check: compute states, owned formats, effective covers for local results
   const bookCheck = await computeBookCheck(finalBookResults, user?.userId ?? null);
 
   const response = NextResponse.json({
     books: finalBookResults,
-    series: enrichedSeries,
-    authors: enrichedAuthors,
+    series: filteredSeries,
+    authors: filteredAuthors,
     people: [],
     external: externalResults,
     check: bookCheck,
@@ -492,132 +464,6 @@ async function hydrateAuthors(scored: { id: string; name: string; bookCount: num
     bookCount: a.bookCount,
     sampleBooks: samplesByAuthor.get(a.id) ?? [],
   }));
-}
-
-// ─── ISBNdb external fallback ───
-
-async function fetchISBNdbResults(
-  queryLower: string,
-  localBooks: { key: string; title: string }[],
-): Promise<ISBNdbResult[]> {
-  // Check cache first
-  const cached = cacheGet(queryLower);
-  if (cached) return cached;
-
-  // Check quota
-  const ok = await consumeApiQuota(ISBNDB_QUOTA_KEY, ISBNDB_DAILY_LIMIT);
-  if (!ok) return [];
-
-  const normalizeIsbn = (s: string | null | undefined): string | null => {
-    if (!s) return null;
-    const cleaned = s.replace(/[^0-9Xx]/g, "").toUpperCase();
-    return cleaned.length >= 10 ? cleaned : null;
-  };
-
-  const isbndbBooks = await searchISBNdbMulti(queryLower, 10);
-
-  // Filter out books already in DB by ISBN
-  const isbns = isbndbBooks
-    .map((b) => normalizeIsbn(b.isbn13) || normalizeIsbn(b.isbn10) || normalizeIsbn(b.isbn))
-    .filter(Boolean) as string[];
-
-  let existingIsbns = new Set<string>();
-  if (isbns.length > 0) {
-    const rows = await db
-      .select({ isbn13: books.isbn13, isbn10: books.isbn10 })
-      .from(books)
-      .where(sql`${books.isbn13} IN (${sql.join(isbns.map((i) => sql`${i}`), sql`, `)}) OR ${books.isbn10} IN (${sql.join(isbns.map((i) => sql`${i}`), sql`, `)})`);
-    existingIsbns = new Set(
-      rows.flatMap((r) => [normalizeIsbn(r.isbn13), normalizeIsbn(r.isbn10)].filter(Boolean) as string[]),
-    );
-  }
-
-  // Also dedup against local results by title
-  const localTitles = new Set(localBooks.map((b) => b.title.toLowerCase()));
-
-  const results: ISBNdbResult[] = [];
-  for (const book of isbndbBooks) {
-    const isbn13 = normalizeIsbn(book.isbn13);
-    const isbn10 = normalizeIsbn(book.isbn10);
-    const isbn = isbn13 || isbn10 || normalizeIsbn(book.isbn);
-    if (!isbn) continue;
-    if (existingIsbns.has(isbn)) continue;
-    if (isJunkTitle(book.title)) continue;
-    if (isBoxSetTitle(book.title)) continue;
-    if (!isEnglishTitle(book.title)) continue;
-    if (localTitles.has(book.title.toLowerCase())) continue;
-
-    const year = book.date_published
-      ? parseInt(book.date_published.slice(0, 4), 10)
-      : undefined;
-
-    results.push({
-      key: `isbndb:${isbn}`,
-      title: book.title,
-      author_name: book.authors ?? [],
-      first_publish_year: Number.isFinite(year) ? year : undefined,
-      isbn: [isbn13, isbn10, book.isbn].filter(Boolean) as string[],
-      number_of_pages_median: book.pages,
-      _externalCoverUrl: getISBNdbCoverUrl(book) ?? undefined,
-      _source: "isbndb",
-      _isbn13: isbn13,
-    });
-  }
-
-  // Deduplicate editions (hardcover, paperback, Kindle, audiobook of same book)
-  // ISBNdb titles often have marketing suffixes appended without punctuation:
-  //   "The Amalfi Curse A Novel"
-  //   "The Amalfi Curse A Bewitching Tale of Sunken Treasure..."
-  //   "The Amalfi Curse The New York Times Bestseller"
-  // Strip marketing suffixes ISBNdb appends without punctuation:
-  //   "The Amalfi Curse A Novel" → "The Amalfi Curse"
-  //   "The Amalfi Curse A Bewitching Tale of..." → "The Amalfi Curse"
-  //   "The Amalfi Curse The New York Times Bestseller" → "The Amalfi Curse"
-  const TITLE_SUFFIXES = /\s+(?:a (?:novel|memoir|thriller|romance|novella|story|mystery|fantasy|[\w]+ (?:novel|tale|story|memoir|mystery|thriller))\b.*|the (?:new york times|#1|no\.?\s*1|international|sunday times|usa today|washington post|wall street journal).*|book \d+.*|volume \d+.*|(?:the )?(?:complete|unabridged|illustrated|deluxe|special|anniversary|collector'?s?) (?:edition|collection).*)/i;
-
-  function normalizeISBNdbTitle(title: string): string {
-    return title
-      .toLowerCase()
-      .replace(/\s*[:([\-–—].*/g, "")   // strip after punctuation separators
-      .replace(TITLE_SUFFIXES, "")        // strip bare marketing suffixes
-      .replace(/[^a-z0-9]/g, "");
-  }
-
-  const deduped: ISBNdbResult[] = [];
-  const seenTitles = new Map<string, number>();
-  for (const r of results) {
-    const normTitle = normalizeISBNdbTitle(r.title);
-    const normAuthor = (r.author_name?.[0] ?? "").toLowerCase().replace(/[^a-z]/g, "");
-    const key = `${normTitle}::${normAuthor}`;
-
-    const existingIdx = seenTitles.get(key);
-    if (existingIdx !== undefined) {
-      // Replace if the new edition is better: prefer cover, then cleanest title, then most pages
-      const existing = deduped[existingIdx];
-      const newHasCover = !!r._externalCoverUrl;
-      const oldHasCover = !!existing._externalCoverUrl;
-      const newTitleLen = r.title.length;
-      const oldTitleLen = existing.title.length;
-      const newPages = r.number_of_pages_median ?? 0;
-      const oldPages = existing.number_of_pages_median ?? 0;
-
-      // Prefer: has cover > shorter/cleaner title > more pages
-      const newBetter =
-        (newHasCover && !oldHasCover) ||
-        (newHasCover === oldHasCover && newTitleLen < oldTitleLen) ||
-        (newHasCover === oldHasCover && newTitleLen === oldTitleLen && newPages > oldPages);
-
-      if (newBetter) {
-        deduped[existingIdx] = r;
-      }
-    } else {
-      seenTitles.set(key, deduped.length);
-      deduped.push(r);
-    }
-  }
-
-  cacheSet(queryLower, deduped);
-  return deduped;
 }
 
 // ─── Book check (states, owned formats, effective covers) ───

@@ -55,7 +55,11 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
   const [seriesMatches, setSeriesMatches] = useState<SeriesMatch[]>([]);
   const [authorMatches, setAuthorMatches] = useState<AuthorMatch[]>([]);
   const [peopleResults, setPeopleResults] = useState<PersonResult[]>([]);
-  const [loading, setLoading] = useState(false);
+  // If we already have an initialQuery with 2+ chars, pre-seed loading so the
+  // "Type at least 2 characters" hint doesn't flash before the debounced effect
+  // fires. That momentary flash was the source of the "hit enter, search page
+  // says enter two or more characters" bug (the effect runs ~150ms later).
+  const [loading, setLoading] = useState(() => (initialQuery?.trim().length ?? 0) >= 2);
   const [searched, setSearched] = useState(false);
   const [sectionOrder, setSectionOrder] = useState<string[]>(["series", "authors", "books"]);
   const [navigating, setNavigating] = useState<string | null>(null);
@@ -106,10 +110,16 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           const localBooks: OLSearchResult[] = data.books ?? [];
           const extBooks: OLSearchResult[] = data.external ?? [];
 
-          // Merge local + external results (external already deduped server-side)
-          const merged = extBooks.length > 0
-            ? [...localBooks, ...extBooks]
-            : localBooks;
+          // Merge local + external. When local has zero or one result and
+          // external has matches, external goes FIRST — the user's search
+          // is clearly for something not (well-represented) in our DB, so
+          // we shouldn't bury the real match under 1-2 weak local matches.
+          let merged: OLSearchResult[];
+          if (extBooks.length > 0 && localBooks.length <= 1) {
+            merged = [...extBooks, ...localBooks];
+          } else {
+            merged = [...localBooks, ...extBooks];
+          }
 
           setResults(merged);
           setSeriesMatches(data.series ?? []);
@@ -487,7 +497,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         </div>
       )}
 
-      {!loading && !searched && (
+      {!loading && !searched && query.trim().length < 2 && (
         <p className="mt-8 text-center text-sm text-muted">
           Type at least 2 characters to search.
         </p>

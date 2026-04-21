@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { NoCover } from "@/components/no-cover";
+import { importFromISBNdbAndReturn } from "@/lib/actions/books";
 
 interface SearchBarProps {
   isLoggedIn: boolean;
@@ -39,12 +40,26 @@ interface AuthorMatch {
   bookCount: number;
 }
 
+/** ISBNdb fallback result — shown only when local returns nothing. */
+interface ExternalBookResult {
+  key: string;                       // "isbndb:<isbn>"
+  title: string;
+  author_name?: string[];
+  first_publish_year?: number;
+  isbn?: string[];
+  _externalCoverUrl?: string;
+  _isbn13?: string | null;
+  number_of_pages_median?: number;
+}
+
 export function SearchBar({ isLoggedIn }: SearchBarProps) {
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
   const [bookResults, setBookResults] = useState<LocalBookResult[]>([]);
   const [seriesMatches, setSeriesMatches] = useState<SeriesMatch[]>([]);
   const [authorMatches, setAuthorMatches] = useState<AuthorMatch[]>([]);
+  const [externalResults, setExternalResults] = useState<ExternalBookResult[]>([]);
+  const [importingKey, setImportingKey] = useState<string | null>(null);
   const [sectionOrder, setSectionOrder] = useState<string[]>(["books", "series", "authors"]);
   const [loading, setLoading] = useState(false);
   // Track animation state for enter/exit transitions
@@ -103,6 +118,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
       setBookResults([]);
       setSeriesMatches([]);
       setAuthorMatches([]);
+      setExternalResults([]);
     }, 250);
   }
 
@@ -112,6 +128,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
         setBookResults([]);
         setSeriesMatches([]);
         setAuthorMatches([]);
+        setExternalResults([]);
         setLoading(false);
         return;
       }
@@ -140,6 +157,10 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
           setBookResults(data.books ?? []);
           setSeriesMatches(data.series ?? []);
           setAuthorMatches(data.authors ?? []);
+          // External (ISBNdb) fallback — server only returns these when the
+          // strict-filtered local result set is empty. Keeps the dropdown
+          // fast in the common case (no network on type-ahead).
+          setExternalResults(data.external ?? []);
           setSectionOrder(data.sectionOrder ?? ["books", "series", "authors"]);
         }
         setLoading(false);
@@ -164,6 +185,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
       setBookResults([]);
       setSeriesMatches([]);
       setAuthorMatches([]);
+      setExternalResults([]);
       setLoading(false);
       return;
     }
@@ -174,9 +196,14 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (query.trim().length >= 2) {
+    // Read the live DOM value as a fallback — the iOS tmp-input focus trick
+    // (350ms) can swallow early keystrokes, leaving React state behind what's
+    // actually in the box. The input's real value is the source of truth.
+    const liveValue = inputRef.current?.value ?? "";
+    const q = (liveValue.length > query.length ? liveValue : query).trim();
+    if (q.length >= 2) {
       collapse();
-      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+      router.push(`/search?q=${encodeURIComponent(q)}`);
     }
   }
 
@@ -191,7 +218,11 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
     }
   }
 
-  const hasResults = seriesMatches.length > 0 || authorMatches.length > 0 || bookResults.length > 0;
+  const hasResults =
+    seriesMatches.length > 0 ||
+    authorMatches.length > 0 ||
+    bookResults.length > 0 ||
+    externalResults.length > 0;
   const queryReady = query.trim().length >= 2;
   // Show dropdown whenever query is long enough: skeleton while loading, results or "no results" after
   const showDropdown = queryReady;
@@ -310,7 +341,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                       setBookResults([]);
                       setSeriesMatches([]);
                       setAuthorMatches([]);
-                      setUserResults([]);
+                      setExternalResults([]);
                       inputRef.current?.focus();
                     }}
                     className="flex-shrink-0 text-muted hover:text-foreground transition-colors"
@@ -474,6 +505,77 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
 
                         return null;
                       })}
+
+                      {/* External (ISBNdb) results — only populated by the
+                          server when local strict-filter returned nothing,
+                          so these appear as the sole matches in the dropdown.
+                          Clicking imports the book, then navigates. */}
+                      {externalResults.length > 0 && (
+                        <>
+                          <div className="px-4 pt-2.5 pb-1 text-[10px] uppercase tracking-wider text-muted/70 font-medium">
+                            Not in our library yet
+                          </div>
+                          {externalResults.map((ext) => (
+                            <button
+                              key={`ext-${ext.key}`}
+                              type="button"
+                              disabled={importingKey === ext.key}
+                              onClick={async () => {
+                                if (importingKey) return;
+                                setImportingKey(ext.key);
+                                try {
+                                  const isbn = ext._isbn13 || ext.isbn?.[0] || "";
+                                  const bookId = await importFromISBNdbAndReturn({
+                                    isbn,
+                                    title: ext.title,
+                                    authors: ext.author_name ?? [],
+                                    coverUrl: ext._externalCoverUrl ?? null,
+                                    publicationYear: ext.first_publish_year ?? null,
+                                    pages: ext.number_of_pages_median ?? null,
+                                  });
+                                  if (bookId) {
+                                    collapse();
+                                    router.push(`/book/${bookId}`);
+                                  }
+                                } catch (err) {
+                                  console.warn("[search] ISBNdb import failed:", err);
+                                } finally {
+                                  setImportingKey(null);
+                                }
+                              }}
+                              className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-surface-alt transition-colors border-b border-border/50 last:border-0 disabled:opacity-60"
+                            >
+                              <div className="flex-shrink-0 w-10 h-[60px] rounded overflow-hidden bg-surface-alt">
+                                {ext._externalCoverUrl ? (
+                                  <img src={ext._externalCoverUrl} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <NoCover title={ext.title} className="w-full h-full" size="sm" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">{ext.title}</p>
+                                {(ext.author_name?.length ?? 0) > 0 && (
+                                  <p className="text-xs text-muted truncate">
+                                    {ext.author_name!.slice(0, 2).join(", ")}
+                                  </p>
+                                )}
+                                {ext.first_publish_year && (
+                                  <p className="text-xs text-muted/60">{ext.first_publish_year}</p>
+                                )}
+                              </div>
+                              <div className="flex-shrink-0">
+                                {importingKey === ext.key ? (
+                                  <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
+                                ) : (
+                                  <span className="text-[10px] font-medium text-neon-blue bg-neon-blue/10 px-2 py-0.5 rounded-full">
+                                    Add
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
                     </>
                   )}
 
