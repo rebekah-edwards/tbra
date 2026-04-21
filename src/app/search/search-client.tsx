@@ -107,6 +107,10 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
 
         if (res.ok) {
           const data = await res.json();
+          // Second stale-response check after json() parse — a newer
+          // request may have started while we were parsing. Prevents
+          // older-but-slower responses from overwriting newer results.
+          if (requestId !== searchIdRef.current) return;
           const localBooks: OLSearchResult[] = data.books ?? [];
           const extBooks: OLSearchResult[] = data.external ?? [];
 

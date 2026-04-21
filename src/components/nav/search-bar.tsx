@@ -154,12 +154,17 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
 
         if (res.ok) {
           const data = await res.json();
+          // Second stale-response check — json() is async and a newer
+          // request may have started while we were parsing. Without this
+          // guard, a slower request that resolves after a faster later
+          // one would overwrite the newer results.
+          if (requestId !== searchIdRef.current) return;
           setBookResults(data.books ?? []);
           setSeriesMatches(data.series ?? []);
           setAuthorMatches(data.authors ?? []);
-          // External (ISBNdb) fallback — server only returns these when the
-          // strict-filtered local result set is empty. Keeps the dropdown
-          // fast in the common case (no network on type-ahead).
+          // External (ISBNdb) fallback — server returns these when local
+          // has no strong match for the query. 5-min LRU cache inside the
+          // helper keeps repeat type-ahead fast.
           setExternalResults(data.external ?? []);
           setSectionOrder(data.sectionOrder ?? ["books", "series", "authors"]);
         }

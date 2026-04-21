@@ -40,7 +40,10 @@ export async function GET(request: NextRequest) {
   const qLower = trimmed.toLowerCase();
   const { discriminating } = tokenizeQuery(trimmed);
   const shouldRunPrefixSafetyNet = discriminating.length >= 1 && trimmed.length >= 4;
-  const prefixPattern = `${qLower}%`;
+  // Use `title LIKE ? COLLATE NOCASE` — NOT `LOWER(title) LIKE ?`.
+  // The LOWER() wrapper defeats the case-insensitive index
+  // (idx_books_title) and turns the query into a 13-SECOND full scan.
+  const prefixPattern = `${trimmed}%`;
 
   const [ftsResults, titlePrefixMatches, seriesResults, authorResults, user] = await Promise.all([
     searchBooksFTS(trimmed, 20),
@@ -48,7 +51,7 @@ export async function GET(request: NextRequest) {
       ? db.all<{ id: string }>(sql`
           SELECT id FROM books
           WHERE visibility = 'public' AND is_box_set = 0
-            AND LOWER(title) LIKE ${prefixPattern}
+            AND title LIKE ${prefixPattern} COLLATE NOCASE
           LIMIT 10
         `)
       : Promise.resolve([]),
@@ -232,14 +235,19 @@ export async function GET(request: NextRequest) {
     { type: "authors", score: bestAuthorScore },
   ].sort((a, b) => b.score - a.score).map((s) => s.type);
 
-  // ISBNdb fallback — ONLY when the strict-filter nav dropdown would
-  // otherwise show nothing. This keeps type-ahead fast in the common case
-  // (our DB has the book) and only pays the 200-500ms latency when the
-  // user is clearly searching for something we don't carry.
+  // ISBNdb fallback — fires when local doesn't have a STRONG match for
+  // the user's query (exact title or prefix). "The Boneyard" searching
+  // our DB returns "Bone Yard" / "The Bone Yard" as weak matches — the
+  // user probably wants "The Boneyard" (a real different book), so we
+  // should pull ISBNdb. The 5-min in-memory LRU cache inside
+  // fetchISBNdbFallback keeps repeat queries fast.
   let external: ISBNdbResult[] = [];
-  const localEmpty =
-    bookResults.length === 0 && filteredSeries.length === 0 && filteredAuthors.length === 0;
-  if (localEmpty && trimmed.length >= 3) {
+  const hasStrongLocalMatch = bookResults.some((b) => {
+    const t = b.title.toLowerCase();
+    const qt = trimmed.toLowerCase();
+    return t === qt || t.startsWith(qt + " ") || t.startsWith(qt + ":") || t.startsWith(qt + ",");
+  });
+  if (!hasStrongLocalMatch && trimmed.length >= 3) {
     try {
       external = await fetchISBNdbFallback(
         trimmed.toLowerCase(),

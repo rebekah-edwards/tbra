@@ -53,7 +53,10 @@ export async function GET(request: NextRequest) {
   // books into the pool.
   const { discriminating: queryDiscriminating } = tokenizeQuery(trimmed);
   const shouldRunPrefixSafetyNet = queryDiscriminating.length >= 1 && trimmed.length >= 4;
-  const prefixPattern = `${queryLower}%`;
+  // Use `title LIKE ? COLLATE NOCASE` — NOT `LOWER(title) LIKE ?`.
+  // The LOWER() wrapper defeats the case-insensitive index and turns
+  // the query into a 13-second full scan.
+  const prefixPattern = `${trimmed}%`;
 
   const [ftsResults, titlePrefixMatches, seriesResults, authorResults, user] = await Promise.all([
     searchBooksFTS(trimmed, 30),
@@ -61,7 +64,7 @@ export async function GET(request: NextRequest) {
       ? db.all<{ id: string }>(sql`
           SELECT id FROM books
           WHERE visibility = 'public' AND is_box_set = 0
-            AND LOWER(title) LIKE ${prefixPattern}
+            AND title LIKE ${prefixPattern} COLLATE NOCASE
           LIMIT 10
         `)
       : Promise.resolve([]),
