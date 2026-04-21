@@ -241,6 +241,12 @@ export async function GET(request: NextRequest) {
   // user probably wants "The Boneyard" (a real different book), so we
   // should pull ISBNdb. The 5-min in-memory LRU cache inside
   // fetchISBNdbFallback keeps repeat queries fast.
+  //
+  // Overall 2.5s ceiling for the nav dropdown — if ISBNdb is slow/hanging,
+  // return local results only rather than make the user stare at a blank
+  // dropdown. fetchISBNdbFallback itself has a 3s per-fetch timeout now,
+  // but that can stack if it does multiple calls (it doesn't currently,
+  // but this is belt-and-suspenders).
   let external: ISBNdbResult[] = [];
   const hasStrongLocalMatch = bookResults.some((b) => {
     const t = b.title.toLowerCase();
@@ -249,10 +255,10 @@ export async function GET(request: NextRequest) {
   });
   if (!hasStrongLocalMatch && trimmed.length >= 3) {
     try {
-      external = await fetchISBNdbFallback(
-        trimmed.toLowerCase(),
-        bookResults.map((b) => b.title),
-      );
+      external = await Promise.race([
+        fetchISBNdbFallback(trimmed.toLowerCase(), bookResults.map((b) => b.title)),
+        new Promise<ISBNdbResult[]>((resolve) => setTimeout(() => resolve([]), 2500)),
+      ]);
     } catch (err) {
       console.warn("[search] ISBNdb fallback failed:", err);
     }

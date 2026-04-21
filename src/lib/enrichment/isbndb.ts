@@ -25,7 +25,7 @@ export interface ISBNdbBook {
 
 let lastCallTime = 0;
 
-async function rateLimitedFetch(url: string): Promise<Response | null> {
+async function rateLimitedFetch(url: string, timeoutMs = 3000): Promise<Response | null> {
   const apiKey = process.env.ISBNDB_API_KEY;
   if (!apiKey) return null;
 
@@ -36,9 +36,14 @@ async function rateLimitedFetch(url: string): Promise<Response | null> {
   }
   lastCallTime = Date.now();
 
+  // Hard timeout — ISBNdb has had multi-second hangs. Without this the
+  // nav dropdown will wait forever.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       headers: { Authorization: apiKey },
+      signal: controller.signal,
     });
     if (!res.ok) {
       if (res.status === 429) console.warn("[isbndb] Rate limited");
@@ -47,6 +52,8 @@ async function rateLimitedFetch(url: string): Promise<Response | null> {
     return res;
   } catch {
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
