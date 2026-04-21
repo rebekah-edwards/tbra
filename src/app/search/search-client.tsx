@@ -110,16 +110,32 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           const localBooks: OLSearchResult[] = data.books ?? [];
           const extBooks: OLSearchResult[] = data.external ?? [];
 
-          // Merge local + external. When local has zero or one result and
-          // external has matches, external goes FIRST — the user's search
-          // is clearly for something not (well-represented) in our DB, so
-          // we shouldn't bury the real match under 1-2 weak local matches.
-          let merged: OLSearchResult[];
-          if (extBooks.length > 0 && localBooks.length <= 1) {
-            merged = [...extBooks, ...localBooks];
-          } else {
-            merged = [...localBooks, ...extBooks];
-          }
+          // Merge local + external in a single ranked list. Exact / prefix
+          // title matches win regardless of source — "The Alchemist" by
+          // Paulo Coelho outranks "Alchemist Academy" whether it comes
+          // from local DB or ISBNdb.
+          const qLowerMerge = query.trim().toLowerCase();
+          const exactnessScore = (title: string) => {
+            const t = title.toLowerCase();
+            if (t === qLowerMerge) return 3;
+            if (t.startsWith(qLowerMerge + " ") || t.startsWith(qLowerMerge + ":") || t.startsWith(qLowerMerge + ",")) return 2;
+            if (t.startsWith(qLowerMerge)) return 1.5;
+            if (t.includes(qLowerMerge)) return 1;
+            return 0;
+          };
+          // Stable merge: preserve original relative order within same score.
+          // Annotate with source so ties can fall back to "local before external".
+          type Annotated = { b: OLSearchResult; score: number; sourceRank: number; idx: number };
+          const annotated: Annotated[] = [
+            ...localBooks.map((b, idx) => ({ b, score: exactnessScore(b.title), sourceRank: 0, idx })),
+            ...extBooks.map((b, idx) => ({ b, score: exactnessScore(b.title), sourceRank: 1, idx: idx + localBooks.length })),
+          ];
+          annotated.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            if (a.sourceRank !== b.sourceRank) return a.sourceRank - b.sourceRank;
+            return a.idx - b.idx;
+          });
+          const merged = annotated.map((a) => a.b);
 
           setResults(merged);
           setSeriesMatches(data.series ?? []);

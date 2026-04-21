@@ -24,13 +24,38 @@ export async function GET(request: NextRequest) {
     .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
     .replace(/[\u201C\u201D\u201E\u201F]/g, '"');
 
-  // Run all searches in parallel
-  const [ftsResults, seriesResults, authorResults, user] = await Promise.all([
+  // Run all searches in parallel.
+  //
+  // The `titlePrefixMatches` query is a belt-and-suspenders guarantee that
+  // if a book's title exactly matches or starts with the user's query, it
+  // lands in the candidate pool — even if Meilisearch's relevance ranking
+  // didn't happen to put it in the top 20. This was how "The Alchemist"
+  // by Paulo Coelho was getting buried: Meilisearch was returning 20
+  // "Fullmetal Alchemist" / "Alchemist Academy" / etc. entries and the
+  // actual exact-title match never made it in.
+  const qLower = trimmed.toLowerCase();
+  const prefixPattern = `${qLower}%`;
+  const [ftsResults, titlePrefixMatches, seriesResults, authorResults, user] = await Promise.all([
     searchBooksFTS(trimmed, 20),
-    searchSeries(trimmed.toLowerCase()),
-    searchAuthors(trimmed.toLowerCase()),
+    db.all<{ id: string }>(sql`
+      SELECT id FROM books
+      WHERE visibility = 'public' AND is_box_set = 0
+        AND LOWER(title) LIKE ${prefixPattern}
+      LIMIT 10
+    `),
+    searchSeries(qLower),
+    searchAuthors(qLower),
     getCurrentUser(),
   ]);
+
+  // Merge prefix-match IDs into ftsResults (preserving FTS rank order,
+  // prepending anything FTS missed). The downstream exactness sort will
+  // reorder these correctly — this just guarantees they're in the pool.
+  const ftsIdSet = new Set(ftsResults.map((r) => r.bookId));
+  const extraPrefix = titlePrefixMatches
+    .filter((r) => !ftsIdSet.has(r.id))
+    .map((r, i) => ({ bookId: r.id, rank: -(1000 + i) })); // high (low-number) rank so they stay visible
+  const mergedResults = [...extraPrefix, ...ftsResults];
 
   // Hydrate FTS results with book data + authors in batch
   let bookResults: {
@@ -43,8 +68,8 @@ export async function GET(request: NextRequest) {
     state: string | null;
   }[] = [];
 
-  if (ftsResults.length > 0) {
-    const bookIds = ftsResults.map((r) => r.bookId);
+  if (mergedResults.length > 0) {
+    const bookIds = mergedResults.map((r) => r.bookId);
 
     // Batch fetch book data
     const bookRows = await db
@@ -98,7 +123,7 @@ export async function GET(request: NextRequest) {
     }
 
     const seen = new Set<string>();
-    for (const ftsRow of ftsResults) {
+    for (const ftsRow of mergedResults) {
       const book = bookMap.get(ftsRow.bookId);
       if (!book) continue;
 
@@ -176,7 +201,6 @@ export async function GET(request: NextRequest) {
   // Compute section order so the nav dropdown can surface whatever the
   // user most likely wanted first. An exact-title / prefix-title book
   // match beats a fuzzy series/author match on "attribute relevance".
-  const qLower = trimmed.toLowerCase();
   const relevanceScore = (s: string) => {
     const lower = (s ?? "").toLowerCase();
     if (lower === qLower) return 100;

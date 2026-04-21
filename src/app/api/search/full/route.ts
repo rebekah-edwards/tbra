@@ -42,8 +42,21 @@ export async function GET(request: NextRequest) {
   // Run all searches + auth check in parallel.
   // User/people search is intentionally NOT included here — reader discovery
   // lives on the dedicated /people page instead of in book search results.
-  const [ftsResults, seriesResults, authorResults, user] = await Promise.all([
+  //
+  // titlePrefixMatches is a safety net: guarantees that if a book's title
+  // exactly matches or starts with the query, it lands in the candidate
+  // pool — even if Meilisearch's top 30 didn't happen to include it.
+  // Fixes the "The Alchemist" (Paulo Coelho) case where Fullmetal Alchemist
+  // / Alchemist Academy / etc. flooded the pool.
+  const prefixPattern = `${queryLower}%`;
+  const [ftsResults, titlePrefixMatches, seriesResults, authorResults, user] = await Promise.all([
     searchBooksFTS(trimmed, 30),
+    db.all<{ id: string }>(sql`
+      SELECT id FROM books
+      WHERE visibility = 'public' AND is_box_set = 0
+        AND LOWER(title) LIKE ${prefixPattern}
+      LIMIT 10
+    `),
     useMeilisearch
       ? searchSeriesViaMeilisearch(trimmed)
       : searchSeriesCandidates(queryLower).then((c) => scoreFuzzyMatches(c, trimmed, 3)),
@@ -53,9 +66,17 @@ export async function GET(request: NextRequest) {
     getCurrentUser(),
   ]);
 
+  // Merge prefix-match IDs into ftsResults (downstream exactness sort will
+  // reorder them correctly — this just guarantees they're in the pool).
+  const ftsIdSet = new Set(ftsResults.map((r) => r.bookId));
+  const extraPrefix = titlePrefixMatches
+    .filter((r) => !ftsIdSet.has(r.id))
+    .map((r, i) => ({ bookId: r.id, rank: -(1000 + i) }));
+  const mergedResults = [...extraPrefix, ...ftsResults];
+
   // Hydrate all results in parallel
   const [bookResults, enrichedSeries, enrichedAuthors] = await Promise.all([
-    hydrateBooks(ftsResults, showBoxSets, user?.userId ?? null),
+    hydrateBooks(mergedResults, showBoxSets, user?.userId ?? null),
     hydrateSeries(seriesResults, user?.userId ?? null),
     hydrateAuthors(authorResults),
   ]);
