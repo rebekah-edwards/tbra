@@ -46,17 +46,25 @@ export async function GET(request: NextRequest) {
   // titlePrefixMatches is a safety net: guarantees that if a book's title
   // exactly matches or starts with the query, it lands in the candidate
   // pool — even if Meilisearch's top 30 didn't happen to include it.
-  // Fixes the "The Alchemist" (Paulo Coelho) case where Fullmetal Alchemist
-  // / Alchemist Academy / etc. flooded the pool.
+  //
+  // Only fires when the query has at least one discriminating (non-stopword)
+  // token AND is ≥4 chars. Without this gate, a transient query like "the"
+  // while the user is still typing "the alchemist" pulls 10 random "The X"
+  // books into the pool.
+  const { discriminating: queryDiscriminating } = tokenizeQuery(trimmed);
+  const shouldRunPrefixSafetyNet = queryDiscriminating.length >= 1 && trimmed.length >= 4;
   const prefixPattern = `${queryLower}%`;
+
   const [ftsResults, titlePrefixMatches, seriesResults, authorResults, user] = await Promise.all([
     searchBooksFTS(trimmed, 30),
-    db.all<{ id: string }>(sql`
-      SELECT id FROM books
-      WHERE visibility = 'public' AND is_box_set = 0
-        AND LOWER(title) LIKE ${prefixPattern}
-      LIMIT 10
-    `),
+    shouldRunPrefixSafetyNet
+      ? db.all<{ id: string }>(sql`
+          SELECT id FROM books
+          WHERE visibility = 'public' AND is_box_set = 0
+            AND LOWER(title) LIKE ${prefixPattern}
+          LIMIT 10
+        `)
+      : Promise.resolve([]),
     useMeilisearch
       ? searchSeriesViaMeilisearch(trimmed)
       : searchSeriesCandidates(queryLower).then((c) => scoreFuzzyMatches(c, trimmed, 3)),
@@ -84,7 +92,8 @@ export async function GET(request: NextRequest) {
   // ISBNdb fallback: trigger if local results are sparse OR if none of the local
   // results are a strong title match (e.g. searching "the amalfi curse" returns
   // books about curses generally but not the specific book)
-  const { discriminating: queryWords } = tokenizeQuery(trimmed);
+  // (queryDiscriminating already computed above for the prefix-safety-net gate.)
+  const queryWords = queryDiscriminating;
 
   // Enforce the strict ALL-tokens rule on local book results. A search for
   // "god of malice" should not surface "Music and Malice in Hurricane Town".

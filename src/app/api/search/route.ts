@@ -29,20 +29,29 @@ export async function GET(request: NextRequest) {
   // The `titlePrefixMatches` query is a belt-and-suspenders guarantee that
   // if a book's title exactly matches or starts with the user's query, it
   // lands in the candidate pool — even if Meilisearch's relevance ranking
-  // didn't happen to put it in the top 20. This was how "The Alchemist"
-  // by Paulo Coelho was getting buried: Meilisearch was returning 20
-  // "Fullmetal Alchemist" / "Alchemist Academy" / etc. entries and the
-  // actual exact-title match never made it in.
+  // didn't happen to put it in the top 20. Fixes the "The Alchemist"
+  // (Paulo Coelho) case where Fullmetal Alchemist / Alchemist Academy /
+  // etc. flooded Meilisearch's top 20 and the exact match never made it in.
+  //
+  // BUT only fires when the query has at least one discriminating (non-
+  // stopword) token AND is ≥4 chars. Otherwise a query like "the" alone
+  // pulls 10 random "The X" books into the pool, which the user sees
+  // briefly while they're still typing "the alchemist".
   const qLower = trimmed.toLowerCase();
+  const { discriminating } = tokenizeQuery(trimmed);
+  const shouldRunPrefixSafetyNet = discriminating.length >= 1 && trimmed.length >= 4;
   const prefixPattern = `${qLower}%`;
+
   const [ftsResults, titlePrefixMatches, seriesResults, authorResults, user] = await Promise.all([
     searchBooksFTS(trimmed, 20),
-    db.all<{ id: string }>(sql`
-      SELECT id FROM books
-      WHERE visibility = 'public' AND is_box_set = 0
-        AND LOWER(title) LIKE ${prefixPattern}
-      LIMIT 10
-    `),
+    shouldRunPrefixSafetyNet
+      ? db.all<{ id: string }>(sql`
+          SELECT id FROM books
+          WHERE visibility = 'public' AND is_box_set = 0
+            AND LOWER(title) LIKE ${prefixPattern}
+          LIMIT 10
+        `)
+      : Promise.resolve([]),
     searchSeries(qLower),
     searchAuthors(qLower),
     getCurrentUser(),
@@ -106,7 +115,7 @@ export async function GET(request: NextRequest) {
     // token (i.e. every non-stopword) in title + authors + series. This is
     // what stops a search for "god of malice" from showing "Music and
     // Malice in Hurricane Town" just because it matches "malice".
-    const { discriminating } = tokenizeQuery(trimmed);
+    // (`discriminating` is already computed above for the prefix-safety-net gate.)
     const seriesByBookId = new Map<string, string[]>();
     if (discriminating.length >= 2) {
       const seriesRows = await db
