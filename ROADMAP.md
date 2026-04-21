@@ -1,21 +1,96 @@
 # tbr*a Beta Launch Roadmap
 
-## Deferred / Backlog
+## ⭐ Distribution & Mobile (biggest unshipped category)
 
-Items we've acknowledged but haven't scheduled yet. Promote to a round when ready.
+All blocked on creating developer accounts. PWA ships today as the bridge.
 
-- **Resume fix-slug-collisions** — 105/431 pairs patched, **326 remaining**. Chunked run killed because Turso throughput degraded. Resume with `--chunk=3 --pause=250 --cooldown=90` during a low-traffic window. ~3 hours wall time. See `reference_slug_collisions.md`.
-- **Slug-collision systemic prevention** — modify the manual-book-add flow in production to check for an existing book by slug BEFORE creating a new UUID. Attaches the user state to the existing book instead of spawning a dupe. Stops the Midnight-pattern at the source.
-- **614 unclassified multi-series pairs** — manual review from the 2026-04-20 audit. Mix of legitimate (book has multiple contributors → multiple series) and actually-wrong assignments. See `reports/multi-series-audit-*.json`.
-- **Invite-a-friend buddy read** — "Buddy Read" button on the reading-state dropdown exists and navigates to `/buddy-reads/new?bookId=X`, but there's no explicit "pick a specific friend → DM them the invite" flow yet. Design needed.
-- **Cover "coming soon" placeholder sweep** — user spotted a new variant that's NOT the ISBNdb or Google Books placeholder we already handle. Need to fingerprint it (size + SHA256), add to `PLACEHOLDERS` in `src/lib/cover-placeholders.ts`. Both the enrichment write-time guard and `nightly-placeholder-clear` pick it up automatically.
-- **Reviews summary visualization** — StoryGraph-style reviews overview at the top of a book's reviews list: star histogram, average, % Did-Not-Finish, written-reviews filter, latest/oldest sort. Reference screenshot captured 2026-04-20. Not a functional blocker; design polish when review volume warrants it.
-- **Proposed edits flow — tightening** — the review wizard's content-details step asks the user for every category. Add a "these look correct as-is" confirmation path so a reviewer isn't forced to re-enter ratings they already agree with. Tighten the submit → `/admin/corrections` queue → apply flow.
-- **Search improvements** — "Invisible Woman" case: Meilisearch relevance surfaces the wrong entries first. Needs a pass similar to the ranking rule tuning we did for "The Giver" in Round 11. Use Invisible Woman as the canonical test case.
-- **Bottom-of-page padding on mobile — GLOBAL** — profile page fix shipped, but every other page still runs content too close to the bottom nav. Audit `src/app/**/page.tsx` + the root layout — one shared `pb-24 lg:pb-8` wrapper rather than per-page copies.
-- **sync-push hardening** — PID lockfile shipped (prevents concurrent runs). STILL NEEDED: per-query timeout (~30s), stall detector (no progress in N min → abort + alert), stdout heartbeat so a stuck state is obvious. Protects against a single legitimate run hanging on a slow Turso write even with the lockfile in place.
-- **Grok cost audit** — ~9,611 enrichment retries wasted on the `opts` ReferenceError bug between 2026-04-02 and 2026-04-20. Estimated $50-$200 in Grok spend. Verify against the xAI console; decide whether it's worth disputing.
-- **Orphan scheduled task cleanup** — `~/.claude/scheduled-tasks/nightly-cover-rescue/SKILL.md` — renamed to `nightly-placeholder-clear` on 2026-04-17 but the old directory wasn't removed. Per tbra/CLAUDE.md rule "Delete old tasks entirely rather than disabling them." Spawned as a side-chip earlier but still pending.
+### App Store (iOS)
+- **Apple Developer account** ($99/yr) — not yet created
+- Xcode packaging — choose Capacitor/Expo or native wrapper
+- App Store Connect setup + listing copy/screenshots
+- Icon variants + splash screens for all device sizes
+- TestFlight beta workflow
+- Privacy nutrition label + App Store review submission
+- Push notifications via APNS (separate from current web push)
+
+### Google Play Store (Android)
+- **Google Play Console account** ($25 one-time) — not yet created
+- AAB packaging (Trusted Web Activity or Capacitor)
+- Play listing copy/screenshots
+- Internal → closed → production testing tracks
+- Push notifications via FCM
+
+### Social login
+- **Google Sign-In** — OAuth credentials in Google Cloud Console
+- **Apple Sign-In** — same gate as App Store (Apple Developer account)
+- `auth/` flow edits to add social buttons + provider-linking to existing email accounts
+
+---
+
+## Premium & Revenue (partially shipped)
+
+### Shipped
+- Premium gating infrastructure (`isPremium()`, `PremiumGate`, `/upgrade`)
+- Custom shelves (create/edit/follow/share)
+- Full data exports (CSV free, JSON premium)
+- ARC review gates
+- TBR Notes
+
+### Open
+- **Payment integration** — `/upgrade` page exists but no Stripe/billing wired up. Decide provider + billing model (monthly? annual? lifetime?).
+- **Reading challenges with discount codes** — advertiser-sponsored, non-data-targeted. Product-vision piece not yet built.
+
+---
+
+## Data & External APIs
+
+### Blocked on credentials
+- **Amazon Creators API integration** — replaces OpenLibrary as primary source. `scripts/audit-series.ts` + `data/series-missing-book1.md` (1,302 series with missing book 1) ready to re-run once access granted.
+
+### In progress
+- **Finish slug-collision migration** — down to **39 groups / 91 books** (from 431 pairs). Remaining cases need tailored handling for UNIQUE-constraint edge cases (books sharing `open_library_key` / `isbn_13`). See `reference_slug_collisions.md`.
+- **Cover review queue** — `/admin/covers` accumulating (74 added 2026-04-21). Ongoing manual work, no blocker.
+
+### Done / retiring from this list
+- ~~**326 slug collisions remaining**~~ — overnight resume cleared 287 pairs, down to 39 groups
+- ~~**Slug-collision systemic prevention**~~ ✅ — manual-add guard shipped 2026-04-20
+- ~~**614 unclassified multi-series pairs**~~ ✅ — aggressive normalizer + 13 curated merges + per-pair walk done; remaining pairs are legitimately cross-series
+- ~~**Search improvements (Invisible Woman)**~~ ✅ — strict ALL-tokens filter + ISBNdb nav fallback shipped 2026-04-20
+- ~~**Bottom-of-page padding — GLOBAL**~~ ✅ — root layout `pb-32` shipped
+- ~~**sync-push hardening**~~ ✅ — PID lockfile + per-query timeout + stall detector shipped
+- ~~**Cover "coming soon" placeholder sweep**~~ ✅ — ISBNdb v2 fingerprint added; `nightly-placeholder-clear` picks it up
+- ~~**Grok cost audit**~~ — own fault, won't dispute
+
+---
+
+## UX & Feature polish
+
+### Open
+- **Reviews summary visualization** — StoryGraph-style histogram/average/% DNF/sort controls at top of book reviews list. Reference screenshot captured 2026-04-20. Not a blocker — design polish when review volume warrants.
+- **Proposed edits flow — "confirm as-is" toggle** — review wizard content-details step should let reviewer confirm categories they already agree with instead of re-entering all ratings. Requires wizard step-advance callback plumbing.
+- **Invite-a-friend buddy read** — "Buddy Read" button exists + routes to `/buddy-reads/new?bookId=X`; "pick specific friend → DM invite" flow not built.
+- **Mobile animations refinement** — page transitions, interactive element polish
+- **Corrections triage pipeline** — formal admin review for beta tester content detail submissions (currently ad-hoc via issue reports)
+- **User submission process for content details** — let non-admin users contribute content ratings
+- **Pacing-based recommendations** — aggregation + display shipped; filter on Discover + wire into recommendation scoring still pending
+- **Comic/manga series parent pages** — group high-volume series into season/arc/volume sub-series with parent linking
+
+### Tabled 2026-04-20 (need to pick up later)
+- **Library reading formats report** — user punted this to "discuss live"
+- **Search relevance post-ship review** — after a week of real traffic, verify strict filter isn't dropping legitimate fuzzy matches; tune safety valve if needed
+
+---
+
+## Infrastructure / housekeeping
+
+- **4 new overnight reports** (2026-04-21): Safe Place to Die details, Legend missing Champion (#3), Legend pub dates inaccurate, On the Edge of Gone title caps + description truncation
+- **Orphan scheduled task cleanup** — remove `~/.claude/scheduled-tasks/nightly-cover-rescue/` directory (renamed to `nightly-placeholder-clear` on 2026-04-17)
+
+---
+
+## Buddy Reads expansion (later phase)
+
+Current buddy-reads is shipped + functional. Later expansion: multi-person groups, public discussion boards, reading-pace matching, challenge tie-ins.
 
 ## Round 8 (2026-04-09) ✅ — Search overhaul + report triage + data integrity
 

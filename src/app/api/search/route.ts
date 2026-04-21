@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { searchBooksFTS } from "@/lib/search/search-index";
 import { tokenizeQuery, matchesAllDiscriminatingTokens } from "@/lib/search/relevance";
 import { fetchISBNdbFallback, type ISBNdbResult } from "@/lib/search/isbndb-fallback";
+import { isJunkTitle } from "@/lib/openlibrary";
 
 /**
  * Unified search endpoint for the nav search bar.
@@ -100,6 +101,10 @@ export async function GET(request: NextRequest) {
     for (const ftsRow of ftsResults) {
       const book = bookMap.get(ftsRow.bookId);
       if (!book) continue;
+
+      // Drop study guides, box sets, Sneak Peek previews, ClassicNotes, etc.
+      if (isJunkTitle(book.title)) continue;
+
       const authorNames = authorsByBook.get(book.id) ?? [];
 
       // Strict all-tokens check (multi-word queries only)
@@ -120,6 +125,22 @@ export async function GET(request: NextRequest) {
         state: null,
       });
     }
+
+    // Exact-phrase ranking boost — when query includes stopwords ("The
+    // Alchemist"), surface results whose title exactly matches or starts
+    // with the FULL query before ones that only match the discriminating
+    // token ("Infinity Alchemist", "Alchemist Chronicles", etc.).
+    // Stable sort by match quality; ties fall back to FTS rank order.
+    const qLowerForRank = trimmed.toLowerCase();
+    function exactnessScore(title: string): number {
+      const t = title.toLowerCase();
+      if (t === qLowerForRank) return 3;
+      if (t.startsWith(qLowerForRank + " ") || t.startsWith(qLowerForRank + ":") || t.startsWith(qLowerForRank + ",")) return 2;
+      if (t.startsWith(qLowerForRank)) return 1.5;
+      if (t.includes(qLowerForRank)) return 1;
+      return 0;
+    }
+    bookResults.sort((a, b) => exactnessScore(b.title) - exactnessScore(a.title));
 
     // Enrich with reading states if logged in
     if (user && bookResults.length > 0) {

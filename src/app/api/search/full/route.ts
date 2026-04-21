@@ -104,6 +104,22 @@ export async function GET(request: NextRequest) {
     finalBookResults = finalBookResults.slice(0, 3);
   }
 
+  // Exact-phrase ranking boost — when the query includes stopwords ("The
+  // Alchemist" by Paulo Coelho), surface results whose title exactly matches
+  // or starts with the FULL query BEFORE ones that only match a single
+  // discriminating token ("Infinity Alchemist", "Alchemist Chronicles",
+  // etc.). Stable-ish sort: equal-exactness ties keep their upstream order.
+  function exactnessScore(title: string): number {
+    const t = title.toLowerCase();
+    if (t === queryLower) return 3;
+    if (t.startsWith(queryLower + " ") || t.startsWith(queryLower + ":") || t.startsWith(queryLower + ",")) return 2;
+    if (t.startsWith(queryLower)) return 1.5;
+    if (t.includes(queryLower)) return 1;
+    return 0;
+  }
+  finalBookResults = [...finalBookResults].sort((a, b) => exactnessScore(b.title) - exactnessScore(a.title));
+  externalResults = [...externalResults].sort((a, b) => exactnessScore(b.title) - exactnessScore(a.title));
+
   // Filter series + author results the same way
   const filteredSeries = queryWords.length >= 2
     ? enrichedSeries.filter((s) => matchesAllDiscriminatingTokens(s.name, queryWords))

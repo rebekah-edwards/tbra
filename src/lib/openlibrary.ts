@@ -134,6 +134,8 @@ const JUNK_TITLE_PATTERNS = [
   /\bstudy\s*guide\b/i,
   /\bcliffs?\s*notes\b/i,
   /\bspark\s*notes\b/i,
+  /\bclassic\s*notes\b/i,                  // GradeSaver "ClassicNotes on X by Y"
+  /\bgradesaver\b/i,                       // GradeSaver-branded content generally
   /\bbook\s*analysis\b/i,
   /\bdetailed\s*summary\b/i,
   /\bquick\s*read\b/i,
@@ -147,6 +149,8 @@ const JUNK_TITLE_PATTERNS = [
   /\blesson\s*plans?\b/i,
   /^biography\s+of\b/i,
   /\[paperback\]/i,
+  /\bsneak\s*peek\b/i,                     // "Sneak Peek for X" preview excerpts
+  /\bedited\s+with\s+an?\s+introduction\b/i, // Academic editions: "X; Edited With an Introduction and Notes by Y"
   // Box sets / collections / omnibus editions
   /\bbox\s*set\b/i,
   /\bboxed\s*set\b/i,
