@@ -144,6 +144,41 @@ Local SQLite (`data/tbra.db`) and production Turso (`tbra-web-app-thebasedreader
 - `nightly-report-triage` (2:27 AM PT) — resolves user reports.
 - `nightly-book-cleanup` (3:24 AM PT) — junk title cleanup.
 
+## Turso script safety (MANDATORY — added 2026-04-22)
+
+**Any script that writes to production Turso must be guarded.** The history is that every unguarded script is one hung `await remote.execute()` away from saturating Turso connections and degrading the live site for hours (see 2026-04-20 postmortem + 2026-04-22 `push-content-ratings-to-turso.ts` hung 7h incident).
+
+**Three layers enforce this:**
+
+1. **`scripts/lib/turso-guard.ts`** — THE primary defense. Import `createGuardedTurso` and use it instead of `createClient` from `@libsql/client`. It provides:
+   - Per-query timeout (default 30s — a hung query rejects instead of blocking forever)
+   - Wall-clock self-abort (script declares its ceiling, process.exit(2) if exceeded)
+   - PID lockfile at `/tmp/tbra-<name>.lock` (refuses to run if another copy holds it)
+   - Auto-cleanup on SIGINT/SIGTERM/uncaughtException
+   - Optional `longRunning: true` for scripts >watchdog threshold — touches `/tmp/tbra-longrun-<pid>` so the watchdog skips it
+
+2. **Launchd watchdog** (`~/Library/LaunchAgents/com.tbra.watchdog.plist` → `scripts/lib/watchdog.sh`) — runs every 5 minutes, kills any `tsx` process under `/Users/clankeredwards/claude/tbra/` older than 60 min (env `TBRA_WATCHDOG_MAX_AGE_MIN` overrides). This is the floor: even if a new script skips the guard, the watchdog catches it. Log at `/tmp/tbra-watchdog.log`.
+
+3. **CLAUDE.md rule (this section).** Every new Turso-writing script must use the guard. Agents reviewing existing code should retrofit any un-guarded script they touch.
+
+**Authoring a new Turso-writing script — minimal template:**
+```typescript
+import { createGuardedTurso } from './lib/turso-guard';
+
+(async () => {
+  const { remote } = await createGuardedTurso({
+    name: 'my-script-name',          // lowercase-dashes, used for lockfile
+    maxRuntimeMs: 20 * 60 * 1000,    // pick based on realistic p95 + 2×
+    queryTimeoutMs: 30_000,
+    longRunning: false,              // true if ceiling > 60min
+  });
+  // use remote.execute({ sql, args }) normally
+  process.exit(0);
+})();
+```
+
+**Do NOT**: call `createClient` directly from `@libsql/client` in scripts/. The guard wraps it. Reading or exploratory `/*` queries via the raw client in one-off investigations are OK; anything that writes, or loops, or runs in a cron — use the guard.
+
 ## Watch Out For
 - **NEVER rewrite, reset, or bulk-modify the production database without explicit instruction from the user.** The book database (62MB, thousands of curated entries) has been cleaned, deduplicated, and enriched over many iterations. Schema migrations are fine; mass data operations are not.
 - **ALWAYS take a screenshot to verify visual changes before telling the user it's done.** Never confirm a UI change is complete without visually confirming it yourself via screenshot. Zoom in on the affected area if the change is subtle.

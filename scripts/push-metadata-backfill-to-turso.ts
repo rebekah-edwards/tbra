@@ -24,9 +24,9 @@
  *     npx tsx scripts/push-metadata-backfill-to-turso.ts [--dry-run] [--limit=N]
  */
 
-import { createClient } from "@libsql/client";
 import Database from "better-sqlite3";
 import path from "path";
+import { createGuardedTurso } from "./lib/turso-guard";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const LIMIT_ARG = process.argv.find((a) => a.startsWith("--limit="));
@@ -47,12 +47,15 @@ const FIELDS = [
 type Field = (typeof FIELDS)[number];
 
 async function main() {
-  const tursoUrl = process.env.TURSO_DATABASE_URL;
-  const tursoToken = process.env.TURSO_AUTH_TOKEN;
-  if (!tursoUrl || !tursoToken) {
-    console.error("ERROR: TURSO_DATABASE_URL and TURSO_AUTH_TOKEN must be set");
-    process.exit(1);
-  }
+  // Guarded Turso client: 60min wall-clock, 30s per-query, marked longRunning
+  // because the first catch-up pass can touch ~10K books. Nightly metadata
+  // backfill passes are much shorter; 60min is generous headroom.
+  const { remote: turso } = await createGuardedTurso({
+    name: "push-metadata-backfill",
+    maxRuntimeMs: 60 * 60 * 1000,
+    queryTimeoutMs: 30_000,
+    longRunning: true,
+  });
 
   // ── Connect to local SQLite ──
   const localDbPath = path.resolve(
@@ -61,10 +64,7 @@ async function main() {
   );
   const local = new Database(localDbPath, { readonly: true });
   console.log(`✓ Local SQLite: ${localDbPath}`);
-
-  // ── Connect to Turso ──
-  const turso = createClient({ url: tursoUrl, authToken: tursoToken });
-  console.log(`✓ Turso: ${tursoUrl}`);
+  console.log(`✓ Turso: ${process.env.TURSO_DATABASE_URL}`);
 
   // ── Fetch the list of Turso books needing ANY of these fields ──
   console.log("\nFetching Turso books with missing metadata…");

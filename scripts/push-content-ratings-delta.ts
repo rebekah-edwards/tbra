@@ -4,18 +4,17 @@
  *
  * Complements push-content-ratings-to-turso.ts (which is time-windowed) for
  * catch-up runs after a long sync lag.
+ *
+ * Guarded by scripts/lib/turso-guard: 30min wall-clock ceiling, 30s per-query
+ * timeout, lockfile at /tmp/tbra-push-content-ratings-delta.lock.
  */
 
 require('dotenv').config({ path: '.env.vercel.local' });
-const { createClient } = require('@libsql/client');
 const Database = require('better-sqlite3');
 const path = require('path');
+import { createGuardedTurso } from './lib/turso-guard';
 
-const remote = createClient({
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
-const local = new Database(path.join(process.cwd(), 'data', 'tbra.db'));
+let remote!: Awaited<ReturnType<typeof createGuardedTurso>>['remote'];
 
 async function fetchSet(sql: string): Promise<Set<string>> {
   const set = new Set<string>();
@@ -32,6 +31,15 @@ async function fetchSet(sql: string): Promise<Set<string>> {
 }
 
 (async () => {
+  const guard = await createGuardedTurso({
+    name: 'push-content-ratings-delta',
+    maxRuntimeMs: 30 * 60 * 1000,   // 30 min ceiling
+    queryTimeoutMs: 30_000,
+    longRunning: false,             // 30min < watchdog default 60min
+  });
+  remote = guard.remote;
+  const local = new Database(path.join(process.cwd(), 'data', 'tbra.db'));
+
   console.log('→ Diff-based book_category_ratings push\n');
 
   console.log('Fetching Turso rating IDs...');

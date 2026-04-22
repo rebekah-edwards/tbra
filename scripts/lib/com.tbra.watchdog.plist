@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.tbra.watchdog</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/clankeredwards/claude/tbra/scripts/lib/watchdog.sh</string>
+    </array>
+
+    <!-- Run every 5 minutes -->
+    <key>StartInterval</key>
+    <integer>300</integer>
+
+    <!-- Also run once at load -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- PATH so `date`, `ps`, `kill`, `awk` resolve -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <!-- Log launchd-level errors separately from the watchdog's own log.
+         watchdog.sh writes to /tmp/tbra-watchdog.log; these capture the
+         tiny footprint of launchd spawning it. -->
+    <key>StandardOutPath</key>
+    <string>/tmp/tbra-watchdog-launchd.out</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/tbra-watchdog-launchd.err</string>
+</dict>
+</plist>

@@ -10,15 +10,9 @@
  */
 
 require('dotenv').config({ path: '.env.vercel.local' });
-const { createClient } = require('@libsql/client');
 const Database = require('better-sqlite3');
 const path = require('path');
-
-const remote = createClient({
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
-const local = new Database(path.join(process.cwd(), 'data', 'tbra.db'));
+import { createGuardedTurso } from './lib/turso-guard';
 
 const UPDATE_FIELDS = [
   'summary', 'description', 'publication_year', 'pages', 'publisher',
@@ -30,6 +24,13 @@ const UPDATE_FIELDS = [
 const BATCH_SIZE = 100;
 
 (async () => {
+  const { remote } = await createGuardedTurso({
+    name: 'push-book-updates-only',
+    maxRuntimeMs: 20 * 60 * 1000,    // 20min — this is supposed to be a fast "just 5b" push
+    queryTimeoutMs: 30_000,
+  });
+  const local = new Database(path.join(process.cwd(), 'data', 'tbra.db'));
+
   console.log('→ Pushing book metadata updates (step 5b only)\n');
 
   // Build liveUpdated map (books.id → updated_at on Turso)
