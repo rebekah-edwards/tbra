@@ -662,9 +662,26 @@ export async function setBookCover(
 
   const { revalidatePath } = await import("next/cache");
 
+  // Mark the cover as manually set so Phase 4 enrichment's gate skips it
+  // (see src/lib/enrichment/enrich-book.ts: `alreadyAttempted = cover_source != null`).
+  // Without this flag an un-enriched book's cover gets overwritten by the next pipeline run.
   await db
     .update(books)
-    .set({ coverImageUrl: coverUrl || null })
+    .set(
+      coverUrl
+        ? {
+            coverImageUrl: coverUrl,
+            coverSource: "manual",
+            coverVerified: true,
+            updatedAt: new Date().toISOString(),
+          }
+        : {
+            coverImageUrl: null,
+            coverSource: null,
+            coverVerified: false,
+            updatedAt: new Date().toISOString(),
+          },
+    )
     .where(eq(books.id, bookId));
 
   revalidatePath(`/book/${bookId}`);

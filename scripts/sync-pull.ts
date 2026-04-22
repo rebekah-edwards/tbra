@@ -252,19 +252,40 @@ async function fetchLiveRows(table: string, cols: string[], page = 5000): Promis
     totalUpdated += updated;
   }
 
-  // Always sync covers live → local (live is authoritative)
+  // Always sync covers live → local (live is authoritative).
+  // Pull cover_image_url, cover_source, and cover_verified together — otherwise
+  // a `manual` flag set on live via /admin/covers gets stripped on the next
+  // push (step 5b pushes local cover_source back on top of the live value).
   console.log('\n→ Syncing covers (live → local; live covers authoritative)');
   try {
     const liveCovers = await remote.execute(
-      `SELECT id, cover_image_url FROM books WHERE cover_image_url IS NOT NULL AND cover_image_url != ''`
+      `SELECT id, cover_image_url, cover_source, cover_verified
+         FROM books
+        WHERE cover_image_url IS NOT NULL AND cover_image_url != ''`
     );
     let coverFixed = 0;
     const updateCover = local.prepare(
-      `UPDATE books SET cover_image_url = ? WHERE id = ? AND (cover_image_url IS NULL OR cover_image_url != ?)`
+      `UPDATE books
+          SET cover_image_url = ?,
+              cover_source    = ?,
+              cover_verified  = ?
+        WHERE id = ?
+          AND (cover_image_url IS NULL
+               OR cover_image_url  != ?
+               OR IFNULL(cover_source,   '') != IFNULL(?, '')
+               OR IFNULL(cover_verified, 0)  != IFNULL(?, 0))`
     );
     const trx = local.transaction((rows: any[]) => {
       for (const row of rows) {
-        const res = updateCover.run(row.cover_image_url, row.id, row.cover_image_url);
+        const res = updateCover.run(
+          row.cover_image_url,
+          row.cover_source,
+          row.cover_verified,
+          row.id,
+          row.cover_image_url,
+          row.cover_source,
+          row.cover_verified,
+        );
         if (res.changes > 0) coverFixed++;
       }
     });
