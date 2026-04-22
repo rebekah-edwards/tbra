@@ -10,17 +10,77 @@
  *   - 30s per-query timeout (no single Turso call hangs forever)
  *   - PID lockfile at /tmp/tbra-push-content-ratings.lock
  *
- * If this script exits with code 2, something hung — the cron should alert.
+ * Schedule gate (added 2026-04-22 after an agent ran this mid-day and
+ * saturated Turso): refuses to start unless running inside the nightly window
+ * (3:00–6:00 AM PT) AND it has been >20 hours since the last successful run.
+ * Set TBRA_FORCE=1 to override — logged loudly so the override is visible.
+ *
+ * If this script exits with code 2, the turso-guard wall-clock fired.
+ * If it exits with code 3, the schedule gate refused.
  */
 require('dotenv').config({ path: '.env.vercel.local' });
 const Database = require('better-sqlite3');
 const path = require('path');
+import * as fs from 'fs';
 import { createGuardedTurso } from './lib/turso-guard';
 
 const MAX_RUNTIME_MS = 20 * 60 * 1000;      // 20 min — 2.5× the p95 normal runtime
 const QUERY_TIMEOUT_MS = 30_000;            // 30s per query
 
+// Schedule gate — see module docstring.
+const ALLOWED_HOUR_PT_START = 3;            // 3:00 AM PT
+const ALLOWED_HOUR_PT_END = 6;              // up to (but not including) 6:00 AM PT
+const LAST_RUN_FILE = '/tmp/tbra-push-content-ratings.last-success';
+const MIN_INTERVAL_MS = 20 * 60 * 60 * 1000;
+
+function hourInPacific(): number {
+  const h = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    hour: 'numeric',
+    hour12: false,
+  }).format(new Date());
+  return parseInt(h, 10);
+}
+
+function lastSuccessAgeMs(): number | null {
+  try {
+    return Date.now() - fs.statSync(LAST_RUN_FILE).mtimeMs;
+  } catch {
+    return null;
+  }
+}
+
+function checkScheduleGate(): void {
+  if (process.env.TBRA_FORCE === '1') {
+    console.log('⚠ TBRA_FORCE=1 — bypassing schedule gate. This is logged for audit.');
+    return;
+  }
+  const hour = hourInPacific();
+  const inWindow = hour >= ALLOWED_HOUR_PT_START && hour < ALLOWED_HOUR_PT_END;
+  const age = lastSuccessAgeMs();
+  const recently = age !== null && age < MIN_INTERVAL_MS;
+
+  if (!inWindow) {
+    console.error(
+      `REFUSED: push-content-ratings is a nightly task. Current PT hour: ${hour}. ` +
+        `Allowed window: ${ALLOWED_HOUR_PT_START}:00–${ALLOWED_HOUR_PT_END}:00 PT. ` +
+        `Set TBRA_FORCE=1 to override (logged).`,
+    );
+    process.exit(3);
+  }
+  if (recently) {
+    const hours = (age! / 3_600_000).toFixed(1);
+    console.error(
+      `REFUSED: last successful run was ${hours}h ago (<20h threshold). ` +
+        `Set TBRA_FORCE=1 to override (logged).`,
+    );
+    process.exit(3);
+  }
+}
+
 (async () => {
+  checkScheduleGate();
+
   const { remote, heartbeat } = await createGuardedTurso({
     name: 'push-content-ratings',
     maxRuntimeMs: MAX_RUNTIME_MS,
@@ -90,6 +150,9 @@ const QUERY_TIMEOUT_MS = 30_000;            // 30s per query
     `SELECT count(*) as n FROM books WHERE id NOT IN (SELECT DISTINCT book_id FROM book_category_ratings)`,
   );
   console.log(`Books still missing content ratings on Turso: ${Number(remain.rows[0].n).toLocaleString()}`);
+
+  // Record successful run for the 20h idempotency check.
+  try { fs.writeFileSync(LAST_RUN_FILE, String(Date.now())); } catch { /* non-fatal */ }
 
   local.close();
   process.exit(0);
