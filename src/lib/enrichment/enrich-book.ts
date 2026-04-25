@@ -341,7 +341,14 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
         if (isbndbResult) {
           const isbnUpdates: Record<string, unknown> = {};
 
-          if (!book.coverImageUrl) {
+          // Only fetch a cover here when the book has never been through the
+          // cover cascade (cover_source IS NULL). Once a book has any
+          // cover_source value — including 'admin-removed', 'none-found', or
+          // 'isbndb-placeholder-cleared' — Phase 4 deliberately leaves the
+          // cover slot empty for /admin/covers manual review. Phase 1.5 must
+          // honor the same gate, otherwise admin-removed covers get silently
+          // re-saved as ISBNdb placeholders.
+          if (!book.coverImageUrl && book.coverSource === null) {
             const cover = getISBNdbCoverUrl(isbndbResult);
             if (cover && !(await isKnownPlaceholderCover(cover))) {
               isbnUpdates.coverImageUrl = cover;

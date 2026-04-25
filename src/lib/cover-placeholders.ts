@@ -53,6 +53,18 @@ export const PLACEHOLDERS: PlaceholderFingerprint[] = [
     hash: "12557f8948b8bdc6af436e3a8b3adddd45f7f7d2b67c5832e799cdf4686f72bb",
     sourceField: "gbooks-placeholder-cleared",
   },
+  {
+    // Added 2026-04-25 — second Google Books "no cover" variant found via
+    // /book/football-larry-niven (the user's repeatedly-reverted cover).
+    // Tiny 1026-byte placeholder served when Google Books has metadata but
+    // no actual cover image.
+    label: "google-books-v2",
+    urlPatternLike: "https://books.google.com/books/content%",
+    urlPatternRegex: /^https:\/\/books\.google\.com\/books\/content/,
+    size: 1026,
+    hash: "b196a07e5b2e4ec0bab6b7859a82f4ca58a9fbf781f526f99dc69ee02b400de7",
+    sourceField: "gbooks-placeholder-cleared",
+  },
 ];
 
 /** Returns true when the URL resolves to a known placeholder image.

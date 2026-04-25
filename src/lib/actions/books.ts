@@ -662,9 +662,10 @@ export async function setBookCover(
 
   const { revalidatePath } = await import("next/cache");
 
-  // Mark the cover as manually set so Phase 4 enrichment's gate skips it
-  // (see src/lib/enrichment/enrich-book.ts: `alreadyAttempted = cover_source != null`).
-  // Without this flag an un-enriched book's cover gets overwritten by the next pipeline run.
+  // Both branches set cover_source to a non-null value so Phase 4 enrichment's
+  // gate skips the book on subsequent runs (`alreadyAttempted = cover_source != null`).
+  // The remove branch uses 'admin-removed' — the book ends up on /admin/covers
+  // awaiting a manual replacement instead of being silently re-fetched.
   await db
     .update(books)
     .set(
@@ -677,7 +678,7 @@ export async function setBookCover(
           }
         : {
             coverImageUrl: null,
-            coverSource: null,
+            coverSource: "admin-removed",
             coverVerified: false,
             updatedAt: new Date().toISOString(),
           },
