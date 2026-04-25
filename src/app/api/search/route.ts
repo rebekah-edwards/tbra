@@ -350,7 +350,7 @@ async function searchSeriesDB(query: string) {
     })
     .from(series)
     .leftJoin(bookSeries, eq(bookSeries.seriesId, series.id))
-    .where(sql`LOWER(${series.name}) LIKE ${`%${query}%`}`)
+    .where(sql`${series.name} LIKE ${`%${query}%`} COLLATE NOCASE`)
     .groupBy(series.id)
     .orderBy(sql`count(${bookSeries.bookId}) DESC`)
     .limit(3);
@@ -385,7 +385,7 @@ async function searchAuthors(query: string) {
     })
     .from(authors)
     .innerJoin(bookAuthors, eq(bookAuthors.authorId, authors.id))
-    .where(sql`LOWER(${authors.name}) LIKE ${`%${query}%`}`)
+    .where(sql`${authors.name} LIKE ${`%${query}%`} COLLATE NOCASE`)
     .groupBy(authors.id)
     .orderBy(sql`count(${bookAuthors.bookId}) desc`)
     .limit(3);

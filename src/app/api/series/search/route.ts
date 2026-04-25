@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     })
     .from(series)
     .leftJoin(bookSeries, eq(bookSeries.seriesId, series.id))
-    .where(sql`LOWER(${series.name}) LIKE ${`%${queryLower}%`}`)
+    .where(sql`${series.name} LIKE ${`%${queryLower}%`} COLLATE NOCASE`)
     .groupBy(series.id)
     .limit(10);
 
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
       })
       .from(series)
       .leftJoin(bookSeries, eq(bookSeries.seriesId, series.id))
-      .where(sql`LOWER(${series.name}) LIKE ${`%${prefix}%`}`)
+      .where(sql`${series.name} LIKE ${`%${prefix}%`} COLLATE NOCASE`)
       .groupBy(series.id)
       .limit(20)
     ).filter((c) => !exactIds.has(c.id));

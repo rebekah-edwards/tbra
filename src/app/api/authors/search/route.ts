@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     })
     .from(authors)
     .innerJoin(bookAuthors, eq(bookAuthors.authorId, authors.id))
-    .where(sql`LOWER(${authors.name}) LIKE ${`%${queryLower}%`}`)
+    .where(sql`${authors.name} LIKE ${`%${queryLower}%`} COLLATE NOCASE`)
     .groupBy(authors.id)
     .orderBy(sql`count(${bookAuthors.bookId}) desc`)
     .limit(10);
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
       })
       .from(authors)
       .innerJoin(bookAuthors, eq(bookAuthors.authorId, authors.id))
-      .where(sql`LOWER(${authors.name}) LIKE ${`%${prefix}%`}`)
+      .where(sql`${authors.name} LIKE ${`%${prefix}%`} COLLATE NOCASE`)
       .groupBy(authors.id)
       .orderBy(sql`count(${bookAuthors.bookId}) desc`)
       .limit(20)

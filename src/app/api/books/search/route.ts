@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
     .from(books)
     .where(
       and(
-        sql`LOWER(${books.title}) LIKE ${`%${trimmed}%`}`,
+        sql`${books.title} LIKE ${`%${trimmed}%`} COLLATE NOCASE`,
         eq(books.visibility, "public"),
         eq(books.isBoxSet, false)
       )
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
       .from(books)
       .where(
         and(
-          sql`LOWER(${books.title}) LIKE ${`%${prefix}%`}`,
+          sql`${books.title} LIKE ${`%${prefix}%`} COLLATE NOCASE`,
           eq(books.visibility, "public"),
           eq(books.isBoxSet, false)
         )
@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
       .innerJoin(authors, eq(bookAuthors.authorId, authors.id))
       .where(
         and(
-          sql`LOWER(${authors.name}) LIKE ${`%${trimmed}%`}`,
+          sql`${authors.name} LIKE ${`%${trimmed}%`} COLLATE NOCASE`,
           eq(books.visibility, "public"),
           eq(books.isBoxSet, false)
         )
