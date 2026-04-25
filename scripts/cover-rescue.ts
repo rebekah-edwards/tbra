@@ -31,18 +31,19 @@ type Placeholder = PlaceholderFingerprint;
 const DB_PATH = path.join(process.cwd(), "data", "tbra.db");
 const db = new Database(DB_PATH);
 
-const BATCH_SIZE = 5000;
 const CONCURRENCY = 8;
 const FETCH_TIMEOUT_MS = 10_000;
 
 type Row = { id: string; title: string; cover_image_url: string };
 
 function selectBatchFor(placeholder: Placeholder): Row[] {
-  // ORDER BY updated_at ASC: process the oldest-touched books first. This
-  // matters because cleared books drop out of the filter (cover_source gets
-  // set to 'isbndb-placeholder-cleared'), but UNCHANGED books keep their
-  // updated_at and stay in the pool. DESC ordering churned on the same recent
-  // books every night; ASC reaches older imports (Pale Dreamer etc.) directly.
+  // No LIMIT: scan EVERY candidate every night. The previous LIMIT 5000 +
+  // ORDER BY updated_at ASC churned on the same window of oldest books each
+  // night because non-cleared books don't get updated_at bumped — they stay
+  // pinned at the top of the queue and crowd out new arrivals. Removing the
+  // limit gives every candidate a fair check daily. Scan time at 8 concurrent
+  // workers is ~6 min for ~18K ISBNdb-pattern books, which is fine for a
+  // 3:15 AM PT job.
   return db
     .prepare(
       `SELECT id, title, cover_image_url
@@ -51,11 +52,9 @@ function selectBatchFor(placeholder: Placeholder): Row[] {
          AND (cover_source IS NULL
               OR cover_source = 'isbndb'
               OR cover_source = 'google_books'
-              OR cover_source = 'openlibrary')
-       ORDER BY updated_at ASC
-       LIMIT ?`,
+              OR cover_source = 'openlibrary')`,
     )
-    .all(placeholder.urlPatternLike, BATCH_SIZE) as Row[];
+    .all(placeholder.urlPatternLike) as Row[];
 }
 
 async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
@@ -129,7 +128,7 @@ async function runBatch(rows: Row[], placeholder: Placeholder) {
 }
 
 async function main() {
-  console.log(`[cover-rescue] Starting — batch ${BATCH_SIZE}/source, concurrency ${CONCURRENCY}`);
+  console.log(`[cover-rescue] Starting — concurrency ${CONCURRENCY}, scanning all candidates per source`);
   const started = Date.now();
   let totalChecked = 0;
   let totalCleared = 0;
