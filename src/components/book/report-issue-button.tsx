@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { submitIssue } from "@/lib/actions/issues";
@@ -23,26 +23,52 @@ export function ReportIssueButton({
   const [description, setDescription] = useState("");
   const [isPending, startTransition] = useTransition();
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [slowSubmit, setSlowSubmit] = useState(false);
   const pathname = usePathname();
+
+  // Surface a "still working" message at 12s so the user doesn't think the
+  // app silently lost their report. The submit can legitimately take this
+  // long on cold starts, but without feedback the user reasonably assumes
+  // it failed and re-submits or walks away.
+  useEffect(() => {
+    if (!isPending) {
+      setSlowSubmit(false);
+      return;
+    }
+    const t = setTimeout(() => setSlowSubmit(true), 12_000);
+    return () => clearTimeout(t);
+  }, [isPending]);
 
   function handleSubmit() {
     if (!description.trim()) return;
+    setError(null);
 
     startTransition(async () => {
-      const result = await submitIssue({
-        bookId,
-        seriesId,
-        pageUrl: pathname,
-        description,
-      });
+      try {
+        const result = await submitIssue({
+          bookId,
+          seriesId,
+          pageUrl: pathname,
+          description,
+        });
 
-      if (result.success) {
-        setSubmitted(true);
-        setTimeout(() => {
-          setOpen(false);
-          setSubmitted(false);
-          setDescription("");
-        }, 1500);
+        if (result.success) {
+          setSubmitted(true);
+          setTimeout(() => {
+            setOpen(false);
+            setSubmitted(false);
+            setDescription("");
+          }, 1500);
+        } else {
+          setError(result.error || "Failed to submit. Please try again.");
+        }
+      } catch (e) {
+        // Network failure, server crash, or stale-bundle ChunkLoadError mid-submit.
+        // The description stays in the textarea so the user can retry without
+        // re-typing everything.
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(`Submit failed: ${msg}. Your text is still here — try again.`);
       }
     });
   }
@@ -75,6 +101,7 @@ export function ReportIssueButton({
           setOpen(false);
           setDescription("");
           setSubmitted(false);
+          setError(null);
         }}
         title="Report Issue"
       >
@@ -103,6 +130,18 @@ export function ReportIssueButton({
                 className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-purple-500/40 resize-none"
                 autoFocus
               />
+
+              {error && (
+                <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-500">
+                  {error}
+                </div>
+              )}
+
+              {isPending && slowSubmit && !error && (
+                <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-600 dark:text-yellow-400">
+                  Still working — server is taking longer than usual. Don&apos;t close this.
+                </div>
+              )}
 
               <button
                 onClick={handleSubmit}

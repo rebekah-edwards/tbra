@@ -42,6 +42,7 @@ export async function submitIssue(data: {
     seriesId = s?.id ?? null;
   }
 
+  const startedAt = Date.now();
   try {
     await db.insert(reportedIssues).values({
       userId: user.userId,
@@ -50,9 +51,17 @@ export async function submitIssue(data: {
       pageUrl: data.pageUrl,
       description: data.description.trim(),
     });
+    const elapsed = Date.now() - startedAt;
+    if (elapsed > 5000) {
+      console.warn(`[submitIssue] slow insert: ${elapsed}ms userId=${user.userId} pageUrl=${data.pageUrl}`);
+    }
     return { success: true };
   } catch (err) {
-    console.error("[submitIssue] Failed to save report:", err);
+    const elapsed = Date.now() - startedAt;
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[submitIssue] insert failed after ${elapsed}ms userId=${user.userId} bookId=${bookId ?? "null"} seriesId=${seriesId ?? "null"} pageUrl=${data.pageUrl}: ${msg}`,
+    );
     return { success: false, error: "Failed to save report. Please try again." };
   }
 }
