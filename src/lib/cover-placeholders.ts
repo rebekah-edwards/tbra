@@ -35,6 +35,17 @@ export const PLACEHOLDERS: PlaceholderFingerprint[] = [
     sourceField: "isbndb-placeholder-cleared",
   },
   {
+    // Added 2026-04-24 — third ISBNdb "no cover" variant found via
+    // /book/first-team-scott-brick. Backlog cleanup turned up 45 books
+    // serving this fingerprint.
+    label: "isbndb-v3",
+    urlPatternLike: "https://images.isbndb.com/covers/%",
+    urlPatternRegex: /^https:\/\/images\.isbndb\.com\/covers\//,
+    size: 4176,
+    hash: "32d36985a98a6cb4b337ee2b3088d4bcd970a00251a32ac074d8f9a287b9958a",
+    sourceField: "isbndb-placeholder-cleared",
+  },
+  {
     label: "google-books",
     urlPatternLike: "https://books.google.com/books/content%",
     urlPatternRegex: /^https:\/\/books\.google\.com\/books\/content/,

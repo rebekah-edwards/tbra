@@ -15,6 +15,22 @@ export default function Error({
       digest: error.digest,
       stack: error.stack,
     });
+
+    // ChunkLoadError handling: when a deploy ships while the user has the
+    // PWA backgrounded, the cached HTML references JS bundle hashes that
+    // no longer exist on the CDN. The next client navigation throws a
+    // chunk-load error. Force a hard reload to fetch fresh HTML + bundles.
+    // Guarded by sessionStorage so a genuinely-broken chunk can't reload-loop.
+    const isChunkError =
+      /Loading chunk \d+ failed|ChunkLoadError|Loading CSS chunk \d+ failed|Failed to fetch dynamically imported module/i
+        .test(error.message ?? "");
+    if (isChunkError && typeof window !== "undefined") {
+      const KEY = "tbra:chunk-reload-attempted";
+      if (!sessionStorage.getItem(KEY)) {
+        sessionStorage.setItem(KEY, String(Date.now()));
+        window.location.reload();
+      }
+    }
   }, [error]);
 
   return (
