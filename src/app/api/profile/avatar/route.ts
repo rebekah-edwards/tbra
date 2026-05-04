@@ -108,8 +108,6 @@ export async function POST(req: NextRequest) {
     .where(eq(users.id, user.userId));
 
   revalidatePath("/", "layout");
-  revalidatePath("/profile");
-  revalidatePath("/");
 
   return NextResponse.json({ avatarUrl });
 }

@@ -154,12 +154,25 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           setBookStates((prev) => ({ ...prev, ...(check.states ?? {}) }));
           setBookOwnedFormats((prev) => ({ ...prev, ...(check.ownedFormats ?? {}) }));
           setBookCovers((prev) => ({ ...prev, ...(check.covers ?? {}) }));
+        } else {
+          // Non-2xx (e.g. 504 when ISBNdb stalls and the function times out).
+          // Without this branch the page goes blank — neither results nor the
+          // "No results found" empty state render.
+          setResults([]);
+          setSeriesMatches([]);
+          setAuthorMatches([]);
+          setPeopleResults([]);
+          setSearched(true);
         }
         setLoading(false);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         if (requestId === searchIdRef.current) {
           setResults([]);
+          setSeriesMatches([]);
+          setAuthorMatches([]);
+          setPeopleResults([]);
+          setSearched(true);
           setLoading(false);
         }
       }

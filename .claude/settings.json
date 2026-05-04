@@ -8,6 +8,9 @@
       "Bash(git diff *)",
       "Bash(git log *)",
       "Bash(tsx *)",
+      "Bash(cd /Users/clankeredwards/claude/tbra && *)",
+      "Bash(./scripts/sync-incremental.sh *)",
+      "Bash(./scripts/*.sh *)",
       "Read",
       "Write",
       "Edit"
@@ -15,6 +18,43 @@
     "deny": [
       "Bash(rm -rf *)",
       "Read(./.env.local)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/block-dangerous.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/log-commands.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/protect-db.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx eslint --fix $(jq -r '.tool_input.file_path') 2>&1 | tail -10; exit 0"
+          }
+        ]
+      }
     ]
   }
 }
