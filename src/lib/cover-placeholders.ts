@@ -157,40 +157,59 @@ function matchMicroImageHost(url: string): string | null {
 
 /**
  * Two-tier check:
- *   1. Known fingerprint (size + SHA256 match against the PLACEHOLDERS table)
+ *   1. Known fingerprint (size + SHA256 match against the PLACEHOLDERS table).
+ *      Iterates ALL fingerprints whose URL pattern matches, since multiple
+ *      variants exist per host (e.g. isbndb-v1 through isbndb-v4).
  *   2. Microimage fallback — if the file is suspiciously small and decodes to
  *      < MICRO_IMAGE_DIMENSION_THRESHOLD on either side, treat as placeholder.
  *
  * Returns true if the URL resolves to a placeholder (by either tier).
  * Returns false on network error so callers prefer writing covers we can't
  * verify — the nightly sweep catches stragglers.
+ *
+ * Important: some hosts (notably covers.openlibrary.org) don't return
+ * Content-Length on HEAD requests. We fetch the body and use buf.length as
+ * the authoritative size rather than relying on the header.
  */
 export async function isKnownPlaceholderCover(url: string, timeoutMs = 5000): Promise<boolean> {
-  const fingerprint = PLACEHOLDERS.find((p) => p.urlPatternRegex.test(url));
+  const matchingFingerprints = PLACEHOLDERS.filter((p) => p.urlPatternRegex.test(url));
   const microHost = matchMicroImageHost(url);
-  if (!fingerprint && !microHost) return false;
+  if (matchingFingerprints.length === 0 && !microHost) return false;
 
   try {
+    // HEAD first as a cheap pre-filter. If we get a definitive Content-Length
+    // that's larger than any plausible placeholder AND no fingerprint matches
+    // that exact size, we can short-circuit without fetching the body.
     const head = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(timeoutMs) });
     if (!head.ok) return false;
-    const len = Number(head.headers.get("content-length"));
+    const headerLen = Number(head.headers.get("content-length"));
+    const knownSizes = new Set<number>(matchingFingerprints.map((p) => p.size));
 
-    // Tier 1: fingerprint match (size + hash)
-    if (fingerprint && Number.isFinite(len) && len === fingerprint.size) {
-      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
-      if (!res.ok) return false;
-      const buf = Buffer.from(await res.arrayBuffer());
-      if (buf.length !== fingerprint.size) return false;
+    if (Number.isFinite(headerLen) && headerLen > 0) {
+      const isMicroCandidate = headerLen <= MICRO_IMAGE_BYTE_THRESHOLD;
+      const isFingerprintCandidate = knownSizes.has(headerLen);
+      if (!isMicroCandidate && !isFingerprintCandidate) {
+        // Definitively NOT a placeholder — too big for microimage detection
+        // and doesn't match any fingerprint size.
+        return false;
+      }
+    }
+    // If headerLen is missing/zero/NaN, we can't pre-filter — fall through to
+    // body fetch and decide from buf.length.
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+    if (!res.ok) return false;
+    const buf = Buffer.from(await res.arrayBuffer());
+
+    // Tier 1: check against every fingerprint variant for this host
+    for (const fp of matchingFingerprints) {
+      if (buf.length !== fp.size) continue;
       const hash = createHash("sha256").update(buf).digest("hex");
-      if (hash === fingerprint.hash) return true;
-      // hash mismatch — fall through to microimage check below
+      if (hash === fp.hash) return true;
     }
 
-    // Tier 2: microimage fallback for suspiciously small files
-    if (microHost && Number.isFinite(len) && len > 0 && len <= MICRO_IMAGE_BYTE_THRESHOLD) {
-      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
-      if (!res.ok) return false;
-      const buf = Buffer.from(await res.arrayBuffer());
+    // Tier 2: microimage fallback — small file with tiny dimensions
+    if (microHost && buf.length > 0 && buf.length <= MICRO_IMAGE_BYTE_THRESHOLD) {
       const dims = parseJpegDimensions(buf);
       if (dims && (dims.width < MICRO_IMAGE_DIMENSION_THRESHOLD || dims.height < MICRO_IMAGE_DIMENSION_THRESHOLD)) {
         return true;
