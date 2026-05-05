@@ -143,12 +143,114 @@ async function getTursoGenreIdSet(): Promise<Set<string>> {
   return set;
 }
 
+/**
+ * When the books-row UPDATE hits a UNIQUE conflict on isbn_13/isbn_10/asin/
+ * open_library_key, those identifiers belong to a different ISBN-edition that
+ * Turso already knows about under another book. Rather than dropping the data,
+ * we capture local's identifying fields as a row in the `editions` table
+ * pointing at the canonical Turso book — that's exactly what `editions` is for.
+ *
+ * Constraint: editions.open_library_key is NOT NULL UNIQUE. Three cases:
+ *   1. Local has an OL key + that key isn't already in editions → use it.
+ *   2. Local has an OL key but it's already used by another edition row → fall
+ *      through to a synthetic key.
+ *   3. Local has no OL key → synthetic.
+ *
+ * Synthetic keys are namespaced as `synthetic:isbn:<isbn>` (or random UUID
+ * fallback) so consumers that don't parse the field beyond uniqueness don't
+ * trip on them. Returns true if an edition row was created, false otherwise.
+ */
+async function maybeCreateEditionForLocalSide(
+  localBookId: string,
+  tursoBookId: string,
+): Promise<boolean> {
+  const localExt = localDb
+    .prepare(
+      `SELECT title, isbn_13, isbn_10, open_library_key, publication_date,
+              publisher, pages, cover_image_url
+       FROM books WHERE id = ?`,
+    )
+    .get(localBookId) as
+    | {
+        title: string | null;
+        isbn_13: string | null;
+        isbn_10: string | null;
+        open_library_key: string | null;
+        publication_date: string | null;
+        publisher: string | null;
+        pages: number | null;
+        cover_image_url: string | null;
+      }
+    | undefined;
+  if (!localExt) return false;
+  // No identifying data → nothing worth saving as an edition
+  if (!localExt.isbn_13 && !localExt.isbn_10 && !localExt.open_library_key) {
+    return false;
+  }
+
+  // Decide on open_library_key for the edition row (NOT NULL UNIQUE)
+  let editionOlKey: string;
+  if (localExt.open_library_key) {
+    await sleep(PAUSE_MS);
+    const r = await turso.execute({
+      sql: `SELECT 1 FROM editions WHERE open_library_key = ? LIMIT 1`,
+      args: [localExt.open_library_key],
+    });
+    if (r.rows.length === 0) {
+      editionOlKey = localExt.open_library_key;
+    } else {
+      const seed = localExt.isbn_13 ?? localExt.isbn_10 ?? randomUUID();
+      editionOlKey = `synthetic:isbn:${seed}`;
+    }
+  } else {
+    const seed = localExt.isbn_13 ?? localExt.isbn_10 ?? randomUUID();
+    editionOlKey = `synthetic:isbn:${seed}`;
+  }
+
+  // Parse OL cover_id from cover_image_url if it's an OL URL
+  let coverId: number | null = null;
+  if (localExt.cover_image_url) {
+    const match = localExt.cover_image_url.match(/\/b\/id\/(\d+)-/);
+    if (match) coverId = parseInt(match[1], 10);
+  }
+
+  const publishersJson = localExt.publisher ? JSON.stringify([localExt.publisher]) : null;
+  const editionId = randomUUID();
+
+  await sleep(PAUSE_MS);
+  try {
+    await turso.execute({
+      sql: `INSERT INTO editions
+              (id, open_library_key, book_id, title, publish_date, publishers,
+               isbn_13, isbn_10, pages, cover_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        editionId,
+        editionOlKey,
+        tursoBookId,
+        localExt.title,
+        localExt.publication_date,
+        publishersJson,
+        localExt.isbn_13,
+        localExt.isbn_10,
+        localExt.pages,
+        coverId,
+      ],
+    });
+    return true;
+  } catch {
+    // Edition already exists, or another conflict. Not fatal — the rest of
+    // the patch still landed; we just couldn't preserve this metadata.
+    return false;
+  }
+}
+
 async function patchPair(
   pair: Pair,
   liveAuthorIds: Set<string>,
   liveGenreIds: Set<string>,
   liveSeriesIds: Set<string>,
-): Promise<{ ratings: number; genres: number; authors: number; series: number; coverPreserved: boolean }> {
+): Promise<{ ratings: number; genres: number; authors: number; series: number; coverPreserved: boolean; editionCreated: boolean }> {
   // 1. Patch books row enrichment fields. If the UPDATE hits a UNIQUE
   //    constraint (open_library_key, isbn_13, isbn_10, asin all have unique
   //    indexes) it means ANOTHER Turso book is already using that identifier
@@ -193,14 +295,25 @@ async function patchPair(
       args,
     });
   }
+  // hadUniqueConflict is true when we had to fall back to tryUpdate(true).
+  // When that happens, local's isbn_13/isbn_10/asin/open_library_key didn't
+  // make it onto the canonical books row — but they're real edition data we
+  // can still preserve by creating a row in `editions` pointing at the
+  // canonical book id.
+  let hadUniqueConflict = false;
   try {
     await tryUpdate(false);
   } catch (e: any) {
     if (/UNIQUE constraint/i.test(e?.message ?? "")) {
+      hadUniqueConflict = true;
       await tryUpdate(true);
     } else {
       throw e;
     }
+  }
+  let editionCreated = false;
+  if (hadUniqueConflict) {
+    editionCreated = await maybeCreateEditionForLocalSide(pair.local.id, pair.turso.id);
   }
 
   // 2. Replace book_category_ratings
@@ -266,7 +379,7 @@ async function patchPair(
     } catch { /* skip */ }
   }
 
-  return { ratings: ratingCount, genres: genreCount, authors: authorCount, series: seriesCount, coverPreserved: preserveCover };
+  return { ratings: ratingCount, genres: genreCount, authors: authorCount, series: seriesCount, coverPreserved: preserveCover, editionCreated };
 }
 
 async function main() {
@@ -306,7 +419,7 @@ async function main() {
 
   console.log(`Pacing: chunk=${CHUNK_SIZE}, pause=${PAUSE_MS}ms between queries, cooldown=${COOLDOWN_SEC}s between chunks.\n`);
 
-  let processed = 0, errors = 0, coversPreserved = 0;
+  let processed = 0, errors = 0, coversPreserved = 0, editionsCreated = 0;
   const totals = { ratings: 0, genres: 0, authors: 0, series: 0 };
   const start = Date.now();
   for (let chunkStart = 0; chunkStart < actionable.length; chunkStart += CHUNK_SIZE) {
@@ -320,6 +433,7 @@ async function main() {
         totals.authors += r.authors;
         totals.series += r.series;
         if (r.coverPreserved) coversPreserved++;
+        if (r.editionCreated) editionsCreated++;
         processed++;
       } catch (e: any) {
         errors++;
@@ -339,6 +453,7 @@ async function main() {
   const elapsed = ((Date.now() - start) / 1000).toFixed(0);
   console.log(`\nDone: ${processed} patched, ${errors} errors, ${elapsed}s elapsed`);
   console.log(`Covers preserved (Turso kept its existing cover): ${coversPreserved}/${processed}`);
+  console.log(`Editions created (UNIQUE-conflict on identifier → preserved as edition): ${editionsCreated}/${processed}`);
   console.log(`Inserted: ${totals.ratings} ratings, ${totals.genres} genres, ${totals.authors} authors, ${totals.series} series`);
   turso.close();
   localDb.close();
