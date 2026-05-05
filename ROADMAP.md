@@ -48,7 +48,7 @@ All blocked on creating developer accounts. PWA ships today as the bridge.
 - **Amazon Creators API integration** — replaces OpenLibrary as primary source. `scripts/audit-series.ts` + `data/series-missing-book1.md` (1,302 series with missing book 1) ready to re-run once access granted.
 
 ### In progress
-- **Finish slug-collision migration** — down to **39 groups / 91 books** (from 431 pairs). Remaining cases need tailored handling for UNIQUE-constraint edge cases (books sharing `open_library_key` / `isbn_13`). See `reference_slug_collisions.md`.
+- ~~**Finish slug-collision migration**~~ ⏳ in progress (Round 16, 2026-05-04..05). Re-audit found 438 new collisions had accumulated since April (prevention hadn't shipped). Prevention shipped 2026-05-04 commit `ef52a8f` (slug-existence check in `importFromOpenLibrary` / `importFromOpenLibraryAndReturn` / `importFromISBNdbAndReturn`). Fix script enhanced commit `9ce8c20` to preserve UNIQUE-conflict identifiers as `editions` rows instead of dropping. Smoke test passed; full run on 438 pairs in background, ~5h. See `reference_slug_collisions.md`.
 - **Cover review queue** — `/admin/covers` accumulating (74 added 2026-04-21). Ongoing manual work, no blocker.
 
 ### Done / retiring from this list
