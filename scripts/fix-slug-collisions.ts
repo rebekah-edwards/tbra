@@ -26,9 +26,10 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
-import { createClient } from "@libsql/client";
+import type { Client } from "@libsql/client";
 import { randomUUID, createHash } from "crypto";
 import { config } from "dotenv";
+import { createGuardedTurso } from "./lib/turso-guard";
 
 void createHash; // imported for future use; referenced here to silence tsc
 
@@ -57,10 +58,12 @@ async function sleep(ms: number) {
 }
 
 const localDb = new Database(path.join(process.cwd(), "data", "tbra.db"), { readonly: true });
-const turso = createClient({
-  url: process.env.TURSO_DATABASE_URL!,
-  authToken: process.env.TURSO_AUTH_TOKEN!,
-});
+
+// Turso client — initialized inside main() via createGuardedTurso so the
+// run gets the watchdog-exemption longRunning lockfile and a wall-clock
+// ceiling. Without longRunning:true the launchd watchdog kills the script
+// at the 60-min mark — exactly what happened on 2026-05-04 (chunk 129/438).
+let turso: Client;
 
 // Locate latest manifest
 function resolveManifest(): string {
@@ -383,6 +386,19 @@ async function patchPair(
 }
 
 async function main() {
+  // Initialize Turso client through the project's standard guard so we get
+  // the longRunning watchdog exemption. Without longRunning:true the launchd
+  // watchdog kills any tsx script under tbra/ older than 60 min — which is
+  // exactly what happened on 2026-05-04 (run died at chunk 129/438).
+  // 8h ceiling is 1.5x the April benchmark; comfortable headroom.
+  const guard = await createGuardedTurso({
+    name: "fix-slug-collisions",
+    maxRuntimeMs: 8 * 60 * 60 * 1000,
+    queryTimeoutMs: 60_000,
+    longRunning: true,
+  });
+  turso = guard.remote;
+
   const manifestPath = resolveManifest();
   console.log(`=== fix-slug-collisions.ts ===`);
   console.log(`Mode: ${APPLY ? "APPLY" : "DRY-RUN"}`);
@@ -402,7 +418,6 @@ async function main() {
     }
     console.log();
     console.log("DRY-RUN complete. Re-run with --apply.");
-    turso.close();
     localDb.close();
     return;
   }
@@ -455,7 +470,9 @@ async function main() {
   console.log(`Covers preserved (Turso kept its existing cover): ${coversPreserved}/${processed}`);
   console.log(`Editions created (UNIQUE-conflict on identifier → preserved as edition): ${editionsCreated}/${processed}`);
   console.log(`Inserted: ${totals.ratings} ratings, ${totals.genres} genres, ${totals.authors} authors, ${totals.series} series`);
-  turso.close();
+  // Note: turso client is owned by createGuardedTurso and is closed on
+  // process exit by its cleanup handler. We don't manually close here
+  // (would race with the guard's auto-cleanup).
   localDb.close();
 }
 
