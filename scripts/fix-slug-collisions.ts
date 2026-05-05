@@ -470,13 +470,23 @@ async function main() {
   console.log(`Covers preserved (Turso kept its existing cover): ${coversPreserved}/${processed}`);
   console.log(`Editions created (UNIQUE-conflict on identifier → preserved as edition): ${editionsCreated}/${processed}`);
   console.log(`Inserted: ${totals.ratings} ratings, ${totals.genres} genres, ${totals.authors} authors, ${totals.series} series`);
-  // Note: turso client is owned by createGuardedTurso and is closed on
-  // process exit by its cleanup handler. We don't manually close here
-  // (would race with the guard's auto-cleanup).
+  // Note: the Turso client is closed by turso-guard's beforeExit/exit hooks.
+  // The Proxy that wraps `remote` doesn't forward `.close()` correctly, so
+  // calling `turso.close()` here would throw. The explicit `process.exit(0)`
+  // below fires the "exit" event which the guard's cleanup is bound to.
   localDb.close();
 }
 
-main().catch((e) => {
-  console.error("FATAL", e);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    // Explicit exit — turso-guard's wall-clock deadline (a non-unref'd
+    // setTimeout) keeps the event loop alive after natural completion. Without
+    // this exit(0), the script "finishes" but the process lingers, holding
+    // open Turso connections until the deadline fires (8h here) or something
+    // kills it. See the 2026-05-05 outage incident.
+    process.exit(0);
+  })
+  .catch((e) => {
+    console.error("FATAL", e);
+    process.exit(1);
+  });

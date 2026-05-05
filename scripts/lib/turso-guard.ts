@@ -111,9 +111,19 @@ export async function createGuardedTurso(opts: GuardOptions): Promise<GuardedTur
 
   // ── Wall-clock self-abort ─────────────────────────────────────────────
   const startedAt = Date.now();
-  // Do NOT unref this timer — we WANT it to fire even if the script is
-  // genuinely hung with no other event loop activity. cleanup() clears it
-  // on natural exit, so well-behaved scripts won't be held open by it.
+  // The deadline timer is unref'd so it does NOT keep the event loop alive
+  // after the script's main() returns naturally. (Earlier comment claimed
+  // "cleanup() clears it on natural exit, so well-behaved scripts won't be
+  // held open" — this was wrong: cleanup is only registered on the "exit"
+  // event, which fires AFTER process.exit, but the process can't exit
+  // because the timer is keeping it alive. Chicken-and-egg.)
+  //
+  // unref'd timers still fire on schedule when reached — they just don't
+  // count as a reason to keep the process alive. So a truly-hung script
+  // with other open handles (the libsql client) will still get killed at
+  // the deadline; a well-behaved script that finishes its work will exit
+  // cleanly via beforeExit/exit hooks below. (Bug introduced 2026-04-22,
+  // root cause of 2026-05-05 outage.)
   const deadline = setTimeout(() => {
     const elapsedMin = ((Date.now() - startedAt) / 60_000).toFixed(1);
     console.error(
@@ -123,6 +133,7 @@ export async function createGuardedTurso(opts: GuardOptions): Promise<GuardedTur
     cleanup();
     process.exit(2);
   }, maxRuntimeMs);
+  deadline.unref();
 
   // ── Cleanup on any exit path ──────────────────────────────────────────
   let cleanedUp = false;
@@ -130,9 +141,16 @@ export async function createGuardedTurso(opts: GuardOptions): Promise<GuardedTur
     if (cleanedUp) return;
     cleanedUp = true;
     clearTimeout(deadline);
+    try { inner.close(); } catch { /* libsql client may already be closed */ }
     try { fs.unlinkSync(lockPath); } catch { /* ignore */ }
     try { fs.unlinkSync(exemptionPath); } catch { /* ignore */ }
   };
+  // beforeExit fires when the event loop is empty (no pending tasks,
+  // no other handles). At that point we know the script's work is done
+  // and we can safely close the libsql client and clean up. This is the
+  // hook that catches scripts which call main() and then return without
+  // an explicit process.exit() — they used to hang here.
+  process.on("beforeExit", () => { cleanup(); });
   process.on("exit", cleanup);
   process.on("SIGINT",  () => { cleanup(); process.exit(130); });
   process.on("SIGTERM", () => { cleanup(); process.exit(143); });
