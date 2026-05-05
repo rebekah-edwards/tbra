@@ -25,7 +25,7 @@ import {
   normalizeTitle as normalizeTitleSanitize,
   titleCaseGenre,
 } from "@/lib/enrichment/sanitize";
-import { assignBookSlug } from "@/lib/utils/slugify";
+import { assignBookSlug, findBookBySlugCollision } from "@/lib/utils/slugify";
 
 const NONFICTION_GENRES = new Set([
   "Nonfiction", "Biography", "Memoir", "Self-Help", "True Crime", "Philosophy",
@@ -254,6 +254,18 @@ export async function importFromOpenLibrary(result: OLSearchResult) {
     redirect(`/book/${fuzzyMatch}`);
   }
 
+  // Slug-collision guard (Midnight-Is-the-Darkest-Hour systemic prevention):
+  // last-line check before insert. Catches cases where the upstream dedups
+  // miss because of normalization disagreement (e.g. different first author
+  // selection, curly-vs-straight quotes, OL key drift across sources).
+  const slugCollision = await findBookBySlugCollision(
+    result.title,
+    result.author_name?.[0] ?? null,
+  );
+  if (slugCollision) {
+    redirect(`/book/${slugCollision.slug || slugCollision.id}`);
+  }
+
   // Fetch work details for description + cover + subjects
   const work = await fetchOpenLibraryWork(result.key);
 
@@ -381,6 +393,15 @@ export async function importFromOpenLibraryAndReturn(result: OLSearchResult): Pr
   );
   if (fuzzyMatch) {
     return fuzzyMatch;
+  }
+
+  // Slug-collision guard — same as importFromOpenLibrary above.
+  const slugCollision = await findBookBySlugCollision(
+    result.title,
+    result.author_name?.[0] ?? null,
+  );
+  if (slugCollision) {
+    return slugCollision.id;
   }
 
   const work = await fetchOpenLibraryWork(result.key);
@@ -912,6 +933,12 @@ export async function importFromISBNdbAndReturn(params: {
   const titleForFuzzy = title.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
   const fuzzyMatch = await findExistingByTitleAndAuthor(titleForFuzzy, authorNames[0] ?? null);
   if (fuzzyMatch) return fuzzyMatch;
+
+  // 2.5. Slug-collision guard — last-line check for the
+  // Midnight-Is-the-Darkest-Hour pattern. Returns the existing book if a
+  // would-be-generated slug already exists. See findBookBySlugCollision.
+  const slugCollision = await findBookBySlugCollision(titleForFuzzy, authorNames[0] ?? null);
+  if (slugCollision) return slugCollision.id;
 
   // 3. Validate title — reject junk
   const validation = validateBookTitle(title);

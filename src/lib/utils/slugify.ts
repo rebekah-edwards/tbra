@@ -61,6 +61,40 @@ export function generateShelfSlug(shelfName: string): string {
 }
 
 /**
+ * Look up an existing book by what slug a fresh import would generate.
+ * Used by import paths (importFromOpenLibrary, importFromISBNdbAndReturn,
+ * createBookManually) to prevent the "Midnight-Is-the-Darkest-Hour" pattern
+ * where two import flows independently generate the same slug for the same
+ * title+author and end up as separate book rows.
+ *
+ * Returns the existing book's `{ id, slug }` or `null` if no collision.
+ *
+ * Important: callers should run this AFTER their existing dedup checks
+ * (OL key, ISBN, fuzzy title+author) — those are stronger and faster.
+ * This is the last-line guard for cases where the upstream dedups fail
+ * (e.g. fuzzy title+author normalization disagreement, OL key mismatch
+ * between sources, ISBN reformatted by source).
+ */
+export async function findBookBySlugCollision(
+  title: string,
+  authorName: string | null,
+): Promise<{ id: string; slug: string | null } | null> {
+  if (!title?.trim() || !authorName?.trim()) return null;
+  const expectedSlug = generateBookSlug(title.trim(), authorName.trim());
+  if (!expectedSlug) return null;
+
+  const { db } = await import("@/db");
+  const { books } = await import("@/db/schema");
+  const { eq } = await import("drizzle-orm");
+
+  const existing = await db.query.books.findFirst({
+    where: eq(books.slug, expectedSlug),
+    columns: { id: true, slug: true },
+  });
+  return existing ?? null;
+}
+
+/**
  * Generate a unique book slug and save it to the database.
  * Handles collisions by appending numeric suffixes (-2, -3, etc.).
  * Call this after inserting the book and linking the author.
