@@ -3,6 +3,89 @@
  * Used by both the healing pass (existing data) and the import pipeline (new data).
  */
 
+// ── Blurb Stripping ──
+
+/**
+ * Strip blurb-attribution patterns ("quote"—Source) from a description while
+ * preserving non-blurb prose. Returns the stripped text and the count of
+ * blurbs removed.
+ *
+ * Pattern matched:
+ *   "<text ≥15 chars>" <opt ws> <em-dash variant> <opt ws> <Capitalized source>
+ *
+ * Source ends at the earliest of:
+ *   - next opening quote (start of next blurb)
+ *   - paragraph break
+ *   - sentence boundary (period + space + capitalized word ≥3 chars)
+ *   - 250 chars (safety cap)
+ *
+ * If stripping leaves the description empty or below the usable threshold,
+ * sanitizeDescription's existing length check (60 chars) returns null and the
+ * caller treats it as a clear.
+ */
+export function stripBlurbs(text: string): { stripped: string; removed: number } {
+  let result = text;
+  let removed = 0;
+
+  // Common English sentence-starter words. When source-name parsing hits
+  // one of these as a free-standing capitalized token, treat it as the
+  // start of a new sentence (i.e. end of source) — this catches sources
+  // like "—MuggleNet It's time to take back Earth..." where there's no
+  // period between source and prose.
+  const SENTENCE_STARTERS = new RegExp(
+    "\\s+(?:It['']s|It|If|But|When|The|This|These|Those|Now|As|While|Although|However|After|Before|With|Without|For|From|Because|Since|Though|Until|Where|Who|What|Why|How|Set|Welcome|In|On|At|Their|Her|His|My|Your|We|They|You|He|She)\\s+[a-z]"
+  );
+
+  while (removed < 50) {
+    // Find next blurb start: opening quote, content ≥15 chars, closing quote,
+    // optional whitespace, em-dash variant, optional whitespace, capital letter
+    const m = result.match(/"[^"]{15,}"\s*[―—–]\s*[A-Z]/);
+    if (!m || m.index === undefined) break;
+
+    const blurbStart = m.index;
+    const sourceStartIdx = blurbStart + m[0].length;
+
+    // Find where the source ends. Pick the earliest boundary.
+    const tail = result.slice(sourceStartIdx);
+    const boundaryCandidates: number[] = [];
+    const patterns = [
+      /\s*"[^"]/,              // next opening quote (start of next blurb)
+      /\n\s*\n/,               // paragraph break
+      /\.\s+[A-Z][a-z]{3,}\s/, // sentence boundary (period + space + capitalized word)
+      SENTENCE_STARTERS,       // sentence-starter heuristic
+    ];
+    for (const p of patterns) {
+      const bm = tail.match(p);
+      if (bm && bm.index !== undefined) boundaryCandidates.push(bm.index);
+    }
+    boundaryCandidates.push(150); // tighter cap (was 250) — typical sources fit
+    boundaryCandidates.push(tail.length); // end of string
+
+    let sourceLen = Math.min(...boundaryCandidates);
+
+    // Snap the cut to the next whitespace AFTER sourceLen to avoid splitting
+    // mid-word. Without this, the 150-char cap can land in the middle of a
+    // word and leave fragments like "pera about" or "d return".
+    if (sourceLen > 0 && sourceLen < tail.length) {
+      const nextSpace = tail.slice(sourceLen).search(/\s/);
+      if (nextSpace >= 0 && nextSpace < 50) sourceLen += nextSpace;
+    }
+
+    const blurbEnd = sourceStartIdx + sourceLen;
+
+    // Excise [blurbStart, blurbEnd)
+    result = result.slice(0, blurbStart) + result.slice(blurbEnd);
+    removed++;
+  }
+
+  // Clean up: collapse runs of whitespace, strip orphan punctuation that
+  // sometimes precedes a removed blurb (", —", "; —", etc.)
+  result = result.replace(/\s{2,}/g, " ").trim();
+  result = result.replace(/^[,;:.\s]+/, "").trim();
+
+  return { stripped: result, removed };
+}
+
 // ── Description Sanitization ──
 
 /**
@@ -74,6 +157,13 @@ export function sanitizeDescription(raw: string): string | null {
   // Collapse whitespace
   text = text.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 
+  // ── Strip blurb-attribution patterns ("quote"—Source) ──
+  // Removes review-quote walls while keeping any surrounding prose. If a
+  // description was mostly blurbs, the result will be too short and the
+  // length check below returns null (the caller treats it as a clear).
+  // Added 2026-05-04.
+  text = stripBlurbs(text).stripped;
+
   // Reject if too short
   if (text.length < 60) return null;
 
@@ -101,6 +191,34 @@ export function sanitizeDescription(raw: string): string | null {
 
   // Reject if it contains concatenated CamelCase genre dumps
   if (/(?:[A-Z][a-z]{2,}){4,}/.test(text)) return null;
+
+  // ── Goodreads UI / scrape artifacts (added 2026-05-04) ──
+  // These are signs the description was scraped from a Goodreads page rather
+  // than written as actual book copy. Each pattern is narrow enough to avoid
+  // false positives on real prose.
+  if (/Read reviews from the world'?s largest community for readers/i.test(text)) return null;
+  if (/Let us know what'?s wrong with this preview/i.test(text)) return null;
+  if (/(?:Want to Read|Currently Reading|Did Not Finish)\s*[·•]/i.test(text)) return null;
+  if (/Return to Book Page/i.test(text)) return null;
+  if (/^Reviews from the book:/i.test(text)) return null;
+  // Goodreads metadata scrape: "by Author · 3.86 · 193 Ratings · 25 Reviews · published 2020 · 3 editions"
+  if (/published\s+\d{4}\s*·\s*\d+\s+editions?/i.test(text)) return null;
+  if (/\d+\s+Ratings?\s*·\s*\d+\s+Reviews?/i.test(text)) return null;
+
+  // ── Star-rating / promo bullet scrapes (added 2026-05-04) ──
+  // Two or more stars in a row is a strong signal the description was scraped
+  // from a star-rating widget or is promotional bullet copy ("★★★ Try this!").
+  if (/★{2,}/.test(text)) return null;
+
+  // ── Review-quote walls (added 2026-05-04) ──
+  // Detects descriptions that are ENTIRELY blurb-attribution quotes. Pattern:
+  // a quoted string of ≥15 chars, followed by an em-dash variant (—, ―, –)
+  // and a Capitalized source name. Three or more such patterns means the
+  // description has no editorial prose — just stacked review snippets.
+  // Fewer than 3 doesn't trigger, so prose with one or two embedded quotes
+  // (legitimate marketing copy) stays.
+  const blurbAttribCount = (text.match(/"[^"]{15,}"\s*[―—–]\s*[A-Z][\w\s.,&]+/g) ?? []).length;
+  if (blurbAttribCount >= 3) return null;
 
   return text;
 }

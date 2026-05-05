@@ -282,10 +282,16 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     const olUpdates: Record<string, unknown> = {};
 
     // Treat stale-flagged descriptions as missing so enrichment refreshes them.
+    // Run through sanitizeDescription so OL-sourced junk (review walls, scrape
+    // artifacts) gets rejected here instead of being written and then needing
+    // to be cleaned up in a later pass.
     const needsDescription = !book.description || book.descriptionStale;
     if (needsDescription && olMeta.description) {
-      olUpdates.description = olMeta.description;
-      olUpdates.descriptionStale = false;
+      const cleanOL = sanitizeDescription(olMeta.description);
+      if (cleanOL) {
+        olUpdates.description = cleanOL;
+        olUpdates.descriptionStale = false;
+      }
     }
     if (!book.pages && olMeta.pages) olUpdates.pages = olMeta.pages;
     if (!book.publicationYear && olMeta.publicationYear) olUpdates.publicationYear = olMeta.publicationYear;
@@ -361,8 +367,14 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
           if (!book.description || book.descriptionStale) {
             const desc = getISBNdbDescription(isbndbResult);
             if (desc) {
-              isbnUpdates.description = desc;
-              isbnUpdates.descriptionStale = false;
+              // Run sanitizeDescription on the already-cleaned ISBNdb output to
+              // catch review walls / Goodreads-shaped junk that getISBNdbDescription's
+              // ad/HTML stripper passes through. Junk → rejected → no write.
+              const cleanIsbn = sanitizeDescription(desc);
+              if (cleanIsbn) {
+                isbnUpdates.description = cleanIsbn;
+                isbnUpdates.descriptionStale = false;
+              }
             }
           }
           if (!book.pages && isbndbResult.pages && isbndbResult.pages > 20) {
@@ -541,7 +553,12 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
             if (r.description.length > 100
                 && !r.description.match(/^(Buy|Shop|Free shipping)/i)
                 && !JUNK_DESC_PATTERNS.test(r.description)) {
-              metaUpdates.description = r.description.slice(0, 500);
+              // Run sanitizeDescription as the final filter. This catches
+              // review-quote walls / Goodreads-UI scrape artifacts that the
+              // narrow JUNK_DESC_PATTERNS regex above doesn't match.
+              const cleanBrave = sanitizeDescription(r.description.slice(0, 500));
+              if (!cleanBrave) continue;
+              metaUpdates.description = cleanBrave;
               metaUpdates.descriptionStale = false;
               break;
             }

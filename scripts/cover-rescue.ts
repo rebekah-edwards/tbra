@@ -24,9 +24,27 @@ import path from "path";
 import { createHash } from "crypto";
 // Single source of truth for placeholder fingerprints — shared with the
 // enrichment pipeline's reject-at-write-time check. Add new placeholders there.
-import { PLACEHOLDERS, type PlaceholderFingerprint } from "../src/lib/cover-placeholders";
+import {
+  PLACEHOLDERS,
+  type PlaceholderFingerprint,
+  parseJpegDimensions,
+  MICRO_IMAGE_BYTE_THRESHOLD,
+  MICRO_IMAGE_DIMENSION_THRESHOLD,
+} from "../src/lib/cover-placeholders";
 
 type Placeholder = PlaceholderFingerprint;
+
+/**
+ * Dimension-based detection: scans covers from known hosts for "microimage"
+ * placeholders that aren't in the fingerprint list (e.g. 60×40 graphics).
+ * Runs as a final pass after the fingerprint loop and only fetches the body
+ * when HEAD content-length is below MICRO_IMAGE_BYTE_THRESHOLD (3000 bytes).
+ */
+const MICRO_IMAGE_HOSTS: { label: string; urlPatternLike: string; sourceField: string }[] = [
+  { label: "isbndb-microimage", urlPatternLike: "https://images.isbndb.com/covers/%", sourceField: "isbndb-placeholder-cleared" },
+  { label: "gbooks-microimage", urlPatternLike: "https://books.google.com/books/content%", sourceField: "gbooks-placeholder-cleared" },
+  { label: "openlibrary-microimage", urlPatternLike: "https://covers.openlibrary.org/%", sourceField: "openlibrary-placeholder-cleared" },
+];
 
 const DB_PATH = path.join(process.cwd(), "data", "tbra.db");
 const db = new Database(DB_PATH);
@@ -127,12 +145,88 @@ async function runBatch(rows: Row[], placeholder: Placeholder) {
   return { cleared, checked };
 }
 
+// ── Dimension-based microimage check (added 2026-05-04) ──
+//
+// Catches placeholders that aren't in the fingerprint list — specifically
+// 60×40 "no image available" microimages from ISBNdb / Google Books /
+// OpenLibrary. Pre-filters via HEAD content-length to avoid full-fetching
+// every cover. Only ~3 KB or smaller bodies get parsed for dimensions.
+
+type MicroHost = (typeof MICRO_IMAGE_HOSTS)[number];
+
+function selectCandidatesForHost(host: MicroHost): Row[] {
+  return db
+    .prepare(
+      `SELECT id, title, cover_image_url
+       FROM books
+       WHERE cover_image_url LIKE ?
+         AND (cover_source IS NULL
+              OR cover_source = 'isbndb'
+              OR cover_source = 'google_books'
+              OR cover_source = 'openlibrary')`,
+    )
+    .all(host.urlPatternLike) as Row[];
+}
+
+async function checkIsMicroImage(url: string): Promise<boolean> {
+  try {
+    const head = await withTimeout(fetch(url, { method: "HEAD" }), FETCH_TIMEOUT_MS);
+    if (!head.ok) return false;
+    const len = Number(head.headers.get("content-length"));
+    // Pre-filter: only fetch the body for files small enough to plausibly be
+    // microimage placeholders. Real ~100×150 thumbnails are ≥4 KB.
+    if (!Number.isFinite(len) || len <= 0 || len > MICRO_IMAGE_BYTE_THRESHOLD) return false;
+
+    const res = await withTimeout(fetch(url), FETCH_TIMEOUT_MS);
+    if (!res.ok) return false;
+    const buf = Buffer.from(await res.arrayBuffer());
+    const dims = parseJpegDimensions(buf);
+    if (!dims) return false;
+    return (
+      dims.width < MICRO_IMAGE_DIMENSION_THRESHOLD ||
+      dims.height < MICRO_IMAGE_DIMENSION_THRESHOLD
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function runMicroImageBatch(rows: Row[], host: MicroHost) {
+  let cleared = 0;
+  let checked = 0;
+  let idx = 0;
+  async function worker() {
+    while (idx < rows.length) {
+      const r = rows[idx++];
+      checked++;
+      if (checked % 100 === 0) {
+        console.log(`  [${host.label}] checked ${checked}/${rows.length}, cleared ${cleared}`);
+      }
+      // Skip rows that have already been cleared in the fingerprint pass
+      // (cover_image_url would now be NULL).
+      const live = db
+        .prepare("SELECT cover_image_url FROM books WHERE id = ?")
+        .get(r.id) as { cover_image_url: string | null } | undefined;
+      if (!live?.cover_image_url) continue;
+
+      const isMicro = await checkIsMicroImage(r.cover_image_url);
+      if (isMicro) {
+        clearCover(r.id, host.sourceField);
+        cleared++;
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
+  return { cleared, checked };
+}
+
 async function main() {
   console.log(`[cover-rescue] Starting — concurrency ${CONCURRENCY}, scanning all candidates per source`);
   const started = Date.now();
   let totalChecked = 0;
   let totalCleared = 0;
 
+  // Pass 1: known fingerprint sweep
   for (const placeholder of PLACEHOLDERS) {
     const rows = selectBatchFor(placeholder);
     console.log(`[cover-rescue] [${placeholder.label}] selected ${rows.length} candidates`);
@@ -140,6 +234,19 @@ async function main() {
 
     const { cleared, checked } = await runBatch(rows, placeholder);
     console.log(`[cover-rescue] [${placeholder.label}] done — cleared ${cleared}/${checked}`);
+    totalChecked += checked;
+    totalCleared += cleared;
+  }
+
+  // Pass 2: dimension-based microimage sweep (catches non-fingerprinted placeholders)
+  console.log(`[cover-rescue] Starting microimage pass (dimension-based)`);
+  for (const host of MICRO_IMAGE_HOSTS) {
+    const rows = selectCandidatesForHost(host);
+    console.log(`[cover-rescue] [${host.label}] selected ${rows.length} candidates`);
+    if (rows.length === 0) continue;
+
+    const { cleared, checked } = await runMicroImageBatch(rows, host);
+    console.log(`[cover-rescue] [${host.label}] done — cleared ${cleared}/${checked}`);
     totalChecked += checked;
     totalCleared += cleared;
   }
