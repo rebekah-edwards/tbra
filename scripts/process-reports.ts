@@ -19,10 +19,31 @@ async function query(sql: string, args: any[] = []) {
 }
 
 async function deleteBook(bookId: string) {
+  // FIRST: detach reported_issues for this book and auto-resolve any still
+  // 'new' (preserves the audit trail). Without this step the cascade DELETEs
+  // below would silently destroy the report row that triggered this delete,
+  // and the caller's resolveReport() update afterward would have nothing to
+  // update — losing the resolution text.
+  await query(
+    `UPDATE reported_issues
+     SET book_id = NULL,
+         status = CASE WHEN status = 'new' THEN 'resolved' ELSE status END,
+         resolved_at = CASE WHEN status = 'new' THEN datetime('now') ELSE resolved_at END,
+         resolution = CASE
+           WHEN status = 'new' AND (resolution IS NULL OR resolution = '')
+             THEN '[auto] book was deleted by process-reports.ts'
+           ELSE resolution
+         END
+     WHERE book_id = ?`,
+    [bookId],
+  );
+
+  // Then cascade-delete the junction + child rows. reported_issues is no
+  // longer in this list because we already detached its book_id above.
   const tables = [
     "book_authors", "book_genres", "book_series", "book_category_ratings",
     "book_narrators", "links", "report_corrections", "editions",
-    "user_owned_editions", "enrichment_log", "reported_issues",
+    "user_owned_editions", "enrichment_log",
     "user_hidden_books", "reading_notes", "up_next", "user_favorite_books",
     "user_book_reviews", "user_book_ratings", "reading_sessions",
     "user_book_state", "tbr_notes", "shelf_books", "buddy_reads",
