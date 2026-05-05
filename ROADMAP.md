@@ -85,6 +85,60 @@ All blocked on creating developer accounts. PWA ships today as the bridge.
 
 - **4 new overnight reports** (2026-04-21): Safe Place to Die details, Legend missing Champion (#3), Legend pub dates inaccurate, On the Edge of Gone title caps + description truncation
 - **Orphan scheduled task cleanup** — remove `~/.claude/scheduled-tasks/nightly-cover-rescue/` directory (renamed to `nightly-placeholder-clear` on 2026-04-17)
+- ~~**Book page mobile perf — convert raw `<img>` to `next/image`**~~ ✅ shipped Round 16 (2026-05-04). 8 raw img tags across 6 files converted; Dune page now serves hero cover via `_next/image` with 15-width responsive srcSet at q=75, automatic AVIF/WebP.
+
+---
+
+## Round 16 (2026-05-04..05) ✅ — Search fix + scheduled-task unblock + cover/description cleanup + mobile perf
+
+### Search "stopped responding" silent-failure fix
+- `/api/search/full` could 504 when ISBNdb was slow → client cleared `loading` but never set `searched=true` → user saw blank page instead of "No results found." Added an `else` branch on `!res.ok` and a non-AbortError catch that sets `searched=true` and clears all result arrays so the existing empty-state UI renders.
+- File: `src/app/search/search-client.tsx`. Commit `0c23e4c`.
+
+### Scheduled-task permission fix (the root cause of "nightly tasks haven't worked in 9 days")
+- 7 scheduled tasks had been firing on cron but stalling at the permission prompt because none of the `cd /Users/clankeredwards/claude/tbra && ./scripts/sync-incremental.sh ...` command shapes matched the project allowlist (`Bash(npm run *)`, `Bash(npx *)`, `Bash(tsx *)`, etc.). The user-level `Bash(*)` in `~/.claude/settings.json` was effectively shadowed.
+- Added 3 patterns to `.claude/settings.json` allow array: `Bash(cd /Users/clankeredwards/claude/tbra && *)`, `Bash(./scripts/sync-incremental.sh *)`, `Bash(./scripts/*.sh *)`.
+- **Verified live:** within an hour of the change, all 3 previously-stuck tasks (junk-sweep, description-refresh, placeholder-clear) self-fired after 8 days of stale `lastRunAt`. Plus a one-time `cron-proof-2026-05-04` task fired at 21:22 EDT with ~50s grace. Settings precedence confirmed: project-level allow patterns are required (user-level Bash(*) doesn't carry through to fresh task sessions).
+
+### Cover placeholder detection upgrade
+- Added 2 new fingerprints found from user-reported books: `isbndb-v4` (1304 bytes, 60×40 microimage, `54664c70...`) and `openlibrary-v1` (1770 bytes, 60×40, `1eaa7e0f...` — first OL placeholder we've found).
+- **New: dimension-based microimage detection.** Both new placeholders are 60×40 pixels — no real cover would be that small. Added `parseJpegDimensions()` (SOF marker walker, no npm dep) + `MICRO_IMAGE_DIMENSION_THRESHOLD=100` + `MICRO_IMAGE_BYTE_THRESHOLD=3000` HEAD pre-filter. Catches future placeholder variants automatically without per-fingerprint maintenance.
+- **Bug fix:** `isKnownPlaceholderCover()` was silently skipping when the host didn't return Content-Length on HEAD (notably covers.openlibrary.org). Now always fetches body and uses `buf.length` as authoritative size. Also iterates ALL fingerprints whose URL pattern matches (was only checking the first match — meant isbndb-v2/v3/v4 were ignored).
+- `cover-rescue.ts` runs the dimension pass after the fingerprint pass, scoped to ISBNdb/Google/OL hosts.
+
+### Description sanitization upgrade
+- New `stripBlurbs()` helper in `sanitize.ts` removes `"quote"—Source` attribution patterns while preserving non-blurb prose. Source-end detection: paragraph break, period+capital, ~30 sentence-starter words (`It's`/`The`/`If`/`But`/`When`/...), 150-char safety cap. Wired into `sanitizeDescription()` early so review-walls get stripped before length/junk checks.
+- New rejection rules in `sanitizeDescription()`: Goodreads UI scrapes (Read reviews from the world's largest community / Let us know what's wrong with this preview / Want to Read · Currently Reading / Return to Book Page / Reviews from the book:), Goodreads metadata (N Ratings · N Reviews / published YYYY · N editions), multi-star bursts (★★+).
+- **Closed the re-enrichment loop hole.** Previously, only the final "publisher description" write path applied `sanitizeDescription`. The OL/ISBNdb/Brave write paths bypassed it, so re-enriching a stale-flagged junk description could write the same junk back. Wrapped all 3 paths with `sanitizeDescription` so worst case is "stays empty" rather than "junk re-written."
+
+### Bulk data cleanup applied
+- `flag-junk-descriptions.ts` (new): scans Turso for descriptions matching the new patterns, with `--dry-run`/`--apply`/`--skip=`/`--only=` flags. **260 books cleared** (Goodreads scrapes + Goodreads metadata + multi-star promos).
+- `strip-blurbs-from-existing.ts` (new): runs `stripBlurbs()` against the catalog, writes back the cleaned text. **46 books had blurbs removed while preserving prose**, **2 PURE blurb-walls cleared** (would have been left below the 60-char threshold).
+- 4 missing series books imported with covers + ISBNdb metadata + author/series links: Marissa Meyer's Renegades trilogy (Renegades 2017 #1, Archenemies 2018 #2, Supernova 2019 #3) and `It Devours!` (Fink + Cranor 2017 #2 in Welcome to Night Vale).
+
+### Process-reports hardening
+- Per-report `Promise.race` 3-min timeout — a single hung report can no longer hold the queue hostage. Wall-clock ceiling raised from 20min to 4h with `longRunning: true` so future bigger queues fit.
+- `deleteBook()` audit-trail fix: now detaches `reported_issues.book_id` and auto-resolves any still-`new` reports BEFORE the cascade DELETEs run. Caller's `resolveReport()` then finds the still-existing report row and overwrites the placeholder resolution with the meaningful one. Was silently destroying audit trail when junk-deletes ran.
+
+### Mobile perf — `<img>` → `next/image`
+- 8 raw img tags across 6 files: `book-header.tsx` (hero blur fill, card blur fill, main cover 180×270 with priority + responsive srcSet), `book-series.tsx` (series thumbs 120×180), `book-page-client.tsx` (cover-picker thumbs ×2), `up-next-shelf.tsx` / `friends-activity.tsx` / `currently-reading-section.tsx` (card-bg blur fills, priority on currently-reading).
+- **Verified live:** Dune book page now serves hero cover via `_next/image` with 15-width srcSet (32w → 3840w) at quality 75. Mobile devices auto-pick 256w/384w (~10-30 KB) instead of the full 600+ KB original.
+
+### 7 user reports resolved
+1. A Parade of Horribles — primary genre humor → LitRPG (removed Humor/Dark Humor/Humorous Fantasy from the book; Fantasy/Grimdark Fantasy/LitRPG/Progression Fantasy remain).
+2. The Wild Robot series — set positions 1, 2, 3 (left "Wild Robot on the Island" picture-book at null).
+3. Empire of Silence (Deluxe Hardcover) — deleted dupe (user already had canonical `completed`); also cleaned up a 3rd no-author junk dupe.
+4. Gone Girl FTI — re-pointed reading session to canonical, set `started_at = completion_date` and `started_at_explicit = 0` (DB constraint requires non-null), preserved 2024 completion. Deleted FTI dupe.
+5. Renegades — imported the 3 English Marissa Meyer books at proper positions; Turkish translations preserved.
+6. Welcome to Night Vale — imported `It Devours!` at position 2.
+7. Strenghtsfinder 2.0 typo (came in mid-session) — deleted (0 users); canonical preserved.
+
+### Commits (5 deploys, all `Ready` on Vercel — broke the 9-day stale streak)
+- `0c23e4c` Search "no results" fix + permission patterns
+- `b8692eb` Cover/description cleanup machinery (placeholders, blurbs, per-report cap)
+- `d499070` Bugfix: placeholder detection works without Content-Length
+- `b77f9bc` process-reports preserves audit trail on book deletion
+- `a9fe09f` Mobile perf: book/home covers → next/image
 
 ---
 

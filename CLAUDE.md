@@ -57,6 +57,7 @@ npm run deploy:code   # Deploy code only
 - **When creating/replacing scheduled tasks:** Delete old tasks entirely rather than just disabling them. Disabled tasks clutter the sidebar.
 - **Task IDs in sidebar:** The task ID you create is what shows in the user's sidebar. Use clear, descriptive IDs.
 - **New tasks don't appear in sidebar until triggered once.** After creating a new task, immediately do a manual "Run now" to make it visible and to pre-approve tool permissions so future automatic runs don't stall on permission prompts.
+- **Permission allowlist must include the cwd-prefix shape (CRITICAL — added 2026-05-04).** Every nightly SKILL.md command starts with `cd /Users/clankeredwards/claude/tbra && ...`. The user-level `~/.claude/settings.json` `Bash(*)` does NOT carry through to fresh scheduled-task sessions when project-level `.claude/settings.json` exists — project settings shadow it. The project allow-list MUST contain `Bash(cd /Users/clankeredwards/claude/tbra && *)` (already added). If you add a new task whose command isn't covered by `Bash(npm run *)` / `Bash(npx *)` / `Bash(tsx *)` / `Bash(./scripts/sync-incremental.sh *)` / `Bash(./scripts/*.sh *)` / `Bash(cd /Users/clankeredwards/claude/tbra && *)` — add the matching pattern to project settings BEFORE enabling the task. Symptom of this trap: tasks fire on cron, hang silently on a permission prompt while user is asleep, never log a `lastRunAt`. **Before enabling any new task, verify by manually running its bash command in your current session — if you don't see a permission prompt, the task is auto-approved; if you do, fix the allowlist first.**
 
 ## Cover Management (2026-04-17)
 Auto-refill is **off** for existing books. Enrichment's Phase 4 cover cascade only runs when `cover_source IS NULL` — meaning the book has never been through the cascade. Subsequent enrichment runs skip Phase 4 for any book with a `cover_source` value.
@@ -95,10 +96,25 @@ Auto-refill is **off** for existing books. Enrichment's Phase 4 cover cascade on
 - **Supported sources:** Goodreads, StoryGraph, Libby (OverDrive audiobook loans)
 
 ## Deduplication
-- **Run `npx tsx scripts/dedup-books.ts`** to find and merge duplicate books. Supports `--dry-run` flag.
-- **The script:** normalizes titles (strips parentheticals, subtitles, "A Novel"), groups by normalized title + author, scores each entry (cover, ratings, clean title), merges all user data into the canonical entry, then deletes dupes.
-- **After running locally:** must also delete the removed book IDs from live Turso. The sync push script never deletes rows — it only inserts/updates.
-- **Live covers are authoritative:** The sync pull script always overwrites local covers with live values. Manual cover fixes on live are never lost.
+
+Three dedup tools, each for a distinct pattern:
+
+### 1. Generic title+author dedup (`scripts/dedup-books.ts`)
+- **Run `npx tsx scripts/dedup-books.ts`** (supports `--dry-run`). Normalizes titles (strips parentheticals, subtitles, "A Novel"), groups by normalized title + author, scores each entry (cover, ratings, clean title), merges all user data into the canonical entry, then deletes dupes.
+- Runs against LOCAL only. After it, removed book IDs must also be deleted from Turso (sync-push never deletes).
+
+### 2. Cross-DB title+author dupes ("Parade of Horribles" pattern) — `scripts/find-title-author-dupes.ts` + `scripts/replay-dedup-both.ts`
+- Scans for same-normalized-title + first-author books that exist as separate rows on Turso (often `/book/<title>` AND `/book/<title>-<author>` as parallel slugs). Dedicated runbook with step-by-step commands at `project_title_author_dupes.md` in Claude memory — read it before running anything.
+- Flow: `find-title-author-dupes.ts --verify-turso` → `reports/title-author-dupe-manifest-<ts>.json` → `replay-dedup-both.ts --apply --chunk=5 --pause=200 --cooldown=60` (applies to BOTH local + Turso per pair, local first to block sync-push re-insertion). Uses `createGuardedTurso` per the Turso script safety rule (3h ceiling, PID lockfile, verified deletes).
+- `scripts/ambiguous-dupes-report.ts` generates a markdown review of the groups the auto-merger declined.
+- Follow-up: `delete-dupes-from-meilisearch.ts --manifest=<path> --apply` — Meilisearch index doesn't auto-purge after a dedup run.
+
+### 3. Slug-collision dedup ("Midnight" pattern) — `scripts/audit-slug-collisions.ts` + `scripts/fix-slug-collisions.ts`
+- Same slug, different UUIDs across local + Turso. See `reference_slug_collisions.md`.
+
+### Related
+- **Merge-shaped user reports auto-handled (patched 2026-04-21):** `process-reports.ts` detects "two versions / please merge / duplicate of this" language in reports, finds the sibling by normalized title + author, and auto-merges when clean. Ambiguous cases stay `status='new'` with `[merge-ambiguous: N siblings …]` prefix so they surface in `/admin/issues` rather than being silently buried. `deleteBook()` has a post-action SELECT verify that throws if the row survived — no more fabricated "Deleted" claims in nightly-triage reports. See `feedback_triage_verification.md`.
+- **Live covers are authoritative:** sync-pull always overwrites local covers with live values. Manual cover fixes on live are never lost.
 
 ## Database Sync Architecture (rewritten 2026-04-16)
 Local SQLite (`data/tbra.db`) and production Turso (`tbra-web-app-thebasedreaderapp`) can diverge. The sync scripts now talk to Turso via `@libsql/client` directly (NOT the `turso` CLI, which is authed to the wrong account — see note under "Watch Out For").
