@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BookHeader } from "@/components/book/book-header";
 import { ReadingStateSelector } from "@/components/book/reading-state-selector";
@@ -613,10 +614,12 @@ export function BookPageClient({
                       disabled={savingCover}
                       className="flex flex-col items-center gap-0.5 rounded-lg p-1 hover:bg-surface-alt transition-colors disabled:opacity-50"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <Image
                         src={`https://covers.openlibrary.org/b/id/${ec.coverId}-M.jpg`}
                         alt={ec.title}
+                        width={120}
+                        height={180}
+                        sizes="120px"
                         className="w-full aspect-[2/3] rounded object-cover border border-border"
                         loading="lazy"
                       />
@@ -668,10 +671,12 @@ export function BookPageClient({
                       disabled={savingCover}
                       className="flex flex-col items-center gap-0.5 rounded-lg p-1 hover:bg-surface-alt transition-colors disabled:opacity-50"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <Image
                         src={ec.url}
                         alt="Cover option"
+                        width={120}
+                        height={180}
+                        sizes="120px"
                         className="w-full aspect-[2/3] rounded object-cover border border-border"
                         loading="lazy"
                         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}

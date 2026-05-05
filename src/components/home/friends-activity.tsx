@@ -112,13 +112,14 @@ export function FriendsActivity({ activity }: FriendsActivityProps) {
           <Link href={cardLink} className="block relative h-16 lg:h-20 overflow-hidden">
             {item.book.coverImageUrl ? (
               <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={item.book.coverImageUrl}
                   alt=""
                   aria-hidden
+                  fill
                   loading="lazy"
-                  className="book-card-bg-img absolute inset-0 h-full w-full scale-150 object-cover"
+                  sizes="(max-width: 1024px) 200px, 260px"
+                  className="book-card-bg-img scale-150 object-cover"
                 />
                 <div className="absolute inset-0 currently-reading-overlay" />
                 <div className="absolute bottom-1.5 lg:bottom-2 left-2 lg:left-3 z-10">

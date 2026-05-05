@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { NoCover } from "@/components/no-cover";
 
@@ -64,12 +65,13 @@ export function BookHeader({
       {/* Full-bleed color spill — escapes container to viewport edges */}
       <div className="hero-bleed hero-bleed-fade absolute -top-20 bottom-0 overflow-hidden">
         {coverImageUrl ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
+          <Image
             src={coverImageUrl}
             alt=""
             aria-hidden
-            className="book-hero-img absolute inset-0 h-full w-full scale-150 object-cover blur-3xl opacity-60 saturate-150 brightness-110"
+            fill
+            sizes="100vw"
+            className="book-hero-img scale-150 object-cover blur-3xl opacity-60 saturate-150 brightness-110"
           />
         ) : (
           <div className="absolute inset-0 no-cover-gradient opacity-40" />
@@ -102,12 +104,13 @@ export function BookHeader({
         <div className="absolute inset-0 overflow-hidden rounded-2xl">
           {coverImageUrl && (
             <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={coverImageUrl}
                 alt=""
                 aria-hidden
-                className="book-card-bg-img absolute inset-0 h-full w-full scale-150 object-cover blur-2xl opacity-80 saturate-150 brightness-110"
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="book-card-bg-img scale-150 object-cover blur-2xl opacity-80 saturate-150 brightness-110"
               />
               <div className="absolute inset-0 book-header-overlay" />
             </>
@@ -138,10 +141,13 @@ export function BookHeader({
         <div className="relative z-10 flex gap-4 sm:gap-6 p-4 sm:p-6">
           <div className="relative flex-shrink-0 flex items-center">
             {coverImageUrl ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
+              <Image
                 src={coverImageUrl}
                 alt={`Cover of ${title}`}
+                width={180}
+                height={270}
+                sizes="(max-width: 640px) 110px, (max-width: 1024px) 140px, 180px"
+                priority
                 className="w-[110px] sm:w-[140px] lg:w-[180px] h-auto rounded-lg object-contain shadow-xl"
               />
             ) : (

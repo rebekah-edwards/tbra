@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { NoCover } from "@/components/no-cover";
 
@@ -66,10 +67,12 @@ export function BookSeries({ seriesId, seriesSlug, name, books, currentBookId }:
             >
               <div className={`relative w-[120px] ${isCurrent ? "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-lg" : ""}`}>
                 {book.coverImageUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
+                  <Image
                     src={book.coverImageUrl}
                     alt={`Cover of ${book.title}`}
+                    width={120}
+                    height={180}
+                    sizes="120px"
                     className="aspect-[2/3] w-[120px] rounded-lg object-cover shadow-sm"
                     loading="lazy"
                   />

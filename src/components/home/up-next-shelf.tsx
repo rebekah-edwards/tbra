@@ -84,12 +84,13 @@ function SortableUpNextCard({
       {/* Blurred cover background */}
       {item.coverImageUrl && (
         <div className="absolute inset-0 overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={item.coverImageUrl}
             alt=""
             aria-hidden
-            className="book-card-bg-img absolute inset-0 h-full w-full scale-150 object-cover"
+            fill
+            sizes="(max-width: 1024px) 50vw, 25vw"
+            className="book-card-bg-img scale-150 object-cover"
           />
           <div className="absolute inset-0 currently-reading-overlay" />
         </div>

@@ -293,8 +293,15 @@ function ReadingBookCard({ book, onReviewOpen }: {
       <div className="relative rounded-xl currently-reading-card-base">
         {book.coverImageUrl && (
           <div className="absolute inset-0 overflow-hidden rounded-xl">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={book.coverImageUrl} alt="" aria-hidden loading="eager" fetchPriority="high" decoding="async" className="book-card-bg-img absolute inset-0 h-full w-full scale-150 object-cover" />
+            <Image
+              src={book.coverImageUrl}
+              alt=""
+              aria-hidden
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="book-card-bg-img scale-150 object-cover"
+            />
             <div className="absolute inset-0 currently-reading-overlay" />
           </div>
         )}
