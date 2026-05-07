@@ -17,10 +17,17 @@ const yearFilter = (year: number | undefined, alias = "") => {
  * Deduplicated completed books subquery.
  * Re-imports can create multiple reading_sessions per book.
  * This CTE selects one row per book_id using the most recent completion_date.
+ *
+ * `active_formats` is preserved so callers can opt into format-aware accounting
+ * (e.g. excluding pages for audio-only sessions in getPageStats / getPagesByMonth).
  */
 const deduped = (userId: string, year: number | undefined) => sql`
   deduped_sessions AS (
-    SELECT book_id, MAX(completion_date) as completion_date, completion_precision
+    SELECT
+      book_id,
+      MAX(completion_date) as completion_date,
+      completion_precision,
+      active_formats
     FROM reading_sessions
     WHERE user_id = ${userId}
       AND state = 'completed'
@@ -29,6 +36,20 @@ const deduped = (userId: string, year: number | undefined) => sql`
     GROUP BY book_id
   )
 `;
+
+/**
+ * SQL fragment: TRUE when this session represents an audio-only read.
+ * Used to suppress page contributions to "Pages read" — the user wants
+ * audio-only listens to add to "Listened" minutes instead of pages read.
+ * Mixed-format sessions (audio + print/ebook) still count toward pages.
+ */
+const isAudioOnly = (col: string = "active_formats") => sql.raw(`
+  ${col} IS NOT NULL
+  AND ${col} LIKE '%audiobook%'
+  AND ${col} NOT LIKE '%hardcover%'
+  AND ${col} NOT LIKE '%paperback%'
+  AND ${col} NOT LIKE '%ebook%'
+`);
 
 /** Books completed grouped by month */
 export async function getCompletedBooksByMonth(
@@ -57,7 +78,7 @@ export async function getCompletedBooksByYear(
 ): Promise<{ year: string | null; count: number; pages: number }[]> {
   const tracked = await db.all(sql`
     WITH dedup AS (
-      SELECT book_id, MAX(completion_date) as completion_date
+      SELECT book_id, MAX(completion_date) as completion_date, active_formats
       FROM reading_sessions
       WHERE user_id = ${userId}
         AND state = 'completed'
@@ -66,7 +87,10 @@ export async function getCompletedBooksByYear(
     )
     SELECT substr(d.completion_date, 1, 4) as year,
            count(*) as count,
-           COALESCE(SUM(b.pages), 0) as pages
+           COALESCE(SUM(
+             CASE WHEN ${isAudioOnly("d.active_formats")} THEN 0
+                  ELSE b.pages END
+           ), 0) as pages
     FROM dedup d
     JOIN books b ON b.id = d.book_id
     GROUP BY substr(d.completion_date, 1, 4)
@@ -75,14 +99,18 @@ export async function getCompletedBooksByYear(
 
   const untracked = await db.all(sql`
     WITH dedup AS (
-      SELECT book_id
+      SELECT book_id, active_formats
       FROM reading_sessions
       WHERE user_id = ${userId}
         AND state = 'completed'
         AND completion_date IS NULL
       GROUP BY book_id
     )
-    SELECT count(*) as count, COALESCE(SUM(b.pages), 0) as pages
+    SELECT count(*) as count,
+           COALESCE(SUM(
+             CASE WHEN ${isAudioOnly("d.active_formats")} THEN 0
+                  ELSE b.pages END
+           ), 0) as pages
     FROM dedup d
     JOIN books b ON b.id = d.book_id
   `) as { count: number; pages: number }[];
@@ -193,7 +221,10 @@ export async function getReadingPace(
   return { avgDays: Math.max(Math.round(rows[0].avg_days), 0), totalBooks: rows[0].total };
 }
 
-/** Total pages read */
+/** Total pages read.
+ * Book count includes audio-only reads. Page total excludes them
+ * (audio-only contributes to "Listened" minutes instead).
+ */
 export async function getPageStats(
   userId: string,
   year?: number
@@ -201,7 +232,13 @@ export async function getPageStats(
   const rows = await db.all(sql`
     WITH ${deduped(userId, year)}
     SELECT
-      COALESCE(SUM(CASE WHEN b.pages IS NOT NULL THEN b.pages ELSE 0 END), 0) as total_pages,
+      COALESCE(SUM(
+        CASE
+          WHEN ${isAudioOnly("ds.active_formats")} THEN 0
+          WHEN b.pages IS NOT NULL THEN b.pages
+          ELSE 0
+        END
+      ), 0) as total_pages,
       COUNT(*) as book_count
     FROM deduped_sessions ds
     JOIN books b ON ds.book_id = b.id
@@ -210,14 +247,18 @@ export async function getPageStats(
   return { totalPages: rows[0]?.total_pages ?? 0, bookCount: rows[0]?.book_count ?? 0 };
 }
 
-/** Pages read grouped by month */
+/** Pages read grouped by month. Excludes audio-only sessions from page total. */
 export async function getPagesByMonth(
   userId: string,
   year?: number
 ): Promise<{ month: string; pages: number }[]> {
   const rows = await db.all(sql`
     WITH ${deduped(userId, year)}
-    SELECT substr(ds.completion_date, 1, 7) as month, COALESCE(SUM(b.pages), 0) as pages
+    SELECT substr(ds.completion_date, 1, 7) as month,
+           COALESCE(SUM(
+             CASE WHEN ${isAudioOnly("ds.active_formats")} THEN 0
+                  ELSE b.pages END
+           ), 0) as pages
     FROM deduped_sessions ds
     JOIN books b ON ds.book_id = b.id
     GROUP BY substr(ds.completion_date, 1, 7)

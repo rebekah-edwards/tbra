@@ -87,3 +87,28 @@ export async function getReferralCount(userId: string): Promise<number> {
 
   return result[0]?.count ?? 0;
 }
+
+/**
+ * List users who joined via this user's referral link, ordered newest first.
+ */
+export async function getReferredUsers(userId: string): Promise<{
+  id: string;
+  username: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+  createdAt: string;
+}[]> {
+  const rows = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      displayName: users.displayName,
+      avatarUrl: users.avatarUrl,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.referredByUserId, userId))
+    .orderBy(sql`${users.createdAt} DESC`);
+
+  return rows;
+}

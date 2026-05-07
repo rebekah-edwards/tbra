@@ -7,7 +7,7 @@ import { userBookState, userOwnedEditions, books, userBookReviews, userBookDimen
 import { eq, and, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { importFromOpenLibraryAndReturn } from "@/lib/actions/books";
-import { ensureReadingSession, pauseActiveSession } from "@/lib/actions/reading-session";
+import { ensureReadingSession, pauseActiveSession, resumeActiveSession } from "@/lib/actions/reading-session";
 import { removeFromUpNext } from "@/lib/actions/up-next";
 import { getActiveSession } from "@/lib/queries/reading-session";
 import type { OLSearchResult } from "@/lib/openlibrary";
@@ -70,6 +70,10 @@ export async function setBookState(bookId: string, state: string) {
   // Sync reading session
   if (state === "currently_reading") {
     await ensureReadingSession(user.userId, bookId, activeFormats);
+    // If the active session was paused (user clicked "Reading Now" to resume),
+    // properly resume it so the paused-time gets accumulated into total_paused_days
+    // and the stats only count Reading-Now days.
+    await resumeActiveSession(user.userId, bookId);
   } else if (state === "paused") {
     // Ensure a reading session exists before pausing — if a book goes straight
     // to "paused" (e.g., imported without a session), create one first so
@@ -310,10 +314,12 @@ export async function setActiveFormats(bookId: string, formats: string[]) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
+  const formatsJson = formats.length > 0 ? JSON.stringify(formats) : null;
+
   await db
     .update(userBookState)
     .set({
-      activeFormats: formats.length > 0 ? JSON.stringify(formats) : null,
+      activeFormats: formatsJson,
       updatedAt: new Date().toISOString(),
     })
     .where(
@@ -322,6 +328,18 @@ export async function setActiveFormats(bookId: string, formats: string[]) {
         eq(userBookState.bookId, bookId)
       )
     );
+
+  // Mirror to the active reading session so stats (e.g. minutes-listened) can
+  // see which formats were actually used. Without this, the session row keeps
+  // the formats it had at session creation (often null) even after the user
+  // picks a format mid-read.
+  const active = await getActiveSession(user.userId, bookId);
+  if (active) {
+    await db
+      .update(readingSessions)
+      .set({ activeFormats: formatsJson, updatedAt: new Date().toISOString() })
+      .where(eq(readingSessions.id, active.id));
+  }
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");

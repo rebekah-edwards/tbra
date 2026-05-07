@@ -33,6 +33,11 @@ export async function setBookStateWithCompletion(
     )
     .get();
 
+  // Capture the user's current format selection BEFORE we null it on the cache,
+  // so we can preserve it on the reading session below (so stats know how the
+  // book was read).
+  const cachedFormats = existing?.activeFormats ?? null;
+
   if (existing) {
     await db
       .update(userBookState)
@@ -59,18 +64,53 @@ export async function setBookStateWithCompletion(
     // Since the user was actively reading, default the finish date to today if they
     // didn't pick one (they most likely just finished today).
     const today = new Date().toISOString().split("T")[0];
+
+    // Determine final activeFormats: prefer whatever's already on the session,
+    // otherwise fall back to the cached selection from user_book_state.
+    const finalFormats =
+      activeSession.activeFormats && activeSession.activeFormats !== "null"
+        ? activeSession.activeFormats
+        : cachedFormats;
+
+    // If the user picked a completion date that's before the recorded start
+    // date, the recorded start can't be right — drop it so the UI shows
+    // "No start date" instead of an impossible timeline (e.g. "Apr 27, 2026 → 2024").
+    let startedAtUpdate: { startedAtExplicit?: boolean } = {};
+    if (
+      completionDate &&
+      activeSession.startedAt &&
+      activeSession.startedAt.split("T")[0] > completionDate
+    ) {
+      startedAtUpdate = { startedAtExplicit: false };
+    }
+
+    // If the active session was paused, accumulate the time it spent in the
+    // paused state into total_paused_days so stats only count Reading-Now days.
+    let pausedUpdate: { totalPausedDays?: number; pausedAt?: string | null } = {};
+    if (activeSession.state === "paused" && activeSession.pausedAt) {
+      const pausedMs = Date.now() - new Date(activeSession.pausedAt).getTime();
+      const additionalPausedDays = Math.max(0, Math.round(pausedMs / (1000 * 60 * 60 * 24)));
+      const totalPaused = (activeSession.totalPausedDays ?? 0) + additionalPausedDays;
+      pausedUpdate = { totalPausedDays: totalPaused, pausedAt: null };
+    }
+
     await db
       .update(readingSessions)
       .set({
         state,
         completionDate: completionDate ?? today,
         completionPrecision: completionPrecision ?? "exact",
+        activeFormats: finalFormats,
+        ...startedAtUpdate,
+        ...pausedUpdate,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(readingSessions.id, activeSession.id));
   } else {
     // No active session — create one (e.g., user clicked "Finished" directly without "Reading Now" first).
     // The user never indicated a start OR finish date; leave both unspecified if they skipped.
+    // Preserve any cached format selection (user_book_state.activeFormats) so
+    // stats know how the book was read.
     const readNumber = await getNextReadNumber(user.userId, bookId);
     await db.insert(readingSessions).values({
       userId: user.userId,
@@ -81,6 +121,7 @@ export async function setBookStateWithCompletion(
       startedAtExplicit: false,
       completionDate,
       completionPrecision,
+      activeFormats: cachedFormats,
     });
   }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 interface ReferralCardProps {
@@ -23,7 +24,7 @@ export function ReferralCard({ code, count }: ReferralCardProps) {
     <div className="rounded-xl border border-accent/20 bg-accent/5 p-4">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue">
             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
             <circle cx="9" cy="7" r="4" />
             <line x1="19" x2="19" y1="8" y2="14" />
@@ -32,9 +33,12 @@ export function ReferralCard({ code, count }: ReferralCardProps) {
           Invite Friends
         </h2>
         {count > 0 && (
-          <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-            {count} {count === 1 ? "referral" : "referrals"}
-          </span>
+          <Link
+            href="/profile/referrals"
+            className="text-xs font-medium text-neon-blue bg-neon-blue/10 px-2 py-0.5 rounded-full hover:bg-neon-blue/20 transition-colors"
+          >
+            {count} {count === 1 ? "referral" : "referrals"} &rarr;
+          </Link>
         )}
       </div>
       <p className="text-xs text-muted mb-3">

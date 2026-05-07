@@ -123,6 +123,7 @@ export async function signup(
         type: "referral_signup",
         title: "New referral!",
         message: `${newUserName} joined tbr*a through your referral link`,
+        linkUrl: "/profile/referrals",
       });
     } catch {
       // Don't fail signup if notification fails
