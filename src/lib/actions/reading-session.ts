@@ -216,12 +216,23 @@ export async function resumeActiveSession(
 }
 
 /**
- * Update dates on an existing reading session.
+ * Update fields on an existing reading session.
  * Only the session owner can update.
+ *
+ * `activeFormats` accepts an array (will be JSON-serialized) or null to clear.
+ * Used by the per-session format editor in Reading History so users can
+ * retro-tag past completed sessions as audio/print/etc — drives the Stats
+ * page's Pages-read / Listened split for sessions that predated session-level
+ * format propagation (Round 17).
  */
 export async function updateReadingSession(
   sessionId: string,
-  data: { startedAt?: string; completionDate?: string | null; pausedAt?: string | null }
+  data: {
+    startedAt?: string;
+    completionDate?: string | null;
+    pausedAt?: string | null;
+    activeFormats?: string[] | null;
+  }
 ) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -253,6 +264,12 @@ export async function updateReadingSession(
   if (data.pausedAt !== undefined) {
     updates.pausedAt = data.pausedAt;
   }
+  if (data.activeFormats !== undefined) {
+    updates.activeFormats =
+      data.activeFormats && data.activeFormats.length > 0
+        ? JSON.stringify(data.activeFormats)
+        : null;
+  }
 
   await db
     .update(readingSessions)
@@ -261,6 +278,7 @@ export async function updateReadingSession(
 
   revalidatePath(`/book/${session.bookId}`);
   revalidatePath("/profile");
+  revalidatePath("/stats");
 }
 
 /**

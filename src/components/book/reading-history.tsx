@@ -1,12 +1,27 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import {
   updateReadingSession,
   addRereadSession,
   deleteReadingSession,
 } from "@/lib/actions/reading-session";
 import type { ReadingSession } from "@/lib/queries/reading-session";
+import { FormatIcon } from "@/components/format-button";
+
+const FORMAT_LABELS: Record<string, string> = {
+  hardcover: "Hardcover",
+  paperback: "Paperback",
+  ebook: "eBook",
+  audiobook: "Audio",
+};
+const ALL_FORMATS = ["hardcover", "paperback", "ebook", "audiobook"];
+
+function formatSummary(formats: string[]): string {
+  if (formats.length === 0) return "Add format";
+  if (formats.length === 1) return FORMAT_LABELS[formats[0]] ?? formats[0];
+  return `${formats.length} formats`;
+}
 
 function formatDate(dateStr: string | null, precision?: string | null): string {
   if (!dateStr) return "";
@@ -59,7 +74,40 @@ function SessionRow({
   const [editingPaused, setEditingPaused] = useState(false);
   const [editingEnd, setEditingEnd] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editingFormats, setEditingFormats] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const formatsPopoverRef = useRef<HTMLDivElement>(null);
+
+  // Close format popover on outside click
+  useEffect(() => {
+    if (!editingFormats) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        formatsPopoverRef.current &&
+        !formatsPopoverRef.current.contains(e.target as Node)
+      ) {
+        setEditingFormats(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [editingFormats]);
+
+  function handleToggleFormat(format: string) {
+    const current = session.activeFormats ?? [];
+    const next = current.includes(format)
+      ? current.filter((f) => f !== format)
+      : [...current, format];
+
+    // Optimistic update
+    setSession((prev) => ({ ...prev, activeFormats: next }));
+
+    startTransition(async () => {
+      await updateReadingSession(session.id, { activeFormats: next });
+      onUpdate();
+    });
+  }
 
   function handleDateChange(
     field: "startedAt" | "completionDate" | "pausedAt",
@@ -208,6 +256,61 @@ function SessionRow({
             >
               {formatDate(session.completionDate, session.completionPrecision) || "No finish date"}
             </button>
+          )}
+        </div>
+
+        {/* Format chips — click to retro-tag a session as audio/print/etc.
+            Drives the Stats page Pages-read vs Listened split. */}
+        <div className="mt-1.5 relative" ref={formatsPopoverRef}>
+          <button
+            onClick={() => setEditingFormats((v) => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors ${
+              session.activeFormats && session.activeFormats.length > 0
+                ? "bg-neon-blue/10 text-neon-blue border border-neon-blue/30 hover:bg-neon-blue/20"
+                : "bg-surface-alt text-muted/70 border border-border/50 hover:text-foreground"
+            }`}
+            title="Set how you read this"
+          >
+            {session.activeFormats && session.activeFormats.length > 0 ? (
+              <FormatIcon
+                format={session.activeFormats.length === 1 ? session.activeFormats[0] : "hardcover"}
+                size={12}
+              />
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            )}
+            {formatSummary(session.activeFormats ?? [])}
+          </button>
+
+          {editingFormats && (
+            <div className="absolute top-full left-0 mt-1.5 z-30 rounded-xl border border-border bg-surface shadow-xl p-2 min-w-[180px]">
+              <p className="px-2 pb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted/70">
+                Format(s)
+              </p>
+              {ALL_FORMATS.map((format) => {
+                const checked = (session.activeFormats ?? []).includes(format);
+                return (
+                  <label
+                    key={format}
+                    className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-xs cursor-pointer hover:bg-surface-alt transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => handleToggleFormat(format)}
+                      className="accent-neon-blue h-3.5 w-3.5"
+                    />
+                    <FormatIcon format={format} size={14} />
+                    <span className={checked ? "text-foreground font-medium" : "text-muted"}>
+                      {FORMAT_LABELS[format] ?? format}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
