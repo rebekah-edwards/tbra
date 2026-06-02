@@ -11,8 +11,13 @@ dotenv.config({ path: ".env.vercel.local" });
 
 import type { Client } from "@libsql/client";
 import { createGuardedTurso } from "./lib/turso-guard";
+import * as fs from "fs";
+import * as path from "path";
 
 let client: Client;
+
+// Running log of every resolution applied this run, for the summary report file.
+const fixedLog: string[] = [];
 
 async function query(sql: string, args: any[] = []) {
   return client.execute({ sql, args });
@@ -74,6 +79,7 @@ async function resolveReport(reportId: string, resolution: string) {
     "UPDATE reported_issues SET status = 'resolved', resolved_at = datetime('now'), resolution = ? WHERE id = ?",
     [resolution, reportId],
   );
+  fixedLog.push(resolution);
 }
 
 // ─── Auto-action helpers (2026-04-20) ───
@@ -84,6 +90,19 @@ function slugify(s: string): string {
     .replace(/[^a-zA-Z0-9\s]/g, "")
     .replace(/\s+/g, " ").trim().toLowerCase()
     .replace(/\s/g, "-");
+}
+
+/** Heuristic: is this text likely non-English? (>10% non-ASCII-Latin letters, or
+ *  common non-English stopwords.) Used to clear foreign-language descriptions. */
+function isLikelyNonEnglish(text: string): boolean {
+  if (!text || text.length < 12) return false;
+  const letters = text.replace(/[^a-zA-ZÀ-ÿğışöçĞİŞÖÇ]/g, "");
+  if (letters.length === 0) return false;
+  const nonAsciiLatin = (text.match(/[^\x00-\x7F]/g) || []).length;
+  if (nonAsciiLatin / text.length > 0.1) return true;
+  // Non-English function words that rarely appear in English book blurbs.
+  return /\b(?:bir|ve|için|bu|ile|olan|den|ein|und|der|die|das|für|el|la|los|las|une|des|pour|avec|este|esta)\b/i.test(text)
+    && (text.match(/\b(?:bir|ve|için|bu|ile|ein|und|der|die|el|la|los|une|des|este)\b/gi) || []).length >= 3;
 }
 
 async function getBookAuthorName(bookId: string): Promise<string | null> {
@@ -278,7 +297,7 @@ async function main() {
     // 3 min cap, with headroom. Realistic queue burns through in minutes,
     // not hours; this ceiling is the safety net, not the steady state.
     maxRuntimeMs: 4 * 60 * 60 * 1000,
-    queryTimeoutMs: 30_000,
+    queryTimeoutMs: 120_000,
     longRunning: true,
   });
   client = guard.remote;
@@ -421,11 +440,16 @@ async function main() {
           const hasHtmlJunk = bookDesc.includes("&#") || bookDesc.includes("&amp;") || bookDesc.includes("<");
           const isTooShort = bookDesc.length < 20;
           const isSpammy = bookDesc.includes("AND LOTS OF THIS") || bookDesc.includes("data is provided as");
+          const isNonEnglish = isLikelyNonEnglish(bookDesc);
 
-          if (hasHtmlJunk || isTooShort || isSpammy) {
-            console.log(`  -> CLEARING junk description`);
-            await query("UPDATE books SET description = NULL WHERE id = ?", [bookId]);
-            await resolveReport(id, "Cleared junk description (HTML entities/spam content)");
+          if (hasHtmlJunk || isTooShort || isSpammy || isNonEnglish) {
+            // Clear AND flag stale so nightly-description-refresh re-enriches a
+            // clean English description (works even for books WITH users — we're
+            // only removing a bad description, never user data).
+            const reason = isNonEnglish ? "non-English text" : hasHtmlJunk ? "HTML entities" : isTooShort ? "too short" : "spam content";
+            console.log(`  -> CLEARING junk description (${reason}) + flag stale`);
+            await query("UPDATE books SET description = NULL, description_stale = 1, updated_at = datetime('now') WHERE id = ?", [bookId]);
+            await resolveReport(id, `Cleared junk description (${reason}); flagged description_stale for re-enrichment`);
             return { kind: "fixed" };
           } else {
             // Description exists but may need manual review
@@ -435,8 +459,47 @@ async function main() {
         // Even if we can't auto-fix the description, resolve as "reviewed"
         if (userCount === 0) {
           console.log(`  -> CLEARING description for 0-user book`);
-          await query("UPDATE books SET description = NULL WHERE id = ?", [bookId]);
-          await resolveReport(id, "Cleared description for book with 0 users");
+          await query("UPDATE books SET description = NULL, description_stale = 1, updated_at = datetime('now') WHERE id = ?", [bookId]);
+          await resolveReport(id, "Cleared description for book with 0 users; flagged for re-enrichment");
+          return { kind: "fixed" };
+        }
+      }
+
+      // === AUTO-FIXABLE: improper "unknown series" labeling → unlink it ===
+      // A book wrongly attached to a series literally named "Unknown"/"Unknown
+      // Series". Only fires on REMOVAL intent — reassignment to a *named* series
+      // (e.g. "this belongs in series X") still needs manual review.
+      if (bookId && /unknown\s+series/i.test(rawDesc) &&
+          /(?:get\s+rid|remove|improper|inappropriate|should\s+(?:never|not))/i.test(rawDesc) &&
+          // Skip REASSIGNMENT requests (they name a target series to move TO) —
+          // those need an owner to confirm/create the target series.
+          !/in\s+(?:the\s+)?series\s+["“']/i.test(rawDesc) &&
+          !/belongs?\s+in\b/i.test(rawDesc) &&
+          !/,\s*not\s+["“']/i.test(rawDesc)) {
+        const links = await query(
+          `SELECT bs.series_id FROM book_series bs JOIN series s ON s.id = bs.series_id
+           WHERE bs.book_id = ? AND lower(s.name) LIKE '%unknown%'`, [bookId]);
+        if (links.rows.length > 0) {
+          for (const row of links.rows as any[]) {
+            await query(`DELETE FROM book_series WHERE book_id = ? AND series_id = ?`, [bookId, row.series_id]);
+          }
+          console.log(`  -> REMOVED ${links.rows.length} improper 'unknown series' link(s)`);
+          await resolveReport(id, `Auto-fixed: removed ${links.rows.length} improper "unknown series" link(s)`);
+          return { kind: "fixed" };
+        }
+      }
+
+      // === AUTO-FIXABLE: binding/edition cruft in title (e.g. "(Turtleback
+      // School & Library Binding Edition)") → strip + regenerate slug ===
+      if (bookId && bookTitle && /\bbinding\s+edition\b|turtleback/i.test(rawDesc + " " + bookTitle)) {
+        const cleaned = bookTitle
+          .replace(/\s*\((?:[^()]*\b(?:binding\s+edition|turtleback)[^()]*)\)\s*/gi, " ")
+          .replace(/\s{2,}/g, " ").trim();
+        if (cleaned && cleaned !== bookTitle) {
+          await query(`UPDATE books SET title = ?, updated_at = datetime('now') WHERE id = ?`, [cleaned, bookId]);
+          const newSlug = await regenerateSlug(bookId, cleaned);
+          console.log(`  -> STRIPPED binding-edition text: "${bookTitle}" → "${cleaned}"${newSlug ? ` (slug ${newSlug})` : ""}`);
+          await resolveReport(id, `Auto-fixed: stripped binding-edition text from title → "${cleaned}"${newSlug ? `; slug → ${newSlug}` : ""}`);
           return { kind: "fixed" };
         }
       }
@@ -545,6 +608,36 @@ async function main() {
       console.log(`   ${needsInput[i].desc}`);
       console.log();
     }
+  }
+
+  // ── Write the summary report file (the SKILL.md promised this; it had been
+  //    missing since 2026-04-24, which is why nightly triage looked "dead" —
+  //    the needs-input queue was vanishing into console output nobody read). ──
+  const today = new Date().toISOString().slice(0, 10);
+  const reportPath = path.join(process.cwd(), "reports", `nightly-triage-${today}.md`);
+  const out: string[] = [];
+  out.push(`# Nightly triage — ${today}`, ``);
+  out.push(`- Open reports processed: ${result.rows.length}`);
+  out.push(`- Auto-fixed: ${fixed}`);
+  out.push(`- Needs your decision: ${needsInput.length}`, ``);
+  if (fixedLog.length > 0) {
+    out.push(`## Auto-fixed`, ``);
+    fixedLog.forEach((f, i) => out.push(`${i + 1}. ${f}`));
+    out.push(``);
+  }
+  if (needsInput.length > 0) {
+    out.push(`## Needs your decision`, ``);
+    out.push(`These are outside the auto-fixer's safe scope (series restructuring, author disambiguation, merges, external/PDF data, ambiguous requests). Review them in /admin/issues.`, ``);
+    needsInput.forEach((n, i) => {
+      out.push(`${i + 1}. **${n.book}**`, `   ${n.desc}`, ``);
+    });
+  }
+  try {
+    fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+    fs.writeFileSync(reportPath, out.join("\n"));
+    console.log(`\nWrote summary → ${reportPath}`);
+  } catch (e) {
+    console.warn(`Failed to write triage summary:`, e);
   }
 }
 
