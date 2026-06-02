@@ -41,6 +41,8 @@ export const books = sqliteTable("books", {
   uniqueIndex("books_isbn13_unique").on(table.isbn13),
   uniqueIndex("books_ol_key_unique").on(table.openLibraryKey),
   index("idx_books_title").on(table.title),
+  // Slug lookups power every book page — without this it was a full table scan.
+  index("idx_books_slug").on(table.slug),
   // Sort by publication year (Browse "newest" sort)
   index("books_publication_year_idx").on(table.publicationYear),
 ]);
