@@ -19,6 +19,7 @@ import { braveSearch } from "./search";
 import { searchISBNdb, searchISBNdbByTitle, getISBNdbCoverUrl, getISBNdbDescription, getISBNdbYear } from "./isbndb";
 import { searchLibraryOfCongress } from "./loc";
 import { searchBookBrainz } from "./bookbrainz";
+import { findNytMatch } from "./nyt";
 import { analyzeBookContent } from "./analyze";
 import type { BookContext } from "./types";
 import {
@@ -195,6 +196,41 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     .where(eq(bookAuthors.bookId, bookId));
 
   const authorNames = bookAuthorRows.map((r) => r.name);
+
+  // ── Phase 0.2: NYT bestseller cache (local DB read — no API call) ──
+  // If this book is a (cached) NYT bestseller, use NYT's curated description and
+  // publisher. Runs BEFORE the OL/ISBNdb/Brave description cascade so the curated
+  // copy wins over junk/missing data. This is also how USER IMPORTS get good
+  // descriptions: they run through enrichBook in production, which reads the
+  // Turso-synced nyt_bestsellers table — zero NYT API calls per book.
+  if (focus === "full") {
+    try {
+      const needsDesc = !book.description || book.descriptionStale;
+      if (needsDesc || !book.publisher) {
+        const nyt = await findNytMatch({
+          isbn13: book.isbn13,
+          title: book.title,
+          author: authorNames[0] ?? null,
+        });
+        if (nyt) {
+          const nytUpdates: Record<string, unknown> = {};
+          if (needsDesc && nyt.description) {
+            nytUpdates.description = nyt.description;
+            nytUpdates.descriptionStale = false;
+          }
+          if (!book.publisher && nyt.publisher) nytUpdates.publisher = nyt.publisher;
+          if (Object.keys(nytUpdates).length > 0) {
+            nytUpdates.updatedAt = new Date().toISOString();
+            await db.update(books).set(nytUpdates).where(eq(books.id, bookId));
+            Object.assign(book, nytUpdates);
+            console.log(`[enrichment] NYT cache filled: ${Object.keys(nytUpdates).filter((k) => k !== "updatedAt").join(", ")}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`[enrichment] NYT match error for "${book.title}":`, err);
+    }
+  }
 
   // ── Phase 0: If no OL key, search OL by title to find one ──
   if (focus === "full" && !book.openLibraryKey) {
@@ -534,17 +570,10 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
           }
         }
 
-        // Extract year
-        if (!book.publicationYear) {
-          const yearMatch = allText.match(/(?:published|released|publication|pub(?:lished)?[\s:]+(?:date)?)\s*(?:in\s+)?(\d{4})/i)
-            || allText.match(/(?:copyright|©)\s*(\d{4})/i);
-          if (yearMatch) {
-            const year = parseInt(yearMatch[1]);
-            if (year >= 1900 && year <= new Date().getFullYear() + 1) {
-              metaUpdates.publicationYear = year;
-            }
-          }
-        }
+        // NOTE: Brave-snippet year extraction was removed (2026-06-01). Grabbing a
+        // 4-digit number near "published/copyright" out of Amazon/Goodreads snippets
+        // was a significant corruption source for the publication year. Year now comes
+        // only from structured sources (OL, ISBNdb, LoC), validated by plausibleYear().
 
         // Extract description from Amazon/Goodreads snippets
         if (!book.description || book.descriptionStale) {
@@ -968,6 +997,19 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
 
   // ── Final check: flag incomplete books for manual review ──
   const finalBook = await db.query.books.findFirst({ where: eq(books.id, bookId) });
+
+  // Reject implausible publication years (source corruption). Under
+  // original-publication-year semantics we'd rather show nothing than a wrong
+  // year, so null it here and let the review flag below pick it up. Floor of 1000
+  // preserves legitimately old works (16th-century texts etc.) while clearing
+  // garbage (year 0/negative) and impossible future dates.
+  if (finalBook?.publicationYear != null &&
+      (finalBook.publicationYear < 1000 || finalBook.publicationYear > new Date().getFullYear() + 1)) {
+    console.warn(`[enrichment] Clearing implausible year ${finalBook.publicationYear} for "${finalBook.title}"`);
+    await db.update(books).set({ publicationYear: null }).where(eq(books.id, bookId));
+    finalBook.publicationYear = null;
+  }
+
   const finalAuthors = await db.select().from(bookAuthors).where(eq(bookAuthors.bookId, bookId));
   const missing: string[] = [];
   if (!finalBook?.description) missing.push("description");

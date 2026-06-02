@@ -1,18 +1,28 @@
 /**
  * Nightly import script — imports popular books into the tbra database.
- * Targets: bestsellers (current → backwards), classics, education staples.
- * Runs with: npx tsx scripts/nightly-import.ts
+ * Runs with: npx tsx scripts/nightly-import.ts  (TARGET_BOOKS caps net additions)
  *
- * Each run picks a batch of search queries and imports books found.
- * The cascade import will pull all books by discovered authors.
+ * PRIMARY engine (added 2026-06-01): paginated OpenLibrary subject feeds. Each
+ * subject (Christian fiction weighted heaviest) exposes thousands of works; a
+ * persisted per-subject offset in data/subject-offsets.json makes every run page
+ * deeper, so discovery no longer dries up. See SUBJECTS / fetchSubjectWorks.
+ *
+ * LEGACY engine (kept as a top-up safety net): a static list of curated search
+ * queries. Structurally capped — each query imports only its single top result —
+ * which is why nightly volume collapsed to near-zero by late May 2026.
+ *
+ * Both feed importBook(), which dedups, enriches, and cascade-imports a
+ * discovered author's backlist (capped per author).
  */
 
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
+import { existsSync, readFileSync, writeFileSync } from "fs";
+
 import { db } from "../src/db";
 import { books, authors, bookAuthors, genres, bookGenres } from "../src/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   searchOpenLibrary,
   fetchOpenLibraryWork,
@@ -20,8 +30,10 @@ import {
   normalizeGenres,
   fetchAuthorWorks,
   findEnglishEditionTitle,
+  isJunkTitle,
 } from "../src/lib/openlibrary";
 import { enrichBook } from "../src/lib/enrichment/enrich-book";
+import { NYT_LISTS, NYT_DELAY_MS, fetchNytList, upsertNytEntries } from "../src/lib/enrichment/nyt";
 
 const NONFICTION_GENRES = new Set([
   "Nonfiction", "Biography", "Memoir", "Self-Help", "True Crime", "Philosophy",
@@ -476,11 +488,18 @@ async function findOrCreateAuthor(name: string, olKey?: string): Promise<string>
   return created.id;
 }
 
-async function importCascadeBooks(authorOlKeys: string[]) {
+// Cap the per-author backlist pull so one prolific author can't dominate a
+// single night's volume budget.
+const CASCADE_LIMIT_PER_AUTHOR = 25;
+
+async function importCascadeBooks(authorOlKeys: string[]): Promise<number> {
+  let added = 0;
   for (const authorKey of authorOlKeys) {
     await delay(350);
     const works = await fetchAuthorWorks(authorKey);
+    let perAuthor = 0;
     for (const work of works) {
+      if (perAuthor >= CASCADE_LIMIT_PER_AUTHOR) break;
       const workKey = work.key;
       const existing = await db.query.books.findFirst({ where: eq(books.openLibraryKey, workKey) });
       if (existing) continue;
@@ -497,16 +516,28 @@ async function importCascadeBooks(authorOlKeys: string[]) {
       if (author) {
         await db.insert(bookAuthors).values({ bookId: newBook.id, authorId: author.id }).onConflictDoNothing();
       }
+      added++;
+      perAuthor++;
     }
   }
+  return added;
 }
 
-async function importBook(query: string): Promise<boolean> {
+// Returns the number of books added (seed + cascade), 0 if skipped/failed.
+interface ImportSeed {
+  description?: string | null;
+  publisher?: string | null;
+  isbn13?: string | null;
+  isbn10?: string | null;
+  coverImageUrl?: string | null;
+}
+
+async function importBook(query: string, seed?: ImportSeed): Promise<number> {
   try {
     const results = await searchOpenLibrary(query, 3);
     if (results.length === 0) {
       console.log(`  No results for: ${query}`);
-      return false;
+      return 0;
     }
 
     const result = results[0];
@@ -517,7 +548,7 @@ async function importBook(query: string): Promise<boolean> {
     });
     if (existing) {
       console.log(`  Already imported: ${result.title}`);
-      return false;
+      return 0;
     }
 
     // Fetch work details
@@ -529,12 +560,15 @@ async function importBook(query: string): Promise<boolean> {
 
     const [book] = await db.insert(books).values({
       title: result.title,
-      description: work.description,
+      // Prefer NYT's curated description (seed) over OL's — addresses the
+      // long-standing description-quality complaint for bestsellers.
+      description: seed?.description ?? work.description ?? null,
       publicationYear: result.first_publish_year,
-      isbn13: result.isbn?.find((i) => i.length === 13) ?? null,
-      isbn10: result.isbn?.find((i) => i.length === 10) ?? null,
+      isbn13: result.isbn?.find((i) => i.length === 13) ?? seed?.isbn13 ?? null,
+      isbn10: result.isbn?.find((i) => i.length === 10) ?? seed?.isbn10 ?? null,
       pages: result.number_of_pages_median,
-      coverImageUrl: coverUrl,
+      coverImageUrl: coverUrl ?? seed?.coverImageUrl ?? null,
+      publisher: seed?.publisher ?? null,
       openLibraryKey: result.key,
       isFiction,
     }).returning();
@@ -568,19 +602,20 @@ async function importBook(query: string): Promise<boolean> {
     }
 
     // Cascade import (non-blocking for the script, but we await for thoroughness)
+    let cascadeAdded = 0;
     if (authorOlKeys.length > 0) {
       try {
-        await importCascadeBooks(authorOlKeys);
+        cascadeAdded = await importCascadeBooks(authorOlKeys);
       } catch (err) {
         console.warn(`  Cascade failed:`, err);
       }
     }
 
-    console.log(`  Imported: ${result.title}`);
-    return true;
+    console.log(`  Imported: ${result.title}${cascadeAdded ? ` (+${cascadeAdded} cascade)` : ""}`);
+    return 1 + cascadeAdded;
   } catch (err) {
     console.error(`  Error importing "${query}":`, err);
-    return false;
+    return 0;
   }
 }
 
@@ -601,53 +636,212 @@ function seededShuffle<T>(arr: T[]): T[] {
   return out;
 }
 
+// ---------------------------------------------------------------------------
+// PRIMARY DISCOVERY ENGINE: paginated OpenLibrary subject feeds.
+//
+// The legacy static query list (above) is structurally capped — each query
+// imports at most its single top result, so once those ~350 seeds were in the
+// catalog the importer dried up to near-zero/night. Subject feeds replace that:
+// each subject exposes thousands of works, and we persist a per-subject offset
+// so every run pages DEEPER into the catalog and (almost) never re-sees a work.
+// Christian fiction is weighted heaviest per product direction.
+// ---------------------------------------------------------------------------
+
+const SUBJECTS: { subject: string; weight: number }[] = [
+  { subject: "christian_fiction", weight: 3 },
+  { subject: "christian_life", weight: 1 },
+  { subject: "religious_fiction", weight: 1 },
+  { subject: "christianity", weight: 1 },
+  { subject: "fiction", weight: 1 },
+  { subject: "historical_fiction", weight: 1 },
+  { subject: "romance", weight: 1 },
+  { subject: "fantasy", weight: 1 },
+  { subject: "mystery", weight: 1 },
+  { subject: "thrillers", weight: 1 },
+  { subject: "young_adult_fiction", weight: 1 },
+];
+const SUBJECT_PAGE_SIZE = 100;
+const OFFSET_FILE = "data/subject-offsets.json";
+const OL_HEADERS = {
+  "User-Agent": "tbra-nightly-import/1.0 (books@thebasedreaderapp.com)",
+};
+
+function loadOffsets(): Record<string, number> {
+  try {
+    if (existsSync(OFFSET_FILE)) return JSON.parse(readFileSync(OFFSET_FILE, "utf8"));
+  } catch (err) {
+    console.warn("  Could not read subject offsets, starting fresh:", err);
+  }
+  return {};
+}
+
+function saveOffsets(offsets: Record<string, number>) {
+  try {
+    writeFileSync(OFFSET_FILE, JSON.stringify(offsets, null, 2));
+  } catch (err) {
+    console.warn("  Failed to persist subject offsets:", err);
+  }
+}
+
+interface SubjectWork {
+  title: string;
+  authorName: string | null;
+}
+
+async function fetchSubjectWorks(
+  subject: string,
+  offset: number,
+  limit: number
+): Promise<{ works: SubjectWork[]; workCount: number }> {
+  // sort=readinglog orders by OpenLibrary reader engagement (how many users have
+  // the book in their reading log) while keeping the subjects endpoint's accurate
+  // subject matching — so we import the most-read titles in each subject first,
+  // then page into the long tail. (search.json?subject=…&sort=readinglog was
+  // rejected: its subject filter is far too loose — it surfaced The Handmaid's
+  // Tale for "christian_fiction".)
+  const url = `https://openlibrary.org/subjects/${subject}.json?sort=readinglog&limit=${limit}&offset=${offset}`;
+  try {
+    const res = await fetch(url, { headers: OL_HEADERS });
+    if (!res.ok) {
+      console.warn(`  [subject:${subject}] HTTP ${res.status} at offset ${offset}`);
+      return { works: [], workCount: 0 };
+    }
+    const data: any = await res.json();
+    const works: SubjectWork[] = (data.works ?? [])
+      .map((w: any) => ({ title: w.title as string, authorName: w.authors?.[0]?.name ?? null }))
+      .filter((w: SubjectWork) => w.title && !isJunkTitle(w.title));
+    return { works, workCount: data.work_count ?? 0 };
+  } catch (err) {
+    console.warn(`  [subject:${subject}] fetch failed at offset ${offset}:`, err);
+    return { works: [], workCount: 0 };
+  }
+}
+
+// NYT freshness source: the fetch/cache logic lives in the shared module
+// (src/lib/enrichment/nyt.ts) so the retroactive backfill script and the
+// enrichment pipeline reuse the exact same code. See the NYT loop in main().
+
+async function bookCount(): Promise<number> {
+  const [row] = await db.select({ n: sql<number>`count(*)` }).from(books);
+  return Number(row.n);
+}
+
 async function main() {
   const startTime = Date.now();
   const MAX_RUNTIME_MS = 5 * 60 * 60 * 1000; // 5 hours safety cap
 
-  // Volume cap — override via env TARGET_BOOKS
+  // Volume cap (NET books added, seed + cascade) — override via env TARGET_BOOKS
   const TARGET_BOOKS = Number(process.env.TARGET_BOOKS) || 500;
 
-  // Christian queries get double-weight per user direction (prioritize
-  // Christian fiction + nonfiction in discovery). Other pools are single-weight.
-  const allQueries = seededShuffle([
-    ...BESTSELLER_QUERIES,
-    ...CLASSICS_QUERIES,
-    ...EDUCATION_QUERIES,
-    ...CHRISTIAN_FICTION_QUERIES,
-    ...CHRISTIAN_FICTION_QUERIES,        // 2× weight
-    ...CHRISTIAN_NONFICTION_QUERIES,
-    ...CHRISTIAN_NONFICTION_QUERIES,     // 2× weight
-  ]);
-
-  let imported = 0;
   let skipped = 0;
   let failed = 0;
 
-  console.log(`[nightly] Target: ${TARGET_BOOKS} books; query pool size: ${allQueries.length}`);
-  console.log(`[nightly] Current book count: ${(await db.select({ id: books.id }).from(books)).length}`);
+  // Budget on ACTUAL catalog growth, not importBook's return value: enrichBook
+  // runs its own author-bibliography discovery (importing ~25-30 books per new
+  // author) that importBook never sees. A live COUNT(*) delta is the only honest
+  // measure of how many net books a run has added.
+  const startCount = await bookCount();
+  let imported = 0; // net books added since start (catalog delta)
+  console.log(`[nightly] Target: ${TARGET_BOOKS} net books; current catalog: ${startCount}`);
 
-  for (const query of allQueries) {
-    if (imported >= TARGET_BOOKS) {
-      console.log(`[nightly] Hit target ${TARGET_BOOKS}, stopping`);
-      break;
+  const overBudget = () =>
+    imported >= TARGET_BOOKS || Date.now() - startTime > MAX_RUNTIME_MS;
+
+  // ---- FRESHNESS SOURCE: NYT bestsellers (runs first when a key is set) ----
+  // For each current list we (1) cache every entry into nyt_bestsellers so
+  // enrichment + user imports can use NYT's curated descriptions, then (2) import
+  // any not-yet-in-catalog bestseller, seeding it with the NYT description/cover.
+  const nytKey = process.env.NYT_API_KEY;
+  if (nytKey) {
+    console.log(`[nightly] NYT bestsellers enabled — scanning ${NYT_LISTS.length} lists`);
+    for (const list of NYT_LISTS) {
+      const { ok, status, entries, listDate } = await fetchNytList(list, nytKey);
+      if (!ok) {
+        console.warn(`  [nyt:${list}] fetch failed (HTTP ${status})`);
+        await delay(NYT_DELAY_MS);
+        continue;
+      }
+      const stats = await upsertNytEntries(entries, list, listDate);
+      console.log(`\n[nyt:${list}] ${entries.length} titles — cached (${stats.inserted} new, ${stats.updated} updated)`);
+      for (const e of entries) {
+        if (overBudget()) break;
+        const query = e.author ? `${e.title} ${e.author}` : e.title;
+        console.log(`[${imported}/${TARGET_BOOKS}] ${query}`);
+        const added = await importBook(query, {
+          description: e.description,
+          publisher: e.publisher,
+          isbn13: e.isbn13,
+          isbn10: e.isbn10,
+          coverImageUrl: e.bookImage,
+        });
+        if (added > 0) imported = (await bookCount()) - startCount;
+        else skipped++;
+        await delay(500);
+      }
+      await delay(NYT_DELAY_MS); // respect NYT rate limit between lists
     }
-    if (Date.now() - startTime > MAX_RUNTIME_MS) {
-      console.log(`[nightly] Hit max runtime, stopping`);
-      break;
+  } else {
+    console.log(`[nightly] NYT_API_KEY not set — skipping NYT bestsellers source`);
+  }
+
+  // ---- PRIMARY ENGINE: paginated subject feeds ----
+  const offsets = loadOffsets();
+  const weightedSubjects = seededShuffle(
+    SUBJECTS.flatMap(({ subject, weight }) => Array(weight).fill(subject))
+  );
+
+  for (const subject of weightedSubjects) {
+    if (overBudget()) break;
+
+    const offset = offsets[subject] ?? 0;
+    const { works, workCount } = await fetchSubjectWorks(subject, offset, SUBJECT_PAGE_SIZE);
+    await delay(500);
+
+    // Advance the offset; wrap to 0 once we've paged past the subject's catalog.
+    const nextOffset = offset + SUBJECT_PAGE_SIZE;
+    offsets[subject] = workCount > 0 && nextOffset >= workCount ? 0 : nextOffset;
+    saveOffsets(offsets);
+
+    console.log(
+      `\n[subject:${subject}] offset ${offset} → ${works.length} works (catalog ${workCount})`
+    );
+
+    for (const work of works) {
+      if (overBudget()) break;
+      const query = work.authorName ? `${work.title} ${work.authorName}` : work.title;
+      console.log(`[${imported}/${TARGET_BOOKS}] ${query}`);
+      const added = await importBook(query);
+      if (added > 0) imported = (await bookCount()) - startCount;
+      else skipped++;
+      await delay(500);
     }
+  }
 
-    console.log(`\n[${imported + skipped + failed + 1}/${allQueries.length}] ${query}`);
-    const result = await importBook(query);
-    if (result) imported++;
-    else skipped++;
-
-    await delay(500); // Be nice to APIs
+  // ---- SAFETY NET: legacy curated queries top up if subjects underdeliver ----
+  if (!overBudget()) {
+    const legacy = seededShuffle([
+      ...BESTSELLER_QUERIES,
+      ...CLASSICS_QUERIES,
+      ...EDUCATION_QUERIES,
+      ...CHRISTIAN_FICTION_QUERIES,
+      ...CHRISTIAN_FICTION_QUERIES, // 2× weight
+      ...CHRISTIAN_NONFICTION_QUERIES,
+      ...CHRISTIAN_NONFICTION_QUERIES, // 2× weight
+    ]);
+    console.log(`\n[nightly] Subjects yielded ${imported}; topping up from ${legacy.length} curated queries`);
+    for (const query of legacy) {
+      if (overBudget()) break;
+      console.log(`[${imported}/${TARGET_BOOKS}] ${query}`);
+      const added = await importBook(query);
+      if (added > 0) imported = (await bookCount()) - startCount;
+      else skipped++;
+      await delay(500);
+    }
   }
 
   const finalCount = (await db.select({ id: books.id }).from(books)).length;
-  console.log(`\n[nightly] Done! Imported: ${imported}, Skipped: ${skipped}, Failed: ${failed}`);
-  console.log(`[nightly] Final book count: ${finalCount}`);
+  console.log(`\n[nightly] Done! Net added: ${imported}, Skipped: ${skipped}, Failed: ${failed}`);
+  console.log(`[nightly] Catalog: ${startCount} → ${finalCount} (+${finalCount - startCount})`);
   process.exit(0);
 }
 

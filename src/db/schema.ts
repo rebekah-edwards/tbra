@@ -45,6 +45,35 @@ export const books = sqliteTable("books", {
   index("books_publication_year_idx").on(table.publicationYear),
 ]);
 
+// ─── NYT bestseller cache ───
+// Snapshot of NYT Books API list data: captured nightly from the current lists
+// and backfilled retroactively from dated lists. Read by the import + enrichment
+// pipelines to fill descriptions/publisher with NYT's curated copy WITHOUT any
+// per-book NYT API call (the API is hit only ~10–200×/night by the capture jobs).
+// Synced to Turso so production user-import enrichment can read it too. Matched
+// by ISBN-13 first, then by normalized titleKey (title|author) as a fallback.
+export const nytBestsellers = sqliteTable("nyt_bestsellers", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  isbn13: text("isbn_13"),
+  isbn10: text("isbn_10"),
+  title: text("title").notNull(),
+  author: text("author"),
+  titleKey: text("title_key"), // normalized "title|author" for fallback matching
+  description: text("description"),
+  publisher: text("publisher"),
+  bookImage: text("book_image"),
+  amazonUrl: text("amazon_url"),
+  firstListName: text("first_list_name"), // list it was first captured on
+  bestRank: integer("best_rank"), // best (lowest) rank ever observed
+  weeksOnList: integer("weeks_on_list"), // max weeks-on-list observed
+  firstPublishedDate: text("first_published_date"), // earliest list publish date seen
+  capturedAt: text("captured_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("nyt_isbn13_unique").on(table.isbn13),
+  index("nyt_title_key_idx").on(table.titleKey),
+]);
+
 export const authors = sqliteTable("authors", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),

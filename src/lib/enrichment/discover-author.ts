@@ -8,7 +8,7 @@ import { books, bookAuthors, authors, bookGenres, genres as genresTable } from "
 import { eq, sql } from "drizzle-orm";
 import {
   searchOpenLibrary, fetchOpenLibraryWork, buildCoverUrl,
-  normalizeGenres, findEnglishCover, isJunkTitle,
+  normalizeGenres, findEnglishCover, isJunkTitle, fetchEarliestPublishYear,
 } from "@/lib/openlibrary";
 import { isEnglishTitle } from "@/lib/queries/books";
 import { findDuplicateBook } from "./dedup";
@@ -18,6 +18,28 @@ const DELAY_MS = 400;
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Generic subject words that don't help distinguish one author from another.
+const SUBJECT_STOPWORDS = new Set([
+  "fiction", "nonfiction", "books", "general", "literature", "novel", "novels",
+  "story", "stories", "english", "american", "british", "reading", "large", "print",
+]);
+
+// Reduce a list of OpenLibrary subjects to a set of significant tokens, used to
+// test whether two works plausibly belong to the same real author. OL routinely
+// merges several real people under one author record (e.g. a 1790s chemist and a
+// modern children's novelist sharing a name), so a discovered "bibliography" can
+// span wildly unrelated subjects. Comparing token overlap lets us drop the works
+// that don't match the book that actually triggered discovery.
+function subjectTokens(subjects: string[]): Set<string> {
+  const out = new Set<string>();
+  for (const s of subjects) {
+    for (const tok of s.toLowerCase().split(/[^a-z]+/)) {
+      if (tok.length >= 4 && !SUBJECT_STOPWORDS.has(tok)) out.add(tok);
+    }
+  }
+  return out;
 }
 
 /**
@@ -201,6 +223,39 @@ export async function discoverAuthorBooks(
 
   console.log(`[author-discovery] Found ${works.length} candidate works for "${authorName}"`);
 
+  // Build a profile of the seed book (the one that triggered discovery) so we
+  // can reject works OpenLibrary has mis-attributed to a conflated same-name
+  // author record. Two extra OL calls total, not per-work.
+  const [seed] = await db.all(sql`
+    SELECT b.open_library_key as olKey, b.is_fiction as isFiction, b.publication_year as year
+    FROM books b JOIN book_authors ba ON ba.book_id = b.id
+    WHERE ba.author_id = ${authorId} LIMIT 1
+  `) as { olKey: string | null; isFiction: number | null; year: number | null }[];
+  const seedIsFiction = seed?.isFiction ?? null;
+  let seedTokens = new Set<string>();
+  if (seed?.olKey) {
+    try {
+      const seedDetails = await fetchOpenLibraryWork(seed.olKey);
+      seedTokens = subjectTokens(seedDetails.subjects);
+      await sleep(DELAY_MS);
+    } catch {
+      // No seed subjects — coherence gate falls back to era / fiction class.
+    }
+  }
+
+  // Publish-year is the strongest conflation signal: a genuine author's
+  // bibliography spans a single career (~decades), whereas a conflated record
+  // can span centuries (e.g. a 1790s chemist + a 2000s novelist sharing a name).
+  // We only need it for works that carry NO usable subjects — those are the ones
+  // subject overlap can't judge — so the year lookup happens lazily in the loop.
+  let seedYear = seed?.year ?? null;
+  if (seedYear == null && seed?.olKey) {
+    seedYear = await fetchEarliestPublishYear(seed.olKey);
+    await sleep(DELAY_MS);
+  }
+  const ERA_WINDOW = 70; // years either side of the seed a single career can plausibly span
+  let rejectedIncoherent = 0;
+
   let imported = 0;
   const seenTitles = new Set<string>();
 
@@ -283,6 +338,34 @@ export async function discoverAuthorBooks(
       const isFiction = subjectsLower.some((s: string) => s.includes('fiction')) ||
                         !subjectsLower.some((s: string) => s.includes('nonfiction') || s.includes('non-fiction'));
 
+      // Gate 8: Author coherence. Reject works that don't match the seed book's
+      // profile — guards against OpenLibrary author-record conflation (multiple
+      // real people sharing a name lumped under one key). A work is rejected if
+      // its fiction/nonfiction class disagrees with the seed, OR if both the seed
+      // and the work carry subject tokens yet share none. Works with no subjects
+      // pass on the class check alone (we can't disprove them).
+      const workTokens = subjectTokens(workDetails?.subjects ?? []);
+      const classMismatch = seedIsFiction != null && (isFiction ? 1 : 0) !== seedIsFiction;
+      const subjectMismatch =
+        seedTokens.size > 0 && workTokens.size > 0 &&
+        ![...workTokens].some((t) => seedTokens.has(t));
+      // Era check only for works with no usable subjects (where overlap can't
+      // help) — fetch the work's earliest year lazily and compare to the seed.
+      // For these subject-less works we favor precision: if we know the seed's
+      // era but can't date the work at all, treat it as unverifiable and drop it
+      // (it can still enter the catalog later via the primary subject importer).
+      let eraMismatch = false;
+      if (!classMismatch && !subjectMismatch && workTokens.size === 0 && seedYear != null) {
+        const workYear = await fetchEarliestPublishYear(work.key);
+        await sleep(DELAY_MS);
+        eraMismatch = workYear == null || Math.abs(workYear - seedYear) > ERA_WINDOW;
+      }
+      if (eraMismatch || classMismatch || subjectMismatch) {
+        rejectedIncoherent++;
+        console.log(`[author-discovery] Skipping "${title}" — doesn't match author profile (likely OL name collision)`);
+        continue;
+      }
+
       // Create book
       const bookId = crypto.randomUUID();
       await db.insert(books).values({
@@ -328,5 +411,5 @@ export async function discoverAuthorBooks(
     }
   }
 
-  console.log(`[author-discovery] Done: imported ${imported} books for "${authorName}"`);
+  console.log(`[author-discovery] Done: imported ${imported} books for "${authorName}"${rejectedIncoherent ? ` (rejected ${rejectedIncoherent} as off-profile / likely name collision)` : ""}`);
 }

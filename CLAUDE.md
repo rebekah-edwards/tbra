@@ -46,14 +46,18 @@ npm run deploy:code   # Deploy code only
 
 ## Scheduled Tasks
 **Redesigned 2026-04-17. All write tasks use pull → run → push. Effective times post-jitter:**
-- `nightly-discovery` — 12:21 AM PT: `nightly-import.ts` with `TARGET_BOOKS=500`, Christian weighted 2×
+- `nightly-discovery` — 12:21 AM PT: `nightly-import.ts` with `TARGET_BOOKS=500` (net books added), Christian weighted heaviest. **Rebuilt 2026-06-01:** primary engine is now paginated OpenLibrary *subject* feeds with persisted per-subject offsets (`data/subject-offsets.json`) so discovery pages ever deeper and never dries up. The old static curated-query list is kept only as a top-up safety net — it was structurally capped (one import per query) and had collapsed nightly volume to near-zero through May. Cascade backlist import capped at 25/author. A NYT Books API freshness source (10 bestseller lists, gated on `NYT_API_KEY` in `.env.local`) runs FIRST before the subject feeds to pull current releases; it silently no-ops if the key is absent.
 - `nightly-junk-sweep` — 1:40 AM PT: flags box-sets + study guides into `/admin/issues`
 - `nightly-report-triage` — 2:34 AM PT: `process-reports.ts` (direct on Turso)
 - `nightly-placeholder-clear` — 3:15 AM PT: detects + clears known cover placeholders (ISBNdb `56c3e12f…` / 3736 bytes; Google Books `12557f8948b8…` / 15567 bytes). Does NOT auto-replace — cleared books land on `/admin/covers` for manual fix. (Renamed from `nightly-cover-rescue` on 2026-04-17 for clarity.)
 - `nightly-description-refresh` — 4:04 AM PT: re-enriches `description_stale=1`
 - `nightly-content-ratings-backfill` — 4:54 AM PT: 700 Grok enrichments/night
 - `sitemap-threshold-check` — 5:36 AM PT: alerts on 5K book-count boundary
+- `nightly-nyt-backfill` — 10:09 AM ET (after the chain): `nyt-backfill.ts` walks historical NYT bestseller lists (dated-list endpoint) into the `nyt_bestsellers` cache, ~120 calls/run, resumable via `data/nyt-backfill-cursor.json`, then `sync-incremental.sh push`. Scheduled outside the 12:21–5:36 AM PT chain window to avoid SQLite write contention. Self-exits once the cursor reaches MIN_DATE (2011-02-13) — disable after it logs BACKFILL COMPLETE for several nights.
 - Legacy `process-reported-issues` — disabled, manual only
+
+### NYT bestseller cache (added 2026-06-01)
+`nyt_bestsellers` table (local + Turso) caches NYT Books API list data so the NYT API is hit only ~10–200×/night by the capture jobs — NEVER per-book. `nightly-discovery` captures the current lists; `nightly-nyt-backfill` fills history. Shared logic in `src/lib/enrichment/nyt.ts` (`fetchNytList`/`upsertNytEntries`/`findNytMatch`). Enrichment Phase 0.2 (`enrich-book.ts`) matches a book to the cache by ISBN-13 → titleKey and uses NYT's curated description/publisher over OL/Brave junk — this is also how USER IMPORTS get good descriptions (they run through `enrichBook` in production, reading the Turso-synced cache; zero NYT API calls per book). `sync-push.ts` mirrors the cache to Turso via INSERT OR REPLACE (step 5d). The publication-year cascade was also hardened 2026-06-01: the Brave-snippet year scraper was removed and implausible years (<1000 or >currentYear+1) are cleared + flagged. Requires `NYT_API_KEY` in `.env.local`; all NYT code no-ops gracefully without it.
 - **When creating/replacing scheduled tasks:** Delete old tasks entirely rather than just disabling them. Disabled tasks clutter the sidebar.
 - **Task IDs in sidebar:** The task ID you create is what shows in the user's sidebar. Use clear, descriptive IDs.
 - **New tasks don't appear in sidebar until triggered once.** After creating a new task, immediately do a manual "Run now" to make it visible and to pre-approve tool permissions so future automatic runs don't stall on permission prompts.

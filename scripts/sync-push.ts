@@ -69,7 +69,7 @@ const BATCH_SIZE = 100; // rows per libsql batch transaction
 // than QUERY_TIMEOUT_MS throws. A separate stall detector aborts the whole
 // script if no progress is made for STALL_TIMEOUT_MS. Prevents the class of
 // 2h-silent-hang incidents the lockfile alone doesn't catch.
-const QUERY_TIMEOUT_MS = 30_000;    // single query ceiling
+const QUERY_TIMEOUT_MS = 120_000;   // single query ceiling
 const STALL_TIMEOUT_MS = 5 * 60_000; // no-progress deadline
 let lastProgressMs = Date.now();
 function markProgress() { lastProgressMs = Date.now(); }
@@ -437,6 +437,51 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
       if (i > 0 && i % 1000 === 0) console.log(`     ...${updated} updated so far`);
     }
     console.log(`     ✓ Updated ${updated} book rows (errors: ${errors})`);
+  }
+
+  // ─── 5d. NYT BESTSELLER CACHE (mirror local → Turso) ──────────
+  // INSERT OR REPLACE (not OR IGNORE) so improved descriptions / better ranks
+  // captured locally propagate to production, where user-import enrichment reads
+  // this table. Local is authoritative; we never delete from it, so no removals.
+  console.log('\n5d   NYT bestseller cache (nyt_bestsellers)...');
+  await remote.execute(`
+    CREATE TABLE IF NOT EXISTS nyt_bestsellers (
+      id TEXT PRIMARY KEY NOT NULL,
+      isbn_13 TEXT, isbn_10 TEXT, title TEXT NOT NULL, author TEXT, title_key TEXT,
+      description TEXT, publisher TEXT, book_image TEXT, amazon_url TEXT,
+      first_list_name TEXT, best_rank INTEGER, weeks_on_list INTEGER,
+      first_published_date TEXT,
+      captured_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  await remote.execute(`CREATE UNIQUE INDEX IF NOT EXISTS nyt_isbn13_unique ON nyt_bestsellers (isbn_13)`);
+  await remote.execute(`CREATE INDEX IF NOT EXISTS nyt_title_key_idx ON nyt_bestsellers (title_key)`);
+  try {
+    const cols = getCols('nyt_bestsellers');
+    if (cols.length === 0) {
+      console.log('     · nyt_bestsellers: not in local DB');
+    } else {
+      const rows = rowsAsArrays('nyt_bestsellers', cols);
+      const placeholders = cols.map(() => '?').join(',');
+      const sql = `INSERT OR REPLACE INTO nyt_bestsellers (${cols.join(',')}) VALUES (${placeholders})`;
+      let pushed = 0;
+      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+        const chunk = rows.slice(i, i + BATCH_SIZE);
+        try {
+          const result = await remote.batch(chunk.map((r) => ({ sql, args: r })), 'write');
+          for (const r of result as any[]) pushed += Number(r.rowsAffected || 0);
+        } catch {
+          for (const row of chunk) {
+            try { const res = await remote.execute({ sql, args: row }); pushed += Number(res.rowsAffected || 0); }
+            catch { /* skip bad row */ }
+          }
+        }
+      }
+      console.log(`     ✓ nyt_bestsellers: mirrored ${pushed} / ${rows.length} rows`);
+    }
+  } catch (e: any) {
+    console.log(`     ⚠ nyt_bestsellers: ${e.message.slice(0, 120)}`);
   }
 
   // ─── 6. LANDING PAGE TABLES (full replace) ────────────────────
