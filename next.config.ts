@@ -94,6 +94,11 @@ const nextConfig: NextConfig = {
         hostname: "images.isbndb.com",
         pathname: "/covers/**",
       },
+      {
+        protocol: "https",
+        hostname: "static01.nyt.com",
+        pathname: "/bestsellers/**",
+      },
     ],
   },
 };

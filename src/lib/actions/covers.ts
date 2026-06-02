@@ -1,9 +1,10 @@
 "use server";
 
 import { db } from "@/db";
-import { books } from "@/db/schema";
+import { books, bookAuthors, authors } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getCurrentUser, isAdmin } from "@/lib/auth";
+import { findNytMatch } from "@/lib/enrichment/nyt";
 import { revalidatePath } from "next/cache";
 
 export async function saveManualCover(
@@ -49,6 +50,58 @@ export async function saveManualCover(
     .get();
   if (row?.slug) revalidatePath(`/book/${row.slug}`);
 
+  return { success: true };
+}
+
+/**
+ * Apply the NYT bestseller cover for a book. Re-derives the NYT cover URL
+ * server-side from the nyt_bestsellers cache (matched by ISBN-13 → title|author),
+ * so the admin's one click is authoritative and can't be spoofed by a client URL.
+ * Tags the result cover_source='nyt' so it's distinguishable from manual pastes.
+ */
+export async function saveNytCover(
+  bookId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await getCurrentUser();
+  if (!user || !isAdmin(user)) {
+    return { success: false, error: "Admin only" };
+  }
+
+  const book = await db
+    .select({ id: books.id, title: books.title, isbn13: books.isbn13, slug: books.slug })
+    .from(books)
+    .where(eq(books.id, bookId))
+    .get();
+  if (!book) return { success: false, error: "Book not found" };
+
+  const authorRow = await db
+    .select({ name: authors.name })
+    .from(bookAuthors)
+    .innerJoin(authors, eq(bookAuthors.authorId, authors.id))
+    .where(eq(bookAuthors.bookId, bookId))
+    .get();
+
+  const nyt = await findNytMatch({
+    isbn13: book.isbn13,
+    title: book.title,
+    author: authorRow?.name ?? null,
+  });
+  if (!nyt?.bookImage) {
+    return { success: false, error: "No NYT cover available for this book" };
+  }
+
+  await db
+    .update(books)
+    .set({
+      coverImageUrl: nyt.bookImage,
+      coverVerified: true,
+      coverSource: "nyt",
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(books.id, bookId));
+
+  revalidatePath("/admin/covers");
+  if (book.slug) revalidatePath(`/book/${book.slug}`);
   return { success: true };
 }
 

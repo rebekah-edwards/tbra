@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { saveManualCover, archiveBook } from "@/lib/actions/covers";
+import { saveManualCover, saveNytCover, archiveBook } from "@/lib/actions/covers";
 
 type BookRow = {
   id: string;
@@ -15,6 +15,7 @@ type BookRow = {
   authorNames: string[];
   userCount: number;
   createdAt: string;
+  nytCoverUrl: string | null;
 };
 
 type Counts = { priority: number; all: number; abandon: number };
@@ -67,6 +68,18 @@ function BookRow({
         return;
       }
       setUrl("");
+      onSaved();
+    });
+  }
+
+  function handleUseNyt() {
+    setError(null);
+    startTransition(async () => {
+      const res = await saveNytCover(book.id);
+      if (!res.success) {
+        setError(res.error ?? "Failed to apply NYT cover");
+        return;
+      }
       onSaved();
     });
   }
@@ -124,6 +137,28 @@ function BookRow({
             </div>
           </div>
         </div>
+
+        {book.nytCoverUrl && (
+          <div className="mt-3 flex items-center gap-3 rounded border border-accent/40 bg-accent/10 p-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={book.nytCoverUrl}
+              alt="NYT bestseller cover"
+              className="h-14 w-9 shrink-0 rounded object-cover"
+            />
+            <span className="flex-1 text-xs text-foreground">
+              NYT bestseller cover available
+            </span>
+            <button
+              type="button"
+              onClick={handleUseNyt}
+              disabled={isPending}
+              className="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-[#18181b] disabled:opacity-40"
+            >
+              Use NYT cover
+            </button>
+          </div>
+        )}
 
         <div className="mt-3 flex gap-2">
           <input

@@ -3,6 +3,7 @@ import { getCurrentUser, isAdmin } from "@/lib/auth";
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
 import { CoversReview } from "@/components/admin/covers-review";
+import { findNytMatch } from "@/lib/enrichment/nyt";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ type BookRow = {
   authorNames: string[];
   userCount: number;
   createdAt: string;
+  nytCoverUrl: string | null;
 };
 
 async function loadBooks(tab: Tab, offset: number): Promise<BookRow[]> {
@@ -37,6 +39,7 @@ async function loadBooks(tab: Tab, offset: number): Promise<BookRow[]> {
     id: string;
     title: string;
     slug: string | null;
+    isbn_13: string | null;
     cover_image_url: string | null;
     cover_source: string | null;
     created_at: string;
@@ -48,6 +51,7 @@ async function loadBooks(tab: Tab, offset: number): Promise<BookRow[]> {
         b.id,
         b.title,
         b.slug,
+        b.isbn_13,
         b.cover_image_url,
         b.cover_source,
         b.created_at,
@@ -62,23 +66,36 @@ async function loadBooks(tab: Tab, offset: number): Promise<BookRow[]> {
       WHERE b.visibility = 'public'
         AND (b.cover_image_url IS NULL OR b.cover_image_url = '')
     )
-    SELECT id, title, slug, cover_image_url, cover_source, created_at, users, author_names
+    SELECT id, title, slug, isbn_13, cover_image_url, cover_source, created_at, users, author_names
     FROM candidates
     ${activityFilter}
     ORDER BY users DESC, created_at DESC
     LIMIT ${PAGE_SIZE} OFFSET ${offset}
   `));
 
-  return rows.map((r) => ({
-    id: r.id,
-    title: r.title,
-    slug: r.slug,
-    coverImageUrl: r.cover_image_url,
-    coverSource: r.cover_source,
-    createdAt: r.created_at,
-    userCount: Number(r.users ?? 0),
-    authorNames: r.author_names ? r.author_names.split("|").filter(Boolean) : [],
-  }));
+  // Attach the NYT bestseller cover (if any) for each book — a local cache read,
+  // no NYT API call. Lets the admin one-click an NYT cover from the picker.
+  return Promise.all(
+    rows.map(async (r) => {
+      const authorNames = r.author_names ? r.author_names.split("|").filter(Boolean) : [];
+      const nyt = await findNytMatch({
+        isbn13: r.isbn_13,
+        title: r.title,
+        author: authorNames[0] ?? null,
+      });
+      return {
+        id: r.id,
+        title: r.title,
+        slug: r.slug,
+        coverImageUrl: r.cover_image_url,
+        coverSource: r.cover_source,
+        createdAt: r.created_at,
+        userCount: Number(r.users ?? 0),
+        authorNames,
+        nytCoverUrl: nyt?.bookImage ?? null,
+      };
+    })
+  );
 }
 
 async function loadCounts(): Promise<{ priority: number; all: number; abandon: number }> {
