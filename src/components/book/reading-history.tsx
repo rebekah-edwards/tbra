@@ -7,7 +7,7 @@ import {
   deleteReadingSession,
 } from "@/lib/actions/reading-session";
 import type { ReadingSession } from "@/lib/queries/reading-session";
-import { FormatIcon } from "@/components/format-button";
+import { FormatIcon, leadFormatIcon } from "@/components/format-button";
 
 const FORMAT_LABELS: Record<string, string> = {
   hardcover: "Hardcover",
@@ -273,7 +273,7 @@ function SessionRow({
           >
             {session.activeFormats && session.activeFormats.length > 0 ? (
               <FormatIcon
-                format={session.activeFormats.length === 1 ? session.activeFormats[0] : "hardcover"}
+                format={leadFormatIcon(session.activeFormats)}
                 size={12}
               />
             ) : (

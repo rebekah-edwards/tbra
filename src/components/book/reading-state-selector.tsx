@@ -121,6 +121,7 @@ export function ReadingStateSelector({
           <FormatButton
             bookId={bookId}
             activeFormats={activeFormats}
+            ownedFormats={ownedFormats}
             isCurrentlyReading={true}
             isLoggedIn={isLoggedIn}
             forceOpen={promptFormat}

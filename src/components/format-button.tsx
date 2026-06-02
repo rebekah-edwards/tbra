@@ -13,7 +13,27 @@ const FORMAT_LABELS: Record<string, string> = {
 
 const ALL_FORMATS = ["hardcover", "paperback", "ebook", "audiobook"];
 
-export function FormatIcon({ format, size = 16, className }: { format: string; size?: number; className?: string }) {
+/**
+ * Pick which format's icon best represents an active-format selection.
+ * - Exactly one active format → that format.
+ * - Multiple active formats → null (neutral icon; don't imply a single format).
+ * - No active format → infer from owned editions: a single owned format, else
+ *   audiobook if owned. Returns null when it can't be inferred.
+ * NEVER assumes "hardcover" — that mislabels audio/ebook readers (see Skyward
+ * report).
+ */
+export function leadFormatIcon(
+  activeFormats: string[],
+  ownedFormats: string[] = [],
+): string | null {
+  if (activeFormats.length === 1) return activeFormats[0];
+  if (activeFormats.length > 1) return null;
+  if (ownedFormats.length === 1) return ownedFormats[0];
+  if (ownedFormats.includes("audiobook")) return "audiobook";
+  return null;
+}
+
+export function FormatIcon({ format, size = 16, className }: { format: string | null; size?: number; className?: string }) {
   const props = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round" as const, strokeLinejoin: "round" as const, className };
   switch (format) {
     case "hardcover":
@@ -27,13 +47,17 @@ export function FormatIcon({ format, size = 16, className }: { format: string; s
     case "set":
       return <svg {...props}><rect x="2" y="4" width="5" height="16" rx="1" /><rect x="9" y="3" width="5" height="17" rx="1" /><rect x="16" y="5" width="5" height="15" rx="1" /></svg>;
     default:
-      return null;
+      // Unknown / unspecified / multiple formats — neutral "stack of books"
+      // glyph so we never falsely imply a single specific format.
+      return <svg {...props}><path d="M4 4v16" /><path d="M8 6v14" /><path d="M12 5v15" /><path d="m16 6 4 13" /></svg>;
   }
 }
 
 interface FormatButtonProps {
   bookId: string;
   activeFormats: string[];
+  /** Owned editions — used to pick a sensible lead icon before a format is chosen. */
+  ownedFormats?: string[];
   isCurrentlyReading: boolean;
   isLoggedIn: boolean;
   forceOpen?: boolean;
@@ -44,6 +68,7 @@ interface FormatButtonProps {
 export function FormatButton({
   bookId,
   activeFormats,
+  ownedFormats = [],
   isCurrentlyReading,
   isLoggedIn,
   forceOpen,
@@ -99,8 +124,9 @@ export function FormatButton({
     return `${localFormats.length} formats`;
   }
 
-  // Show the icon for the first selected format, or a generic book icon
-  const leadIcon = localFormats.length === 1 ? localFormats[0] : "hardcover";
+  // Lead icon: the chosen format if there's exactly one, otherwise inferred from
+  // owned editions — never an unconditional "hardcover" assumption.
+  const leadIcon = leadFormatIcon(localFormats, ownedFormats);
 
   return (
     <div className="relative" ref={popoverRef}>
