@@ -62,11 +62,20 @@ export function OwnedButton({
   // Box sets show "Box Set" as the only format; regular books show the standard 4
   const FORMATS = isBoxSet ? [BOX_SET_FORMAT] : STANDARD_FORMATS;
   const isOwned = localFormats.length > 0;
+  // "unknown" is an import placeholder ("owned, format unspecified"). It isn't a
+  // real, selectable format, so it must not be counted in "Owned · N".
+  const realFormats = localFormats.filter((f) => f !== "unknown");
 
   function handleToggleFormat(format: string) {
-    const newFormats = localFormats.includes(format)
+    let newFormats = localFormats.includes(format)
       ? localFormats.filter((f) => f !== format)
       : [...localFormats, format];
+
+    // Once a real format is chosen, drop the "unknown" placeholder so the
+    // owned count reflects only real formats.
+    if (newFormats.some((f) => f !== "unknown")) {
+      newFormats = newFormats.filter((f) => f !== "unknown");
+    }
 
     setLocalFormats(newFormats);
     startTransition(async () => {
@@ -103,7 +112,7 @@ export function OwnedButton({
             ? "bg-neon-purple text-white shadow-[0_0_16px_rgba(192,132,252,0.3)] border-2 border-neon-purple"
             : "bg-neon-purple/10 text-muted border-2 border-neon-purple/40 hover:text-foreground hover:border-neon-purple/70"
         } ${isPending ? "opacity-60" : ""}`}
-        title={isOwned ? `Owned: ${localFormats.join(", ")}` : "Mark as owned"}
+        title={isOwned ? `Owned${realFormats.length > 0 ? `: ${realFormats.join(", ")}` : ""}` : "Mark as owned"}
       >
         <svg
           width="20"
@@ -122,8 +131,8 @@ export function OwnedButton({
           <rect x="15" y="5" width="4" height="13" rx="0.5" fill="none" />
           <line x1="2" y1="20" x2="22" y2="20" />
         </svg>
-        {isOwned
-          ? `Owned · ${localFormats.length}`
+        {isOwned && realFormats.length > 0
+          ? `Owned · ${realFormats.length}`
           : "Owned"}
       </button>
 

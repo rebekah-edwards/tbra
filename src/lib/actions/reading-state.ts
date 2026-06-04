@@ -134,9 +134,17 @@ export async function removeBookState(bookId: string) {
   revalidatePath("/");
 }
 
-export async function setOwnedFormats(bookId: string, formats: string[]) {
+export async function setOwnedFormats(bookId: string, rawFormats: string[]) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+
+  // "unknown" is an import placeholder meaning "owned, format unspecified".
+  // As soon as the user picks a real format it must be dropped — otherwise it
+  // lingers alongside the real format and inflates the "Owned · N" count
+  // (e.g. ["unknown","paperback"] showed as "Owned · 2").
+  const formats = rawFormats.some((f) => f !== "unknown")
+    ? rawFormats.filter((f) => f !== "unknown")
+    : rawFormats;
 
   const existing = await db
     .select()
@@ -150,7 +158,7 @@ export async function setOwnedFormats(bookId: string, formats: string[]) {
     .get();
 
   // Determine which formats were removed so we can clean up edition associations
-  const previousFormats = parseFormats(existing.ownedFormats);
+  const previousFormats = parseFormats(existing?.ownedFormats);
   const removedFormats = previousFormats.filter((f) => !formats.includes(f));
 
   if (existing) {
