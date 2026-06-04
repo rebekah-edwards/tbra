@@ -67,9 +67,18 @@ export async function setBookStateWithCompletion(
 
     // Determine final activeFormats: prefer whatever's already on the session,
     // otherwise fall back to the cached selection from user_book_state.
+    //
+    // getActiveSession() returns activeFormats already parsed to a string[], so
+    // it MUST be re-serialized with JSON.stringify before it goes into the text
+    // column. Assigning a JS array straight to a text column coerces it via
+    // String() to a bare value like "paperback" (single element) or throws
+    // "Too many parameter values" (multi element). A bare "paperback" is not
+    // valid JSON, so every reader that JSON.parse()s it later threw — this was
+    // the root cause of the "Something went wrong" crash on finished books.
+    // cachedFormats is already a JSON string (or null) from user_book_state.
     const finalFormats =
-      activeSession.activeFormats && activeSession.activeFormats !== "null"
-        ? activeSession.activeFormats
+      activeSession.activeFormats.length > 0
+        ? JSON.stringify(activeSession.activeFormats)
         : cachedFormats;
 
     // If the user picked a completion date that's before the recorded start
