@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { parseFormats } from "@/lib/reading-formats";
 import {
   userBookReviews,
   books,
@@ -177,12 +178,8 @@ export async function getUserReviewsWithBooks(
     const stateRow = stateByBook.get(review.bookId);
     const isActivelyReading =
       stateRow?.state === "currently_reading" || stateRow?.state === "paused";
-    const activeFormats = stateRow?.activeFormats
-      ? (JSON.parse(stateRow.activeFormats) as string[])
-      : [];
-    const ownedFormats = stateRow?.ownedFormats
-      ? (JSON.parse(stateRow.ownedFormats) as string[])
-      : [];
+    const activeFormats = parseFormats(stateRow?.activeFormats);
+    const ownedFormats = parseFormats(stateRow?.ownedFormats);
 
     const effectiveCover = getEffectiveCoverUrl({
       baseCoverUrl: review.coverImageUrl,

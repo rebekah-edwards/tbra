@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { parseFormats } from "@/lib/reading-formats";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { userBookState, userOwnedEditions, books, userBookReviews, userBookDimensionRatings, reviewDescriptorTags, userBookRatings, readingSessions } from "@/db/schema";
@@ -34,9 +35,7 @@ export async function setBookState(bookId: string, state: string) {
     if (existing?.activeFormats) {
       activeFormats = existing.activeFormats;
     } else {
-      const formats = existing?.ownedFormats
-        ? (JSON.parse(existing.ownedFormats) as string[])
-        : [];
+      const formats = parseFormats(existing.ownedFormats);
       if (formats.length === 1) {
         activeFormats = JSON.stringify(formats);
       }
@@ -106,9 +105,7 @@ export async function removeBookState(bookId: string) {
 
   if (!existing) return;
 
-  const formats = existing.ownedFormats
-    ? (JSON.parse(existing.ownedFormats) as string[])
-    : [];
+  const formats = parseFormats(existing.ownedFormats);
 
   if (formats.length > 0) {
     // Keep the row for owned formats, just clear the state and active formats
@@ -153,9 +150,7 @@ export async function setOwnedFormats(bookId: string, formats: string[]) {
     .get();
 
   // Determine which formats were removed so we can clean up edition associations
-  const previousFormats = existing?.ownedFormats
-    ? (JSON.parse(existing.ownedFormats) as string[])
-    : [];
+  const previousFormats = parseFormats(existing.ownedFormats);
   const removedFormats = previousFormats.filter((f) => !formats.includes(f));
 
   if (existing) {

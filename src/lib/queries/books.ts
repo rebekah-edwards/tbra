@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { parseFormats } from "@/lib/reading-formats";
 import { unstable_cache } from "next/cache";
 import { db } from "@/db";
 import {
@@ -262,8 +263,8 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
         for (const st of stateRows) {
           stateMap.set(st.bookId, {
             state: st.state,
-            ownedFormats: st.ownedFormats ? JSON.parse(st.ownedFormats) : [],
-            activeFormats: st.activeFormats ? JSON.parse(st.activeFormats) : [],
+            ownedFormats: parseFormats(st.ownedFormats),
+            activeFormats: parseFormats(st.activeFormats),
           });
         }
       }
@@ -412,7 +413,7 @@ export async function getSeriesBooks(seriesId: string, userId: string | null) {
         .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, sb.id)))
         .get();
       currentState = stateRow?.state ?? null;
-      ownedFormats = stateRow?.ownedFormats ? JSON.parse(stateRow.ownedFormats) as string[] : [];
+      ownedFormats = parseFormats(stateRow?.ownedFormats);
 
       // Only apply edition cover cascade if series is set to 'format' mode
       if (useFormatCovers) {
@@ -429,7 +430,7 @@ export async function getSeriesBooks(seriesId: string, userId: string | null) {
           .from(userBookState)
           .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, sb.id)))
           .get())?.activeFormats : null;
-        const activeFormats = activeFormatsStr ? JSON.parse(activeFormatsStr) as string[] : [];
+        const activeFormats = parseFormats(activeFormatsStr);
 
         effectiveCover = getEffectiveCoverUrl({
           baseCoverUrl: sb.coverImageUrl,

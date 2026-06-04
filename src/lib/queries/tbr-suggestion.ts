@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { parseFormats } from "@/lib/reading-formats";
 import {
   books,
   bookAuthors,
@@ -150,7 +151,7 @@ export async function getRandomOwnedTbrBook(userId: string): Promise<TbrSuggesti
       .all(),
   ]);
 
-  const ownedFormats = row.ownedFormats ? JSON.parse(row.ownedFormats) as string[] : [];
+  const ownedFormats = parseFormats(row.ownedFormats);
 
   const effectiveCover = getEffectiveCoverUrl({
     baseCoverUrl: row.coverImageUrl,

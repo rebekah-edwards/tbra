@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { parseFormats } from "@/lib/reading-formats";
 import { users, userBookState } from "@/db/schema";
 import { eq, and, isNotNull, sql } from "drizzle-orm";
 
@@ -84,10 +85,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
     if (row.state === "completed") completed++;
     if (row.state === "currently_reading") currentlyReading++;
     if (row.state === "tbr") tbr++;
-    if (row.ownedFormats) {
-      const formats = JSON.parse(row.ownedFormats) as string[];
-      if (formats.length > 0) owned++;
-    }
+    if (parseFormats(row.ownedFormats).length > 0) owned++;
   }
 
   return { completed, currentlyReading, tbr, owned };

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { parseFormats } from "@/lib/reading-formats";
 import { db } from "@/db";
 import {
   books, bookAuthors, authors, series, bookSeries,
@@ -404,7 +405,7 @@ async function hydrateSeries(
     for (const r of stateRows) {
       stateMap.set(r.bookId, {
         state: r.state,
-        ownedFormats: r.ownedFormats ? JSON.parse(r.ownedFormats) : [],
+        ownedFormats: parseFormats(r.ownedFormats),
       });
     }
   }
@@ -581,7 +582,7 @@ async function computeBookCheck(
   for (const row of stateRows) {
     const olKey = bookIdToKey[row.bookId];
     if (olKey && row.state) states[olKey] = row.state;
-    if (olKey && row.ownedFormats) ownedFormats[olKey] = JSON.parse(row.ownedFormats);
+    if (olKey && row.ownedFormats) ownedFormats[olKey] = parseFormats(row.ownedFormats);
     stateByBookId[row.bookId] = row;
   }
 
@@ -597,8 +598,8 @@ async function computeBookCheck(
 
     const stateRow = stateByBookId[bookId];
     const isActivelyReading = stateRow?.state === "currently_reading" || stateRow?.state === "paused";
-    const activeFormats = stateRow?.activeFormats ? JSON.parse(stateRow.activeFormats) as string[] : [];
-    const owned = stateRow?.ownedFormats ? JSON.parse(stateRow.ownedFormats) as string[] : [];
+    const activeFormats = parseFormats(stateRow?.activeFormats);
+    const owned = parseFormats(stateRow?.ownedFormats);
 
     const effectiveCover = getEffectiveCoverUrl({
       baseCoverUrl: bookIdToCover[bookId],

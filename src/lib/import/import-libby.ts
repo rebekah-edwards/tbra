@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { parseFormats } from "@/lib/reading-formats";
 import { books, bookAuthors, userBookState, readingSessions } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { findOrCreateAuthor } from "@/lib/actions/books";
@@ -169,9 +170,7 @@ async function processRow(
         .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)))
         .get();
       if (existState) {
-        const currentActive = existState.activeFormats
-          ? (JSON.parse(existState.activeFormats) as string[])
-          : [];
+        const currentActive = parseFormats(existState.activeFormats);
         if (!currentActive.includes("audiobook")) {
           currentActive.push("audiobook");
           await db

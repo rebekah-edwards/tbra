@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { parseFormats } from "@/lib/reading-formats";
 import {
   books,
   bookAuthors,
@@ -169,9 +170,7 @@ async function markOwned(userId: string, bookId: string, format: string | null, 
     .get();
 
   if (existing) {
-    const currentFormats: string[] = existing.ownedFormats
-      ? (JSON.parse(existing.ownedFormats) as string[])
-      : [];
+    const currentFormats: string[] = parseFormats(existing.ownedFormats);
     let updatedFormats: string[];
     if (cleanUnknown) {
       updatedFormats = mergeOwnedFormats(currentFormats, format);
@@ -456,9 +455,7 @@ async function processRow(
         .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)))
         .get();
       if (existState) {
-        const currentActive = existState.activeFormats
-          ? (JSON.parse(existState.activeFormats) as string[])
-          : [];
+        const currentActive = parseFormats(existState.activeFormats);
         if (!currentActive.includes(row.format)) {
           currentActive.push(row.format);
           await db

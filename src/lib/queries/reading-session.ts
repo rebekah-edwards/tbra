@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { parseFormats } from "@/lib/reading-formats";
 import { readingSessions } from "@/db/schema";
 import { eq, and, or, desc, count, sql } from "drizzle-orm";
 
@@ -25,7 +26,7 @@ function parseSession(row: typeof readingSessions.$inferSelect): ReadingSession 
     startedAtExplicit: row.startedAtExplicit ?? false,
     completionDate: row.completionDate,
     completionPrecision: row.completionPrecision,
-    activeFormats: row.activeFormats ? JSON.parse(row.activeFormats) : [],
+    activeFormats: parseFormats(row.activeFormats),
     pausedAt: row.pausedAt ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

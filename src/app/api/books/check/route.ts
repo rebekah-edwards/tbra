@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseFormats } from "@/lib/reading-formats";
 import { db } from "@/db";
 import { books, userBookState, userOwnedEditions, editions } from "@/db/schema";
 import { inArray, eq, and } from "drizzle-orm";
@@ -103,7 +104,7 @@ export async function POST(request: Request) {
           states[olKey] = row.state;
         }
         if (olKey && row.ownedFormats) {
-          ownedFormats[olKey] = JSON.parse(row.ownedFormats) as string[];
+          ownedFormats[olKey] = parseFormats(row.ownedFormats);
         }
         stateByBookId[row.bookId] = row;
       }
@@ -139,8 +140,8 @@ export async function POST(request: Request) {
 
         const stateRow = stateByBookId[bookId];
         const isActivelyReading = stateRow?.state === "currently_reading" || stateRow?.state === "paused";
-        const activeFormats = stateRow?.activeFormats ? JSON.parse(stateRow.activeFormats) as string[] : [];
-        const owned = stateRow?.ownedFormats ? JSON.parse(stateRow.ownedFormats) as string[] : [];
+        const activeFormats = parseFormats(stateRow?.activeFormats);
+        const owned = parseFormats(stateRow?.ownedFormats);
 
         const effectiveCover = getEffectiveCoverUrl({
           baseCoverUrl: bookIdToCover[bookId],

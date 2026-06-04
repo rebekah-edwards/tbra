@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseFormats } from "@/lib/reading-formats";
 import { db } from "@/db";
 import { series, bookSeries, books, bookAuthors, authors, userBookState } from "@/db/schema";
 import { eq, sql, and, isNotNull } from "drizzle-orm";
@@ -128,7 +129,7 @@ export async function GET(request: Request) {
     for (const r of stateRows) {
       stateMap.set(r.bookId, {
         state: r.state,
-        ownedFormats: r.ownedFormats ? JSON.parse(r.ownedFormats) : [],
+        ownedFormats: parseFormats(r.ownedFormats),
       });
     }
   }

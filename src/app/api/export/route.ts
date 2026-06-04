@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { parseFormats } from "@/lib/reading-formats";
 import { getCurrentUser, isPremium } from "@/lib/auth";
 import { db } from "@/db";
 import {
@@ -34,18 +35,15 @@ function stateToGoodreads(state: string | null): string {
 }
 
 function formatToBinding(formats: string | null): string {
-  if (!formats) return "";
-  try {
-    const arr = JSON.parse(formats) as string[];
-    const f = arr[0];
-    switch (f) {
-      case "hardcover": return "Hardcover";
-      case "paperback": return "Paperback";
-      case "ebook": return "Kindle Edition";
-      case "audiobook": return "Audiobook";
-      default: return "";
-    }
-  } catch { return ""; }
+  const arr = parseFormats(formats);
+  if (arr.length === 0) return "";
+  switch (arr[0]) {
+    case "hardcover": return "Hardcover";
+    case "paperback": return "Paperback";
+    case "ebook": return "Kindle Edition";
+    case "audiobook": return "Audiobook";
+    default: return "";
+  }
 }
 
 async function generateCSV(userId: string): Promise<string> {

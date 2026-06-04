@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { parseFormats } from "@/lib/reading-formats";
 import { userBookState, books, bookAuthors, authors, userBookRatings, userOwnedEditions, editions } from "@/db/schema";
 import { eq, and, isNotNull, desc } from "drizzle-orm";
 import { getEffectiveCoverUrl } from "@/lib/covers";
@@ -38,8 +39,8 @@ export async function getUserBookState(userId: string, bookId: string): Promise<
 
   return {
     state: row.state,
-    ownedFormats: row.ownedFormats ? (JSON.parse(row.ownedFormats) as string[]) : [],
-    activeFormats: row.activeFormats ? (JSON.parse(row.activeFormats) as string[]) : [],
+    ownedFormats: parseFormats(row.ownedFormats),
+    activeFormats: parseFormats(row.activeFormats),
   };
 }
 
@@ -126,8 +127,8 @@ export async function getUserBooks(
   ]);
 
   return rows.map((row) => {
-    const parsedOwned = row.ownedFormats ? (JSON.parse(row.ownedFormats) as string[]) : [];
-    const activeFormats = row.activeFormats ? (JSON.parse(row.activeFormats) as string[]) : [];
+    const parsedOwned = parseFormats(row.ownedFormats);
+    const activeFormats = parseFormats(row.activeFormats);
     const isActivelyReading = row.state === "currently_reading" || row.state === "paused";
 
     const effectiveCover = getEffectiveCoverUrl({

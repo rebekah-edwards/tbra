@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { parseFormats } from "@/lib/reading-formats";
 import { upNext, books, authors, bookAuthors, bookGenres, genres, userBookRatings, userOwnedEditions, editions, userBookState } from "@/db/schema";
 import { eq, and, asc, isNull } from "drizzle-orm";
 import { getEffectiveCoverUrl } from "@/lib/covers";
@@ -58,8 +59,8 @@ export async function getUserUpNext(userId: string): Promise<UpNextItem[]> {
   return rows.map((row) => {
     const stateRow = statesMap.get(row.bookId);
     const isActivelyReading = stateRow?.state === "currently_reading" || stateRow?.state === "paused";
-    const activeFormats = stateRow?.activeFormats ? JSON.parse(stateRow.activeFormats) as string[] : [];
-    const ownedFormats = stateRow?.ownedFormats ? JSON.parse(stateRow.ownedFormats) as string[] : [];
+    const activeFormats = parseFormats(stateRow?.activeFormats);
+    const ownedFormats = parseFormats(stateRow?.ownedFormats);
 
     const effectiveCover = getEffectiveCoverUrl({
       baseCoverUrl: row.coverImageUrl,

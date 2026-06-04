@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { parseFormats } from "@/lib/reading-formats";
 import { sql } from "drizzle-orm";
 
 // ─── Types ───
@@ -233,7 +234,7 @@ export async function getShelfWithBooks(shelfId: string): Promise<ShelfDetail | 
     pages: row.pages,
     isFiction: row.is_fiction === null ? null : !!row.is_fiction,
     genres: genresByBook.get(row.book_id) ?? [],
-    ownedFormats: row.owned_formats ? (JSON.parse(row.owned_formats) as string[]) : [],
+    ownedFormats: parseFormats(row.owned_formats),
     aggregateRating: row.aggregate_rating ? Math.round(row.aggregate_rating * 100) / 100 : null,
   }));
 
