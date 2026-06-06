@@ -276,8 +276,13 @@ export default async function BookPage({
     }
   }
 
-  // Detect unenriched books and trigger enrichment on visit
-  const needsEnrichment = book.ratings.length === 0 && !book.summary;
+  // Detect unenriched books and trigger enrichment on visit.
+  // Must align with the "Manually Added" pill in book-page-client.tsx —
+  // a book is unenriched if it has no ratings AND is missing key metadata
+  // (no description, no genres, or no summary).
+  const needsEnrichment =
+    book.ratings.length === 0 &&
+    (!book.summary || !book.description || book.genres.length === 0);
 
   if (needsEnrichment && process.env.ENRICHMENT_PAUSED !== "true") {
     after(() => triggerEnrichment(book.id));
