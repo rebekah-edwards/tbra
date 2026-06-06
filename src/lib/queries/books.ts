@@ -321,10 +321,14 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
     parentFranchise = await getParentSeries(seriesRow[0].seriesId);
   }
 
+  // Raw genre names for admin editing (unfiltered, all linked genres)
+  const allGenreNames = bookGenreRows.map((g) => g.name);
+
   return {
     ...book,
     authors: bookAuthorRows,
     genres: displayGenres,
+    allGenreNames,
     topLevelGenre,
     ageCategory,
     ratings,
