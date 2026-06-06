@@ -11,13 +11,15 @@ import {
   userOwnedEditions,
   editions,
   userBookState,
+  books,
   bookGenres,
   genres,
   readingSessions,
   bookCategoryRatings,
   taxonomyCategories,
 } from "@/db/schema";
-import { eq, and, sql, isNull } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
+import { classifyGenres } from "@/lib/genre-taxonomy";
 
 /** Build a SQL IN clause from an array of string IDs */
 function inList(ids: string[]) {
@@ -148,24 +150,47 @@ export async function batchFetchTopLevelGenres(
 ): Promise<Map<string, string>> {
   if (bookIds.length === 0) return new Map();
 
-  const rows = await db
-    .select({ bookId: bookGenres.bookId, name: genres.name })
-    .from(bookGenres)
-    .innerJoin(genres, eq(bookGenres.genreId, genres.id))
-    .where(
-      and(
-        sql`${bookGenres.bookId} IN (${inList(bookIds)})`,
-        isNull(genres.parentGenreId)
-      )
-    )
-    .all();
+  // Fetch ALL genre rows per book (not just parentless ones). The genre
+  // hierarchy is mostly flat — ~8.8k genres have a NULL parent_genre_id —
+  // so "first parentless genre" surfaces long-tail tags like "Found Family"
+  // or "Isekai" instead of a real top-level genre. Instead we run the same
+  // curated `classifyGenres` taxonomy the book page uses for its primary pill.
+  const [genreRows, bookRows] = await Promise.all([
+    db
+      .select({
+        bookId: bookGenres.bookId,
+        genreId: genres.id,
+        name: genres.name,
+        parentGenreId: genres.parentGenreId,
+      })
+      .from(bookGenres)
+      .innerJoin(genres, eq(bookGenres.genreId, genres.id))
+      .where(sql`${bookGenres.bookId} IN (${inList(bookIds)})`)
+      .all(),
+    db
+      .select({ id: books.id, isFiction: books.isFiction })
+      .from(books)
+      .where(sql`${books.id} IN (${inList(bookIds)})`)
+      .all(),
+  ]);
 
-  // Take first top-level genre per book
+  // Group genre rows by book.
+  const byBook = new Map<
+    string,
+    { genreId: string; name: string; parentGenreId: string | null }[]
+  >();
+  for (const row of genreRows) {
+    const list = byBook.get(row.bookId) ?? [];
+    list.push({ genreId: row.genreId, name: row.name, parentGenreId: row.parentGenreId });
+    byBook.set(row.bookId, list);
+  }
+
+  const fictionByBook = new Map(bookRows.map((b) => [b.id, b.isFiction]));
+
   const map = new Map<string, string>();
-  for (const row of rows) {
-    if (!map.has(row.bookId)) {
-      map.set(row.bookId, row.name);
-    }
+  for (const [bookId, rows] of byBook) {
+    const { primaryGenre } = classifyGenres(rows, fictionByBook.get(bookId) ?? null);
+    if (primaryGenre) map.set(bookId, primaryGenre);
   }
   return map;
 }
