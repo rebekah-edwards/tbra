@@ -28,9 +28,6 @@ const CLEAN_TITLE_PATTERNS: { pattern: RegExp; replacement?: string }[] = [
   // Author + ISBN catalog scrape: "Title: Author, Name: 9781234567890"
   { pattern: /:\s+[A-Z][a-z]+(?:[-'][A-Z][a-z]+)*(?:,\s+[A-Z]\.?[A-Z]?\.?)?:\s+978\d{10}\s*$/ },
 
-  // Comic issue numbers: "Avengers (2018-2023) #36"
-  { pattern: /\s*\(\d{4}-\d{4}\)\s*#\d+\s*$/ },
-
   // Series info in parentheses: "Golden Son (Red Rising Saga, #2)"
   { pattern: /\s*\([^)]*#\d+(?:\.\d+)?[^)]*\)\s*$/ },
 
@@ -41,14 +38,14 @@ const CLEAN_TITLE_PATTERNS: { pattern: RegExp; replacement?: string }[] = [
   { pattern: /\s*\(Volume\s+\d+(?:\s+of\s+\d+)?\)\s*$/i },
 
   // Genre descriptor in parens: "(a Virgil Flowers Novel)", "(A Graphic Novel)"
-  { pattern: /\s*\([Aa]n?\s+[A-Z][A-Za-z\s']+\b(?:Novel|Memoir|Thriller|Mystery|Romance)\)\s*$/ },
+  { pattern: /\s*\([Aa]n?\s+[A-Z][A-Za-z\s']+\bNovel\)\s*$/ },
 
   // Edition/format in parens (from sanitize.ts — keep in sync)
   { pattern: /\s*\((?:Paperback|Hardcover|Kindle Edition|Mass Market Paperback|Library Binding|Board Book|Audio CD|MP3 CD|Graphic Novel)\)\s*$/i },
   { pattern: /\s*\((?:Collector'?s? Edition|Deluxe Edition|Anniversary Edition|Movie Tie-[Ii]n|Special Edition|Illustrated Edition|International Edition|Signed Edition|Limited Edition|Expanded Edition|Revised Edition|Updated Edition|Unabridged|Abridged|Large Print|New Edition)\)\s*$/i },
 
-  // Trailing ": A Novel", "— A Memoir", etc (with colon, dash, or em-dash)
-  { pattern: /\s*[:–—-]\s*A\s+(?:Novel|Memoir|Thriller|Mystery|Romance)\s*$/i },
+  // Trailing ": A Novel" only (not Memoir — often part of the real title)
+  { pattern: /\s*[:–—-]\s*A\s+Novel\s*$/i },
 
   // Trailing ", Book N" without parens: "Arctic Drift: Dirk Pitt Adventures, Book 20"
   { pattern: /,\s+Book\s+(?:\d+|One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten)\s*$/i },
