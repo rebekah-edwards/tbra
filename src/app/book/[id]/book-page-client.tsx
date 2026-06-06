@@ -193,21 +193,31 @@ export function BookPageClient({
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-refresh after 10 seconds when enrichment is pending
+  // Auto-refresh after 10 seconds when enrichment is pending (max 3 reloads)
   useEffect(() => {
     if (!showEnrichmentBanner) return;
+    const storageKey = `enrich-poll-${book.id}`;
+    const attempts = parseInt(sessionStorage.getItem(storageKey) || "0", 10);
+    if (attempts >= 3) {
+      // Enrichment didn't complete after 3 reloads — give up and dismiss
+      sessionStorage.removeItem(storageKey);
+      setShowEnrichmentBanner(false);
+      return;
+    }
     const timeout = setTimeout(() => {
+      sessionStorage.setItem(storageKey, String(attempts + 1));
       window.location.reload();
     }, 10000);
     return () => clearTimeout(timeout);
-  }, [showEnrichmentBanner]);
+  }, [showEnrichmentBanner, book.id]);
 
   // Hide banner when enrichment data arrives (prop changes on refresh)
   useEffect(() => {
     if (!isRecentlyImported && showEnrichmentBanner) {
+      sessionStorage.removeItem(`enrich-poll-${book.id}`);
       setShowEnrichmentBanner(false);
     }
-  }, [isRecentlyImported, showEnrichmentBanner]);
+  }, [isRecentlyImported, showEnrichmentBanner, book.id]);
 
   const isActivelyReading = currentState === "currently_reading" || currentState === "paused";
 
