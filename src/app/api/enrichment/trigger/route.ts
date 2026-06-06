@@ -55,13 +55,13 @@ export async function POST(request: Request) {
   // Verify the book exists
   const book = await db.query.books.findFirst({
     where: eq(books.id, bookId),
-    columns: { id: true, title: true },
+    columns: { id: true, title: true, summary: true, description: true },
   });
   if (!book) {
     return NextResponse.json({ error: "Book not found" }, { status: 404 });
   }
 
-  // Idempotency: skip if already enriched (has category ratings)
+  // Idempotency: skip if already enriched (has category ratings AND key metadata)
   const existingRatings = await db
     .select({ id: bookCategoryRatings.id })
     .from(bookCategoryRatings)
@@ -69,7 +69,9 @@ export async function POST(request: Request) {
     .limit(1)
     .all();
 
-  if (existingRatings.length > 0) {
+  const hasKeyMetadata = !!book.summary && !!book.description;
+
+  if (existingRatings.length > 0 && hasKeyMetadata) {
     return NextResponse.json({
       success: true,
       bookId,
