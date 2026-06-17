@@ -51,7 +51,7 @@ npm run deploy:code   # Deploy code only
 - `nightly-report-triage` — 2:34 AM PT: `process-reports.ts` (direct on Turso)
 - `nightly-placeholder-clear` — 3:15 AM PT: detects + clears known cover placeholders (ISBNdb `56c3e12f…` / 3736 bytes; Google Books `12557f8948b8…` / 15567 bytes). Does NOT auto-replace — cleared books land on `/admin/covers` for manual fix. (Renamed from `nightly-cover-rescue` on 2026-04-17 for clarity.)
 - `nightly-description-refresh` — 4:04 AM PT: re-enriches `description_stale=1`
-- `nightly-content-ratings-backfill` — 4:54 AM PT: 700 Grok enrichments/night
+- `nightly-content-ratings-backfill` — 4:54 AM PT: 500 Grok enrichments/night (dropped from 700 on 2026-06-17 to fit the Brave budget; `BACKFILL_LIMIT` env in `enrich-content-700.ts`). NOTE: filters `visibility='public'`, so import_only (search-added) books are handled by `scripts/fix-shelf-enrichment.ts`, not here.
 - `sitemap-threshold-check` — 5:36 AM PT: alerts on 5K book-count boundary
 - `nightly-nyt-backfill` — 10:09 AM ET (after the chain): `nyt-backfill.ts` walks historical NYT bestseller lists (dated-list endpoint) into the `nyt_bestsellers` cache, ~120 calls/run, resumable via `data/nyt-backfill-cursor.json`, then `sync-incremental.sh push`. Scheduled outside the 12:21–5:36 AM PT chain window to avoid SQLite write contention. Self-exits once the cursor reaches MIN_DATE (2011-02-13) — disable after it logs BACKFILL COMPLETE for several nights.
 - Legacy `process-reported-issues` — disabled, manual only
@@ -72,7 +72,7 @@ Auto-refill is **off** for existing books. Enrichment's Phase 4 cover cascade on
 - **Never re-enable auto-refill for existing books** unless the user explicitly asks. The `/admin/covers` queue is the source of truth.
 
 ## Enrichment API Quotas
-- **Brave Search:** rate-limited, use sparingly. Primary metadata fallback after OpenLibrary.
+- **Brave Search:** valid key + HARD budget guard as of 2026-06-17. `braveSearch()` (the single choke point) calls `consumeApiQuotaWithMonthly("brave_search", BRAVE_DAILY_MAX≈3300, BRAVE_MONTHLY_MAX≈101000)` and throws `API_EXHAUSTED` when a cap is hit — no silent overspend. Budget = $505/mo ÷ $5/1k = 101k calls. `skipBrave` now defaults FALSE on the trigger route (content-ratings + user search-adds); bulk discovery keeps `skipBrave:true` so it doesn't compete for budget. Env overrides: `BRAVE_DAILY_MAX`, `BRAVE_MONTHLY_MAX`. Primary metadata fallback after OpenLibrary.
 - **Google Books:** 1,000 queries/day free tier, resets midnight Pacific. Cap bulk runs at 1,000. Use `skipGoogleBooks` option in `enrichBook()` during bulk operations.
 - **ISBNdb:** Premium plan, 15,000 queries/day, 3/sec rate limit. Primary metadata source after OL. Fills covers, pages, publisher, year, description, ISBN variants.
   - **Search-driven calls are hard-capped at 2,000/day** via `api_quota_usage` table (see `src/lib/api-quota.ts`). Enrichment gets the rest.
@@ -206,6 +206,7 @@ import { createGuardedTurso } from './lib/turso-guard';
 - **ALWAYS check `vercel ls` after every `git push`** to confirm the deploy reaches `Ready` status. Never trust that a push succeeded just because git accepted it. A broken env var (e.g. whitespace in `CRON_SECRET`) can silently fail all builds for days — this actually happened on 2026-04-04 and blocked ~3 days of deploys.
 - **New schema columns must land on Turso BEFORE deploying code** that references them. The local `turso` CLI is authed to the wrong database (`tbra-rebekah-edwards`, not production `tbra-web-app-thebasedreaderapp`), so `turso db shell tbra-web-app "ALTER TABLE ..."` does NOT work. Apply via `@libsql/client` using `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` from `.env.vercel.local` instead. See `scripts/sync-push.ts` for the pattern.
 - **Intensity labels are standardized:** None / Mild / Moderate / Significant / Extreme. Never use "Heavy", "Intense", or "Strong".
+- **Amazon affiliate tag MUST render in server HTML.** `buy-button.tsx` renders the tagged `<a href ...tag=>` in the INITIAL markup (not only inside the click dialog) — Amazon's reviewer scans raw HTML/View Source. Tag is env-overridable via `NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG` (current `tbra08-20` is from the REJECTED app). **As of 2026-06-17 the user has NOT supplied a fresh tracking ID — awaiting Amazon account reopen. Do NOT treat Amazon Associates as resolved.** Verify any change with `curl <book-url> | grep tag=` (not the hydrated DOM).
 - **Super admins need BOTH `account_type = 'super_admin'` AND `role = 'admin'`** for the Admin Edit panel to show on book pages. When changing account types, always set both fields.
 - **Import enrichment is deferred:** The import process does NOT call `enrichBook()` inline. New books get enriched by Phase 2 background call or the nightly task.
 - **The user can't run commands** — dev server, deploys, scripts, CLI, DB operations all must happen from the agent side.

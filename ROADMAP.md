@@ -21,8 +21,8 @@ All blocked on creating developer accounts. PWA ships today as the bridge.
 - Push notifications via FCM
 
 ### Social login
-- **Google Sign-In** — OAuth credentials in Google Cloud Console
-- **Apple Sign-In** — same gate as App Store (Apple Developer account)
+- **Google Sign-In** — ⏳ ACTIVE NEXT (2026-06-17, user decision: Google ONLY for now, no other social logins). Needs OAuth credentials in Google Cloud Console + `auth/` flow edits (social button + account-linking to existing email users).
+- **Apple Sign-In** — deferred. (App Store rules require Apple Sign-In *if* any other social login is offered — revisit when iOS packaging starts.)
 - `auth/` flow edits to add social buttons + provider-linking to existing email accounts
 
 ---
@@ -37,8 +37,9 @@ All blocked on creating developer accounts. PWA ships today as the bridge.
 - TBR Notes
 
 ### Open
-- **Payment integration** — `/upgrade` page exists but no Stripe/billing wired up. Decide provider + billing model (monthly? annual? lifetime?).
+- **Payment integration** — `/upgrade` page exists but no Stripe/billing wired up. Decide provider + billing model (monthly? annual? lifetime?). (User is OK with Apple's IAP cut on premium upgrades.)
 - **Reading challenges with discount codes** — advertiser-sponsored, non-data-targeted. Product-vision piece not yet built.
+- **Amazon Associates affiliate** — code FIXED 2026-06-17 (tag now in server-rendered HTML; was only in the click dialog → repeated rejections). ⏳ Awaiting Amazon to re-open the account, then a FRESH tracking ID (`tbra08-20` is the rejected one) → set `NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG` + redeploy + reapply. See memory `project_amazon_affiliate_fix`.
 
 ---
 
