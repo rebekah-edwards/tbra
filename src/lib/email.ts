@@ -181,7 +181,7 @@ export async function sendEnrichmentFailureEmail(
   errorMessage: string,
   status: string
 ): Promise<void> {
-  const appUrl = process.env.APP_URL ?? "https://www.thebasedreader.app";
+  const appUrl = process.env.APP_URL ?? "https://thebasedreader.app";
   const bookUrl = `${appUrl}/book/${bookId}`;
 
   try {

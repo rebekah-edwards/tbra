@@ -4,6 +4,8 @@ export const runtime = "nodejs";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 
+// Canonical site origin (apex — NOT www). Used to build the OAuth redirect_uri
+// so it matches the registered URI and keeps the whole flow on one domain.
 function baseUrl(): string {
   return process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 }
