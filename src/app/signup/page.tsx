@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signup } from "@/lib/actions/auth";
 import { PasswordInput } from "@/components/ui/password-input";
+import { GoogleButton } from "@/components/auth/google-button";
 
 export default function SignupPage() {
   const [state, action, pending] = useActionState(signup, {});
@@ -45,6 +46,13 @@ export default function SignupPage() {
             {state.error}
           </div>
         )}
+
+        <GoogleButton label="Sign up with Google" />
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted">or</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
 
         <div>
           <label htmlFor="email" className="block text-sm font-medium mb-1">

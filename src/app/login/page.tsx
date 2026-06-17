@@ -5,11 +5,13 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { login } from "@/lib/actions/auth";
 import { PasswordInput } from "@/components/ui/password-input";
+import { GoogleButton, googleAuthErrorMessage } from "@/components/auth/google-button";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(login, {});
   const searchParams = useSearchParams();
   const resetSuccess = searchParams.get("reset") === "success";
+  const googleError = googleAuthErrorMessage(searchParams.get("error"));
 
   return (
     <>
@@ -33,6 +35,19 @@ export default function LoginPage() {
       </p>
 
       <form action={action} className="mt-8 w-full max-w-sm space-y-4">
+        {googleError && (
+          <div className="rounded-lg border border-intensity-4/30 bg-intensity-4/10 px-4 py-3 text-sm text-intensity-4">
+            {googleError}
+          </div>
+        )}
+
+        <GoogleButton />
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted">or</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
         {resetSuccess && (
           <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
             Password reset successfully. Sign in with your new password.

@@ -216,6 +216,9 @@ export const users = sqliteTable("users", {
   emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
   emailVerificationToken: text("email_verification_token"),
   emailVerificationExpiresAt: text("email_verification_expires_at"),
+  // Google OAuth — Google's stable subject id ('sub'). Nullable: only set for
+  // accounts linked to Google. UNIQUE allows many NULLs (email/password users).
+  googleSub: text("google_sub").unique(),
   // Social handles (stored without @)
   instagram: text("instagram"),
   tiktok: text("tiktok"),

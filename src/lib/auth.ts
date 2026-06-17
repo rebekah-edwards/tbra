@@ -5,8 +5,8 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-const COOKIE_NAME = "tbra-session";
-const SESSION_DURATION = 7 * 24 * 60 * 60; // 7 days in seconds
+export const COOKIE_NAME = "tbra-session";
+export const SESSION_DURATION = 7 * 24 * 60 * 60; // 7 days in seconds
 
 function getSecret() {
   const secret = process.env.AUTH_SECRET;
