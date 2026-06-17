@@ -325,7 +325,7 @@ export function BookPageClient({
             pages={book.pages}
             audioLengthMinutes={book.audioLengthMinutes}
             showAudioLength={showAudioLength}
-            isManuallyAdded={!book.openLibraryKey && !book.description && book.genres.length === 0}
+            isManuallyAdded={isRecentlyImported}
             topLevelGenre={book.topLevelGenre}
             ageCategory={book.ageCategory}
             pacing={book.pacing}
