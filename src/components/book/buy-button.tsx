@@ -9,27 +9,51 @@ interface BuyButtonProps {
   asin?: string | null;
 }
 
-/**
- * Buy button that links to Amazon with affiliate tag.
- * Shows a shopping bag icon. Tapping opens a confirmation dialog
- * with affiliate disclosure before navigating to Amazon.
- */
-export function BuyButton({ bookTitle, amazonUrl, isbn13, asin }: BuyButtonProps) {
-  const ASSOCIATE_TAG = "tbra08-20";
-  const [showDialog, setShowDialog] = useState(false);
+// Amazon Associates tracking ID. Set NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG in the
+// environment to swap in a fresh tracking ID without a code change (Amazon does
+// not re-review rejected apps — each reapplication needs a fresh tag).
+const ASSOCIATE_TAG = process.env.NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG || "tbra08-20";
 
-  const getAmazonLink = () => {
-    if (amazonUrl) return amazonUrl;
-    if (asin) return `https://www.amazon.com/dp/${asin}?tag=${ASSOCIATE_TAG}`;
-    if (isbn13) return `https://www.amazon.com/s?k=${isbn13}&tag=${ASSOCIATE_TAG}`;
-    return `https://www.amazon.com/s?k=${encodeURIComponent(bookTitle)}&tag=${ASSOCIATE_TAG}`;
-  };
+/** Append the affiliate tag to any Amazon URL that doesn't already carry it. */
+function withTag(url: string): string {
+  if (/[?&]tag=/.test(url)) return url;
+  return url + (url.includes("?") ? "&" : "?") + `tag=${ASSOCIATE_TAG}`;
+}
+
+function buildAmazonLink({ amazonUrl, asin, isbn13, bookTitle }: BuyButtonProps): string {
+  if (amazonUrl) return withTag(amazonUrl);
+  if (asin) return `https://www.amazon.com/dp/${asin}?tag=${ASSOCIATE_TAG}`;
+  if (isbn13) return `https://www.amazon.com/s?k=${isbn13}&tag=${ASSOCIATE_TAG}`;
+  return `https://www.amazon.com/s?k=${encodeURIComponent(bookTitle)}&tag=${ASSOCIATE_TAG}`;
+}
+
+/**
+ * Buy button that links to Amazon with the affiliate tag.
+ *
+ * IMPORTANT (Amazon Associates compliance): the tagged Amazon URL is rendered as
+ * a real <a href> in the INITIAL markup — so it appears in the server-rendered
+ * HTML / "View Source" that Amazon's reviewer scans. (Previously the tagged link
+ * only existed inside the click-opened dialog, so it was absent from the static
+ * HTML and Amazon reported "no tracking link" → rejection.)
+ *
+ * The click is intercepted to show an affiliate-disclosure interstitial before
+ * navigating; the dialog's "Continue" uses the same href.
+ */
+export function BuyButton(props: BuyButtonProps) {
+  const { bookTitle } = props;
+  const [showDialog, setShowDialog] = useState(false);
+  const amazonLink = buildAmazonLink(props);
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setShowDialog(true)}
+      <a
+        href={amazonLink}
+        target="_blank"
+        rel="sponsored noopener noreferrer"
+        onClick={(e) => {
+          e.preventDefault();
+          setShowDialog(true);
+        }}
         className="flex flex-col items-center justify-center rounded-xl border-2 border-border hover:bg-muted/10 transition-colors px-3 shrink-0 self-stretch gap-0.5"
         title="Buy on Amazon"
       >
@@ -49,7 +73,7 @@ export function BuyButton({ bookTitle, amazonUrl, isbn13, asin }: BuyButtonProps
           <path d="M8 7V5a4 4 0 0 1 8 0v2" />
         </svg>
         <span className="text-[8px] text-muted/50 leading-none">Buy</span>
-      </button>
+      </a>
 
       {showDialog && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-6">
@@ -62,9 +86,9 @@ export function BuyButton({ bookTitle, amazonUrl, isbn13, asin }: BuyButtonProps
             </p>
             <div className="flex flex-col gap-2">
               <a
-                href={getAmazonLink()}
+                href={amazonLink}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="sponsored noopener noreferrer"
                 onClick={() => setShowDialog(false)}
                 className="w-full py-2.5 rounded-xl text-sm font-semibold bg-accent text-black text-center hover:brightness-110 transition-all"
               >
