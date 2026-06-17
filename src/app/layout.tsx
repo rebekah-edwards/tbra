@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
   ],
   icons: {
-    icon: "/icon",
+    // Tab favicon comes from src/app/favicon.ico (Next file convention).
     apple: "/icons/apple-touch-icon.png",
   },
 };
