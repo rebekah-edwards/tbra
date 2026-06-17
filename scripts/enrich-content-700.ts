@@ -7,7 +7,16 @@ import path from "path";
 const DB_PATH = path.join(process.cwd(), "data", "tbra.db");
 const db = new Database(DB_PATH);
 
-// Get books without content details, prioritized by user activity
+// Nightly batch size. Dropped 700 → 500 (2026-06-17) to fit the Brave budget:
+// $505/mo ÷ $5 per 1,000 calls = 101,000 calls/mo; at ~5 Brave calls/book a
+// 500-book night = 2,500 calls, leaving daily headroom for user search-adds
+// under the ~3,300/day cap. Override via env BACKFILL_LIMIT.
+const BACKFILL_LIMIT = Number(process.env.BACKFILL_LIMIT) || 500;
+
+// Get books without content details, prioritized by user activity.
+// Note: filters visibility='public', so import_only (user search-added) books
+// are intentionally NOT picked up here — those are handled by the dedicated
+// shelf-fix path which promotes + enriches them.
 const books = db.prepare(`
   SELECT b.id, b.title, COUNT(DISTINCT ubs.user_id) as users
   FROM books b
@@ -16,8 +25,8 @@ const books = db.prepare(`
   AND b.id NOT IN (SELECT DISTINCT book_id FROM book_category_ratings)
   GROUP BY b.id
   ORDER BY users DESC, b.title
-  LIMIT 700
-`).all() as { id: string; title: string; users: number }[];
+  LIMIT ?
+`).all(BACKFILL_LIMIT) as { id: string; title: string; users: number }[];
 
 db.close();
 

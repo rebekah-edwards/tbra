@@ -32,6 +32,7 @@ import {
   findEnglishEditionTitle,
   isJunkTitle,
 } from "../src/lib/openlibrary";
+import { isLikelyNonEnglish } from "../src/lib/enrichment/enrichable";
 import { enrichBook } from "../src/lib/enrichment/enrich-book";
 import { NYT_LISTS, NYT_DELAY_MS, fetchNytList, upsertNytEntries } from "../src/lib/enrichment/nyt";
 
@@ -503,14 +504,21 @@ async function importCascadeBooks(authorOlKeys: string[]): Promise<number> {
       const workKey = work.key;
       const existing = await db.query.books.findFirst({ where: eq(books.openLibraryKey, workKey) });
       if (existing) continue;
-      const coverUrl = buildCoverUrl(work.covers?.[0], "L");
       // Resolve English title for foreign-language works
       const englishTitle = await findEnglishEditionTitle(workKey);
+      const resolvedTitle = englishTitle ?? work.title;
+      // Cascade books are inserted as bare stubs (no ISBN/description/year), so
+      // they must NOT enter the public catalog — that was the source of the
+      // ~5k un-enrichable skeleton flood (2026-06-17). Skip junk/non-English
+      // outright, and land the rest as import_only pending real enrichment.
+      if (isJunkTitle(resolvedTitle) || isLikelyNonEnglish(resolvedTitle)) continue;
+      const coverUrl = buildCoverUrl(work.covers?.[0], "L");
       await delay(350);
       const [newBook] = await db.insert(books).values({
-        title: englishTitle ?? work.title,
+        title: resolvedTitle,
         coverImageUrl: coverUrl,
         openLibraryKey: workKey,
+        visibility: "import_only",
       }).returning();
       const author = await db.query.authors.findFirst({ where: eq(authors.openLibraryKey, authorKey) });
       if (author) {
@@ -542,6 +550,13 @@ async function importBook(query: string, seed?: ImportSeed): Promise<number> {
 
     const result = results[0];
 
+    // Reject junk/box-sets and non-English at the source. (Seeded imports —
+    // NYT/curated — are always real, so they bypass this guard.)
+    if (!seed && (isJunkTitle(result.title) || isLikelyNonEnglish(result.title))) {
+      console.log(`  Skipped (junk/non-English): ${result.title}`);
+      return 0;
+    }
+
     // Check if already imported
     const existing = await db.query.books.findFirst({
       where: eq(books.openLibraryKey, result.key),
@@ -558,19 +573,30 @@ async function importBook(query: string, seed?: ImportSeed): Promise<number> {
     const genreNames = normalizeGenres(work.subjects);
     const isFiction = detectIsFiction(genreNames);
 
+    const description = seed?.description ?? work.description ?? null;
+    const isbn13 = result.isbn?.find((i) => i.length === 13) ?? seed?.isbn13 ?? null;
+    const isbn10 = result.isbn?.find((i) => i.length === 10) ?? seed?.isbn10 ?? null;
+
+    // Don't publish a bare skeleton (no ISBN + no description). Land it as
+    // import_only so the public catalog stays clean; a later enrichment that
+    // fills real metadata can promote it. Seeded imports are always publishable.
+    const isThin = !seed && !isbn13 && !isbn10 && !description;
+    const visibility = isThin ? "import_only" : "public";
+
     const [book] = await db.insert(books).values({
       title: result.title,
       // Prefer NYT's curated description (seed) over OL's — addresses the
       // long-standing description-quality complaint for bestsellers.
-      description: seed?.description ?? work.description ?? null,
+      description,
       publicationYear: result.first_publish_year,
-      isbn13: result.isbn?.find((i) => i.length === 13) ?? seed?.isbn13 ?? null,
-      isbn10: result.isbn?.find((i) => i.length === 10) ?? seed?.isbn10 ?? null,
+      isbn13,
+      isbn10,
       pages: result.number_of_pages_median,
       coverImageUrl: coverUrl ?? seed?.coverImageUrl ?? null,
       publisher: seed?.publisher ?? null,
       openLibraryKey: result.key,
       isFiction,
+      visibility,
     }).returning();
 
     // Authors
@@ -709,7 +735,9 @@ async function fetchSubjectWorks(
     const data: any = await res.json();
     const works: SubjectWork[] = (data.works ?? [])
       .map((w: any) => ({ title: w.title as string, authorName: w.authors?.[0]?.name ?? null }))
-      .filter((w: SubjectWork) => w.title && !isJunkTitle(w.title));
+      // Reject junk/box-sets and non-English titles at the source so they never
+      // enter the catalog as un-enrichable filler (2026-06-17 importer hardening).
+      .filter((w: SubjectWork) => w.title && !isJunkTitle(w.title) && !isLikelyNonEnglish(w.title));
     return { works, workCount: data.work_count ?? 0 };
   } catch (err) {
     console.warn(`  [subject:${subject}] fetch failed at offset ${offset}:`, err);

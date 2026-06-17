@@ -51,6 +51,12 @@ export interface EnrichOptions {
   skipBrave?: boolean; // DEFAULT TRUE — Brave has limited credits, only use when explicitly enabled
   /** Run only a specific enrichment step instead of the full pipeline */
   focus?: "full" | "cover" | "audio" | "description";
+  /**
+   * Skip the author-bibliography discovery side-effect (which imports an
+   * author's backlist). Use when re-enriching a targeted set where you do NOT
+   * want to grow the catalog — e.g. fixing specific shelf books.
+   */
+  skipAuthorDiscovery?: boolean;
 }
 
 export async function enrichBook(bookId: string, options?: EnrichOptions): Promise<void> {
@@ -198,11 +204,16 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
   const authorNames = bookAuthorRows.map((r) => r.name);
 
   // ── Phase 0.2: NYT bestseller cache (local DB read — no API call) ──
-  // If this book is a (cached) NYT bestseller, use NYT's curated description and
-  // publisher. Runs BEFORE the OL/ISBNdb/Brave description cascade so the curated
-  // copy wins over junk/missing data. This is also how USER IMPORTS get good
-  // descriptions: they run through enrichBook in production, which reads the
-  // Turso-synced nyt_bestsellers table — zero NYT API calls per book.
+  // If this book is a (cached) NYT bestseller, seed the description and publisher
+  // from NYT's curated data. The NYT blurb is short marketing copy, so it is only
+  // a SEED/FALLBACK: we keep descriptionStale=true so the richer OL/ISBNdb/Brave
+  // description cascade (and the supplemental description search) still run and can
+  // replace it with fuller publisher text. If nothing richer is found, the NYT
+  // copy remains. This is also how USER IMPORTS get a description: they run through
+  // enrichBook in production, reading the Turso-synced nyt_bestsellers table — zero
+  // NYT API calls per book. (Previously this set descriptionStale=false and won
+  // over everything, starving Grok's content analysis of fuller text — fixed
+  // 2026-06-08, the NYT content-details regression.)
   if (focus === "full") {
     try {
       const needsDesc = !book.description || book.descriptionStale;
@@ -216,7 +227,10 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
           const nytUpdates: Record<string, unknown> = {};
           if (needsDesc && nyt.description) {
             nytUpdates.description = nyt.description;
-            nytUpdates.descriptionStale = false;
+            // Keep stale=true so the fuller description cascade still runs and can
+            // overwrite this seed. Cleared to false only when a real publisher-grade
+            // description lands downstream.
+            nytUpdates.descriptionStale = true;
           }
           if (!book.publisher && nyt.publisher) nytUpdates.publisher = nyt.publisher;
           if (Object.keys(nytUpdates).length > 0) {
@@ -627,7 +641,9 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     braveSearch(`${searchName} book series reading order synopsis Goodreads`, 6),
     braveSearch(`${searchName} parent guide mature content sexual violence`, 5),
   ];
-  if (!book.description) {
+  // Run the supplemental description search when we have no description OR only a
+  // stale seed (e.g. the short NYT blurb). This feeds Grok fuller publisher text.
+  if (!book.description || book.descriptionStale) {
     searches.push(
       braveSearch(`${searchName} "about this book" OR "book description" OR "editorial reviews" site:amazon.com OR site:goodreads.com`, 5)
     );
@@ -962,7 +978,10 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
   if (book.isBoxSet) {
     console.log(`[enrichment] Skipping author discovery for box set: "${book.title}"`);
   }
-  for (const authorRow of (book.isBoxSet ? [] : bookAuthorRows)) {
+  if (opts.skipAuthorDiscovery) {
+    console.log(`[enrichment] Skipping author bibliography discovery (skipAuthorDiscovery) for "${book.title}"`);
+  }
+  for (const authorRow of (book.isBoxSet || opts.skipAuthorDiscovery ? [] : bookAuthorRows)) {
     const authorRecord = await db.query.authors.findFirst({
       where: eq(authors.name, authorRow.name),
       columns: { id: true, openLibraryKey: true },

@@ -55,13 +55,15 @@ export async function POST(request: Request) {
   // Verify the book exists
   const book = await db.query.books.findFirst({
     where: eq(books.id, bookId),
-    columns: { id: true, title: true, summary: true, description: true },
+    columns: { id: true, title: true },
   });
   if (!book) {
     return NextResponse.json({ error: "Book not found" }, { status: 404 });
   }
 
-  // Idempotency: skip if already enriched (has category ratings AND key metadata)
+  // Idempotency: skip if already enriched. Content ratings are written last by the
+  // Grok content-analysis step, so their presence is the canonical "enrichment
+  // completed" signal — matching needsEnrichment in book/[id]/page.tsx.
   const existingRatings = await db
     .select({ id: bookCategoryRatings.id })
     .from(bookCategoryRatings)
@@ -69,9 +71,7 @@ export async function POST(request: Request) {
     .limit(1)
     .all();
 
-  const hasKeyMetadata = !!book.summary && !!book.description;
-
-  if (existingRatings.length > 0 && hasKeyMetadata) {
+  if (existingRatings.length > 0) {
     return NextResponse.json({
       success: true,
       bookId,
@@ -80,9 +80,15 @@ export async function POST(request: Request) {
     });
   }
 
-  // Run enrichment — this is the long-running part
+  // Run enrichment — this is the long-running part.
+  // skipBrave: false — this endpoint serves content-ratings backfill AND user
+  // search-adds, the two paths where Brave web research most improves quality
+  // (accurate ratings + metadata/cover fallback). Safe to enable now that
+  // braveSearch enforces a hard daily/monthly budget cap. Bulk discovery import
+  // (nightly-import.ts) keeps the skipBrave=true default so it doesn't compete
+  // for the budget — those books get Brave later via the content-ratings pass.
   try {
-    await enrichBook(bookId);
+    await enrichBook(bookId, { skipBrave: false });
     return NextResponse.json({ success: true, bookId });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

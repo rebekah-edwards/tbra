@@ -173,6 +173,14 @@ const JUNK_TITLE_PATTERNS = [
   /\b\d+\s*-?\s*pack\b/i,       // "6 Pack", "6-Pack"
   /\bpop-?up\s*book\b/i,
   /\bboard\s*book\b/i,
+  // Non-book media formats (not enrichable as books)
+  /\bcassette\b/i,
+  /\bvhs\b/i,
+  /\bdvd\b/i,
+  /\bvinyl\b/i,
+  /\bsheet\s*music\b/i,
+  /\beasy\s*(guitar|piano)\b/i,
+  /\bguitar\s*tab\b/i,
   /\bsticker\s*book\b/i,
   /\bflip\s*book\b/i,
   /\bpuzzle\s*book\b/i,
