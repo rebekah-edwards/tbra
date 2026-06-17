@@ -11,7 +11,7 @@
 import { config } from "dotenv";
 config({ path: ".env.vercel.local" });
 
-import { createClient } from "@libsql/client";
+import { createGuardedTurso } from "./lib/turso-guard";
 import fs from "fs";
 import path from "path";
 
@@ -22,16 +22,17 @@ const THRESHOLD_STEP = 5000;
 async function main() {
   if (!fs.existsSync(REPORTS_DIR)) fs.mkdirSync(REPORTS_DIR, { recursive: true });
 
-  const client = createClient({
-    url: process.env.TURSO_DATABASE_URL!,
-    authToken: process.env.TURSO_AUTH_TOKEN!,
+  const { remote: client, shutdown } = await createGuardedTurso({
+    name: "sitemap-threshold-check",
+    maxRuntimeMs: 5 * 60 * 1000,
+    queryTimeoutMs: 30_000,
   });
 
   const { rows } = await client.execute(
     `SELECT count(*) as n FROM books WHERE visibility = 'public'`,
   );
   const current = Number((rows[0] as any).n);
-  client.close();
+  shutdown();
 
   let previous = 0;
   if (fs.existsSync(STATE_FILE)) {

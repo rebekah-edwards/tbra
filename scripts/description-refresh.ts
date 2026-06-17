@@ -24,7 +24,7 @@ import { enrichBook } from "../src/lib/enrichment/enrich-book";
 const DB_PATH = path.join(process.cwd(), "data", "tbra.db");
 const db = new Database(DB_PATH);
 
-const BATCH_SIZE = 200;
+const BATCH_SIZE = 500;
 const DELAY_MS = 300;
 
 type Row = { id: string; title: string };

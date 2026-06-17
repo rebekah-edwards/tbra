@@ -13,12 +13,13 @@
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 dotenv.config({ path: ".env.vercel.local" });
-import { createClient } from "@libsql/client";
+import type { Client } from "@libsql/client";
+import { createGuardedTurso } from "./lib/turso-guard";
 import { searchISBNdbMulti } from "../src/lib/enrichment/isbndb";
 import { randomUUID } from "crypto";
 
 const APPLY = process.argv.includes("--apply");
-const c = createClient({ url: process.env.TURSO_DATABASE_URL!, authToken: process.env.TURSO_AUTH_TOKEN! });
+let c: Client;
 const q = (sql: string, args: any[] = []) => c.execute({ sql, args });
 
 function slugify(s: string): string {
@@ -50,6 +51,13 @@ async function findOrCreateAuthor(name: string): Promise<string> {
 }
 
 async function main() {
+  const guard = await createGuardedTurso({
+    name: "fix-overnight-reports",
+    maxRuntimeMs: 15 * 60 * 1000,
+    queryTimeoutMs: 30_000,
+  });
+  c = guard.remote;
+
   console.log(`Mode: ${APPLY ? "APPLY" : "DRY-RUN"}\n`);
 
   // ─── Look up all 4 open reports to grab IDs ───

@@ -8,18 +8,26 @@
 
 import { config } from "dotenv";
 config({ path: ".env.local" });
+config({ path: ".env.vercel.local" });
 
 import { createClient } from "@libsql/client";
+import { createGuardedTurso } from "./lib/turso-guard";
 import { sendSignupDigestEmail } from "../src/lib/email";
 
 const TURSO_URL = process.env.TURSO_DATABASE_URL;
-const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
-
-const db = TURSO_URL
-  ? createClient({ url: TURSO_URL, authToken: TURSO_TOKEN })
-  : createClient({ url: "file:data/tbra.db" });
 
 async function main() {
+  // In production (cron), use guarded Turso. In local dev, fall back to the
+  // local SQLite file — matches prior behavior, lets the digest be tested
+  // without pulling live creds.
+  const db = TURSO_URL
+    ? (await createGuardedTurso({
+        name: "daily-signup-digest",
+        maxRuntimeMs: 5 * 60 * 1000,
+        queryTimeoutMs: 30_000,
+      })).remote
+    : createClient({ url: "file:data/tbra.db" });
+
   // Get signups from the last 24 hours
   const rows = await db.execute(
     `SELECT email, display_name, email_verified, created_at

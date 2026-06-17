@@ -16,19 +16,20 @@
  *   npx tsx scripts/audit-series.ts --years-only # Only fix missing years (no book additions)
  */
 
-import { createClient } from "@libsql/client";
+import { createClient, type Client } from "@libsql/client";
+import { createGuardedTurso } from "./lib/turso-guard";
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
 
 config({ path: ".env.local" });
+config({ path: ".env.vercel.local" });
 
 const TURSO_URL = process.env.TURSO_DATABASE_URL;
-const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
 
-// Use Turso if available, otherwise local
-const db = TURSO_URL
-  ? createClient({ url: TURSO_URL, authToken: TURSO_TOKEN })
-  : createClient({ url: "file:data/tbra.db" });
+// Lazily initialized in main(). Turso path goes through the guard so a hung
+// query can't stall this script indefinitely; local path is unguarded because
+// it hits a file, not a network service.
+let db: Client;
 
 const FIX_MODE = process.argv.includes("--fix");
 const YEARS_ONLY = process.argv.includes("--years-only");
@@ -569,6 +570,18 @@ async function auditSeries(series: SeriesInfo): Promise<boolean> {
 }
 
 async function main() {
+  if (TURSO_URL) {
+    const guard = await createGuardedTurso({
+      name: "audit-series",
+      maxRuntimeMs: 60 * 60 * 1000,
+      queryTimeoutMs: 30_000,
+      longRunning: true,
+    });
+    db = guard.remote;
+  } else {
+    db = createClient({ url: "file:data/tbra.db" });
+  }
+
   console.log(
     `\n🔍 Series Audit${FIX_MODE ? " (FIX MODE)" : " (DRY RUN)"}${YEARS_ONLY ? " [years only]" : ""}`
   );

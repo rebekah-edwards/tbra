@@ -10,10 +10,11 @@
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 dotenv.config({ path: ".env.vercel.local" });
-import { createClient } from "@libsql/client";
+import type { Client } from "@libsql/client";
+import { createGuardedTurso } from "./lib/turso-guard";
 
 const APPLY = process.argv.includes("--apply");
-const c = createClient({ url: process.env.TURSO_DATABASE_URL!, authToken: process.env.TURSO_AUTH_TOKEN! });
+let c: Client;
 const q = (sql: string, args: any[] = []) => c.execute({ sql, args });
 
 async function run(sql: string, args: any[], label: string) {
@@ -45,6 +46,13 @@ async function mergeUserData(dupeId: string, canonicalId: string) {
 }
 
 async function main() {
+  const guard = await createGuardedTurso({
+    name: "finish-dupe-slugs",
+    maxRuntimeMs: 30 * 60 * 1000,
+    queryTimeoutMs: 30_000,
+  });
+  c = guard.remote;
+
   console.log(`Mode: ${APPLY ? "APPLY" : "DRY-RUN"}\n`);
 
   const dupes = await q(`

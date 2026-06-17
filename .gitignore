@@ -45,3 +45,11 @@ next-env.d.ts
 *.db
 data/*.db
 .turso-sync-incremental/
+
+# generated logs / run output / scratch / reports — regenerable, never commit.
+# scripts/_*.ts are throwaway one-off debug scratch (NOT real tooling).
+scripts/*.log
+scripts/*.out
+scripts/enrichment-log-*.txt
+scripts/_*
+/reports/

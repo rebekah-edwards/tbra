@@ -1,14 +1,12 @@
-import { createClient } from '@libsql/client';
+import type { Client } from '@libsql/client';
+import { createGuardedTurso } from './lib/turso-guard';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 
 dotenv.config({ path: path.join(process.cwd(), '.env.vercel.local') });
 
-const client = createClient({
-  url: process.env.TURSO_DATABASE_URL!,
-  authToken: process.env.TURSO_AUTH_TOKEN!,
-});
+let client: Client;
 
 async function getBookUserCount(bookId: string): Promise<number> {
   const r = await client.execute({
@@ -153,6 +151,13 @@ function isUserOnlyRequest(desc: string): boolean {
 }
 
 async function main() {
+  const guard = await createGuardedTurso({
+    name: 'nightly-triage',
+    maxRuntimeMs: 20 * 60 * 1000,
+    queryTimeoutMs: 30_000,
+  });
+  client = guard.remote;
+
   const fixed: string[] = [];
   const skipped: string[] = [];
   const errors: string[] = [];
@@ -390,4 +395,4 @@ ${errors.length === 0 ? '_None_' : errors.map(l => `- ${l}`).join('\n')}
   console.log(`Summary written to ${summaryPath}`);
 }
 
-main().catch(console.error).finally(() => client.close());
+main().catch(console.error).finally(() => client?.close());

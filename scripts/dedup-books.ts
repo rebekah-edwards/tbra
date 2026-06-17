@@ -896,6 +896,8 @@ async function main() {
   let totalDupesDeleted = 0;
   let totalUserRecordsMigrated = 0;
   const mergeLog: string[] = [];
+  // Manifest of all merges — full UUIDs. Used to replay deletions on Turso.
+  const manifest: { dupe_id: string; canonical_id: string; dupe_title: string; canonical_title: string }[] = [];
 
   for (const group of dupeGroups) {
     // Score each book in the group
@@ -954,6 +956,7 @@ async function main() {
 
       const logMsg = `Merged '${dupe.title}' (${dupe.id.slice(0, 8)}) into '${canonical.title}' (${canonical.id.slice(0, 8)})${userMoved > 0 ? ` [${userMoved} user records moved]` : ""}`;
       mergeLog.push(logMsg);
+      manifest.push({ dupe_id: dupe.id, canonical_id: canonical.id, dupe_title: dupe.title, canonical_title: canonical.title });
       totalDupesDeleted++;
     }
 
@@ -977,6 +980,16 @@ async function main() {
     for (const msg of mergeLog) {
       console.log(`  ${msg}`);
     }
+  }
+
+  // Write manifest (for Turso replay)
+  if (manifest.length > 0) {
+    const fs = await import("fs");
+    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+    const manifestPath = `reports/dedup-manifest-${ts}.json`;
+    fs.mkdirSync("reports", { recursive: true });
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    console.log(`\nManifest written: ${manifestPath} (${manifest.length} pairs)`);
   }
 
   // Re-enable foreign keys
