@@ -88,7 +88,17 @@ export async function POST(request: Request) {
   // (nightly-import.ts) keeps the skipBrave=true default so it doesn't compete
   // for the budget — those books get Brave later via the content-ratings pass.
   try {
-    await enrichBook(bookId, { skipBrave: false });
+    const outcome = await enrichBook(bookId, { skipBrave: false });
+    // Don't report success on a no-op. enrichBook auto-pauses (returns "skipped")
+    // when a hard API stop was logged in the last hour; reporting that as success
+    // is exactly what masked the invalid-Brave-key outage. Surface it as 503 so
+    // callers and manual re-triggers can tell nothing was enriched.
+    if (outcome.status === "skipped") {
+      return NextResponse.json(
+        { success: false, bookId, skipped: true, reason: outcome.reason },
+        { status: 503 },
+      );
+    }
     return NextResponse.json({ success: true, bookId });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

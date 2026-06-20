@@ -140,6 +140,13 @@ export async function analyzeBookContent(
     clearTimeout(timeout);
   } catch (err: unknown) {
     const status = (err as { status?: number }).status;
+    // 401 = bad/expired key — distinct code so a dead key is never confused with
+    // transient quota exhaustion (waiting never fixes a bad key). Mirrors search.ts.
+    if (status === 401) {
+      const error = new Error(`Grok API key invalid (401) — set a valid XAI_API_KEY`);
+      (error as Error & { code: string }).code = "API_KEY_INVALID";
+      throw error;
+    }
     if (status === 429 || status === 402 || status === 403) {
       const error = new Error(`Grok API exhausted (${status})`);
       (error as Error & { code: string }).code = "API_EXHAUSTED";

@@ -60,13 +60,15 @@ export async function braveSearch(
     // FAIL LOUD on authentication failures. Brave returns 422
     // SUBSCRIPTION_TOKEN_INVALID (and 401) when the key is invalid/expired.
     // Returning [] here would silently strip web research from content analysis,
-    // baking thin/inaccurate ratings into books with no visible error. Routing it
-    // through API_EXHAUSTED instead aborts enrichment BEFORE ratings are written,
-    // logs api_exhausted, emails the admin, and pauses — so books stay pending and
-    // self-heal once a valid key is restored.
+    // baking thin/inaccurate ratings into books with no visible error. We throw
+    // a DISTINCT code (API_KEY_INVALID) rather than API_EXHAUSTED: a bad/expired
+    // key is NOT a transient quota condition — waiting never fixes it, so it must
+    // be diagnosable at a glance and surfaced to the operator (loud email + the
+    // nightly key-health canary), not silently conflated with rate-limiting.
+    // Like exhaustion it still aborts enrichment BEFORE thin ratings are written.
     if (status === 401 || bodyCode === "SUBSCRIPTION_TOKEN_INVALID") {
       const err = new Error(`Brave API key invalid (${status} ${bodyCode || "auth"}) — set a valid BRAVE_SEARCH_API_KEY`);
-      (err as Error & { code: string }).code = "API_EXHAUSTED";
+      (err as Error & { code: string }).code = "API_KEY_INVALID";
       throw err;
     }
     // 429 = rate limited, 403 = quota exhausted

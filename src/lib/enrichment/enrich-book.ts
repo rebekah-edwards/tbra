@@ -59,23 +59,47 @@ export interface EnrichOptions {
   skipAuthorDiscovery?: boolean;
 }
 
-export async function enrichBook(bookId: string, options?: EnrichOptions): Promise<void> {
+/**
+ * Outcome of an enrichBook() call. Returned (not just void) so callers — most
+ * importantly the /api/enrichment/trigger route — can tell a real enrichment
+ * apart from a no-op skip. Before this existed, an auto-paused call returned
+ * `undefined` and the trigger reported `success: true` while doing nothing,
+ * which masked a production outage (invalid Brave key) for weeks.
+ *
+ * Note: enrichBook still THROWS on API_EXHAUSTED / API_KEY_INVALID so batch
+ * scripts can break their loop (the long-standing circuit-breaker contract).
+ * The result type only describes the non-throwing paths.
+ */
+export type EnrichOutcome =
+  | { status: "enriched" }
+  | { status: "skipped"; reason: "paused" | "auto_paused" }
+  | { status: "failed"; reason: string };
+
+export async function enrichBook(bookId: string, options?: EnrichOptions): Promise<EnrichOutcome> {
   // Default skipBrave to true — Brave has limited monthly credits.
   // Only pass skipBrave: false when explicitly approved by the user.
   const opts = { skipBrave: true, ...options };
   // Auto-pause: skip if API was exhausted in the last hour (resets at midnight PST)
   if (process.env.ENRICHMENT_PAUSED === "true") {
     console.log(`[enrichment] PAUSED — skipping ${bookId}`);
-    return;
+    return { status: "skipped", reason: "paused" };
   }
-  const recentExhaustion = await db.all(sql`
-    SELECT count(*) as count FROM enrichment_log
-    WHERE status = 'api_exhausted'
+  // Auto-pause on a recent hard API stop. 'api_exhausted' is a transient quota
+  // condition that self-heals; 'api_key_invalid' will NOT self-heal but we still
+  // back off here to avoid hammering a dead key + flooding the admin inbox —
+  // visibility for the key-invalid case is guaranteed by the distinct log status,
+  // the escalated email below, and the nightly key-health canary, not by retrying.
+  const recentStop = await db.all(sql`
+    SELECT status, count(*) as count FROM enrichment_log
+    WHERE status IN ('api_exhausted', 'api_key_invalid')
     AND created_at > datetime('now', '-1 hour')
-  `) as { count: number }[];
-  if ((recentExhaustion[0]?.count ?? 0) > 0) {
-    console.log(`[enrichment] Auto-paused (API exhausted in last hour) — skipping ${bookId}`);
-    return;
+    GROUP BY status
+  `) as { status: string; count: number }[];
+  const stopTotal = recentStop.reduce((n, r) => n + (r.count ?? 0), 0);
+  if (stopTotal > 0) {
+    const reasons = recentStop.map((r) => `${r.status}×${r.count}`).join(", ");
+    console.log(`[enrichment] Auto-paused (${reasons} in last hour) — skipping ${bookId}`);
+    return { status: "skipped", reason: "auto_paused" };
   }
 
   console.log(`[enrichment] Starting enrichment for book ${bookId}`);
@@ -86,10 +110,17 @@ export async function enrichBook(bookId: string, options?: EnrichOptions): Promi
       bookId,
       status: "success",
     }).onConflictDoNothing();
+    return { status: "enriched" };
   } catch (err: unknown) {
     const code = (err as Error & { code?: string }).code;
     const message = err instanceof Error ? err.message : String(err);
-    const status = code === "API_EXHAUSTED" ? "api_exhausted" : "failed";
+    // Map the throw code to a log status. API_KEY_INVALID gets its own status so
+    // a dead/expired key is never confused with transient quota exhaustion — the
+    // exact misdiagnosis ("is it Grok? is the key fixed?") that delayed recovery.
+    const status =
+      code === "API_KEY_INVALID" ? "api_key_invalid"
+      : code === "API_EXHAUSTED" ? "api_exhausted"
+      : "failed";
 
     console.error(`[enrichment] ${status} for book ${bookId}: ${message}`);
 
@@ -99,25 +130,31 @@ export async function enrichBook(bookId: string, options?: EnrichOptions): Promi
       errorMessage: message,
     }).onConflictDoNothing();
 
-    // Email admin about the failure
+    // Email admin about the failure. A key-invalid failure is escalated: it will
+    // not self-heal and requires manual key rotation.
     try {
       const bookRow = await db.query.books.findFirst({
         where: eq(books.id, bookId),
         columns: { title: true },
       });
       const { sendEnrichmentFailureEmail } = await import("@/lib/email");
+      const emailMessage =
+        status === "api_key_invalid"
+          ? `INVALID API KEY — enrichment is blocked and will NOT self-heal until the key is rotated. ${message}`
+          : message;
       await sendEnrichmentFailureEmail(
         bookRow?.title ?? bookId,
         bookId,
-        message,
+        emailMessage,
         status
       );
     } catch {
       // Don't let email failure prevent normal error flow
     }
 
-    // Re-throw API_EXHAUSTED so callers (batch scripts) can stop the loop
-    if (code === "API_EXHAUSTED") throw err;
+    // Re-throw hard API stops so callers (batch scripts) can break their loop.
+    if (code === "API_EXHAUSTED" || code === "API_KEY_INVALID") throw err;
+    return { status: "failed", reason: message };
   }
 }
 
