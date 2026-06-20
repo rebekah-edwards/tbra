@@ -14,6 +14,7 @@ import {
 import { eq, and, sql } from "drizzle-orm";
 import { findOrCreateAuthor } from "@/lib/actions/books";
 import { classifyBook } from "@/lib/enrichment/enrichable";
+import { isBoxSetTitle } from "@/lib/queries/books";
 import crypto from "crypto";
 import type { GoodreadsRow } from "./parse-goodreads";
 import { mergeOwnedFormats, isStateProgression, formatImportError, type ImportOptions, DEFAULT_IMPORT_OPTIONS } from "./import-options";
@@ -235,13 +236,15 @@ async function processRow(
     }
 
     if (!bookId) {
-      // Junk gate: study guides, box sets, workbooks, non-English, etc. still
-      // belong on the importing user's shelf, but must NOT enter the public
-      // catalog. Divert them to 'import_only' (kept on the user's shelf, hidden
-      // from public discovery, and skipped by the enrichment gate). Without this
-      // a Goodreads/StoryGraph CSV silently floods the public catalog with junk —
-      // the exact source of the 158 legacy junk books cleaned up on 2026-06-20.
-      const junk = classifyBook({
+      // Junk gate. Box sets stay public but flagged is_box_set (the app filters
+      // them from search — labeled, not hidden). True junk (study guides,
+      // workbooks, scrape-leak titles) and non-English editions go to
+      // 'import_only': kept on the importing user's shelf, out of the public
+      // catalog, skipped by the enrichment gate. Without this a Goodreads/
+      // StoryGraph CSV silently floods the public catalog with junk — the exact
+      // source of the legacy junk cleaned up on 2026-06-20.
+      const isBox = isBoxSetTitle(row.title);
+      const junk = !isBox && classifyBook({
         title: row.title,
         isbn13: row.isbn13,
         isbn10: row.isbn10,
@@ -266,6 +269,7 @@ async function processRow(
           pages: row.pages,
           publicationYear: row.originalPublicationYear || row.yearPublished,
           visibility: junk ? "import_only" : "public",
+          isBoxSet: isBox,
         })
         .returning();
       bookId = book.id;

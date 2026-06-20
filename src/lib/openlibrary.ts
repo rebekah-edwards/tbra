@@ -197,6 +197,13 @@ const JUNK_TITLE_PATTERNS = [
   /\btomo\s+/i,                 // Spanish "Tomo" (volume)
   /\bBooks?\s+Collection\s+Set\b/i,
   /\bBoxed\s+Set\b/i,
+  // Scrape/metadata-leak titles that aren't books at all (Amazon catalog rows,
+  // listing fragments). Kept high-precision to avoid hitting real titles.
+  /\baudible\s+books\b/i,
+  /\boriginals\s+amazon\b/i,
+  /\bstock\s+photo\b/i,
+  /\bisbn\s+numbers?\s+for\b/i,
+  /\b\d+\s+titles?\s+kindle\s+edition\b/i,
 ];
 
 /** Check if a title looks like a summary/study-guide derivative or a box set */

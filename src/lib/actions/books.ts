@@ -949,12 +949,14 @@ export async function importFromISBNdbAndReturn(params: {
   }
   const finalTitle = validation.title;
 
-  // 3.5. Junk gate — keep study guides, box sets, workbooks, and non-English
-  // editions out of the PUBLIC catalog. The user still gets the book on their
-  // shelf (caller links user_book_state), but as 'import_only' it's hidden from
-  // public discovery and skipped by the enrichment gate. validateBookTitle only
-  // rejects garbage titles; this is the full junk/box-set/non-English classifier.
-  const isJunk = classifyBook({
+  // 3.5. Junk gate. Box sets are KEPT public but flagged is_box_set (the app
+  // filters them from search — labeled, not hidden). True junk (study guides,
+  // workbooks, scrape-leak titles) and non-English editions are diverted to
+  // 'import_only': still on the importing user's shelf, but out of the public
+  // catalog and skipped by the enrichment gate. validateBookTitle only rejects
+  // garbage titles; this is the full classifier.
+  const isBox = isBoxSetTitle(finalTitle);
+  const isJunk = !isBox && classifyBook({
     title: finalTitle,
     isbn13,
     isbn10,
@@ -982,6 +984,7 @@ export async function importFromISBNdbAndReturn(params: {
         pages: pages ?? null,
         coverImageUrl: coverUrl ?? null,
         visibility: isJunk ? "import_only" : "public",
+        isBoxSet: isBox,
         // isFiction defaults to true; enrichment will refine
       })
       .returning();
