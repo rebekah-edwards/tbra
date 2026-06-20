@@ -149,7 +149,11 @@ const JUNK_TITLE_PATTERNS = [
   /\blesson\s*plans?\b/i,
   /^biography\s+of\b/i,
   /\[paperback\]/i,
-  /\bsneak\s*peek\b/i,                     // "Sneak Peek for X" preview excerpts
+  /\bsneak\s*pe[ae]k\b/i,                  // "Sneak Peek/Peak for X" preview excerpts
+  /\bfree\s*preview\b/i,                    // "X (Free Preview)" preview excerpts
+  /\bchapter\s*sampler\b/i,                 // "X Chapter Sampler" preview excerpts
+  /\bliterature\s*guide\b/i,               // generic literature study aids
+  /\ba\s+guide\s+for\s+using\b.*\bin\s+the\s+classroom\b/i, // classroom teaching guides
   /\bedited\s+with\s+an?\s+introduction\b/i, // Academic editions: "X; Edited With an Introduction and Notes by Y"
   // Box sets / collections / omnibus editions
   /\bbox\s*set\b/i,

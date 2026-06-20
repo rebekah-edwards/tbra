@@ -13,6 +13,7 @@ import {
 } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { findOrCreateAuthor } from "@/lib/actions/books";
+import { classifyBook } from "@/lib/enrichment/enrichable";
 import crypto from "crypto";
 import type { GoodreadsRow } from "./parse-goodreads";
 import { mergeOwnedFormats, isStateProgression, formatImportError, type ImportOptions, DEFAULT_IMPORT_OPTIONS } from "./import-options";
@@ -234,6 +235,27 @@ async function processRow(
     }
 
     if (!bookId) {
+      // Junk gate: study guides, box sets, workbooks, non-English, etc. still
+      // belong on the importing user's shelf, but must NOT enter the public
+      // catalog. Divert them to 'import_only' (kept on the user's shelf, hidden
+      // from public discovery, and skipped by the enrichment gate). Without this
+      // a Goodreads/StoryGraph CSV silently floods the public catalog with junk —
+      // the exact source of the 158 legacy junk books cleaned up on 2026-06-20.
+      const junk = classifyBook({
+        title: row.title,
+        isbn13: row.isbn13,
+        isbn10: row.isbn10,
+        asin: null,
+        description: null,
+        summary: null,
+        publicationYear: row.originalPublicationYear || row.yearPublished,
+        language: null,
+        isBoxSet: false,
+      }).clearlyUnwanted;
+      if (junk) {
+        console.log(`[import] Diverting junk to import_only: "${row.title}"`);
+      }
+
       // Create minimal book record from CSV data — no OL search
       const [book] = await db
         .insert(books)
@@ -243,6 +265,7 @@ async function processRow(
           isbn10: row.isbn10,
           pages: row.pages,
           publicationYear: row.originalPublicationYear || row.yearPublished,
+          visibility: junk ? "import_only" : "public",
         })
         .returning();
       bookId = book.id;

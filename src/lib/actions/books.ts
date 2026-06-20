@@ -18,6 +18,7 @@ import {
   type OLSearchResult,
 } from "@/lib/openlibrary";
 import { isEnglishTitle, isBoxSetTitle } from "@/lib/queries/books";
+import { classifyBook } from "@/lib/enrichment/enrichable";
 import { triggerEnrichment } from "@/lib/enrichment/trigger";
 import { after } from "next/server";
 import {
@@ -948,6 +949,23 @@ export async function importFromISBNdbAndReturn(params: {
   }
   const finalTitle = validation.title;
 
+  // 3.5. Junk gate — keep study guides, box sets, workbooks, and non-English
+  // editions out of the PUBLIC catalog. The user still gets the book on their
+  // shelf (caller links user_book_state), but as 'import_only' it's hidden from
+  // public discovery and skipped by the enrichment gate. validateBookTitle only
+  // rejects garbage titles; this is the full junk/box-set/non-English classifier.
+  const isJunk = classifyBook({
+    title: finalTitle,
+    isbn13,
+    isbn10,
+    asin: null,
+    description: null,
+    summary: null,
+    publicationYear: publicationYear ?? null,
+    language: null,
+    isBoxSet: false,
+  }).clearlyUnwanted;
+
   // 4. Insert minimal book row. Wrap in try/catch so a UNIQUE-constraint
   // collision (book with the same ISBN is already on Turso, just missed
   // by the dedup step above due to format drift) doesn't crash the import
@@ -963,6 +981,7 @@ export async function importFromISBNdbAndReturn(params: {
         publicationYear: publicationYear ?? null,
         pages: pages ?? null,
         coverImageUrl: coverUrl ?? null,
+        visibility: isJunk ? "import_only" : "public",
         // isFiction defaults to true; enrichment will refine
       })
       .returning();
