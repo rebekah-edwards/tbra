@@ -36,9 +36,14 @@ export async function POST(request: Request) {
   }
 
   let bookId: string;
+  let force = false;
   try {
     const body = await request.json();
     bookId = body.bookId;
+    // force: re-enrich even if the book already has ratings. Used by the
+    // thin-ratings recovery campaign to refresh books whose ratings were
+    // generated without working web research (all "no evidence found").
+    force = body.force === true;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
@@ -71,7 +76,7 @@ export async function POST(request: Request) {
     .limit(1)
     .all();
 
-  if (existingRatings.length > 0) {
+  if (existingRatings.length > 0 && !force) {
     return NextResponse.json({
       success: true,
       bookId,
