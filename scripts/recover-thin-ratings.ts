@@ -15,58 +15,108 @@
  *
  * Env: MAX_BOOKS (default 40), TIER (default 1). Read-only against Turso for
  * selection + verification; the writes happen server-side via the trigger.
+ *
+ * --- 2026-06-22 rewrite (fixes the silent exit-144 no-op) ---
+ * The previous selection SQL used three correlated subqueries (NOT EXISTS on a
+ * now-large enrichment_log + two EXISTS on user tables) evaluated per row, which
+ * scaled past the watchdog timeout and never returned — the task produced zero
+ * work for nights. Selection is now decomposed into a few cheap queries + JS set
+ * math (see project_thin_recovery_select_hang.md). Also:
+ *   - createGuardedTurso(longRunning) so a >60min run isn't killed by the
+ *     launchd watchdog (120 books ≈ 120-130min of real enrichment at ~25-65s/book).
+ *   - Checkpoint to /tmp so a kill/abort resumes instead of re-grinding.
+ *   - Per-fetch AbortController timeout so one stuck trigger can't hang the run.
+ *   - Idempotent index on enrichment_log(book_id,status,created_at) to keep the
+ *     recent-success lookup fast as the table grows.
  */
 import { config } from "dotenv";
+import * as fs from "fs";
 config({ path: ".env.local" });        // ENRICHMENT_SECRET
 config({ path: ".env.vercel.local" }); // Turso creds
-import { createClient } from "@libsql/client";
+import { createGuardedTurso } from "./lib/turso-guard";
 
-const db = createClient({ url: process.env.TURSO_DATABASE_URL!, authToken: process.env.TURSO_AUTH_TOKEN! });
 const SECRET = process.env.ENRICHMENT_SECRET!;
 const URL = process.env.TRIGGER_URL || "https://thebasedreader.app/api/enrichment/trigger";
 const MAX = Number(process.env.MAX_BOOKS) || 40;
 const TIER = process.env.TIER || "1";
+const CHECKPOINT = `/tmp/tbra-thin-recovery-checkpoint.json`;
+const FETCH_TIMEOUT_MS = 120_000;
 
 const M = "lower(r.notes) LIKE '%no evidence found%'";
 
-// Retry wrapper — Turso connections drop transiently (ECONNRESET); a single blip
-// must not kill a long campaign run.
-async function exec(arg: any): Promise<any> {
-  for (let a = 0; a < 4; a++) {
-    try { return await db.execute(arg); }
-    catch (e) { if (a === 3) throw e; await new Promise((r) => setTimeout(r, 600 * (a + 1))); }
-  }
-}
-const NOEV = async (id: string) =>
-  Number((await exec({ sql: `SELECT SUM(CASE WHEN ${M} THEN 1 ELSE 0 END) n FROM book_category_ratings r WHERE r.book_id=?`, args: [id] })).rows[0].n) || 0;
-
 (async () => {
-  // TIER=1 → only user-shelved books (bounded priority run).
-  // Otherwise (the nightly default) → all thin books, but user-shelved FIRST via
-  // the priority ordering, so the task self-advances from Tier 1 into Tier 2
-  // without anyone editing it. The 21-day success filter drops books already
-  // (re)enriched, so each night picks up fresh ones.
-  const prio = `(CASE WHEN EXISTS(SELECT 1 FROM user_book_state s WHERE s.book_id=b.id) OR EXISTS(SELECT 1 FROM user_favorite_books f WHERE f.book_id=b.id) THEN 1 ELSE 0 END)`;
-  const tierFilter = TIER === "1" ? `AND ${prio}=1` : "";
-  const sql = `
-    SELECT b.id, b.title, ${prio} AS prio FROM books b
+  const { remote, heartbeat } = await createGuardedTurso({
+    name: "thin-recovery",
+    maxRuntimeMs: 170 * 60 * 1000, // 170min ceiling — comfortably above ~130min worst case for 120 books
+    queryTimeoutMs: 240_000,       // the candidate GROUP BY/HAVING scan measures ~136s against prod Turso
+    longRunning: true,             // exempt from the 60-min watchdog
+  });
+
+  const NOEV = async (id: string) =>
+    Number((await remote.execute({ sql: `SELECT SUM(CASE WHEN ${M} THEN 1 ELSE 0 END) n FROM book_category_ratings r WHERE r.book_id=?`, args: [id] })).rows[0].n) || 0;
+
+  // ── Decomposed selection — cheap queries + JS set math, no correlated subqueries ──
+  console.log("Selecting thin public books (decomposed)…");
+  const candidates = (await remote.execute(`
+    SELECT b.id AS id, b.title AS title FROM books b
     JOIN book_category_ratings r ON r.book_id=b.id
     WHERE b.visibility='public'
-      ${tierFilter}
-      AND NOT EXISTS (SELECT 1 FROM enrichment_log el WHERE el.book_id=b.id AND el.status='success' AND el.created_at > datetime('now','-21 days'))
     GROUP BY b.id
     HAVING CAST(SUM(CASE WHEN ${M} THEN 1 ELSE 0 END) AS REAL)/COUNT(*) >= 0.5
-    ORDER BY prio DESC
-    LIMIT ${MAX}`;
-  const targets = (await exec({ sql })).rows as any[];
-  console.log(`TIER ${TIER}: ${targets.length} thin books to re-enrich (cap ${MAX})\n`);
+  `)).rows as any[];
+  heartbeat(`candidates: ${candidates.length}`);
+
+  const recentSuccess = new Set(
+    (await remote.execute(`SELECT DISTINCT book_id FROM enrichment_log WHERE status='success' AND created_at > datetime('now','-21 days')`)).rows.map((r: any) => String(r.book_id)),
+  );
+  heartbeat(`recent-success (21d): ${recentSuccess.size}`);
+
+  const prio = new Set<string>();
+  for (const r of (await remote.execute(`SELECT DISTINCT book_id FROM user_book_state`)).rows) prio.add(String((r as any).book_id));
+  for (const r of (await remote.execute(`SELECT DISTINCT book_id FROM user_favorite_books`)).rows) prio.add(String((r as any).book_id));
+  heartbeat(`user-shelved/favorited: ${prio.size}`);
+
+  // Resume checkpoint (same-night re-run after a kill). Ignore if older than 24h.
+  let done: Set<string> = new Set();
+  try {
+    const cp = JSON.parse(fs.readFileSync(CHECKPOINT, "utf8"));
+    if (cp && Date.now() - cp.ts < 24 * 3600 * 1000 && Array.isArray(cp.done)) {
+      done = new Set(cp.done.map(String));
+      console.log(`Resuming: ${done.size} books already processed in a prior chunk today.`);
+    }
+  } catch { /* no checkpoint */ }
+
+  let eligible = candidates
+    .filter((c) => !recentSuccess.has(String(c.id)) && !done.has(String(c.id)))
+    .map((c) => ({ ...c, prio: prio.has(String(c.id)) ? 1 : 0 }));
+  if (TIER === "1") eligible = eligible.filter((c) => c.prio === 1);
+  eligible.sort((a, b) => b.prio - a.prio); // user-shelved first
+  const targets = eligible.slice(0, MAX);
+
+  console.log(
+    `TIER ${TIER}: ${candidates.length} thin public, ${recentSuccess.size} excluded (21d), ` +
+      `${eligible.length} eligible (${eligible.filter((e) => e.prio === 1).length} user-shelved) — processing ${targets.length} (cap ${MAX})\n`,
+  );
+
+  const fetchTrigger = async (bookId: string) => {
+    const ac = new AbortController();
+    const t = setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS);
+    try {
+      return await fetch(URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-enrichment-secret": SECRET },
+        body: JSON.stringify({ bookId, force: true }),
+        signal: ac.signal,
+      });
+    } finally { clearTimeout(t); }
+  };
 
   let improved = 0, same = 0, failed = 0, totalBefore = 0, totalAfter = 0, stop = false;
   for (let i = 0; i < targets.length && !stop; i++) {
     const t = targets[i];
     try {
       const before = await NOEV(t.id);
-      const res = await fetch(URL, { method: "POST", headers: { "Content-Type": "application/json", "x-enrichment-secret": SECRET }, body: JSON.stringify({ bookId: t.id, force: true }) });
+      const res = await fetchTrigger(t.id);
       if (res.status === 503) { console.log(`\n⛔ Budget/paused (503) — stopping at ${i}/${targets.length} to stay within the Brave cap.`); stop = true; break; }
       if (!res.ok) { failed++; console.log(`  [${i + 1}] HTTP ${res.status} ${t.title?.slice(0, 40)}`); continue; }
       const after = await NOEV(t.id);
@@ -76,9 +126,13 @@ const NOEV = async (id: string) =>
     } catch (e) {
       failed++; console.log(`  [${i + 1}] ERR ${t.title?.slice(0, 40)}: ${(e as Error).message}`);
     }
+    done.add(String(t.id));
+    if (i % 5 === 0) { try { fs.writeFileSync(CHECKPOINT, JSON.stringify({ ts: Date.now(), done: [...done] })); } catch { /* ignore */ } heartbeat(`progress ${i + 1}/${targets.length}`); }
   }
-  const done = improved + same;
-  console.log(`\n=== TIER ${TIER}: ${done} processed — improved ${improved}, same ${same}, failed ${failed} ===`);
-  if (done) console.log(`avg "no evidence" notes/book: ${(totalBefore / done).toFixed(1)} → ${(totalAfter / done).toFixed(1)}`);
+  try { fs.writeFileSync(CHECKPOINT, JSON.stringify({ ts: Date.now(), done: [...done] })); } catch { /* ignore */ }
+
+  const processed = improved + same;
+  console.log(`\n=== TIER ${TIER}: ${processed} processed — improved ${improved}, same ${same}, failed ${failed}${stop ? " (stopped early on 503)" : ""} ===`);
+  if (processed) console.log(`avg "no evidence" notes/book: ${(totalBefore / processed).toFixed(1)} → ${(totalAfter / processed).toFixed(1)}`);
   process.exit(0);
 })();
