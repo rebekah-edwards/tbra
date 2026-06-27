@@ -35,7 +35,7 @@ export async function setBookState(bookId: string, state: string) {
     if (existing?.activeFormats) {
       activeFormats = existing.activeFormats;
     } else {
-      const formats = parseFormats(existing.ownedFormats);
+      const formats = parseFormats(existing?.ownedFormats);
       if (formats.length === 1) {
         activeFormats = JSON.stringify(formats);
       }
