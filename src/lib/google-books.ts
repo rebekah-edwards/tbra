@@ -31,10 +31,15 @@ export interface GoogleBooksVolume {
 
 /**
  * Search Google Books by title + author, or by ISBN.
+ *
+ * `orderBy` defaults to Google's relevance ranking; pass "newest" to surface
+ * the most recently published (and forthcoming) editions first — this is the
+ * lever the upcoming-releases lane uses to find an author's next book.
  */
 export async function searchGoogleBooks(
   query: string,
-  maxResults = 5
+  maxResults = 5,
+  orderBy: "relevance" | "newest" = "relevance"
 ): Promise<GoogleBooksVolume[]> {
   const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
   if (!apiKey) {
@@ -45,6 +50,7 @@ export async function searchGoogleBooks(
   const url = new URL(GOOGLE_BOOKS_API);
   url.searchParams.set("q", query);
   url.searchParams.set("maxResults", String(maxResults));
+  if (orderBy === "newest") url.searchParams.set("orderBy", "newest");
   url.searchParams.set("key", apiKey);
 
   try {
@@ -74,6 +80,38 @@ export async function searchGoogleBooks(
  */
 export async function searchGoogleBooksByIsbn(isbn: string): Promise<GoogleBooksVolume[]> {
   return searchGoogleBooks(`isbn:${isbn}`, 3);
+}
+
+/**
+ * Fetch an author's most-recent / forthcoming volumes, newest first.
+ *
+ * Used by the upcoming-releases lane: query by exact author, ordered newest,
+ * so the caller can keep only the volumes whose published date is in the
+ * future. Returns the raw volumes (the caller does date parsing + dedup).
+ */
+export async function searchGoogleBooksByAuthorNewest(
+  authorName: string,
+  maxResults = 12
+): Promise<GoogleBooksVolume[]> {
+  // inauthor: with quotes pins the match to the full author name rather than
+  // matching either token loosely.
+  return searchGoogleBooks(`inauthor:"${authorName}"`, maxResults, "newest");
+}
+
+/**
+ * Pull the best ISBN-13 / ISBN-10 out of a volume's industryIdentifiers.
+ */
+export function getGoogleBooksIsbns(volume: GoogleBooksVolume): {
+  isbn13: string | null;
+  isbn10: string | null;
+} {
+  let isbn13: string | null = null;
+  let isbn10: string | null = null;
+  for (const idf of volume.volumeInfo.industryIdentifiers ?? []) {
+    if (idf.type === "ISBN_13" && !isbn13) isbn13 = idf.identifier.replace(/[^0-9]/g, "");
+    if (idf.type === "ISBN_10" && !isbn10) isbn10 = idf.identifier.replace(/[^0-9Xx]/g, "").toUpperCase();
+  }
+  return { isbn13, isbn10 };
 }
 
 /**

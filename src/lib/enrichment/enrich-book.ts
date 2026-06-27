@@ -41,7 +41,7 @@ import { verifyIdentity } from "./identity";
 import { findDuplicateBook } from "./dedup";
 import { fetchOLMetadata } from "./ol-metadata";
 import { discoverAuthorBooks } from "./discover-author";
-import { normalizePublicationDate } from "./sanitize";
+import { normalizePubDate } from "@/lib/publication-date";
 import { findOrCreateAuthor } from "@/lib/actions/books";
 
 export interface EnrichOptions {
@@ -382,7 +382,12 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     }
     if (!book.pages && olMeta.pages) olUpdates.pages = olMeta.pages;
     if (!book.publicationYear && olMeta.publicationYear) olUpdates.publicationYear = olMeta.publicationYear;
-    if (!book.publicationDate && olMeta.publicationDate) olUpdates.publicationDate = olMeta.publicationDate;
+    if (!book.publicationDate && olMeta.publicationDate) {
+      // Normalize to ISO before write so the column stays sortable/comparable.
+      const norm = normalizePubDate(olMeta.publicationDate);
+      if (norm.date) olUpdates.publicationDate = norm.date;
+      if (!book.publicationYear && olUpdates.publicationYear == null && norm.year) olUpdates.publicationYear = norm.year;
+    }
     if (!book.isbn13 && olMeta.isbn13) olUpdates.isbn13 = olMeta.isbn13;
     if (!book.isbn10 && olMeta.isbn10) olUpdates.isbn10 = olMeta.isbn10;
     if (!book.publisher && olMeta.publisher) olUpdates.publisher = olMeta.publisher;
@@ -472,7 +477,9 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
             if (year) isbnUpdates.publicationYear = year;
           }
           if (!book.publicationDate && isbndbResult.date_published) {
-            isbnUpdates.publicationDate = isbndbResult.date_published;
+            const norm = normalizePubDate(isbndbResult.date_published);
+            if (norm.date) isbnUpdates.publicationDate = norm.date;
+            if (!book.publicationYear && isbnUpdates.publicationYear == null && norm.year) isbnUpdates.publicationYear = norm.year;
           }
           if (!book.publisher && isbndbResult.publisher) {
             isbnUpdates.publisher = isbndbResult.publisher;
@@ -1058,9 +1065,12 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
   // original-publication-year semantics we'd rather show nothing than a wrong
   // year, so null it here and let the review flag below pick it up. Floor of 1000
   // preserves legitimately old works (16th-century texts etc.) while clearing
-  // garbage (year 0/negative) and impossible future dates.
+  // garbage (year 0/negative) and impossible future dates. Ceiling is
+  // currentYear+3 to match normalizePubDate's plausibility window — legitimate
+  // preorders/announced releases (the upcoming-releases lane) sit inside it,
+  // while scrape-leak years (2075, 2098) stay cleared.
   if (finalBook?.publicationYear != null &&
-      (finalBook.publicationYear < 1000 || finalBook.publicationYear > new Date().getFullYear() + 1)) {
+      (finalBook.publicationYear < 1000 || finalBook.publicationYear > new Date().getFullYear() + 3)) {
     console.warn(`[enrichment] Clearing implausible year ${finalBook.publicationYear} for "${finalBook.title}"`);
     await db.update(books).set({ publicationYear: null }).where(eq(books.id, bookId));
     finalBook.publicationYear = null;
