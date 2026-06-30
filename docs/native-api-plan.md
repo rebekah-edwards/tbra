@@ -102,11 +102,11 @@ Base path `/api/v1/`. JSON in/out. `200/4xx` status codes; errors as `{ error: s
 1. **Auth shim** — `verifySessionToken` + `getApiUser`; refactor `getCurrentUser` to use the shared verifier. Verify web login still works unchanged.
 2. **Auth endpoints** — `POST /api/v1/auth/login`, `GET /api/v1/auth/me`. Verify with `curl` (email/password → token → `me`).
 3. **Read endpoints** — `/up-next`, `/shelves`, `/shelves/{id}` (calling existing query fns). `curl` with a bearer token.
-4. **Extract write mutations** — move action bodies into `src/lib/mutations/`, rewire the actions as wrappers. Confirm web shelves/Up Next still behave identically.
+4. **Extract write mutations** — move action bodies into `src/lib/mutations/`, rewire the actions as wrappers. Confirm web shelves/Up Next still behave identically. **Correctness invariant (must preserve):** the existing two-phase renumbering — move every row to a temporary negative position, then back to a clean `1..N` — is what prevents the `UNIQUE(user_id, position)` collisions and the "a position is mysteriously empty / order breaks" bug. This logic (`compactUpNext` in up-next; the negative-then-final loops in shelf reorder) is carried over **verbatim**, not rewritten.
 5. **Write endpoints** — reorder/add/remove/move for both surfaces, including the new array reorder + cross-shelf move.
 6. **Hand-off doc** — request/response examples for each endpoint so the SwiftUI side has a contract to code against.
 
 ## Decisions I need from you (defaults in bold — I'll proceed with these unless you say otherwise)
 - **`/api/v1/` path prefix** for the native API (keeps it separate from existing internal `/api/*`, room to evolve). ✅ confirmed
 - Up Next reorder uses the whole-new-order approach (internal detail, no user-facing effect). ✅ no decision needed
-- **Token lifetime: 30 days** for v1 (user logs in ~monthly; nicer than weekly). Silent "never log out" renewal (refresh tokens) deferred to a follow-up. *(Confirm or adjust — see chat.)*
+- **Token lifetime: aim for "never log out"** (user preference, 2026-06-30). Staged: **(A)** ship a long-lived access token now for build/test, **(B)** implement proper **refresh-token rotation** (silent renewal + revocable "log out everywhere") as a **required pre-launch task** before App Store submission. Refresh tokens add ~100–150 lines + one schema table (`auth_refresh_tokens`) + refresh/logout endpoints. The on-device token is stored in the iOS Keychain (OS-encrypted); the password is never in the token (stays bcrypt-hashed server-side).

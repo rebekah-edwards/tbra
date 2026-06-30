@@ -62,11 +62,12 @@ export interface AuthUser {
   accountType: AccountType;
 }
 
-export async function getCurrentUser(): Promise<AuthUser | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
-  if (!token) return null;
-
+/**
+ * Verify a raw session JWT and hydrate the AuthUser (role + accountType from DB).
+ * Shared by the cookie reader (web) and the bearer-token reader (native API).
+ * Returns null on any invalid/expired token.
+ */
+export async function verifySessionToken(token: string): Promise<AuthUser | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret());
     const userId = payload.userId as string;
@@ -87,6 +88,32 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Web session reader: validates the session cookie. Behavior unchanged —
+ * returns the current user, or null if there is no valid cookie.
+ */
+export async function getCurrentUser(): Promise<AuthUser | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value;
+  if (!token) return null;
+  return verifySessionToken(token);
+}
+
+/**
+ * API session reader for native clients (and any request-scoped caller).
+ * Prefers an `Authorization: Bearer <jwt>` header (how the iOS app authenticates),
+ * falling back to the session cookie so the same routes also work from the web.
+ */
+export async function getApiUser(req: Request): Promise<AuthUser | null> {
+  const authHeader = req.headers.get("authorization");
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice("Bearer ".length).trim();
+    if (token) return verifySessionToken(token);
+  }
+  // No bearer token — fall back to the cookie (web fetches hitting these routes).
+  return getCurrentUser();
 }
 
 /** Check if user has admin or super_admin access */
