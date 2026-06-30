@@ -4,11 +4,16 @@
 
 All blocked on creating developer accounts. PWA ships today as the bridge.
 
-### App Store (iOS)
-- **Apple Developer account** ($99/yr) — not yet created
-- Xcode packaging — choose Capacitor/Expo or native wrapper
+### App Store (iOS) — **native SwiftUI** (direction set 2026-06-30; see `docs/ios27-redesign.md`)
+Decision reversed from Capacitor → **native SwiftUI app as a second client.** Additive: the web app is untouched; the SwiftUI app shares the Turso DB + enrichment backend via a JSON API. This is the only path that actually uses the WWDC 2026 features (drag-and-drop, Liquid Glass, Foundation Models, App Intents, widgets) instead of imitating them. Standing cost: two UIs to maintain.
+- **Apple Developer account** ($99/yr) — not yet created (blocks everything native)
+- **App Store Small Business Program** enrollment (unlocks free Foundation Models / PCC tier)
+- **New Xcode 27 SwiftUI project** — bundle ID, signing, buildable shell
+- **JSON API for core user actions** — extract server-action bodies into shared functions, expose at `/api/*` (web keeps calling the same functions). First slice: auth, shelves, Up Next. *(Prereq for any native screen.)*
+- **Token auth + Sign in with Apple** for the native client (required once Google Sign-In ships)
+- **Shelves + Up Next as the first native screens** — smallest footprint that exercises the whole stack; showcase for the WWDC 2026 `reorderable()` drag-and-drop
 - App Store Connect setup + listing copy/screenshots
-- Icon variants + splash screens for all device sizes
+- **Layered Liquid Glass icon** via Icon Composer + splash screens for all device sizes
 - TestFlight beta workflow
 - Privacy nutrition label + App Store review submission
 - Push notifications via APNS (separate from current web push)
