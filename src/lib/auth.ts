@@ -6,7 +6,11 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export const COOKIE_NAME = "tbra-session";
-export const SESSION_DURATION = 7 * 24 * 60 * 60; // 7 days in seconds
+export const SESSION_DURATION = 7 * 24 * 60 * 60; // 7 days in seconds (web cookie)
+// Native apps don't carry a browser cookie, so we issue a long-lived token to
+// approximate "never log out" until refresh-token rotation lands (see
+// docs/native-api-plan.md). Stored in the iOS Keychain (OS-encrypted).
+export const NATIVE_SESSION_DURATION = 365 * 24 * 60 * 60; // 365 days in seconds
 
 function getSecret() {
   const secret = process.env.AUTH_SECRET;
@@ -28,12 +32,13 @@ export async function verifyPassword(
 export async function createSession(
   userId: string,
   email: string,
-  verified = true
+  verified = true,
+  durationSeconds: number = SESSION_DURATION
 ): Promise<string> {
   return new SignJWT({ userId, email, verified })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime(`${SESSION_DURATION}s`)
+    .setExpirationTime(`${durationSeconds}s`)
     .sign(getSecret());
 }
 
