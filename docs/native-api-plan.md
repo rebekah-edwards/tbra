@@ -86,9 +86,8 @@ Base path `/api/v1/`. JSON in/out. `200/4xx` status codes; errors as `{ error: s
 | POST | `/shelves/{shelfId}/books` | `{ bookId, note? }` | `addBookToShelfFor` |
 | DELETE | `/shelves/{shelfId}/books/{bookId}` | — | `removeBookFromShelfFor` |
 | PUT | `/shelves/{shelfId}/order` | `{ bookIds: [...] }` | `reorderShelfBooksFor` |
-| POST | `/shelves/{shelfId}/move` | `{ bookId, toShelfId }` | `moveBookBetweenShelvesFor` **(new)** |
 
-> **The cross-shelf move** maps directly to iOS 27's multi-collection drag (`reorderContainer(for:in:)`) — dragging a book from one shelf onto another. I'll add an atomic `moveBookBetweenShelvesFor(userId, fromShelfId, toShelfId, bookId)` rather than make the client fire add+remove separately.
+> **Out of scope (decided 2026-06-30):** cross-shelf drag (dragging a book from one shelf onto another) is **not** part of this design. Drag-and-drop is used only for *reordering within* a single list — Up Next and within one shelf. Adding/removing a book to/from a shelf stays a tap action, not a drag.
 
 ### Authorization notes
 - `getShelfWithBooks` returns `userId` but does **not** itself enforce access. The route must allow it only if the requester owns the shelf **or** the shelf `isPublic`. (Web enforces this at the page level today; the API must do it explicitly.)
@@ -108,6 +107,6 @@ Base path `/api/v1/`. JSON in/out. `200/4xx` status codes; errors as `{ error: s
 6. **Hand-off doc** — request/response examples for each endpoint so the SwiftUI side has a contract to code against.
 
 ## Decisions I need from you (defaults in bold — I'll proceed with these unless you say otherwise)
-- **`/api/v1/` path prefix** for the native API (keeps it separate from existing internal `/api/*`, room to evolve). ✅ default
-- **Retire the single-item `reorderUpNext`** once the array version exists, vs keep both. → **Keep both for now** (zero risk), retire later. ✅ default
-- **Token lifetime stays 7 days** (matches web `SESSION_DURATION`). Native re-logs-in after expiry; refresh tokens deferred. ✅ default
+- **`/api/v1/` path prefix** for the native API (keeps it separate from existing internal `/api/*`, room to evolve). ✅ confirmed
+- Up Next reorder uses the whole-new-order approach (internal detail, no user-facing effect). ✅ no decision needed
+- **Token lifetime: 30 days** for v1 (user logs in ~monthly; nicer than weekly). Silent "never log out" renewal (refresh tokens) deferred to a follow-up. *(Confirm or adjust — see chat.)*

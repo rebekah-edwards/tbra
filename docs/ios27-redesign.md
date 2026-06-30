@@ -73,7 +73,7 @@ iOS 27's marquee SwiftUI win for a list-heavy app: a new **reordering + drag-con
 **Reordering modifiers:**
 - `reorderable()` — marks dynamic content (e.g. a `ForEach`) as drag-to-reorder participants. **Works in any container** now — `List`, `LazyVStack`, `LazyVGrid`, custom layouts (previously basically `List`-only).
 - `reorderContainer(for:)` — applied to the enclosing container; hands you a `ReorderDifference` (`sources` = moved IDs; `destination.position` = `.before(value)` or `.end`) so your code just applies the change to the model. Requires items to be `Identifiable` (or use `reorderContainer(for:itemID:)`).
-- `reorderable(collectionID:)` / `reorderContainer(for:in:)` — reordering **across multiple collections** in one container (e.g. moving a book from one shelf to another, with `destination.collectionID` identifying the receiving shelf).
+- `reorderable(collectionID:)` / `reorderContainer(for:in:)` — reordering **across multiple collections** in one container. *(Available, but NOT used in tbr*a's design — see below. We only reorder within a single list.)*
 
 **Drag-container modifiers (new to iPhone/iPad — were macOS-only):**
 - `dragContainer(for:)` + `draggable(containerItemID:)` — the draggable item carries only its **ID**, not the payload; the framework lazily requests the real transferable values only when the drag actually starts.
@@ -83,9 +83,10 @@ iOS 27's marquee SwiftUI win for a list-heavy app: a new **reordering + drag-con
 
 **System handles** the drag preview, the insertion placeholder, and the drop animation automatically — that's the native "feel" you can't get in the WebView.
 
-**Where it lands in tbr*a:**
+**Where it lands in tbr*a** (scope set 2026-06-30 — *reordering within a single list only*):
 - **Up Next** — reorder the queue with real Apple drag physics (replaces today's CSS-imitation drag-to-reorder in the web app).
-- **Shelves** — reorder books within a shelf, and **drag a book from one shelf to another** via the multi-collection variant. Multi-select drag to move several books at once.
+- **Shelves** — reorder books within a shelf with real Apple drag physics.
+- **Out of scope:** cross-shelf drag (moving a book between shelves) and multi-select drag. Adding/removing a book to/from a shelf stays a tap action.
 
 **Caveat:** SwiftUI-native — **a WebView/Capacitor build cannot use this.** This single fact is why the plan moved to native SwiftUI.
 
