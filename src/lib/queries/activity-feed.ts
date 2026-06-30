@@ -20,6 +20,10 @@ export interface ActivityItem {
   rating?: number | null;
   reviewPreview?: string | null;
   reviewId?: string | null;
+  // Progress fields — only populated for reading_note items so the feed can
+  // show "logged a reading note" + progress WITHOUT exposing the note body.
+  percentComplete?: number | null;
+  pageNumber?: number | null;
   timestamp: string;
 }
 
@@ -112,7 +116,11 @@ export async function getFollowedUsersActivity(
         b.id as book_id, b.slug, b.title, b.cover_image_url,
         rn.created_at as timestamp,
         NULL as rating,
-        CASE WHEN rn.is_private = 0 THEN rn.note_text ELSE NULL END as review_preview
+        -- Note body is private. Never surface note_text in the feed; only the
+        -- fact that a note was logged plus progress.
+        NULL as review_preview,
+        rn.percent_complete as percent_complete,
+        rn.page_number as page_number
       FROM reading_notes rn
       INNER JOIN users u ON rn.user_id = u.id
       INNER JOIN books b ON rn.book_id = b.id
@@ -168,6 +176,8 @@ export async function getFollowedUsersActivity(
       rating: r.rating,
       reviewPreview: preview,
       reviewId: r.review_id ?? null,
+      percentComplete: r.percent_complete ?? null,
+      pageNumber: r.page_number ?? null,
       timestamp: r.timestamp ?? "",
     };
   });
@@ -187,4 +197,6 @@ interface RawActivityRow {
   rating: number | null;
   review_preview: string | null;
   review_id?: string | null;
+  percent_complete?: number | null;
+  page_number?: number | null;
 }

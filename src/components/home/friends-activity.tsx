@@ -37,7 +37,7 @@ const ACTION_CONFIG: Record<ActivityItem["type"], { label: string; color: string
   rating: { label: "Rated", color: "bg-accent/15 text-accent border-accent/20" },
   currently_reading: { label: "Reading", color: "bg-accent/15 text-accent border-accent/20" },
   tbr: { label: "TBR'd", color: "bg-neon-blue/15 text-neon-blue border-neon-blue/20" },
-  reading_note: { label: "Note", color: "bg-amber-500/15 text-amber-500 border-amber-500/20" },
+  reading_note: { label: "Reading note", color: "bg-amber-500/15 text-amber-500 border-amber-500/20" },
 };
 
 function ActionBadge({ type }: { type: ActivityItem["type"] }) {
@@ -81,6 +81,17 @@ function UserAvatar({ user }: { user: ActivityItem["user"] }) {
 
 function displayName(user: ActivityItem["user"]) {
   return user.displayName || user.username || "Reader";
+}
+
+// Generic progress line for reading-note cards — never exposes the note body.
+function progressLabel(item: ActivityItem): string | null {
+  if (item.percentComplete != null && item.percentComplete > 0) {
+    return `${Math.round(item.percentComplete)}% complete`;
+  }
+  if (item.pageNumber != null && item.pageNumber > 0) {
+    return `On page ${item.pageNumber}`;
+  }
+  return null;
 }
 
 interface FriendsActivityProps {
@@ -154,13 +165,20 @@ export function FriendsActivity({ activity }: FriendsActivityProps) {
               <TimeAgo timestamp={item.timestamp} />
             </div>
 
-            {/* Review snippet */}
-            {item.reviewPreview && (
+            {/* Review snippet — reviews are public; note bodies are NOT and never reach this prop */}
+            {item.type !== "reading_note" && item.reviewPreview && (
               <Link href={cardLink} className="block hover:underline">
                 <p className="text-[11px] lg:text-xs text-muted line-clamp-2 leading-relaxed italic">
                   &ldquo;{item.reviewPreview}&rdquo;
                 </p>
               </Link>
+            )}
+
+            {/* Reading note — generic, no body. Show progress only if available. */}
+            {item.type === "reading_note" && (
+              <p className="text-[11px] lg:text-xs text-muted leading-relaxed">
+                {progressLabel(item) ?? "Logged a private note"}
+              </p>
             )}
 
             {/* User attribution */}
