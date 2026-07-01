@@ -10,9 +10,12 @@ settings:
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "6.0"
-    # Simulator runs need no signing team.
-    CODE_SIGNING_ALLOWED: "NO"
+    # Simulator builds sign ad-hoc (no Apple Developer team needed). Signing must
+    # stay ENABLED so the app gets an application-identifier entitlement — without
+    # it the Keychain (auth token storage) fails with errSecMissingEntitlement (-34018).
+    CODE_SIGN_IDENTITY: "-"
     CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGNING_ALLOWED: "YES"
 
 targets:
   Tbra:
@@ -38,5 +41,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.tbra.ios
         GENERATE_INFOPLIST_FILE: "NO"
+        CODE_SIGN_ENTITLEMENTS: Tbra.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
