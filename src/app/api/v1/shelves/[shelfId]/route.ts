@@ -1,6 +1,13 @@
-import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/auth";
 import { getShelfWithBooks } from "@/lib/queries/shelves";
+import { updateShelfFor, deleteShelfFor } from "@/lib/mutations/shelves";
+import {
+  jsonError,
+  jsonOk,
+  parseJsonBody,
+  asOptionalString,
+  asOptionalBoolean,
+} from "@/lib/api/http";
 
 /**
  * GET /api/v1/shelves/:shelfId
@@ -24,8 +31,59 @@ export async function GET(
   const shelf = await getShelfWithBooks(shelfId);
 
   if (!shelf || (shelf.userId !== user.userId && !shelf.isPublic)) {
-    return NextResponse.json({ error: "Shelf not found." }, { status: 404 });
+    return jsonError("Shelf not found.", 404);
   }
 
-  return NextResponse.json({ shelf });
+  return jsonOk({ shelf });
+}
+
+/**
+ * PATCH /api/v1/shelves/:shelfId  { name?, description?, isPublic?, color?, coverImageUrl? }
+ * Update shelf metadata. Only the owner may update (non-owners get 404).
+ */
+export async function PATCH(
+  req: Request,
+  context: { params: Promise<{ shelfId: string }> },
+) {
+  const user = await getApiUser(req);
+  if (!user) return jsonError("Unauthorized.", 401);
+
+  const { shelfId } = await context.params;
+  const body = await parseJsonBody(req);
+  if (!body) return jsonError("Invalid JSON body.", 400);
+
+  const result = await updateShelfFor(user.userId, shelfId, {
+    name: asOptionalString(body.name) ?? undefined,
+    description: asOptionalString(body.description),
+    isPublic: asOptionalBoolean(body.isPublic),
+    color: asOptionalString(body.color),
+    coverImageUrl: asOptionalString(body.coverImageUrl),
+  });
+
+  if (!result.success) {
+    // "Shelf not found" covers both missing and not-owned.
+    const status = result.error === "Shelf not found" ? 404 : 400;
+    return jsonError(result.error ?? "Could not update shelf.", status);
+  }
+  return jsonOk({ slug: result.slug });
+}
+
+/**
+ * DELETE /api/v1/shelves/:shelfId
+ * Delete a shelf (and its books, via cascade). Owner only.
+ */
+export async function DELETE(
+  req: Request,
+  context: { params: Promise<{ shelfId: string }> },
+) {
+  const user = await getApiUser(req);
+  if (!user) return jsonError("Unauthorized.", 401);
+
+  const { shelfId } = await context.params;
+  const result = await deleteShelfFor(user.userId, shelfId);
+
+  if (!result.success) {
+    return jsonError(result.error ?? "Shelf not found.", 404);
+  }
+  return jsonOk();
 }
