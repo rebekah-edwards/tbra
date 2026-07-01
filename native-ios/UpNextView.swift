@@ -1,6 +1,7 @@
 import SwiftUI
 import Observation
 
+@MainActor
 @Observable
 final class UpNextModel {
     var items: [UpNextItem] = []

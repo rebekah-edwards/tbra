@@ -3,6 +3,7 @@ import Observation
 
 /// App-wide session state. On launch it tries to restore a session from the
 /// stored token (validated via /auth/me, which auto-refreshes on 401).
+@MainActor
 @Observable
 final class AuthStore {
     enum Phase { case loading, signedOut, signedIn(PublicUser) }

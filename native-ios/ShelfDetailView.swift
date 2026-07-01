@@ -1,6 +1,7 @@
 import SwiftUI
 import Observation
 
+@MainActor
 @Observable
 final class ShelfDetailModel {
     let shelfId: String

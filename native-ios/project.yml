@@ -1,0 +1,42 @@
+name: Tbra
+options:
+  bundleIdPrefix: app.tbra
+  deploymentTarget:
+    iOS: "27.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "6.0"
+    # Simulator runs need no signing team.
+    CODE_SIGNING_ALLOWED: "NO"
+    CODE_SIGNING_REQUIRED: "NO"
+
+targets:
+  Tbra:
+    type: application
+    platform: iOS
+    deploymentTarget: "27.0"
+    # Only the hand-written Swift sources — not README.md / project.yml / Info.plist.
+    sources:
+      - path: .
+        includes:
+          - "*.swift"
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: tbr*a
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+        # Dev-only: let the simulator reach the Mac's cleartext http://localhost:3000.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.tbra.ios
+        GENERATE_INFOPLIST_FILE: "NO"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"

@@ -10,7 +10,9 @@ actor APIClient {
     static let shared = APIClient()
 
     /// Dev: a Mac-hosted `npm run dev`. Point at production otherwise.
-    static var baseURL = URL(string: "http://localhost:3000")!
+    /// Set once at launch before any request; `nonisolated(unsafe)` is the
+    /// standard Swift 6 escape hatch for a start-up-configured global.
+    nonisolated(unsafe) static var baseURL = URL(string: "http://localhost:3000")!
 
     private let session = URLSession.shared
     private let decoder = JSONDecoder()
