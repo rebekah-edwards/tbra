@@ -57,12 +57,13 @@ DO THESE IN ORDER:
   and screenshots of the two screens. Commit fixes to the same branch.
 
 IMPORTANT CONSTRAINTS (from CLAUDE.md — read it):
-  - The one hard DB rule: never nuke-and-replace the production database (no wholesale
-    wipe / delete-and-re-import of curated data, ever, without an explicit specific ask).
-    Everything short of that — schema migrations, incremental writes, deploys — is
-    routine and does NOT need per-change approval. For this work: apply the
-    auth_refresh_tokens table to production BEFORE the code that uses it ships (ordering
-    is for correctness, not permission).
+  - DB safety (from CLAUDE.md): proceed without approval on writes, updates, deletes of
+    <1,000 rows, schema migrations, sync, backfills, and deploys. STOP AND CONFIRM FIRST
+    only before (a) DROP/TRUNCATE a table or (b) a single DELETE of 1,000+ rows (estimate
+    the count first; if unsure it clears 1K, confirm). NEVER nuke-and-replace the
+    production DB or wipe user-activity tables — that needs an explicit, specific ask
+    every time. For this work: apply the auth_refresh_tokens table to production BEFORE
+    the code that uses it ships (ordering is for correctness, not permission).
   - Verify visual changes with a screenshot before claiming done.
 
 NOT in scope for this pass (later): Sign in with Apple, cross-shelf drag, and any
