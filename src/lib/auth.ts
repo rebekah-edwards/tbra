@@ -7,10 +7,11 @@ import { eq } from "drizzle-orm";
 
 export const COOKIE_NAME = "tbra-session";
 export const SESSION_DURATION = 7 * 24 * 60 * 60; // 7 days in seconds (web cookie)
-// Native apps don't carry a browser cookie, so we issue a long-lived token to
-// approximate "never log out" until refresh-token rotation lands (see
-// docs/native-api-plan.md). Stored in the iOS Keychain (OS-encrypted).
-export const NATIVE_SESSION_DURATION = 365 * 24 * 60 * 60; // 365 days in seconds
+// Native access token is short-lived; the app silently swaps its long-lived
+// refresh token for a new access token when this expires (see
+// src/lib/auth-refresh.ts + docs/native-api-plan.md). Short lifetime keeps the
+// revocation window small even though the JWT itself is stateless.
+export const NATIVE_ACCESS_DURATION = 60 * 60; // 1 hour in seconds
 
 function getSecret() {
   const secret = process.env.AUTH_SECRET;

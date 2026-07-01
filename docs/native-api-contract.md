@@ -5,7 +5,7 @@
 ## Conventions
 
 - **Base URL:** `http://localhost:3000` in dev; the production origin otherwise.
-- **Auth:** every endpoint except `login` requires an `Authorization: Bearer <token>` header. The token comes from `POST /api/v1/auth/login` and is a 365-day JWT (stored in the iOS Keychain).
+- **Auth:** every endpoint except `login` / `refresh` requires an `Authorization: Bearer <token>` header. The `token` is a **short-lived (1-hour) access JWT** from `login`/`refresh`. Alongside it the client gets a **long-lived (60-day) `refreshToken`**; when the access token 401s, POST the refresh token to `/api/v1/auth/refresh` for a new pair (rotation). Both are stored in the iOS Keychain. As long as the app is opened within any 60-day window it stays logged in ("never log out"); `logout` revokes the refresh token.
 - **Request bodies** are JSON; send `Content-Type: application/json`.
 - **Success** responses are `200` (or `201` for create) with a JSON body. The `/api/v1` shelf + Up Next endpoints wrap data as `{ "ok": true, ... }`; the two `auth` endpoints return the bare object (`{ token, user }` / `{ user }`).
 - **Errors** are `{ "error": "<message>" }` with an appropriate status:
@@ -23,7 +23,7 @@
 
 ### `POST /api/v1/auth/login`
 Body: `{ "email": string, "password": string }`
-Success `200`: `{ "token": string, "user": PublicUser }`
+Success `200`: `{ "token": string, "refreshToken": string, "user": PublicUser }`
 Errors: `400` missing fields · `401` invalid credentials (same generic message whether the email exists or the password is wrong).
 
 ```bash
@@ -32,9 +32,23 @@ curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -d '{"email":"you@example.com","password":"yourpassword"}'
 ```
 
+### `POST /api/v1/auth/refresh`
+Body: `{ "refreshToken": string }`
+Success `200`: `{ "token": string, "refreshToken": string }` — a new access token and a new refresh token (the old refresh token is now revoked). Error `401` if the refresh token is unknown/used/expired → the app must send the user back to login.
+
+```bash
+curl -s -X POST http://localhost:3000/api/v1/auth/refresh \
+  -H 'Content-Type: application/json' \
+  -d "{\"refreshToken\":\"$REFRESH\"}"
+```
+
+### `POST /api/v1/auth/logout`
+Body: `{ "refreshToken": string }` to log out this device, or `{ "all": true }` (with a valid `Authorization` header) to log out everywhere.
+Success `200`: `{ "ok": true }` (idempotent).
+
 ### `GET /api/v1/auth/me`
-Validates a stored token on app launch.
-Success `200`: `{ "user": PublicUser }` · Error `401`.
+Validates a stored access token on app launch.
+Success `200`: `{ "user": PublicUser }` · Error `401` (→ try `refresh`, then login).
 
 ```bash
 curl -s http://localhost:3000/api/v1/auth/me -H "Authorization: Bearer $TOKEN"

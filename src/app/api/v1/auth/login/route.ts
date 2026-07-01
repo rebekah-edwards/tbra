@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { verifyPassword, createSession, NATIVE_SESSION_DURATION } from "@/lib/auth";
+import { verifyPassword, createSession, NATIVE_ACCESS_DURATION } from "@/lib/auth";
+import { issueRefreshToken } from "@/lib/auth-refresh";
 import { toPublicUser } from "@/lib/api/users";
 
 /**
@@ -52,8 +53,9 @@ export async function POST(req: Request) {
     user.id,
     user.email,
     user.emailVerified,
-    NATIVE_SESSION_DURATION,
+    NATIVE_ACCESS_DURATION,
   );
+  const refreshToken = await issueRefreshToken(user.id);
 
-  return NextResponse.json({ token, user: toPublicUser(user) });
+  return NextResponse.json({ token, refreshToken, user: toPublicUser(user) });
 }
