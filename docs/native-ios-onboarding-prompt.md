@@ -57,10 +57,12 @@ DO THESE IN ORDER:
   and screenshots of the two screens. Commit fixes to the same branch.
 
 IMPORTANT CONSTRAINTS (from CLAUDE.md — read it):
-  - Do NOT deploy or push schema to production Turso without explicit instruction. The
-    auth_refresh_tokens table must exist on Turso BEFORE this code ships — flag it, but
-    don't do it unless asked.
-  - Don't reset/bulk-modify the book database.
+  - The one hard DB rule: never nuke-and-replace the production database (no wholesale
+    wipe / delete-and-re-import of curated data, ever, without an explicit specific ask).
+    Everything short of that — schema migrations, incremental writes, deploys — is
+    routine and does NOT need per-change approval. For this work: apply the
+    auth_refresh_tokens table to production BEFORE the code that uses it ships (ordering
+    is for correctness, not permission).
   - Verify visual changes with a screenshot before claiming done.
 
 NOT in scope for this pass (later): Sign in with Apple, cross-shelf drag, and any
