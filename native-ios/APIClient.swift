@@ -1,0 +1,155 @@
+import Foundation
+
+/// URLSession client for the tbr*a native API (docs/native-api-contract.md).
+///
+/// Auth: sends the Keychain access token as a Bearer header. On a 401 it tries
+/// once to rotate the refresh token (POST /auth/refresh), stores the new pair,
+/// and retries the original request. If refresh fails, it throws
+/// `.unauthorized` and the UI should route back to login.
+actor APIClient {
+    static let shared = APIClient()
+
+    /// Dev: a Mac-hosted `npm run dev`. Point at production otherwise.
+    static var baseURL = URL(string: "http://localhost:3000")!
+
+    private let session = URLSession.shared
+    private let decoder = JSONDecoder()
+
+    // MARK: Auth
+
+    func login(email: String, password: String) async throws -> LoginResponse {
+        let res: LoginResponse = try await send(
+            "/api/v1/auth/login", method: "POST",
+            body: ["email": email, "password": password], authed: false
+        )
+        Keychain.accessToken = res.token
+        Keychain.refreshToken = res.refreshToken
+        return res
+    }
+
+    func me() async throws -> PublicUser {
+        let res: MeResponse = try await send("/api/v1/auth/me", method: "GET")
+        return res.user
+    }
+
+    func logout() async {
+        if let refresh = Keychain.refreshToken {
+            _ = try? await send("/api/v1/auth/logout", method: "POST",
+                                body: ["refreshToken": refresh], authed: false) as OkResponse
+        }
+        Keychain.clear()
+    }
+
+    // MARK: Up Next
+
+    func upNext() async throws -> [UpNextItem] {
+        let res: UpNextResponse = try await send("/api/v1/up-next", method: "GET")
+        return res.items
+    }
+
+    func addToUpNext(bookId: String) async throws {
+        _ = try await send("/api/v1/up-next", method: "POST",
+                           body: ["bookId": bookId]) as OkResponse
+    }
+
+    func removeFromUpNext(bookId: String) async throws {
+        _ = try await send("/api/v1/up-next/\(bookId)", method: "DELETE") as OkResponse
+    }
+
+    /// Send the COMPLETE queue in the new order.
+    func reorderUpNext(bookIds: [String]) async throws {
+        _ = try await send("/api/v1/up-next/order", method: "PUT",
+                           body: ["bookIds": bookIds]) as OkResponse
+    }
+
+    // MARK: Shelves
+
+    func shelves() async throws -> [ShelfSummary] {
+        let res: ShelvesResponse = try await send("/api/v1/shelves", method: "GET")
+        return res.shelves
+    }
+
+    func shelf(id: String) async throws -> ShelfDetail {
+        let res: ShelfResponse = try await send("/api/v1/shelves/\(id)", method: "GET")
+        return res.shelf
+    }
+
+    /// Send the COMPLETE set of the user's shelves in the new order.
+    func reorderShelves(shelfIds: [String]) async throws {
+        _ = try await send("/api/v1/shelves/order", method: "PUT",
+                           body: ["shelfIds": shelfIds]) as OkResponse
+    }
+
+    func addBook(toShelf shelfId: String, bookId: String) async throws {
+        _ = try await send("/api/v1/shelves/\(shelfId)/books", method: "POST",
+                           body: ["bookId": bookId]) as OkResponse
+    }
+
+    func removeBook(fromShelf shelfId: String, bookId: String) async throws {
+        _ = try await send("/api/v1/shelves/\(shelfId)/books/\(bookId)", method: "DELETE") as OkResponse
+    }
+
+    /// Send the COMPLETE set of the shelf's books in the new order.
+    func reorderShelfBooks(shelfId: String, bookIds: [String]) async throws {
+        _ = try await send("/api/v1/shelves/\(shelfId)/order", method: "PUT",
+                           body: ["bookIds": bookIds]) as OkResponse
+    }
+
+    // MARK: Core request + refresh
+
+    private func send<T: Decodable>(
+        _ path: String, method: String,
+        body: [String: Any]? = nil, authed: Bool = true, isRetry: Bool = false
+    ) async throws -> T {
+        var req = URLRequest(url: Self.baseURL.appending(path: path))
+        req.httpMethod = method
+        if let body {
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = try JSONSerialization.data(withJSONObject: body)
+        }
+        if authed, let token = Keychain.accessToken {
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        let data: Data, response: URLResponse
+        do {
+            (data, response) = try await session.data(for: req)
+        } catch {
+            throw APIError.transport(error)
+        }
+        guard let http = response as? HTTPURLResponse else { throw APIError.decoding }
+
+        if http.statusCode == 401 && authed && !isRetry {
+            // Access token expired — rotate once and retry.
+            try await refreshAccessToken()
+            return try await send(path, method: method, body: body, authed: authed, isRetry: true)
+        }
+
+        guard (200..<300).contains(http.statusCode) else {
+            let message = (try? decoder.decode(APIErrorBody.self, from: data))?.error
+            if http.statusCode == 401 { throw APIError.unauthorized }
+            throw APIError.server(status: http.statusCode, message: message ?? "Request failed.")
+        }
+
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw APIError.decoding
+        }
+    }
+
+    private func refreshAccessToken() async throws {
+        guard let refresh = Keychain.refreshToken else { throw APIError.unauthorized }
+        do {
+            let res: RefreshResponse = try await send(
+                "/api/v1/auth/refresh", method: "POST",
+                body: ["refreshToken": refresh], authed: false
+            )
+            Keychain.accessToken = res.token
+            Keychain.refreshToken = res.refreshToken
+        } catch {
+            Keychain.clear()
+            throw APIError.unauthorized
+        }
+    }
+}
