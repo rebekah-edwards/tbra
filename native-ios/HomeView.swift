@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 @Observable
 final class HomeModel {
     var home: HomeData?
+    var discover: HomeDiscoverData?
     var error: String?
     var loading = false
 
@@ -18,6 +19,11 @@ final class HomeModel {
         loading = true; defer { loading = false }
         do { home = try await APIClient.shared.home() }
         catch { self.error = (error as? APIError)?.errorDescription ?? "Couldn't load home." }
+    }
+
+    /// The heavy sections stream in separately, like the web's Suspense block.
+    func loadDiscover() async {
+        discover = try? await APIClient.shared.homeDiscover()
     }
 }
 
@@ -58,7 +64,9 @@ struct HomeView: View {
                 // ── Goal + streak (mobile order: between Reading Now and Up Next) ──
                 if let home = homeModel.home {
                     HStack(alignment: .top, spacing: 12) {
-                        ReadingGoalCardView(goal: home.goal, year: home.year)
+                        ReadingGoalCardView(goal: home.goal, year: home.year) {
+                            await homeModel.load()
+                        }
                         ReadingStreakCardView(streak: home.streak)
                     }
                 }
@@ -90,6 +98,44 @@ struct HomeView: View {
                             .foregroundStyle(Theme.muted)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 40)
+                    } else if !model.items.isEmpty {
+                        Text("Hold & drag to reorder")
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 2)
+                    }
+                }
+
+                // ── Pick From Your Shelf ──
+                if let home = homeModel.home {
+                    VStack(alignment: .leading, spacing: 14) {
+                        SectionHeading("Pick From Your Shelf")
+                        TbrSuggestionCard(book: home.tbrSuggestion)
+                    }
+                }
+
+                // ── Deferred sections (web renders these via Suspense) ──
+                if let discover = homeModel.discover {
+                    ForEach(discover.becauseYouLiked, id: \.seed.id) { section in
+                        BecauseYouLikedSection(section: section)
+                    }
+
+                    if !discover.friendsActivity.isEmpty {
+                        VStack(alignment: .leading, spacing: 14) {
+                            SectionHeading("Friends Activity")
+                            FriendsActivityRow(activity: discover.friendsActivity)
+                        }
+                    }
+
+                    if !discover.discover.isEmpty {
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack(spacing: 8) {
+                                SectionHeading("Discover Something New")
+                                InfoBubble(text: "Personalized picks based on your reading history — genres you love, fiction vs. nonfiction balance, and content comfort level. Only shows books not already on your shelves. Refreshes each visit.")
+                            }
+                            HorizontalBookRow(books: discover.discover)
+                        }
                     }
                 }
             }
@@ -100,12 +146,14 @@ struct HomeView: View {
         .refreshable {
             async let a: Void = model.load()
             async let b: Void = homeModel.load()
-            _ = await (a, b)
+            async let c: Void = homeModel.loadDiscover()
+            _ = await (a, b, c)
         }
         .task {
             async let a: Void = model.load()
             async let b: Void = homeModel.load()
-            _ = await (a, b)
+            async let c: Void = homeModel.loadDiscover()
+            _ = await (a, b, c)
         }
         .alert("Error", isPresented: .constant(model.error != nil || homeModel.error != nil)) {
             Button("OK") { model.error = nil; homeModel.error = nil }
@@ -565,6 +613,8 @@ private struct CompletionDateSheet: View {
 private struct ReadingGoalCardView: View {
     let goal: ReadingGoal?
     let year: Int
+    let onChanged: () async -> Void
+    @State private var editing = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -573,9 +623,14 @@ private struct ReadingGoalCardView: View {
                     .font(Theme.body(12, .medium))
                     .foregroundStyle(Theme.muted)
                 Spacer()
-                Image(systemName: "pencil")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.muted)
+                Button {
+                    editing = true
+                } label: {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.muted)
+                        .frame(width: 26, height: 26)
+                }
             }
             if let goal {
                 HStack(spacing: 14) {
@@ -600,10 +655,14 @@ private struct ReadingGoalCardView: View {
                     }
                 }
             } else {
-                Text("Set a \(String(year)) reading goal")
-                    .font(Theme.body(13))
-                    .foregroundStyle(Theme.muted)
-                    .padding(.vertical, 14)
+                Button {
+                    editing = true
+                } label: {
+                    Text("Set a \(String(year)) reading goal")
+                        .font(Theme.body(13))
+                        .foregroundStyle(Theme.muted)
+                        .padding(.vertical, 14)
+                }
             }
         }
         .padding(14)
@@ -613,6 +672,11 @@ private struct ReadingGoalCardView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.accent.opacity(0.20), lineWidth: 1))
+        .sheet(isPresented: $editing) {
+            GoalEditSheet(year: year, current: goal?.targetBooks) { await onChanged() }
+                .presentationDetents([.height(260)])
+                .presentationBackground(Theme.surface)
+        }
     }
 }
 

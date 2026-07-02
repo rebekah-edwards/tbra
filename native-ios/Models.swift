@@ -103,11 +103,21 @@ struct ReadingStreak: Codable, Hashable {
     let longestStreak: Int
 }
 
+struct TbrSuggestion: Codable, Hashable {
+    let id: String
+    let slug: String?
+    let title: String
+    let coverImageUrl: String?
+    let authors: [String]
+    let reason: String?
+}
+
 struct HomeData: Hashable {
     let year: Int
     let readingNow: [ReadingNowBook]
     let goal: ReadingGoal?
     let streak: ReadingStreak
+    let tbrSuggestion: TbrSuggestion?
 }
 
 struct HomeResponse: Codable {
@@ -116,6 +126,68 @@ struct HomeResponse: Codable {
     let readingNow: [ReadingNowBook]
     let goal: ReadingGoal?
     let streak: ReadingStreak
+    let tbrSuggestion: TbrSuggestion?
+}
+
+// ─── Home deferred sections (/api/v1/home/discover) ───
+
+/// The site's BookCard payload: bare cover + rating pill + conflict badge.
+struct LiteBook: Codable, Identifiable, Hashable {
+    let id: String
+    let slug: String?
+    let title: String
+    let coverImageUrl: String?
+    let authors: [String]
+    let aggregateRating: Double?
+    let hasContentConflict: Bool
+}
+
+struct BylSeed: Codable, Hashable { let id: String; let title: String }
+struct BylSection: Codable, Hashable {
+    let seed: BylSeed
+    let books: [LiteBook]
+}
+
+struct ActivityUser: Codable, Hashable {
+    let id: String
+    let displayName: String?
+    let username: String?
+    let avatarUrl: String?
+}
+struct ActivityBookRef: Codable, Hashable {
+    let id: String
+    let slug: String?
+    let title: String
+    let coverImageUrl: String?
+}
+struct ActivityItem: Codable, Hashable {
+    let type: String   // completed | review | rating | currently_reading | tbr | reading_note
+    let user: ActivityUser
+    let book: ActivityBookRef
+    let rating: Double?
+    let reviewPreview: String?
+    let reviewId: String?
+    let percentComplete: Double?
+    let pageNumber: Int?
+    let timestamp: String
+}
+
+struct HomeDiscoverData: Hashable {
+    let becauseYouLiked: [BylSection]
+    let friendsActivity: [ActivityItem]
+    let discover: [LiteBook]
+}
+
+struct HomeDiscoverResponse: Codable {
+    let ok: Bool
+    let becauseYouLiked: [BylSection]
+    let friendsActivity: [ActivityItem]
+    let discover: [LiteBook]
+}
+
+struct TbrSuggestionResponse: Codable {
+    let ok: Bool
+    let suggestion: TbrSuggestion?
 }
 
 // ─── Response envelopes ───

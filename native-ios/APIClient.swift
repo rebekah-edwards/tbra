@@ -108,7 +108,28 @@ actor APIClient {
 
     func home() async throws -> HomeData {
         let res: HomeResponse = try await send("/api/v1/home", method: "GET")
-        return HomeData(year: res.year, readingNow: res.readingNow, goal: res.goal, streak: res.streak)
+        return HomeData(year: res.year, readingNow: res.readingNow, goal: res.goal,
+                        streak: res.streak, tbrSuggestion: res.tbrSuggestion)
+    }
+
+    /// The deferred home sections (Because You Liked / Friends Activity /
+    /// Discover Something New) — loaded after the fold, like the web.
+    func homeDiscover() async throws -> HomeDiscoverData {
+        let res: HomeDiscoverResponse = try await send("/api/v1/home/discover", method: "GET")
+        return HomeDiscoverData(becauseYouLiked: res.becauseYouLiked,
+                                friendsActivity: res.friendsActivity,
+                                discover: res.discover)
+    }
+
+    /// "Show me another" — reshuffle the Pick From Your Shelf suggestion.
+    func shuffleTbrSuggestion() async throws -> TbrSuggestion? {
+        let res: TbrSuggestionResponse = try await send("/api/v1/home/tbr-suggestion", method: "GET")
+        return res.suggestion
+    }
+
+    func setReadingGoal(targetBooks: Int) async throws {
+        _ = try await send("/api/v1/reading-goal", method: "POST",
+                           body: ["targetBooks": targetBooks]) as OkResponse
     }
 
     /// The Track Progress sheet — same validation + writes as the web action.

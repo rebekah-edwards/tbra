@@ -6,6 +6,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { getUserBooks } from "@/lib/queries/reading-state";
 import { getReadingGoal } from "@/lib/queries/reading-goals";
 import { getReadingStreak } from "@/lib/queries/reading-streak";
+import { getRandomOwnedTbrBook } from "@/lib/queries/tbr-suggestion";
 
 /**
  * GET /api/v1/home
@@ -19,10 +20,11 @@ export async function GET(req: Request) {
 
   const currentYear = new Date().getFullYear();
 
-  const [allBooks, readingGoal, readingStreak] = await Promise.all([
+  const [allBooks, readingGoal, readingStreak, tbrSuggestion] = await Promise.all([
     getUserBooks(user.userId),
     getReadingGoal(user.userId, currentYear),
     getReadingStreak(user.userId),
+    getRandomOwnedTbrBook(user.userId),
   ]);
 
   const currentlyReading = allBooks.filter((b) => b.state === "currently_reading");
@@ -114,5 +116,6 @@ export async function GET(req: Request) {
     readingNow,
     goal: readingGoal, // { targetBooks, completedBooks, percentComplete } | null
     streak: { currentStreak: readingStreak.currentStreak, longestStreak: readingStreak.longestStreak },
+    tbrSuggestion, // { id, slug, title, coverImageUrl, authors, reason } | null
   });
 }

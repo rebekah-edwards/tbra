@@ -44,7 +44,10 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 | `/` | Home: Reading Now card (progress pill, Track Progress sheet w/ page-%/mood/pace, state dropdown → Paused confirm / Finished+DNF date sheet) | BUILT | ✅ /api/v1/home + /reading-notes + /reading-state |
 | `/` | Home: reading goal ring + tbr streak cards | BUILT (goal EDITING not wired — needs goal-set endpoint) | ✅ /api/v1/home |
 | `/` | Home: Up Next numbered grid w/ drag-reorder | BUILT | ✅ served |
-| `/` | Home: remaining sections (inventory from live page: Because-You-Liked, Discover-Something-New, …) | — | TBD at build |
+| `/` | Home: Pick From Your Shelf (suggestion + shuffle + empty state) | BUILT | ✅ /home + /home/tbr-suggestion |
+| `/` | Home: Discover Something New (cover row, info bubble, fade hint) | BUILT | ✅ /home/discover |
+| `/` | Home: Because You Liked + Friends Activity | BUILT (code-spec — test acct has no follows/high ratings to render them; verify visually on a real account) | ✅ /home/discover |
+| `/` | Home: goal editing (pencil → sheet) | BUILT | ✅ /reading-goal |
 | `/book/[id]` | Book page: hero blur card, What's Inside ratings, reviews, formats, Buy button (affiliate tag rule!), series, notes, spoiler tags | — | book-detail endpoint |
 | `/library` | Library: TBR/Activity/Owned groups, sub-filters, sort, advanced filters, book grid | — | library endpoint |
 | `/library/shelves` | Shelves list, My Shelves/Following pills, shelf cards | BUILT | Following + Top Shelf missing |
