@@ -2,6 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
+      "Bash(*)",
       "Bash(npm run *)",
       "Bash(npx *)",
       "Bash(git status)",

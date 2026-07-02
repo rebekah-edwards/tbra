@@ -20,6 +20,7 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 import Database from "better-sqlite3";
+import fs from "fs";
 import path from "path";
 import { createHash } from "crypto";
 // Single source of truth for placeholder fingerprints — shared with the
@@ -54,25 +55,82 @@ const FETCH_TIMEOUT_MS = 10_000;
 
 type Row = { id: string; title: string; cover_image_url: string };
 
-function selectBatchFor(placeholder: Placeholder): Row[] {
-  // No LIMIT: scan EVERY candidate every night. The previous LIMIT 5000 +
-  // ORDER BY updated_at ASC churned on the same window of oldest books each
-  // night because non-cleared books don't get updated_at bumped — they stay
-  // pinned at the top of the queue and crowd out new arrivals. Removing the
-  // limit gives every candidate a fair check daily. Scan time at 8 concurrent
-  // workers is ~6 min for ~18K ISBNdb-pattern books, which is fine for a
-  // 3:15 AM PT job.
+// Bounded, ROTATING scan. Each run checks a fixed window of PER_SOURCE_LIMIT
+// candidates per source and persists a per-source offset cursor (in
+// data/cover-rescue-offsets.json) so the next run picks up where this one left
+// off, cycling through every candidate over several nights.
+//
+// This replaces the previous unbounded "scan EVERY candidate every night"
+// approach. That version took ~2h across all ~120k+ candidates and was
+// reliably SIGTERM'd by the 60-min launchd watchdog (com.tbra.watchdog), so
+// later sources never ran and — worse — its long runtime overlapped the
+// 4:04 AM description-refresh pull, which reverts same-night clears (live
+// covers are authoritative). A bounded window finishes in minutes, well
+// before any other pipeline's pull.
+//
+// The rotating cursor also resolves the churn problem that motivated removing
+// the *original* LIMIT: that one used ORDER BY updated_at ASC, which pinned the
+// same oldest window every night because non-cleared books never get
+// updated_at bumped. By advancing a cursor over a stable ORDER BY id instead,
+// every candidate gets a fair check across the cycle, and new arrivals are
+// swept as the cursor passes them (or once it wraps).
+const PER_SOURCE_LIMIT = Number(process.env.COVER_RESCUE_LIMIT ?? 2000);
+const OFFSETS_PATH = path.join(process.cwd(), "data", "cover-rescue-offsets.json");
+
+const CANDIDATE_WHERE = `cover_image_url LIKE ?
+     AND (cover_source IS NULL
+          OR cover_source = 'isbndb'
+          OR cover_source = 'google_books'
+          OR cover_source = 'openlibrary')`;
+
+function loadOffsets(): Record<string, number> {
+  try {
+    return JSON.parse(fs.readFileSync(OFFSETS_PATH, "utf8")) as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+
+function saveOffsets(offsets: Record<string, number>) {
+  fs.writeFileSync(OFFSETS_PATH, JSON.stringify(offsets, null, 2));
+}
+
+function countCandidates(urlPatternLike: string): number {
+  const row = db
+    .prepare(`SELECT COUNT(*) AS n FROM books WHERE ${CANDIDATE_WHERE}`)
+    .get(urlPatternLike) as { n: number };
+  return row.n;
+}
+
+// Stable ORDER BY id so OFFSET pagination is deterministic across nights.
+function selectWindow(urlPatternLike: string, offset: number, limit: number): Row[] {
   return db
     .prepare(
       `SELECT id, title, cover_image_url
        FROM books
-       WHERE cover_image_url LIKE ?
-         AND (cover_source IS NULL
-              OR cover_source = 'isbndb'
-              OR cover_source = 'google_books'
-              OR cover_source = 'openlibrary')`,
+       WHERE ${CANDIDATE_WHERE}
+       ORDER BY id
+       LIMIT ? OFFSET ?`,
     )
-    .all(placeholder.urlPatternLike) as Row[];
+    .all(urlPatternLike, limit, offset) as Row[];
+}
+
+// Resolve the next window for a source, advancing (and wrapping) its cursor.
+function nextWindow(
+  offsets: Record<string, number>,
+  key: string,
+  urlPatternLike: string,
+): { rows: Row[]; total: number; start: number } {
+  const total = countCandidates(urlPatternLike);
+  if (total === 0) {
+    offsets[key] = 0;
+    return { rows: [], total: 0, start: 0 };
+  }
+  let start = offsets[key] ?? 0;
+  if (start >= total) start = 0; // wrap to the beginning of the cycle
+  const rows = selectWindow(urlPatternLike, start, PER_SOURCE_LIMIT);
+  offsets[key] = start + rows.length;
+  return { rows, total, start };
 }
 
 async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
@@ -154,20 +212,6 @@ async function runBatch(rows: Row[], placeholder: Placeholder) {
 
 type MicroHost = (typeof MICRO_IMAGE_HOSTS)[number];
 
-function selectCandidatesForHost(host: MicroHost): Row[] {
-  return db
-    .prepare(
-      `SELECT id, title, cover_image_url
-       FROM books
-       WHERE cover_image_url LIKE ?
-         AND (cover_source IS NULL
-              OR cover_source = 'isbndb'
-              OR cover_source = 'google_books'
-              OR cover_source = 'openlibrary')`,
-    )
-    .all(host.urlPatternLike) as Row[];
-}
-
 async function checkIsMicroImage(url: string): Promise<boolean> {
   try {
     const head = await withTimeout(fetch(url, { method: "HEAD" }), FETCH_TIMEOUT_MS);
@@ -221,34 +265,46 @@ async function runMicroImageBatch(rows: Row[], host: MicroHost) {
 }
 
 async function main() {
-  console.log(`[cover-rescue] Starting — concurrency ${CONCURRENCY}, scanning all candidates per source`);
+  console.log(
+    `[cover-rescue] Starting — concurrency ${CONCURRENCY}, window ${PER_SOURCE_LIMIT}/source (rotating cursor in ${path.basename(OFFSETS_PATH)})`,
+  );
   const started = Date.now();
   let totalChecked = 0;
   let totalCleared = 0;
 
+  // Per-source rotating offset cursor. Persisted after EACH source so a
+  // mid-run watchdog kill still advances the cursor for completed sources.
+  const offsets = loadOffsets();
+
   // Pass 1: known fingerprint sweep
   for (const placeholder of PLACEHOLDERS) {
-    const rows = selectBatchFor(placeholder);
-    console.log(`[cover-rescue] [${placeholder.label}] selected ${rows.length} candidates`);
-    if (rows.length === 0) continue;
-
-    const { cleared, checked } = await runBatch(rows, placeholder);
-    console.log(`[cover-rescue] [${placeholder.label}] done — cleared ${cleared}/${checked}`);
-    totalChecked += checked;
-    totalCleared += cleared;
+    const { rows, total, start } = nextWindow(offsets, placeholder.label, placeholder.urlPatternLike);
+    console.log(
+      `[cover-rescue] [${placeholder.label}] window ${start}–${start + rows.length} of ${total} candidates`,
+    );
+    if (rows.length > 0) {
+      const { cleared, checked } = await runBatch(rows, placeholder);
+      console.log(`[cover-rescue] [${placeholder.label}] done — cleared ${cleared}/${checked}`);
+      totalChecked += checked;
+      totalCleared += cleared;
+    }
+    saveOffsets(offsets);
   }
 
   // Pass 2: dimension-based microimage sweep (catches non-fingerprinted placeholders)
   console.log(`[cover-rescue] Starting microimage pass (dimension-based)`);
   for (const host of MICRO_IMAGE_HOSTS) {
-    const rows = selectCandidatesForHost(host);
-    console.log(`[cover-rescue] [${host.label}] selected ${rows.length} candidates`);
-    if (rows.length === 0) continue;
-
-    const { cleared, checked } = await runMicroImageBatch(rows, host);
-    console.log(`[cover-rescue] [${host.label}] done — cleared ${cleared}/${checked}`);
-    totalChecked += checked;
-    totalCleared += cleared;
+    const { rows, total, start } = nextWindow(offsets, host.label, host.urlPatternLike);
+    console.log(
+      `[cover-rescue] [${host.label}] window ${start}–${start + rows.length} of ${total} candidates`,
+    );
+    if (rows.length > 0) {
+      const { cleared, checked } = await runMicroImageBatch(rows, host);
+      console.log(`[cover-rescue] [${host.label}] done — cleared ${cleared}/${checked}`);
+      totalChecked += checked;
+      totalCleared += cleared;
+    }
+    saveOffsets(offsets);
   }
 
   const elapsed = ((Date.now() - started) / 1000).toFixed(1);

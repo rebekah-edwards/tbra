@@ -25,7 +25,11 @@ async function main() {
   const { remote: client, shutdown } = await createGuardedTurso({
     name: "sitemap-threshold-check",
     maxRuntimeMs: 5 * 60 * 1000,
-    queryTimeoutMs: 30_000,
+    // The public-count query depends on idx_books_visibility (added 2026-06-22);
+    // with the index it runs in ~340ms. The generous timeout is a backstop so a
+    // future un-indexed/slow run fails loudly within the 5-min ceiling rather than
+    // tripping a 30s guard and silently exiting (the bug that broke this nightly).
+    queryTimeoutMs: 180_000,
   });
 
   const { rows } = await client.execute(

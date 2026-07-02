@@ -673,7 +673,7 @@ function seededShuffle<T>(arr: T[]): T[] {
 // Christian fiction is weighted heaviest per product direction.
 // ---------------------------------------------------------------------------
 
-const SUBJECTS: { subject: string; weight: number }[] = [
+const DISCOVERY_SUBJECTS: { subject: string; weight: number }[] = [
   { subject: "christian_fiction", weight: 3 },
   { subject: "christian_life", weight: 1 },
   { subject: "religious_fiction", weight: 1 },
@@ -686,8 +686,44 @@ const SUBJECTS: { subject: string; weight: number }[] = [
   { subject: "thrillers", weight: 1 },
   { subject: "young_adult_fiction", weight: 1 },
 ];
+
+// BREADTH set (added 2026-06-20) — selected with SUBJECT_SET=broad by the
+// Wed/Sat breadth-import lane (repurposed from the retired NYT backfill slot).
+// Goal: the high-demand NONFICTION + adjacent categories people search for that
+// DISCOVERY_SUBJECTS (fiction/Christian-heavy) never reaches, plus a few big
+// fiction subjects discovery underweights. All slugs validated against the OL
+// /subjects endpoint (work_count + popular top result) on 2026-06-20. Same
+// sort=readinglog popularity paging — popular titles first, then the long tail.
+const BROAD_SUBJECTS: { subject: string; weight: number }[] = [
+  { subject: "biography", weight: 2 },        // 905k works
+  { subject: "history", weight: 2 },          // 2.5M works
+  { subject: "nonfiction", weight: 1 },
+  { subject: "science", weight: 1 },
+  { subject: "psychology", weight: 1 },
+  { subject: "business", weight: 1 },
+  { subject: "self-help", weight: 1 },
+  { subject: "philosophy", weight: 1 },
+  { subject: "religion", weight: 1 },
+  { subject: "true_crime", weight: 1 },
+  { subject: "cooking", weight: 1 },
+  { subject: "health", weight: 1 },
+  { subject: "poetry", weight: 1 },
+  { subject: "literature", weight: 1 },
+  { subject: "science_fiction", weight: 1 },
+  { subject: "horror", weight: 1 },
+  { subject: "juvenile_fiction", weight: 1 },
+  { subject: "classics", weight: 1 },
+  { subject: "autobiography", weight: 1 },
+  { subject: "humor", weight: 1 },
+];
+
+// Default to the Christian-weighted discovery rotation; SUBJECT_SET=broad selects
+// the breadth lane. Each lane keeps its OWN persisted offset file so they page
+// independently (override via SUBJECT_OFFSET_FILE).
+const SUBJECTS =
+  process.env.SUBJECT_SET === "broad" ? BROAD_SUBJECTS : DISCOVERY_SUBJECTS;
 const SUBJECT_PAGE_SIZE = 100;
-const OFFSET_FILE = "data/subject-offsets.json";
+const OFFSET_FILE = process.env.SUBJECT_OFFSET_FILE || "data/subject-offsets.json";
 const OL_HEADERS = {
   "User-Agent": "tbra-nightly-import/1.0 (books@thebasedreaderapp.com)",
 };
@@ -780,7 +816,7 @@ async function main() {
   // enrichment + user imports can use NYT's curated descriptions, then (2) import
   // any not-yet-in-catalog bestseller, seeding it with the NYT description/cover.
   const nytKey = process.env.NYT_API_KEY;
-  if (nytKey) {
+  if (nytKey && process.env.DISABLE_NYT !== "1") {
     console.log(`[nightly] NYT bestsellers enabled — scanning ${NYT_LISTS.length} lists`);
     for (const list of NYT_LISTS) {
       const { ok, status, entries, listDate } = await fetchNytList(list, nytKey);
@@ -808,6 +844,8 @@ async function main() {
       }
       await delay(NYT_DELAY_MS); // respect NYT rate limit between lists
     }
+  } else if (process.env.DISABLE_NYT === "1") {
+    console.log(`[nightly] NYT source disabled (DISABLE_NYT=1)`);
   } else {
     console.log(`[nightly] NYT_API_KEY not set — skipping NYT bestsellers source`);
   }
@@ -846,7 +884,9 @@ async function main() {
   }
 
   // ---- SAFETY NET: legacy curated queries top up if subjects underdeliver ----
-  if (!overBudget()) {
+  // (Skipped by the breadth lane via DISABLE_LEGACY=1 — those curated seeds are
+  // bestseller/Christian titles that belong to nightly-discovery, not breadth.)
+  if (!overBudget() && process.env.DISABLE_LEGACY !== "1") {
     const legacy = seededShuffle([
       ...BESTSELLER_QUERIES,
       ...CLASSICS_QUERIES,
