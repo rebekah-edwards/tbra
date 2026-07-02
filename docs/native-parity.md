@@ -21,6 +21,10 @@ feature — with iOS-specific enhancements added only after a screen reaches par
    placeholder data that could be mistaken for parity.
 5. **Statuses:** `—` not started · `API` endpoint work in progress · `WIP` building ·
    `BUILT` compiles + runs with real data · `VERIFIED` side-by-side reconciled + user-seen.
+6. **Auto-push to the phone (standing user order — do NOT ask).** After every native
+   change that builds, run `native-ios/push-to-phone.sh`. It installs + relaunches on
+   Rebekah's iPhone over cable or home-network wireless. If the phone isn't reachable,
+   the script says so — just note it and move on; push again when it's back.
 
 ## App chrome (cross-screen) — BUILT
 
