@@ -123,10 +123,17 @@ export async function GET(request: NextRequest) {
     }
 
     if (strictLocalBooks.length < 5 || !hasStrongMatch) {
-      externalResults = await fetchISBNdbFallback(
-        queryLower,
-        bookResults.map((b) => b.title),
-      );
+      // Same belt-and-suspenders ceiling as the nav route: if ISBNdb (or its
+      // local dedup query) is slow, serve local results rather than 504 the
+      // whole page.
+      try {
+        externalResults = await Promise.race([
+          fetchISBNdbFallback(queryLower, bookResults.map((b) => b.title)),
+          new Promise<ISBNdbResult[]>((resolve) => setTimeout(() => resolve([]), 4000)),
+        ]);
+      } catch (err) {
+        console.warn("[search/full] ISBNdb fallback failed:", err);
+      }
     }
   }
 

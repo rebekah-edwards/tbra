@@ -48,7 +48,28 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 | `/` | Home: Discover Something New (cover row, info bubble, fade hint) | BUILT | ✅ /home/discover |
 | `/` | Home: Because You Liked + Friends Activity | BUILT (code-spec — test acct has no follows/high ratings to render them; verify visually on a real account) | ✅ /home/discover |
 | `/` | Home: goal editing (pencil → sheet) | BUILT | ✅ /reading-goal |
-| `/book/[id]` | Book page: hero blur card, What's Inside ratings, reviews, formats, Buy button (affiliate tag rule!), series, notes, spoiler tags | — | book-detail endpoint |
+| `/book/[id]` | Book page (full functional inventory below) | SPEC'D | book-detail endpoint + removeBookState/removeFromLibrary/setOwnedFormats/setActiveFormats v1 wrappers |
+
+### /book/[id] — functional inventory (captured 2026-07-02, from live UI + component code)
+
+**Hero (book-header.tsx):** back circle · top-level genre pill (lime) + audience pill (purple) · admin pencil (admin only) · title · author link → `/author/[id]` · "#N in <series> ›" (neon-blue) → `/series/[slug]` · year · pages/audio-length (🎧 15h 28m when audio) · genre pills (translucent) · pacing pill (amber clock, "Medium-paced") · cover w/ hero blur bg (overlay tokens) · share circle (share-button.tsx → share sheet).
+
+**Action cluster (reading-state-selector.tsx):**
+- **Signed-out variant:** "Sign in to track" lime CTA → /login · Buy button still visible (Amazon compliance!) · disabled Owned ghost.
+- **Reading-state split button (reading-state-button.tsx):** main label = current state or "To Read"+bookmark icon; lime solid when active, translucent lime 20%/border 60% when not.
+  - Main tap: inactive → set `tbr` (+toast); active → REMOVE state entirely (removeBookState — keeps owned formats).
+  - Chevron dropdown items: **To Read / Reading Now / Finished / Paused / DNF** (✓ on current; tapping current = remove state). Finished/DNF intercept → CompletionDatePicker ("When did you finish?" / "When did you stop reading?", exact/month/year precision) → setBookStateWithCompletion. Every change fires a state toast (STATE_TOAST_MESSAGES).
+  - When current = tbr: dropdown embeds **TbrNoteEditor** (premium-gated note on the TBR entry).
+  - **Buddy Read** row (people icon) → `/buddy-reads/new?bookId=`.
+  - When active: destructive **"Remove from Library"** → confirm modal ("clears reading history, review, and rating — cannot be undone") → removeFromLibrary.
+- **Up Next button** (up-next-button.tsx, shown ONLY when state = tbr): not queued → "Add to Up Next" (addToUpNext, disabled + "Up Next is full (6 max)" at capacity); queued → "Up Next #N — tap to remove".
+- **Buy button (buy-button.tsx):** SSR `<a href>` with affiliate tag (amazonUrl → asin → isbn13 search → title search fallback); click intercepted → affiliate-disclosure dialog → Continue opens Amazon. NATIVE: same interstitial then open URL; keep the tag env-driven.
+- **Format button** (format-button.tsx, shown when state = currently_reading/paused; auto-opens right after switching to Reading Now): multi-select checkboxes of hardcover/paperback/ebook/audiobook → setActiveFormats ("how I'm reading it"; never assume hardcover).
+- **Owned button** (owned-button.tsx): popover of Hardcover/Paperback/eBook/Audiobook toggles ("Box Set" single option when is_box_set) → setOwnedFormats; per-format "specify editions" → EditionPicker bottom sheet (OL editions); "unknown" import placeholder excluded from "Owned · N" count and dropped once a real format is chosen.
+- **Shelves button** (add-to-shelf-button.tsx): popover listing user shelves w/ checkmarks (add/remove via shelf APIs — v1 exists) + "New Shelf" creation. *(popover detail TO INVENTORY at build)*
+- **Stars row:** community avg + review count → reviews; "Mark as finished to review" hint; own rating stars after completion.
+
+**Below the fold (components on page, each needs its own inventory pass at build):** book-summary (frosted quote card) · content-warning-banner · **content-profile.tsx (What's Inside — THE core feature, 494 lines: category intensity rows, expanders w/ notes, spoiler handling)** · book-description · book-about-details · book-series (More in this Series rail) · reading-history (per-session editor incl. format retro-tag) · book-reading-notes · reviews block (review wizard entry) · friends-who-read · similar-books · favorite-button (Top Shelf) · hide-book-button · report-issue-button · post-completion-suggestions · ARC form (arc-source-form).
 | `/library` | Library: TBR/Activity/Owned groups, sub-filters, sort, advanced filters, book grid | — | library endpoint |
 | `/library/shelves` | Shelves list, My Shelves/Following pills, shelf cards | BUILT | Following + Top Shelf missing |
 | `/library/shelves/[slug]` | Shelf detail: cover grid, Shelf Order, Filters, Edit, share | BUILT (controls visual-only) | sort/filter params |
