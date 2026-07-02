@@ -61,9 +61,13 @@ struct ShelfDetailView: View {
             }
             .onMove(perform: model.move)
             .onDelete(perform: model.remove)
+            .listRowBackground(Theme.surface)
+            .listRowSeparatorTint(Theme.border)
         }
+        .scrollContentBackground(.hidden)
+        .background(AmbientBackground())
         .navigationTitle(model.shelf?.name ?? "Shelf")
-        .toolbar { EditButton() }
+        .toolbar { EditButton().font(Theme.body(15, .medium)) }
         .overlay {
             if model.books.isEmpty && !model.loading {
                 ContentUnavailableView("No books yet", systemImage: "book.closed")
@@ -81,21 +85,26 @@ private struct ShelfBookRow: View {
     let book: ShelfBook
     var body: some View {
         HStack(spacing: 12) {
-            AsyncImage(url: book.coverImageUrl.flatMap(URL.init(string:))) { image in
-                image.resizable().aspectRatio(contentMode: .fill)
-            } placeholder: { Color.gray.opacity(0.2) }
-            .frame(width: 44, height: 66)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
+            CoverThumb(url: book.coverImageUrl)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(book.title).font(.body).lineLimit(2)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(book.title)
+                    .font(Theme.body(15, .semibold))
+                    .foregroundStyle(Theme.foreground)
+                    .lineLimit(2)
                 if let author = book.authors.first {
-                    Text(author).font(.caption).foregroundStyle(.secondary)
+                    Text(author)
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
                 }
                 if let note = book.note, !note.isEmpty {
-                    Text(note).font(.caption2).foregroundStyle(.tertiary).lineLimit(1)
+                    Text(note)
+                        .font(Theme.body(11))
+                        .foregroundStyle(Theme.muted.opacity(0.7))
+                        .lineLimit(1)
                 }
             }
         }
+        .padding(.vertical, 2)
     }
 }

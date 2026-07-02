@@ -49,9 +49,13 @@ struct UpNextView: View {
                 }
                 .onMove(perform: model.move)
                 .onDelete(perform: model.remove)
+                .listRowBackground(Theme.surface)
+                .listRowSeparatorTint(Theme.border)
             }
+            .scrollContentBackground(.hidden)
+            .background(AmbientBackground())
             .navigationTitle("Up Next")
-            .toolbar { EditButton() }
+            .toolbar { EditButton().font(Theme.body(15, .medium)) }
             .overlay {
                 if model.items.isEmpty && !model.loading {
                     ContentUnavailableView("Nothing queued", systemImage: "books.vertical")
@@ -62,6 +66,7 @@ struct UpNextView: View {
             .alert("Error", isPresented: .constant(model.error != nil)) {
                 Button("OK") { model.error = nil }
             } message: { Text(model.error ?? "") }
+            .tint(Theme.neonBlue)   // tappable text is neon blue on the web
         }
     }
 }
@@ -70,18 +75,20 @@ private struct UpNextRow: View {
     let item: UpNextItem
     var body: some View {
         HStack(spacing: 12) {
-            AsyncImage(url: item.coverImageUrl.flatMap(URL.init(string:))) { image in
-                image.resizable().aspectRatio(contentMode: .fill)
-            } placeholder: { Color.gray.opacity(0.2) }
-            .frame(width: 44, height: 66)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
+            CoverThumb(url: item.coverImageUrl)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.title).font(.body).lineLimit(2)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.title)
+                    .font(Theme.body(15, .semibold))
+                    .foregroundStyle(Theme.foreground)
+                    .lineLimit(2)
                 if let author = item.authorName {
-                    Text(author).font(.caption).foregroundStyle(.secondary)
+                    Text(author)
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
                 }
             }
         }
+        .padding(.vertical, 2)
     }
 }

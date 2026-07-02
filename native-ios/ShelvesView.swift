@@ -37,9 +37,13 @@ struct ShelvesView: View {
                     }
                 }
                 .onMove(perform: model.move)
+                .listRowBackground(Theme.surface)
+                .listRowSeparatorTint(Theme.border)
             }
+            .scrollContentBackground(.hidden)
+            .background(AmbientBackground())
             .navigationTitle("Shelves")
-            .toolbar { EditButton() }
+            .toolbar { EditButton().font(Theme.body(15, .medium)) }
             .navigationDestination(for: String.self) { shelfId in
                 ShelfDetailView(shelfId: shelfId)
             }
@@ -48,6 +52,7 @@ struct ShelvesView: View {
             .alert("Error", isPresented: .constant(model.error != nil)) {
                 Button("OK") { model.error = nil }
             } message: { Text(model.error ?? "") }
+            .tint(Theme.neonBlue)   // tappable text is neon blue on the web
         }
     }
 }
@@ -58,19 +63,20 @@ private struct ShelfRow: View {
         HStack(spacing: 12) {
             // Small cover mosaic from the first few covers.
             HStack(spacing: -8) {
-                ForEach(Array(shelf.coverUrls.prefix(3).enumerated()), id: \.offset) { _, url in
-                    AsyncImage(url: URL(string: url)) { image in
-                        image.resizable().aspectRatio(contentMode: .fill)
-                    } placeholder: { Color.gray.opacity(0.2) }
-                    .frame(width: 30, height: 45)
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                ForEach(Array(shelf.coverUrls.prefix(3).enumerated()), id: \.offset) { index, url in
+                    CoverThumb(url: url, width: 30, height: 45, radius: 3)
+                        .zIndex(Double(3 - index))
                 }
             }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(shelf.name).font(.body)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(shelf.name)
+                    .font(Theme.body(15, .semibold))
+                    .foregroundStyle(Theme.foreground)
                 Text("\(shelf.bookCount) book\(shelf.bookCount == 1 ? "" : "s")")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.muted)
             }
         }
+        .padding(.vertical, 2)
     }
 }

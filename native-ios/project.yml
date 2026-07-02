@@ -27,10 +27,17 @@ targets:
       - path: .
         includes:
           - "*.swift"
+      # Bundled brand fonts (Plus Jakarta Sans / Outfit / Space Grotesk) —
+      # the same OFL families the web app loads via next/font.
+      - path: Fonts
     info:
       path: Info.plist
       properties:
         CFBundleDisplayName: tbr*a
+        UIAppFonts:
+          - PlusJakartaSans.ttf
+          - Outfit.ttf
+          - SpaceGrotesk.ttf
         UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: true

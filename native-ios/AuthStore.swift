@@ -48,7 +48,10 @@ struct RootView: View {
         Group {
             switch auth.phase {
             case .loading:
-                ProgressView().controlSize(.large)
+                ZStack {
+                    AmbientBackground()
+                    ProgressView().controlSize(.large).tint(Theme.accent)
+                }
             case .signedOut:
                 LoginView()
             case .signedIn:
@@ -66,6 +69,9 @@ struct MainTabView: View {
             Tab("Up Next", systemImage: "books.vertical") { UpNextView() }
             Tab("Shelves", systemImage: "square.stack") { ShelvesView() }
         }
+        // Active tab is neon purple on the web (bottom-tabs.tsx: text-neon-purple);
+        // lime is reserved for the center "+" action button there.
+        .tint(Theme.neonPurple)
     }
 }
 
@@ -76,26 +82,53 @@ struct LoginView: View {
     @State private var busy = false
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("tbr*a").font(.largeTitle.bold())
-            TextField("Email", text: $email)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-            SecureField("Password", text: $password)
-                .textContentType(.password)
-            if let err = auth.loginError {
-                Text(err).font(.footnote).foregroundStyle(.red)
+        ZStack {
+            AmbientBackground()
+            VStack(spacing: 16) {
+                Spacer()
+
+                // The wordmark — Space Grotesk with the lime→blue→purple
+                // .logo-gradient. The ONLY gradient text in the app.
+                Text("tbr*a")
+                    .font(Theme.logo(44))
+                    .foregroundStyle(Theme.logoGradient)
+                    .padding(.bottom, 4)
+                Text("Know what's in a book before you read it")
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.muted)
+                    .padding(.bottom, 20)
+
+                TextField("Email", text: $email)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .brandedField()
+                SecureField("Password", text: $password)
+                    .textContentType(.password)
+                    .brandedField()
+
+                if let err = auth.loginError {
+                    Text(err).font(Theme.body(13)).foregroundStyle(Theme.destructive)
+                }
+
+                Button {
+                    Task { busy = true; await auth.login(email: email, password: password); busy = false }
+                } label: {
+                    if busy {
+                        ProgressView().tint(Theme.onAccent)
+                    } else {
+                        Text("Sign in")
+                    }
+                }
+                .buttonStyle(AccentButtonStyle())
+                .disabled(busy || email.isEmpty || password.isEmpty)
+                .padding(.top, 4)
+
+                Spacer()
+                Spacer()
             }
-            Button {
-                Task { busy = true; await auth.login(email: email, password: password); busy = false }
-            } label: {
-                Text("Sign in").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(busy || email.isEmpty || password.isEmpty)
+            .padding(.horizontal, 28)
         }
-        .textFieldStyle(.roundedBorder)
-        .padding()
     }
 }
