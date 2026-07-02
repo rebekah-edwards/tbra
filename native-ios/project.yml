@@ -1,9 +1,10 @@
 name: Tbra
 options:
   bundleIdPrefix: app.tbra
-  # 26.0 so the app installs on stable-iOS phones; no 27-only APIs in use.
+  # 27.0 — the user's iPhone runs the iOS 27 developer beta (their explicit
+  # instruction: do NOT lower this).
   deploymentTarget:
-    iOS: "26.0"
+    iOS: "27.0"
   createIntermediateGroups: true
 
 settings:
@@ -11,18 +12,19 @@ settings:
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "6.0"
-    # Simulator builds sign ad-hoc (no Apple Developer team needed). Signing must
-    # stay ENABLED so the app gets an application-identifier entitlement — without
-    # it the Keychain (auth token storage) fails with errSecMissingEntitlement (-34018).
-    CODE_SIGN_IDENTITY: "-"
-    CODE_SIGNING_REQUIRED: "NO"
+    # Real signing (paid team, cert "Clanker's Mac mini" in the login keychain).
+    # Automatic style covers simulator AND device; signing must stay ENABLED so
+    # the app gets an application-identifier entitlement — without it the
+    # Keychain (auth token storage) fails with errSecMissingEntitlement (-34018).
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: E5ZFZ263ET
     CODE_SIGNING_ALLOWED: "YES"
 
 targets:
   Tbra:
     type: application
     platform: iOS
-    deploymentTarget: "26.0"
+    deploymentTarget: "27.0"
     # Only the hand-written Swift sources — not README.md / project.yml / Info.plist.
     sources:
       - path: .
