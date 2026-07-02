@@ -1,8 +1,9 @@
 name: Tbra
 options:
   bundleIdPrefix: app.tbra
+  # 26.0 so the app installs on stable-iOS phones; no 27-only APIs in use.
   deploymentTarget:
-    iOS: "27.0"
+    iOS: "26.0"
   createIntermediateGroups: true
 
 settings:
@@ -21,7 +22,7 @@ targets:
   Tbra:
     type: application
     platform: iOS
-    deploymentTarget: "27.0"
+    deploymentTarget: "26.0"
     # Only the hand-written Swift sources — not README.md / project.yml / Info.plist.
     sources:
       - path: .
@@ -41,9 +42,13 @@ targets:
         UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: true
-        # Dev-only: let the simulator reach the Mac's cleartext http://localhost:3000.
+        # Dev-only ATS: simulator hits cleartext localhost:3000; physical
+        # devices hit the Mac's tailnet IP (WireGuard-encrypted transport).
+        # ⚠️ NSAllowsArbitraryLoads MUST be removed before any TestFlight /
+        # App Store build — tracked in docs/native-parity.md.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+          NSAllowsArbitraryLoads: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.tbra.ios

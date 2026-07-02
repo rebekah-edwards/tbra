@@ -12,7 +12,14 @@ actor APIClient {
     /// Dev: a Mac-hosted `npm run dev`. Point at production otherwise.
     /// Set once at launch before any request; `nonisolated(unsafe)` is the
     /// standard Swift 6 escape hatch for a start-up-configured global.
+    #if targetEnvironment(simulator)
     nonisolated(unsafe) static var baseURL = URL(string: "http://localhost:3000")!
+    #else
+    // Physical device: the Mac's Tailscale address (clanker-macmini).
+    // Cleartext HTTP is fine here — the tailnet wraps it in WireGuard.
+    // The Mac's dev server (port 3000) must be running.
+    nonisolated(unsafe) static var baseURL = URL(string: "http://100.84.95.103:3000")!
+    #endif
 
     private let session = URLSession.shared
     private let decoder = JSONDecoder()
