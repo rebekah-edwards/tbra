@@ -55,23 +55,11 @@ struct RootView: View {
             case .signedOut:
                 LoginView()
             case .signedIn:
-                MainTabView()
+                AppShell()
             }
         }
         .environment(auth)
         .task { await auth.restore() }
-    }
-}
-
-struct MainTabView: View {
-    var body: some View {
-        TabView {
-            Tab("Up Next", systemImage: "books.vertical") { UpNextView() }
-            Tab("Shelves", systemImage: "square.stack") { ShelvesView() }
-        }
-        // Active tab is neon purple on the web (bottom-tabs.tsx: text-neon-purple);
-        // lime is reserved for the center "+" action button there.
-        .tint(Theme.neonPurple)
     }
 }
 
