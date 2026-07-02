@@ -304,6 +304,12 @@ async function fetchLiveRows(table: string, cols: string[], page = 5000): Promis
   console.log('\nPull complete.');
 
   local.close();
+  // The Turso libSQL client keeps an open socket that holds the event loop
+  // alive after all work is done. Without an explicit exit the process hangs
+  // until the unref'd stall watchdog fires and kills the chain with exit 3
+  // (observed 2026-06-25: pull finished, then aborted at 319s before import ran).
+  try { remote.close(); } catch {}
+  process.exit(0);
 })().catch((e) => {
   console.error('FATAL:', e);
   process.exit(1);

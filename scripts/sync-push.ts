@@ -537,6 +537,13 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
   console.log(`     Books on Turso: ${Number((remoteBookCount.rows[0] as any).n).toLocaleString()}`);
 
   local.close();
+  // The Turso libSQL client keeps an open socket that holds the event loop
+  // alive after all work is done. Without an explicit exit the process hangs
+  // until the unref'd stall watchdog fires and kills it with exit 3 (same
+  // class of bug fixed in sync-pull.ts on 2026-06-25). The 'exit' handler
+  // (line ~47) clears the lockfile.
+  try { remote.close(); } catch {}
+  process.exit(0);
 })().catch((e) => {
   console.error('FATAL:', e);
   process.exit(1);
