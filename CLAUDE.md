@@ -38,7 +38,7 @@ npm run deploy:code   # Deploy code only
   - **Translucent green backgrounds** (10-20% opacity pills/badges): use `text-accent` — the global override at `globals.css:184` forces black in light mode. Tailwind opacity variants like `text-accent/60` do NOT get the override because they compile to unique class names; use `text-foreground/50` or `text-muted/60` instead.
   - **NEVER use `text-primary`** for text — it resolves to `#a3e635` (lime) which is unreadable on light backgrounds. Use `text-foreground` for body text, `text-neon-blue` for tappable text.
   - **NEVER use `text-secondary` or `text-tertiary`** — they aren't defined in the theme CSS and render as browser default. Use `text-muted` or `text-muted/60`.
-- Fonts: Source Sans 3 (body), Literata (headings), Space Grotesk (logo only) via CSS vars `font-body`, `font-heading`, `font-logo`
+- Fonts: Plus Jakarta Sans (body), Outfit (headings), Space Grotesk (logo only) via CSS vars `font-body`, `font-heading`, `font-logo` (next/font in layout.tsx; h1/h2/h3 get the heading font automatically via globals.css)
 - Pill/badge styles: translucent backgrounds, never solid fills
 - `.env.local` must be loaded explicitly for standalone scripts (outside Next.js)
 - **SEO book page title must always be `What's Inside {book} | tbr*a`** — do not change the format. This is the documented SEO plan.
