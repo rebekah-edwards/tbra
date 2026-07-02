@@ -101,22 +101,28 @@ const TABLES: Array<[string, string[], boolean]> = [
   ['book_narrators',           ['book_id', 'narrator_id'],false],
   ['book_category_ratings',    ['id'],                    true],
   ['links',                    ['id'],                    false],
-  ['user_book_state',          ['user_id', 'book_id'],    false],
-  ['user_book_ratings',        ['user_id', 'book_id'],    false],
-  ['user_book_reviews',        ['id'],                    false],
+  // ⚠️ User-activity tables WITH an updated_at column MUST be flagged true —
+  // they change on BOTH sides (live site + native app). They were insert-only
+  // until 2026-07-02, which froze every state change made on the live site
+  // out of local: the native app showed months-stale "currently reading".
+  // The newer-timestamp rule keeps bidirectional writes safe in both
+  // directions. (Tables flagged false here genuinely have no updated_at.)
+  ['user_book_state',          ['user_id', 'book_id'],    true],
+  ['user_book_ratings',        ['user_id', 'book_id'],    true],
+  ['user_book_reviews',        ['id'],                    true],
   ['user_favorite_books',      ['user_id', 'book_id'],    false],
   ['user_hidden_books',        ['user_id', 'book_id'],    false],
   ['user_follows',             ['follower_id', 'followed_id'], false],
   ['author_follows',           ['user_id', 'author_id'],  false],
   ['shelf_follows',            ['user_id', 'shelf_id'],   false],
-  ['tbr_notes',                ['id'],                    false],
+  ['tbr_notes',                ['id'],                    true],
   ['user_owned_editions',      ['user_id', 'edition_id'], false],
   ['user_content_preferences', ['user_id', 'category_id'],false],
-  ['user_reading_preferences', ['user_id'],               false],
+  ['user_reading_preferences', ['user_id'],               true],
   ['user_genre_preferences',   ['user_id', 'genre_name'], false],
-  ['user_notification_preferences', ['user_id'],          false],
-  ['reading_goals',            ['id'],                    false],
-  ['reading_sessions',         ['id'],                    false],
+  ['user_notification_preferences', ['user_id'],          true],
+  ['reading_goals',            ['id'],                    true],
+  ['reading_sessions',         ['id'],                    true],
   ['reading_notes',            ['id'],                    false],
   ['up_next',                  ['user_id', 'book_id'],    false],
   ['review_descriptor_tags',   ['id'],                    false],
@@ -226,7 +232,10 @@ async function fetchLiveRows(table: string, cols: string[], page = 5000): Promis
           if (!liveUpdated) continue;
           const localRow = getLocalUpdated.get(...pkCols.map((c) => row[c]));
           const localUpdated = localRow ? localRow.updated_at : null;
-          if (localUpdated && liveUpdated > localUpdated) {
+          // A local row with NULL updated_at has never been touched locally —
+          // treat it as older than any live timestamp (previously such rows
+          // could never be updated at all).
+          if (!localUpdated || liveUpdated > localUpdated) {
             try {
               const nonPkVals = cols.filter((c) => !pkCols.includes(c)).map((c) => row[c]);
               const pkVals = pkCols.map((c) => row[c]);
