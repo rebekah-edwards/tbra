@@ -78,6 +78,46 @@ struct ShelfDetail: Codable, Identifiable, Hashable {
     let books: [ShelfBook]
 }
 
+// ─── Home (Reading Now + goal + streak) ───
+
+struct ReadingNowBook: Codable, Identifiable, Hashable {
+    let id: String
+    let slug: String?
+    let title: String
+    let coverImageUrl: String?
+    let authors: [String]
+    let pages: Int?
+    let activeFormats: [String]
+    let progress: Int?          // 0-100, derived from the latest reading note
+    let buddyReadId: String?
+}
+
+struct ReadingGoal: Codable, Hashable {
+    let targetBooks: Int
+    let completedBooks: Int
+    let percentComplete: Int
+}
+
+struct ReadingStreak: Codable, Hashable {
+    let currentStreak: Int
+    let longestStreak: Int
+}
+
+struct HomeData: Hashable {
+    let year: Int
+    let readingNow: [ReadingNowBook]
+    let goal: ReadingGoal?
+    let streak: ReadingStreak
+}
+
+struct HomeResponse: Codable {
+    let ok: Bool
+    let year: Int
+    let readingNow: [ReadingNowBook]
+    let goal: ReadingGoal?
+    let streak: ReadingStreak
+}
+
 // ─── Response envelopes ───
 
 struct LoginResponse: Codable {

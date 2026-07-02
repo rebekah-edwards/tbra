@@ -5,6 +5,7 @@ import { readingNotes, userBookState, buddyReadMessages, buddyReadMembers, buddy
 import { eq, and } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { addReadingNoteFor } from "@/lib/mutations/reading-notes";
 
 const VALID_MOODS = ["excited", "tense", "emotional", "bored", "relaxed", "curious", "confused", "nostalgic"];
 const VALID_PACES = ["slow", "steady", "fast", "flying"];
@@ -14,80 +15,31 @@ export async function addReadingNote(formData: FormData): Promise<{ success: boo
   if (!session) return { success: false, error: "Not logged in" };
 
   const bookId = formData.get("bookId") as string;
-  const noteText = (formData.get("noteText") as string)?.trim();
-  const pageNumber = formData.get("pageNumber") ? parseInt(formData.get("pageNumber") as string) : null;
-  const percentComplete = formData.get("percentComplete") ? parseInt(formData.get("percentComplete") as string) : null;
-  const mood = formData.get("mood") as string | null;
-  const pace = formData.get("pace") as string | null;
-
-  if (!bookId) return { success: false, error: "Book ID required" };
-  if (!noteText) return { success: false, error: "Note text required" };
-  if (noteText.length > 2000) return { success: false, error: "Note too long (max 2000 chars)" };
-
-  // Validate the book is in currently_reading state
-  const state = await db
-    .select({ state: userBookState.state })
-    .from(userBookState)
-    .where(and(eq(userBookState.userId, session.userId), eq(userBookState.bookId, bookId)))
-    .get();
-
-  if (!state || state.state !== "currently_reading") {
-    return { success: false, error: "Book must be in 'currently reading' state" };
-  }
-
-  // Validate optional fields
-  if (pageNumber !== null && (pageNumber < 0 || pageNumber > 99999)) {
-    return { success: false, error: "Invalid page number" };
-  }
-  if (percentComplete !== null && (percentComplete < 0 || percentComplete > 100)) {
-    return { success: false, error: "Percentage must be 0-100" };
-  }
-  if (mood && !VALID_MOODS.includes(mood)) {
-    return { success: false, error: "Invalid mood" };
-  }
-  if (pace && !VALID_PACES.includes(pace)) {
-    return { success: false, error: "Invalid pace" };
-  }
-
-  const isPrivate = formData.get("isPrivate") !== "false"; // default true
-
-  await db.insert(readingNotes).values({
-    userId: session.userId,
-    bookId,
-    noteText,
-    pageNumber,
-    percentComplete,
-    mood: mood || null,
-    pace: pace || null,
-    isPrivate,
-  });
-
-  // Optionally share to buddy read discussion
   const buddyReadId = formData.get("buddyReadId") as string | null;
+
+  // Shared user-scoped implementation (also used by /api/v1) — see
+  // src/lib/mutations/reading-notes.ts. Validation + writes are the exact
+  // former body of this action.
+  const result = await addReadingNoteFor(session.userId, {
+    bookId,
+    noteText: (formData.get("noteText") as string) ?? "",
+    pageNumber: formData.get("pageNumber") ? parseInt(formData.get("pageNumber") as string) : null,
+    percentComplete: formData.get("percentComplete") ? parseInt(formData.get("percentComplete") as string) : null,
+    mood: formData.get("mood") as string | null,
+    pace: formData.get("pace") as string | null,
+    isPrivate: formData.get("isPrivate") !== "false",
+    buddyReadId,
+  });
+  if (!result.success) return result;
+
+  // Revalidate the buddy-read page if the note was shared there (the shared
+  // mutation posts the message; only the cache invalidation lives here).
   if (buddyReadId) {
     try {
-      // Verify user is an active member
-      const membership = await db
-        .select({ status: buddyReadMembers.status })
-        .from(buddyReadMembers)
-        .where(and(eq(buddyReadMembers.buddyReadId, buddyReadId), eq(buddyReadMembers.userId, session.userId)))
-        .get();
-      if (membership?.status === "active") {
-        const parts: string[] = [];
-        if (pageNumber) parts.push(`p.${pageNumber}`);
-        if (percentComplete !== null) parts.push(`${percentComplete}%`);
-        const progressInfo = parts.length > 0 ? ` (${parts.join(", ")})` : "";
-        const message = `📖 Reading update${progressInfo}: ${noteText}`;
-        await db.insert(buddyReadMessages).values({
-          buddyReadId,
-          userId: session.userId,
-          message: message.slice(0, 2000),
-        });
-        const br = await db.select({ slug: buddyReads.slug }).from(buddyReads).where(eq(buddyReads.id, buddyReadId)).get();
-        if (br?.slug) revalidatePath(`/buddy-reads/${br.slug}`);
-      }
+      const br = await db.select({ slug: buddyReads.slug }).from(buddyReads).where(eq(buddyReads.id, buddyReadId)).get();
+      if (br?.slug) revalidatePath(`/buddy-reads/${br.slug}`);
     } catch {
-      // Don't fail the note creation if buddy read sharing fails
+      // cache revalidation is best-effort
     }
   }
 

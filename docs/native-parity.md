@@ -37,8 +37,8 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 
 | Route | Screen | Status | API needs |
 |---|---|---|---|
-| `/` | Home: Reading Now card (Track Progress, state dropdown) | — | reading-now endpoint |
-| `/` | Home: reading goal + tbr streak cards | — | goals/streak endpoint |
+| `/` | Home: Reading Now card (progress pill, Track Progress sheet w/ page-%/mood/pace, state dropdown → Paused confirm / Finished+DNF date sheet) | BUILT | ✅ /api/v1/home + /reading-notes + /reading-state |
+| `/` | Home: reading goal ring + tbr streak cards | BUILT (goal EDITING not wired — needs goal-set endpoint) | ✅ /api/v1/home |
 | `/` | Home: Up Next numbered grid w/ drag-reorder | BUILT | ✅ served |
 | `/` | Home: remaining sections (inventory from live page: Because-You-Liked, Discover-Something-New, …) | — | TBD at build |
 | `/book/[id]` | Book page: hero blur card, What's Inside ratings, reviews, formats, Buy button (affiliate tag rule!), series, notes, spoiler tags | — | book-detail endpoint |
@@ -82,6 +82,16 @@ explicit user sign-off.
 
 ## Log
 
+- 2026-07-02 (Phase 1 start): Home Reading Now + goal + streak BUILT. New v1 endpoints:
+  GET /home, POST /reading-notes, POST /reading-state — each reuses the web's exact
+  query/mutation code via new user-scoped modules (src/lib/mutations/reading-state.ts,
+  reading-session.ts, reading-notes.ts); the cookie server actions now delegate to them,
+  so web and native share ONE state machine. Verified: API round-trips (note→progress %,
+  pause→resume w/ session accounting), web home regression (42% pill renders from an
+  API-written note), native dropdown z-order fix mirroring the web's hoisted state.
+  Known follow-ups: goal editing endpoint, month/year completion precision, post-completion
+  review wizard, remaining home sections (Pick From Your Shelf, Friends Activity,
+  Discover Something New, Because You Liked).
 - 2026-07-02: Manifest created. Chrome + Home(Up Next) + Shelves + Shelf detail BUILT
   (commit 0e45aa4) via the screenshot-first protocol; earlier iOS-idiom pass (6a89d90)
   rejected by user and replaced. Xcode 27 beta at /Applications/Xcode-beta.app is the

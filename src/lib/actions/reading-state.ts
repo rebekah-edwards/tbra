@@ -8,8 +8,9 @@ import { userBookState, userOwnedEditions, books, userBookReviews, userBookDimen
 import { eq, and, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { importFromOpenLibraryAndReturn } from "@/lib/actions/books";
-import { ensureReadingSession, pauseActiveSession, resumeActiveSession } from "@/lib/actions/reading-session";
+import { ensureReadingSession, pauseActiveSession, resumeActiveSession } from "@/lib/mutations/reading-session";
 import { removeFromUpNext } from "@/lib/actions/up-next";
+import { setBookStateFor } from "@/lib/mutations/reading-state";
 import { getActiveSession } from "@/lib/queries/reading-session";
 import type { OLSearchResult } from "@/lib/openlibrary";
 
@@ -17,71 +18,10 @@ export async function setBookState(bookId: string, state: string) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const existing = await db
-    .select()
-    .from(userBookState)
-    .where(
-      and(
-        eq(userBookState.userId, user.userId),
-        eq(userBookState.bookId, bookId)
-      )
-    )
-    .get();
-
-  // Preserve activeFormats when entering currently_reading, clear when leaving
-  // If entering with exactly one owned format, pre-select it
-  let activeFormats: string | null = null;
-  if (state === "currently_reading") {
-    if (existing?.activeFormats) {
-      activeFormats = existing.activeFormats;
-    } else {
-      const formats = parseFormats(existing?.ownedFormats);
-      if (formats.length === 1) {
-        activeFormats = JSON.stringify(formats);
-      }
-    }
-  }
-
-  if (existing) {
-    await db
-      .update(userBookState)
-      .set({ state, activeFormats, updatedAt: new Date().toISOString() })
-      .where(
-        and(
-          eq(userBookState.userId, user.userId),
-          eq(userBookState.bookId, bookId)
-        )
-      );
-  } else {
-    await db.insert(userBookState).values({
-      userId: user.userId,
-      bookId,
-      state,
-      activeFormats,
-    });
-  }
-
-  // Remove from Up Next when starting to read
-  if (state === "currently_reading") {
-    await removeFromUpNext(bookId);
-  }
-
-  // Sync reading session
-  if (state === "currently_reading") {
-    await ensureReadingSession(user.userId, bookId, activeFormats);
-    // If the active session was paused (user clicked "Reading Now" to resume),
-    // properly resume it so the paused-time gets accumulated into total_paused_days
-    // and the stats only count Reading-Now days.
-    await resumeActiveSession(user.userId, bookId);
-  } else if (state === "paused") {
-    // Ensure a reading session exists before pausing — if a book goes straight
-    // to "paused" (e.g., imported without a session), create one first so
-    // the reader has a start date, then pause it.
-    await ensureReadingSession(user.userId, bookId, activeFormats);
-    await pauseActiveSession(user.userId, bookId);
-  }
-  // Note: "completed" and "dnf" are handled by setBookStateWithCompletion (called from UI with date info)
-  // "tbr" doesn't need a session
+  // Shared user-scoped implementation (also used by /api/v1) — see
+  // src/lib/mutations/reading-state.ts. Behavior is the exact former body
+  // of this action.
+  await setBookStateFor(user.userId, bookId, state);
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");

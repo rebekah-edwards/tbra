@@ -97,6 +97,39 @@ actor APIClient {
                            body: ["bookIds": bookIds]) as OkResponse
     }
 
+    // MARK: Home (Reading Now + goal + streak)
+
+    func home() async throws -> HomeData {
+        let res: HomeResponse = try await send("/api/v1/home", method: "GET")
+        return HomeData(year: res.year, readingNow: res.readingNow, goal: res.goal, streak: res.streak)
+    }
+
+    /// The Track Progress sheet — same validation + writes as the web action.
+    func addReadingNote(
+        bookId: String, noteText: String,
+        pageNumber: Int? = nil, percentComplete: Int? = nil,
+        mood: String? = nil, pace: String? = nil, buddyReadId: String? = nil
+    ) async throws {
+        var body: [String: Any] = ["bookId": bookId, "noteText": noteText]
+        if let pageNumber { body["pageNumber"] = pageNumber }
+        if let percentComplete { body["percentComplete"] = percentComplete }
+        if let mood { body["mood"] = mood }
+        if let pace { body["pace"] = pace }
+        if let buddyReadId { body["buddyReadId"] = buddyReadId }
+        _ = try await send("/api/v1/reading-notes", method: "POST", body: body) as OkResponse
+    }
+
+    /// Reading-state changes; completed/dnf carry a completion date (YYYY-MM-DD).
+    func setReadingState(
+        bookId: String, state: String,
+        completionDate: String? = nil, completionPrecision: String? = nil
+    ) async throws {
+        var body: [String: Any] = ["bookId": bookId, "state": state]
+        if let completionDate { body["completionDate"] = completionDate }
+        if let completionPrecision { body["completionPrecision"] = completionPrecision }
+        _ = try await send("/api/v1/reading-state", method: "POST", body: body) as OkResponse
+    }
+
     // MARK: Core request + refresh
 
     private func send<T: Decodable>(

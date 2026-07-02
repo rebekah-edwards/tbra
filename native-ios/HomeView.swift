@@ -1,15 +1,34 @@
 import SwiftUI
+import Observation
 import UniformTypeIdentifiers
 
-// Home — recreates the mobile site's home page (src/app/page.tsx).
-// Currently renders the sections the /api/v1 surface can power:
-// the "Up Next" numbered 2-column card grid (BookCard style). The
-// Reading Now / reading-goal / streak sections need new v1 endpoints
-// and slot in above this grid later.
+// Home — recreates the mobile site's home page (src/app/page.tsx) in its
+// exact mobile order: Reading Now → goal + streak cards → Up Next grid.
+// (Pick From Your Shelf / Friends Activity / Discover Something New /
+// Because You Liked still need endpoints — tracked in docs/native-parity.md.)
+
+@MainActor
+@Observable
+final class HomeModel {
+    var home: HomeData?
+    var error: String?
+    var loading = false
+
+    func load() async {
+        loading = true; defer { loading = false }
+        do { home = try await APIClient.shared.home() }
+        catch { self.error = (error as? APIError)?.errorDescription ?? "Couldn't load home." }
+    }
+}
 
 struct HomeView: View {
     @State private var model = UpNextModel()
+    @State private var homeModel = HomeModel()
     @State private var dragging: UpNextItem?
+    // Hoisted like the web's openStateDropdown so the whole Reading Now
+    // section can be z-raised above the goal/streak cards while a card's
+    // state dropdown is open (bottom-tabs of the dropdown must not clip).
+    @State private var openStateDropdownBookId: String?
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -18,51 +37,621 @@ struct HomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Up Next")
-                    .font(Theme.heading(26, .bold))
-                    .foregroundStyle(Theme.foreground)
-                    .padding(.top, 22)
-
-                LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(Array(model.items.enumerated()), id: \.element.id) { index, item in
-                        UpNextCard(item: item, number: index + 1)
-                            .opacity(dragging?.id == item.id ? 0.4 : 1)
-                            .onDrag {
-                                dragging = item
-                                return NSItemProvider(object: item.bookId as NSString)
+            VStack(alignment: .leading, spacing: 28) {
+                // ── Reading Now ──
+                if let home = homeModel.home, !home.readingNow.isEmpty {
+                    VStack(alignment: .leading, spacing: 14) {
+                        SectionHeading("Reading Now")
+                        VStack(spacing: 12) {
+                            ForEach(home.readingNow) { book in
+                                ReadingNowCard(book: book, openDropdownBookId: $openStateDropdownBookId) {
+                                    await homeModel.load()
+                                    await model.load()
+                                }
+                                .zIndex(openStateDropdownBookId == book.id ? 50 : 0)
                             }
-                            .onDrop(of: [.text], delegate: GridReorderDelegate(
-                                item: item,
-                                items: $model.items,
-                                dragging: $dragging,
-                                commit: { model.persistOrder() }
-                            ))
+                        }
+                    }
+                    .zIndex(openStateDropdownBookId != nil ? 50 : 0)
+                }
+
+                // ── Goal + streak (mobile order: between Reading Now and Up Next) ──
+                if let home = homeModel.home {
+                    HStack(alignment: .top, spacing: 12) {
+                        ReadingGoalCardView(goal: home.goal, year: home.year)
+                        ReadingStreakCardView(streak: home.streak)
                     }
                 }
 
-                if model.items.isEmpty && !model.loading {
-                    Text("Nothing queued yet")
-                        .font(Theme.body(14))
-                        .foregroundStyle(Theme.muted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 40)
+                // ── Up Next ──
+                VStack(alignment: .leading, spacing: 14) {
+                    SectionHeading("Up Next")
+
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        ForEach(Array(model.items.enumerated()), id: \.element.id) { index, item in
+                            UpNextCard(item: item, number: index + 1)
+                                .opacity(dragging?.id == item.id ? 0.4 : 1)
+                                .onDrag {
+                                    dragging = item
+                                    return NSItemProvider(object: item.bookId as NSString)
+                                }
+                                .onDrop(of: [.text], delegate: GridReorderDelegate(
+                                    item: item,
+                                    items: $model.items,
+                                    dragging: $dragging,
+                                    commit: { model.persistOrder() }
+                                ))
+                        }
+                    }
+
+                    if model.items.isEmpty && !model.loading {
+                        Text("Nothing queued yet")
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
+                    }
                 }
             }
             .padding(.horizontal, 20)
+            .padding(.top, 6)
             .padding(.bottom, 40)
         }
-        .refreshable { await model.load() }
-        .task { await model.load() }
-        .alert("Error", isPresented: .constant(model.error != nil)) {
-            Button("OK") { model.error = nil }
-        } message: { Text(model.error ?? "") }
+        .refreshable {
+            async let a: Void = model.load()
+            async let b: Void = homeModel.load()
+            _ = await (a, b)
+        }
+        .task {
+            async let a: Void = model.load()
+            async let b: Void = homeModel.load()
+            _ = await (a, b)
+        }
+        .alert("Error", isPresented: .constant(model.error != nil || homeModel.error != nil)) {
+            Button("OK") { model.error = nil; homeModel.error = nil }
+        } message: { Text(model.error ?? homeModel.error ?? "") }
     }
 }
 
-// One Up Next card — matches the site's BookCard: blurred-cover-tinted
-// dark card, cover with purple position badge, uppercase genre, bold
-// title, page count, drag handle.
+// The web's .section-heading: Outfit, 600 weight, foreground, text-xl.
+struct SectionHeading: View {
+    let text: String
+    init(_ text: String) { self.text = text }
+    var body: some View {
+        Text(text)
+            .font(Theme.heading(24, .bold))
+            .foregroundStyle(Theme.foreground)
+    }
+}
+
+// ── Reading Now card — currently-reading-section.tsx ──
+private struct ReadingNowCard: View {
+    let book: ReadingNowBook
+    @Binding var openDropdownBookId: String?
+    let onChanged: () async -> Void
+
+    private var showStateDropdown: Bool { openDropdownBookId == book.id }
+    @State private var showTrackSheet = false
+    @State private var confirmState: (state: String, label: String)?
+    @State private var showDatePicker = false
+    @State private var pendingCompleteState: String = "completed"
+    @State private var busy = false
+
+    var body: some View {
+        VStack(spacing: 8) {
+            ZStack(alignment: .topTrailing) {
+                cardBody
+            }
+            .background(cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(alignment: .bottomTrailing) { dropdown }
+
+            if let confirm = confirmState {
+                confirmPrompt(confirm)
+            }
+        }
+        .sheet(isPresented: $showTrackSheet) {
+            TrackProgressSheet(book: book) { await onChanged() }
+                .presentationDetents([.medium, .large])
+                .presentationBackground(Theme.surface)
+        }
+        .sheet(isPresented: $showDatePicker) {
+            CompletionDateSheet(
+                title: pendingCompleteState == "dnf" ? "When did you stop reading?" : "When did you finish?"
+            ) { date in
+                Task { await setState(pendingCompleteState, completionDate: date) }
+            }
+            .presentationDetents([.medium])
+            .presentationBackground(Theme.surface)
+        }
+        .opacity(busy ? 0.5 : 1)
+    }
+
+    private var cardBody: some View {
+        HStack(alignment: .center, spacing: 16) {
+            // Cover with the frosted progress pill overlapping the bottom
+            CoverThumb(url: book.coverImageUrl, width: 60, height: 90, radius: 8)
+                .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
+                .overlay(alignment: .bottom) {
+                    if let progress = book.progress, progress > 0 {
+                        Text("\(progress)%")
+                            .font(Theme.body(10, .bold))
+                            .foregroundStyle(Theme.neonPurple)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 3)
+                            .background(.ultraThinMaterial, in: Capsule())
+                            .overlay(Capsule().stroke(Theme.neonPurple.opacity(0.30), lineWidth: 1))
+                            .offset(y: 10)
+                    }
+                }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(book.title)
+                    .font(Theme.body(16, .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                Text(book.authors.joined(separator: ", "))
+                    .font(Theme.body(14))
+                    .foregroundStyle(.white.opacity(0.70))
+                    .lineLimit(2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Action buttons — stacked right column, 104pt like the web
+            VStack(spacing: 6) {
+                Button {
+                    showTrackSheet = true
+                } label: {
+                    Text("Track Progress")
+                        .font(Theme.body(11, .semibold))
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(Theme.neonBlue)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(TapScaleButtonStyle())
+
+                // Reading split button (lime, black text, chevron)
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        openDropdownBookId = showStateDropdown ? nil : book.id
+                    }
+                } label: {
+                    HStack(spacing: 0) {
+                        Text("Reading")
+                            .font(Theme.body(11, .semibold))
+                            .frame(maxWidth: .infinity)
+                        Rectangle().fill(.black.opacity(0.2)).frame(width: 1, height: 18)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 8)
+                    }
+                    .foregroundStyle(.black)
+                    .padding(.vertical, 8)
+                    .background(Theme.accent)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(TapScaleButtonStyle())
+            }
+            .frame(width: 104)
+        }
+        .padding(16)
+    }
+
+    @ViewBuilder private var cardBackground: some View {
+        ZStack {
+            // .currently-reading-card-base fallback gradient…
+            LinearGradient(
+                colors: [
+                    Theme.accent.opacity(0.08),
+                    Theme.neonPurple.opacity(0.06),
+                ],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+            .background(Theme.surfaceAlt)
+            // …under the blurred cover + dark overlay (.book-card-bg-img + overlay)
+            if let cover = book.coverImageUrl, let url = URL(string: cover) {
+                AsyncImage(url: url) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                        .blur(radius: 16)
+                        .saturation(1.5)
+                        .opacity(0.4)
+                } placeholder: { Color.clear }
+                Color.black.opacity(0.25)
+            }
+        }
+    }
+
+    // State dropdown — Finished / Paused / DNF, anchored under the buttons
+    @ViewBuilder private var dropdown: some View {
+        if showStateDropdown {
+            VStack(spacing: 0) {
+                dropdownRow("Finished") {
+                    pendingCompleteState = "completed"
+                    showDatePicker = true
+                }
+                Divider().background(Theme.border)
+                dropdownRow("Paused") { confirmState = ("paused", "Paused") }
+                Divider().background(Theme.border)
+                dropdownRow("DNF") {
+                    pendingCompleteState = "dnf"
+                    showDatePicker = true
+                }
+            }
+            .frame(width: 104)
+            .background(Theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+            .shadow(color: .black.opacity(0.4), radius: 10, y: 4)
+            .padding(.trailing, 16)
+            .offset(y: 44)
+            .zIndex(10)
+        }
+    }
+
+    private func dropdownRow(_ label: String, action: @escaping () -> Void) -> some View {
+        Button {
+            openDropdownBookId = nil
+            action()
+        } label: {
+            Text(label)
+                .font(Theme.body(13, .medium))
+                .foregroundStyle(Theme.foreground)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+        }
+    }
+
+    private func confirmPrompt(_ confirm: (state: String, label: String)) -> some View {
+        HStack(spacing: 12) {
+            (Text("Mark ") + Text(book.title).fontWeight(.semibold) + Text(" as \(confirm.label)?"))
+                .font(Theme.body(14))
+                .foregroundStyle(Theme.foreground)
+            Spacer()
+            Button("Cancel") { confirmState = nil }
+                .font(Theme.body(12, .medium))
+                .foregroundStyle(Theme.muted)
+                .padding(.horizontal, 12).padding(.vertical, 7)
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+            Button(confirm.label) {
+                confirmState = nil
+                Task { await setState(confirm.state) }
+            }
+            .font(Theme.body(12, .semibold))
+            .foregroundStyle(.black)
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(Theme.accent)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .padding(12)
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+    }
+
+    private func setState(_ state: String, completionDate: String? = nil) async {
+        busy = true; defer { busy = false }
+        do {
+            try await APIClient.shared.setReadingState(
+                bookId: book.id, state: state,
+                completionDate: completionDate,
+                completionPrecision: completionDate != nil ? "exact" : nil
+            )
+            await onChanged()
+        } catch {
+            // The card stays; a reload reconciles with the server.
+            await onChanged()
+        }
+    }
+}
+
+// ── Track Progress sheet — the TrackSheet from the web ──
+private struct TrackProgressSheet: View {
+    let book: ReadingNowBook
+    let onSaved: () async -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var noteText = ""
+    @State private var pageMode: PageMode = .page
+    @State private var pageValue = ""
+    @State private var mood: String?
+    @State private var pace: String?
+    @State private var showExtras = false
+    @State private var busy = false
+    @State private var saved = false
+    @State private var errorText: String?
+
+    enum PageMode: String, CaseIterable { case page = "Page", percent = "%" }
+
+    private let moods: [(key: String, emoji: String, label: String)] = [
+        ("excited", "🤩", "Excited"), ("tense", "😰", "Tense"),
+        ("emotional", "🥺", "Emotional"), ("bored", "😴", "Bored"),
+        ("relaxed", "😌", "Relaxed"), ("curious", "🤔", "Curious"),
+        ("confused", "😵‍💫", "Confused"), ("nostalgic", "🥹", "Nostalgic"),
+    ]
+    private let paces = [("slow", "Slow"), ("steady", "Steady"), ("fast", "Fast"), ("flying", "Flying")]
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text("Tracking: \(book.title)")
+                        .font(Theme.body(12, .medium))
+                        .foregroundStyle(Theme.muted)
+                        .lineLimit(1)
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Theme.muted)
+                    }
+                }
+
+                if saved {
+                    Text("✓ Note saved")
+                        .font(Theme.body(14, .medium))
+                        .foregroundStyle(Theme.accentDark)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Theme.accent.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.accent.opacity(0.2), lineWidth: 1))
+                } else {
+                    TextField("How's it going?", text: $noteText, axis: .vertical)
+                        .lineLimit(2...5)
+                        .brandedField()
+
+                    HStack(spacing: 10) {
+                        // Page / % mini toggle
+                        HStack(spacing: 0) {
+                            ForEach(PageMode.allCases, id: \.self) { m in
+                                Button {
+                                    pageMode = m
+                                } label: {
+                                    Text(m.rawValue)
+                                        .font(Theme.body(12, .medium))
+                                        .foregroundStyle(pageMode == m ? .black : Theme.muted)
+                                        .padding(.horizontal, 12).padding(.vertical, 6)
+                                        .background(pageMode == m ? Theme.accent : .clear)
+                                }
+                            }
+                        }
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                        TextField(pageMode == .page ? "Page #" : "Percent", text: $pageValue)
+                            .keyboardType(.numberPad)
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.foreground)
+                            .padding(.horizontal, 12).padding(.vertical, 7)
+                            .frame(width: 110)
+                            .background(Theme.surfaceAlt)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        if pageMode == .page, let pages = book.pages {
+                            Text("of \(pages)")
+                                .font(Theme.body(12))
+                                .foregroundStyle(Theme.muted)
+                        }
+                        Spacer()
+                    }
+
+                    Button {
+                        withAnimation { showExtras.toggle() }
+                    } label: {
+                        Text(showExtras ? "− Mood & pace" : "+ Mood & pace")
+                            .font(Theme.body(12, .medium))
+                            .foregroundStyle(Theme.neonBlue)
+                    }
+
+                    if showExtras {
+                        VStack(alignment: .leading, spacing: 10) {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(moods, id: \.key) { m in
+                                        Button {
+                                            mood = mood == m.key ? nil : m.key
+                                        } label: {
+                                            VStack(spacing: 2) {
+                                                Text(m.emoji).font(.system(size: 20))
+                                                Text(m.label).font(Theme.body(9)).foregroundStyle(Theme.muted)
+                                            }
+                                            .padding(.horizontal, 10).padding(.vertical, 6)
+                                            .background(mood == m.key ? Theme.accent.opacity(0.15) : Theme.surfaceAlt)
+                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            .overlay(RoundedRectangle(cornerRadius: 10)
+                                                .stroke(mood == m.key ? Theme.accent.opacity(0.5) : .clear, lineWidth: 1))
+                                        }
+                                    }
+                                }
+                            }
+                            HStack(spacing: 8) {
+                                ForEach(paces, id: \.0) { p in
+                                    Button {
+                                        pace = pace == p.0 ? nil : p.0
+                                    } label: {
+                                        Text(p.1)
+                                            .font(Theme.body(12, .medium))
+                                            .foregroundStyle(pace == p.0 ? .black : Theme.muted)
+                                            .padding(.horizontal, 14).padding(.vertical, 6)
+                                            .background(pace == p.0 ? Theme.accent : Theme.surfaceAlt)
+                                            .clipShape(Capsule())
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if let errorText {
+                        Text(errorText).font(Theme.body(12)).foregroundStyle(Theme.destructive)
+                    }
+
+                    Button {
+                        Task { await save() }
+                    } label: {
+                        if busy { ProgressView().tint(Theme.onAccent) } else { Text("Save note") }
+                    }
+                    .buttonStyle(AccentButtonStyle())
+                    .disabled(busy || noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+            .padding(20)
+        }
+        .background(Theme.surface)
+    }
+
+    private func save() async {
+        busy = true; defer { busy = false }
+        errorText = nil
+        do {
+            let value = Int(pageValue)
+            try await APIClient.shared.addReadingNote(
+                bookId: book.id,
+                noteText: noteText.trimmingCharacters(in: .whitespacesAndNewlines),
+                pageNumber: pageMode == .page ? value : nil,
+                percentComplete: pageMode == .percent ? value : nil,
+                mood: mood, pace: pace
+            )
+            saved = true
+            await onSaved()
+            try? await Task.sleep(for: .seconds(1.2))
+            dismiss()
+        } catch {
+            errorText = (error as? APIError)?.errorDescription ?? "Couldn't save the note."
+        }
+    }
+}
+
+// ── Completion date sheet (Finished / DNF) ──
+private struct CompletionDateSheet: View {
+    let title: String
+    let onConfirm: (String?) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var date = Date()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(title)
+                .font(Theme.heading(18, .bold))
+                .foregroundStyle(Theme.foreground)
+
+            DatePicker("", selection: $date, in: ...Date(), displayedComponents: .date)
+                .datePickerStyle(.graphical)
+                .tint(Theme.accent)
+
+            Button("Save") {
+                let fmt = DateFormatter()
+                fmt.dateFormat = "yyyy-MM-dd"
+                onConfirm(fmt.string(from: date))
+                dismiss()
+            }
+            .buttonStyle(AccentButtonStyle())
+
+            Button("Skip the date") {
+                onConfirm(nil)
+                dismiss()
+            }
+            .font(Theme.body(13, .medium))
+            .foregroundStyle(Theme.muted)
+            .frame(maxWidth: .infinity)
+        }
+        .padding(20)
+        .background(Theme.surface)
+    }
+}
+
+// ── Goal + streak cards — reading-goal-card.tsx / reading-streak-card.tsx ──
+private struct ReadingGoalCardView: View {
+    let goal: ReadingGoal?
+    let year: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("\(String(year)) Reading Goal")
+                    .font(Theme.body(12, .medium))
+                    .foregroundStyle(Theme.muted)
+                Spacer()
+                Image(systemName: "pencil")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.muted)
+            }
+            if let goal {
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle().stroke(Theme.surfaceAlt, lineWidth: 6)
+                        Circle()
+                            .trim(from: 0, to: CGFloat(goal.percentComplete) / 100)
+                            .stroke(Theme.accent, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                        Text("\(goal.percentComplete)%")
+                            .font(Theme.body(13, .bold))
+                            .foregroundStyle(Theme.foreground)
+                    }
+                    .frame(width: 60, height: 60)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        (Text("\(goal.completedBooks) ").font(Theme.heading(17, .bold)).foregroundStyle(Theme.foreground)
+                            + Text("/ \(goal.targetBooks)").font(Theme.body(13)).foregroundStyle(Theme.muted))
+                        Text("books read")
+                            .font(Theme.body(11))
+                            .foregroundStyle(Theme.muted)
+                    }
+                }
+            } else {
+                Text("Set a \(String(year)) reading goal")
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.muted)
+                    .padding(.vertical, 14)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(colors: [Theme.surface, Theme.surfaceAlt], startPoint: .topLeading, endPoint: .bottomTrailing)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.accent.opacity(0.20), lineWidth: 1))
+    }
+}
+
+private struct ReadingStreakCardView: View {
+    let streak: ReadingStreak
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("tbr streak")
+                .font(Theme.body(12, .medium))
+                .foregroundStyle(Theme.muted)
+            HStack(spacing: 10) {
+                Text(streak.currentStreak > 0 ? "🔥" : "📚")
+                    .font(.system(size: 28))
+                VStack(alignment: .leading, spacing: 2) {
+                    (Text("\(streak.currentStreak) ").font(Theme.heading(17, .bold)).foregroundStyle(Theme.foreground)
+                        + Text(streak.currentStreak == 1 ? "day" : "days").font(Theme.body(13)).foregroundStyle(Theme.muted))
+                    Text(streak.currentStreak > 0
+                         ? "Best: \(streak.longestStreak) \(streak.longestStreak == 1 ? "day" : "days")"
+                         : "Read or log something to start!")
+                        .font(Theme.body(11))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+            Text("Any reading activity keeps your streak alive")
+                .font(Theme.body(9))
+                .foregroundStyle(Theme.muted.opacity(0.6))
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(colors: [Theme.surface, Theme.surfaceAlt], startPoint: .topLeading, endPoint: .bottomTrailing)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.neonPurple.opacity(0.20), lineWidth: 1))
+    }
+}
+
+// ── Up Next card + reorder delegate (unchanged from the parity pass) ──
 private struct UpNextCard: View {
     let item: UpNextItem
     let number: Int
@@ -91,7 +680,6 @@ private struct UpNextCard: View {
                         .lineLimit(1)
                         .padding(.top, 9)
                     Spacer(minLength: 2)
-                    // Drag handle in a translucent dark circle (top-right).
                     DragHandleIcon()
                         .stroked(lineWidth: 2)
                         .frame(width: 11, height: 11)
@@ -117,8 +705,6 @@ private struct UpNextCard: View {
         .background(
             ZStack {
                 Theme.surfaceAlt
-                // The site's cards glow faintly with the cover's own colors —
-                // blurred cover under a dark scrim so every card stays dark.
                 if let cover = item.coverImageUrl, let url = URL(string: cover) {
                     AsyncImage(url: url) { image in
                         image.resizable().aspectRatio(contentMode: .fill)
