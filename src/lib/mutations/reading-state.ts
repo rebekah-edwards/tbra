@@ -1,6 +1,14 @@
 import { db } from "@/db";
-import { userBookState, readingSessions } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import {
+  userBookState,
+  readingSessions,
+  userBookReviews,
+  userBookRatings,
+  userBookDimensionRatings,
+  reviewDescriptorTags,
+  userOwnedEditions,
+} from "@/db/schema";
+import { eq, and, inArray } from "drizzle-orm";
 import { parseFormats } from "@/lib/reading-formats";
 import {
   ensureReadingSession,
@@ -87,6 +95,134 @@ export async function setBookStateFor(userId: string, bookId: string, state: str
   }
   // Note: "completed" and "dnf" are handled by setBookStateWithCompletionFor
   // (called with date info). "tbr" doesn't need a session.
+}
+
+/** Clear the reading state (keeps the row if owned formats exist). */
+export async function removeBookStateFor(userId: string, bookId: string) {
+  const existing = await db
+    .select()
+    .from(userBookState)
+    .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)))
+    .get();
+
+  if (!existing) return;
+
+  const formats = parseFormats(existing.ownedFormats);
+
+  if (formats.length > 0) {
+    // Keep the row for owned formats, just clear the state and active formats
+    await db
+      .update(userBookState)
+      .set({ state: null, activeFormats: null, updatedAt: new Date().toISOString() })
+      .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
+  } else {
+    await db
+      .delete(userBookState)
+      .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
+  }
+}
+
+/** "Remove Everything": review + tags + dimension ratings + rating + editions + sessions + state. */
+export async function removeFromLibraryFor(userId: string, bookId: string) {
+  const review = await db
+    .select({ id: userBookReviews.id })
+    .from(userBookReviews)
+    .where(and(eq(userBookReviews.userId, userId), eq(userBookReviews.bookId, bookId)))
+    .get();
+
+  if (review) {
+    await db.delete(reviewDescriptorTags).where(eq(reviewDescriptorTags.reviewId, review.id));
+    await db.delete(userBookDimensionRatings).where(eq(userBookDimensionRatings.reviewId, review.id));
+    await db.delete(userBookReviews).where(eq(userBookReviews.id, review.id));
+  }
+
+  await db
+    .delete(userBookRatings)
+    .where(and(eq(userBookRatings.userId, userId), eq(userBookRatings.bookId, bookId)));
+
+  await db
+    .delete(userOwnedEditions)
+    .where(and(eq(userOwnedEditions.userId, userId), eq(userOwnedEditions.bookId, bookId)));
+
+  await db
+    .delete(readingSessions)
+    .where(and(eq(readingSessions.userId, userId), eq(readingSessions.bookId, bookId)));
+
+  await db
+    .delete(userBookState)
+    .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
+}
+
+/** Owned formats editor — drops the "unknown" import placeholder once a real format exists. */
+export async function setOwnedFormatsFor(userId: string, bookId: string, rawFormats: string[]) {
+  const formats = rawFormats.some((f) => f !== "unknown")
+    ? rawFormats.filter((f) => f !== "unknown")
+    : rawFormats;
+
+  const existing = await db
+    .select()
+    .from(userBookState)
+    .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)))
+    .get();
+
+  const previousFormats = parseFormats(existing?.ownedFormats);
+  const removedFormats = previousFormats.filter((f) => !formats.includes(f));
+
+  if (existing) {
+    if (formats.length === 0 && !existing.state) {
+      // No formats and no state — delete the row
+      await db
+        .delete(userBookState)
+        .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
+    } else {
+      await db
+        .update(userBookState)
+        .set({
+          ownedFormats: formats.length > 0 ? JSON.stringify(formats) : null,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
+    }
+  } else if (formats.length > 0) {
+    await db.insert(userBookState).values({
+      userId,
+      bookId,
+      ownedFormats: JSON.stringify(formats),
+    });
+  }
+
+  // Clean up edition associations for removed formats
+  if (removedFormats.length > 0) {
+    await db
+      .delete(userOwnedEditions)
+      .where(
+        and(
+          eq(userOwnedEditions.userId, userId),
+          eq(userOwnedEditions.bookId, bookId),
+          inArray(userOwnedEditions.format, removedFormats)
+        )
+      );
+  }
+}
+
+/** Active formats ("how I'm reading it") — mirrored onto the active session for stats. */
+export async function setActiveFormatsFor(userId: string, bookId: string, formats: string[]) {
+  const formatsJson = formats.length > 0 ? JSON.stringify(formats) : null;
+
+  await db
+    .update(userBookState)
+    .set({ activeFormats: formatsJson, updatedAt: new Date().toISOString() })
+    .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
+
+  // Mirror to the active reading session so stats (e.g. minutes-listened) can
+  // see which formats were actually used.
+  const active = await getActiveSession(userId, bookId);
+  if (active) {
+    await db
+      .update(readingSessions)
+      .set({ activeFormats: formatsJson, updatedAt: new Date().toISOString() })
+      .where(eq(readingSessions.id, active.id));
+  }
 }
 
 export async function setBookStateWithCompletionFor(

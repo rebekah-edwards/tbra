@@ -1,6 +1,6 @@
 import { getApiUser } from "@/lib/auth";
 import { jsonError, jsonOk, parseJsonBody, asString } from "@/lib/api/http";
-import { setBookStateFor, setBookStateWithCompletionFor } from "@/lib/mutations/reading-state";
+import { setBookStateFor, setBookStateWithCompletionFor, removeBookStateFor } from "@/lib/mutations/reading-state";
 
 const SIMPLE_STATES = ["currently_reading", "paused", "tbr"] as const;
 const COMPLETION_STATES = ["completed", "dnf"] as const;
@@ -23,6 +23,13 @@ export async function POST(req: Request) {
   const bookId = body ? asString(body.bookId) : null;
   const state = body ? asString(body.state) : null;
   if (!bookId || !state) return jsonError("bookId and state are required.", 400);
+
+  // "none" clears the reading state (web: tapping the active state / current
+  // dropdown item) — keeps the row when owned formats exist.
+  if (state === "none") {
+    await removeBookStateFor(user.userId, bookId);
+    return jsonOk({ state: null });
+  }
 
   if ((COMPLETION_STATES as readonly string[]).includes(state)) {
     const completionDate = body ? asString(body.completionDate) : null; // YYYY-MM-DD (or YYYY-MM / YYYY per precision)
