@@ -1,0 +1,88 @@
+# Native iOS Parity Manifest
+
+**The governing document for the full-native SwiftUI rebuild.** Decision made 2026-07-02: the
+native app recreates the mobile web app **1:1** — its chrome, screens, and every granular
+feature — with iOS-specific enhancements added only after a screen reaches parity.
+
+## The rules (non-negotiable)
+
+1. **Screenshot-first.** No native screen gets designed from memory or docs. Before building,
+   log into `localhost:3000` in the preview browser at **390×844** (test account) and
+   screenshot the real page. The screenshot is the spec.
+2. **Feature inventory before code.** When a screen's build starts, read its page/component
+   source and list every interactive element and state in its section below. That list is the
+   acceptance checklist — nothing ships half-inventoried.
+3. **Side-by-side proof.** A screen is `VERIFIED` only when web and native screenshots have
+   been visually reconciled by the agent (layout, spacing, colors, typography, all states),
+   and the comparison shots were sent to the user. The user reviews finished screens, never
+   hunts for missing features.
+4. **API honesty.** If a screen needs data `/api/v1` doesn't serve yet, the endpoint gets
+   built (on the branch, mirroring the web queries) — never mocked, never faked with
+   placeholder data that could be mistaken for parity.
+5. **Statuses:** `—` not started · `API` endpoint work in progress · `WIP` building ·
+   `BUILT` compiles + runs with real data · `VERIFIED` side-by-side reconciled + user-seen.
+
+## App chrome (cross-screen) — BUILT
+
+- [x] Top bar: gradient `tbr*a` wordmark (Space Grotesk), search / bell / hamburger — **icons not yet functional**
+- [x] Bottom nav: Discover / My Library / raised lime Home circle / Stats / Profile avatar,
+      neon-purple active state, SVG-accurate icons (AppShell.swift)
+- [ ] Search overlay/page wired to the search icon
+- [ ] Notifications panel wired to the bell
+- [ ] Hamburger menu (theme toggle, settings, logout live here on the web)
+- [ ] Global report (flag) floating button
+- [ ] Pull-to-refresh app-wide; View-Transitions-style 200ms/30px push-pop slide
+
+## Phase 1 — Core reading loop
+
+| Route | Screen | Status | API needs |
+|---|---|---|---|
+| `/` | Home: Reading Now card (Track Progress, state dropdown) | — | reading-now endpoint |
+| `/` | Home: reading goal + tbr streak cards | — | goals/streak endpoint |
+| `/` | Home: Up Next numbered grid w/ drag-reorder | BUILT | ✅ served |
+| `/` | Home: remaining sections (inventory from live page: Because-You-Liked, Discover-Something-New, …) | — | TBD at build |
+| `/book/[id]` | Book page: hero blur card, What's Inside ratings, reviews, formats, Buy button (affiliate tag rule!), series, notes, spoiler tags | — | book-detail endpoint |
+| `/library` | Library: TBR/Activity/Owned groups, sub-filters, sort, advanced filters, book grid | — | library endpoint |
+| `/library/shelves` | Shelves list, My Shelves/Following pills, shelf cards | BUILT | Following + Top Shelf missing |
+| `/library/shelves/[slug]` | Shelf detail: cover grid, Shelf Order, Filters, Edit, share | BUILT (controls visual-only) | sort/filter params |
+| `/library/shelves/top-shelf` | Top Shelf (favorites) | — | favorites endpoint |
+| `/search` + `/search/add` | Search page, local-first + ISBNdb fallback, add-to-library flows | — | search endpoints |
+
+## Phase 2 — Discovery + identity
+
+| Route | Screen | Status | API needs |
+|---|---|---|---|
+| `/discover` | Discover feed | — | discover endpoint |
+| `/browse`, `/find` | Browse/find surfaces | — | TBD |
+| `/stats` | Stats dashboards | — | stats endpoint |
+| `/profile` (+ `/edit`, `/journal`, `/referrals`, `/reviews`) | Profile suite | — | profile endpoints |
+| `/u/[username]` (+ followers/following/shelves) | Public profiles + social graph | — | public-profile endpoints |
+| `/author/[id]`, `/series/[slug]` | Author + series pages | — | author/series endpoints |
+| `/people` | Find people | — | TBD |
+| `/book/[id]/notes`, `/book/[id]/reviews` | Notes + reviews detail | — | notes/reviews endpoints |
+
+## Phase 3 — Flows + long tail
+
+| Route | Screen | Status | API needs |
+|---|---|---|---|
+| `/login` | Login (wordmark, branded fields, lime CTA) | BUILT | ✅ — needs parity re-check vs web login (incl. Google Sign-In) |
+| `/signup`, `/verify-email`, `/forgot-password`, `/reset-password` | Auth suite | — | v1 wrappers |
+| `/onboarding` | Onboarding | — | TBD |
+| `/buddy-reads` (+ slug/join/new) | Buddy reads suite | — | buddy-read endpoints |
+| `/import` | Goodreads/StoryGraph/Libby import | — | likely stays web-first |
+| `/settings` | Settings (text size, theme, notification prefs) | — | settings endpoints |
+| `/upgrade`, `/methodology`, `/contact` | Static-ish pages | — | low priority |
+
+## iOS-specific touches (AFTER parity, per screen)
+
+Haptics on reorder/complete · home-screen widgets (Up Next, streak) · Live Activity for
+reading sessions · share sheets · Sign in with Apple · push notifications · offline shelf
+cache. None of these may change a screen's visual design from the web version without
+explicit user sign-off.
+
+## Log
+
+- 2026-07-02: Manifest created. Chrome + Home(Up Next) + Shelves + Shelf detail BUILT
+  (commit 0e45aa4) via the screenshot-first protocol; earlier iOS-idiom pass (6a89d90)
+  rejected by user and replaced. Xcode 27 beta at /Applications/Xcode-beta.app is the
+  build toolchain (see project memory for the Simulator.app rescue).
