@@ -46,10 +46,13 @@ targets:
           UIApplicationSupportsMultipleScenes: true
         # Dev-only ATS: simulator hits cleartext localhost:3000; physical
         # devices hit the Mac's tailnet IP (WireGuard-encrypted transport).
+        # ONLY NSAllowsArbitraryLoads — when a granular key like
+        # NSAllowsLocalNetworking is also present, iOS IGNORES the broad key
+        # and blocks the tailnet IP (100.x is not "local" to ATS). That combo
+        # broke login on the physical phone on 2026-07-02.
         # ⚠️ NSAllowsArbitraryLoads MUST be removed before any TestFlight /
         # App Store build — tracked in docs/native-parity.md.
         NSAppTransportSecurity:
-          NSAllowsLocalNetworking: true
           NSAllowsArbitraryLoads: true
     settings:
       base:

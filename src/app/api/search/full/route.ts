@@ -54,18 +54,19 @@ export async function GET(request: NextRequest) {
   // books into the pool.
   const { discriminating: queryDiscriminating } = tokenizeQuery(trimmed);
   const shouldRunPrefixSafetyNet = queryDiscriminating.length >= 1 && trimmed.length >= 4;
-  // Use `title LIKE ? COLLATE NOCASE` — NOT `LOWER(title) LIKE ?`.
-  // The LOWER() wrapper defeats the case-insensitive index and turns
-  // the query into a 13-second full scan.
+  // Use `title LIKE ? COLLATE NOCASE` — NOT `LOWER(title) LIKE ?` — and
+  // keep the INDEXED BY hint: without it the planner picks
+  // idx_books_visibility and row-scans every public book (199s on Turso
+  // at 64k books = guaranteed 504 on Vercel's 15s limit).
   const prefixPattern = `${trimmed}%`;
 
   const [ftsResults, titlePrefixMatches, seriesResults, authorResults, user] = await Promise.all([
     searchBooksFTS(trimmed, 30),
     shouldRunPrefixSafetyNet
       ? db.all<{ id: string }>(sql`
-          SELECT id FROM books
-          WHERE visibility = 'public' AND is_box_set = 0
-            AND title LIKE ${prefixPattern} COLLATE NOCASE
+          SELECT id FROM books INDEXED BY idx_books_title
+          WHERE title LIKE ${prefixPattern} COLLATE NOCASE
+            AND visibility = 'public' AND is_box_set = 0
           LIMIT 10
         `)
       : Promise.resolve([]),
