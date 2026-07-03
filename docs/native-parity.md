@@ -85,7 +85,7 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 | `/stats` | Stats dashboards | BUILT (year pills, hero cards, goal ring, monthly/yearly chart, rating dist, fiction split, authors, genres). Charts verified on empty-ish data — re-verify visually on a data-rich account. | ✅ /api/v1/stats |
 | `/profile` (+ `/edit`, `/journal`, `/referrals`, `/reviews`) | Profile suite | BUILT (main page: header/badges/stats/referral/top-shelf/shelf rails/journal/import/sign-out). Sub-pages (edit, journal full view, referrals, reviews) open the web for now. Reviews section needs a data-rich account to inventory review cards. | ✅ /api/v1/profile |
 | `/u/[username]` (+ followers/following/shelves) | Public profiles + social graph | — | public-profile endpoints |
-| `/author/[id]`, `/series/[slug]` | Author + series pages | — | author/series endpoints |
+| `/author/[id]`, `/series/[slug]` | Author + series pages | BUILT (series: Core/All/Sets + compact pills; author: follow/unfollow, bio, series-grouped rails). Covers-variant toggle + admin pencils not ported. | ✅ /api/v1/series/[slug] + /api/v1/authors/[id] |
 | `/people` | Find people | — | TBD |
 | `/book/[id]/notes`, `/book/[id]/reviews` | Notes + reviews detail | — | notes/reviews endpoints |
 
