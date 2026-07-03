@@ -131,10 +131,14 @@ private struct BookHero: View {
                     Text(book.title)
                         .font(Theme.body(22, .bold))
                         .foregroundStyle(.white)
-                    Text(book.authors.map(\.name).joined(separator: ", "))
-                        .font(Theme.body(15))
-                        .foregroundStyle(.white.opacity(0.85))
-                        .underline()
+                    NavigationLink(value: AuthorRoute(idOrSlug: book.authors.first.map { $0.slug ?? $0.id } ?? "")) {
+                        Text(book.authors.map(\.name).joined(separator: ", "))
+                            .font(Theme.body(15))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .underline()
+                            .multilineTextAlignment(.leading)
+                    }
+                    .disabled(book.authors.isEmpty)
                     if let series = book.seriesInfo, let pos = book.seriesPosition {
                         NavigationLink(value: SeriesRoute(slug: series.slug ?? series.id)) {
                             HStack(spacing: 3) {

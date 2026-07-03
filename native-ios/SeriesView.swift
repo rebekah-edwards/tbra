@@ -19,6 +19,9 @@ struct AppDestinations: ViewModifier {
             .navigationDestination(for: SeriesRoute.self) { route in
                 SeriesView(slug: route.slug)
             }
+            .navigationDestination(for: AuthorRoute.self) { route in
+                AuthorView(idOrSlug: route.idOrSlug)
+            }
     }
 }
 extension View {

@@ -111,6 +111,11 @@ actor APIClient {
         try await send(path, method: "GET")
     }
 
+    /// Generic POST with a JSON body.
+    func post<T: Decodable>(_ path: String, body: [String: Any]) async throws -> T {
+        try await send(path, method: "POST", body: body)
+    }
+
     // MARK: Profile
 
     func profile() async throws -> ProfileData {
