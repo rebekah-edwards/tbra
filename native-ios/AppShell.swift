@@ -27,7 +27,7 @@ struct AppShell: View {
                     case .library: LibraryRootView()
                     case .discover: DiscoverRootView()
                     case .stats: StatsView()
-                    case .profile: PlaceholderScreen(title: "Profile")
+                    case .profile: ProfileRootView()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

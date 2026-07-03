@@ -104,6 +104,12 @@ actor APIClient {
                            body: ["bookIds": bookIds]) as OkResponse
     }
 
+    // MARK: Profile
+
+    func profile() async throws -> ProfileData {
+        try await send("/api/v1/profile", method: "GET")
+    }
+
     // MARK: Discover
 
     /// Returns (books, reasons-by-book-id).

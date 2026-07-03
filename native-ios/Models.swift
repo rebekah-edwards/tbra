@@ -190,6 +190,51 @@ struct TbrSuggestionResponse: Codable {
     let suggestion: TbrSuggestion?
 }
 
+// ─── Profile (/api/v1/profile) ───
+
+struct ProfileUser: Codable, Hashable {
+    let id: String
+    let displayName: String?
+    let username: String?
+    let avatarUrl: String?
+    let accountType: String?
+    let createdAt: String
+}
+
+struct ProfileStats: Codable, Hashable {
+    let completed: Int
+    let currentlyReading: Int
+    let tbr: Int
+    let owned: Int
+}
+
+struct JournalNote: Codable, Hashable, Identifiable {
+    let id: String
+    let bookId: String
+    let bookSlug: String?
+    let bookTitle: String
+    let bookCoverUrl: String?
+    let noteText: String
+    let pageNumber: Int?
+    let percentComplete: Int?
+    let mood: String?
+    let pace: String?
+    let isPrivate: Bool?
+    let createdAt: String
+}
+
+struct ProfileData: Codable, Hashable {
+    let ok: Bool
+    let user: ProfileUser
+    let stats: ProfileStats
+    let journalNotes: [JournalNote]
+    let followerCount: Int
+    let followingCount: Int
+    let shelves: [ShelfSummary]
+    let referralCode: String
+    let referralCount: Int
+}
+
 // ─── Stats (/api/v1/stats) ───
 
 struct MonthCount: Codable, Hashable { let month: String; let count: Int }
