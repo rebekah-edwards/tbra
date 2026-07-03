@@ -104,6 +104,14 @@ actor APIClient {
                            body: ["bookIds": bookIds]) as OkResponse
     }
 
+    // MARK: Search
+
+    func search(_ query: String) async throws -> [SearchResult] {
+        let q = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        let res: SearchResponse = try await send("/api/v1/search?q=\(q)", method: "GET")
+        return res.results
+    }
+
     // MARK: Library
 
     func library() async throws -> [LibraryBook] {

@@ -95,6 +95,7 @@ struct InfoBubble: View {
 
 // ── Pick From Your Shelf — tbr-suggestion-card.tsx, both states ──
 struct TbrSuggestionCard: View {
+    @Environment(\.openSearch) private var openSearch
     @State var book: TbrSuggestion?
     @State private var shuffling = false
 
@@ -155,9 +156,11 @@ struct TbrSuggestionCard: View {
                     Text("No owned TBR books yet.")
                         .font(Theme.body(14))
                         .foregroundStyle(Theme.muted)
-                    Text("Find books to add")
-                        .font(Theme.body(14, .medium))
-                        .foregroundStyle(Theme.accent)
+                    Button { openSearch() } label: {
+                        Text("Find books to add")
+                            .font(Theme.body(14, .medium))
+                            .foregroundStyle(Theme.accent)
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)

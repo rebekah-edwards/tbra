@@ -14,12 +14,13 @@ enum AppTab: Hashable {
 struct AppShell: View {
     @Environment(AuthStore.self) private var auth
     @State private var tab: AppTab = .home
+    @State private var searchOpen = false
 
     var body: some View {
         ZStack {
             AmbientBackground()
             VStack(spacing: 0) {
-                TopBar()
+                TopBar(onSearch: { searchOpen = true })
                 ZStack {
                     switch tab {
                     case .home: HomeView()
@@ -33,6 +34,10 @@ struct AppShell: View {
                 BottomNav(tab: $tab, avatarUrl: currentAvatarUrl)
             }
         }
+        .environment(\.openSearch, { searchOpen = true })
+        .fullScreenCover(isPresented: $searchOpen) {
+            SearchRootView()
+        }
     }
 
     private var currentAvatarUrl: String? {
@@ -43,6 +48,8 @@ struct AppShell: View {
 
 // ── Top bar — layout.tsx sticky nav ──
 struct TopBar: View {
+    var onSearch: @MainActor () -> Void = {}
+
     var body: some View {
         HStack(spacing: 0) {
             // Wordmark: Space Grotesk, lime→blue→purple gradient (.logo-gradient).
@@ -53,7 +60,9 @@ struct TopBar: View {
             Spacer()
 
             HStack(spacing: 26) {
-                Image(systemName: "magnifyingglass")
+                Button { onSearch() } label: {
+                    Image(systemName: "magnifyingglass")
+                }
                 Image(systemName: "bell")
                 Image(systemName: "line.3.horizontal")
             }

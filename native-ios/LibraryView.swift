@@ -188,6 +188,8 @@ struct LibraryView: View {
         .foregroundStyle(Theme.muted)
     }
 
+    @Environment(\.openSearch) private var openSearch
+
     @ViewBuilder private var content: some View {
         let books = filteredBooks
         if books.isEmpty && !model.loading {
@@ -195,9 +197,11 @@ struct LibraryView: View {
                 Text("Nothing here yet.")
                     .font(Theme.body(17))
                     .foregroundStyle(Theme.muted)
-                Text("Find books to add")
-                    .font(Theme.body(17, .medium))
-                    .foregroundStyle(Theme.accent)
+                Button { openSearch() } label: {
+                    Text("Find books to add")
+                        .font(Theme.body(17, .medium))
+                        .foregroundStyle(Theme.accent)
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 60)

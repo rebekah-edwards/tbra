@@ -190,6 +190,23 @@ struct TbrSuggestionResponse: Codable {
     let suggestion: TbrSuggestion?
 }
 
+// ─── Search (/api/v1/search) ───
+
+struct SearchResult: Codable, Identifiable, Hashable {
+    let id: String
+    let slug: String?
+    let title: String
+    let coverImageUrl: String?
+    let authors: [String]
+    let publicationYear: Int?
+    let pages: Int?
+}
+
+struct SearchResponse: Codable {
+    let ok: Bool
+    let results: [SearchResult]
+}
+
 // ─── Library (/api/v1/library) ───
 
 struct LibraryBook: Codable, Identifiable, Hashable {
