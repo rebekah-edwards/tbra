@@ -42,6 +42,16 @@ struct HomeView: View {
     ]
 
     var body: some View {
+        NavigationStack {
+            homeContent
+                .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(for: BookRoute.self) { route in
+                    BookDetailView(idOrSlug: route.idOrSlug)
+                }
+        }
+    }
+
+    private var homeContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 // ── Reading Now ──
@@ -77,7 +87,10 @@ struct HomeView: View {
 
                     LazyVGrid(columns: columns, spacing: 12) {
                         ForEach(Array(model.items.enumerated()), id: \.element.id) { index, item in
-                            UpNextCard(item: item, number: index + 1)
+                            NavigationLink(value: BookRoute(idOrSlug: item.slug ?? item.bookId)) {
+                                UpNextCard(item: item, number: index + 1)
+                            }
+                            .buttonStyle(TapScaleButtonStyle())
                                 .opacity(dragging?.id == item.id ? 0.4 : 1)
                                 .onDrag {
                                     dragging = item
@@ -572,7 +585,7 @@ private struct TrackProgressSheet: View {
 }
 
 // ── Completion date sheet (Finished / DNF) ──
-private struct CompletionDateSheet: View {
+struct CompletionDateSheet: View {
     let title: String
     let onConfirm: (String?) -> Void
     @Environment(\.dismiss) private var dismiss

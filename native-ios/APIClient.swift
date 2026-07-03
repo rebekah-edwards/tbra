@@ -104,6 +104,25 @@ actor APIClient {
                            body: ["bookIds": bookIds]) as OkResponse
     }
 
+    // MARK: Book detail
+
+    func bookDetail(_ idOrSlug: String) async throws -> BookDetailData {
+        try await send("/api/v1/books/\(idOrSlug)", method: "GET")
+    }
+
+    /// Owned and/or active formats — same rules as the web.
+    func setFormats(bookId: String, owned: [String]? = nil, active: [String]? = nil) async throws {
+        var body: [String: Any] = [:]
+        if let owned { body["owned"] = owned }
+        if let active { body["active"] = active }
+        _ = try await send("/api/v1/books/\(bookId)/formats", method: "POST", body: body) as OkResponse
+    }
+
+    /// "Remove Everything" — review, rating, editions, sessions, state.
+    func removeFromLibrary(bookId: String) async throws {
+        _ = try await send("/api/v1/books/\(bookId)/library", method: "DELETE") as OkResponse
+    }
+
     // MARK: Home (Reading Now + goal + streak)
 
     func home() async throws -> HomeData {

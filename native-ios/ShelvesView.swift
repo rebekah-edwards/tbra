@@ -80,6 +80,9 @@ struct LibraryShelvesView: View {
             .navigationDestination(for: String.self) { shelfId in
                 ShelfDetailView(shelfId: shelfId)
             }
+            .navigationDestination(for: BookRoute.self) { route in
+                BookDetailView(idOrSlug: route.idOrSlug)
+            }
             .alert("Error", isPresented: .constant(model.error != nil)) {
                 Button("OK") { model.error = nil }
             } message: { Text(model.error ?? "") }

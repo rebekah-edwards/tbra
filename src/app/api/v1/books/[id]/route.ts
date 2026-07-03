@@ -84,7 +84,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     aggregate, // { average, count } | null
     userRating: userReview?.rating ?? null,
     userShelves,
-    bookShelfIds: bookShelfMemberships.map((s: { id: string }) => s.id),
+    bookShelfIds: bookShelfMemberships.map((s) => s.shelfId),
     tbrNote: tbrNote?.note ?? null,
     contentConflicts,
   });

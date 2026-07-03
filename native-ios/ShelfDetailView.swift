@@ -167,7 +167,10 @@ struct ShelfDetailView: View {
     private var booksCard: some View {
         LazyVGrid(columns: columns, spacing: 20) {
             ForEach(model.books) { book in
-                BookCell(book: book)
+                NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.bookId)) {
+                    BookCell(book: book)
+                }
+                .buttonStyle(TapScaleButtonStyle())
                     .opacity(dragging?.id == book.id ? 0.4 : 1)
                     .onDrag {
                         dragging = book

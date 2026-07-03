@@ -44,7 +44,10 @@ struct HorizontalBookRow: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 16) {
                 ForEach(books) { book in
-                    BookCardMini(book: book)
+                    NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
+                        BookCardMini(book: book)
+                    }
+                    .buttonStyle(TapScaleButtonStyle())
                 }
             }
             .padding(.trailing, 48)
@@ -99,29 +102,32 @@ struct TbrSuggestionCard: View {
         Group {
             if let book {
                 VStack(spacing: 0) {
-                    HStack(spacing: 16) {
-                        CoverThumb(url: book.coverImageUrl, width: 70, height: 105, radius: 8)
-                            .shadow(color: .black.opacity(0.3), radius: 5, y: 2)
-                        VStack(alignment: .leading, spacing: 3) {
-                            // .tbr-reason-tag — lime in dark mode
-                            Text((book.reason ?? "From Your TBR").uppercased())
-                                .font(Theme.body(10, .medium))
-                                .tracking(1.0)
-                                .foregroundStyle(Theme.accent)
-                            Text(book.title)
-                                .font(Theme.body(16, .bold))
-                                .foregroundStyle(Theme.foreground)
-                                .lineLimit(2)
-                            if !book.authors.isEmpty {
-                                Text(book.authors.joined(separator: ", "))
-                                    .font(Theme.body(14))
-                                    .foregroundStyle(Theme.muted)
-                                    .lineLimit(1)
+                    NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
+                        HStack(spacing: 16) {
+                            CoverThumb(url: book.coverImageUrl, width: 70, height: 105, radius: 8)
+                                .shadow(color: .black.opacity(0.3), radius: 5, y: 2)
+                            VStack(alignment: .leading, spacing: 3) {
+                                // .tbr-reason-tag — lime in dark mode
+                                Text((book.reason ?? "From Your TBR").uppercased())
+                                    .font(Theme.body(10, .medium))
+                                    .tracking(1.0)
+                                    .foregroundStyle(Theme.accent)
+                                Text(book.title)
+                                    .font(Theme.body(16, .bold))
+                                    .foregroundStyle(Theme.foreground)
+                                    .lineLimit(2)
+                                if !book.authors.isEmpty {
+                                    Text(book.authors.joined(separator: ", "))
+                                        .font(Theme.body(14))
+                                        .foregroundStyle(Theme.muted)
+                                        .lineLimit(1)
+                                }
                             }
+                            Spacer(minLength: 0)
                         }
-                        Spacer(minLength: 0)
+                        .padding(16)
                     }
-                    .padding(16)
+                    .buttonStyle(TapScaleButtonStyle())
 
                     Divider().background(Theme.border)
 

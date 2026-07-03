@@ -190,6 +190,86 @@ struct TbrSuggestionResponse: Codable {
     let suggestion: TbrSuggestion?
 }
 
+// ─── Book detail (/api/v1/books/[id]) ───
+
+struct BookAuthor: Codable, Hashable {
+    let id: String
+    let name: String
+    let slug: String?
+    let role: String?
+}
+
+struct BookSeriesInfo: Codable, Hashable {
+    let id: String
+    let name: String
+    let slug: String?
+}
+
+struct ContentRating: Codable, Hashable, Identifiable {
+    var id: String { categoryId }
+    let categoryId: String
+    let categoryKey: String
+    let categoryName: String
+    let intensity: Int          // 0 None · 1 Mild · 2 Moderate · 3 Significant · 4 Extreme
+    let notes: String?
+    let evidenceLevel: String?  // e.g. human_verified
+}
+
+struct BookFull: Codable, Hashable {
+    let id: String
+    let slug: String?
+    let title: String
+    let coverImageUrl: String?
+    let authors: [BookAuthor]
+    let seriesInfo: BookSeriesInfo?
+    let seriesPosition: Int?
+    let genres: [String]
+    let topLevelGenre: String?
+    let ageCategory: String?
+    let pacing: String?
+    let publicationYear: Int?
+    let pages: Int?
+    let audioLengthMinutes: Int?
+    let summary: String?
+    let description: String?
+    let isbn13: String?
+    let asin: String?
+    let isBoxSet: Bool?
+    let ratings: [ContentRating]
+}
+
+struct BookUserState: Codable, Hashable {
+    let state: String?
+    let ownedFormats: [String]
+    let activeFormats: [String]
+}
+
+struct BookAggregate: Codable, Hashable {
+    let average: Double?
+    let count: Int
+}
+
+struct BookPageShelf: Codable, Hashable, Identifiable {
+    let id: String
+    let name: String
+}
+
+struct BookDetailData: Codable, Hashable {
+    let ok: Bool
+    let book: BookFull
+    let slug: String?
+    let userState: BookUserState?
+    let hasCompleted: Bool
+    let upNextPosition: Int?
+    let upNextCount: Int
+    let isFavorited: Bool
+    let aggregate: BookAggregate?
+    let userRating: Double?
+    let userShelves: [BookPageShelf]
+    let bookShelfIds: [String]
+    let tbrNote: String?
+}
+
 // ─── Response envelopes ───
 
 struct LoginResponse: Codable {
