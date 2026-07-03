@@ -190,6 +190,30 @@ struct TbrSuggestionResponse: Codable {
     let suggestion: TbrSuggestion?
 }
 
+// ─── Library (/api/v1/library) ───
+
+struct LibraryBook: Codable, Identifiable, Hashable {
+    let id: String
+    let slug: String?
+    let title: String
+    let coverImageUrl: String?
+    let authors: [String]
+    let state: String?
+    let ownedFormats: [String]
+    let activeFormats: [String]
+    let isFiction: Bool?
+    let userRating: Double?
+    let updatedAt: String?
+    let genres: [String]
+    let completionYear: Int?
+    let tbrNote: String?
+}
+
+struct LibraryResponse: Codable {
+    let ok: Bool
+    let books: [LibraryBook]
+}
+
 // ─── Book detail (/api/v1/books/[id]) ───
 
 struct BookAuthor: Codable, Hashable {

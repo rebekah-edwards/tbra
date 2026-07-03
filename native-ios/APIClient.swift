@@ -104,6 +104,13 @@ actor APIClient {
                            body: ["bookIds": bookIds]) as OkResponse
     }
 
+    // MARK: Library
+
+    func library() async throws -> [LibraryBook] {
+        let res: LibraryResponse = try await send("/api/v1/library", method: "GET")
+        return res.books
+    }
+
     // MARK: Book detail
 
     func bookDetail(_ idOrSlug: String) async throws -> BookDetailData {

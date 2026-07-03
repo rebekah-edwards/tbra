@@ -30,14 +30,17 @@ final class ShelvesModel {
 }
 
 struct LibraryShelvesView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var model = ShelvesModel()
     @State private var dragging: ShelfSummary?
     @State private var filter: ShelvesFilter = .mine
 
     enum ShelvesFilter { case mine, following }
 
+    // NOTE: no NavigationStack of its own — this screen is pushed inside the
+    // My Library tab's stack (LibraryRootView), matching the web's IA where
+    // /library/shelves is a sub-page of /library.
     var body: some View {
-        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     header
@@ -77,23 +80,19 @@ struct LibraryShelvesView: View {
             .refreshable { await model.load() }
             .task { await model.load() }
             .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: String.self) { shelfId in
-                ShelfDetailView(shelfId: shelfId)
-            }
-            .navigationDestination(for: BookRoute.self) { route in
-                BookDetailView(idOrSlug: route.idOrSlug)
-            }
             .alert("Error", isPresented: .constant(model.error != nil)) {
                 Button("OK") { model.error = nil }
             } message: { Text(model.error ?? "") }
-        }
     }
 
     private var header: some View {
         HStack(spacing: 12) {
-            Image(systemName: "chevron.left")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Theme.muted)
+            Button { dismiss() } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Theme.muted)
+                    .frame(width: 30, height: 34)
+            }
             Text("Shelves")
                 .font(Theme.heading(26, .bold))
                 .foregroundStyle(Theme.foreground)

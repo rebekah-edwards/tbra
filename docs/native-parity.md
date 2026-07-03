@@ -70,7 +70,7 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 - **Stars row:** community avg + review count → reviews; "Mark as finished to review" hint; own rating stars after completion.
 
 **Below the fold (components on page, each needs its own inventory pass at build):** book-summary (frosted quote card) · content-warning-banner · **content-profile.tsx (What's Inside — THE core feature, 494 lines: category intensity rows, expanders w/ notes, spoiler handling)** · book-description · book-about-details · book-series (More in this Series rail) · reading-history (per-session editor incl. format retro-tag) · book-reading-notes · reviews block (review wizard entry) · friends-who-read · similar-books · favorite-button (Top Shelf) · hide-book-button · report-issue-button · post-completion-suggestions · ARC form (arc-source-form).
-| `/library` | Library: TBR/Activity/Owned groups, sub-filters, sort, advanced filters, book grid | — | library endpoint |
+| `/library` | Library: TBR/Activity/Owned groups, sub-filters w/ counts, book grid (audiobook-square rule), My Shelves entry, header stats | BUILT (sort menu + advanced Filters expander still open; Find-books link inert until search) | ✅ /api/v1/library |
 | `/library/shelves` | Shelves list, My Shelves/Following pills, shelf cards | BUILT | Following + Top Shelf missing |
 | `/library/shelves/[slug]` | Shelf detail: cover grid, Shelf Order, Filters, Edit, share | BUILT (controls visual-only) | sort/filter params |
 | `/library/shelves/top-shelf` | Top Shelf (favorites) | — | favorites endpoint |

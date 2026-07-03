@@ -23,7 +23,7 @@ struct AppShell: View {
                 ZStack {
                     switch tab {
                     case .home: HomeView()
-                    case .library: LibraryShelvesView()
+                    case .library: LibraryRootView()
                     case .discover: PlaceholderScreen(title: "Discover")
                     case .stats: PlaceholderScreen(title: "Stats")
                     case .profile: PlaceholderScreen(title: "Profile")
