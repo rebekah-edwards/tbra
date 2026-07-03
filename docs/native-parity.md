@@ -80,7 +80,7 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 
 | Route | Screen | Status | API needs |
 |---|---|---|---|
-| `/discover` | Discover feed | — | discover endpoint |
+| `/discover` | Discover mood search | BUILT (14-mood tinted grid, all filters, Find Books, results w/ reasons). Results-grid visual pass pending on a tap-capable session; content-comfort overrides panel not yet inventoried. | ✅ /api/v1/discover |
 | `/browse`, `/find` | Browse/find surfaces | — | TBD |
 | `/stats` | Stats dashboards | BUILT (year pills, hero cards, goal ring, monthly/yearly chart, rating dist, fiction split, authors, genres). Charts verified on empty-ish data — re-verify visually on a data-rich account. | ✅ /api/v1/stats |
 | `/profile` (+ `/edit`, `/journal`, `/referrals`, `/reviews`) | Profile suite | — | profile endpoints |
