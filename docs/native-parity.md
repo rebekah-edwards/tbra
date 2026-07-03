@@ -83,7 +83,7 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 | `/discover` | Discover mood search | BUILT (14-mood tinted grid, all filters, Find Books, results w/ reasons). Results-grid visual pass pending on a tap-capable session; content-comfort overrides panel not yet inventoried. | ✅ /api/v1/discover |
 | `/browse`, `/find` | Browse/find surfaces | — | TBD |
 | `/stats` | Stats dashboards | BUILT (year pills, hero cards, goal ring, monthly/yearly chart, rating dist, fiction split, authors, genres). Charts verified on empty-ish data — re-verify visually on a data-rich account. | ✅ /api/v1/stats |
-| `/profile` (+ `/edit`, `/journal`, `/referrals`, `/reviews`) | Profile suite | — | profile endpoints |
+| `/profile` (+ `/edit`, `/journal`, `/referrals`, `/reviews`) | Profile suite | BUILT (main page: header/badges/stats/referral/top-shelf/shelf rails/journal/import/sign-out). Sub-pages (edit, journal full view, referrals, reviews) open the web for now. Reviews section needs a data-rich account to inventory review cards. | ✅ /api/v1/profile |
 | `/u/[username]` (+ followers/following/shelves) | Public profiles + social graph | — | public-profile endpoints |
 | `/author/[id]`, `/series/[slug]` | Author + series pages | — | author/series endpoints |
 | `/people` | Find people | — | TBD |
