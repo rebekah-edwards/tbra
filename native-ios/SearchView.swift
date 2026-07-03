@@ -53,9 +53,7 @@ struct SearchRootView: View {
         NavigationStack {
             SearchView(onClose: { dismiss() })
                 .toolbar(.hidden, for: .navigationBar)
-                .navigationDestination(for: BookRoute.self) { route in
-                    BookDetailView(idOrSlug: route.idOrSlug)
-                }
+                .appDestinations()
         }
     }
 }

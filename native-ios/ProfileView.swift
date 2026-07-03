@@ -25,9 +25,7 @@ struct ProfileRootView: View {
         NavigationStack {
             ProfileView()
                 .toolbar(.hidden, for: .navigationBar)
-                .navigationDestination(for: BookRoute.self) { route in
-                    BookDetailView(idOrSlug: route.idOrSlug)
-                }
+                .appDestinations()
                 .navigationDestination(for: String.self) { shelfId in
                     ShelfDetailView(shelfId: shelfId)
                 }

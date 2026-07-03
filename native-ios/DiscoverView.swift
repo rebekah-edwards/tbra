@@ -72,9 +72,7 @@ struct DiscoverRootView: View {
         NavigationStack {
             DiscoverView()
                 .toolbar(.hidden, for: .navigationBar)
-                .navigationDestination(for: BookRoute.self) { route in
-                    BookDetailView(idOrSlug: route.idOrSlug)
-                }
+                .appDestinations()
         }
     }
 }

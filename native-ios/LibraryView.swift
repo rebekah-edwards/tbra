@@ -21,9 +21,7 @@ struct LibraryRootView: View {
                 .navigationDestination(for: String.self) { shelfId in
                     ShelfDetailView(shelfId: shelfId)
                 }
-                .navigationDestination(for: BookRoute.self) { route in
-                    BookDetailView(idOrSlug: route.idOrSlug)
-                }
+                .appDestinations()
         }
     }
 }

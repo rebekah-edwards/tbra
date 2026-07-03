@@ -104,6 +104,13 @@ actor APIClient {
                            body: ["bookIds": bookIds]) as OkResponse
     }
 
+    // MARK: Generic
+
+    /// Generic GET for simple endpoint fetches (decodes the full envelope).
+    func get<T: Decodable>(_ path: String) async throws -> T {
+        try await send(path, method: "GET")
+    }
+
     // MARK: Profile
 
     func profile() async throws -> ProfileData {

@@ -136,12 +136,14 @@ private struct BookHero: View {
                         .foregroundStyle(.white.opacity(0.85))
                         .underline()
                     if let series = book.seriesInfo, let pos = book.seriesPosition {
-                        HStack(spacing: 3) {
-                            Text("#\(pos) in \(series.name)")
-                            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                        NavigationLink(value: SeriesRoute(slug: series.slug ?? series.id)) {
+                            HStack(spacing: 3) {
+                                Text("#\(pos) in \(series.name)")
+                                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                            }
+                            .font(Theme.body(14, .medium))
+                            .foregroundStyle(Theme.neonBlue)
                         }
-                        .font(Theme.body(14, .medium))
-                        .foregroundStyle(Theme.neonBlue)
                     }
                     HStack(spacing: 6) {
                         if let year = book.publicationYear { Text(String(year)) }

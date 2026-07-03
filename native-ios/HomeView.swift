@@ -45,9 +45,7 @@ struct HomeView: View {
         NavigationStack {
             homeContent
                 .toolbar(.hidden, for: .navigationBar)
-                .navigationDestination(for: BookRoute.self) { route in
-                    BookDetailView(idOrSlug: route.idOrSlug)
-                }
+                .appDestinations()
         }
     }
 
