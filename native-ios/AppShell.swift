@@ -25,7 +25,7 @@ struct AppShell: View {
                     switch tab {
                     case .home: HomeView()
                     case .library: LibraryRootView()
-                    case .discover: PlaceholderScreen(title: "Discover")
+                    case .discover: DiscoverRootView()
                     case .stats: StatsView()
                     case .profile: PlaceholderScreen(title: "Profile")
                     }
