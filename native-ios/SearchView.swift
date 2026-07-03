@@ -133,7 +133,12 @@ struct SearchView: View {
 // One result card — cover, meta, compact state pill + Owned pill.
 private struct SearchResultCard: View {
     let result: SearchResult
-    @State private var state: String?      // set after a state change for instant feedback
+    @State private var state: String?      // seeded from the server, updated optimistically
+
+    init(result: SearchResult) {
+        self.result = result
+        _state = State(initialValue: result.state)
+    }
     @State private var dropdownOpen = false
     @State private var showDatePicker = false
     @State private var pendingCompleteState = "completed"
@@ -185,6 +190,17 @@ private struct SearchResultCard: View {
             // Compact action row (reading-state-button.tsx compact mode)
             HStack(spacing: 10) {
                 compactStatePill
+                if result.ownedCount > 0 {
+                    HStack(spacing: 6) {
+                        Image(systemName: "books.vertical")
+                            .font(.system(size: 12))
+                        Text(result.ownedCount == 1 ? "Owned" : "Owned · \(result.ownedCount)")
+                            .font(Theme.body(14, .medium))
+                    }
+                    .foregroundStyle(Theme.neonPurple)
+                    .padding(.horizontal, 14).padding(.vertical, 9)
+                    .background(Capsule().stroke(Theme.neonPurple.opacity(0.35), lineWidth: 1.5))
+                }
                 Spacer()
             }
             .padding(.horizontal, 14)

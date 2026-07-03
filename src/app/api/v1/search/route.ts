@@ -1,8 +1,8 @@
 import { getApiUser } from "@/lib/auth";
 import { jsonError, jsonOk } from "@/lib/api/http";
 import { db } from "@/db";
-import { books, bookAuthors, authors } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { books, bookAuthors, authors, userBookState } from "@/db/schema";
+import { and, eq, sql } from "drizzle-orm";
 import { isJunkTitle } from "@/lib/openlibrary";
 import { isBoxSetTitle } from "@/lib/queries/books";
 import { searchBooksFTS } from "@/lib/search/search-index";
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
 
   const bookIds = ftsResults.map((r) => r.bookId);
 
-  const [bookRows, authorRows] = await Promise.all([
+  const [bookRows, authorRows, stateRows] = await Promise.all([
     db
       .select({
         id: books.id,
@@ -53,7 +53,22 @@ export async function GET(req: Request) {
       .innerJoin(authors, eq(bookAuthors.authorId, authors.id))
       .where(sql`${bookAuthors.bookId} IN (${sql.join(bookIds.map((id) => sql`${id}`), sql`, `)})`)
       .all(),
+    // The user's existing relationship with each result (state pill + Owned pill)
+    db
+      .select({
+        bookId: userBookState.bookId,
+        state: userBookState.state,
+        ownedFormats: userBookState.ownedFormats,
+      })
+      .from(userBookState)
+      .where(and(
+        eq(userBookState.userId, user.userId),
+        sql`${userBookState.bookId} IN (${sql.join(bookIds.map((id) => sql`${id}`), sql`, `)})`
+      ))
+      .all(),
   ]);
+
+  const stateMap = new Map(stateRows.map((r) => [r.bookId, r]));
 
   const bookMap = new Map(bookRows.map((b) => [b.id, b]));
   const authorsByBook = new Map<string, string[]>();
@@ -68,6 +83,13 @@ export async function GET(req: Request) {
     const row = bookMap.get(ftsRow.bookId);
     if (!row) continue;
     if (isJunkTitle(row.title) || (!showBoxSets && isBoxSetTitle(row.title))) continue;
+    const userRow = stateMap.get(row.id);
+    let ownedCount = 0;
+    if (userRow?.ownedFormats) {
+      try {
+        ownedCount = (JSON.parse(userRow.ownedFormats) as string[]).filter((f) => f !== "unknown").length;
+      } catch { /* malformed json — treat as none */ }
+    }
     results.push({
       id: row.id,
       slug: row.slug,
@@ -76,6 +98,8 @@ export async function GET(req: Request) {
       authors: authorsByBook.get(row.id) ?? [],
       publicationYear: row.publicationYear,
       pages: row.pages,
+      state: userRow?.state ?? null,
+      ownedCount,
     });
     if (results.length >= 20) break;
   }

@@ -200,6 +200,8 @@ struct SearchResult: Codable, Identifiable, Hashable {
     let authors: [String]
     let publicationYear: Int?
     let pages: Int?
+    let state: String?      // the user's existing reading state, if any
+    let ownedCount: Int     // owned formats count (excl. "unknown")
 }
 
 struct SearchResponse: Codable {
