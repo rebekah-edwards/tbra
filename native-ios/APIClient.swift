@@ -104,6 +104,13 @@ actor APIClient {
                            body: ["bookIds": bookIds]) as OkResponse
     }
 
+    // MARK: Stats
+
+    func stats(year: String) async throws -> StatsData {
+        try await send("/api/v1/stats", method: "GET",
+                       query: [URLQueryItem(name: "year", value: year)])
+    }
+
     // MARK: Search
 
     func search(_ query: String) async throws -> [SearchResult] {

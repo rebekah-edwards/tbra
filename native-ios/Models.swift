@@ -190,6 +190,35 @@ struct TbrSuggestionResponse: Codable {
     let suggestion: TbrSuggestion?
 }
 
+// ─── Stats (/api/v1/stats) ───
+
+struct MonthCount: Codable, Hashable { let month: String; let count: Int }
+struct MonthPages: Codable, Hashable { let month: String; let pages: Int }
+struct YearCount: Codable, Hashable { let year: String?; let count: Int; let pages: Int }
+struct GenreCount: Codable, Hashable { let genre: String; let count: Int }
+struct RatingBucket: Codable, Hashable { let bucket: String; let count: Int }
+struct AuthorCount: Codable, Hashable { let author: String; let count: Int }
+struct ReadingPace: Codable, Hashable { let avgDays: Int; let totalBooks: Int }
+struct PageStats: Codable, Hashable { let totalPages: Int; let bookCount: Int }
+struct FictionSplit: Codable, Hashable { let fiction: Int; let nonfiction: Int }
+
+struct StatsData: Codable, Hashable {
+    let ok: Bool
+    let currentYear: Int
+    let goal: ReadingGoal?
+    let streak: ReadingStreak
+    let booksByMonth: [MonthCount]
+    let booksByYear: [YearCount]
+    let pagesByMonth: [MonthPages]
+    let genreBreakdown: [GenreCount]
+    let ratingDistribution: [RatingBucket]
+    let mostReadAuthors: [AuthorCount]
+    let readingPace: ReadingPace?
+    let pageStats: PageStats
+    let minutesListened: Int
+    let fictionSplit: FictionSplit
+}
+
 // ─── Search (/api/v1/search) ───
 
 struct SearchResult: Codable, Identifiable, Hashable {

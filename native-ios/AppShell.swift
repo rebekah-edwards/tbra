@@ -26,7 +26,7 @@ struct AppShell: View {
                     case .home: HomeView()
                     case .library: LibraryRootView()
                     case .discover: PlaceholderScreen(title: "Discover")
-                    case .stats: PlaceholderScreen(title: "Stats")
+                    case .stats: StatsView()
                     case .profile: PlaceholderScreen(title: "Profile")
                     }
                 }
