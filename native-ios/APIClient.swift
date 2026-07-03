@@ -107,8 +107,12 @@ actor APIClient {
     // MARK: Search
 
     func search(_ query: String) async throws -> [SearchResult] {
-        let q = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
-        let res: SearchResponse = try await send("/api/v1/search?q=\(q)", method: "GET")
+        // NOTE: never bake "?q=" into the path — appending(path:) percent-
+        // encodes the "?" and the server 404s. Query items go via `query:`.
+        let res: SearchResponse = try await send(
+            "/api/v1/search", method: "GET",
+            query: [URLQueryItem(name: "q", value: query)]
+        )
         return res.results
     }
 
@@ -196,9 +200,12 @@ actor APIClient {
 
     private func send<T: Decodable>(
         _ path: String, method: String,
+        query: [URLQueryItem]? = nil,
         body: [String: Any]? = nil, authed: Bool = true, isRetry: Bool = false
     ) async throws -> T {
-        var req = URLRequest(url: Self.baseURL.appending(path: path))
+        var url = Self.baseURL.appending(path: path)
+        if let query { url.append(queryItems: query) }
+        var req = URLRequest(url: url)
         req.httpMethod = method
         if let body {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -219,7 +226,7 @@ actor APIClient {
         if http.statusCode == 401 && authed && !isRetry {
             // Access token expired — rotate once and retry.
             try await refreshAccessToken()
-            return try await send(path, method: method, body: body, authed: authed, isRetry: true)
+            return try await send(path, method: method, query: query, body: body, authed: authed, isRetry: true)
         }
 
         guard (200..<300).contains(http.statusCode) else {

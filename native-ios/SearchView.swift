@@ -126,7 +126,16 @@ struct SearchView: View {
                 .padding(.bottom, 40)
             }
         }
-        .onAppear { fieldFocused = true }
+        .onAppear {
+            fieldFocused = true
+            #if DEBUG && targetEnvironment(simulator)
+            // Headless verification: pre-fill the query from the launch env.
+            if let q = ProcessInfo.processInfo.environment["TBRA_DEBUG_QUERY"], model.query.isEmpty {
+                model.query = q
+                model.queryChanged()
+            }
+            #endif
+        }
     }
 }
 

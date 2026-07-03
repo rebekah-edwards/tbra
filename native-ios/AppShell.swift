@@ -38,6 +38,23 @@ struct AppShell: View {
         .fullScreenCover(isPresented: $searchOpen) {
             SearchRootView()
         }
+        #if DEBUG && targetEnvironment(simulator)
+        // Headless verification hook: `SIMCTL_CHILD_TBRA_DEBUG_ROUTE=search
+        // xcrun simctl launch …` lands directly on a screen so the agent can
+        // screenshot it without GUI taps. Never compiled for device builds.
+        .task {
+            let env = ProcessInfo.processInfo.environment
+            try? await Task.sleep(for: .seconds(1.5))
+            switch env["TBRA_DEBUG_ROUTE"] {
+            case "search": searchOpen = true
+            case "library": tab = .library
+            case "discover": tab = .discover
+            case "stats": tab = .stats
+            case "profile": tab = .profile
+            default: break
+            }
+        }
+        #endif
     }
 
     private var currentAvatarUrl: String? {
