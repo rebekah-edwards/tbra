@@ -82,7 +82,7 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 |---|---|---|---|
 | `/discover` | Discover feed | — | discover endpoint |
 | `/browse`, `/find` | Browse/find surfaces | — | TBD |
-| `/stats` | Stats dashboards | — | stats endpoint |
+| `/stats` | Stats dashboards | BUILT (year pills, hero cards, goal ring, monthly/yearly chart, rating dist, fiction split, authors, genres). Charts verified on empty-ish data — re-verify visually on a data-rich account. | ✅ /api/v1/stats |
 | `/profile` (+ `/edit`, `/journal`, `/referrals`, `/reviews`) | Profile suite | — | profile endpoints |
 | `/u/[username]` (+ followers/following/shelves) | Public profiles + social graph | — | public-profile endpoints |
 | `/author/[id]`, `/series/[slug]` | Author + series pages | — | author/series endpoints |
