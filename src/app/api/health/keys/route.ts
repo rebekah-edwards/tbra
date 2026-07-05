@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@libsql/client";
+import { list } from "@vercel/blob";
 
 // Don't cache — this must reflect the live state of production env vars.
 export const dynamic = "force-dynamic";
@@ -36,6 +38,15 @@ async function withTimeout(fn: (signal: AbortSignal) => Promise<Response>): Prom
   } finally {
     clearTimeout(t);
   }
+}
+
+// For SDK-based checks (Turso, Blob) that don't expose an AbortSignal — bound the
+// wall-clock so a hung connection can't blow past the 30s function budget.
+async function raceTimeout<T>(p: Promise<T>, ms = 10_000): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`timed out after ${ms}ms`)), ms)),
+  ]);
 }
 
 async function checkBrave(): Promise<ProviderHealth> {
@@ -108,6 +119,66 @@ async function checkGoogleBooks(): Promise<ProviderHealth> {
   }
 }
 
+async function checkTurso(): Promise<ProviderHealth> {
+  const url = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+  if (!url) return { present: false, ok: false, status: null, detail: "TURSO_DATABASE_URL not set" };
+  const client = createClient({ url, authToken });
+  try {
+    const res = await raceTimeout(client.execute("SELECT 1"));
+    const ok = res.rows.length > 0;
+    return { present: true, ok, status: ok ? 200 : null, detail: ok ? "ok" : "SELECT 1 returned no rows" };
+  } catch (e) {
+    // Expired/rotated token surfaces as a LibsqlError (often "401"/"UNAUTHORIZED").
+    return { present: true, ok: false, status: null, detail: (e as Error).message };
+  } finally {
+    client.close();
+  }
+}
+
+async function checkBlob(): Promise<ProviderHealth> {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) return { present: false, ok: false, status: null, detail: "BLOB_READ_WRITE_TOKEN not set" };
+  try {
+    // Cheapest authenticated read — validates the token against the Blob API.
+    await raceTimeout(list({ token, limit: 1 }));
+    return { present: true, ok: true, status: 200, detail: "ok" };
+  } catch (e) {
+    const status = typeof (e as { status?: unknown })?.status === "number" ? (e as { status: number }).status : null;
+    return { present: true, ok: false, status, detail: (e as Error).message };
+  }
+}
+
+async function checkResend(): Promise<ProviderHealth> {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return { present: false, ok: false, status: null, detail: "RESEND_API_KEY not set" };
+  try {
+    // Probe auth WITHOUT sending mail: POST /emails with an incomplete body. A
+    // valid key authenticates then fails validation (422 "missing `to` field");
+    // a bad key fails auth first (401/403). We deliberately don't GET /domains or
+    // /api-keys — those require a FULL-access key and 401 for a sending-only key,
+    // which is a false negative (the prod key is sending-only). Anything that
+    // isn't an auth rejection means the key works.
+    const res = await withTimeout((signal) =>
+      fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: "{}",
+        signal,
+      }),
+    );
+    const authFailed = res.status === 401 || res.status === 403;
+    return {
+      present: true,
+      ok: !authFailed,
+      status: res.status,
+      detail: authFailed ? res.statusText || "auth rejected" : "ok",
+    };
+  } catch (e) {
+    return { present: true, ok: false, status: null, detail: (e as Error).message };
+  }
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const secret = request.headers.get("x-enrichment-secret") ?? url.searchParams.get("secret");
@@ -115,19 +186,29 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [brave, xai, isbndb, googleBooks] = await Promise.all([
+  const [brave, xai, isbndb, googleBooks, turso, blob, resend] = await Promise.all([
     checkBrave(),
     checkXai(),
     checkIsbndb(),
     checkGoogleBooks(),
+    checkTurso(),
+    checkBlob(),
+    checkResend(),
   ]);
 
-  // Brave + xAI are the two providers that hard-block enrichment (no web research
-  // → no Grok analysis → no summary/ratings). They are CRITICAL. ISBNdb + Google
-  // Books degrade quality (covers, metadata) but don't block; report-only.
-  const providers = { brave, xai, isbndb, googleBooks };
-  const critical = { brave, xai };
-  const ok = Object.values(critical).every((p) => p.ok);
+  // CRITICAL = a bad prod value silently breaks a core flow, and the failure mode
+  // is exactly the invisible-key-drift class this canary exists for:
+  //   • brave + xai — hard-block enrichment (no web research → no Grok → no ratings)
+  //   • turso       — the production database; a rotated/expired auth token not
+  //                   pushed to Vercel takes the whole app down. Report-only would
+  //                   defeat the point.
+  // Report-only (degrade a feature, don't block):
+  //   • isbndb + googleBooks — metadata/cover quality
+  //   • blob                 — cover/avatar uploads
+  //   • resend               — verification + notification email
+  const providers = { brave, xai, isbndb, googleBooks, turso, blob, resend };
+  const criticalNames = ["brave", "xai", "turso"];
+  const ok = criticalNames.every((name) => providers[name as keyof typeof providers].ok);
 
-  return NextResponse.json({ ok, providers, criticalProviders: ["brave", "xai"] }, { status: ok ? 200 : 503 });
+  return NextResponse.json({ ok, providers, criticalProviders: criticalNames }, { status: ok ? 200 : 503 });
 }

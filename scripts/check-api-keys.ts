@@ -99,8 +99,11 @@ type HealthResponse = {
       console.log(`Alert for ${name} already open — not duplicating`);
       continue;
     }
-    const desc = `${FLAG_PREFIX} ${name} API key FAILING in production (status=${p.status ?? "-"}: ${p.detail}). `
-      + `Enrichment is blocked for new imports until this key is rotated on Vercel. `
+    const impact = name === "turso"
+      ? `The production database connection is failing — a rotated/expired Turso auth token not pushed to Vercel takes the whole app down.`
+      : `Enrichment is blocked for new imports until this key is rotated on Vercel.`;
+    const desc = `${FLAG_PREFIX} ${name} FAILING in production (status=${p.status ?? "-"}: ${p.detail}). `
+      + `${impact} `
       + `Verify with: curl -s "${PROD_URL}" -H "x-enrichment-secret: $ENRICHMENT_SECRET".`;
     await remote.execute({
       sql: `INSERT INTO reported_issues (id, user_id, book_id, description, status, created_at)
