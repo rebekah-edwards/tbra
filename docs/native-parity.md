@@ -95,7 +95,7 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 |---|---|---|---|
 | `/login` | Login (wordmark, branded fields, lime CTA) | BUILT | ✅ email/password verified on device 2026-07-02 |
 | `/login` | **Google Sign-In on native** (user-flagged gap) | — | Needs design with user: ASWebAuthenticationSession against the existing /api/auth/google flow + a v1 token handoff endpoint. NOTE: App Store rules require offering Sign in with Apple once any third-party login ships — plan both together. |
-| `/signup`, `/verify-email`, `/forgot-password`, `/reset-password` | Auth suite | — | v1 wrappers |
+| `/signup`, `/verify-email`, `/forgot-password`, `/reset-password` | Auth suite | BUILT (native signup + forgot-password; verify-email + reset land on web via emailed links — correct by design) | ✅ /api/v1/auth/register + /forgot-password |
 | `/onboarding` | Onboarding | — | TBD |
 | `/buddy-reads` (+ slug/join/new) | Buddy reads suite | — | buddy-read endpoints |
 | `/import` | Goodreads/StoryGraph/Libby import | — | likely stays web-first |
