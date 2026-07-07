@@ -173,3 +173,71 @@ struct SimilarBooksSection: View {
         }
     }
 }
+
+// ── More in this Series — book-series.tsx rail ──
+struct BookSeriesRail: View {
+    let series: BookSeriesInfo
+    let currentBookId: String
+    @State private var books: [SeriesBookRow] = []
+    @State private var loaded = false
+
+    var body: some View {
+        Group {
+            if !books.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        SectionHeading("More in this Series")
+                        Spacer()
+                        NavigationLink(value: SeriesRoute(slug: series.slug ?? series.id)) {
+                            HStack(spacing: 3) {
+                                Text("View all")
+                                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                            }
+                            .font(Theme.body(13, .medium))
+                            .foregroundStyle(Theme.neonBlue)
+                        }
+                    }
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 12) {
+                            ForEach(books) { book in
+                                NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        CoverThumb(url: book.coverImageUrl, width: 92, height: 138, radius: 8)
+                                        if let pos = book.position {
+                                            Text(pos.truncatingRemainder(dividingBy: 1) == 0
+                                                 ? "Book \(Int(pos))" : "Book \(String(format: "%.1f", pos))")
+                                                .font(Theme.body(11, .medium))
+                                                .foregroundStyle(Theme.muted)
+                                        }
+                                        Text(book.title)
+                                            .font(Theme.body(12, .medium))
+                                            .foregroundStyle(Theme.foreground.opacity(0.9))
+                                            .lineLimit(2)
+                                            .multilineTextAlignment(.leading)
+                                            .frame(width: 92, alignment: .leading)
+                                    }
+                                }
+                                .buttonStyle(TapScaleButtonStyle())
+                            }
+                        }
+                        .padding(.trailing, 32)
+                    }
+                    .mask(
+                        LinearGradient(stops: [
+                            .init(color: .black, location: 0),
+                            .init(color: .black, location: 0.85),
+                            .init(color: .clear, location: 1),
+                        ], startPoint: .leading, endPoint: .trailing)
+                    )
+                }
+            }
+        }
+        .task {
+            guard !loaded else { return }
+            loaded = true
+            struct Res: Codable { let ok: Bool; let name: String; let books: [SeriesBookRow] }
+            guard let res: Res = try? await APIClient.shared.get("/api/v1/series/\(series.slug ?? series.id)") else { return }
+            books = res.books.filter { $0.id != currentBookId && !$0.isBoxSet }
+        }
+    }
+}

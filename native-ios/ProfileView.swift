@@ -287,9 +287,15 @@ struct ProfileView: View {
                     .foregroundStyle(Theme.accent)
             }
             ForEach(data.shelves) { shelf in
+                let tint: Color = {
+                    if let hex = shelf.color, hex.hasPrefix("#"), hex.count == 7 {
+                        return Color(hex: String(hex.dropFirst()))
+                    }
+                    return Theme.accent
+                }()
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
-                        Circle().fill(Theme.accent).frame(width: 10, height: 10)
+                        Circle().fill(tint).frame(width: 10, height: 10)
                         Text(shelf.name)
                             .font(Theme.body(17, .semibold))
                             .foregroundStyle(Theme.foreground)
@@ -312,8 +318,8 @@ struct ProfileView: View {
                         .padding(10)
                     }
                     .background(
-                        LinearGradient(colors: [Theme.accent.opacity(0.06), Theme.neonPurple.opacity(0.04)],
-                                       startPoint: .topLeading, endPoint: .bottomTrailing)
+                        LinearGradient(colors: [tint.opacity(0.07), tint.opacity(0.13)],
+                                       startPoint: .top, endPoint: .bottom)
                             .background(Theme.surface.opacity(0.5))
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 12))

@@ -207,3 +207,30 @@ struct CoverThumb: View {
         .overlay(RoundedRectangle(cornerRadius: radius).stroke(Theme.border.opacity(0.6), lineWidth: 0.5))
     }
 }
+
+/// The exact web `.book-card-bg-img` treatment for cover-blur card
+/// backgrounds, both modes:
+///   dark:  opacity .4 · blur 16 · saturate 1.5
+///   light: opacity .5 · blur 16 · saturate 2.5 · brightness ↑ · screen blend
+struct CoverBlurImage: View {
+    let url: URL
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        AsyncImage(url: url) { image in
+            if colorScheme == .light {
+                image.resizable().aspectRatio(contentMode: .fill)
+                    .blur(radius: 16)
+                    .saturation(2.5)
+                    .brightness(0.2)
+                    .opacity(0.5)
+                    .blendMode(.screen)
+            } else {
+                image.resizable().aspectRatio(contentMode: .fill)
+                    .blur(radius: 16)
+                    .saturation(1.5)
+                    .opacity(0.4)
+            }
+        } placeholder: { Color.clear }
+    }
+}

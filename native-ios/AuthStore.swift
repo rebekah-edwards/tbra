@@ -70,6 +70,10 @@ final class AuthStore {
 
 struct RootView: View {
     @State private var auth = AuthStore()
+    /// Lives HERE (a View) not in TbraApp: @AppStorage inside an App body
+    /// doesn't reliably re-evaluate the Scene, which left the theme toggle
+    /// dead on device.
+    @AppStorage("themeOverride") private var themeOverride = "dark"
 
     var body: some View {
         Group {
@@ -85,6 +89,10 @@ struct RootView: View {
                 AppShell()
             }
         }
+        .preferredColorScheme(
+            themeOverride == "light" ? .light :
+            themeOverride == "system" ? nil : .dark
+        )
         .environment(auth)
         .task {
             await auth.restore()

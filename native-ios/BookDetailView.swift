@@ -50,8 +50,17 @@ struct BookDetailView: View {
                     if let summary = data.book.summary, !summary.isEmpty {
                         SummaryQuoteCard(summary: summary)
                     }
-                    if !data.book.ratings.isEmpty {
-                        WhatsInsideSection(ratings: data.book.ratings)
+                    if !data.readingNotes.isEmpty {
+                        BookNotesSection(
+                            bookId: data.book.id,
+                            notes: data.readingNotes,
+                            onChanged: { Task { await model.load() } }
+                        )
+                        .id("notes")
+                    }
+                    if !data.friendsWhoRead.isEmpty {
+                        FriendsWhoReadSection(friends: data.friendsWhoRead)
+                            .id("friends")
                     }
                     if !data.sessions.isEmpty {
                         ReadingHistorySection(
@@ -61,19 +70,12 @@ struct BookDetailView: View {
                         )
                         .id("reading-history")
                     }
-                    if !data.readingNotes.isEmpty {
-                        BookNotesSection(
-                            bookId: data.book.id,
-                            notes: data.readingNotes,
-                            onChanged: { Task { await model.load() } }
-                        )
-                        .id("notes")
+                    if let series = data.book.seriesInfo {
+                        BookSeriesRail(series: series, currentBookId: data.book.id)
+                            .id("series")
                     }
-                    SimilarBooksSection(bookId: data.book.id)
-                        .id("similar")
-                    if !data.friendsWhoRead.isEmpty {
-                        FriendsWhoReadSection(friends: data.friendsWhoRead)
-                            .id("friends")
+                    if !data.book.ratings.isEmpty {
+                        WhatsInsideSection(ratings: data.book.ratings)
                     }
                     BookFooterActions(
                         bookId: data.book.id,
@@ -81,6 +83,8 @@ struct BookDetailView: View {
                         isHidden: data.isHidden,
                         onChanged: { Task { await model.load() } }
                     )
+                    SimilarBooksSection(bookId: data.book.id)
+                        .id("similar")
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)
@@ -240,8 +244,10 @@ struct TbrNoteEditorSheet: View {
 private struct BookHero: View {
     let data: BookDetailData
     let onBack: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
 
     private var book: BookFull { data.book }
+    private var isLight: Bool { colorScheme == .light }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -251,16 +257,96 @@ private struct BookHero: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(Theme.foreground.opacity(0.9))
                         .frame(width: 40, height: 40)
-                        .background(.black.opacity(0.35), in: Circle())
+                        .background(Theme.scrim, in: Circle())
                         .overlay(Circle().stroke(Theme.border, lineWidth: 1))
                 }
                 Spacer()
+            }
+
+            // Blurred-cover hero card — the genre/age pills half-overlap the
+            // top-right edge (web: absolute -top-3 right-4) and the share
+            // button half-overlaps the bottom-left (bottom-0 left-4
+            // translate-y-1/2), so the card gets breathing room top+bottom.
+            heroCard
+                .padding(.top, 14)
+                .padding(.bottom, 20)
+        }
+        // Page-level hero bleed (.book-hero-img): the big soft color wash
+        // behind everything is what gives the page its vibrance.
+        .background(alignment: .top) { heroBleed }
+    }
+
+    private var heroCard: some View {
+        HStack(alignment: .center, spacing: 16) {   // web: items-center
+            CoverThumb(url: book.coverImageUrl, width: 110, height: book.audioLengthMinutes != nil && book.pages == nil ? 110 : 165, radius: 10)
+                .shadow(color: .black.opacity(0.5), radius: 12, y: 6)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(book.title)
+                    .font(Theme.body(22, .bold))
+                    .foregroundStyle(heroText)
+                NavigationLink(value: AuthorRoute(idOrSlug: book.authors.first.map { $0.slug ?? $0.id } ?? "")) {
+                    Text(book.authors.map(\.name).joined(separator: ", "))
+                        .font(Theme.body(15))
+                        .foregroundStyle(heroText.opacity(0.85))
+                        .underline()
+                        .multilineTextAlignment(.leading)
+                }
+                .disabled(book.authors.isEmpty)
+                if let series = book.seriesInfo, let pos = book.seriesPosition {
+                    NavigationLink(value: SeriesRoute(slug: series.slug ?? series.id)) {
+                        HStack(spacing: 3) {
+                            Text("#\(pos) in \(series.name)")
+                            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                        }
+                        .font(Theme.body(14, .medium))
+                        .foregroundStyle(Theme.neonBlue)
+                    }
+                }
+                HStack(spacing: 6) {
+                    if let year = book.publicationYear { Text(String(year)) }
+                    if let mins = book.audioLengthMinutes {
+                        Text("·")
+                        Label("\(mins / 60)h \(mins % 60)m", systemImage: "headphones")
+                    } else if let pages = book.pages {
+                        Text("·")
+                        Text("\(pages)p")
+                    }
+                }
+                .font(Theme.body(14))
+                .foregroundStyle(heroText.opacity(0.8))
+
+                // Genre pills
+                FlowPills(items: Array(book.genres.prefix(5)))
+
+                if let pacing = book.pacing {
+                    HStack(spacing: 5) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 11))
+                        Text("\(pacing.capitalized)-paced")
+                            .font(Theme.body(12, .medium))
+                    }
+                    .foregroundStyle(.orange)
+                    .padding(.horizontal, 12).padding(.vertical, 5)
+                    .background(.orange.opacity(0.12), in: Capsule())
+                    .overlay(Capsule().stroke(.orange.opacity(0.4), lineWidth: 1))
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        // Genre + age pills: half-overlapping top-right (-top-3 right-4)
+        .overlay(alignment: .topTrailing) {
+            HStack(spacing: 6) {
                 if let genre = book.topLevelGenre {
                     Text(genre)
                         .font(Theme.body(13, .semibold))
                         .foregroundStyle(.black)
                         .padding(.horizontal, 14).padding(.vertical, 6)
                         .background(Theme.accent, in: Capsule())
+                        .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
                 }
                 if let age = book.ageCategory {
                     Text(age)
@@ -268,93 +354,99 @@ private struct BookHero: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 14).padding(.vertical, 6)
                         .background(Color(hex: "7c3aed"), in: Capsule())
+                        .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
                 }
             }
-
-            // Blurred-cover hero card
-            HStack(alignment: .top, spacing: 16) {
-                CoverThumb(url: book.coverImageUrl, width: 110, height: book.audioLengthMinutes != nil && book.pages == nil ? 110 : 165, radius: 10)
-                    .shadow(color: .black.opacity(0.5), radius: 12, y: 6)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(book.title)
-                        .font(Theme.body(22, .bold))
-                        .foregroundStyle(.white)
-                    NavigationLink(value: AuthorRoute(idOrSlug: book.authors.first.map { $0.slug ?? $0.id } ?? "")) {
-                        Text(book.authors.map(\.name).joined(separator: ", "))
-                            .font(Theme.body(15))
-                            .foregroundStyle(.white.opacity(0.85))
-                            .underline()
-                            .multilineTextAlignment(.leading)
-                    }
-                    .disabled(book.authors.isEmpty)
-                    if let series = book.seriesInfo, let pos = book.seriesPosition {
-                        NavigationLink(value: SeriesRoute(slug: series.slug ?? series.id)) {
-                            HStack(spacing: 3) {
-                                Text("#\(pos) in \(series.name)")
-                                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
-                            }
-                            .font(Theme.body(14, .medium))
-                            .foregroundStyle(Theme.neonBlue)
-                        }
-                    }
-                    HStack(spacing: 6) {
-                        if let year = book.publicationYear { Text(String(year)) }
-                        if let mins = book.audioLengthMinutes {
-                            Text("·")
-                            Label("\(mins / 60)h \(mins % 60)m", systemImage: "headphones")
-                        } else if let pages = book.pages {
-                            Text("·")
-                            Text("\(pages)p")
-                        }
-                    }
-                    .font(Theme.body(14))
-                    .foregroundStyle(.white.opacity(0.8))
-
-                    // Genre pills
-                    FlowPills(items: Array(book.genres.prefix(5)))
-
-                    if let pacing = book.pacing {
-                        HStack(spacing: 5) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 11))
-                            Text("\(pacing.capitalized)-paced")
-                                .font(Theme.body(12, .medium))
-                        }
-                        .foregroundStyle(.orange)
-                        .padding(.horizontal, 12).padding(.vertical, 5)
-                        .background(.orange.opacity(0.12), in: Capsule())
-                        .overlay(Capsule().stroke(.orange.opacity(0.4), lineWidth: 1))
-                    }
-                }
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                ZStack {
-                    Theme.surfaceAlt
-                    if let cover = book.coverImageUrl, let url = URL(string: cover) {
-                        AsyncImage(url: url) { image in
-                            image.resizable().aspectRatio(contentMode: .fill)
-                                .blur(radius: 40).saturation(1.5).opacity(0.6)
-                        } placeholder: { Color.clear }
-                        Color.black.opacity(0.30)
-                    }
-                }
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-
-            // Share — the live page URL, like the web share button
+            .padding(.trailing, 16)
+            .offset(y: -12)
+        }
+        // Share: half-overlapping bottom-left (bottom-0 left-4 + ty-1/2)
+        .overlay(alignment: .bottomLeading) {
             if let slug = data.slug ?? book.slug {
                 ShareLink(item: URL(string: "https://thebasedreader.app/book/\(slug)")!) {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 15))
                         .foregroundStyle(Theme.foreground.opacity(0.9))
                         .frame(width: 40, height: 40)
-                        .background(.black.opacity(0.35), in: Circle())
+                        .background(Theme.surface, in: Circle())
                         .overlay(Circle().stroke(Theme.border, lineWidth: 1))
+                        .shadow(color: .black.opacity(0.3), radius: 5, y: 2)
                 }
+                .padding(.leading, 16)
+                .offset(y: 20)
             }
+        }
+    }
+
+    /// Hero text: white over the dark scrim, near-black over the frosted
+    /// white card in light mode (web .book-header-overlay flips too).
+    private var heroText: Color { isLight ? Color(hex: "18181b") : .white }
+
+    /// Card inner background — .book-card-bg-img exactly:
+    /// dark: opacity .4, blur 16, saturate 1.5 + black-30% overlay
+    /// light: opacity .5, blur 16, saturate 2.5, brightness 1.4,
+    ///        mix-blend-mode screen + white-52% frosted overlay
+    private var cardBackground: some View {
+        ZStack {
+            isLight ? Color.white : Theme.surfaceAlt
+            if let cover = book.coverImageUrl, let url = URL(string: cover) {
+                AsyncImage(url: url) { image in
+                    if isLight {
+                        image.resizable().aspectRatio(contentMode: .fill)
+                            .blur(radius: 16)
+                            .saturation(2.5)
+                            .brightness(0.2)   // ≈ brightness(1.4) over white w/ screen
+                            .opacity(0.5)
+                            .blendMode(.screen)
+                    } else {
+                        image.resizable().aspectRatio(contentMode: .fill)
+                            .blur(radius: 16)
+                            .saturation(1.5)
+                            .opacity(0.4)
+                    }
+                } placeholder: { Color.clear }
+                (isLight ? Color.white.opacity(0.52) : Color.black.opacity(0.30))
+            }
+        }
+    }
+
+    /// Page-level bleed — .book-hero-img exactly:
+    /// dark: opacity .6, saturate 1.5, brightness 1.1, blur 64, scale 1.5
+    /// light: opacity .9, blur 64, saturate 2.5, brightness 1.6, screen
+    @ViewBuilder private var heroBleed: some View {
+        if let cover = book.coverImageUrl, let url = URL(string: cover) {
+            AsyncImage(url: url) { image in
+                Group {
+                    if isLight {
+                        image.resizable().aspectRatio(contentMode: .fill)
+                            .scaleEffect(1.5)
+                            .blur(radius: 64)
+                            .saturation(2.5)
+                            .brightness(0.3)
+                            .opacity(0.9)
+                            .blendMode(.screen)
+                    } else {
+                        image.resizable().aspectRatio(contentMode: .fill)
+                            .scaleEffect(1.5)
+                            .blur(radius: 64)
+                            .saturation(1.5)
+                            .brightness(0.05)
+                            .opacity(0.6)
+                    }
+                }
+                .frame(height: 380)
+                .clipped()
+                .mask(
+                    LinearGradient(stops: [
+                        .init(color: .black, location: 0),
+                        .init(color: .black, location: 0.55),
+                        .init(color: .clear, location: 1),
+                    ], startPoint: .top, endPoint: .bottom)
+                )
+                .allowsHitTesting(false)
+            } placeholder: { Color.clear }
+            .padding(.horizontal, -20)
+            .padding(.top, -60)
         }
     }
 }
@@ -362,15 +454,19 @@ private struct BookHero: View {
 /// Wrapping pill row for genres.
 private struct FlowPills: View {
     let items: [String]
+    @Environment(\.colorScheme) private var colorScheme
     var body: some View {
-        // Simple two-row wrap approximation: SwiftUI flow layout
+        // Genre pills over the hero card — dark: translucent white on the
+        // scrim; light: surface-alt w/ border on the frosted white card
+        // (fixed white-on-white was invisible in light mode).
         FlowLayout(spacing: 6) {
             ForEach(items, id: \.self) { g in
                 Text(g)
                     .font(Theme.body(12, .medium))
-                    .foregroundStyle(.white.opacity(0.9))
+                    .foregroundStyle(colorScheme == .light ? Color(hex: "18181b").opacity(0.85) : .white.opacity(0.9))
                     .padding(.horizontal, 12).padding(.vertical, 5)
-                    .background(.white.opacity(0.12), in: Capsule())
+                    .background(colorScheme == .light ? Color.black.opacity(0.05) : Color.white.opacity(0.12), in: Capsule())
+                    .overlay(Capsule().stroke(colorScheme == .light ? Color.black.opacity(0.10) : .clear, lineWidth: 1))
             }
         }
     }
@@ -664,9 +760,11 @@ private struct BookActionCluster: View {
             VStack(spacing: 2) {
                 Image(systemName: data.upNextPosition != nil ? "text.badge.checkmark" : "text.badge.plus")
                     .font(.system(size: 16))
-                if let pos = data.upNextPosition {
-                    Text("#\(pos)").font(Theme.body(10, .bold))
-                }
+                // Web labels: "Add to Up Next" / "Up Next #N — tap to remove"
+                Text(data.upNextPosition.map { "Up Next #\($0)" } ?? "Up Next")
+                    .font(Theme.body(9, .semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
             .foregroundStyle(data.upNextPosition != nil ? Theme.accent : Theme.muted)
             .frame(width: 52, height: 52)
@@ -981,9 +1079,7 @@ private struct BookStarsRow: View {
     var body: some View {
         VStack(spacing: 8) {
             HStack(spacing: 10) {
-                StarRow(rating: data.aggregate?.average ?? 0)
-                    .scaleEffect(1.5)
-                    .frame(height: 24)
+                StarRow(rating: data.aggregate?.average ?? 0, size: 15)
                 if let avg = data.aggregate?.average, avg > 0 {
                     Text(String(format: "%.1f avg.", avg))
                         .font(Theme.body(17, .semibold))
@@ -1055,7 +1151,12 @@ private struct SummaryQuoteCard: View {
                 .offset(x: -6, y: 34)
         }
         .background(.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        // Web mobile: rounded-r-2xl + pl-[calc(50vw-50%+1rem)] — the card
+        // bleeds off the LEFT screen edge; only right corners round.
+        .clipShape(UnevenRoundedRectangle(
+            topLeadingRadius: 0, bottomLeadingRadius: 0,
+            bottomTrailingRadius: 16, topTrailingRadius: 16))
+        .padding(.leading, -20)   // cancel the page gutter → full-bleed left
     }
 }
 

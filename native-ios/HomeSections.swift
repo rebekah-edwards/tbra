@@ -372,14 +372,15 @@ extension ISO8601DateFormatter {
 /// 5-star display: lime filled stars, muted empty outlines (friends-activity.tsx).
 struct StarRow: View {
     let rating: Double
+    var size: CGFloat = 10
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: size * 0.2) {
             ForEach(0..<5, id: \.self) { i in
                 let full = Double(i) < rating.rounded(.down)
                 let half = !full && rating - rating.rounded(.down) >= 0.25 && i == Int(rating.rounded(.down))
                 Image(systemName: full ? "star.fill" : (half ? "star.leadinghalf.filled" : "star"))
-                    .font(.system(size: 10))
+                    .font(.system(size: size))
                     .foregroundStyle(full || half ? Theme.accent : Theme.muted.opacity(0.3))
             }
         }

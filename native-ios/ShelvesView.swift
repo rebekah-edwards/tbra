@@ -189,17 +189,34 @@ private struct ShelfCard: View {
             }
             .padding(14)
 
-            // Bottom accent bar in the shelf's color.
+            // The bookshelf plank (web: gradient accent bar) sits ABOVE the
+            // card bottom — plank, then an h-1.5 (~6pt) gap inside the card.
             Rectangle()
-                .fill(tint.opacity(0.55))
-                .frame(height: 3)
+                .fill(LinearGradient(
+                    colors: [tint.opacity(0.19), tint.opacity(0.27)],
+                    startPoint: .top, endPoint: .bottom))
+                .frame(height: 8)
+                .padding(.horizontal, 10)
+            Color.clear.frame(height: 6)
         }
-        .background(Theme.surface.opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(tint.opacity(0.35), lineWidth: 1)
+        .background(
+            // Web card tint: linear-gradient(to bottom, color12, color22)
+            LinearGradient(colors: [tint.opacity(0.07), tint.opacity(0.13)],
+                           startPoint: .top, endPoint: .bottom)
+                .background(Theme.surface.opacity(0.9))
         )
-        .shadow(color: tint.opacity(0.12), radius: 12, y: 4)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(tint.opacity(0.19), lineWidth: 1)
+        )
+        // Web: under-card shadow strip (h-2 mx-2 black/10→transparent)
+        .background(alignment: .bottom) {
+            LinearGradient(colors: [.black.opacity(0.10), .clear],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(height: 8)
+                .padding(.horizontal, 8)
+                .offset(y: 8)
+        }
     }
 }

@@ -223,7 +223,10 @@ struct StatsView: View {
                                 .foregroundStyle(Theme.muted)
                         }
                         Capsule()
-                            .fill(entry.books > 0 ? Theme.accent : Theme.surfaceAlt)
+                            .fill(entry.books > 0
+                                  ? AnyShapeStyle(LinearGradient(colors: [Theme.accent, Theme.neonBlue],
+                                                                 startPoint: .bottom, endPoint: .top))
+                                  : AnyShapeStyle(Theme.surfaceAlt))
                             .frame(height: max(CGFloat(entry.books) / CGFloat(maxBooks) * 90, 4))
                         Text(entry.label)
                             .font(Theme.body(8))
@@ -260,7 +263,8 @@ struct StatsView: View {
                             .frame(width: 34, alignment: .trailing)
                         GeometryReader { geo in
                             Capsule().fill(Theme.surfaceAlt)
-                            Capsule().fill(Theme.accent)
+                            Capsule().fill(LinearGradient(colors: [Theme.neonBlue, Theme.accent],
+                                                          startPoint: .leading, endPoint: .trailing))
                                 .frame(width: max(geo.size.width * CGFloat(row.count) / CGFloat(maxCount), row.count > 0 ? 8 : 0))
                         }
                         .frame(height: 8)
@@ -299,45 +303,93 @@ struct StatsView: View {
     }
 
     private func authorsCard(_ data: StatsData) -> some View {
-        statCard("Most Read Authors") {
+        let maxCount = max(data.mostReadAuthors.first?.count ?? 1, 1)
+        return statCard("Most Read Authors") {
             VStack(spacing: 10) {
-                ForEach(data.mostReadAuthors, id: \.author) { row in
-                    HStack {
-                        Text(row.author)
-                            .font(Theme.body(14))
-                            .foregroundStyle(Theme.foreground)
-                            .lineLimit(1)
-                        Spacer()
-                        Text("\(row.count)")
-                            .font(Theme.body(13, .semibold))
-                            .foregroundStyle(Theme.accent)
+                ForEach(Array(data.mostReadAuthors.enumerated()), id: \.element.author) { i, row in
+                    HStack(spacing: 10) {
+                        Group {
+                            if i == 0 { Text("👑").font(.system(size: 13)) }
+                            else {
+                                Text("\(i + 1)")
+                                    .font(Theme.body(11))
+                                    .foregroundStyle(Theme.muted)
+                            }
+                        }
+                        .frame(width: 20)
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack {
+                                Text(row.author)
+                                    .font(Theme.body(12, .medium))
+                                    .foregroundStyle(Theme.foreground)
+                                    .lineLimit(1)
+                                Spacer()
+                                Text("\(row.count) book\(row.count == 1 ? "" : "s")")
+                                    .font(Theme.body(11))
+                                    .foregroundStyle(Theme.muted)
+                            }
+                            GeometryReader { geo in
+                                Capsule().fill(Theme.surfaceAlt)
+                                Capsule()
+                                    .fill(i == 0 ? Theme.accent : Theme.neonPurple)
+                                    .frame(width: max(geo.size.width * CGFloat(row.count) / CGFloat(maxCount), geo.size.width * 0.05))
+                            }
+                            .frame(height: 6)
+                        }
                     }
                 }
             }
         }
     }
 
+    // CHART_COLORS from stats-client.tsx
+    private var chartColors: [Color] {
+        [Theme.accent, Theme.neonPurple, Theme.neonBlue,
+         Color(hex: "fb923c"), Color(hex: "f472b6"), Color(hex: "34d399")]
+    }
+
     private func genresCard(_ data: StatsData) -> some View {
-        let maxCount = max(data.genreBreakdown.map(\.count).max() ?? 1, 1)
+        let top = Array(data.genreBreakdown.prefix(6))
+        let total = max(top.reduce(0) { $0 + $1.count }, 1)
         return statCard("Top Genres") {
-            VStack(spacing: 10) {
-                ForEach(data.genreBreakdown.prefix(8), id: \.genre) { row in
-                    HStack(spacing: 10) {
-                        Text(row.genre)
-                            .font(Theme.body(13))
-                            .foregroundStyle(Theme.foreground)
-                            .lineLimit(1)
-                            .frame(width: 120, alignment: .leading)
-                        GeometryReader { geo in
-                            Capsule().fill(Theme.surfaceAlt)
-                            Capsule().fill(Theme.neonPurple)
-                                .frame(width: max(geo.size.width * CGFloat(row.count) / CGFloat(maxCount), 8))
+            HStack(spacing: 22) {
+                // Donut pie (web: stroked circles, -90° start)
+                ZStack {
+                    ForEach(Array(top.enumerated()), id: \.element.genre) { i, row in
+                        let startPct = top.prefix(i).reduce(0.0) { $0 + Double($1.count) / Double(total) }
+                        let endPct = startPct + Double(row.count) / Double(total)
+                        Circle()
+                            .trim(from: startPct, to: endPct)
+                            .stroke(chartColors[i % chartColors.count],
+                                    style: StrokeStyle(lineWidth: 13))
+                            .rotationEffect(.degrees(-90))
+                    }
+                    Text(top.first?.genre ?? "")
+                        .font(Theme.body(10, .bold))
+                        .foregroundStyle(Theme.foreground)
+                        .multilineTextAlignment(.center)
+                        .frame(width: 62)
+                        .lineLimit(2)
+                }
+                .frame(width: 104, height: 104)
+                .padding(6)
+
+                // Legend
+                VStack(alignment: .leading, spacing: 7) {
+                    ForEach(Array(top.enumerated()), id: \.element.genre) { i, row in
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(chartColors[i % chartColors.count])
+                                .frame(width: 9, height: 9)
+                            Text(row.genre)
+                                .font(Theme.body(12))
+                                .foregroundStyle(Theme.foreground)
+                                .lineLimit(1)
+                            Spacer()
+                            Text("\(row.count)")
+                                .font(Theme.body(12))
+                                .foregroundStyle(Theme.muted)
                         }
-                        .frame(height: 8)
-                        Text("\(row.count)")
-                            .font(Theme.body(12))
-                            .foregroundStyle(Theme.muted)
-                            .frame(width: 24, alignment: .leading)
                     }
                 }
             }

@@ -311,12 +311,7 @@ private struct ReadingNowCard: View {
             .background(Theme.surfaceAlt)
             // …under the blurred cover + dark overlay (.book-card-bg-img + overlay)
             if let cover = book.coverImageUrl, let url = URL(string: cover) {
-                AsyncImage(url: url) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
-                        .blur(radius: 16)
-                        .saturation(1.5)
-                        .opacity(0.4)
-                } placeholder: { Color.clear }
+                CoverBlurImage(url: url)
                 Theme.scrim // black 25% dark · white 35% light (.currently-reading-overlay)
             }
         }
@@ -744,11 +739,7 @@ private struct UpNextCard: View {
             ZStack {
                 Theme.surfaceAlt
                 if let cover = item.coverImageUrl, let url = URL(string: cover) {
-                    AsyncImage(url: url) { image in
-                        image.resizable().aspectRatio(contentMode: .fill)
-                            .blur(radius: 22)
-                            .opacity(0.30)
-                    } placeholder: { Color.clear }
+                    CoverBlurImage(url: url)
                     Theme.scrim
                 }
             }
