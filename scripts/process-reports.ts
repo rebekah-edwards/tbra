@@ -1,25 +1,56 @@
 /**
- * Process open user reports on the PRODUCTION Turso database.
+ * Process open user reports, keeping the LOCAL (data/tbra.db) and PRODUCTION
+ * (Turso) databases identical.
  *
  * Usage: npx tsx scripts/process-reports.ts
  *
- * Loads env from .env.vercel.local (run `npx vercel env pull` first).
+ * Loads env from .env.local (Meilisearch keys) + .env.vercel.local (Turso).
+ * Run `npx vercel env pull` first if .env.vercel.local is missing.
+ *
+ * Parity guarantee: every mutation is applied to BOTH databases (see query()
+ * below), and every deleted book is purged from Meilisearch. Without this, a
+ * Turso-only delete/merge would be undone the same night — sync-push only ever
+ * INSERTs, so it re-creates any book that still exists locally, and an
+ * upsert-only Meilisearch sync never removes deleted docs. Keeping both DBs in
+ * lockstep here prevents that drift entirely.
  */
 
 import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
 dotenv.config({ path: ".env.vercel.local" });
 
-import type { Client } from "@libsql/client";
+import { createClient, type Client } from "@libsql/client";
 import { createGuardedTurso } from "./lib/turso-guard";
+import { Meilisearch } from "meilisearch";
 import * as fs from "fs";
 import * as path from "path";
 
+// Production Turso — authoritative for the live report queue.
 let client: Client;
+// Local mirror (data/tbra.db). Every write is applied here too so the two
+// databases never diverge.
+let localDb: Client | null = null;
+// Book ids deleted this run — purged from the Meilisearch index at the end.
+const deletedBookIds: string[] = [];
 
 // Running log of every resolution applied this run, for the summary report file.
 const fixedLog: string[] = [];
 
+// Reads hit production. Writes (INSERT/UPDATE/DELETE/REPLACE) are mirrored to
+// the local DB as well, so both databases stay identical. Production is
+// authoritative and its result is what callers receive.
 async function query(sql: string, args: any[] = []) {
+  const isWrite = /^\s*(INSERT|UPDATE|DELETE|REPLACE)\b/i.test(sql);
+  if (isWrite && localDb) {
+    try {
+      await localDb.execute({ sql, args });
+    } catch (e: any) {
+      // A missing table/row locally must never block the production write.
+      if (!/no such table/i.test(String(e?.message ?? e))) {
+        console.warn(`  [local mirror skip] ${String(e?.message ?? e)}`);
+      }
+    }
+  }
   return client.execute({ sql, args });
 }
 
@@ -72,6 +103,8 @@ async function deleteBook(bookId: string) {
   if (v.rows.length !== 0) {
     throw new Error(`deleteBook verification failed: ${bookId} still exists on Turso`);
   }
+  // Queue for Meilisearch removal (upsert-only syncs never drop deleted docs).
+  deletedBookIds.push(bookId);
 }
 
 async function resolveReport(reportId: string, resolution: string) {
@@ -301,6 +334,18 @@ async function main() {
     longRunning: true,
   });
   client = guard.remote;
+
+  // Open the local mirror so every write below lands in BOTH databases. If it
+  // is unavailable we fall back to production-only (previous behaviour) rather
+  // than failing the whole run, but warn loudly since the DBs may then diverge.
+  try {
+    localDb = createClient({ url: "file:./data/tbra.db" });
+    await localDb.execute("SELECT 1");
+    console.log("Local mirror: data/tbra.db (dual-write enabled — local + Turso stay in sync)");
+  } catch (e: any) {
+    localDb = null;
+    console.warn(`Local mirror UNAVAILABLE (${String(e?.message ?? e)}) — running production-only; local/prod may diverge until next sync.`);
+  }
 
   // Fetch open reports
   const result = await query(`
@@ -597,9 +642,33 @@ async function main() {
     console.log();
   }
 
+  // ── Purge deleted books from Meilisearch ──
+  // Deletions above already applied to both DBs; the search index is upsert-only
+  // via sync-meilisearch, so deleted books linger as ghost search hits unless we
+  // remove them here.
+  let meiliPurged = 0;
+  if (deletedBookIds.length > 0) {
+    const host = process.env.MEILISEARCH_HOST;
+    const key = process.env.MEILISEARCH_ADMIN_KEY;
+    if (host && key) {
+      try {
+        const meili = new Meilisearch({ host, apiKey: key });
+        await meili.index("books").deleteDocuments(deletedBookIds);
+        meiliPurged = deletedBookIds.length;
+        console.log(`Meilisearch: purged ${meiliPurged} deleted book(s) from the index`);
+      } catch (e: any) {
+        console.warn(`Meilisearch purge failed (non-fatal): ${String(e?.message ?? e)}`);
+      }
+    } else {
+      console.warn(`Meilisearch keys absent — ${deletedBookIds.length} deleted book(s) NOT purged from index`);
+    }
+  }
+
   console.log(`\n=== SUMMARY ===`);
   console.log(`Fixed: ${fixed}`);
   console.log(`Needs input: ${needsInput.length}`);
+  console.log(`Local mirror: ${localDb ? "in sync (dual-write)" : "UNAVAILABLE (production-only)"}`);
+  console.log(`Books deleted: ${deletedBookIds.length}${deletedBookIds.length ? ` (Meilisearch purged: ${meiliPurged})` : ""}`);
 
   if (needsInput.length > 0) {
     console.log(`\n=== REPORTS NEEDING USER INPUT ===\n`);
@@ -619,7 +688,10 @@ async function main() {
   out.push(`# Nightly triage — ${today}`, ``);
   out.push(`- Open reports processed: ${result.rows.length}`);
   out.push(`- Auto-fixed: ${fixed}`);
-  out.push(`- Needs your decision: ${needsInput.length}`, ``);
+  out.push(`- Needs your decision: ${needsInput.length}`);
+  out.push(`- Databases: ${localDb ? "local + Turso kept in sync" : "**production-only (local mirror was unavailable)**"}`);
+  if (deletedBookIds.length > 0) out.push(`- Books deleted: ${deletedBookIds.length} (also removed from local DB + Meilisearch)`);
+  out.push(``);
   if (fixedLog.length > 0) {
     out.push(`## Auto-fixed`, ``);
     fixedLog.forEach((f, i) => out.push(`${i + 1}. ${f}`));
@@ -639,6 +711,8 @@ async function main() {
   } catch (e) {
     console.warn(`Failed to write triage summary:`, e);
   }
+
+  try { localDb?.close(); } catch { /* best effort */ }
 }
 
 main().catch(console.error);
