@@ -127,3 +127,5 @@ explicit user sign-off.
   build toolchain (see project memory for the Simulator.app rescue).
 
 - 2026-07-03: Review wizard BUILT + verified (5 steps, edit mode, delete).
+
+- 2026-07: Light-mode pass done (Theme.scrim adaptive token; all tabs verified light). Browse + follow lists + buddy reads + reviews list + auth sub-pages + Find Readers + external search all BUILT — see route table.
