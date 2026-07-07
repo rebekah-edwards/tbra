@@ -52,7 +52,11 @@ interface ReviewPayload {
 export async function saveReview(payload: ReviewPayload) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  return saveReviewFor(userId, payload);
+}
 
+/** Core save logic, callable with an explicit user id (used by /api/v1). */
+export async function saveReviewFor(userId: string, payload: ReviewPayload) {
   const {
     bookId,
     overallRating,
@@ -87,7 +91,7 @@ export async function saveReview(payload: ReviewPayload) {
   const existing = await db
     .select({ id: userBookReviews.id })
     .from(userBookReviews)
-    .where(and(eq(userBookReviews.userId, user.userId), eq(userBookReviews.bookId, bookId)))
+    .where(and(eq(userBookReviews.userId, userId), eq(userBookReviews.bookId, bookId)))
     .get();
 
   let reviewId: string;
@@ -116,7 +120,7 @@ export async function saveReview(payload: ReviewPayload) {
     reviewId = crypto.randomUUID();
     await db.insert(userBookReviews).values({
       id: reviewId,
-      userId: user.userId,
+      userId: userId,
       bookId,
       overallRating: validatedRating,
       mood,
@@ -145,10 +149,10 @@ export async function saveReview(payload: ReviewPayload) {
     const reviewer = await db
       .select({ displayName: users.displayName, username: users.username })
       .from(users)
-      .where(eq(users.id, user.userId))
+      .where(eq(users.id, userId))
       .get();
     await notifyAdminsOfArcSubmission({
-      reviewerId: user.userId,
+      reviewerId: userId,
       reviewerDisplayName: reviewer?.displayName ?? null,
       reviewerUsername: reviewer?.username ?? null,
       bookTitle: book?.title ?? "a book",
@@ -210,7 +214,7 @@ export async function saveReview(payload: ReviewPayload) {
     const existingRating = await db
       .select({ id: userBookRatings.id })
       .from(userBookRatings)
-      .where(and(eq(userBookRatings.userId, user.userId), eq(userBookRatings.bookId, bookId)))
+      .where(and(eq(userBookRatings.userId, userId), eq(userBookRatings.bookId, bookId)))
       .get();
 
     if (existingRating) {
@@ -220,7 +224,7 @@ export async function saveReview(payload: ReviewPayload) {
         .where(eq(userBookRatings.id, existingRating.id));
     } else {
       await db.insert(userBookRatings).values({
-        userId: user.userId,
+        userId: userId,
         bookId,
         rating: validatedRating,
       });
@@ -229,7 +233,7 @@ export async function saveReview(payload: ReviewPayload) {
     // Remove rating if DNF or no rating
     await db
       .delete(userBookRatings)
-      .where(and(eq(userBookRatings.userId, user.userId), eq(userBookRatings.bookId, bookId)));
+      .where(and(eq(userBookRatings.userId, userId), eq(userBookRatings.bookId, bookId)));
   }
 
   // Process content warnings → What's Inside aggregation
@@ -256,7 +260,7 @@ export async function saveReview(payload: ReviewPayload) {
       if (!categoryId) continue;
       if (p.intensity < 0 || p.intensity > 4) continue;
       await db.insert(reportCorrections).values({
-        userId: user.userId,
+        userId: userId,
         bookId,
         categoryId,
         proposedIntensity: p.intensity,
@@ -280,7 +284,7 @@ export async function saveReview(payload: ReviewPayload) {
         const text = raw.slice(0, 120).trim();
         if (!text) continue;
         await db.insert(reportCorrections).values({
-          userId: user.userId,
+          userId: userId,
           bookId,
           categoryId: userAddedCat.id,
           proposedIntensity: null,
@@ -310,11 +314,11 @@ export async function saveReview(payload: ReviewPayload) {
       db
         .select({ displayName: users.displayName, username: users.username })
         .from(users)
-        .where(eq(users.id, user.userId))
+        .where(eq(users.id, userId))
         .get(),
     ]);
     await notifyAdminsOfProposedEdits({
-      reviewerId: user.userId,
+      reviewerId: userId,
       reviewerDisplayName: reviewer?.displayName ?? null,
       reviewerUsername: reviewer?.username ?? null,
       bookTitle: book?.title ?? "a book",
@@ -331,11 +335,15 @@ export async function saveReview(payload: ReviewPayload) {
 export async function deleteReview(bookId: string) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  return deleteReviewFor(userId, bookId);
+}
 
+/** Core delete logic, callable with an explicit user id (used by /api/v1). */
+export async function deleteReviewFor(userId: string, bookId: string) {
   const existing = await db
     .select({ id: userBookReviews.id })
     .from(userBookReviews)
-    .where(and(eq(userBookReviews.userId, user.userId), eq(userBookReviews.bookId, bookId)))
+    .where(and(eq(userBookReviews.userId, userId), eq(userBookReviews.bookId, bookId)))
     .get();
 
   if (!existing) return;
@@ -348,7 +356,7 @@ export async function deleteReview(bookId: string) {
   // Remove synced rating
   await db
     .delete(userBookRatings)
-    .where(and(eq(userBookRatings.userId, user.userId), eq(userBookRatings.bookId, bookId)));
+    .where(and(eq(userBookRatings.userId, userId), eq(userBookRatings.bookId, bookId)));
 
   // Re-aggregate content warnings without this review
   await aggregateContentWarnings(bookId, []);

@@ -45,7 +45,7 @@ struct BookDetailView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     BookHero(data: data, onBack: { dismiss() })
                     BookActionCluster(model: model, data: data)
-                    BookStarsRow(data: data)
+                    BookStarsRow(data: data, onReviewSaved: { Task { await model.load() } })
                     if let summary = data.book.summary, !summary.isEmpty {
                         SummaryQuoteCard(summary: summary)
                     }
@@ -712,12 +712,14 @@ private struct ShelvesPickerSheet: View {
     }
 }
 
-// ── Stars row ──
+// ── Stars row + review trigger (review-trigger.tsx) ──
 private struct BookStarsRow: View {
     let data: BookDetailData
+    var onReviewSaved: () -> Void = {}
+    @State private var wizardOpen = false
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
             HStack(spacing: 10) {
                 StarRow(rating: data.aggregate?.average ?? 0)
                     .scaleEffect(1.5)
@@ -734,13 +736,41 @@ private struct BookStarsRow: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            if !data.hasCompleted {
+
+            if data.hasCompleted || data.userState?.state == "completed" || data.userState?.state == "dnf" || data.userRating != nil {
+                Button {
+                    wizardOpen = true
+                } label: {
+                    Text(data.userRating != nil ? "Edit your review" : "Rate & review")
+                        .font(Theme.body(15, .semibold))
+                        .foregroundStyle(Theme.accent)
+                        .padding(.horizontal, 20).padding(.vertical, 9)
+                        .background(Theme.accent.opacity(0.1), in: Capsule())
+                        .overlay(Capsule().stroke(Theme.accent.opacity(0.45), lineWidth: 1))
+                }
+            } else {
                 Text("Mark as finished to review")
                     .font(Theme.body(14))
                     .foregroundStyle(Theme.muted)
             }
         }
         .padding(.top, 4)
+        #if DEBUG && targetEnvironment(simulator)
+        .task {
+            if ProcessInfo.processInfo.environment["TBRA_DEBUG_REVIEW"] != nil {
+                try? await Task.sleep(for: .seconds(1))
+                wizardOpen = true
+            }
+        }
+        #endif
+        .fullScreenCover(isPresented: $wizardOpen) {
+            ReviewWizardView(
+                bookId: data.book.id,
+                isFiction: data.book.isFiction,
+                ratings: data.book.ratings,
+                onSaved: onReviewSaved
+            )
+        }
     }
 }
 

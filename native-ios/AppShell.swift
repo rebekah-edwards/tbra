@@ -15,6 +15,9 @@ struct AppShell: View {
     @Environment(AuthStore.self) private var auth
     @State private var tab: AppTab = .home
     @State private var searchOpen = false
+    #if DEBUG && targetEnvironment(simulator)
+    @State private var debugBookSlug: String?
+    #endif
 
     var body: some View {
         ZStack {
@@ -39,6 +42,18 @@ struct AppShell: View {
             SearchRootView()
         }
         #if DEBUG && targetEnvironment(simulator)
+        .fullScreenCover(isPresented: Binding(
+            get: { debugBookSlug != nil },
+            set: { if !$0 { debugBookSlug = nil } }
+        )) {
+            NavigationStack {
+                BookDetailView(idOrSlug: debugBookSlug ?? "")
+                    .toolbar(.hidden, for: .navigationBar)
+                    .appDestinations()
+            }
+        }
+        #endif
+        #if DEBUG && targetEnvironment(simulator)
         // Headless verification hook: `SIMCTL_CHILD_TBRA_DEBUG_ROUTE=search
         // xcrun simctl launch …` lands directly on a screen so the agent can
         // screenshot it without GUI taps. Never compiled for device builds.
@@ -51,6 +66,8 @@ struct AppShell: View {
             case "discover": tab = .discover
             case "stats": tab = .stats
             case "profile": tab = .profile
+            case let route? where route.hasPrefix("book:"):
+                debugBookSlug = String(route.dropFirst("book:".count))
             default: break
             }
         }

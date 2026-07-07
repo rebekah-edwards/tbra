@@ -116,6 +116,19 @@ actor APIClient {
         try await send(path, method: "POST", body: body)
     }
 
+    /// Generic request with a typed Encodable JSON body (PUT flows).
+    /// Sendable payload structs cross actor isolation cleanly where
+    /// `[String: Any]` trips Swift 6 region analysis.
+    func request<T: Decodable, B: Encodable & Sendable>(_ path: String, method: String, json: B) async throws -> T {
+        let data = try JSONEncoder().encode(json)
+        return try await send(path, method: method, bodyData: data)
+    }
+
+    /// Generic body-less request (DELETE flows).
+    func request<T: Decodable>(_ path: String, method: String) async throws -> T {
+        try await send(path, method: method)
+    }
+
     // MARK: Profile
 
     func profile() async throws -> ProfileData {
@@ -248,7 +261,8 @@ actor APIClient {
     private func send<T: Decodable>(
         _ path: String, method: String,
         query: [URLQueryItem]? = nil,
-        body: [String: Any]? = nil, authed: Bool = true, isRetry: Bool = false
+        body: [String: Any]? = nil, bodyData: Data? = nil,
+        authed: Bool = true, isRetry: Bool = false
     ) async throws -> T {
         var url = Self.baseURL.appending(path: path)
         if let query { url.append(queryItems: query) }
@@ -257,6 +271,9 @@ actor APIClient {
         if let body {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             req.httpBody = try JSONSerialization.data(withJSONObject: body)
+        } else if let bodyData {
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = bodyData
         }
         if authed, let token = Keychain.accessToken {
             req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -273,7 +290,7 @@ actor APIClient {
         if http.statusCode == 401 && authed && !isRetry {
             // Access token expired — rotate once and retry.
             try await refreshAccessToken()
-            return try await send(path, method: method, query: query, body: body, authed: authed, isRetry: true)
+            return try await send(path, method: method, query: query, body: body, bodyData: bodyData, authed: authed, isRetry: true)
         }
 
         guard (200..<300).contains(http.statusCode) else {

@@ -352,6 +352,7 @@ struct BookFull: Codable, Hashable {
     let isbn13: String?
     let asin: String?
     let isBoxSet: Bool?
+    let isFiction: Bool?
     let ratings: [ContentRating]
 }
 
