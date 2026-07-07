@@ -25,6 +25,9 @@ struct AppDestinations: ViewModifier {
             .navigationDestination(for: UserRoute.self) { route in
                 PublicProfileView(username: route.username)
             }
+            .navigationDestination(for: ReviewsRoute.self) { route in
+                ReviewsListView(bookIdOrSlug: route.bookIdOrSlug, bookTitle: route.bookTitle)
+            }
     }
 }
 extension View {

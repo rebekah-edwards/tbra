@@ -973,10 +973,12 @@ private struct BookStarsRow: View {
                         .font(Theme.body(17, .semibold))
                         .foregroundStyle(Theme.foreground)
                     Text("·").foregroundStyle(Theme.muted)
-                    Text("\(data.aggregate?.count ?? 0) review\(data.aggregate?.count == 1 ? "" : "s")")
-                        .font(Theme.body(15))
-                        .foregroundStyle(Theme.muted)
-                        .underline()
+                    NavigationLink(value: ReviewsRoute(bookIdOrSlug: data.slug ?? data.book.id, bookTitle: data.book.title)) {
+                        Text("\(data.aggregate?.count ?? 0) review\(data.aggregate?.count == 1 ? "" : "s")")
+                            .font(Theme.body(15))
+                            .foregroundStyle(Theme.neonBlue)
+                            .underline()
+                    }
                 }
             }
             .frame(maxWidth: .infinity)

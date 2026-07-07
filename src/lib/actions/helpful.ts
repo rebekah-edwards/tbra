@@ -11,14 +11,18 @@ export async function toggleHelpfulVote(reviewId: string, bookId: string) {
   if (!user) {
     return { error: "Must be logged in to vote" };
   }
+  return toggleHelpfulVoteFor(userId, reviewId, bookId);
+}
 
+/** Core toggle, callable with an explicit user id (used by /api/v1). */
+export async function toggleHelpfulVoteFor(userId: string, reviewId: string, bookId: string) {
   // Check if the user already voted
   const existing = await db
     .select()
     .from(reviewHelpfulVotes)
     .where(
       and(
-        eq(reviewHelpfulVotes.userId, user.userId),
+        eq(reviewHelpfulVotes.userId, userId),
         eq(reviewHelpfulVotes.reviewId, reviewId)
       )
     )
@@ -32,7 +36,7 @@ export async function toggleHelpfulVote(reviewId: string, bookId: string) {
   } else {
     // Add vote
     await db.insert(reviewHelpfulVotes).values({
-      userId: user.userId,
+      userId: userId,
       reviewId,
     });
 
@@ -40,9 +44,9 @@ export async function toggleHelpfulVote(reviewId: string, bookId: string) {
     try {
       const review = await db.select({ userId: userBookReviews.userId })
         .from(userBookReviews).where(eq(userBookReviews.id, reviewId)).get();
-      if (review && review.userId !== user.userId) {
+      if (review && review.userId !== userId) {
         const voter = await db.select({ displayName: users.displayName, username: users.username })
-          .from(users).where(eq(users.id, user.userId)).get();
+          .from(users).where(eq(users.id, userId)).get();
         const voterName = voter?.displayName || voter?.username || "Someone";
         const bookRow = await db.select({ slug: books.slug }).from(books).where(eq(books.id, bookId)).get();
         await db.insert(userNotifications).values({
