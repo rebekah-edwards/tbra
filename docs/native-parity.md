@@ -74,7 +74,7 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 | `/library/shelves` | Shelves list, My Shelves/Following pills, shelf cards | BUILT | Following + Top Shelf missing |
 | `/library/shelves/[slug]` | Shelf detail: cover grid, Shelf Order, Filters, Edit, share | BUILT (controls visual-only) | sort/filter params |
 | `/library/shelves/top-shelf` | Top Shelf (favorites) | BUILT (toggle in Shelves picker + Profile rail; the dedicated /top-shelf page itself still opens web) | ✅ /api/v1/books/[id]/favorite |
-| `/search` + `/search/add` | Search page, local-first + add flows | BUILT (commit 872b773): FTS search, result cards w/ compact 5-state pill + date sheet, book navigation, top-bar + Find-books entry points. Open: ISBNdb external supplement + import-from-external, Owned pill on cards, /search/add page. | ✅ /api/v1/search |
+| `/search` + `/search/add` | Search page, local-first + add flows | BUILT: FTS search, compact 5-state pills, ISBNdb MORE-RESULTS supplement w/ import-on-add (2026-07 — covers the Martian-Deluxe report case). Open: Owned pill on cards, /search/add page. | ✅ /api/v1/search + /external + /import |
 
 ## Phase 2 — Discovery + identity
 
