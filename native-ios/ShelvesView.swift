@@ -184,7 +184,7 @@ private struct ShelfCard: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Theme.foreground.opacity(0.85))
                     .frame(width: 32, height: 32)
-                    .background(.black.opacity(0.30))
+                    .background(Theme.scrim)
                     .clipShape(Circle())
             }
             .padding(14)

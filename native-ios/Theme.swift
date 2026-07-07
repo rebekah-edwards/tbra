@@ -51,6 +51,13 @@ enum Theme {
     static let border     = Color(dark: "2a2a3a", light: "dddce4")
     static let muted      = Color(dark: "7a7890", light: "71717a")
     static let destructive = Color(dark: "ef4444", light: "dc2626")
+    /// Cover-blur card scrim — .currently-reading-overlay: black 25% on
+    /// dark, white 35% on light (text on it uses Theme.foreground).
+    static let scrim = Color(UIColor { trait in
+        trait.userInterfaceStyle == .light
+            ? UIColor.white.withAlphaComponent(0.35)
+            : UIColor.black.withAlphaComponent(0.25)
+    })
 
     // ── Brand colors ──
     static let accent      = Color(hex: "a3e635")   // lime-400, both modes, never olive

@@ -247,11 +247,11 @@ private struct ReadingNowCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(book.title)
                     .font(Theme.body(16, .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.foreground)
                     .lineLimit(2)
                 Text(book.authors.joined(separator: ", "))
                     .font(Theme.body(14))
-                    .foregroundStyle(.white.opacity(0.70))
+                    .foregroundStyle(Theme.foreground.opacity(0.70))
                     .lineLimit(2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -317,7 +317,7 @@ private struct ReadingNowCard: View {
                         .saturation(1.5)
                         .opacity(0.4)
                 } placeholder: { Color.clear }
-                Color.black.opacity(0.25)
+                Theme.scrim // black 25% dark · white 35% light (.currently-reading-overlay)
             }
         }
     }
@@ -749,7 +749,7 @@ private struct UpNextCard: View {
                             .blur(radius: 22)
                             .opacity(0.30)
                     } placeholder: { Color.clear }
-                    Color.black.opacity(0.30)
+                    Theme.scrim
                 }
             }
         )

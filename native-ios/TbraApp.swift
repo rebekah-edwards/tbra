@@ -8,6 +8,12 @@ struct TbraApp: App {
 
     init() {
         Theme.configureNavigationBarAppearance()
+        #if DEBUG && targetEnvironment(simulator)
+        // Headless light-mode verification: SIMCTL_CHILD_TBRA_DEBUG_THEME=light
+        if let t = ProcessInfo.processInfo.environment["TBRA_DEBUG_THEME"] {
+            UserDefaults.standard.set(t, forKey: "themeOverride")
+        }
+        #endif
     }
 
     var body: some Scene {
