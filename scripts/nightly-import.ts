@@ -620,9 +620,20 @@ async function importBook(query: string, seed?: ImportSeed): Promise<number> {
       await db.insert(bookGenres).values({ bookId: book.id, genreId: genre.id }).onConflictDoNothing();
     }
 
-    // Enrich
+    // Enrich — metadata-only (skipContentSearch). Both the discovery and breadth
+    // lanes bulk-add ~500 books/night; enrichBook's content-analysis + audiobook
+    // Brave searches ignore skipBrave, so leaving them on spent ~6 Brave calls ×
+    // ~500 books ≈ 3,000/night — enough to exhaust the shared ~3,300/day cap on
+    // its OWN and starve the priority lanes (upcoming-releases, thin-recovery,
+    // content-ratings) that run after it. skipContentSearch makes ingestion truly
+    // Brave-free: books land with metadata/genres/cover from the free structured
+    // sources, and their Grok content ratings are filled later by the (now
+    // expanded) nightly content-ratings backfill. Bonus: it also skips enrichBook's
+    // internal author-bibliography discovery — the redundant "double import" — so
+    // the intended cascade below (importCascadeBooks, capped, import_only) is the
+    // single source of backlist growth.
     try {
-      await enrichBook(book.id);
+      await enrichBook(book.id, { skipContentSearch: true });
     } catch (err) {
       console.warn(`  Enrichment failed for ${result.title}:`, err);
     }

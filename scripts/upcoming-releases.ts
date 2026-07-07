@@ -318,11 +318,18 @@ async function main() {
       await assignBookSlug(book.id, finalTitle, primaryAuthor);
       await updateSearchIndex(book.id);
 
-      // Enrich to fill genres/ratings/cover gaps. skipAuthorDiscovery so we don't
-      // balloon the catalog with backlists; skipBrave to stay off that budget.
-      // enrichBook only fills EMPTY fields, so our good Google date survives.
+      // Enrich to fill metadata/genres/cover gaps from the FREE structured
+      // sources (OL / ISBNdb / LoC / Google Books). skipAuthorDiscovery so we
+      // don't balloon the catalog with backlists. skipContentSearch is what
+      // actually keeps this lane off the Brave budget: skipBrave alone does NOT
+      // (the content-analysis + audiobook searches ignore it), so without this
+      // every preorder would spend ~6 Brave calls and — on a night the shared
+      // daily cap is already spent by nightly-discovery — throw API_EXHAUSTED and
+      // land as a bare shell. Content ratings are deferred to the nightly
+      // content-ratings backfill, which picks these public books up on its own
+      // Brave budget. enrichBook only fills EMPTY fields, so our Google date survives.
       try {
-        await enrichBook(book.id, { skipAuthorDiscovery: true, skipBrave: true });
+        await enrichBook(book.id, { skipAuthorDiscovery: true, skipBrave: true, skipContentSearch: true });
       } catch (err) {
         console.warn(`  enrichment failed for "${finalTitle}":`, err);
       }
