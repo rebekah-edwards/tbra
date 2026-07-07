@@ -21,18 +21,29 @@ extension EnvironmentValues {
     }
 }
 
+struct ExternalResult: Codable, Hashable, Identifiable {
+    var id: String { isbn }
+    let isbn: String
+    let title: String
+    let authors: [String]
+    let publicationYear: Int?
+    let pages: Int?
+    let coverUrl: String?
+}
+
 @MainActor
 @Observable
 final class SearchModel {
     var query = ""
     var results: [SearchResult] = []
+    var external: [ExternalResult] = []
     var searching = false
     private var task: Task<Void, Never>?
 
     func queryChanged() {
         task?.cancel()
         let q = query.trimmingCharacters(in: .whitespaces)
-        guard q.count >= 2 else { results = []; searching = false; return }
+        guard q.count >= 2 else { results = []; external = []; searching = false; return }
         searching = true
         task = Task {
             // Debounce as-you-type like the web client
@@ -42,6 +53,17 @@ final class SearchModel {
             guard !Task.isCancelled else { return }
             results = found
             searching = false
+            // Local-first, ISBNdb fallback: supplement when local < 5
+            // (same trigger as the web search page).
+            if found.count < 5 {
+                struct Res: Codable { let ok: Bool; let results: [ExternalResult] }
+                let res: Res? = try? await APIClient.shared.get(
+                    "/api/v1/search/external", query: [URLQueryItem(name: "q", value: q)])
+                guard !Task.isCancelled else { return }
+                external = res?.results ?? []
+            } else {
+                external = []
+            }
         }
     }
 }
@@ -112,12 +134,28 @@ struct SearchView: View {
                                 SearchResultCard(result: result)
                             }
                         }
-                    } else if model.query.trimmingCharacters(in: .whitespaces).count >= 2 {
+                    } else if model.query.trimmingCharacters(in: .whitespaces).count >= 2 && model.external.isEmpty {
                         Text("No matches in the library yet.")
                             .font(Theme.body(15))
                             .foregroundStyle(Theme.muted)
                             .frame(maxWidth: .infinity)
                             .padding(.top, 30)
+                    }
+
+                    if !model.external.isEmpty && !model.searching {
+                        Text("MORE RESULTS")
+                            .font(Theme.body(13, .semibold))
+                            .tracking(1.2)
+                            .foregroundStyle(Theme.muted)
+                            .padding(.top, 8)
+                        Text("From the wider catalog — adding one imports it to tbr*a.")
+                            .font(Theme.body(12))
+                            .foregroundStyle(Theme.muted.opacity(0.8))
+                        VStack(spacing: 14) {
+                            ForEach(model.external) { result in
+                                ExternalResultCard(result: result)
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 20)
@@ -326,5 +364,92 @@ private struct SearchResultCard: View {
             completionDate: date, completionPrecision: precision
         )
         state = value
+    }
+}
+
+
+// External (ISBNdb) result — importing happens on first state selection:
+// POST /search/import creates the book (+ background enrichment), then the
+// normal reading-state endpoint runs. Mirrors setBookStateWithImport.
+private struct ExternalResultCard: View {
+    let result: ExternalResult
+    @State private var importedBookId: String?
+    @State private var state: String?
+    @State private var busy = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 14) {
+                CoverThumb(url: result.coverUrl, width: 74, height: 111, radius: 8)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(result.title)
+                        .font(Theme.body(18, .bold))
+                        .foregroundStyle(Theme.foreground)
+                        .multilineTextAlignment(.leading)
+                    Text(result.authors.joined(separator: ", "))
+                        .font(Theme.body(15))
+                        .foregroundStyle(Theme.muted)
+                        .lineLimit(1)
+                    HStack(spacing: 4) {
+                        if let year = result.publicationYear { Text(String(year)) }
+                        if let pages = result.pages { Text("·"); Text("\(pages) pp") }
+                    }
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.muted)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(14)
+
+            HStack(spacing: 10) {
+                Button {
+                    guard !busy else { return }
+                    busy = true
+                    Task {
+                        defer { busy = false }
+                        let bookId: String
+                        if let importedBookId {
+                            bookId = importedBookId
+                        } else {
+                            struct Body: Codable, Sendable {
+                                let isbn: String; let title: String; let authors: [String]
+                                let coverUrl: String?; let publicationYear: Int?; let pages: Int?
+                            }
+                            struct Ok: Codable { let ok: Bool; let bookId: String }
+                            guard let res: Ok = try? await APIClient.shared.request(
+                                "/api/v1/search/import", method: "POST",
+                                json: Body(isbn: result.isbn, title: result.title, authors: result.authors,
+                                           coverUrl: result.coverUrl, publicationYear: result.publicationYear,
+                                           pages: result.pages)) else { return }
+                            importedBookId = res.bookId
+                            bookId = res.bookId
+                        }
+                        try? await APIClient.shared.setReadingState(bookId: bookId, state: state == nil ? "tbr" : "none")
+                        state = state == nil ? "tbr" : nil
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        if busy {
+                            ProgressView().tint(state != nil ? .black : Theme.foreground).scaleEffect(0.7)
+                        } else if state == nil {
+                            Image(systemName: "plus").font(.system(size: 12, weight: .semibold))
+                        }
+                        Text(state == nil ? "Add to tbr*a" : "On your TBR ✓")
+                            .font(Theme.body(14, .medium))
+                    }
+                    .foregroundStyle(state != nil ? .black : Theme.foreground)
+                    .padding(.horizontal, 16).padding(.vertical, 9)
+                    .background(state != nil ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.accent.opacity(0.2)))
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(Theme.accent.opacity(state != nil ? 1 : 0.6), lineWidth: 1.5))
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 14)
+        }
+        .background(Theme.surface.opacity(0.65))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border.opacity(0.7), lineWidth: 1))
     }
 }
