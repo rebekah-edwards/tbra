@@ -31,6 +31,9 @@ struct AppDestinations: ViewModifier {
             .navigationDestination(for: BuddyReadRoute.self) { route in
                 BuddyReadDetailView(slug: route.slug)
             }
+            .navigationDestination(for: FollowListRoute.self) { route in
+                FollowListView(username: route.username, type: route.type)
+            }
     }
 }
 extension View {

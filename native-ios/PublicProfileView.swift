@@ -181,9 +181,13 @@ struct PublicProfileView: View {
                         .foregroundStyle(Theme.muted)
                 }
                 HStack(spacing: 6) {
-                    (Text("\(model.followerCount) ").fontWeight(.bold) + Text("followers"))
+                    NavigationLink(value: FollowListRoute(username: model.username, type: "followers")) {
+                        (Text("\(model.followerCount) ").fontWeight(.bold) + Text("followers"))
+                    }
                     Text("·")
-                    (Text("\(model.followingCount) ").fontWeight(.bold) + Text("following"))
+                    NavigationLink(value: FollowListRoute(username: model.username, type: "following")) {
+                        (Text("\(model.followingCount) ").fontWeight(.bold) + Text("following"))
+                    }
                 }
                 .font(Theme.body(13))
                 .foregroundStyle(Theme.foreground.opacity(0.85))
