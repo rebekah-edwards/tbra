@@ -141,9 +141,10 @@ struct HamburgerMenuSheet: View {
     @AppStorage("themeOverride") private var themeOverride = "dark"
     let onProfile: () -> Void
 
+    @State private var settingsOpen = false
+
     private struct WebItem { let label: String; let icon: String; let path: String }
     private let items: [WebItem] = [
-        WebItem(label: "Settings", icon: "gearshape", path: "/settings"),
         WebItem(label: "Find Readers", icon: "person.2", path: "/people"),
         WebItem(label: "Buddy Reads", icon: "book.pages", path: "/buddy-reads"),
         WebItem(label: "Browse All Books", icon: "books.vertical", path: "/browse"),
@@ -177,6 +178,12 @@ struct HamburgerMenuSheet: View {
                 onProfile()
             } label: {
                 menuRow(icon: "person.crop.circle", label: "Profile")
+            }
+
+            Button {
+                settingsOpen = true
+            } label: {
+                menuRow(icon: "gearshape", label: "Settings")
             }
 
             ForEach(items, id: \.path) { item in
@@ -221,6 +228,12 @@ struct HamburgerMenuSheet: View {
             Spacer()
         }
         .background(Theme.bg)
+        .fullScreenCover(isPresented: $settingsOpen) {
+            NavigationStack {
+                SettingsView()
+                    .appDestinations()
+            }
+        }
     }
 
     private func menuRow(icon: String, label: String, tint: Color = Theme.foreground) -> some View {

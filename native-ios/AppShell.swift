@@ -20,6 +20,7 @@ struct AppShell: View {
     #if DEBUG && targetEnvironment(simulator)
     @State private var debugBookSlug: String?
     @State private var menuDebugOpen = false
+    @State private var settingsDebugOpen = false
     #endif
 
     var body: some View {
@@ -74,6 +75,9 @@ struct AppShell: View {
                 .presentationDetents([.large])
                 .presentationBackground(Theme.bg)
         }
+        .fullScreenCover(isPresented: $settingsDebugOpen) {
+            NavigationStack { SettingsView().appDestinations() }
+        }
         #endif
         #if DEBUG && targetEnvironment(simulator)
         // Headless verification hook: `SIMCTL_CHILD_TBRA_DEBUG_ROUTE=search
@@ -91,6 +95,7 @@ struct AppShell: View {
             case let route? where route.hasPrefix("book:"):
                 debugBookSlug = String(route.dropFirst("book:".count))
             case "menu": menuDebugOpen = true
+            case "settings": settingsDebugOpen = true
             default: break
             }
         }
