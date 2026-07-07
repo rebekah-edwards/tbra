@@ -15,15 +15,22 @@ struct AppShell: View {
     @Environment(AuthStore.self) private var auth
     @State private var tab: AppTab = .home
     @State private var searchOpen = false
+    /// Book page presented from outside the tab stacks (notification links).
+    @State private var presentedBookSlug: String?
     #if DEBUG && targetEnvironment(simulator)
     @State private var debugBookSlug: String?
+    @State private var menuDebugOpen = false
     #endif
 
     var body: some View {
         ZStack {
             AmbientBackground()
             VStack(spacing: 0) {
-                TopBar(onSearch: { searchOpen = true })
+                TopBar(
+                    onSearch: { searchOpen = true },
+                    onProfile: { tab = .profile },
+                    onOpenBook: { slug in presentedBookSlug = slug }
+                )
                 ZStack {
                     switch tab {
                     case .home: HomeView()
@@ -41,6 +48,16 @@ struct AppShell: View {
         .fullScreenCover(isPresented: $searchOpen) {
             SearchRootView()
         }
+        .fullScreenCover(isPresented: Binding(
+            get: { presentedBookSlug != nil },
+            set: { if !$0 { presentedBookSlug = nil } }
+        )) {
+            NavigationStack {
+                BookDetailView(idOrSlug: presentedBookSlug ?? "")
+                    .toolbar(.hidden, for: .navigationBar)
+                    .appDestinations()
+            }
+        }
         #if DEBUG && targetEnvironment(simulator)
         .fullScreenCover(isPresented: Binding(
             get: { debugBookSlug != nil },
@@ -51,6 +68,11 @@ struct AppShell: View {
                     .toolbar(.hidden, for: .navigationBar)
                     .appDestinations()
             }
+        }
+        .sheet(isPresented: $menuDebugOpen) {
+            HamburgerMenuSheet(onProfile: { tab = .profile })
+                .presentationDetents([.large])
+                .presentationBackground(Theme.bg)
         }
         #endif
         #if DEBUG && targetEnvironment(simulator)
@@ -68,6 +90,7 @@ struct AppShell: View {
             case "profile": tab = .profile
             case let route? where route.hasPrefix("book:"):
                 debugBookSlug = String(route.dropFirst("book:".count))
+            case "menu": menuDebugOpen = true
             default: break
             }
         }
@@ -83,6 +106,12 @@ struct AppShell: View {
 // ── Top bar — layout.tsx sticky nav ──
 struct TopBar: View {
     var onSearch: @MainActor () -> Void = {}
+    var onProfile: @MainActor () -> Void = {}
+    var onOpenBook: @MainActor (String) -> Void = { _ in }
+
+    @State private var notifications = NotificationsModel()
+    @State private var bellOpen = false
+    @State private var menuOpen = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -97,8 +126,19 @@ struct TopBar: View {
                 Button { onSearch() } label: {
                     Image(systemName: "magnifyingglass")
                 }
-                Image(systemName: "bell")
-                Image(systemName: "line.3.horizontal")
+                Button { bellOpen = true } label: {
+                    Image(systemName: "bell")
+                        .overlay(alignment: .topTrailing) {
+                            if notifications.unreadCount > 0 {
+                                Circle().fill(Theme.accent)
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: 2, y: -2)
+                            }
+                        }
+                }
+                Button { menuOpen = true } label: {
+                    Image(systemName: "line.3.horizontal")
+                }
             }
             .font(.system(size: 19, weight: .regular))
             .foregroundStyle(Theme.muted)
@@ -108,6 +148,17 @@ struct TopBar: View {
         .background(Theme.surface)
         .overlay(alignment: .bottom) {
             Rectangle().fill(Theme.border).frame(height: 0.5)
+        }
+        .task { await notifications.load() }
+        .sheet(isPresented: $bellOpen) {
+            NotificationsSheet(model: notifications, onOpenBook: onOpenBook)
+                .presentationDetents([.medium, .large])
+                .presentationBackground(Theme.bg)
+        }
+        .sheet(isPresented: $menuOpen) {
+            HamburgerMenuSheet(onProfile: onProfile)
+                .presentationDetents([.large])
+                .presentationBackground(Theme.bg)
         }
     }
 }

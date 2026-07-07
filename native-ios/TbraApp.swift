@@ -2,6 +2,10 @@ import SwiftUI
 
 @main
 struct TbraApp: App {
+    /// "dark" (web default) · "light" · "system" — set from the hamburger
+    /// menu's Theme row, mirroring the web ThemeToggle.
+    @AppStorage("themeOverride") private var themeOverride = "dark"
+
     init() {
         Theme.configureNavigationBarAppearance()
     }
@@ -10,6 +14,10 @@ struct TbraApp: App {
         WindowGroup {
             RootView()
                 .tint(Theme.accent)
+                .preferredColorScheme(
+                    themeOverride == "light" ? .light :
+                    themeOverride == "system" ? nil : .dark
+                )
         }
     }
 }
