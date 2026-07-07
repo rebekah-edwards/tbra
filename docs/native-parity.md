@@ -125,3 +125,5 @@ explicit user sign-off.
   (commit 0e45aa4) via the screenshot-first protocol; earlier iOS-idiom pass (6a89d90)
   rejected by user and replaced. Xcode 27 beta at /Applications/Xcode-beta.app is the
   build toolchain (see project memory for the Simulator.app rescue).
+
+- 2026-07-03: Review wizard BUILT + verified (5 steps, edit mode, delete).
