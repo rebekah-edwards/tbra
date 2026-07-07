@@ -97,7 +97,7 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 | `/login` | **Google Sign-In on native** (user-flagged gap) | — | Needs design with user: ASWebAuthenticationSession against the existing /api/auth/google flow + a v1 token handoff endpoint. NOTE: App Store rules require offering Sign in with Apple once any third-party login ships — plan both together. |
 | `/signup`, `/verify-email`, `/forgot-password`, `/reset-password` | Auth suite | BUILT (native signup + forgot-password; verify-email + reset land on web via emailed links — correct by design) | ✅ /api/v1/auth/register + /forgot-password |
 | `/onboarding` | Onboarding | — | TBD |
-| `/buddy-reads` (+ slug/join/new) | Buddy reads suite | — | buddy-read endpoints |
+| `/buddy-reads` (+ slug/join/new) | Buddy reads suite | BUILT (list, join-by-code, detail w/ members+discussion+leave, create from book page). Invite-someone + complete-read host flows still open web. | ✅ /api/v1/buddy-reads (+ [slug]) |
 | `/import` | Goodreads/StoryGraph/Libby import | — | likely stays web-first |
 | `/settings` | Settings | BUILT (comfort zone, topics-to-avoid, theme, notif toggles, hidden books; password/export/account open web; text-size + location not yet native) | ✅ /api/v1/settings |
 | `/upgrade`, `/methodology`, `/contact` | Static-ish pages | — | low priority |
