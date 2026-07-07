@@ -111,6 +111,12 @@ actor APIClient {
         try await send(path, method: "GET")
     }
 
+    /// Generic GET with query items (NEVER bake "?k=v" into the path —
+    /// appending(path:) percent-encodes the "?" and the server 404s).
+    func get<T: Decodable>(_ path: String, query: [URLQueryItem]) async throws -> T {
+        try await send(path, method: "GET", query: query)
+    }
+
     /// Generic POST with a JSON body.
     func post<T: Decodable>(_ path: String, body: [String: Any]) async throws -> T {
         try await send(path, method: "POST", body: body)

@@ -111,8 +111,31 @@ struct BookDetailView: View {
         .alert("Error", isPresented: .constant(model.error != nil)) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
+        #if DEBUG && targetEnvironment(simulator)
+        .sheet(isPresented: $debugEditionsOpen) {
+            if let data = model.data {
+                EditionPickerSheet(
+                    bookId: data.book.id,
+                    format: ProcessInfo.processInfo.environment["TBRA_DEBUG_EDITIONS"] ?? "hardcover",
+                    onChanged: {}
+                )
+                .presentationDetents([.large])
+                .presentationBackground(Theme.bg)
+            }
+        }
+        .task {
+            if ProcessInfo.processInfo.environment["TBRA_DEBUG_EDITIONS"] != nil {
+                try? await Task.sleep(for: .seconds(2.5))
+                debugEditionsOpen = true
+            }
+        }
+        #endif
         }
     }
+
+    #if DEBUG && targetEnvironment(simulator)
+    @State private var debugEditionsOpen = false
+    #endif
 }
 
 // ── TBR note editor — tbr-note-editor.tsx (premium "note to self") ──
@@ -446,13 +469,15 @@ private struct BookActionCluster: View {
         }
         .sheet(isPresented: $showOwnedSheet) {
             FormatSheet(title: "Formats you own",
-                        selected: data.userState?.ownedFormats.filter { $0 != "unknown" } ?? []) { formats in
+                        selected: data.userState?.ownedFormats.filter { $0 != "unknown" } ?? [],
+                        editionBookId: book.id,
+                        onEditionsChanged: { Task { await model.load() } }) { formats in
                 Task {
                     try? await APIClient.shared.setFormats(bookId: book.id, owned: formats)
                     await model.load()
                 }
             }
-            .presentationDetents([.height(340)])
+            .presentationDetents([.height(420), .large])
             .presentationBackground(Theme.surface)
         }
         .sheet(isPresented: $showShelvesSheet) {
@@ -759,8 +784,13 @@ private struct BookActionCluster: View {
 private struct FormatSheet: View {
     let title: String
     @State var selected: [String]
+    /// When set (the Owned flow), each selected format row gains a
+    /// "choose edition" entry opening the OL edition picker.
+    var editionBookId: String? = nil
+    var onEditionsChanged: () -> Void = {}
     let onSave: ([String]) -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var editionFormat: String?
 
     private let formats = [("hardcover", "Hardcover"), ("paperback", "Paperback"), ("ebook", "eBook"), ("audiobook", "Audiobook")]
 
@@ -770,19 +800,33 @@ private struct FormatSheet: View {
                 .font(Theme.heading(18, .bold))
                 .foregroundStyle(Theme.foreground)
             ForEach(formats, id: \.0) { value, label in
-                Button {
-                    if selected.contains(value) { selected.removeAll { $0 == value } }
-                    else { selected.append(value) }
-                } label: {
-                    HStack {
-                        Image(systemName: selected.contains(value) ? "checkmark.square.fill" : "square")
-                            .foregroundStyle(selected.contains(value) ? Theme.accent : Theme.muted)
-                        Text(label)
-                            .font(Theme.body(15))
-                            .foregroundStyle(Theme.foreground)
-                        Spacer()
+                HStack(spacing: 0) {
+                    Button {
+                        if selected.contains(value) { selected.removeAll { $0 == value } }
+                        else { selected.append(value) }
+                    } label: {
+                        HStack {
+                            Image(systemName: selected.contains(value) ? "checkmark.square.fill" : "square")
+                                .foregroundStyle(selected.contains(value) ? Theme.accent : Theme.muted)
+                            Text(label)
+                                .font(Theme.body(15))
+                                .foregroundStyle(Theme.foreground)
+                            Spacer()
+                        }
+                        .padding(.vertical, 6)
                     }
-                    .padding(.vertical, 6)
+                    if editionBookId != nil && selected.contains(value) {
+                        Button {
+                            editionFormat = value
+                        } label: {
+                            HStack(spacing: 3) {
+                                Text("edition")
+                                    .font(Theme.body(12, .medium))
+                                Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
+                            }
+                            .foregroundStyle(Theme.neonBlue)
+                        }
+                    }
                 }
             }
             Button("Save") {
@@ -792,6 +836,16 @@ private struct FormatSheet: View {
             .buttonStyle(AccentButtonStyle())
         }
         .padding(20)
+        .sheet(isPresented: Binding(
+            get: { editionFormat != nil },
+            set: { if !$0 { editionFormat = nil } }
+        )) {
+            if let bookId = editionBookId, let format = editionFormat {
+                EditionPickerSheet(bookId: bookId, format: format, onChanged: onEditionsChanged)
+                    .presentationDetents([.large])
+                    .presentationBackground(Theme.bg)
+            }
+        }
     }
 }
 
