@@ -13,6 +13,7 @@ struct FriendsWhoReadSection: View {
             SectionHeading("Friends Who Read It")
             VStack(spacing: 10) {
                 ForEach(friends) { friend in
+                    NavigationLink(value: UserRoute(username: friend.username ?? "")) {
                     HStack(spacing: 12) {
                         avatar(friend)
                         VStack(alignment: .leading, spacing: 2) {
@@ -38,6 +39,9 @@ struct FriendsWhoReadSection: View {
                     .background(Theme.surface.opacity(0.55))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                    }
+                    .buttonStyle(TapScaleButtonStyle())
+                    .disabled(friend.username == nil)
                 }
             }
         }
