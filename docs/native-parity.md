@@ -32,8 +32,8 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 - [x] Bottom nav: Discover / My Library / raised lime Home circle / Stats / Profile avatar,
       neon-purple active state, SVG-accurate icons (AppShell.swift)
 - [ ] Search overlay/page wired to the search icon
-- [ ] Notifications panel wired to the bell
-- [ ] Hamburger menu (theme toggle, settings, logout live here on the web)
+- [x] Notifications panel wired to the bell (unread dot, mark-read, linkUrl routing)
+- [x] Hamburger menu (theme Dark/Light/Auto, Profile, web links, Sign Out)
 - [ ] Global report (flag) floating button
 - [ ] Pull-to-refresh app-wide; View-Transitions-style 200ms/30px push-pop slide
 
