@@ -143,10 +143,10 @@ struct HamburgerMenuSheet: View {
 
     @State private var settingsOpen = false
     @State private var findReadersOpen = false
+    @State private var buddyReadsOpen = false
 
     private struct WebItem { let label: String; let icon: String; let path: String }
     private let items: [WebItem] = [
-        WebItem(label: "Buddy Reads", icon: "book.pages", path: "/buddy-reads"),
         WebItem(label: "Browse All Books", icon: "books.vertical", path: "/browse"),
         WebItem(label: "Import Your Library", icon: "tray.and.arrow.down", path: "/import"),
         WebItem(label: "Contact Us", icon: "envelope", path: "/contact"),
@@ -190,6 +190,12 @@ struct HamburgerMenuSheet: View {
                 findReadersOpen = true
             } label: {
                 menuRow(icon: "person.2", label: "Find Readers")
+            }
+
+            Button {
+                buddyReadsOpen = true
+            } label: {
+                menuRow(icon: "book.pages", label: "Buddy Reads")
             }
 
             ForEach(items, id: \.path) { item in
@@ -243,6 +249,12 @@ struct HamburgerMenuSheet: View {
         .fullScreenCover(isPresented: $findReadersOpen) {
             NavigationStack {
                 FindReadersView()
+                    .appDestinations()
+            }
+        }
+        .fullScreenCover(isPresented: $buddyReadsOpen) {
+            NavigationStack {
+                BuddyReadsView()
                     .appDestinations()
             }
         }

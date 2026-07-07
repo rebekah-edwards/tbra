@@ -36,7 +36,18 @@ export async function createBuddyRead(
 ): Promise<{ success: boolean; slug?: string; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  return createBuddyReadFor(user.userId, bookId, description, isPublic, startDate, endDate);
+}
 
+/** Core create, callable with an explicit user id (used by /api/v1). */
+export async function createBuddyReadFor(
+  userId: string,
+  bookId: string,
+  description?: string,
+  isPublic?: boolean,
+  startDate?: string,
+  endDate?: string,
+): Promise<{ success: boolean; slug?: string; error?: string }> {
   // Look up book title to auto-name the buddy read
   const book = await db.select({ title: books.title }).from(books).where(eq(books.id, bookId)).get();
   if (!book) return { success: false, error: "Book not found" };
@@ -74,7 +85,7 @@ export async function createBuddyRead(
   await db.insert(buddyReads).values({
     id: buddyReadId,
     bookId,
-    createdBy: user.userId,
+    createdBy: userId,
     name: trimmed,
     slug,
     description: description?.trim() || null,
@@ -86,7 +97,7 @@ export async function createBuddyRead(
 
   await db.insert(buddyReadMembers).values({
     buddyReadId,
-    userId: user.userId,
+    userId: userId,
     role: "host",
     status: "active",
     joinedAt: new Date().toISOString(),
@@ -287,7 +298,14 @@ export async function joinBuddyReadByCode(
 ): Promise<{ success: boolean; slug?: string; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  return joinBuddyReadByCodeFor(user.userId, inviteCode);
+}
 
+/** Core join, callable with an explicit user id (used by /api/v1). */
+export async function joinBuddyReadByCodeFor(
+  userId: string,
+  inviteCode: string,
+): Promise<{ success: boolean; slug?: string; error?: string }> {
   const buddyRead = await db
     .select({
       id: buddyReads.id, slug: buddyReads.slug, bookId: buddyReads.bookId,
@@ -304,7 +322,7 @@ export async function joinBuddyReadByCode(
   const existing = await db
     .select({ id: buddyReadMembers.id, status: buddyReadMembers.status })
     .from(buddyReadMembers)
-    .where(and(eq(buddyReadMembers.buddyReadId, buddyRead.id), eq(buddyReadMembers.userId, user.userId)))
+    .where(and(eq(buddyReadMembers.buddyReadId, buddyRead.id), eq(buddyReadMembers.userId, userId)))
     .get();
 
   if (existing) {
@@ -332,7 +350,7 @@ export async function joinBuddyReadByCode(
 
   await db.insert(buddyReadMembers).values({
     buddyReadId: buddyRead.id,
-    userId: user.userId,
+    userId: userId,
     role: "member",
     status: "active",
     joinedAt: new Date().toISOString(),
@@ -343,7 +361,7 @@ export async function joinBuddyReadByCode(
     const joiner = await db
       .select({ displayName: users.displayName, username: users.username })
       .from(users)
-      .where(eq(users.id, user.userId))
+      .where(eq(users.id, userId))
       .get();
 
     const joinerName = joiner?.displayName || (joiner?.username ? `@${joiner.username}` : "Someone");
@@ -364,12 +382,12 @@ export async function joinBuddyReadByCode(
     const bookState = await db
       .select({ state: userBookState.state })
       .from(userBookState)
-      .where(and(eq(userBookState.userId, user.userId), eq(userBookState.bookId, buddyRead.bookId)))
+      .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, buddyRead.bookId)))
       .get();
 
     if (!bookState) {
       await db.insert(userBookState).values({
-        userId: user.userId,
+        userId: userId,
         bookId: buddyRead.bookId,
         state: "tbr",
       });
@@ -390,11 +408,18 @@ export async function leaveBuddyRead(
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  return leaveBuddyReadFor(user.userId, buddyReadId);
+}
 
+/** Core leave, callable with an explicit user id (used by /api/v1). */
+export async function leaveBuddyReadFor(
+  userId: string,
+  buddyReadId: string,
+): Promise<{ success: boolean; error?: string }> {
   const membership = await db
     .select({ id: buddyReadMembers.id, role: buddyReadMembers.role, status: buddyReadMembers.status })
     .from(buddyReadMembers)
-    .where(and(eq(buddyReadMembers.buddyReadId, buddyReadId), eq(buddyReadMembers.userId, user.userId)))
+    .where(and(eq(buddyReadMembers.buddyReadId, buddyReadId), eq(buddyReadMembers.userId, userId)))
     .get();
 
   if (!membership) return { success: false, error: "Not a member" };
@@ -478,12 +503,20 @@ export async function postBuddyReadMessage(
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  return postBuddyReadMessageFor(user.userId, buddyReadId, message);
+}
 
+/** Core post, callable with an explicit user id (used by /api/v1). */
+export async function postBuddyReadMessageFor(
+  userId: string,
+  buddyReadId: string,
+  message: string,
+): Promise<{ success: boolean; error?: string }> {
   // Validate active membership
   const membership = await db
     .select({ status: buddyReadMembers.status })
     .from(buddyReadMembers)
-    .where(and(eq(buddyReadMembers.buddyReadId, buddyReadId), eq(buddyReadMembers.userId, user.userId)))
+    .where(and(eq(buddyReadMembers.buddyReadId, buddyReadId), eq(buddyReadMembers.userId, userId)))
     .get();
 
   if (!membership || membership.status !== "active") {
@@ -497,7 +530,7 @@ export async function postBuddyReadMessage(
 
   await db.insert(buddyReadMessages).values({
     buddyReadId,
-    userId: user.userId,
+    userId: userId,
     message: trimmed,
   });
 

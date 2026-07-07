@@ -414,6 +414,7 @@ private struct BookActionCluster: View {
     @State private var pendingCompleteState = "completed"
     @State private var showRemoveConfirm = false
     @State private var showTbrNoteEditor = false
+    @State private var createdBuddyReadSlug: String?
     @State private var showBuyDialog = false
     @State private var showFormatSheet = false
     @State private var showOwnedSheet = false
@@ -499,6 +500,15 @@ private struct BookActionCluster: View {
             }
             .presentationDetents([.medium])
             .presentationBackground(Theme.surface)
+        }
+        .fullScreenCover(isPresented: Binding(
+            get: { createdBuddyReadSlug != nil },
+            set: { if !$0 { createdBuddyReadSlug = nil } }
+        )) {
+            NavigationStack {
+                BuddyReadDetailView(slug: createdBuddyReadSlug ?? "")
+                    .appDestinations()
+            }
         }
         .sheet(isPresented: $showTbrNoteEditor) {
             TbrNoteEditorSheet(bookId: book.id, existing: data.tbrNote) {
@@ -595,11 +605,17 @@ private struct BookActionCluster: View {
                     }
                     Divider().background(Theme.border.opacity(0.5))
                 }
-                // Buddy Read → opens the web flow (no native buddy reads yet)
+                // Buddy Read → creates one for this book, opens the detail
                 Button {
                     stateDropdownOpen = false
-                    if let url = URL(string: "https://thebasedreader.app/buddy-reads/new?bookId=\(book.id)") {
-                        UIApplication.shared.open(url)
+                    Task {
+                        struct Body: Codable, Sendable { let bookId: String }
+                        struct Ok: Codable { let ok: Bool; let slug: String? }
+                        if let res: Ok = try? await APIClient.shared.request(
+                            "/api/v1/buddy-reads", method: "POST", json: Body(bookId: book.id)),
+                           let slug = res.slug {
+                            createdBuddyReadSlug = slug
+                        }
                     }
                 } label: {
                     HStack(spacing: 8) {

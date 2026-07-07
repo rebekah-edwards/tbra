@@ -28,6 +28,9 @@ struct AppDestinations: ViewModifier {
             .navigationDestination(for: ReviewsRoute.self) { route in
                 ReviewsListView(bookIdOrSlug: route.bookIdOrSlug, bookTitle: route.bookTitle)
             }
+            .navigationDestination(for: BuddyReadRoute.self) { route in
+                BuddyReadDetailView(slug: route.slug)
+            }
     }
 }
 extension View {
