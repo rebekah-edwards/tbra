@@ -99,7 +99,7 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 | `/onboarding` | Onboarding | — | TBD |
 | `/buddy-reads` (+ slug/join/new) | Buddy reads suite | — | buddy-read endpoints |
 | `/import` | Goodreads/StoryGraph/Libby import | — | likely stays web-first |
-| `/settings` | Settings (text size, theme, notification prefs) | — | settings endpoints |
+| `/settings` | Settings | BUILT (comfort zone, topics-to-avoid, theme, notif toggles, hidden books; password/export/account open web; text-size + location not yet native) | ✅ /api/v1/settings |
 | `/upgrade`, `/methodology`, `/contact` | Static-ish pages | — | low priority |
 
 ## iOS-specific touches (AFTER parity, per screen)
