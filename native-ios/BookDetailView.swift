@@ -492,6 +492,7 @@ private struct BookActionCluster: View {
         }
         .sheet(isPresented: $showShelvesSheet) {
             ShelvesPickerSheet(bookId: book.id,
+                               isFavorited: data.isFavorited,
                                shelves: data.userShelves,
                                memberIds: Set(data.bookShelfIds)) {
                 await model.load()
@@ -862,16 +863,54 @@ private struct FormatSheet: View {
 // ── Shelves picker — add-to-shelf-button.tsx popover ──
 private struct ShelvesPickerSheet: View {
     let bookId: String
+    @State var isFavorited: Bool
     let shelves: [BookPageShelf]
     @State var memberIds: Set<String>
     let onChanged: () async -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var favoriteError: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Add to Shelf")
                 .font(Theme.heading(18, .bold))
                 .foregroundStyle(Theme.foreground)
+
+            // Top Shelf toggle — first row like the web popover (free tier)
+            Button {
+                Task {
+                    struct Ok: Codable { let ok: Bool; let isFavorited: Bool }
+                    do {
+                        let res: Ok = try await APIClient.shared.post("/api/v1/books/\(bookId)/favorite", body: [:])
+                        isFavorited = res.isFavorited
+                        await onChanged()
+                    } catch {
+                        favoriteError = (error as? APIError)?.errorDescription ?? "Couldn't update Top Shelf."
+                    }
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: isFavorited ? "star.fill" : "star")
+                        .foregroundStyle(isFavorited ? Theme.accent : Theme.muted)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Top Shelf")
+                            .font(Theme.body(15, .semibold))
+                            .foregroundStyle(Theme.foreground)
+                        Text("Your all-time favorites — pinned on your profile")
+                            .font(Theme.body(12))
+                            .foregroundStyle(Theme.muted)
+                    }
+                    Spacer()
+                    if isFavorited { Text("✓").foregroundStyle(Theme.accent) }
+                }
+                .padding(.vertical, 8)
+            }
+            if let favoriteError {
+                Text(favoriteError)
+                    .font(Theme.body(12, .medium))
+                    .foregroundStyle(Theme.destructive)
+            }
+            Divider().background(Theme.border.opacity(0.6))
             if shelves.isEmpty {
                 Text("No shelves yet — create one in My Library.")
                     .font(Theme.body(14))

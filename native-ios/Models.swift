@@ -223,10 +223,20 @@ struct JournalNote: Codable, Hashable, Identifiable {
     let createdAt: String
 }
 
+struct FavoriteBookRow: Codable, Hashable, Identifiable {
+    let id: String
+    let slug: String?
+    let title: String
+    let coverImageUrl: String?
+    let authors: [String]
+    let position: Int
+}
+
 struct ProfileData: Codable, Hashable {
     let ok: Bool
     let user: ProfileUser
     let stats: ProfileStats
+    let favorites: [FavoriteBookRow]
     let journalNotes: [JournalNote]
     let followerCount: Int
     let followingCount: Int

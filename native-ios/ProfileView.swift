@@ -242,21 +242,35 @@ struct ProfileView: View {
             Text("Top-Shelf Reads")
                 .font(Theme.heading(20, .bold))
                 .foregroundStyle(Theme.foreground)
-            VStack(spacing: 4) {
-                Text("Pin your all-time favorites here")
-                    .font(Theme.body(16))
-                    .foregroundStyle(Theme.muted)
-                Text("Tap Top Shelf on any book page to add it")
-                    .font(Theme.body(14))
-                    .foregroundStyle(Theme.muted.opacity(0.7))
+            if data.favorites.isEmpty {
+                VStack(spacing: 4) {
+                    Text("Pin your all-time favorites here")
+                        .font(Theme.body(16))
+                        .foregroundStyle(Theme.muted)
+                    Text("Tap Top Shelf on any book page to add it")
+                        .font(Theme.body(14))
+                        .foregroundStyle(Theme.muted.opacity(0.7))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 36)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(style: StrokeStyle(lineWidth: 1, dash: [6, 5]))
+                        .foregroundStyle(Theme.border)
+                )
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(data.favorites.sorted { $0.position < $1.position }) { fav in
+                            NavigationLink(value: BookRoute(idOrSlug: fav.slug ?? fav.id)) {
+                                CoverThumb(url: fav.coverImageUrl, width: 88, height: 132, radius: 8)
+                            }
+                            .buttonStyle(TapScaleButtonStyle())
+                        }
+                    }
+                    .padding(.trailing, 32)
+                }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 36)
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [6, 5]))
-                    .foregroundStyle(Theme.border)
-            )
         }
     }
 
