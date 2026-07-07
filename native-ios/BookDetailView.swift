@@ -71,6 +71,16 @@ struct BookDetailView: View {
                     }
                     SimilarBooksSection(bookId: data.book.id)
                         .id("similar")
+                    if !data.friendsWhoRead.isEmpty {
+                        FriendsWhoReadSection(friends: data.friendsWhoRead)
+                            .id("friends")
+                    }
+                    BookFooterActions(
+                        bookId: data.book.id,
+                        bookTitle: data.book.title,
+                        isHidden: data.isHidden,
+                        onChanged: { Task { await model.load() } }
+                    )
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)

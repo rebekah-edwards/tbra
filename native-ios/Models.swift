@@ -394,6 +394,16 @@ struct BookNote: Codable, Hashable, Identifiable {
     let createdAt: String
 }
 
+struct FriendWhoRead: Codable, Hashable, Identifiable {
+    var id: String { userId }
+    let userId: String
+    let displayName: String?
+    let username: String?
+    let avatarUrl: String?
+    let state: String?
+    let rating: Double?
+}
+
 struct BookDetailData: Codable, Hashable {
     let ok: Bool
     let book: BookFull
@@ -402,6 +412,8 @@ struct BookDetailData: Codable, Hashable {
     let hasCompleted: Bool
     let sessions: [ReadingSessionRow]
     let readingNotes: [BookNote]
+    let friendsWhoRead: [FriendWhoRead]
+    let isHidden: Bool
     let upNextPosition: Int?
     let upNextCount: Int
     let isFavorited: Bool

@@ -11,6 +11,8 @@ import { getUserShelves, getBookShelves } from "@/lib/queries/shelves";
 import { getTbrNote } from "@/lib/queries/tbr-notes";
 import { getUserReview } from "@/lib/queries/review";
 import { getBookReadingNotes } from "@/lib/queries/reading-notes";
+import { getFollowedUsersWhoRead } from "@/lib/queries/follows";
+import { isBookHidden } from "@/lib/actions/hidden-books";
 
 /**
  * GET /api/v1/books/[id]  (id = uuid or slug)
@@ -43,6 +45,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     tbrNote,
     userReview,
     bookNotes,
+    friendsWhoRead,
+    hidden,
   ] = await Promise.all([
     getUserBookState(user.userId, bookId),
     getBookSessionData(user.userId, bookId),
@@ -56,6 +60,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     getTbrNote(user.userId, bookId),
     getUserReview(user.userId, bookId),
     getBookReadingNotes(user.userId, bookId),
+    getFollowedUsersWhoRead(user.userId, bookId),
+    isBookHidden(user.userId, bookId),
   ]);
 
   // Content conflicts vs the user's tolerances (same logic as the web page)
@@ -91,6 +97,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     bookShelfIds: bookShelfMemberships.map((s) => s.shelfId),
     tbrNote: tbrNote ?? null, // getTbrNote returns string | null directly
     readingNotes: bookNotes,
+    friendsWhoRead,
+    isHidden: hidden,
     contentConflicts,
   });
 }
