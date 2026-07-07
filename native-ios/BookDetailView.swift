@@ -61,6 +61,16 @@ struct BookDetailView: View {
                         )
                         .id("reading-history")
                     }
+                    if !data.readingNotes.isEmpty {
+                        BookNotesSection(
+                            bookId: data.book.id,
+                            notes: data.readingNotes,
+                            onChanged: { Task { await model.load() } }
+                        )
+                        .id("notes")
+                    }
+                    SimilarBooksSection(bookId: data.book.id)
+                        .id("similar")
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)

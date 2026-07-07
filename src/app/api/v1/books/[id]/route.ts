@@ -10,6 +10,7 @@ import { getUserContentSensitivities } from "@/lib/queries/reading-preferences";
 import { getUserShelves, getBookShelves } from "@/lib/queries/shelves";
 import { getTbrNote } from "@/lib/queries/tbr-notes";
 import { getUserReview } from "@/lib/queries/review";
+import { getBookReadingNotes } from "@/lib/queries/reading-notes";
 
 /**
  * GET /api/v1/books/[id]  (id = uuid or slug)
@@ -41,6 +42,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     bookShelfMemberships,
     tbrNote,
     userReview,
+    bookNotes,
   ] = await Promise.all([
     getUserBookState(user.userId, bookId),
     getBookSessionData(user.userId, bookId),
@@ -53,6 +55,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     getBookShelves(user.userId, bookId),
     getTbrNote(user.userId, bookId),
     getUserReview(user.userId, bookId),
+    getBookReadingNotes(user.userId, bookId),
   ]);
 
   // Content conflicts vs the user's tolerances (same logic as the web page)
@@ -87,6 +90,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     userShelves,
     bookShelfIds: bookShelfMemberships.map((s) => s.shelfId),
     tbrNote: tbrNote?.note ?? null,
+    readingNotes: bookNotes,
     contentConflicts,
   });
 }

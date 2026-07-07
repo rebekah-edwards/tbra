@@ -383,6 +383,17 @@ struct ReadingSessionRow: Codable, Hashable, Identifiable {
     let activeFormats: [String]?
 }
 
+struct BookNote: Codable, Hashable, Identifiable {
+    let id: String
+    let noteText: String
+    let pageNumber: Int?
+    let percentComplete: Int?
+    let mood: String?
+    let pace: String?
+    let isPrivate: Bool?
+    let createdAt: String
+}
+
 struct BookDetailData: Codable, Hashable {
     let ok: Bool
     let book: BookFull
@@ -390,6 +401,7 @@ struct BookDetailData: Codable, Hashable {
     let userState: BookUserState?
     let hasCompleted: Bool
     let sessions: [ReadingSessionRow]
+    let readingNotes: [BookNote]
     let upNextPosition: Int?
     let upNextCount: Int
     let isFavorited: Bool
