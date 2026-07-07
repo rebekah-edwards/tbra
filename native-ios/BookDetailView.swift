@@ -40,6 +40,7 @@ struct BookDetailView: View {
     }
 
     var body: some View {
+        ScrollViewReader { scrollProxy in
         ScrollView {
             if let data = model.data {
                 VStack(alignment: .leading, spacing: 20) {
@@ -51,6 +52,14 @@ struct BookDetailView: View {
                     }
                     if !data.book.ratings.isEmpty {
                         WhatsInsideSection(ratings: data.book.ratings)
+                    }
+                    if !data.sessions.isEmpty {
+                        ReadingHistorySection(
+                            bookId: data.book.id,
+                            sessions: data.sessions,
+                            onChanged: { Task { await model.load() } }
+                        )
+                        .id("reading-history")
                     }
                 }
                 .padding(.horizontal, 20)
@@ -79,11 +88,20 @@ struct BookDetailView: View {
         }
         .background(AmbientBackground())
         .toolbar(.hidden, for: .navigationBar)
-        .task { await model.load() }
+        .task {
+            await model.load()
+            #if DEBUG && targetEnvironment(simulator)
+            if let anchor = ProcessInfo.processInfo.environment["TBRA_DEBUG_SCROLL_TO"] {
+                try? await Task.sleep(for: .seconds(1))
+                withAnimation { scrollProxy.scrollTo(anchor, anchor: .top) }
+            }
+            #endif
+        }
         .refreshable { await model.load() }
         .alert("Error", isPresented: .constant(model.error != nil)) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
+        }
     }
 }
 

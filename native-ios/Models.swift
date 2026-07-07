@@ -372,12 +372,24 @@ struct BookPageShelf: Codable, Hashable, Identifiable {
     let name: String
 }
 
+struct ReadingSessionRow: Codable, Hashable, Identifiable {
+    let id: String
+    let readNumber: Int
+    let state: String
+    let startedAt: String?
+    let startedAtExplicit: Bool?
+    let completionDate: String?
+    let completionPrecision: String?
+    let activeFormats: [String]?
+}
+
 struct BookDetailData: Codable, Hashable {
     let ok: Bool
     let book: BookFull
     let slug: String?
     let userState: BookUserState?
     let hasCompleted: Bool
+    let sessions: [ReadingSessionRow]
     let upNextPosition: Int?
     let upNextCount: Int
     let isFavorited: Bool

@@ -78,6 +78,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     slug: resolved.book.slug,
     userState, // { state, ownedFormats, activeFormats } | null
     hasCompleted: sessionData.hasCompleted,
+    sessions: sessionData.sessions,
     upNextPosition,
     upNextCount,
     isFavorited: isFavoritedResult !== null,
