@@ -40,6 +40,18 @@ final class AuthStore {
         phase = .signedOut
     }
 
+    func register(email: String, password: String, referralCode: String?) async {
+        loginError = nil
+        do {
+            let res = try await APIClient.shared.register(email: email, password: password, referralCode: referralCode)
+            Keychain.accessToken = res.token
+            Keychain.refreshToken = res.refreshToken
+            phase = .signedIn(res.user)
+        } catch {
+            loginError = (error as? APIError)?.errorDescription ?? "Sign-up failed."
+        }
+    }
+
     func login(email: String, password: String) async {
         loginError = nil
         do {
@@ -138,10 +150,151 @@ struct LoginView: View {
                 .disabled(busy || email.isEmpty || password.isEmpty)
                 .padding(.top, 4)
 
+                HStack(spacing: 18) {
+                    Button("Create account") { signupOpen = true }
+                    Button("Forgot password?") { forgotOpen = true }
+                }
+                .font(Theme.body(14, .medium))
+                .foregroundStyle(Theme.neonBlue)
+                .padding(.top, 8)
+
                 Spacer()
                 Spacer()
             }
             .padding(.horizontal, 28)
         }
+        .sheet(isPresented: $signupOpen) {
+            SignupSheet()
+                .presentationDetents([.large])
+                .presentationBackground(Theme.bg)
+        }
+        .sheet(isPresented: $forgotOpen) {
+            ForgotPasswordSheet()
+                .presentationDetents([.medium])
+                .presentationBackground(Theme.bg)
+        }
+    }
+
+    @State private var signupOpen = false
+    @State private var forgotOpen = false
+}
+
+// ── Signup — mirrors /signup (referral code optional) ──
+struct SignupSheet: View {
+    @Environment(AuthStore.self) private var auth
+    @Environment(\.dismiss) private var dismiss
+    @State private var email = ""
+    @State private var password = ""
+    @State private var confirm = ""
+    @State private var referralCode = ""
+    @State private var busy = false
+    @State private var localError: String?
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                Text("Create your account")
+                    .font(Theme.heading(22, .bold))
+                    .foregroundStyle(Theme.foreground)
+                    .padding(.top, 26)
+                Text("Know what's in a book before you read it")
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.muted)
+
+                TextField("Email", text: $email)
+                    .textContentType(.username)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .brandedField()
+                SecureField("Password (8+ characters)", text: $password)
+                    .textContentType(.newPassword)
+                    .brandedField()
+                SecureField("Confirm password", text: $confirm)
+                    .textContentType(.newPassword)
+                    .brandedField()
+                TextField("Referral code (optional)", text: $referralCode)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .brandedField()
+
+                if let err = localError ?? auth.loginError {
+                    Text(err).font(Theme.body(13)).foregroundStyle(Theme.destructive)
+                }
+
+                Button {
+                    guard password == confirm else { localError = "Passwords do not match."; return }
+                    localError = nil
+                    Task {
+                        busy = true
+                        await auth.register(email: email, password: password,
+                                            referralCode: referralCode.isEmpty ? nil : referralCode)
+                        busy = false
+                        if case .signedIn = auth.phase { dismiss() }
+                    }
+                } label: {
+                    if busy { ProgressView().tint(Theme.onAccent) } else { Text("Create account") }
+                }
+                .buttonStyle(AccentButtonStyle())
+                .disabled(busy || email.isEmpty || password.isEmpty || confirm.isEmpty)
+                .padding(.top, 4)
+
+                Text("We'll email you a verification link.")
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.muted)
+            }
+            .padding(.horizontal, 28)
+            .padding(.bottom, 30)
+        }
+        .background(Theme.bg)
+    }
+}
+
+// ── Forgot password — mirrors /forgot-password ──
+struct ForgotPasswordSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var email = ""
+    @State private var busy = false
+    @State private var sent = false
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Text("Reset your password")
+                .font(Theme.heading(20, .bold))
+                .foregroundStyle(Theme.foreground)
+                .padding(.top, 26)
+            Text("Enter your email and we'll send a reset link.")
+                .font(Theme.body(13))
+                .foregroundStyle(Theme.muted)
+
+            TextField("Email", text: $email)
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .brandedField()
+
+            Button {
+                busy = true
+                Task {
+                    struct Body: Codable, Sendable { let email: String }
+                    struct Ok: Codable { let ok: Bool }
+                    let _: Ok? = try? await APIClient.shared.postPublic("/api/v1/auth/forgot-password", json: Body(email: email))
+                    busy = false
+                    sent = true
+                    try? await Task.sleep(for: .seconds(1.6))
+                    dismiss()
+                }
+            } label: {
+                if busy { ProgressView().tint(Theme.onAccent) }
+                else if sent { Text("Check your email ✓") }
+                else { Text("Send reset link") }
+            }
+            .buttonStyle(AccentButtonStyle())
+            .disabled(busy || sent || email.isEmpty)
+
+            Spacer()
+        }
+        .padding(.horizontal, 28)
+        .background(Theme.bg)
     }
 }

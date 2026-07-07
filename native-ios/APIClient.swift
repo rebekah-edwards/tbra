@@ -104,6 +104,22 @@ actor APIClient {
                            body: ["bookIds": bookIds]) as OkResponse
     }
 
+    // MARK: Register + public posts
+
+    struct AuthPair: Codable { let token: String; let refreshToken: String; let user: PublicUser }
+
+    func register(email: String, password: String, referralCode: String?) async throws -> AuthPair {
+        var body: [String: Any] = ["email": email, "password": password]
+        if let referralCode { body["referralCode"] = referralCode }
+        return try await send("/api/v1/auth/register", method: "POST", body: body, authed: false)
+    }
+
+    /// Unauthenticated POST with a typed body (forgot-password etc).
+    func postPublic<T: Decodable, B: Encodable & Sendable>(_ path: String, json: B) async throws -> T {
+        let data = try JSONEncoder().encode(json)
+        return try await send(path, method: "POST", bodyData: data, authed: false)
+    }
+
     // MARK: Generic
 
     /// Generic GET for simple endpoint fetches (decodes the full envelope).
