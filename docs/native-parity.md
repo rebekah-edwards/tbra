@@ -48,7 +48,7 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 | `/` | Home: Discover Something New (cover row, info bubble, fade hint) | BUILT | ✅ /home/discover |
 | `/` | Home: Because You Liked + Friends Activity | BUILT (code-spec — test acct has no follows/high ratings to render them; verify visually on a real account) | ✅ /home/discover |
 | `/` | Home: goal editing (pencil → sheet) | BUILT | ✅ /reading-goal |
-| `/book/[id]` | Book page (full functional inventory below) | BUILT v1 (commit b65dab5) — hero, action cluster w/ every dropdown functional, summary, What's Inside gate+grid; app-wide cover navigation wired. Still open: edition picker, review wizard, reading history, notes, similar books, friends-who-read, hide/report, TBR-note editor in dropdown, month/year completion precision, empty-stars rendering check vs web. | ✅ /books/[id] + formats + library + reading-state 'none' |
+| `/book/[id]` | Book page (full functional inventory below) | BUILT v1 (commit b65dab5) — hero, action cluster w/ every dropdown functional, summary, What's Inside gate+grid; app-wide cover navigation wired. Still open: edition picker, reading history, notes, similar books, friends-who-read, hide/report, TBR-note editor in dropdown, month/year completion precision, empty-stars rendering check vs web. Review wizard: ✅ BUILT + verified 2026-07-03 (5 steps, edit mode round-trip, delete, GET/PUT/DELETE /books/[id]/review). | ✅ /books/[id] + formats + library + reading-state 'none' |
 
 ### /book/[id] — functional inventory (captured 2026-07-02, from live UI + component code)
 
