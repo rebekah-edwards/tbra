@@ -65,8 +65,8 @@ struct CompactStatePill: View {
         .sheet(isPresented: $showDatePicker) {
             CompletionDateSheet(
                 title: pendingCompleteState == "dnf" ? "When did you stop reading?" : "When did you finish?"
-            ) { date in
-                Task { await setState(pendingCompleteState, date: date) }
+            ) { date, precision in
+                Task { await setState(pendingCompleteState, date: date, precision: precision) }
             }
             .presentationDetents([.medium])
             .presentationBackground(Theme.surface)
@@ -132,11 +132,11 @@ struct CompactStatePill: View {
         onChanged?(state)
     }
 
-    private func setState(_ value: String, date: String?) async {
+    private func setState(_ value: String, date: String?, precision: String?) async {
         busy = true; defer { busy = false }
         try? await APIClient.shared.setReadingState(
             bookId: bookId, state: value,
-            completionDate: date, completionPrecision: date != nil ? "exact" : nil
+            completionDate: date, completionPrecision: precision
         )
         state = value
         onChanged?(state)

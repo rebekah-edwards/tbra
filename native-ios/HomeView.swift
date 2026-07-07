@@ -217,8 +217,8 @@ private struct ReadingNowCard: View {
         .sheet(isPresented: $showDatePicker) {
             CompletionDateSheet(
                 title: pendingCompleteState == "dnf" ? "When did you stop reading?" : "When did you finish?"
-            ) { date in
-                Task { await setState(pendingCompleteState, completionDate: date) }
+            ) { date, precision in
+                Task { await setState(pendingCompleteState, completionDate: date, precision: precision) }
             }
             .presentationDetents([.medium])
             .presentationBackground(Theme.surface)
@@ -390,13 +390,13 @@ private struct ReadingNowCard: View {
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
     }
 
-    private func setState(_ state: String, completionDate: String? = nil) async {
+    private func setState(_ state: String, completionDate: String? = nil, precision: String? = nil) async {
         busy = true; defer { busy = false }
         do {
             try await APIClient.shared.setReadingState(
                 bookId: book.id, state: state,
                 completionDate: completionDate,
-                completionPrecision: completionDate != nil ? "exact" : nil
+                completionPrecision: precision
             )
             await onChanged()
         } catch {
@@ -583,43 +583,6 @@ private struct TrackProgressSheet: View {
 }
 
 // ── Completion date sheet (Finished / DNF) ──
-struct CompletionDateSheet: View {
-    let title: String
-    let onConfirm: (String?) -> Void
-    @Environment(\.dismiss) private var dismiss
-    @State private var date = Date()
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(title)
-                .font(Theme.heading(18, .bold))
-                .foregroundStyle(Theme.foreground)
-
-            DatePicker("", selection: $date, in: ...Date(), displayedComponents: .date)
-                .datePickerStyle(.graphical)
-                .tint(Theme.accent)
-
-            Button("Save") {
-                let fmt = DateFormatter()
-                fmt.dateFormat = "yyyy-MM-dd"
-                onConfirm(fmt.string(from: date))
-                dismiss()
-            }
-            .buttonStyle(AccentButtonStyle())
-
-            Button("Skip the date") {
-                onConfirm(nil)
-                dismiss()
-            }
-            .font(Theme.body(13, .medium))
-            .foregroundStyle(Theme.muted)
-            .frame(maxWidth: .infinity)
-        }
-        .padding(20)
-        .background(Theme.surface)
-    }
-}
-
 // ── Goal + streak cards — reading-goal-card.tsx / reading-streak-card.tsx ──
 private struct ReadingGoalCardView: View {
     let goal: ReadingGoal?

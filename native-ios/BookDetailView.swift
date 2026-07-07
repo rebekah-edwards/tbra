@@ -115,6 +115,94 @@ struct BookDetailView: View {
     }
 }
 
+// ── TBR note editor — tbr-note-editor.tsx (premium "note to self") ──
+struct TbrNoteEditorSheet: View {
+    let bookId: String
+    let existing: String?
+    let onSaved: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var text: String
+    @State private var saving = false
+    @State private var errorText: String?
+
+    init(bookId: String, existing: String?, onSaved: @escaping () -> Void) {
+        self.bookId = bookId
+        self.existing = existing
+        self.onSaved = onSaved
+        _text = State(initialValue: existing ?? "")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Note to self")
+                .font(Theme.heading(20, .bold))
+                .foregroundStyle(Theme.foreground)
+            Text("Why did you add this to your TBR? (only you see this)")
+                .font(Theme.body(13))
+                .foregroundStyle(Theme.muted)
+
+            TextEditor(text: $text)
+                .scrollContentBackground(.hidden)
+                .font(Theme.body(15))
+                .foregroundStyle(Theme.foreground)
+                .frame(minHeight: 110)
+                .padding(10)
+                .background(Theme.surfaceAlt.opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                .onChange(of: text) {
+                    if text.count > 500 { text = String(text.prefix(500)) }
+                }
+            Text("\(text.count)/500")
+                .font(Theme.body(11))
+                .foregroundStyle(Theme.muted)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+
+            if let errorText {
+                Text(errorText)
+                    .font(Theme.body(13, .medium))
+                    .foregroundStyle(Theme.destructive)
+            }
+
+            Button {
+                saving = true
+                Task {
+                    struct Body: Codable, Sendable { let note: String }
+                    struct Ok: Codable { let ok: Bool }
+                    do {
+                        let _: Ok = try await APIClient.shared.request(
+                            "/api/v1/books/\(bookId)/tbr-note", method: "PUT", json: Body(note: text))
+                        onSaved(); dismiss()
+                    } catch {
+                        errorText = (error as? APIError)?.errorDescription ?? "Couldn't save the note."
+                    }
+                    saving = false
+                }
+            } label: {
+                if saving { ProgressView().tint(.black) } else { Text("Save note") }
+            }
+            .buttonStyle(AccentButtonStyle())
+            .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty || saving)
+
+            if existing?.isEmpty == false {
+                Button("Delete note") {
+                    Task {
+                        struct Ok: Codable { let ok: Bool }
+                        let _: Ok? = try? await APIClient.shared.request("/api/v1/books/\(bookId)/tbr-note", method: "DELETE")
+                        onSaved(); dismiss()
+                    }
+                }
+                .font(Theme.body(13, .medium))
+                .foregroundStyle(Theme.destructive)
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Theme.surface)
+    }
+}
+
 // ── Hero — book-header.tsx ──
 private struct BookHero: View {
     let data: BookDetailData
@@ -292,6 +380,7 @@ private struct BookActionCluster: View {
     @State private var showDatePicker = false
     @State private var pendingCompleteState = "completed"
     @State private var showRemoveConfirm = false
+    @State private var showTbrNoteEditor = false
     @State private var showBuyDialog = false
     @State private var showFormatSheet = false
     @State private var showOwnedSheet = false
@@ -338,8 +427,8 @@ private struct BookActionCluster: View {
         .sheet(isPresented: $showDatePicker) {
             CompletionDateSheet(
                 title: pendingCompleteState == "dnf" ? "When did you stop reading?" : "When did you finish?"
-            ) { date in
-                Task { await setState(pendingCompleteState, completionDate: date) }
+            ) { date, precision in
+                Task { await setState(pendingCompleteState, completionDate: date, precision: precision) }
             }
             .presentationDetents([.medium])
             .presentationBackground(Theme.surface)
@@ -371,6 +460,13 @@ private struct BookActionCluster: View {
                                shelves: data.userShelves,
                                memberIds: Set(data.bookShelfIds)) {
                 await model.load()
+            }
+            .presentationDetents([.medium])
+            .presentationBackground(Theme.surface)
+        }
+        .sheet(isPresented: $showTbrNoteEditor) {
+            TbrNoteEditorSheet(bookId: book.id, existing: data.tbrNote) {
+                Task { await model.load() }
             }
             .presentationDetents([.medium])
             .presentationBackground(Theme.surface)
@@ -443,6 +539,23 @@ private struct BookActionCluster: View {
                         }
                         .padding(.horizontal, 18).padding(.vertical, 11)
                         .background(currentState == value ? Theme.accent.opacity(0.15) : .clear)
+                    }
+                    Divider().background(Theme.border.opacity(0.5))
+                }
+                // TBR note (premium) — web embeds TbrNoteEditor when state = tbr
+                if currentState == "tbr" {
+                    Button {
+                        stateDropdownOpen = false
+                        showTbrNoteEditor = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "note.text").font(.system(size: 13))
+                            Text(data.tbrNote?.isEmpty == false ? "Edit note to self" : "Add note to self")
+                                .font(Theme.body(14, .medium))
+                            Spacer()
+                        }
+                        .foregroundStyle(Theme.foreground)
+                        .padding(.horizontal, 18).padding(.vertical, 11)
                     }
                     Divider().background(Theme.border.opacity(0.5))
                 }
@@ -631,12 +744,12 @@ private struct BookActionCluster: View {
         await model.load()
     }
 
-    private func setState(_ state: String, completionDate: String?) async {
+    private func setState(_ state: String, completionDate: String?, precision: String? = nil) async {
         busy = true; defer { busy = false }
         try? await APIClient.shared.setReadingState(
             bookId: book.id, state: state,
             completionDate: completionDate,
-            completionPrecision: completionDate != nil ? "exact" : nil
+            completionPrecision: precision
         )
         await model.load()
     }

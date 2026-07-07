@@ -89,7 +89,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     userRating: userReview?.rating ?? null,
     userShelves,
     bookShelfIds: bookShelfMemberships.map((s) => s.shelfId),
-    tbrNote: tbrNote?.note ?? null,
+    tbrNote: tbrNote ?? null, // getTbrNote returns string | null directly
     readingNotes: bookNotes,
     contentConflicts,
   });
