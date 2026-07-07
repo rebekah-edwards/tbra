@@ -86,7 +86,7 @@ feature — with iOS-specific enhancements added only after a screen reaches par
 | `/profile` (+ `/edit`, `/journal`, `/referrals`, `/reviews`) | Profile suite | BUILT (main page: header/badges/stats/referral/top-shelf/shelf rails/journal/import/sign-out). Sub-pages (edit, journal full view, referrals, reviews) open the web for now. Reviews section needs a data-rich account to inventory review cards. | ✅ /api/v1/profile |
 | `/u/[username]` (+ followers/following/shelves) | Public profiles + social graph | BUILT (profile, privacy gate, follow/unfollow, shelves, reviews). Followers/following LIST pages + public shelf detail still open web. | ✅ /api/v1/users/[username] |
 | `/author/[id]`, `/series/[slug]` | Author + series pages | BUILT (series: Core/All/Sets + compact pills; author: follow/unfollow, bio, series-grouped rails). Covers-variant toggle + admin pencils not ported. | ✅ /api/v1/series/[slug] + /api/v1/authors/[id] |
-| `/people` | Find people | — | TBD |
+| `/people` | Find Readers | BUILT (search + follow pills + profile navigation) | ✅ /api/v1/users/search |
 | `/book/[id]/notes`, `/book/[id]/reviews` | Notes + reviews detail | — | notes/reviews endpoints |
 
 ## Phase 3 — Flows + long tail
