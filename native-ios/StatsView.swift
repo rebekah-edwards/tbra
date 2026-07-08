@@ -83,9 +83,9 @@ struct StatsView: View {
                     } label: {
                         Text(y == "all" ? "All Time" : y)
                             .font(Theme.body(16, .medium))
-                            .foregroundStyle(active ? Theme.accent : Theme.muted)
+                            .foregroundStyle(active ? Theme.accentText : Theme.muted)
                             .padding(.horizontal, 20).padding(.vertical, 10)
-                            .background(active ? Theme.accent.opacity(0.12) : Theme.surfaceAlt.opacity(0.6), in: Capsule())
+                            .background(active ? Theme.accent.opacity(0.18) : Theme.surfaceAlt.opacity(0.6), in: Capsule())
                             .overlay(Capsule().stroke(active ? Theme.accent.opacity(0.5) : .clear, lineWidth: 1))
                     }
                 }

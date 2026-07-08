@@ -198,9 +198,9 @@ struct PublicProfileView: View {
                     } label: {
                         Text(model.isFollowing ? "Following" : "Follow")
                             .font(Theme.body(14, .semibold))
-                            .foregroundStyle(model.isFollowing ? Theme.accent : .black)
+                            .foregroundStyle(model.isFollowing ? Theme.accentText : .black)
                             .padding(.horizontal, 18).padding(.vertical, 8)
-                            .background(model.isFollowing ? Theme.accent.opacity(0.12) : Theme.accent, in: Capsule())
+                            .background(model.isFollowing ? Theme.accent.opacity(0.15) : Theme.accent, in: Capsule())
                             .overlay(Capsule().stroke(Theme.accent.opacity(model.isFollowing ? 0.5 : 1), lineWidth: 1))
                     }
                     .padding(.top, 4)

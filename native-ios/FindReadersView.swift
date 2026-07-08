@@ -157,7 +157,7 @@ struct FindReadersView: View {
             } label: {
                 Text(person.isFollowing ? "Following" : "Follow")
                     .font(Theme.body(13, .semibold))
-                    .foregroundStyle(person.isFollowing ? Theme.accent : .black)
+                    .foregroundStyle(person.isFollowing ? Theme.accentText : .black)
                     .padding(.horizontal, 14).padding(.vertical, 7)
                     .background(person.isFollowing ? Theme.accent.opacity(0.12) : Theme.accent, in: Capsule())
                     .overlay(Capsule().stroke(Theme.accent.opacity(person.isFollowing ? 0.5 : 1), lineWidth: 1))

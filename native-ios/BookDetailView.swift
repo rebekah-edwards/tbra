@@ -1107,7 +1107,7 @@ private struct BookStarsRow: View {
                 } label: {
                     Text(data.userRating != nil ? "Edit your review" : "Rate & review")
                         .font(Theme.body(15, .semibold))
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(Theme.accentText)
                         .padding(.horizontal, 20).padding(.vertical, 9)
                         .background(Theme.accent.opacity(0.1), in: Capsule())
                         .overlay(Capsule().stroke(Theme.accent.opacity(0.45), lineWidth: 1))

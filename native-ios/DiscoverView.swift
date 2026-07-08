@@ -244,9 +244,9 @@ struct DiscoverView: View {
         Button(action: action) {
             Text(label)
                 .font(Theme.body(16, .medium))
-                .foregroundStyle(selected ? Theme.accent : Theme.muted)
+                .foregroundStyle(selected ? Theme.accentText : Theme.muted)
                 .padding(.horizontal, 18).padding(.vertical, 11)
-                .background(selected ? Theme.accent.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 12))
+                .background(selected ? Theme.accent.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12)
                     .stroke(selected ? Theme.accent.opacity(0.6) : Theme.border, lineWidth: selected ? 1.5 : 1))
         }
@@ -282,10 +282,10 @@ struct DiscoverView: View {
         } label: {
             Text(label)
                 .font(Theme.body(15, .medium))
-                .foregroundStyle(selected ? Theme.accent : Theme.muted)
+                .foregroundStyle(selected ? Theme.accentText : Theme.muted)
                 .padding(.horizontal, 14).padding(.vertical, 11)
                 .frame(maxWidth: .infinity)
-                .background(selected ? Theme.accent.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 14))
+                .background(selected ? Theme.accent.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 14))
                 .overlay(RoundedRectangle(cornerRadius: 14)
                     .stroke(selected ? Theme.accent : Theme.border, lineWidth: selected ? 2 : 1))
         }
@@ -300,7 +300,7 @@ struct DiscoverView: View {
                 Image(systemName: icon).font(.system(size: 13))
                 Text(label).font(Theme.body(15, .medium))
             }
-            .foregroundStyle(isOn.wrappedValue ? Theme.accent : Theme.muted)
+            .foregroundStyle(isOn.wrappedValue ? Theme.accentText : Theme.muted)
             .padding(.horizontal, 20).padding(.vertical, 11)
             .background(isOn.wrappedValue ? Theme.accent.opacity(0.10) : .clear, in: Capsule())
             .overlay(Capsule().stroke(isOn.wrappedValue ? Theme.accent.opacity(0.6) : Theme.border, lineWidth: 1))

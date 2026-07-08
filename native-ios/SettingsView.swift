@@ -158,7 +158,7 @@ struct SettingsView: View {
                         Spacer()
                         Text(toleranceLabels[pref.maxTolerance])
                             .font(Theme.body(12, .medium))
-                            .foregroundStyle(pref.maxTolerance < 4 ? Theme.accent : Theme.muted)
+                            .foregroundStyle(pref.maxTolerance < 4 ? Theme.accentText : Theme.muted)
                     }
                     HStack(spacing: 5) {
                         ForEach(0..<5, id: \.self) { level in

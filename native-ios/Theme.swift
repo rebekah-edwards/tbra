@@ -63,6 +63,10 @@ enum Theme {
     static let accent      = Color(hex: "a3e635")   // lime-400, both modes, never olive
     static let accentDark  = Color(hex: "84cc16")   // pressed/hover only
     static let onAccent    = Color(hex: "18181b")   // ALWAYS the text on solid lime
+    /// Text sitting on TRANSLUCENT lime (10-20% pills): lime in dark mode,
+    /// near-black in light — the web's global text-accent override
+    /// (globals.css:184). Fills/borders stay lime; this is for text/icons.
+    static let accentText  = Color(dark: "a3e635", light: "18181b")
     static let neonBlue    = Color(dark: "38bdf8", light: "0ea5e9")
     static let neonPurple  = Color(dark: "c084fc", light: "a855f7")
 
