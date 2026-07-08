@@ -336,6 +336,23 @@ extension Theme {
     static let readMoreLink = Color(dark: "a3e635", light: "a855f7")
 }
 
+extension View {
+    /// The web's .mask-fade-right: the row fades out over its last 15%
+    /// to hint that it scrolls sideways.
+    func maskFadeRight() -> some View {
+        mask(
+            LinearGradient(
+                stops: [
+                    .init(color: .black, location: 0),
+                    .init(color: .black, location: 0.85),
+                    .init(color: .clear, location: 1),
+                ],
+                startPoint: .leading, endPoint: .trailing
+            )
+        )
+    }
+}
+
 /// Tailwind amber tokens the web Top-Shelf case is built from.
 private enum ShelfWood {
     static let amber700 = Color(hex: "b45309")
@@ -361,10 +378,12 @@ struct TopShelfCase: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.leading, 16)
+                    .padding(.trailing, 48)   // web pr-10: last cover clears the fade
                     .padding(.top, 22)
                     .padding(.bottom, 18)
                 }
+                .maskFadeRight()
                 // Shelf-edge plank, full bleed across the case.
                 LinearGradient(
                     colors: isLight
@@ -488,10 +507,12 @@ struct ShelfRailCase: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.leading, 12)
+                        .padding(.trailing, 40)   // web pr-8: last cover clears the fade
                         .padding(.top, 12)
                         .padding(.bottom, 10)
                     }
+                    .maskFadeRight()
                     // Tinted shelf-edge plank (web: accent30 → accent45 hex alpha).
                     LinearGradient(colors: [tint.opacity(0.188), tint.opacity(0.271)],
                                    startPoint: .top, endPoint: .bottom)
