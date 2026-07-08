@@ -230,6 +230,7 @@ struct FavoriteBookRow: Codable, Hashable, Identifiable {
     let coverImageUrl: String?
     let authors: [String]
     let position: Int
+    let userRating: Double?
 }
 
 struct ProfileData: Codable, Hashable {

@@ -226,43 +226,27 @@ struct PublicProfileView: View {
     private var topShelf: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeading("Top-Shelf Reads")
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(model.favorites.sorted { $0.position < $1.position }) { fav in
-                        NavigationLink(value: BookRoute(idOrSlug: fav.slug ?? fav.id)) {
-                            CoverThumb(url: fav.coverImageUrl, width: 88, height: 132, radius: 8)
-                        }
-                    }
-                }
-                .padding(.trailing, 32)
-            }
+            // Same shelf furniture as the private profile (TopShelfCase).
+            TopShelfCase(favorites: model.favorites, avatarUrl: model.user?.avatarUrl)
         }
     }
 
     private var shelvesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 14) {
             SectionHeading("Shelves")
             ForEach(model.publicShelves) { shelf in
-                HStack(spacing: 8) {
-                    Circle().fill(Theme.accent).frame(width: 8, height: 8)
-                    Text(shelf.name)
-                        .font(Theme.body(15, .semibold))
-                        .foregroundStyle(Theme.foreground)
-                    Text("\(shelf.bookCount)")
-                        .font(Theme.body(13))
-                        .foregroundStyle(Theme.muted)
-                    Spacer()
-                }
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(Array(shelf.coverUrls.prefix(8).enumerated()), id: \.offset) { i, url in
-                            let slug = i < shelf.coverSlugs.count ? shelf.coverSlugs[i] : nil
-                            NavigationLink(value: BookRoute(idOrSlug: slug ?? "")) {
-                                CoverThumb(url: url, width: 56, height: 84, radius: 6)
-                            }
-                            .disabled(slug == nil)
-                        }
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Circle().fill(shelf.tint).frame(width: 10, height: 10)
+                        Text(shelf.name)
+                            .font(Theme.body(15, .semibold))
+                            .foregroundStyle(Theme.foreground)
+                        Text("\(shelf.bookCount)")
+                            .font(Theme.body(13))
+                            .foregroundStyle(Theme.muted)
+                        Spacer()
                     }
+                    ShelfRailCase(coverUrls: shelf.coverUrls, coverSlugs: shelf.coverSlugs, tint: shelf.tint)
                 }
             }
         }

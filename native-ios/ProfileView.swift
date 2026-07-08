@@ -263,16 +263,7 @@ struct ProfileView: View {
                         .foregroundStyle(Theme.border)
                 )
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(data.favorites.sorted { $0.position < $1.position }) { fav in
-                            NavigationLink(value: BookRoute(idOrSlug: fav.slug ?? fav.id)) {
-                                CoverThumb(url: fav.coverImageUrl, width: 88, height: 132, radius: 8)
-                            }
-                        }
-                    }
-                    .padding(.trailing, 32)
-                }
+                TopShelfCase(favorites: data.favorites, avatarUrl: data.user.avatarUrl)
             }
         }
     }
@@ -287,18 +278,12 @@ struct ProfileView: View {
                 Spacer()
                 Text("View all →")
                     .font(Theme.body(15, .medium))
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.readMoreLink)
             }
             ForEach(data.shelves) { shelf in
-                let tint: Color = {
-                    if let hex = shelf.color, hex.hasPrefix("#"), hex.count == 7 {
-                        return Color(hex: String(hex.dropFirst()))
-                    }
-                    return Theme.accent
-                }()
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
-                        Circle().fill(tint).frame(width: 10, height: 10)
+                        Circle().fill(shelf.tint).frame(width: 10, height: 10)
                         Text(shelf.name)
                             .font(Theme.body(17, .semibold))
                             .foregroundStyle(Theme.foreground)
@@ -309,24 +294,10 @@ struct ProfileView: View {
                         NavigationLink(value: shelf.id) {
                             Text("View →")
                                 .font(Theme.body(14, .medium))
-                                .foregroundStyle(Theme.accent)
+                                .foregroundStyle(Theme.readMoreLink)
                         }
                     }
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 10) {
-                            ForEach(Array(shelf.coverUrls.prefix(8).enumerated()), id: \.offset) { _, url in
-                                CoverThumb(url: url, width: 62, height: 93, radius: 6)
-                            }
-                        }
-                        .padding(10)
-                    }
-                    .background(
-                        LinearGradient(colors: [tint.opacity(0.07), tint.opacity(0.13)],
-                                       startPoint: .top, endPoint: .bottom)
-                            .background(Theme.surface.opacity(0.5))
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                    ShelfRailCase(coverUrls: shelf.coverUrls, coverSlugs: shelf.coverSlugs, tint: shelf.tint)
                 }
             }
         }
@@ -342,7 +313,212 @@ struct ProfileView: View {
                 .foregroundStyle(Theme.muted)
         }
     }
+}
 
+// ── Shared shelf furniture — used by BOTH the private profile and
+// /u/[username]; keep the two pages visually identical. Recreates the
+// web's favorites-shelf.tsx / profile-shelves-section.tsx: a padded
+// "bookcase" card, a darker shelf-edge plank across the bottom, and a
+// soft floor shadow underneath.
+
+extension ShelfSummary {
+    /// The shelf's accent color (falls back to the web's amber default).
+    var tint: Color {
+        if let hex = color, hex.hasPrefix("#"), hex.count == 7 {
+            return Color(hex: String(hex.dropFirst()))
+        }
+        return Color(hex: "d97706")
+    }
+}
+
+extension Theme {
+    /// The web's .read-more-link: lime in dark mode, neon purple in light.
+    static let readMoreLink = Color(dark: "a3e635", light: "a855f7")
+}
+
+/// Tailwind amber tokens the web Top-Shelf case is built from.
+private enum ShelfWood {
+    static let amber700 = Color(hex: "b45309")
+    static let amber800 = Color(hex: "92400e")
+    static let amber900 = Color(hex: "78350f")
+}
+
+/// The wooden Top-Shelf Reads bookcase (web: favorites-shelf.tsx).
+struct TopShelfCase: View {
+    let favorites: [FavoriteBookRow]
+    let avatarUrl: String?
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let isLight = colorScheme == .light
+        VStack(spacing: 0) {
+            VStack(spacing: 0) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(favorites.sorted { $0.position < $1.position }) { fav in
+                            NavigationLink(value: BookRoute(idOrSlug: fav.slug ?? fav.id)) {
+                                FavoriteShelfCover(fav: fav, avatarUrl: avatarUrl)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 22)
+                    .padding(.bottom, 18)
+                }
+                // Shelf-edge plank, full bleed across the case.
+                LinearGradient(
+                    colors: isLight
+                        ? [ShelfWood.amber800.opacity(0.30), ShelfWood.amber900.opacity(0.40)]
+                        : [ShelfWood.amber700.opacity(0.30), ShelfWood.amber800.opacity(0.40)],
+                    startPoint: .top, endPoint: .bottom
+                )
+                .frame(height: 6)
+            }
+            .background(
+                LinearGradient(
+                    colors: isLight
+                        ? [ShelfWood.amber900.opacity(0.10), ShelfWood.amber800.opacity(0.20)]
+                        : [ShelfWood.amber900.opacity(0.20), ShelfWood.amber800.opacity(0.30)],
+                    startPoint: .top, endPoint: .bottom
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke((isLight ? ShelfWood.amber800 : ShelfWood.amber700).opacity(0.20), lineWidth: 1)
+            )
+
+            // Floor shadow under the case.
+            LinearGradient(colors: [.black.opacity(0.10), .clear], startPoint: .top, endPoint: .bottom)
+                .frame(height: 8)
+                .padding(.horizontal, 8)
+        }
+    }
+}
+
+/// One favorite on the top shelf: 72×108 cover with a spine shadow and
+/// the avatar + rating pill overlapping the bottom-right corner.
+struct FavoriteShelfCover: View {
+    let fav: FavoriteBookRow
+    let avatarUrl: String?
+
+    var body: some View {
+        CoverThumb(url: fav.coverImageUrl, width: 72, height: 108, radius: 3)
+            .overlay(alignment: .leading) {
+                LinearGradient(colors: [.black.opacity(0.20), .clear],
+                               startPoint: .leading, endPoint: .trailing)
+                    .frame(width: 3)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+            .shadow(color: .black.opacity(0.3), radius: 4, x: 2, y: 2)
+            .overlay(alignment: .bottomTrailing) {
+                if let rating = fav.userRating, rating > 0 {
+                    HStack(spacing: 3) {
+                        avatarBubble
+                        Text("\(ratingText(rating)) ★")
+                            .font(Theme.body(9, .medium))
+                            .foregroundStyle(.white)
+                    }
+                    .padding(.leading, 2)
+                    .padding(.trailing, 6)
+                    .padding(.vertical, 2)
+                    .background(.black.opacity(0.75), in: Capsule())
+                    .padding(4)
+                }
+            }
+    }
+
+    @ViewBuilder private var avatarBubble: some View {
+        // Avatar paths come back relative (/uploads/...) — resolve against the API host.
+        if let avatarUrl,
+           let url = avatarUrl.hasPrefix("/")
+               ? URL(string: avatarUrl, relativeTo: APIClient.baseURL)
+               : URL(string: avatarUrl) {
+            AsyncImage(url: url) { image in
+                image.resizable().aspectRatio(contentMode: .fill)
+            } placeholder: { Theme.surfaceAlt }
+            .frame(width: 14, height: 14)
+            .clipShape(Circle())
+        } else {
+            Circle().fill(Theme.accent.opacity(0.6))
+                .frame(width: 14, height: 14)
+                .overlay(
+                    Text("★").font(.system(size: 7, weight: .bold)).foregroundStyle(.black)
+                )
+        }
+    }
+
+    private func ratingText(_ r: Double) -> String {
+        r.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(r)) : String(format: "%.2f", r)
+    }
+}
+
+/// A custom shelf's mini bookcase (web: MiniShelfRow) — tinted case,
+/// padded 46×69 covers, tinted shelf-edge plank, floor shadow.
+struct ShelfRailCase: View {
+    let coverUrls: [String]
+    let coverSlugs: [String]
+    let tint: Color
+
+    var body: some View {
+        if coverUrls.isEmpty {
+            Text("Empty shelf")
+                .font(Theme.body(11))
+                .foregroundStyle(Theme.muted.opacity(0.6))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                        .foregroundStyle(tint.opacity(0.15))
+                )
+        } else {
+            VStack(spacing: 0) {
+                VStack(spacing: 0) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(Array(coverUrls.prefix(8).enumerated()), id: \.offset) { i, url in
+                                let slug = i < coverSlugs.count ? coverSlugs[i] : ""
+                                if slug.isEmpty {
+                                    railCover(url)
+                                } else {
+                                    NavigationLink(value: BookRoute(idOrSlug: slug)) {
+                                        railCover(url)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.top, 12)
+                        .padding(.bottom, 10)
+                    }
+                    // Tinted shelf-edge plank (web: accent30 → accent45 hex alpha).
+                    LinearGradient(colors: [tint.opacity(0.188), tint.opacity(0.271)],
+                                   startPoint: .top, endPoint: .bottom)
+                        .frame(height: 5)
+                }
+                .background(
+                    // Web: accent08 → accent15 (hex alpha ≈ 3% → 8%).
+                    LinearGradient(colors: [tint.opacity(0.031), tint.opacity(0.082)],
+                                   startPoint: .top, endPoint: .bottom)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(tint.opacity(0.125), lineWidth: 1))
+
+                LinearGradient(colors: [.black.opacity(0.08), .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 6)
+                    .padding(.horizontal, 4)
+            }
+        }
+    }
+
+    private func railCover(_ url: String) -> some View {
+        CoverThumb(url: url, width: 46, height: 69, radius: 2)
+            .shadow(color: .black.opacity(0.3), radius: 3, x: 2, y: 2)
+    }
+}
+
+extension ProfileView {
     // ── Reading Journal ──
     private func journalSection(_ data: ProfileData) -> some View {
         VStack(alignment: .leading, spacing: 12) {
