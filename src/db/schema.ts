@@ -395,6 +395,11 @@ export const upNext = sqliteTable("up_next", {
   bookId: text("book_id").notNull().references(() => books.id),
   position: integer("position").notNull(), // 1-5
   addedAt: text("added_at").notNull().default(sql`(datetime('now'))`),
+  // Touched on EVERY queue mutation (add/remove/reorder) across ALL of the
+  // user's rows — sync-pull/push compare MAX(updated_at) per side to decide
+  // which copy of the whole queue is newer (the queue syncs as one unit
+  // because deletes/reorders leave no per-row trace).
+  updatedAt: text("updated_at"),
 }, (table) => [
   uniqueIndex("up_next_user_book_unique").on(table.userId, table.bookId),
   uniqueIndex("up_next_user_position_unique").on(table.userId, table.position),

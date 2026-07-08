@@ -233,11 +233,30 @@ struct FavoriteBookRow: Codable, Hashable, Identifiable {
     let userRating: Double?
 }
 
+/// One review row as getUserReviewsWithBooks emits it (shared by
+/// /api/v1/profile and /api/v1/users/[username]).
+struct UserReviewRow: Codable, Hashable, Identifiable {
+    let reviewId: String
+    let bookId: String
+    let bookSlug: String?
+    let title: String
+    let coverImageUrl: String?
+    let authors: [String]
+    let rating: Double?
+    let reviewText: String?
+    let didNotFinish: Bool
+    let dnfPercentComplete: Double?
+    let isAnonymous: Bool
+    let createdAt: String
+    var id: String { reviewId }
+}
+
 struct ProfileData: Codable, Hashable {
     let ok: Bool
     let user: ProfileUser
     let stats: ProfileStats
     let favorites: [FavoriteBookRow]
+    let reviews: [UserReviewRow]
     let journalNotes: [JournalNote]
     let followerCount: Int
     let followingCount: Int

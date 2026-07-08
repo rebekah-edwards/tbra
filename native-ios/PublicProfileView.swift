@@ -6,16 +6,10 @@ import SwiftUI
 
 struct UserRoute: Hashable { let username: String }
 
-struct PublicProfileReview: Codable, Hashable, Identifiable {
-    let id: String
-    let bookId: String
-    let bookSlug: String?
-    let bookTitle: String
-    let bookCoverUrl: String?
-    let overallRating: Double?
-    let reviewText: String?
-    let createdAt: String
-}
+// (Reviews decode as UserReviewRow — the shared getUserReviewsWithBooks
+// wire shape in Models.swift. The old PublicProfileReview struct had field
+// names the API never sent, so the whole payload failed to decode and the
+// public profile rendered without reviews.)
 
 @MainActor
 @Observable
@@ -28,7 +22,7 @@ final class PublicProfileModel {
     var stats: ProfileStats?
     var favorites: [FavoriteBookRow] = []
     var publicShelves: [ShelfSummary] = []
-    var reviews: [PublicProfileReview] = []
+    var reviews: [UserReviewRow] = []
     var followerCount = 0
     var followingCount = 0
     var loaded = false
@@ -43,7 +37,7 @@ final class PublicProfileModel {
         let isFollowing: Bool?
         let stats: ProfileStats?
         let favorites: [FavoriteBookRow]?
-        let reviews: [PublicProfileReview]?
+        let reviews: [UserReviewRow]?
         let followerCount: Int?
         let followingCount: Int?
         let publicShelves: [ShelfSummary]?
@@ -258,13 +252,13 @@ struct PublicProfileView: View {
             ForEach(model.reviews) { review in
                 NavigationLink(value: BookRoute(idOrSlug: review.bookSlug ?? review.bookId)) {
                     HStack(alignment: .top, spacing: 12) {
-                        CoverThumb(url: review.bookCoverUrl, width: 44, height: 66, radius: 5)
+                        CoverThumb(url: review.coverImageUrl, width: 44, height: 66, radius: 5)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(review.bookTitle)
+                            Text(review.title)
                                 .font(Theme.body(15, .semibold))
                                 .foregroundStyle(Theme.foreground)
                                 .multilineTextAlignment(.leading)
-                            if let rating = review.overallRating {
+                            if let rating = review.rating {
                                 StarRow(rating: rating)
                             }
                             if let text = review.reviewText, !text.isEmpty {

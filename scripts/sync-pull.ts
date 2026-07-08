@@ -124,7 +124,11 @@ const TABLES: Array<[string, string[], boolean]> = [
   ['reading_goals',            ['id'],                    true],
   ['reading_sessions',         ['id'],                    true],
   ['reading_notes',            ['id'],                    false],
-  ['up_next',                  ['user_id', 'book_id'],    false],
+  // up_next is NOT in this list on purpose — it gets a dedicated whole-queue
+  // mirror step below. Insert-only pulling could never work for it: removals
+  // and reorders leave no per-row trace, and the UNIQUE(user_id, position)
+  // index made stale local rows silently BLOCK the live queue's inserts
+  // (users saw a months-old queue in the native app).
   ['review_descriptor_tags',   ['id'],                    false],
   ['review_helpful_votes',     ['user_id', 'review_id'],  false],
   ['user_book_dimension_ratings', ['id'],                 false],
@@ -259,6 +263,65 @@ async function fetchLiveRows(table: string, cols: string[], page = 5000): Promis
 
     totalInserted += inserted;
     totalUpdated += updated;
+  }
+
+  // ─── Up Next queue mirror (newest side wins) ───
+  // The queue has no per-row update trail — deletes and reorders leave
+  // nothing behind — so it syncs as ONE UNIT per user: whichever side was
+  // touched most recently (MAX(COALESCE(updated_at, added_at))) replaces the
+  // other. This step handles live-is-newer (or tied); sync-push step 5f
+  // handles local-newer. A user with rows ONLY locally is left alone (an
+  // emptied live queue is indistinguishable from unpushed local adds — we
+  // never destroy data over that ambiguity).
+  console.log('\n→ Syncing up_next queues (whole-queue mirror, newest side wins)');
+  try {
+    const liveUpNext = (await remote.execute(
+      'SELECT id, user_id, book_id, position, added_at, updated_at FROM up_next'
+    )).rows as any[];
+    const liveByUser = new Map<string, any[]>();
+    for (const r of liveUpNext) {
+      const key = String(r.user_id);
+      const list = liveByUser.get(key) ?? [];
+      list.push(r);
+      liveByUser.set(key, list);
+    }
+    const localMaxRows = local.prepare(
+      'SELECT user_id, MAX(COALESCE(updated_at, added_at)) AS m FROM up_next GROUP BY user_id'
+    ).all() as any[];
+    const localMax = new Map(localMaxRows.map((r: any) => [String(r.user_id), String(r.m ?? '')]));
+    const localBookIds = new Set(
+      (local.prepare('SELECT id FROM books').all() as any[]).map((r) => String(r.id))
+    );
+
+    const delStmt = local.prepare('DELETE FROM up_next WHERE user_id = ?');
+    const insStmt = local.prepare(
+      'INSERT INTO up_next (id, user_id, book_id, position, added_at, updated_at) VALUES (?,?,?,?,?,?)'
+    );
+    let mirrored = 0;
+    let leftLocalNewer = 0;
+    for (const [userId, rows] of liveByUser) {
+      const liveMax = rows.reduce((m, r) => {
+        const v = String(r.updated_at ?? r.added_at ?? '');
+        return v > m ? v : m;
+      }, '');
+      if ((localMax.get(userId) ?? '') > liveMax) { leftLocalNewer++; continue; }
+      // FK guard: the books table was pulled above, but skip any row whose
+      // book still isn't local rather than failing the whole queue.
+      const insertable = rows.filter((r) => localBookIds.has(String(r.book_id)));
+      local.transaction(() => {
+        delStmt.run(userId);
+        for (const r of insertable) {
+          insStmt.run(r.id, r.user_id, r.book_id, r.position, r.added_at, r.updated_at ?? null);
+        }
+      })();
+      mirrored++;
+    }
+    markProgress();
+    const note = leftLocalNewer ? `, left ${leftLocalNewer} local-newer queue(s) for sync-push` : '';
+    console.log(`  ✓  up_next: mirrored ${mirrored} queue(s) live→local${note}`);
+  } catch (e: any) {
+    errors.push(`up_next mirror: ${e.message.slice(0, 100)}`);
+    console.log(`  ✗  up_next mirror: ${e.message.slice(0, 100)}`);
   }
 
   // Always sync covers live → local (live is authoritative).

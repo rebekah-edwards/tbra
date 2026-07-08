@@ -315,13 +315,53 @@ struct ProfileView: View {
     }
 
     private func reviewsSection(_ data: ProfileData) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Recent Reviews")
                 .font(Theme.heading(20, .bold))
                 .foregroundStyle(Theme.foreground)
-            Text("No reviews yet.")
-                .font(Theme.body(16))
-                .foregroundStyle(Theme.muted)
+            if data.reviews.isEmpty {
+                Text("No reviews yet.")
+                    .font(Theme.body(16))
+                    .foregroundStyle(Theme.muted)
+            } else {
+                ForEach(data.reviews) { review in
+                    NavigationLink(value: BookRoute(idOrSlug: review.bookSlug ?? review.bookId)) {
+                        HStack(alignment: .top, spacing: 12) {
+                            CoverThumb(url: review.coverImageUrl, width: 44, height: 66, radius: 5)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(review.title)
+                                    .font(Theme.body(15, .semibold))
+                                    .foregroundStyle(Theme.foreground)
+                                    .multilineTextAlignment(.leading)
+                                HStack(spacing: 8) {
+                                    if let rating = review.rating {
+                                        StarRow(rating: rating)
+                                    }
+                                    if review.didNotFinish {
+                                        Text("DNF")
+                                            .font(Theme.body(10, .bold))
+                                            .foregroundStyle(Theme.destructive)
+                                            .padding(.horizontal, 6).padding(.vertical, 2)
+                                            .background(Theme.destructive.opacity(0.12), in: Capsule())
+                                    }
+                                }
+                                if let text = review.reviewText, !text.isEmpty {
+                                    Text(text)
+                                        .font(Theme.body(13))
+                                        .foregroundStyle(Theme.muted)
+                                        .lineLimit(3)
+                                        .multilineTextAlignment(.leading)
+                                }
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(12)
+                        .background(Theme.surface.opacity(0.55))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+                    }
+                }
+            }
         }
     }
 }

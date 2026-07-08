@@ -9,6 +9,8 @@
  * What it pushes (INSERT OR IGNORE — never deletes, never overwrites):
  *   - new books (and their book_authors, book_genres, book_series, book_category_ratings, enrichment_log)
  *   - new authors / series / genres referenced by those books
+ *   - new reported_issues rows created locally (e.g. nightly-junk-sweep flags) —
+ *     INSERT OR IGNORE by id only, so live admin resolutions are never overwritten
  *   - landing_page_books and landing_page_copy (full replace — admin-managed)
  *
  * Does NOT push user-data tables (those are bidirectional; admin edits happen on live).
@@ -482,6 +484,98 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
     }
   } catch (e: any) {
     console.log(`     ⚠ nyt_bestsellers: ${e.message.slice(0, 120)}`);
+  }
+
+  // ─── 5e. NEW reported_issues (local-created flags → live) ─────
+  // reported_issues is BIDIRECTIONAL: users file reports on live, admins resolve
+  // them on live, and nightly-junk-sweep / key-health create rows locally. We must
+  // push local-created rows (e.g. [AUTO-FLAG: junk-sweep] box-set flags) WITHOUT ever
+  // overwriting a live row — an admin may have already resolved it on Turso. So:
+  // diff by id, INSERT OR IGNORE only the local ids not present on live. Pre-filter
+  // book_id against liveBooksAfter so a flag on a not-yet-synced book doesn't roll
+  // back the batch (batchInsert's per-row fallback also skips residual FK failures).
+  // Fixes the long-standing gap where junk-sweep flags never reached /admin/issues on
+  // live and had to be pushed by hand each night.
+  console.log('\n5e   New reported_issues (local-created flags)...');
+  try {
+    const cols = getCols('reported_issues');
+    if (cols.length === 0) {
+      console.log('     · reported_issues: not in local DB');
+    } else {
+      const liveIssueIds = await fetchIdSet('reported_issues');
+      const localIssues = local
+        .prepare(`SELECT ${cols.join(',')} FROM reported_issues`)
+        .all() as any[];
+      let orphanedCount = 0;
+      const toPush: any[][] = [];
+      for (const r of localIssues) {
+        if (liveIssueIds.has(String(r.id))) continue; // already on live — never overwrite
+        if (r.book_id != null && !liveBooksAfter.has(String(r.book_id))) {
+          orphanedCount++;
+          continue; // flag references a book not yet on live — skip (would FK-fail)
+        }
+        toPush.push(cols.map((c) => r[c]));
+      }
+      if (toPush.length === 0) {
+        const note = orphanedCount > 0 ? ` (${orphanedCount} referenced a book not on live — skipped)` : '';
+        console.log(`     · reported_issues: in sync (live has ${liveIssueIds.size.toLocaleString()} rows)${note}`);
+      } else {
+        const n = await batchInsert('reported_issues', cols, toPush);
+        const note = orphanedCount > 0 ? ` [${orphanedCount} orphaned book_id skipped]` : '';
+        console.log(`     ✓ reported_issues: pushed ${n} / ${toPush.length} new local rows${note}`);
+      }
+    }
+  } catch (e: any) {
+    console.log(`     ⚠ reported_issues: ${e.message.slice(0, 120)}`);
+  }
+
+  // ─── 5f. up_next queues where LOCAL is newer (app edits → live) ─────
+  // Mirror of sync-pull's whole-queue step: the queue syncs as ONE UNIT per
+  // user (deletes/reorders leave no per-row trace), newest side wins by
+  // MAX(COALESCE(updated_at, added_at)). Pull handles live-newer; this step
+  // pushes queues the native app touched more recently. A user with rows
+  // ONLY on live is left alone (ambiguous — never destroy data).
+  console.log('\n5f   up_next queues (local-newer → live)...');
+  try {
+    const liveQueueRows = (await remote.execute(
+      'SELECT user_id, MAX(COALESCE(updated_at, added_at)) AS m FROM up_next GROUP BY user_id'
+    )).rows as any[];
+    const liveMax = new Map(liveQueueRows.map((r: any) => [String(r.user_id), String(r.m ?? '')]));
+    const localQueues = local.prepare(
+      'SELECT id, user_id, book_id, position, added_at, updated_at FROM up_next ORDER BY user_id, position'
+    ).all() as any[];
+    const byUser = new Map<string, any[]>();
+    for (const r of localQueues) {
+      const key = String(r.user_id);
+      const list = byUser.get(key) ?? [];
+      list.push(r);
+      byUser.set(key, list);
+    }
+    let pushed = 0;
+    let skippedFk = 0;
+    for (const [userId, rows] of byUser) {
+      const localMax = rows.reduce((m, r) => {
+        const v = String(r.updated_at ?? r.added_at ?? '');
+        return v > m ? v : m;
+      }, '');
+      if ((liveMax.get(userId) ?? '') >= localMax) continue; // live same-or-newer
+      const insertable = rows.filter((r) => liveBooksAfter.has(String(r.book_id)));
+      skippedFk += rows.length - insertable.length;
+      await remote.batch([
+        { sql: 'DELETE FROM up_next WHERE user_id = ?', args: [userId] },
+        ...insertable.map((r) => ({
+          sql: 'INSERT INTO up_next (id, user_id, book_id, position, added_at, updated_at) VALUES (?,?,?,?,?,?)',
+          args: [r.id, r.user_id, r.book_id, r.position, r.added_at, r.updated_at ?? null],
+        })),
+      ], 'write');
+      pushed++;
+    }
+    markProgress();
+    const note = skippedFk ? ` [${skippedFk} row(s) skipped — book not on live]` : '';
+    if (pushed === 0) console.log('     · up_next: all queues in sync (or live newer)');
+    else console.log(`     ✓ up_next: mirrored ${pushed} local-newer queue(s) → live${note}`);
+  } catch (e: any) {
+    console.log(`     ⚠ up_next: ${e.message.slice(0, 120)}`);
   }
 
   // ─── 6. LANDING PAGE TABLES (full replace) ────────────────────

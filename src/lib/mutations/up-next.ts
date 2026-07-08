@@ -15,6 +15,19 @@ import { eq, and, asc } from "drizzle-orm";
 export const MAX_UP_NEXT = 6;
 
 /**
+ * Stamp updated_at on ALL of the user's up_next rows. Called at the end of
+ * every mutation: the queue syncs live↔local as ONE unit (deletes and
+ * reorders leave no per-row trace), so sync-pull/push compare
+ * MAX(updated_at) per side to decide which whole queue is newer.
+ */
+export async function touchUpNext(userId: string): Promise<void> {
+  await db
+    .update(upNext)
+    .set({ updatedAt: new Date().toISOString().replace("T", " ").slice(0, 19) })
+    .where(eq(upNext.userId, userId));
+}
+
+/**
  * Normalize a user's up_next rows so positions are strictly 1..N with no gaps,
  * preserving current visual order. Uses the two-phase "negative positions
  * first" trick to avoid tripping the UNIQUE(user_id, position) constraint
@@ -61,6 +74,7 @@ export async function addToUpNextFor(
 
   const newPosition = current.length + 1;
   await db.insert(upNext).values({ userId, bookId, position: newPosition });
+  await touchUpNext(userId);
 
   return { success: true, position: newPosition, added: true };
 }
@@ -72,6 +86,7 @@ export async function removeFromUpNextFor(userId: string, bookId: string): Promi
 
   // Always re-compact so positions stay 1..N contiguous.
   await compactUpNext(userId);
+  await touchUpNext(userId);
 }
 
 /**
@@ -109,6 +124,7 @@ export async function reorderUpNextItemFor(
   for (let i = 0; i < reordered.length; i++) {
     await db.update(upNext).set({ position: i + 1 }).where(eq(upNext.id, reordered[i].id));
   }
+  await touchUpNext(userId);
 }
 
 /**
@@ -132,4 +148,5 @@ export async function reorderUpNextOrderFor(userId: string, bookIds: string[]): 
       .set({ position: i + 1 })
       .where(and(eq(upNext.userId, userId), eq(upNext.bookId, bookIds[i])));
   }
+  await touchUpNext(userId);
 }
