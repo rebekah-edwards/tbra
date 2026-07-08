@@ -135,6 +135,7 @@ struct HomeView: View {
                     .id("home-\(homeModel.home?.readingNow.isEmpty != false)-\(homeModel.home == nil)")
             }
         }
+        .background(AmbientBackground())
         .simultaneousGesture(
             SpatialTapGesture(coordinateSpace: .global).onEnded { v in
                 TapDebug.log("TAP at x\(Int(v.location.x)) y\(Int(v.location.y))")

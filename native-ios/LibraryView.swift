@@ -105,6 +105,7 @@ struct LibraryView: View {
             .padding(.top, 20)
             .padding(.bottom, 40)
         }
+        .background(AmbientBackground())
         .tracksScrollAtTop()
         .refreshable { await model.load() }
         .task { await model.load() }

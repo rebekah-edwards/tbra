@@ -191,6 +191,7 @@ struct DiscoverView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)
             }
+            .background(AmbientBackground())
             .tracksScrollAtTop()
         }
         #if DEBUG && targetEnvironment(simulator)

@@ -65,6 +65,7 @@ struct StatsView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
         }
+        .background(AmbientBackground())
         .tracksScrollAtTop()
         .refreshable { await model.load() }
         .task { await model.load() }

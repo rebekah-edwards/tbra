@@ -78,6 +78,7 @@ struct LibraryShelvesView: View {
             }
             .refreshable { await model.load() }
             .task { await model.load() }
+            .background(AmbientBackground())
             .floatingBack(topPadding: 20, bare: true)
             .toolbar(.hidden, for: .navigationBar)
             .alert("Error", isPresented: .constant(model.error != nil)) {

@@ -64,6 +64,7 @@ struct ProfileView: View {
             .padding(.top, 20)
             .padding(.bottom, 40)
         }
+        .background(AmbientBackground())
         .tracksScrollAtTop()
         .refreshable { await model.load() }
         .task { await model.load() }
@@ -202,20 +203,30 @@ struct ProfileView: View {
     // ── Invite Friends ──
     private func referralCard(_ data: ProfileData) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Invite Friends", systemImage: "person.badge.plus")
-                .font(Theme.body(17, .bold))
-                .foregroundStyle(Theme.foreground)
+            HStack(spacing: 8) {
+                // Web: the person+ icon is neon blue (text-neon-blue).
+                Image(systemName: "person.badge.plus")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Theme.neonBlue)
+                Text("Invite Friends")
+                    .font(Theme.body(17, .bold))
+                    .foregroundStyle(Theme.foreground)
+            }
             Text("Share your link and we'll track who joins through you.")
                 .font(Theme.body(14))
                 .foregroundStyle(Theme.muted)
             HStack(spacing: 10) {
-                Text("https://thebasedreader.app/signup?ref=\(data.referralCode)")
+                // Web: solid surface box w/ border. verbatim: stops SwiftUI's
+                // markdown pass from auto-linking the URL and painting it
+                // with the lime tint — it must render as plain grey text.
+                Text(verbatim: "https://thebasedreader.app/signup?ref=\(data.referralCode)")
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundStyle(Theme.muted)
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .padding(.horizontal, 12).padding(.vertical, 10)
-                    .background(Theme.surfaceAlt.opacity(0.6), in: RoundedRectangle(cornerRadius: 10))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
                 Button {
                     UIPasteboard.general.string = "https://thebasedreader.app/signup?ref=\(data.referralCode)"
                     copiedReferral = true
@@ -231,7 +242,7 @@ struct ProfileView: View {
             if data.referralCount > 0 {
                 Text("\(data.referralCount) reader\(data.referralCount == 1 ? "" : "s") joined through you 🎉")
                     .font(Theme.body(12, .medium))
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.neonBlue)
             }
         }
         .padding(16)
