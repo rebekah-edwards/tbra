@@ -149,3 +149,16 @@ explicit user sign-off.
   Also: Up Next grid is non-lazy + home renders once behind a ready-gate (no insert-above
   churn). Sim-verified: all grid cells open the right book across repeated push/pop,
   Reading Now navigates, back pops every time. Both commits pushed to her phone.
+
+- 2026-07-08: LIQUID-GLASS CHROME (commit 67246cd, user-requested) — both bars are now
+  detached floating glass pills (iOS 26 style): bottom pill with the lime Home circle
+  centered; top has a search/bell/menu glass bubble and the tbr*a wordmark renders ONLY
+  while the page rests at its top (fades on scroll; tap = Home root). Content scrolls
+  under and blurs through both pills. ARCHITECTURE NOTE: the bars are shell OVERLAYS,
+  not safeAreaInsets — an inset outside the NavigationStacks collapses + z-fights on
+  iOS 27 whenever a stack's content swaps (scroll-geometry logs showed the top inset
+  drop 168→62 at home's ready-gate swap). Every TAB ROOT therefore reserves bar space
+  itself via pushedScreenChrome() (same measured-height env the pushed screens use).
+  ChromeState + tracksScrollAtTop() (onScrollGeometryChange; at-rest offset = -inset)
+  feed the wordmark visibility from each main ScrollView. Verified dark+light in sim:
+  blur-through, logo hide/show, taps + back still correct. Pushed to phone.
