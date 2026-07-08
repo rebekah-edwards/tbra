@@ -195,3 +195,12 @@ explicit user sign-off.
   pattern — never a bare resizable-fill in a ZStack background. Test account now has 3
   currently_reading books as a permanent multi-card regression fixture. Sim-verified:
   all 3 cards navigate, Track Progress/dropdown/goal/menu/bell/up-next/back all correct.
+
+- 2026-07-08 (book-page chrome polish, commit ed25713, user-requested): wordmark on its
+  own glass pill (legible over vivid heroes; still fades on scroll, taps home; pill
+  metrics mirror the actions bubble; both chrome modes share geometry). Book hero: back-
+  button row REMOVED — floating back chevron overlaps the card's top edge ~30% (mobile-
+  site style; floatingBack(topPadding: -8), card padding.top 20), card sits ~45pt higher.
+  chromeCircle() = shared opaque circle treatment (bg base + scrim + border + shadow)
+  for back chevron + share button so the two match. Verified light+dark, scroll fade,
+  back/logo taps. On phone (next open).

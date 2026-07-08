@@ -101,7 +101,10 @@ struct BookDetailView: View {
         // Floating back button, OUTSIDE the scroll content on purpose: the
         // scroll layer's top strip stops hit-testing on repeat pushes
         // (iOS 27) — a screen-level overlay is tried first and always works.
-        .floatingBack(topPadding: 0)
+        // -8 tucks the chevron up so its lower ~30% overlaps the hero card
+        // (card top = 20; chevron spans -8…32 → 12pt over the card), matching
+        // the mobile site's overlapped back button.
+        .floatingBack(topPadding: -8)
         .toolbar(.hidden, for: .navigationBar)
         .task {
             await model.load()
@@ -241,21 +244,13 @@ private struct BookHero: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                // Layout placeholder only — the real back button is a
-                // screen-level overlay (see BookDetailView.body): buttons in
-                // this scroll content's top strip went hit-test-dead on the
-                // second push of a book page (iOS 27 interaction-layer bug).
-                Color.clear.frame(width: 40, height: 40)
-                Spacer()
-            }
-
-            // Blurred-cover hero card — the genre/age pills half-overlap the
-            // top-right edge (web: absolute -top-3 right-4) and the share
-            // button half-overlaps the bottom-left (bottom-0 left-4
-            // translate-y-1/2), so the card gets breathing room top+bottom.
+            // No back-button row: the floating back chevron (screen-level
+            // overlay, see BookDetailView.body) straddles the card's top
+            // edge instead — mobile-site style — so the card sits high.
+            // The 20pt top padding leaves room for the half-overlapping
+            // genre/age pills (-12) and the chevron's lower third.
             heroCard
-                .padding(.top, 14)
+                .padding(.top, 20)
                 .padding(.bottom, 20)
         }
         // Page-level hero bleed (.book-hero-img): the big soft color wash
@@ -366,13 +361,12 @@ private struct BookHero: View {
         .overlay(alignment: .bottomLeading) {
             if let slug = data.slug ?? book.slug {
                 ShareLink(item: URL(string: "https://thebasedreader.app/book/\(slug)")!) {
+                    // Same chromeCircle treatment as the floating back
+                    // chevron — the two circles must match (user request).
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 15))
                         .foregroundStyle(Theme.foreground.opacity(0.9))
-                        .frame(width: 40, height: 40)
-                        .background(Theme.surface, in: Circle())
-                        .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-                        .shadow(color: .black.opacity(0.3), radius: 5, y: 2)
+                        .chromeCircle()
                 }
                 .padding(.leading, 16)
                 .offset(y: 20)

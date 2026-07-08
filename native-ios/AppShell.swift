@@ -267,15 +267,23 @@ struct TopBarLogo: View {
     var onTap: @MainActor () -> Void
 
     var body: some View {
-        // Wordmark: Space Grotesk, lime→blue→purple gradient (.logo-gradient).
+        // Wordmark: Space Grotesk, lime→blue→purple gradient (.logo-gradient),
+        // on its own glass pill so it stays legible over vivid book heroes.
+        // Pill metrics mirror TopBarActions (24pt content row + 11pt vertical)
+        // so the two pills read as one bar. GEOMETRY RULE: paddings are shared
+        // by both modes; only the ink/glass differ.
         Button(action: onTap) {
             Text("tbr*a")
                 .font(Theme.logo(22))
                 .foregroundStyle(hitLayerOnly ? hitLayerInk : AnyShapeStyle(Theme.logoGradient))
+                .frame(height: 24)
                 .contentShape(Rectangle())
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 11)
+        .modifier(GlassPillIf(enabled: !hitLayerOnly))
         .padding(.leading, 16)
-        .padding(.top, 11)
+        .padding(.top, 2)
         .opacity(hitLayerOnly ? 1 : (visible ? 1 : 0))
         .offset(y: (hitLayerOnly || visible) ? 0 : -6)
         .allowsHitTesting(hitLayerOnly && visible)
