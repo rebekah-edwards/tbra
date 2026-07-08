@@ -388,24 +388,13 @@ private struct BookHero: View {
     ///        mix-blend-mode screen + white-52% frosted overlay
     private var cardBackground: some View {
         ZStack {
-            isLight ? Color.white : Theme.surfaceAlt
+            // Light: translucent white so the hero bleed's color glows
+            // through the card (the CSS screen-blend effect, achieved by
+            // layering instead of blending).
+            isLight ? Color.white.opacity(0.55) : Theme.surfaceAlt.opacity(1)
             if let cover = book.coverImageUrl, let url = URL(string: cover) {
-                AsyncImage(url: url) { image in
-                    if isLight {
-                        image.resizable().aspectRatio(contentMode: .fill)
-                            .blur(radius: 16)
-                            .saturation(2.5)
-                            .brightness(0.2)   // ≈ brightness(1.4) over white w/ screen
-                            .opacity(0.5)
-                            .blendMode(.screen)
-                    } else {
-                        image.resizable().aspectRatio(contentMode: .fill)
-                            .blur(radius: 16)
-                            .saturation(1.5)
-                            .opacity(0.4)
-                    }
-                } placeholder: { Color.clear }
-                (isLight ? Color.white.opacity(0.52) : Color.black.opacity(0.30))
+                CoverBlurImage(url: url)
+                (isLight ? Color.white.opacity(0.38) : Color.black.opacity(0.30))
             }
         }
     }

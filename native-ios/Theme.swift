@@ -219,12 +219,16 @@ struct CoverBlurImage: View {
     var body: some View {
         AsyncImage(url: url) { image in
             if colorScheme == .light {
+                // NOTE: no .blendMode(.screen) here — CSS screen-blends
+                // against the colorful page BEHIND the card, but SwiftUI
+                // blends against the card's own white base, and screen over
+                // white is always white (uniform grey cards). This recipe
+                // reproduces the web's visual result instead.
                 image.resizable().aspectRatio(contentMode: .fill)
                     .blur(radius: 16)
-                    .saturation(2.5)
-                    .brightness(0.2)
-                    .opacity(0.5)
-                    .blendMode(.screen)
+                    .saturation(2.2)
+                    .brightness(0.12)
+                    .opacity(0.55)
             } else {
                 image.resizable().aspectRatio(contentMode: .fill)
                     .blur(radius: 16)
