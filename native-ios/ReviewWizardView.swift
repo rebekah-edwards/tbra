@@ -218,7 +218,7 @@ struct QuarterStarControl: View {
                 .foregroundStyle(Theme.surfaceAlt)
             Image(systemName: "star.fill")
                 .resizable().scaledToFit()
-                .foregroundStyle(Theme.accent)
+                .foregroundStyle(Color(hex: "facc15"))  // yellow-400, like the web
                 .mask(
                     GeometryReader { g in
                         Rectangle().frame(width: g.size.width * fill)

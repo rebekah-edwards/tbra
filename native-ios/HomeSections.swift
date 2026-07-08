@@ -381,7 +381,8 @@ struct StarRow: View {
                 let half = !full && rating - rating.rounded(.down) >= 0.25 && i == Int(rating.rounded(.down))
                 Image(systemName: full ? "star.fill" : (half ? "star.leadinghalf.filled" : "star"))
                     .font(.system(size: size))
-                    .foregroundStyle(full || half ? Theme.accent : Theme.muted.opacity(0.3))
+                    // Web stars are yellow-400 (rounded-star.tsx), NOT lime
+                    .foregroundStyle(full || half ? Color(hex: "facc15") : Theme.muted.opacity(0.3))
             }
         }
     }

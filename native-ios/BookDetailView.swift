@@ -320,16 +320,31 @@ private struct BookHero: View {
                 FlowPills(items: Array(book.genres.prefix(5)))
 
                 if let pacing = book.pacing {
+                    // Web pacing pills: slow red / medium amber / fast green,
+                    // darker text + more opaque bg in light mode.
+                    let (textColor, bgColor): (Color, Color) = {
+                        switch pacing {
+                        case "slow":
+                            return (isLight ? Color(hex: "dc2626") : Color(hex: "f87171"),
+                                    Color(hex: "ef4444"))
+                        case "fast":
+                            return (isLight ? Color(hex: "15803d") : Theme.accent,
+                                    isLight ? Color(hex: "22c55e") : Theme.accent)
+                        default:
+                            return (isLight ? Color(hex: "d97706") : Color(hex: "fbbf24"),
+                                    Color(hex: "f59e0b"))
+                        }
+                    }()
                     HStack(spacing: 5) {
                         Image(systemName: "clock")
                             .font(.system(size: 11))
                         Text("\(pacing.capitalized)-paced")
-                            .font(Theme.body(12, .medium))
+                            .font(Theme.body(12, .semibold))
                     }
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(textColor)
                     .padding(.horizontal, 12).padding(.vertical, 5)
-                    .background(.orange.opacity(0.12), in: Capsule())
-                    .overlay(Capsule().stroke(.orange.opacity(0.4), lineWidth: 1))
+                    .background(bgColor.opacity(isLight ? 0.22 : 0.14), in: Capsule())
+                    .overlay(Capsule().stroke(bgColor.opacity(0.4), lineWidth: 1))
                 }
             }
         }
@@ -842,7 +857,9 @@ private struct BookActionCluster: View {
                 Image(systemName: icon).font(.system(size: 13))
                 Text(label).font(Theme.body(14, .semibold)).lineLimit(1)
             }
-            .foregroundStyle(solid ? .black : tint)
+            // Black text is a LIME-only rule; every other solid fill (the
+            // blue Format pill etc.) takes white, like the web.
+            .foregroundStyle(solid ? .white : tint)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 13)
             .background(solid ? AnyShapeStyle(tint) : AnyShapeStyle(tint.opacity(0.08)))
