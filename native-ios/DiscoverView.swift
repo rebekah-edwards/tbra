@@ -68,8 +68,9 @@ final class DiscoverModel {
 }
 
 struct DiscoverRootView: View {
+    @Binding var path: NavigationPath
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             DiscoverView()
                 .toolbar(.hidden, for: .navigationBar)
                 .appDestinations()

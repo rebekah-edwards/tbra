@@ -15,6 +15,12 @@ struct AppShell: View {
     @Environment(AuthStore.self) private var auth
     @State private var tab: AppTab = .home
     @State private var searchOpen = false
+    // Per-tab navigation paths, lifted here so re-tapping the ACTIVE tab
+    // pops its stack to root (web: bottom nav always goes to the page top).
+    @State private var homePath = NavigationPath()
+    @State private var libraryPath = NavigationPath()
+    @State private var discoverPath = NavigationPath()
+    @State private var profilePath = NavigationPath()
     /// Book page presented from outside the tab stacks (notification links).
     @State private var presentedBookSlug: String?
     #if DEBUG && targetEnvironment(simulator)
@@ -34,15 +40,24 @@ struct AppShell: View {
                 )
                 ZStack {
                     switch tab {
-                    case .home: HomeView()
-                    case .library: LibraryRootView()
-                    case .discover: DiscoverRootView()
+                    case .home: HomeView(path: $homePath)
+                    case .library: LibraryRootView(path: $libraryPath)
+                    case .discover: DiscoverRootView(path: $discoverPath)
                     case .stats: StatsView()
-                    case .profile: ProfileRootView()
+                    case .profile: ProfileRootView(path: $profilePath)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                BottomNav(tab: $tab, avatarUrl: currentAvatarUrl)
+                BottomNav(tab: $tab, avatarUrl: currentAvatarUrl, onReselect: { reselected in
+                    // Same-tab tap: pop that tab's stack to its root.
+                    switch reselected {
+                    case .home: homePath = NavigationPath()
+                    case .library: libraryPath = NavigationPath()
+                    case .discover: discoverPath = NavigationPath()
+                    case .profile: profilePath = NavigationPath()
+                    case .stats: break
+                    }
+                })
             }
         }
         .environment(\.openSearch, { searchOpen = true })
@@ -172,6 +187,7 @@ struct TopBar: View {
 struct BottomNav: View {
     @Binding var tab: AppTab
     var avatarUrl: String?
+    var onReselect: (AppTab) -> Void = { _ in }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -196,7 +212,7 @@ struct BottomNav: View {
     private func navItem<Icon: View>(_ target: AppTab, label: String, @ViewBuilder icon: () -> Icon) -> some View {
         let active = tab == target
         return Button {
-            tab = target
+            if tab == target { onReselect(target) } else { tab = target }
         } label: {
             VStack(spacing: 2) {
                 icon()
@@ -216,7 +232,7 @@ struct BottomNav: View {
     private var homeButton: some View {
         let active = tab == .home
         return Button {
-            tab = .home
+            if tab == .home { onReselect(.home) } else { tab = .home }
         } label: {
             ZStack {
                 Circle()

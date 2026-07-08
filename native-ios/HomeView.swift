@@ -28,6 +28,7 @@ final class HomeModel {
 }
 
 struct HomeView: View {
+    @Binding var path: NavigationPath
     @State private var model = UpNextModel()
     @State private var homeModel = HomeModel()
     @State private var dragging: UpNextItem?
@@ -42,7 +43,7 @@ struct HomeView: View {
     ]
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             homeContent
                 .toolbar(.hidden, for: .navigationBar)
                 .appDestinations()
@@ -90,9 +91,24 @@ struct HomeView: View {
                             }
                             .buttonStyle(TapScaleButtonStyle())
                                 .opacity(dragging?.id == item.id ? 0.4 : 1)
-                                .onDrag {
-                                    dragging = item
-                                    return NSItemProvider(object: item.bookId as NSString)
+                                // Reorder drag lives on the ≡ handle ONLY —
+                                // on the whole card it hijacked plain taps
+                                // (drag started + grid reordered mid-tap →
+                                // the link fired with the wrong book).
+                                .overlay(alignment: .topTrailing) {
+                                    DragHandleIcon()
+                                        .stroked(lineWidth: 2)
+                                        .frame(width: 11, height: 11)
+                                        .foregroundStyle(Theme.muted)
+                                        .frame(width: 34, height: 34)
+                                        .background(Theme.scrim)
+                                        .clipShape(Circle())
+                                        .padding(6)
+                                        .contentShape(Circle())
+                                        .onDrag {
+                                            dragging = item
+                                            return NSItemProvider(object: item.bookId as NSString)
+                                        }
                                 }
                                 .onDrop(of: [.text], delegate: GridReorderDelegate(
                                     item: item,
@@ -228,33 +244,41 @@ private struct ReadingNowCard: View {
 
     private var cardBody: some View {
         HStack(alignment: .center, spacing: 16) {
-            // Cover with the frosted progress pill overlapping the bottom
-            CoverThumb(url: book.coverImageUrl, width: 60, height: 90, radius: 8)
-                .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
-                .overlay(alignment: .bottom) {
-                    if let progress = book.progress, progress > 0 {
-                        Text("\(progress)%")
-                            .font(Theme.body(10, .bold))
-                            .foregroundStyle(Theme.neonPurple)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 3)
-                            .background(.ultraThinMaterial, in: Capsule())
-                            .overlay(Capsule().stroke(Theme.neonPurple.opacity(0.30), lineWidth: 1))
-                            .offset(y: 10)
-                    }
-                }
+            // Cover + title/author navigate to the book page (the action
+            // buttons on the right keep their own tap targets).
+            NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
+                HStack(alignment: .center, spacing: 16) {
+                    CoverThumb(url: book.coverImageUrl, width: 60, height: 90, radius: 8)
+                        .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
+                        .overlay(alignment: .bottom) {
+                            if let progress = book.progress, progress > 0 {
+                                Text("\(progress)%")
+                                    .font(Theme.body(10, .bold))
+                                    .foregroundStyle(Theme.neonPurple)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 3)
+                                    .background(.ultraThinMaterial, in: Capsule())
+                                    .overlay(Capsule().stroke(Theme.neonPurple.opacity(0.30), lineWidth: 1))
+                                    .offset(y: 10)
+                            }
+                        }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(book.title)
-                    .font(Theme.body(16, .bold))
-                    .foregroundStyle(Theme.foreground)
-                    .lineLimit(2)
-                Text(book.authors.joined(separator: ", "))
-                    .font(Theme.body(14))
-                    .foregroundStyle(Theme.foreground.opacity(0.70))
-                    .lineLimit(2)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(book.title)
+                            .font(Theme.body(16, .bold))
+                            .foregroundStyle(Theme.foreground)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                        Text(book.authors.joined(separator: ", "))
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.foreground.opacity(0.70))
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .buttonStyle(TapScaleButtonStyle())
 
             // Action buttons — stacked right column, 104pt like the web
             VStack(spacing: 6) {
@@ -713,13 +737,9 @@ private struct UpNextCard: View {
                         .lineLimit(1)
                         .padding(.top, 9)
                     Spacer(minLength: 2)
-                    DragHandleIcon()
-                        .stroked(lineWidth: 2)
-                        .frame(width: 11, height: 11)
-                        .foregroundStyle(Theme.muted)
-                        .frame(width: 28, height: 28)
-                        .background(.black.opacity(0.30))
-                        .clipShape(Circle())
+                    // (reorder handle is drawn by the grid overlay — it owns
+                    // the .onDrag so plain taps never start a reorder)
+                    Color.clear.frame(width: 28, height: 28)
                 }
                 Text(item.title)
                     .font(Theme.body(15, .bold))

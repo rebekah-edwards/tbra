@@ -11,8 +11,9 @@ import SwiftUI
 struct ShelvesListRoute: Hashable {}
 
 struct LibraryRootView: View {
+    @Binding var path: NavigationPath
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             LibraryView()
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(for: ShelvesListRoute.self) { _ in

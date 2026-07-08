@@ -21,8 +21,9 @@ final class ProfileModel {
 }
 
 struct ProfileRootView: View {
+    @Binding var path: NavigationPath
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ProfileView()
                 .toolbar(.hidden, for: .navigationBar)
                 .appDestinations()
