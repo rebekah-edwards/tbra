@@ -219,26 +219,53 @@ struct CoverThumb: View {
 struct CoverBlurImage: View {
     let url: URL
     @Environment(\.colorScheme) private var colorScheme
+    @State private var image: UIImage = CoverBlurImage.blank
+
+    // 1×1 clear stand-in so the Image view exists from first render; the
+    // arriving cover only swaps its contents, never the view structure.
+    // (Defense-in-depth — the actual iOS 27 killer was the unbounded .fill
+    // frame, see the note on `body`.)
+    private static let blank = UIGraphicsImageRenderer(size: CGSize(width: 1, height: 1))
+        .image { _ in }
 
     var body: some View {
-        AsyncImage(url: url) { image in
-            if colorScheme == .light {
-                // NOTE: no .blendMode(.screen) here — CSS screen-blends
-                // against the colorful page BEHIND the card, but SwiftUI
-                // blends against the card's own white base, and screen over
-                // white is always white (uniform grey cards). This recipe
-                // reproduces the web's visual result instead.
-                image.resizable().aspectRatio(contentMode: .fill)
-                    .blur(radius: 16)
-                    .saturation(2.2)
-                    .brightness(0.12)
-                    .opacity(0.55)
-            } else {
-                image.resizable().aspectRatio(contentMode: .fill)
-                    .blur(radius: 16)
-                    .saturation(1.5)
-                    .opacity(0.4)
+        // Color.clear.overlay + .clipped() keeps the image's LAYOUT frame
+        // equal to the card, not the oversized .fill rect. Without this,
+        // each backdrop's frame spills over the neighboring cards and on
+        // iOS 27 that kills button activation for the ENTIRE run of sibling
+        // cards (Home "Reading Now" with 2+ books): taps land in the right
+        // frames (TAPDEBUG proved it) but no button ever fires. One card
+        // alone is fine, which is why this shipped unnoticed. Bisect-verified
+        // 2026-07-08: scrim/blur/AsyncImage-phase-swap all innocent; the
+        // unbounded fill frame is the poison. Do NOT "simplify" this back to
+        // a bare resizable-fill image in a ZStack.
+        Color.clear
+            .overlay {
+                if colorScheme == .light {
+                    // NOTE: no .blendMode(.screen) here — CSS screen-blends
+                    // against the colorful page BEHIND the card, but SwiftUI
+                    // blends against the card's own white base, and screen over
+                    // white is always white (uniform grey cards). This recipe
+                    // reproduces the web's visual result instead.
+                    Image(uiImage: image).resizable().aspectRatio(contentMode: .fill)
+                        .blur(radius: 16)
+                        .saturation(2.2)
+                        .brightness(0.12)
+                        .opacity(0.55)
+                } else {
+                    Image(uiImage: image).resizable().aspectRatio(contentMode: .fill)
+                        .blur(radius: 16)
+                        .saturation(1.5)
+                        .opacity(0.4)
+                }
             }
-        } placeholder: { Color.clear }
+            .clipped()
+            .allowsHitTesting(false)
+            .task(id: url) {
+                if let (data, _) = try? await URLSession.shared.data(from: url),
+                   let loaded = UIImage(data: data) {
+                    image = loaded
+                }
+            }
     }
 }

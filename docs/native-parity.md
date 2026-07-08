@@ -179,3 +179,19 @@ explicit user sign-off.
   screen via PushedScreenChrome, negative padding cancels the bar-spacer insets).
   ChromeState = chrome hub (tab + wired actions); TopBarActions stateless (sheets +
   notifications hoisted to AppShell). Debug: TBRA_DEBUG_TAPS=1 paints the hit twins red.
+
+- 2026-07-08 (live report #2): READING NOW DEAD WITH 2+ BOOKS — iOS 27 hit-test bug #7,
+  the one her phone hit (she reads several books at once; the test account's single card
+  masked it). CoverBlurImage's `.resizable().aspectRatio(.fill)` backdrop takes an
+  UNBOUNDED layout frame that spills far past its card; with 2+ Reading Now cards the
+  overlapping oversized frames kill button activation for the ENTIRE run — taps land in
+  the right frames (TAPDEBUG) but no button fires. One card is fine. Bisect cleared the
+  suspects: scrim, blur, AsyncImage phase-swap, zIndex, sheets, HitFrameReporter all
+  innocent; the unbounded fill frame is the poison. FIX inside CoverBlurImage (protects
+  Reading Now + Up Next cells + book-page hero): `Color.clear.overlay { image }.clipped()`
+  bounds the layout frame to the card; also swapped AsyncImage for a stable-identity
+  Image(uiImage:) + .task loader and .allowsHitTesting(false) as defense-in-depth.
+  RULE: any decorative fill-image backdrop MUST be frame-bounded via the clear-overlay
+  pattern — never a bare resizable-fill in a ZStack background. Test account now has 3
+  currently_reading books as a permanent multi-card regression fixture. Sim-verified:
+  all 3 cards navigate, Track Progress/dropdown/goal/menu/bell/up-next/back all correct.

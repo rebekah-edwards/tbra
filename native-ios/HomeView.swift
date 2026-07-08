@@ -168,7 +168,11 @@ struct HomeView: View {
                         SectionHeading("Reading Now")
                         VStack(spacing: 12) {
                             ForEach(home.readingNow) { book in
-                                ReadingNowCard(book: book, openDropdownBookId: $openStateDropdownBookId) {
+                                ReadingNowCard(
+                                    book: book,
+                                    openDropdownBookId: $openStateDropdownBookId,
+                                    onOpen: { path.append(BookRoute(idOrSlug: book.slug ?? book.id)) }
+                                ) {
                                     await homeModel.load()
                                     await model.load()
                                 }
@@ -282,6 +286,7 @@ struct SectionHeading: View {
 private struct ReadingNowCard: View {
     let book: ReadingNowBook
     @Binding var openDropdownBookId: String?
+    let onOpen: () -> Void
     let onChanged: () async -> Void
 
     private var showStateDropdown: Bool { openDropdownBookId == book.id }
@@ -325,7 +330,11 @@ private struct ReadingNowCard: View {
         HStack(alignment: .center, spacing: 16) {
             // Cover + title/author navigate to the book page (the action
             // buttons on the right keep their own tap targets).
-            NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
+            // Plain Button + path.append, NOT NavigationLink(value:) —
+            // with 2+ sibling cards in this run, iOS 27 kills every
+            // card's NavigationLink hit region (one card alone works).
+            // Same disease as the Up Next grid; same cure.
+            Button(action: onOpen) {
                 HStack(alignment: .center, spacing: 16) {
                     CoverThumb(url: book.coverImageUrl, width: 60, height: 90, radius: 8)
                         .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
