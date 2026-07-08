@@ -147,7 +147,6 @@ struct FindReadersView: View {
                     }
                 }
             }
-            .buttonStyle(TapScaleButtonStyle())
             .disabled(person.username == nil)
 
             Spacer()

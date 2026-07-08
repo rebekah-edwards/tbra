@@ -354,7 +354,6 @@ private struct ReadingNowCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            .buttonStyle(TapScaleButtonStyle())
 
             // Action buttons — stacked right column, 104pt like the web
             VStack(spacing: 6) {
@@ -369,7 +368,6 @@ private struct ReadingNowCard: View {
                         .background(Theme.neonBlue)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .buttonStyle(TapScaleButtonStyle())
 
                 // Reading split button (lime, black text, chevron)
                 Button {
@@ -391,7 +389,6 @@ private struct ReadingNowCard: View {
                     .background(Theme.accent)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .buttonStyle(TapScaleButtonStyle())
             }
             .frame(width: 104)
         }

@@ -52,7 +52,6 @@ struct LibraryShelvesView: View {
                                 NavigationLink(value: shelf.id) {
                                     ShelfCard(shelf: shelf)
                                 }
-                                .buttonStyle(TapScaleButtonStyle())
                                 .opacity(dragging?.id == shelf.id ? 0.4 : 1)
                                 .onDrag {
                                     dragging = shelf
@@ -79,6 +78,7 @@ struct LibraryShelvesView: View {
             }
             .refreshable { await model.load() }
             .task { await model.load() }
+            .floatingBack(topPadding: 20, bare: true)
             .toolbar(.hidden, for: .navigationBar)
             .alert("Error", isPresented: .constant(model.error != nil)) {
                 Button("OK") { model.error = nil }
@@ -87,12 +87,8 @@ struct LibraryShelvesView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Theme.muted)
-                    .frame(width: 30, height: 34)
-            }
+            // Placeholder — real back button is the .floatingBack overlay.
+            Color.clear.frame(width: 30, height: 34)
             Text("Shelves")
                 .font(Theme.heading(26, .bold))
                 .foregroundStyle(Theme.foreground)
@@ -129,7 +125,6 @@ struct LibraryShelvesView: View {
                 .background(active ? Theme.accent : Theme.surfaceAlt)
                 .clipShape(Capsule())
         }
-        .buttonStyle(TapScaleButtonStyle())
     }
 }
 

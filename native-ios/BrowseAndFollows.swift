@@ -27,14 +27,7 @@ struct FollowListView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 12) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Theme.foreground.opacity(0.9))
-                            .frame(width: 40, height: 40)
-                            .background(.black.opacity(0.35), in: Circle())
-                            .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-                    }
+                    Color.clear.frame(width: 40, height: 40)
                     Text(type == "following" ? "Following" : "Followers")
                         .font(Theme.heading(24, .bold))
                         .foregroundStyle(Theme.foreground)
@@ -87,7 +80,6 @@ struct FollowListView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
                     }
-                    .buttonStyle(TapScaleButtonStyle())
                     .disabled(person.username == nil)
                 }
             }
@@ -95,6 +87,7 @@ struct FollowListView: View {
             .padding(.bottom, 40)
         }
         .background(AmbientBackground())
+        .floatingBack()
         .toolbar(.hidden, for: .navigationBar)
         .task {
             struct Res: Codable { let ok: Bool; let users: [PersonRowLite] }
@@ -160,14 +153,7 @@ struct BrowseView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 12) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Theme.foreground.opacity(0.9))
-                            .frame(width: 40, height: 40)
-                            .background(.black.opacity(0.35), in: Circle())
-                            .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-                    }
+                    Color.clear.frame(width: 40, height: 40)
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Browse All Books")
                             .font(Theme.heading(24, .bold))
@@ -218,7 +204,6 @@ struct BrowseView: View {
                                 }
                             }
                         }
-                        .buttonStyle(TapScaleButtonStyle())
                     }
                 }
 
@@ -241,6 +226,7 @@ struct BrowseView: View {
             .padding(.bottom, 40)
         }
         .background(AmbientBackground())
+        .floatingBack()
         .toolbar(.hidden, for: .navigationBar)
         .task { if model.books.isEmpty { await model.load(reset: true) } }
     }

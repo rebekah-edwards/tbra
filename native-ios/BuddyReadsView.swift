@@ -112,14 +112,7 @@ struct BuddyReadsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 12) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Theme.foreground.opacity(0.9))
-                            .frame(width: 40, height: 40)
-                            .background(.black.opacity(0.35), in: Circle())
-                            .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-                    }
+                    Color.clear.frame(width: 40, height: 40)
                     Text("Buddy Reads")
                         .font(Theme.heading(26, .bold))
                         .foregroundStyle(Theme.foreground)
@@ -194,7 +187,6 @@ struct BuddyReadsView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
                         }
-                        .buttonStyle(TapScaleButtonStyle())
                     }
                 }
             }
@@ -202,6 +194,7 @@ struct BuddyReadsView: View {
             .padding(.bottom, 40)
         }
         .background(AmbientBackground())
+        .floatingBack()
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }
         .refreshable { await model.load() }
@@ -269,14 +262,7 @@ struct BuddyReadDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 HStack(spacing: 12) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Theme.foreground.opacity(0.9))
-                            .frame(width: 40, height: 40)
-                            .background(.black.opacity(0.35), in: Circle())
-                            .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-                    }
+                    Color.clear.frame(width: 40, height: 40)
                     Text(model.detail?.name ?? "Buddy Read")
                         .font(Theme.heading(24, .bold))
                         .foregroundStyle(Theme.foreground)
@@ -311,7 +297,6 @@ struct BuddyReadDetailView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
                     }
-                    .buttonStyle(TapScaleButtonStyle())
 
                     // Invite code (host share)
                     HStack(spacing: 8) {
@@ -424,6 +409,7 @@ struct BuddyReadDetailView: View {
             .padding(.bottom, 40)
         }
         .background(AmbientBackground())
+        .floatingBack()
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }
         .refreshable { await model.load() }

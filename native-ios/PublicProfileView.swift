@@ -91,14 +91,7 @@ struct PublicProfileView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 HStack(spacing: 12) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Theme.foreground.opacity(0.9))
-                            .frame(width: 40, height: 40)
-                            .background(.black.opacity(0.35), in: Circle())
-                            .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-                    }
+                    Color.clear.frame(width: 40, height: 40)
                     Spacer()
                 }
                 .padding(.top, 14)
@@ -127,6 +120,7 @@ struct PublicProfileView: View {
             .padding(.bottom, 40)
         }
         .background(AmbientBackground())
+        .floatingBack()
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }
     }
@@ -238,7 +232,6 @@ struct PublicProfileView: View {
                         NavigationLink(value: BookRoute(idOrSlug: fav.slug ?? fav.id)) {
                             CoverThumb(url: fav.coverImageUrl, width: 88, height: 132, radius: 8)
                         }
-                        .buttonStyle(TapScaleButtonStyle())
                     }
                 }
                 .padding(.trailing, 32)
@@ -305,7 +298,6 @@ struct PublicProfileView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
                 }
-                .buttonStyle(TapScaleButtonStyle())
             }
         }
     }

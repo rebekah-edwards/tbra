@@ -161,7 +161,6 @@ struct EditionPickerSheet: View {
             .overlay(RoundedRectangle(cornerRadius: 12)
                 .stroke(isSelected ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1))
         }
-        .buttonStyle(TapScaleButtonStyle())
     }
 
     private func load(offset: Int, keepEntries: Bool = false) async {

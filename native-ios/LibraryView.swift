@@ -18,9 +18,11 @@ struct LibraryRootView: View {
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(for: ShelvesListRoute.self) { _ in
                     LibraryShelvesView()
+                        .pushedScreenChrome()
                 }
                 .navigationDestination(for: String.self) { shelfId in
                     ShelfDetailView(shelfId: shelfId)
+                        .pushedScreenChrome()
                 }
                 .appDestinations()
         }
@@ -91,7 +93,6 @@ struct LibraryView: View {
                     .padding(.horizontal, 16).padding(.vertical, 16)
                     .background(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
                 }
-                .buttonStyle(TapScaleButtonStyle())
 
                 groupSegments
                 subFilterChips
@@ -211,7 +212,6 @@ struct LibraryView: View {
                     NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
                         LibraryBookCard(book: book)
                     }
-                    .buttonStyle(TapScaleButtonStyle())
                 }
             }
         }

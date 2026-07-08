@@ -100,17 +100,7 @@ struct BookDetailView: View {
         // Floating back button, OUTSIDE the scroll content on purpose: the
         // scroll layer's top strip stops hit-testing on repeat pushes
         // (iOS 27) — a screen-level overlay is tried first and always works.
-        .overlay(alignment: .topLeading) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Theme.foreground.opacity(0.9))
-                    .frame(width: 40, height: 40)
-                    .background(Theme.scrim, in: Circle())
-                    .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-            }
-            .padding(.leading, 20)
-        }
+        .floatingBack(topPadding: 0)
         .toolbar(.hidden, for: .navigationBar)
         .task {
             await model.load()
@@ -862,7 +852,6 @@ private struct BookActionCluster: View {
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(tint.opacity(solid ? 1 : 0.35), lineWidth: 2))
         }
-        .buttonStyle(TapScaleButtonStyle())
     }
 
     private func formatLabel(_ f: String) -> String {

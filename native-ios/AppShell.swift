@@ -243,7 +243,6 @@ struct BottomNav: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
         }
-        .buttonStyle(TapScaleButtonStyle())
     }
 
     // Standout Home button in the center — larger raised circle, no label.
@@ -267,7 +266,6 @@ struct BottomNav: View {
             .shadow(color: active ? Theme.accent.opacity(0.30) : .black.opacity(0.25), radius: 10, y: 3)
             .offset(y: -18)
         }
-        .buttonStyle(TapScaleButtonStyle())
         .frame(maxWidth: .infinity)
     }
 
@@ -290,19 +288,12 @@ struct BottomNav: View {
     }
 }
 
-// .tap-scale press feedback for arbitrary buttons.
-// WARNING (iOS 27): do NOT apply this to a run of sibling buttons in a
-// multi-row grid (see the Up Next grid in HomeView) — the isPressed
-// scaleEffect made button activation land on the sibling one row down
-// (bisect-verified; happened with and without the .animation line).
-// Standalone buttons and links are unaffected.
-struct TapScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
+// TOMBSTONE — TapScaleButtonStyle (the web's .tap-scale press feedback)
+// was deleted on purpose. On iOS 27, a ButtonStyle that scaleEffects on
+// configuration.isPressed makes button ACTIVATION land on a sibling when
+// applied to runs of card/cell buttons (Up Next grid opened the book one
+// row down; bisect-verified, with and without the .animation line).
+// Do NOT reintroduce a pressed-scale ButtonStyle for card grids/rails.
 
 // ── Placeholder for tabs whose /api/v1 endpoints don't exist yet ──
 struct PlaceholderScreen: View {

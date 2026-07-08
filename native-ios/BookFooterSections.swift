@@ -40,7 +40,6 @@ struct FriendsWhoReadSection: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
                     }
-                    .buttonStyle(TapScaleButtonStyle())
                     .disabled(friend.username == nil)
                 }
             }

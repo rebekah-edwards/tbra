@@ -230,7 +230,6 @@ private struct SearchResultCard: View {
                 }
                 .padding(14)
             }
-            .buttonStyle(TapScaleButtonStyle())
 
             // Compact action row (reading-state-button.tsx compact mode)
             HStack(spacing: 10) {

@@ -29,6 +29,7 @@ struct ProfileRootView: View {
                 .appDestinations()
                 .navigationDestination(for: String.self) { shelfId in
                     ShelfDetailView(shelfId: shelfId)
+                        .pushedScreenChrome()
                 }
         }
     }
@@ -266,7 +267,6 @@ struct ProfileView: View {
                             NavigationLink(value: BookRoute(idOrSlug: fav.slug ?? fav.id)) {
                                 CoverThumb(url: fav.coverImageUrl, width: 88, height: 132, radius: 8)
                             }
-                            .buttonStyle(TapScaleButtonStyle())
                         }
                     }
                     .padding(.trailing, 32)

@@ -47,7 +47,6 @@ struct HorizontalBookRow: View {
                     NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
                         BookCardMini(book: book)
                     }
-                    .buttonStyle(TapScaleButtonStyle())
                 }
             }
             .padding(.trailing, 48)
@@ -77,7 +76,6 @@ struct InfoBubble: View {
                 .frame(width: 22, height: 22)
                 .overlay(Circle().stroke(Theme.border, lineWidth: 1))
         }
-        .buttonStyle(TapScaleButtonStyle())
         .sheet(isPresented: $open) {
             VStack(alignment: .leading, spacing: 12) {
                 Text(text)
@@ -128,7 +126,6 @@ struct TbrSuggestionCard: View {
                         }
                         .padding(16)
                     }
-                    .buttonStyle(TapScaleButtonStyle())
 
                     Divider().background(Theme.border)
 

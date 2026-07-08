@@ -24,7 +24,7 @@ extension EnvironmentValues {
 
 /// Applied to every pushed destination: pads the content by the shell bars'
 /// measured heights (no-op inside full-screen covers, which set the env to 0).
-private struct PushedScreenChrome: ViewModifier {
+struct PushedScreenChrome: ViewModifier {
     @Environment(\.shellBarInsets) private var bars
     func body(content: Content) -> some View {
         content
@@ -35,6 +35,47 @@ private struct PushedScreenChrome: ViewModifier {
                 Color.clear.frame(height: bars.bottom)
             }
     }
+}
+
+/// Standard floating back chevron for pushed screens. It lives in a
+/// screen-level overlay ON PURPOSE: back buttons inside the scroll content's
+/// top strip go hit-test-dead on repeat pushes (iOS 27) — the overlay layer
+/// is hit-tested first and keeps working. Screens keep a 40pt placeholder in
+/// their header row so the title layout is unchanged.
+struct FloatingBackButton: View {
+    /// `bare` = the plain muted chevron some screens use instead of the
+    /// scrim circle (Shelves, shelf detail).
+    var bare = false
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        Button { dismiss() } label: {
+            if bare {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Theme.muted)
+                    .frame(width: 32, height: 36)
+            } else {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Theme.foreground.opacity(0.9))
+                    .frame(width: 40, height: 40)
+                    .background(Theme.scrim, in: Circle())
+                    .overlay(Circle().stroke(Theme.border, lineWidth: 1))
+            }
+        }
+        .padding(.leading, 20)
+    }
+}
+extension View {
+    /// Overlay a working back button on a pushed screen. `topPadding`
+    /// matches the screen's header padding so the chevron sits exactly
+    /// where the old in-content button rendered.
+    func floatingBack(topPadding: CGFloat = 14, bare: Bool = false) -> some View {
+        overlay(alignment: .topLeading) {
+            FloatingBackButton(bare: bare).padding(.top, topPadding)
+        }
+    }
+    func pushedScreenChrome() -> some View { modifier(PushedScreenChrome()) }
 }
 
 /// One modifier carrying every app-wide navigation destination, so each
@@ -132,14 +173,7 @@ struct SeriesView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 12) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Theme.foreground.opacity(0.9))
-                            .frame(width: 40, height: 40)
-                            .background(.black.opacity(0.35), in: Circle())
-                            .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-                    }
+                    Color.clear.frame(width: 40, height: 40)
                     Text(model.name)
                         .font(Theme.heading(26, .bold))
                         .foregroundStyle(Theme.foreground)
@@ -165,6 +199,7 @@ struct SeriesView: View {
             .padding(.bottom, 40)
         }
         .background(AmbientBackground())
+        .floatingBack()
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await model.load() }
         .task { await model.load() }
@@ -250,7 +285,6 @@ struct SeriesView: View {
                 }
                 .padding(14)
             }
-            .buttonStyle(TapScaleButtonStyle())
 
             HStack(spacing: 10) {
                 CompactStatePill(bookId: book.id, state: book.currentState)

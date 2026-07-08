@@ -181,7 +181,6 @@ struct DiscoverView: View {
                                                 }
                                             }
                                         }
-                                        .buttonStyle(TapScaleButtonStyle())
                                     }
                                 }
                             }
@@ -237,7 +236,6 @@ struct DiscoverView: View {
             .overlay(RoundedRectangle(cornerRadius: 14)
                 .stroke(mood.tint.opacity(selected ? 0.55 : 0.2), lineWidth: selected ? 1.5 : 1))
         }
-        .buttonStyle(TapScaleButtonStyle())
     }
 
     private func choicePill(_ label: String, selected: Bool, action: @escaping () -> Void) -> some View {
@@ -250,7 +248,6 @@ struct DiscoverView: View {
                 .overlay(RoundedRectangle(cornerRadius: 12)
                     .stroke(selected ? Theme.accent.opacity(0.6) : Theme.border, lineWidth: selected ? 1.5 : 1))
         }
-        .buttonStyle(TapScaleButtonStyle())
     }
 
     private func lengthCard(_ title: String, _ sub: String, key: String) -> some View {
@@ -272,7 +269,6 @@ struct DiscoverView: View {
             .overlay(RoundedRectangle(cornerRadius: 14)
                 .stroke(selected ? Theme.accent.opacity(0.6) : Theme.border, lineWidth: selected ? 1.5 : 1))
         }
-        .buttonStyle(TapScaleButtonStyle())
     }
 
     private func searchInPill(_ label: String, key: String?) -> some View {
@@ -289,7 +285,6 @@ struct DiscoverView: View {
                 .overlay(RoundedRectangle(cornerRadius: 14)
                     .stroke(selected ? Theme.accent : Theme.border, lineWidth: selected ? 2 : 1))
         }
-        .buttonStyle(TapScaleButtonStyle())
     }
 
     private func togglePill(_ label: String, icon: String, isOn: Binding<Bool>) -> some View {
@@ -305,6 +300,5 @@ struct DiscoverView: View {
             .background(isOn.wrappedValue ? Theme.accent.opacity(0.10) : .clear, in: Capsule())
             .overlay(Capsule().stroke(isOn.wrappedValue ? Theme.accent.opacity(0.6) : Theme.border, lineWidth: 1))
         }
-        .buttonStyle(TapScaleButtonStyle())
     }
 }

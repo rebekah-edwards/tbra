@@ -140,7 +140,6 @@ struct SimilarBooksSection: View {
                                     }
                                     .frame(width: 100, alignment: .leading)
                                 }
-                                .buttonStyle(TapScaleButtonStyle())
                             }
                         }
                         .padding(.trailing, 32)
@@ -217,7 +216,6 @@ struct BookSeriesRail: View {
                                             .frame(width: 92, alignment: .leading)
                                     }
                                 }
-                                .buttonStyle(TapScaleButtonStyle())
                             }
                         }
                         .padding(.trailing, 32)

@@ -71,6 +71,7 @@ struct ShelfDetailView: View {
             .padding(.bottom, 40)
         }
         .background(AmbientBackground())
+        .floatingBack(topPadding: 18, bare: true)
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await model.load() }
         .task { await model.load() }
@@ -88,12 +89,8 @@ struct ShelfDetailView: View {
 
     private var header: some View {
         HStack(alignment: .top, spacing: 12) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Theme.muted)
-                    .frame(width: 32, height: 36)
-            }
+            // Placeholder — real back button is the .floatingBack overlay.
+            Color.clear.frame(width: 32, height: 36)
             VStack(alignment: .leading, spacing: 2) {
                 Text(model.shelf?.name ?? " ")
                     .font(Theme.heading(26, .bold))
@@ -170,7 +167,6 @@ struct ShelfDetailView: View {
                 NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.bookId)) {
                     BookCell(book: book)
                 }
-                .buttonStyle(TapScaleButtonStyle())
                     .opacity(dragging?.id == book.id ? 0.4 : 1)
                     .onDrag {
                         dragging = book
