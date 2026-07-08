@@ -15,6 +15,7 @@ struct LibraryRootView: View {
     var body: some View {
         NavigationStack(path: $path) {
             LibraryView()
+                .pushedScreenChrome()
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(for: ShelvesListRoute.self) { _ in
                     LibraryShelvesView()
@@ -104,6 +105,7 @@ struct LibraryView: View {
             .padding(.top, 20)
             .padding(.bottom, 40)
         }
+        .tracksScrollAtTop()
         .refreshable { await model.load() }
         .task { await model.load() }
         .alert("Error", isPresented: .constant(model.error != nil)) {

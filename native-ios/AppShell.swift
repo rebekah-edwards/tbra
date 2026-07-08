@@ -26,6 +26,8 @@ struct AppShell: View {
     // Measured bar heights, forwarded to pushed screens (see shellBarInsets).
     @State private var topBarHeight: CGFloat = 0
     @State private var bottomNavHeight: CGFloat = 0
+    // Scroll chrome: whether the visible screen rests at its top (logo shows).
+    @State private var chrome = ChromeState()
     #if DEBUG && targetEnvironment(simulator)
     @State private var debugBookSlug: String?
     @State private var menuDebugOpen = false
@@ -47,21 +49,29 @@ struct AppShell: View {
                 case .home: HomeView(path: $homePath)
                 case .library: LibraryRootView(path: $libraryPath)
                 case .discover: DiscoverRootView(path: $discoverPath)
-                case .stats: StatsView()
+                case .stats: StatsView().pushedScreenChrome()
                 case .profile: ProfileRootView(path: $profilePath)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .safeAreaInset(edge: .top, spacing: 0) {
+        // The floating bars are plain OVERLAYS, not safeAreaInsets: an inset
+        // applied outside the NavigationStacks collapses (and z-fights) on
+        // iOS 27 the moment a stack's content is swapped. Every screen
+        // reserves the bar space itself instead via screenChrome()/
+        // PushedScreenChrome using the measured heights below — the same
+        // mechanism the pushed screens already use.
+        .overlay(alignment: .top) {
             TopBar(
+                showLogo: chrome.atTop,
+                onLogoTap: { tab = .home; homePath = NavigationPath() },
                 onSearch: { searchOpen = true },
                 onProfile: { tab = .profile },
                 onOpenBook: { slug in presentedBookSlug = slug }
             )
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { topBarHeight = $0 }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        .overlay(alignment: .bottom) {
             BottomNav(tab: $tab, avatarUrl: currentAvatarUrl, onReselect: { reselected in
                 // Same-tab tap: pop that tab's stack to its root.
                 switch reselected {
@@ -75,6 +85,7 @@ struct AppShell: View {
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bottomNavHeight = $0 }
         }
         .environment(\.shellBarInsets, (top: topBarHeight, bottom: bottomNavHeight))
+        .environment(chrome)
         .environment(\.openSearch, { searchOpen = true })
         .fullScreenCover(isPresented: $searchOpen) {
             SearchRootView()
@@ -142,8 +153,60 @@ struct AppShell: View {
     }
 }
 
-// ── Top bar — layout.tsx sticky nav ──
+// ── Floating "liquid glass" chrome ──────────────────────────────────────
+// The bars are detached glass pills (iOS 26 style): scroll content passes
+// underneath and blurs through them. Both stay .safeAreaInset views so the
+// hit-test geometry from the 2026-07-07 fixes is untouched — only the
+// visuals changed (transparent inset area, glass capsules inside it).
+
+/// Shared scroll state: is the active screen resting at its very top?
+/// Drives the top-bar wordmark (visible only when fully scrolled up).
+@MainActor
+@Observable
+final class ChromeState {
+    var atTop = true
+}
+
+/// Attach to a screen's root ScrollView so the shell knows whether it rests
+/// at the top. onAppear re-reports on pop so a scrolled pushed page doesn't
+/// leave a stale value behind.
+struct TracksScrollAtTop: ViewModifier {
+    @Environment(ChromeState.self) private var chrome: ChromeState?
+    @State private var atTop = true
+    func body(content: Content) -> some View {
+        content
+            .onScrollGeometryChange(for: Bool.self) { geo in
+                // At rest contentOffset.y == -contentInsets.top, so the sum
+                // is ~0 at the top and grows as the user scrolls down.
+                geo.contentOffset.y + geo.contentInsets.top <= 2
+            } action: { _, new in
+                atTop = new
+                chrome?.atTop = new
+            }
+            .onAppear { chrome?.atTop = atTop }
+    }
+}
+extension View {
+    func tracksScrollAtTop() -> some View { modifier(TracksScrollAtTop()) }
+
+    /// Liquid-glass capsule chrome for the floating bars.
+    @ViewBuilder func glassPill() -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular, in: Capsule())
+        } else {
+            self
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().stroke(Theme.border.opacity(0.6), lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
+        }
+    }
+}
+
+// ── Top bar — floating glass bubble (search/bell/menu) + wordmark that is
+// only shown while the page is fully scrolled up; tapping it goes Home. ──
 struct TopBar: View {
+    var showLogo = true
+    var onLogoTap: @MainActor () -> Void = {}
     var onSearch: @MainActor () -> Void = {}
     var onProfile: @MainActor () -> Void = {}
     var onOpenBook: @MainActor (String) -> Void = { _ in }
@@ -153,15 +216,21 @@ struct TopBar: View {
     @State private var menuOpen = false
 
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 12) {
             // Wordmark: Space Grotesk, lime→blue→purple gradient (.logo-gradient).
-            Text("tbr*a")
-                .font(Theme.logo(22))
-                .foregroundStyle(Theme.logoGradient)
+            Button { onLogoTap() } label: {
+                Text("tbr*a")
+                    .font(Theme.logo(22))
+                    .foregroundStyle(Theme.logoGradient)
+            }
+            .opacity(showLogo ? 1 : 0)
+            .offset(y: showLogo ? 0 : -6)
+            .allowsHitTesting(showLogo)
+            .animation(.easeOut(duration: 0.18), value: showLogo)
 
             Spacer()
 
-            HStack(spacing: 26) {
+            HStack(spacing: 24) {
                 Button { onSearch() } label: {
                     Image(systemName: "magnifyingglass")
                 }
@@ -179,15 +248,15 @@ struct TopBar: View {
                     Image(systemName: "line.3.horizontal")
                 }
             }
-            .font(.system(size: 19, weight: .regular))
-            .foregroundStyle(Theme.muted)
+            .font(.system(size: 18, weight: .regular))
+            .foregroundStyle(Theme.foreground.opacity(0.85))
+            .padding(.horizontal, 18)
+            .padding(.vertical, 11)
+            .glassPill()
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(Theme.surface)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Theme.border).frame(height: 0.5)
-        }
+        .padding(.horizontal, 16)
+        .padding(.top, 2)
+        .padding(.bottom, 8)
         .task { await notifications.load() }
         .sheet(isPresented: $bellOpen) {
             NotificationsSheet(model: notifications, onOpenBook: onOpenBook)
@@ -202,7 +271,8 @@ struct TopBar: View {
     }
 }
 
-// ── Bottom nav — bottom-tabs.tsx, five columns, raised home circle ──
+// ── Bottom nav — floating glass pill, five columns, lime home circle in
+// the middle. Detached from the screen edges; content blurs through it. ──
 struct BottomNav: View {
     @Binding var tab: AppTab
     var avatarUrl: String?
@@ -217,15 +287,11 @@ struct BottomNav: View {
             navItem(.profile, label: "Profile") { profileIcon }
         }
         .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .glassPill()
+        .padding(.horizontal, 16)
         .padding(.top, 6)
-        .background(
-            Theme.surface.opacity(0.95)
-                .background(.ultraThinMaterial)
-                .ignoresSafeArea(edges: .bottom)
-        )
-        .overlay(alignment: .top) {
-            Rectangle().fill(Theme.border).frame(height: 0.5)
-        }
+        .padding(.bottom, 2)
     }
 
     private func navItem<Icon: View>(_ target: AppTab, label: String, @ViewBuilder icon: () -> Icon) -> some View {
@@ -241,12 +307,12 @@ struct BottomNav: View {
             }
             .foregroundStyle(active ? Theme.neonPurple : Theme.muted)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .padding(.vertical, 6)
         }
     }
 
-    // Standout Home button in the center — larger raised circle, no label.
-    // Active: solid lime with black icon; inactive: surface-alt with border.
+    // Standout Home button in the center of the pill — lime circle when
+    // active, surface-alt when not.
     private var homeButton: some View {
         let active = tab == .home
         return Button {
@@ -259,12 +325,11 @@ struct BottomNav: View {
                     .stroke(Theme.border, lineWidth: active ? 0 : 1)
                 HomeIcon()
                     .stroked()
-                    .frame(width: 26, height: 26)
+                    .frame(width: 24, height: 24)
                     .foregroundStyle(active ? Theme.onAccent : Theme.muted)
             }
-            .frame(width: 56, height: 56)
-            .shadow(color: active ? Theme.accent.opacity(0.30) : .black.opacity(0.25), radius: 10, y: 3)
-            .offset(y: -18)
+            .frame(width: 50, height: 50)
+            .shadow(color: active ? Theme.accent.opacity(0.35) : .black.opacity(0.2), radius: 8, y: 2)
         }
         .frame(maxWidth: .infinity)
     }

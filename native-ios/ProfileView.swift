@@ -25,6 +25,7 @@ struct ProfileRootView: View {
     var body: some View {
         NavigationStack(path: $path) {
             ProfileView()
+                .pushedScreenChrome()
                 .toolbar(.hidden, for: .navigationBar)
                 .appDestinations()
                 .navigationDestination(for: String.self) { shelfId in
@@ -63,6 +64,7 @@ struct ProfileView: View {
             .padding(.top, 20)
             .padding(.bottom, 40)
         }
+        .tracksScrollAtTop()
         .refreshable { await model.load() }
         .task { await model.load() }
         .alert("Error", isPresented: .constant(model.error != nil)) {

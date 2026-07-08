@@ -65,6 +65,7 @@ struct StatsView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
         }
+        .tracksScrollAtTop()
         .refreshable { await model.load() }
         .task { await model.load() }
         .alert("Error", isPresented: .constant(model.error != nil)) {

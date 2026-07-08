@@ -72,6 +72,7 @@ struct DiscoverRootView: View {
     var body: some View {
         NavigationStack(path: $path) {
             DiscoverView()
+                .pushedScreenChrome()
                 .toolbar(.hidden, for: .navigationBar)
                 .appDestinations()
         }
@@ -190,6 +191,7 @@ struct DiscoverView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)
             }
+            .tracksScrollAtTop()
         }
         #if DEBUG && targetEnvironment(simulator)
         .task {

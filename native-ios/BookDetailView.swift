@@ -97,6 +97,7 @@ struct BookDetailView: View {
             }
         }
         .background(AmbientBackground())
+        .tracksScrollAtTop()
         // Floating back button, OUTSIDE the scroll content on purpose: the
         // scroll layer's top strip stops hit-testing on repeat pushes
         // (iOS 27) — a screen-level overlay is tried first and always works.

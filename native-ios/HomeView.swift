@@ -66,6 +66,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack(path: $path) {
             homeContent
+                .pushedScreenChrome()
                 .toolbar(.hidden, for: .navigationBar)
                 .appDestinations()
         }
@@ -139,6 +140,7 @@ struct HomeView: View {
                 TapDebug.log("TAP at x\(Int(v.location.x)) y\(Int(v.location.y))")
             }
         )
+        .tracksScrollAtTop()
         .refreshable {
             async let a: Void = model.load()
             async let b: Void = homeModel.load()
