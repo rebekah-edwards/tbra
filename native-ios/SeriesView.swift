@@ -15,19 +15,70 @@ struct SeriesRoute: Hashable { let slug: String }
 private struct ShellBarInsetsKey: EnvironmentKey {
     static let defaultValue: (top: CGFloat, bottom: CGFloat) = (0, 0)
 }
+/// False inside full-screen covers: they replace the whole screen, so the
+/// per-screen chrome hit layers (and bar spacers) must not render there.
+private struct ShowsShellChromeKey: EnvironmentKey {
+    static let defaultValue = true
+}
 extension EnvironmentValues {
     var shellBarInsets: (top: CGFloat, bottom: CGFloat) {
         get { self[ShellBarInsetsKey.self] }
         set { self[ShellBarInsetsKey.self] = newValue }
     }
+    var showsShellChrome: Bool {
+        get { self[ShowsShellChromeKey.self] }
+        set { self[ShowsShellChromeKey.self] = newValue }
+    }
 }
 
-/// Applied to every pushed destination: pads the content by the shell bars'
-/// measured heights (no-op inside full-screen covers, which set the env to 0).
+/// Applied to every screen (tab roots + pushed destinations). Two jobs:
+/// 1. Pads the content by the shell bars' measured heights (no-op inside
+///    full-screen covers, which zero the env).
+/// 2. Renders the INVISIBLE HIT LAYER for the chrome bars: geometry-
+///    identical twins of the shell's display-only pills. They must live
+///    HERE, inside the screen, because overlays outside the
+///    NavigationStacks lose iOS 27 hit-testing to links scrolled beneath
+///    the pills (tapping the menu icon opened the book under it), while
+///    overlays inside a screen reliably win (the floating back chevron
+///    beats the content under it). The overlays are attached BEFORE the
+///    safeAreaInset spacers so they anchor to the true top like the shell
+///    bars do.
 struct PushedScreenChrome: ViewModifier {
     @Environment(\.shellBarInsets) private var bars
+    @Environment(\.showsShellChrome) private var showsChrome
+    @Environment(ChromeState.self) private var chrome: ChromeState?
+
     func body(content: Content) -> some View {
         content
+            // The negative paddings cancel the safeAreaInset spacers below —
+            // overlays attached in the same chain get pushed by the insets,
+            // so without the compensation the twins sat one bar-height off
+            // (verified with the red TBRA_DEBUG_TAPS ink).
+            .overlay(alignment: .topLeading) {
+                if showsChrome, let chrome {
+                    TopBarLogo(visible: chrome.atTop, hitLayerOnly: true, onTap: chrome.goHome)
+                        .padding(.top, -bars.top)
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                if showsChrome, let chrome {
+                    TopBarActions(hitLayerOnly: true,
+                                  onSearch: chrome.openSearch,
+                                  onBell: chrome.openBell,
+                                  onMenu: chrome.openMenu)
+                        .padding(.top, -bars.top)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if showsChrome, let chrome {
+                    BottomNav(hitLayerOnly: true,
+                              tab: chrome.tab,
+                              avatarUrl: nil,
+                              onSelect: chrome.selectTab,
+                              onReselect: chrome.reselectTab)
+                        .padding(.bottom, -bars.bottom)
+                }
+            }
             .safeAreaInset(edge: .top, spacing: 0) {
                 Color.clear.frame(height: bars.top)
             }
