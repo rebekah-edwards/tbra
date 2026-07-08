@@ -384,7 +384,8 @@ struct TopShelfCase: View {
                     .padding(.bottom, 18)
                 }
                 .maskFadeRight()
-                // Shelf-edge plank, full bleed across the case.
+                // Shelf-edge plank, full bleed across the case — lifted off
+                // the card bottom (web pb-2) so it floats inside the case.
                 LinearGradient(
                     colors: isLight
                         ? [ShelfWood.amber800.opacity(0.30), ShelfWood.amber900.opacity(0.40)]
@@ -392,6 +393,7 @@ struct TopShelfCase: View {
                     startPoint: .top, endPoint: .bottom
                 )
                 .frame(height: 6)
+                Color.clear.frame(height: 8)
             }
             .background(
                 LinearGradient(
@@ -513,10 +515,13 @@ struct ShelfRailCase: View {
                         .padding(.bottom, 10)
                     }
                     .maskFadeRight()
-                    // Tinted shelf-edge plank (web: accent30 → accent45 hex alpha).
+                    // Tinted shelf-edge plank (web: accent30 → accent45 hex
+                    // alpha), lifted off the card bottom (web pb-1.5) so it
+                    // floats inside the case.
                     LinearGradient(colors: [tint.opacity(0.188), tint.opacity(0.271)],
                                    startPoint: .top, endPoint: .bottom)
                         .frame(height: 5)
+                    Color.clear.frame(height: 6)
                 }
                 .background(
                     // Web: accent08 → accent15 (hex alpha ≈ 3% → 8%).
