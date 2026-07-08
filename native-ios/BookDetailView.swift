@@ -101,10 +101,10 @@ struct BookDetailView: View {
         // Floating back button, OUTSIDE the scroll content on purpose: the
         // scroll layer's top strip stops hit-testing on repeat pushes
         // (iOS 27) — a screen-level overlay is tried first and always works.
-        // -8 tucks the chevron up so its lower ~30% overlaps the hero card
-        // (card top = 20; chevron spans -8…32 → 12pt over the card), matching
-        // the mobile site's overlapped back button.
-        .floatingBack(topPadding: -8)
+        // topPadding 0 puts the chevron's lower HALF over the hero card
+        // (card top = 20; chevron spans 0…40 → 20pt over the card) while
+        // keeping clear air below the logo pill.
+        .floatingBack(topPadding: 0)
         .toolbar(.hidden, for: .navigationBar)
         .task {
             await model.load()

@@ -118,15 +118,13 @@ struct FloatingBackButton: View {
 
 extension View {
     /// The floating circular chrome treatment shared by the back chevron and
-    /// the book-page share button: OPAQUE base so it stays readable when it
-    /// overlaps vivid hero cards, scrim tint + border on top. Keep the two
-    /// buttons visually identical — user request 2026-07-08.
+    /// the book-page share button: the ORIGINAL back-button recipe —
+    /// translucent scrim + border, NO opaque base (user preference
+    /// 2026-07-08: share must match this look, not the other way around).
     func chromeCircle() -> some View {
         frame(width: 40, height: 40)
-            .background(Theme.bg, in: Circle())
-            .background(Circle().fill(Theme.scrim))
+            .background(Theme.scrim, in: Circle())
             .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-            .shadow(color: .black.opacity(0.25), radius: 5, y: 2)
     }
 }
 extension View {
