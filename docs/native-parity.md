@@ -169,3 +169,13 @@ explicit user sign-off.
   tinted padded rail cards w/ shelf-edge planks + floor shadows, dashed empty state,
   .read-more-link colors on View links. DEFERRED from web favorites-shelf.tsx: same-series
   STACKING on the top shelf (stack + count badge) — add when she asks or in a later pass.
+
+- 2026-07-08 (live report): CHROME TAPS ALWAYS WIN — tapping the menu bubble with a book
+  link scrolled beneath navigated to the book: shell-level overlays LOSE iOS 27
+  hit-testing to interactive content inside the NavigationStacks (in-screen overlays like
+  the floating back chevron WIN — verified both ways). Fix: every bar is one component
+  with two modes — visual (shell overlay, allowsHitTesting(false), free to mutate/never
+  slides with transitions) + hitLayerOnly (clear-ink geometry twin rendered inside every
+  screen via PushedScreenChrome, negative padding cancels the bar-spacer insets).
+  ChromeState = chrome hub (tab + wired actions); TopBarActions stateless (sheets +
+  notifications hoisted to AppShell). Debug: TBRA_DEBUG_TAPS=1 paints the hit twins red.
