@@ -162,3 +162,10 @@ explicit user sign-off.
   ChromeState + tracksScrollAtTop() (onScrollGeometryChange; at-rest offset = -inset)
   feed the wordmark visibility from each main ScrollView. Verified dark+light in sim:
   blur-through, logo hide/show, taps + back still correct. Pushed to phone.
+
+- 2026-07-08 (punch list round 2, item 1): PROFILE SHELVES PARITY — shared TopShelfCase +
+  ShelfRailCase components now render the web's bookcase design on BOTH profile pages:
+  amber wooden Top-Shelf case w/ avatar+rating pills (FavoriteBookRow gained userRating),
+  tinted padded rail cards w/ shelf-edge planks + floor shadows, dashed empty state,
+  .read-more-link colors on View links. DEFERRED from web favorites-shelf.tsx: same-series
+  STACKING on the top shelf (stack + count badge) — add when she asks or in a later pass.
