@@ -44,7 +44,7 @@ struct BookDetailView: View {
         ScrollView {
             if let data = model.data {
                 VStack(alignment: .leading, spacing: 20) {
-                    BookHero(data: data, onBack: { dismiss() })
+                    BookHero(data: data)
                     BookActionCluster(model: model, data: data)
                     BookStarsRow(data: data, onReviewSaved: { Task { await model.load() } })
                     if let summary = data.book.summary, !summary.isEmpty {
@@ -88,29 +88,29 @@ struct BookDetailView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)
-            } else {
-                // Loading / failed state — keep a back affordance on screen
-                // (the hero's back button only exists once data renders).
-                VStack(alignment: .leading, spacing: 24) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Theme.foreground.opacity(0.9))
-                            .frame(width: 40, height: 40)
-                            .background(.black.opacity(0.35), in: Circle())
-                            .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-                    }
-                    if model.loading {
-                        ProgressView().tint(Theme.accent)
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 100)
-                    }
-                }
-                .padding(20)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            } else if model.loading {
+                // Loading state — the floating overlay supplies the back
+                // affordance in every state.
+                ProgressView().tint(Theme.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 120)
             }
         }
         .background(AmbientBackground())
+        // Floating back button, OUTSIDE the scroll content on purpose: the
+        // scroll layer's top strip stops hit-testing on repeat pushes
+        // (iOS 27) — a screen-level overlay is tried first and always works.
+        .overlay(alignment: .topLeading) {
+            Button { dismiss() } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Theme.foreground.opacity(0.9))
+                    .frame(width: 40, height: 40)
+                    .background(Theme.scrim, in: Circle())
+                    .overlay(Circle().stroke(Theme.border, lineWidth: 1))
+            }
+            .padding(.leading, 20)
+        }
         .toolbar(.hidden, for: .navigationBar)
         .task {
             await model.load()
@@ -243,7 +243,6 @@ struct TbrNoteEditorSheet: View {
 // ── Hero — book-header.tsx ──
 private struct BookHero: View {
     let data: BookDetailData
-    let onBack: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
     private var book: BookFull { data.book }
@@ -252,14 +251,11 @@ private struct BookHero: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Button(action: onBack) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Theme.foreground.opacity(0.9))
-                        .frame(width: 40, height: 40)
-                        .background(Theme.scrim, in: Circle())
-                        .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-                }
+                // Layout placeholder only — the real back button is a
+                // screen-level overlay (see BookDetailView.body): buttons in
+                // this scroll content's top strip went hit-test-dead on the
+                // second push of a book page (iOS 27 interaction-layer bug).
+                Color.clear.frame(width: 40, height: 40)
                 Spacer()
             }
 

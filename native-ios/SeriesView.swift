@@ -8,6 +8,35 @@ import SwiftUI
 
 struct SeriesRoute: Hashable { let slug: String }
 
+/// Heights of the app-shell bars, published so PUSHED screens can reserve
+/// the same space. The shell's .safeAreaInset covers each stack's ROOT, but
+/// iOS 27 does not propagate it to views pushed onto the stack — without
+/// this, pushed content (incl. every back button) slides under the TopBar.
+private struct ShellBarInsetsKey: EnvironmentKey {
+    static let defaultValue: (top: CGFloat, bottom: CGFloat) = (0, 0)
+}
+extension EnvironmentValues {
+    var shellBarInsets: (top: CGFloat, bottom: CGFloat) {
+        get { self[ShellBarInsetsKey.self] }
+        set { self[ShellBarInsetsKey.self] = newValue }
+    }
+}
+
+/// Applied to every pushed destination: pads the content by the shell bars'
+/// measured heights (no-op inside full-screen covers, which set the env to 0).
+private struct PushedScreenChrome: ViewModifier {
+    @Environment(\.shellBarInsets) private var bars
+    func body(content: Content) -> some View {
+        content
+            .safeAreaInset(edge: .top, spacing: 0) {
+                Color.clear.frame(height: bars.top)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: bars.bottom)
+            }
+    }
+}
+
 /// One modifier carrying every app-wide navigation destination, so each
 /// tab's NavigationStack registers the same routes without drift.
 struct AppDestinations: ViewModifier {
@@ -15,24 +44,32 @@ struct AppDestinations: ViewModifier {
         content
             .navigationDestination(for: BookRoute.self) { route in
                 BookDetailView(idOrSlug: route.idOrSlug)
+                    .modifier(PushedScreenChrome())
+                    .onAppear { TapDebug.log("NAV BookRoute → \(route.idOrSlug)") }
             }
             .navigationDestination(for: SeriesRoute.self) { route in
                 SeriesView(slug: route.slug)
+                    .modifier(PushedScreenChrome())
             }
             .navigationDestination(for: AuthorRoute.self) { route in
                 AuthorView(idOrSlug: route.idOrSlug)
+                    .modifier(PushedScreenChrome())
             }
             .navigationDestination(for: UserRoute.self) { route in
                 PublicProfileView(username: route.username)
+                    .modifier(PushedScreenChrome())
             }
             .navigationDestination(for: ReviewsRoute.self) { route in
                 ReviewsListView(bookIdOrSlug: route.bookIdOrSlug, bookTitle: route.bookTitle)
+                    .modifier(PushedScreenChrome())
             }
             .navigationDestination(for: BuddyReadRoute.self) { route in
                 BuddyReadDetailView(slug: route.slug)
+                    .modifier(PushedScreenChrome())
             }
             .navigationDestination(for: FollowListRoute.self) { route in
                 FollowListView(username: route.username, type: route.type)
+                    .modifier(PushedScreenChrome())
             }
     }
 }

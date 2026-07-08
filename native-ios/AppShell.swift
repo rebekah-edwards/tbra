@@ -23,6 +23,9 @@ struct AppShell: View {
     @State private var profilePath = NavigationPath()
     /// Book page presented from outside the tab stacks (notification links).
     @State private var presentedBookSlug: String?
+    // Measured bar heights, forwarded to pushed screens (see shellBarInsets).
+    @State private var topBarHeight: CGFloat = 0
+    @State private var bottomNavHeight: CGFloat = 0
     #if DEBUG && targetEnvironment(simulator)
     @State private var debugBookSlug: String?
     @State private var menuDebugOpen = false
@@ -32,37 +35,50 @@ struct AppShell: View {
     var body: some View {
         ZStack {
             AmbientBackground()
-            VStack(spacing: 0) {
-                TopBar(
-                    onSearch: { searchOpen = true },
-                    onProfile: { tab = .profile },
-                    onOpenBook: { slug in presentedBookSlug = slug }
-                )
-                ZStack {
-                    switch tab {
-                    case .home: HomeView(path: $homePath)
-                    case .library: LibraryRootView(path: $libraryPath)
-                    case .discover: DiscoverRootView(path: $discoverPath)
-                    case .stats: StatsView()
-                    case .profile: ProfileRootView(path: $profilePath)
-                    }
+            // The tab NavigationStacks must own the FULL screen — the bars are
+            // injected as safe-area insets instead of VStack siblings. With the
+            // stacks sandwiched in a VStack, the UIKit navigation controller
+            // believed it spanned the whole window while SwiftUI drew it ~114pt
+            // lower (below TopBar): every touch inside a stack then hit-tested
+            // one bar-height off (Up Next opened the book a grid row down,
+            // Reading Now + book-page back were dead zones).
+            ZStack {
+                switch tab {
+                case .home: HomeView(path: $homePath)
+                case .library: LibraryRootView(path: $libraryPath)
+                case .discover: DiscoverRootView(path: $discoverPath)
+                case .stats: StatsView()
+                case .profile: ProfileRootView(path: $profilePath)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                BottomNav(tab: $tab, avatarUrl: currentAvatarUrl, onReselect: { reselected in
-                    // Same-tab tap: pop that tab's stack to its root.
-                    switch reselected {
-                    case .home: homePath = NavigationPath()
-                    case .library: libraryPath = NavigationPath()
-                    case .discover: discoverPath = NavigationPath()
-                    case .profile: profilePath = NavigationPath()
-                    case .stats: break
-                    }
-                })
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            TopBar(
+                onSearch: { searchOpen = true },
+                onProfile: { tab = .profile },
+                onOpenBook: { slug in presentedBookSlug = slug }
+            )
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { topBarHeight = $0 }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            BottomNav(tab: $tab, avatarUrl: currentAvatarUrl, onReselect: { reselected in
+                // Same-tab tap: pop that tab's stack to its root.
+                switch reselected {
+                case .home: homePath = NavigationPath()
+                case .library: libraryPath = NavigationPath()
+                case .discover: discoverPath = NavigationPath()
+                case .profile: profilePath = NavigationPath()
+                case .stats: break
+                }
+            })
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bottomNavHeight = $0 }
+        }
+        .environment(\.shellBarInsets, (top: topBarHeight, bottom: bottomNavHeight))
         .environment(\.openSearch, { searchOpen = true })
         .fullScreenCover(isPresented: $searchOpen) {
             SearchRootView()
+                .environment(\.shellBarInsets, (top: 0, bottom: 0))
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedBookSlug != nil },
@@ -73,6 +89,7 @@ struct AppShell: View {
                     .toolbar(.hidden, for: .navigationBar)
                     .appDestinations()
             }
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
         }
         #if DEBUG && targetEnvironment(simulator)
         .fullScreenCover(isPresented: Binding(
@@ -84,6 +101,7 @@ struct AppShell: View {
                     .toolbar(.hidden, for: .navigationBar)
                     .appDestinations()
             }
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
         }
         .sheet(isPresented: $menuDebugOpen) {
             HamburgerMenuSheet(onProfile: { tab = .profile })
@@ -92,6 +110,7 @@ struct AppShell: View {
         }
         .fullScreenCover(isPresented: $settingsDebugOpen) {
             NavigationStack { SettingsView().appDestinations() }
+                .environment(\.shellBarInsets, (top: 0, bottom: 0))
         }
         #endif
         #if DEBUG && targetEnvironment(simulator)
@@ -272,6 +291,11 @@ struct BottomNav: View {
 }
 
 // .tap-scale press feedback for arbitrary buttons.
+// WARNING (iOS 27): do NOT apply this to a run of sibling buttons in a
+// multi-row grid (see the Up Next grid in HomeView) — the isPressed
+// scaleEffect made button activation land on the sibling one row down
+// (bisect-verified; happened with and without the .animation line).
+// Standalone buttons and links are unaffected.
 struct TapScaleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

@@ -1,6 +1,31 @@
 import SwiftUI
 import Observation
 import UniformTypeIdentifiers
+import os
+
+// Temporary tap-debug instrumentation (TBRA_DEBUG_TAPS=1): logs global tap
+// locations, each home item's layout frame, and which BookRoute navigates —
+// for diagnosing the draw-vs-hit-test displacement on Home.
+enum TapDebug {
+    static let logger = Logger(subsystem: "app.tbra.ios", category: "tapdebug")
+    static let enabled = ProcessInfo.processInfo.environment["TBRA_DEBUG_TAPS"] == "1"
+    static func log(_ s: String) { if enabled { logger.warning("TAPDEBUG \(s, privacy: .public)") } }
+}
+
+struct HitFrameReporter: View {
+    let label: String
+    var body: some View {
+        GeometryReader { g in
+            Color.clear
+                .onAppear { TapDebug.log("\(label) frame=\(f(g))") }
+                .onChange(of: g.frame(in: .global)) { TapDebug.log("\(label) frame=\(f(g))") }
+        }
+    }
+    private func f(_ g: GeometryProxy) -> String {
+        let r = g.frame(in: .global)
+        return "x\(Int(r.minX)) y\(Int(r.minY)) w\(Int(r.width)) h\(Int(r.height))"
+    }
+}
 
 // Home — recreates the mobile site's home page (src/app/page.tsx) in its
 // exact mobile order: Reading Now → goal + streak cards → Up Next grid.
@@ -32,15 +57,11 @@ struct HomeView: View {
     @State private var model = UpNextModel()
     @State private var homeModel = HomeModel()
     @State private var dragging: UpNextItem?
+    @State private var ready = false
     // Hoisted like the web's openStateDropdown so the whole Reading Now
     // section can be z-raised above the goal/streak cards while a card's
     // state dropdown is open (bottom-tabs of the dropdown must not clip).
     @State private var openStateDropdownBookId: String?
-
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-    ]
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -50,8 +71,93 @@ struct HomeView: View {
         }
     }
 
+    @ViewBuilder private func upNextCell(index: Int) -> some View {
+        let item = model.items[index]
+        // Plain Button + path.append instead of NavigationLink(value:) — on
+        // iOS 27 the value-based links in this grid fired the VALUE of the
+        // cell one row down (tap/frame/payload logs all proved the tap, the
+        // layout and the API data were correct; only the fired value was
+        // wrong). A closure capturing `item` can't be misassociated.
+        Button {
+            path.append(BookRoute(idOrSlug: item.slug ?? item.bookId))
+        } label: {
+            UpNextCard(item: item, number: index + 1)
+        }
+        // NO TapScaleButtonStyle here: on iOS 27 the isPressed scaleEffect on
+        // these grid buttons made the ACTIVATION land on the card one row
+        // down (bisect-verified — data, frames and tap location were all
+        // correct; only the fired button was wrong). Default style is safe.
+        .background(HitFrameReporter(label: "upnext[\(index + 1)] \(item.title.prefix(14))"))
+        .opacity(dragging?.id == item.id ? 0.4 : 1)
+        // Reorder drag lives on the ≡ handle ONLY — on the whole card it
+        // hijacked plain taps (drag started + grid reordered mid-tap → the
+        // link fired with the wrong book).
+        .overlay(alignment: .topTrailing) {
+            DragHandleIcon()
+                .stroked(lineWidth: 2)
+                .frame(width: 11, height: 11)
+                .foregroundStyle(Theme.muted)
+                .frame(width: 34, height: 34)
+                .background(Theme.scrim)
+                .clipShape(Circle())
+                .padding(6)
+                .contentShape(Circle())
+                .onDrag {
+                    dragging = item
+                    return NSItemProvider(object: item.bookId as NSString)
+                }
+        }
+        .onDrop(of: [.text], delegate: GridReorderDelegate(
+            item: item,
+            items: $model.items,
+            dragging: $dragging,
+            commit: { model.persistOrder() }
+        ))
+    }
+
     private var homeContent: some View {
         ScrollView {
+            // Nothing may render until BOTH models have answered: if the grid
+            // lays out first and the Reading Now / goal sections insert above
+            // it a moment later, iOS 27's scroll-content interaction layer
+            // keeps the PRE-insertion offsets — frames and gestures follow the
+            // new layout but button/link hit regions don't, so taps activate
+            // the card one row down (and controls near the top go dead). The
+            // .id() below rebuilds the content wholesale if the section
+            // structure ever changes later (e.g. a refresh adds Reading Now).
+            if !ready {
+                ProgressView().tint(Theme.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 120)
+            } else {
+                homeSections
+                    .id("home-\(homeModel.home?.readingNow.isEmpty != false)-\(homeModel.home == nil)")
+            }
+        }
+        .simultaneousGesture(
+            SpatialTapGesture(coordinateSpace: .global).onEnded { v in
+                TapDebug.log("TAP at x\(Int(v.location.x)) y\(Int(v.location.y))")
+            }
+        )
+        .refreshable {
+            async let a: Void = model.load()
+            async let b: Void = homeModel.load()
+            async let c: Void = homeModel.loadDiscover()
+            _ = await (a, b, c)
+        }
+        .task {
+            async let a: Void = model.load()
+            async let b: Void = homeModel.load()
+            _ = await (a, b)
+            ready = true
+            await homeModel.loadDiscover()
+        }
+        .alert("Error", isPresented: .constant(model.error != nil || homeModel.error != nil)) {
+            Button("OK") { model.error = nil; homeModel.error = nil }
+        } message: { Text(model.error ?? homeModel.error ?? "") }
+    }
+
+    private var homeSections: some View {
             VStack(alignment: .leading, spacing: 28) {
                 // ── Reading Now ──
                 if let home = homeModel.home, !home.readingNow.isEmpty {
@@ -63,6 +169,7 @@ struct HomeView: View {
                                     await homeModel.load()
                                     await model.load()
                                 }
+                                .background(HitFrameReporter(label: "readingnow \(book.title.prefix(14))"))
                                 .zIndex(openStateDropdownBookId == book.id ? 50 : 0)
                             }
                         }
@@ -83,39 +190,24 @@ struct HomeView: View {
                 // ── Up Next ──
                 VStack(alignment: .leading, spacing: 14) {
                     SectionHeading("Up Next")
+                        .background(HitFrameReporter(label: "upnext-heading"))
 
-                    LazyVGrid(columns: columns, spacing: 12) {
-                        ForEach(Array(model.items.enumerated()), id: \.element.id) { index, item in
-                            NavigationLink(value: BookRoute(idOrSlug: item.slug ?? item.bookId)) {
-                                UpNextCard(item: item, number: index + 1)
-                            }
-                            .buttonStyle(TapScaleButtonStyle())
-                                .opacity(dragging?.id == item.id ? 0.4 : 1)
-                                // Reorder drag lives on the ≡ handle ONLY —
-                                // on the whole card it hijacked plain taps
-                                // (drag started + grid reordered mid-tap →
-                                // the link fired with the wrong book).
-                                .overlay(alignment: .topTrailing) {
-                                    DragHandleIcon()
-                                        .stroked(lineWidth: 2)
-                                        .frame(width: 11, height: 11)
-                                        .foregroundStyle(Theme.muted)
-                                        .frame(width: 34, height: 34)
-                                        .background(Theme.scrim)
-                                        .clipShape(Circle())
-                                        .padding(6)
-                                        .contentShape(Circle())
-                                        .onDrag {
-                                            dragging = item
-                                            return NSItemProvider(object: item.bookId as NSString)
-                                        }
+                    // NON-lazy 2-column grid. The one-row-off tap bug turned
+                    // out to be TapScaleButtonStyle on the cells (see the
+                    // button below), but the grid stays eager on purpose —
+                    // the queue is tiny and it removes a whole class of
+                    // iOS 27 lazy-container interaction bugs from this
+                    // much-churned screen.
+                    VStack(spacing: 12) {
+                        ForEach(Array(stride(from: 0, to: model.items.count, by: 2)), id: \.self) { rowStart in
+                            HStack(alignment: .top, spacing: 12) {
+                                upNextCell(index: rowStart)
+                                if rowStart + 1 < model.items.count {
+                                    upNextCell(index: rowStart + 1)
+                                } else {
+                                    Color.clear.frame(maxWidth: .infinity)
                                 }
-                                .onDrop(of: [.text], delegate: GridReorderDelegate(
-                                    item: item,
-                                    items: $model.items,
-                                    dragging: $dragging,
-                                    commit: { model.persistOrder() }
-                                ))
+                            }
                         }
                     }
 
@@ -169,22 +261,6 @@ struct HomeView: View {
             .padding(.horizontal, 20)
             .padding(.top, 6)
             .padding(.bottom, 40)
-        }
-        .refreshable {
-            async let a: Void = model.load()
-            async let b: Void = homeModel.load()
-            async let c: Void = homeModel.loadDiscover()
-            _ = await (a, b, c)
-        }
-        .task {
-            async let a: Void = model.load()
-            async let b: Void = homeModel.load()
-            async let c: Void = homeModel.loadDiscover()
-            _ = await (a, b, c)
-        }
-        .alert("Error", isPresented: .constant(model.error != nil || homeModel.error != nil)) {
-            Button("OK") { model.error = nil; homeModel.error = nil }
-        } message: { Text(model.error ?? homeModel.error ?? "") }
     }
 }
 
