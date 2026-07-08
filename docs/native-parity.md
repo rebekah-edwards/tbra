@@ -129,3 +129,23 @@ explicit user sign-off.
 - 2026-07-03: Review wizard BUILT + verified (5 steps, edit mode, delete).
 
 - 2026-07: Light-mode pass done (Theme.scrim adaptive token; all tabs verified light). Browse + follow lists + buddy reads + reviews list + auth sub-pages + Find Readers + external search all BUILT — see route table.
+
+- 2026-07-07: NAVIGATION BUG HUNT (commits 9fc89ad + 0da3940) — her live report: up-next
+  taps opened the book one grid row down, Reading Now taps dead, book-page back dead.
+  THREE iOS 27 hit-test bugs found via sim instrumentation (TBRA_DEBUG_TAPS=1 logs tap
+  locations, item frames, fired routes — kept in the code, env-gated):
+  1. TapScaleButtonStyle (isPressed scaleEffect) misroutes button ACTIVATION to a sibling
+     in runs of card/cell buttons — data, frames, tap location all correct, wrong button
+     fires. REMOVED app-wide (tombstone in AppShell.swift). Never reintroduce pressed-scale
+     ButtonStyles on grids/rails.
+  2. Tab stacks were VStack-sandwiched between TopBar/BottomNav → UIKit hit-tested the
+     whole home stack ~114pt off (dead Reading Now, etc.). Bars are now .safeAreaInset and
+     the NavigationStacks own the full screen (AppShell).
+  3. Pushed destinations don't inherit the shell's safeAreaInset → content slid under the
+     TopBar, and scroll-content TOP-STRIP buttons go hit-test-dead on repeat pushes.
+     PushedScreenChrome (env-measured bar heights) pads every destination, and every pushed
+     screen's back chevron is now a screen-level .floatingBack() overlay (circle + bare
+     variants). Headers keep 40pt placeholders so titles don't shift.
+  Also: Up Next grid is non-lazy + home renders once behind a ready-gate (no insert-above
+  churn). Sim-verified: all grid cells open the right book across repeated push/pop,
+  Reading Now navigates, back pops every time. Both commits pushed to her phone.
