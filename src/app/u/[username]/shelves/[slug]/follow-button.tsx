@@ -56,7 +56,7 @@ export function FollowShelfButton({ shelfId, initialFollowing, followerCount }: 
         </>
       )}
       {count > 0 && (
-        <span className={`text-[10px] ${isFollowing ? "text-accent/60" : "text-muted/50"}`}>
+        <span className={`text-[10px] ${isFollowing ? "text-accent" : "text-muted/50"}`}>
           {count}
         </span>
       )}
