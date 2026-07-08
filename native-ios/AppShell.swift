@@ -61,10 +61,20 @@ struct AppShell: View {
         // reserves the bar space itself instead via screenChrome()/
         // PushedScreenChrome using the measured heights below — the same
         // mechanism the pushed screens already use.
-        .overlay(alignment: .top) {
-            TopBar(
-                showLogo: chrome.atTop,
-                onLogoTap: { tab = .home; homePath = NavigationPath() },
+        // The logo and the icon bubble are SEPARATE overlays on purpose: on
+        // iOS 27, mutating an overlay's content (the logo's hide/show as you
+        // scroll) drifts that overlay's hit-test regions ~40pt off the drawn
+        // pixels — with both in one overlay the search/bell/menu buttons went
+        // dead after the first scroll. The bubble overlay never changes
+        // structure (the badge toggles pure opacity), so it stays tappable.
+        .overlay(alignment: .topLeading) {
+            TopBarLogo(visible: chrome.atTop) {
+                tab = .home
+                homePath = NavigationPath()
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            TopBarActions(
                 onSearch: { searchOpen = true },
                 onProfile: { tab = .profile },
                 onOpenBook: { slug in presentedBookSlug = slug }
@@ -202,11 +212,33 @@ extension View {
     }
 }
 
-// ── Top bar — floating glass bubble (search/bell/menu) + wordmark that is
-// only shown while the page is fully scrolled up; tapping it goes Home. ──
-struct TopBar: View {
-    var showLogo = true
-    var onLogoTap: @MainActor () -> Void = {}
+// ── Top-left wordmark — visible only while the page rests at its top;
+// tapping it returns to the Home root. Lives in its OWN overlay so its
+// show/hide animation can't desync the icon bubble's hit-testing. ──
+struct TopBarLogo: View {
+    var visible: Bool
+    var onTap: @MainActor () -> Void
+
+    var body: some View {
+        // Wordmark: Space Grotesk, lime→blue→purple gradient (.logo-gradient).
+        Button(action: onTap) {
+            Text("tbr*a")
+                .font(Theme.logo(22))
+                .foregroundStyle(Theme.logoGradient)
+        }
+        .padding(.leading, 16)
+        .padding(.top, 11)
+        .opacity(visible ? 1 : 0)
+        .offset(y: visible ? 0 : -6)
+        .allowsHitTesting(visible)
+        .animation(.easeOut(duration: 0.18), value: visible)
+    }
+}
+
+// ── Top-right floating glass bubble: search / bell / menu. Its content
+// must stay structurally STATIC (badge toggles opacity only) so iOS 27
+// never rebuilds — and never drifts — the overlay's hit regions. ──
+struct TopBarActions: View {
     var onSearch: @MainActor () -> Void = {}
     var onProfile: @MainActor () -> Void = {}
     var onOpenBook: @MainActor (String) -> Void = { _ in }
@@ -216,45 +248,29 @@ struct TopBar: View {
     @State private var menuOpen = false
 
     var body: some View {
-        HStack(spacing: 12) {
-            // Wordmark: Space Grotesk, lime→blue→purple gradient (.logo-gradient).
-            Button { onLogoTap() } label: {
-                Text("tbr*a")
-                    .font(Theme.logo(22))
-                    .foregroundStyle(Theme.logoGradient)
+        HStack(spacing: 24) {
+            Button { onSearch() } label: {
+                Image(systemName: "magnifyingglass")
             }
-            .opacity(showLogo ? 1 : 0)
-            .offset(y: showLogo ? 0 : -6)
-            .allowsHitTesting(showLogo)
-            .animation(.easeOut(duration: 0.18), value: showLogo)
-
-            Spacer()
-
-            HStack(spacing: 24) {
-                Button { onSearch() } label: {
-                    Image(systemName: "magnifyingglass")
-                }
-                Button { bellOpen = true } label: {
-                    Image(systemName: "bell")
-                        .overlay(alignment: .topTrailing) {
-                            if notifications.unreadCount > 0 {
-                                Circle().fill(Theme.accent)
-                                    .frame(width: 8, height: 8)
-                                    .offset(x: 2, y: -2)
-                            }
-                        }
-                }
-                Button { menuOpen = true } label: {
-                    Image(systemName: "line.3.horizontal")
-                }
+            Button { bellOpen = true } label: {
+                Image(systemName: "bell")
+                    .overlay(alignment: .topTrailing) {
+                        Circle().fill(Theme.accent)
+                            .frame(width: 8, height: 8)
+                            .offset(x: 2, y: -2)
+                            .opacity(notifications.unreadCount > 0 ? 1 : 0)
+                    }
             }
-            .font(.system(size: 18, weight: .regular))
-            .foregroundStyle(Theme.foreground.opacity(0.85))
-            .padding(.horizontal, 18)
-            .padding(.vertical, 11)
-            .glassPill()
+            Button { menuOpen = true } label: {
+                Image(systemName: "line.3.horizontal")
+            }
         }
-        .padding(.horizontal, 16)
+        .font(.system(size: 18, weight: .regular))
+        .foregroundStyle(Theme.foreground.opacity(0.85))
+        .padding(.horizontal, 18)
+        .padding(.vertical, 11)
+        .glassPill()
+        .padding(.trailing, 16)
         .padding(.top, 2)
         .padding(.bottom, 8)
         .task { await notifications.load() }
@@ -303,9 +319,13 @@ struct BottomNav: View {
                 icon()
                     .frame(width: 22, height: 22)
                 Text(label)
-                    .font(Theme.body(10, .medium))
+                    .font(Theme.body(10, .semibold))
             }
-            .foregroundStyle(active ? Theme.neonPurple : Theme.muted)
+            // Inactive items use strong foreground (not muted): the glass
+            // pill floats over book covers and grey was illegible in light
+            // mode. The bg-tinted glow separates the glyphs from busy art.
+            .foregroundStyle(active ? Theme.neonPurple : Theme.foreground.opacity(0.78))
+            .shadow(color: Theme.bg.opacity(0.55), radius: 2.5)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
         }
