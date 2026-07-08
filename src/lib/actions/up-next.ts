@@ -9,6 +9,19 @@ import { revalidatePath } from "next/cache";
 const MAX_UP_NEXT = 6;
 
 /**
+ * Stamp updated_at on ALL of the user's up_next rows. Called at the end of
+ * every mutation: the queue syncs live<->local as ONE unit (deletes and
+ * reorders leave no per-row trace), so the sync scripts compare
+ * MAX(updated_at) per side to decide which whole queue is newer.
+ */
+async function touchUpNext(userId: string): Promise<void> {
+  await db
+    .update(upNext)
+    .set({ updatedAt: new Date().toISOString().replace("T", " ").slice(0, 19) })
+    .where(eq(upNext.userId, userId));
+}
+
+/**
  * Normalize a user's up_next rows so positions are strictly 1..N with
  * no gaps, preserving current visual order. Uses the two-phase
  * "negative positions first" trick to avoid tripping the
@@ -64,6 +77,8 @@ export async function addToUpNext(bookId: string): Promise<{ success: boolean; p
     position: newPosition,
   });
 
+  await touchUpNext(user.userId);
+
   revalidatePath("/library");
   revalidatePath(`/book/${bookId}`);
   return { success: true, position: newPosition };
@@ -79,6 +94,7 @@ export async function removeFromUpNext(bookId: string): Promise<void> {
 
   // Always re-compact so positions stay 1..N contiguous.
   await compactUpNext(user.userId);
+  await touchUpNext(user.userId);
 
   revalidatePath("/library");
   revalidatePath(`/book/${bookId}`);
@@ -116,6 +132,7 @@ export async function reorderUpNext(bookId: string, newPosition: number): Promis
   for (let i = 0; i < reordered.length; i++) {
     await db.update(upNext).set({ position: i + 1 }).where(eq(upNext.id, reordered[i].id));
   }
+  await touchUpNext(user.userId);
 
   revalidatePath("/library");
 }
