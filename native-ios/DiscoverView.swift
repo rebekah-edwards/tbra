@@ -71,7 +71,7 @@ struct DiscoverRootView: View {
     @Binding var path: NavigationPath
     var body: some View {
         NavigationStack(path: $path) {
-            DiscoverView()
+            DiscoverView(path: $path)
                 .pushedScreenChrome()
                 .toolbar(.hidden, for: .navigationBar)
                 .appDestinations()
@@ -80,16 +80,84 @@ struct DiscoverRootView: View {
 }
 
 struct DiscoverView: View {
+    @Binding var path: NavigationPath
+    @Environment(AuthStore.self) private var auth
     @State private var model = DiscoverModel()
 
     private let moodColumns = [
         GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12),
     ]
+    // 2-up result cards, matching the web's mobile grid.
     private let resultColumns = [
-        GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12),
     ]
 
+    /// Find My Next Read is a Based Reader (premium) feature — mirrors
+    /// hasPremiumAccess() on the server (which also 403s the API route).
+    private var isPremium: Bool {
+        if case .signedIn(let user) = auth.phase {
+            return ["premium", "beta_tester", "admin", "super_admin"].contains(user.accountType)
+        }
+        return false
+    }
+
     var body: some View {
+        if isPremium {
+            discoverBody
+        } else {
+            gateBody
+        }
+    }
+
+    // Non-premium: the standard upgrade prompt (mirrors PremiumGate on web).
+    private var gateBody: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(spacing: 10) {
+                    Text("Find Your Next Read")
+                        .font(Theme.heading(26, .bold))
+                        .foregroundStyle(Theme.foreground)
+                }
+                .padding(.top, 20)
+
+                VStack(spacing: 12) {
+                    ZStack {
+                        Circle().fill(Theme.neonPurple.opacity(0.15)).frame(width: 48, height: 48)
+                        Image(systemName: "lock")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(Theme.neonPurple)
+                    }
+                    Text("Unlock Find My Next Read")
+                        .font(Theme.heading(18, .bold))
+                        .foregroundStyle(Theme.foreground)
+                    Text("Find My Next Read is a Based Reader feature. Upgrade to unlock this and other premium features.")
+                        .font(Theme.body(14))
+                        .foregroundStyle(Theme.muted)
+                        .multilineTextAlignment(.center)
+                    Link(destination: URL(string: "https://thebasedreader.app/upgrade")!) {
+                        Text("Learn More")
+                            .font(Theme.body(14, .semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 10)
+                            .background(Theme.neonPurple, in: RoundedRectangle(cornerRadius: 10))
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(24)
+                .background(Theme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                .padding(.top, 24)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+        }
+        .background(AmbientBackground())
+        .tracksScrollAtTop()
+    }
+
+    private var discoverBody: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
@@ -161,27 +229,51 @@ struct DiscoverView: View {
 
                     if model.searched {
                         VStack(alignment: .leading, spacing: 14) {
-                            SectionHeading(model.results.isEmpty ? "No matches" : "Your Matches")
-                                .id("results")
                             if model.results.isEmpty {
-                                Text("Try fewer moods or looser filters.")
-                                    .font(Theme.body(14))
-                                    .foregroundStyle(Theme.muted)
+                                // Empty state — discover-client.tsx copy
+                                VStack(spacing: 6) {
+                                    Text("💎").font(.system(size: 34))
+                                    Text("No matches found")
+                                        .font(Theme.body(14, .medium))
+                                        .foregroundStyle(Theme.foreground)
+                                    Text("Try different moods or loosen your filters.")
+                                        .font(Theme.body(12))
+                                        .foregroundStyle(Theme.muted)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 24)
+                                .id("results")
                             } else {
-                                LazyVGrid(columns: resultColumns, alignment: .leading, spacing: 18) {
-                                    ForEach(model.results) { book in
-                                        NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
-                                            VStack(alignment: .leading, spacing: 5) {
-                                                BookCardMini(book: book)
-                                                if let reason = model.reasons[book.id], !reason.isEmpty {
-                                                    Text(reason)
-                                                        .font(Theme.body(9, .medium))
-                                                        .tracking(0.5)
-                                                        .foregroundStyle(Theme.accent)
-                                                        .lineLimit(2)
-                                                }
-                                            }
+                                // "N matches found" + Shuffle — web results header
+                                HStack {
+                                    Text("\(model.results.count) match\(model.results.count == 1 ? "" : "es") found")
+                                        .font(Theme.heading(14, .semibold))
+                                        .foregroundStyle(Theme.muted)
+                                    Spacer()
+                                    Button {
+                                        Task {
+                                            await model.find()
                                         }
+                                    } label: {
+                                        Text("↻ Shuffle")
+                                            .font(Theme.body(12, .medium))
+                                            .foregroundStyle(Color(dark: "a3e635", light: "18181b"))
+                                    }
+                                    .disabled(model.searching)
+                                }
+                                .id("results")
+
+                                LazyVGrid(columns: resultColumns, alignment: .leading, spacing: 12) {
+                                    ForEach(model.results) { book in
+                                        // Button + path.append, not
+                                        // NavigationLink(value:) — value links
+                                        // misfire in sibling-card grids (iOS 27).
+                                        Button {
+                                            path.append(BookRoute(idOrSlug: book.slug ?? book.id))
+                                        } label: {
+                                            resultCard(book)
+                                        }
+                                        .buttonStyle(.plain)
                                     }
                                 }
                             }
@@ -203,6 +295,70 @@ struct DiscoverView: View {
             }
         }
         #endif
+    }
+
+    // Result card — mirrors the web's discover result card: bordered surface
+    // card, full-width 2:3 cover, title, authors, and the match-reason pill
+    // (💎 + reason on the lime→blue gradient — the card that explains the
+    // match stays, per user direction; only the "gems" wording is gone).
+    private func resultCard(_ book: LiteBook) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            GeometryReader { geo in
+                CoverThumb(url: book.coverImageUrl,
+                           width: geo.size.width,
+                           height: geo.size.width * 1.5,
+                           radius: 8)
+                    .overlay(alignment: .topLeading) {
+                        if book.hasContentConflict {
+                            Text("!")
+                                .font(Theme.body(11, .bold))
+                                .foregroundStyle(.black)
+                                .frame(width: 20, height: 20)
+                                .background(Color.yellow.opacity(0.9), in: Circle())
+                                .padding(6)
+                        }
+                    }
+            }
+            .aspectRatio(2 / 3, contentMode: .fit)
+            .shadow(color: .black.opacity(0.25), radius: 5, y: 2)
+
+            Text(book.title)
+                .font(Theme.body(12, .semibold))
+                .foregroundStyle(Theme.foreground)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+
+            if !book.authors.isEmpty {
+                Text(book.authors.joined(separator: ", "))
+                    .font(Theme.body(10))
+                    .foregroundStyle(Theme.muted)
+                    .lineLimit(1)
+            }
+
+            if let reason = model.reasons[book.id], !reason.isEmpty {
+                HStack(alignment: .top, spacing: 4) {
+                    Text("💎").font(.system(size: 10))
+                    Text(reason)
+                        .font(Theme.body(10, .medium))
+                        .foregroundStyle(Color(dark: "a3e635", light: "18181b"))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    LinearGradient(colors: [Theme.accent.opacity(0.15), Theme.neonBlue.opacity(0.15)],
+                                   startPoint: .leading, endPoint: .trailing),
+                    in: RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.accent.opacity(0.2), lineWidth: 1))
+            }
+        }
+        .padding(10)
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
+        .contentShape(RoundedRectangle(cornerRadius: 16))
     }
 
     private func toggleChoice(_ keyPath: ReferenceWritableKeyPath<DiscoverModel, String?>, _ value: String) {
@@ -261,14 +417,19 @@ struct DiscoverView: View {
             VStack(spacing: 3) {
                 Text(title)
                     .font(Theme.body(15, .semibold))
-                    .foregroundStyle(selected ? Theme.accent : Theme.foreground.opacity(0.85))
+                    // Translucent-green background rule: lime text in dark
+                    // mode, BLACK in light (lime-on-white is unreadable —
+                    // matches the web's global text-accent override).
+                    .foregroundStyle(selected
+                        ? Color(dark: "a3e635", light: "18181b")
+                        : Theme.foreground.opacity(0.85))
                 Text(sub)
                     .font(Theme.body(11))
                     .foregroundStyle(Theme.muted)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .background(selected ? Theme.accent.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 14))
+            .background(selected ? Theme.accent.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14)
                 .stroke(selected ? Theme.accent.opacity(0.6) : Theme.border, lineWidth: selected ? 1.5 : 1))
         }

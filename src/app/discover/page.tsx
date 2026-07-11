@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { DiscoverClient } from "@/components/discover/discover-client";
+import { PremiumGate } from "@/components/premium-gate";
+import { getCurrentUser, isPremium } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "Find Your Next Read | The Based Reader App",
@@ -12,12 +14,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function FindPage() {
+export default async function FindPage() {
+  // Find My Next Read is a Based Reader (premium) feature — free readers
+  // and signed-out visitors see the standard upgrade prompt instead.
+  // (The home page's "Discover Something New" strip stays free.)
+  const user = await getCurrentUser();
+
   return (
     <div>
-      <Suspense>
-        <DiscoverClient />
-      </Suspense>
+      <PremiumGate isPremium={isPremium(user)} featureName="Find My Next Read">
+        <Suspense>
+          <DiscoverClient />
+        </Suspense>
+      </PremiumGate>
     </div>
   );
 }

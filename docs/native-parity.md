@@ -240,3 +240,16 @@ explicit user sign-off.
   re-push it) — needs the typed-route refactor of every stack + NavigationLink first.
   Sim-verified: dropdown open/act/cancel, wiggle enter/Done/exit, post-scroll taps,
   friends card nav, back-swipe (incl. data-safe start zone <18pt), reading-now nav.
+
+- 2026-07-11 (Discover polish + premium gate, iOS commit + main 28cbc20): "gems" wording
+  retired on BOTH surfaces ("N matches found", no ✨; empty state "No matches found";
+  match-reason pill kept). Native results rebuilt to web parity: 2-up bordered cards
+  (cover/title/authors/💎-reason pill on lime→blue gradient), "N matches found" + Shuffle
+  header, cells Button+path.append. Length cards: black-on-green selection in light mode
+  (translucent-green rule), bg 15%. PREMIUM GATE (was never enforced anywhere!): /discover
+  page wraps in PremiumGate, /api/discover + /api/v1/discover 403 non-premium
+  (hasPremiumAccess = premium/beta_tester/admin/super_admin), native DiscoverView reads
+  accountType from AuthStore env and shows the mirrored upgrade card (Learn More →
+  thebasedreader.app/upgrade). Home's free "Discover Something New" strip untouched
+  (per the tier sheet, only the /discover mood tool is premium). Sim-verified light mode:
+  gate logic, black-on-green length, header+Shuffle, card grid, reason pills.

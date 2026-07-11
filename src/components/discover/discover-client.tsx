@@ -379,7 +379,7 @@ export function DiscoverClient() {
         {searched && results.length === 0 && !loading && (
           <div className="mt-8 text-center py-8">
             <span className="text-4xl block mb-3">💎</span>
-            <p className="text-sm font-medium mb-1">No gems found</p>
+            <p className="text-sm font-medium mb-1">No matches found</p>
             <p className="text-xs text-muted">Try different moods or loosen your filters.</p>
           </div>
         )}
@@ -388,7 +388,7 @@ export function DiscoverClient() {
           <div className="mt-6">
             <div className="flex items-center justify-between mb-3">
               <p className="font-heading text-sm font-semibold text-muted">
-                <span className="gem-sparkle">{results.length} gem{results.length !== 1 ? "s" : ""} found ✨</span>
+                {results.length} match{results.length !== 1 ? "es" : ""} found
               </p>
               <button
                 onClick={handleDiscover}
