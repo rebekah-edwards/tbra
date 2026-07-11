@@ -119,8 +119,9 @@ export function FriendsActivity({ activity }: FriendsActivityProps) {
           key={`${item.user.id}-${item.book.id}-${i}`}
           className="w-[200px] lg:w-[260px] flex-shrink-0 rounded-xl border border-border bg-surface overflow-hidden hover:border-border/80 transition-colors"
         >
-          {/* Book cover as top banner */}
-          <Link href={cardLink} className="block relative h-16 lg:h-20 overflow-hidden">
+          {/* Banner: the PERSON up top (avatar + name + time), book cover +
+              title below — mirrors the native app (user request 2026-07-11) */}
+          <Link href={cardLink} className="block relative h-[5.75rem] lg:h-24 overflow-hidden">
             {item.book.coverImageUrl ? (
               <>
                 <Image
@@ -150,11 +151,16 @@ export function FriendsActivity({ activity }: FriendsActivityProps) {
             ) : (
               <NoCover title={item.book.title} className="h-full w-full" size="sm" />
             )}
+            <span className="absolute top-1.5 left-2 right-2 lg:top-2 lg:left-3 lg:right-3 z-10 flex items-center gap-1.5">
+              <UserAvatar user={item.user} />
+              <span className="text-xs font-semibold book-header-text truncate">{displayName(item.user)}</span>
+              <span className="ml-auto flex-shrink-0"><TimeAgo timestamp={item.timestamp} /></span>
+            </span>
           </Link>
 
           {/* Card body */}
           <div className="p-2.5 lg:p-3 space-y-1.5 lg:space-y-2">
-            {/* Action badge + rating */}
+            {/* Action badge + rating (time lives in the banner now) */}
             <div className="flex items-center gap-1.5 lg:gap-2">
               <ActionBadge type={item.type} />
               {item.rating != null && (
@@ -162,7 +168,6 @@ export function FriendsActivity({ activity }: FriendsActivityProps) {
                   {formatRating(item.rating)} ★
                 </span>
               )}
-              <TimeAgo timestamp={item.timestamp} />
             </div>
 
             {/* Review snippet — reviews are public; note bodies are NOT and never reach this prop */}
@@ -181,16 +186,7 @@ export function FriendsActivity({ activity }: FriendsActivityProps) {
               </p>
             )}
 
-            {/* User attribution */}
-            <Link
-              href={item.user.username ? `/u/${item.user.username}` : "#"}
-              className="flex items-center gap-1.5 hover:underline"
-            >
-              <UserAvatar user={item.user} />
-              <span className="text-xs font-medium text-foreground/70 truncate">
-                {displayName(item.user)}
-              </span>
-            </Link>
+            {/* (User attribution moved into the banner top row) */}
           </div>
         </div>
         );
