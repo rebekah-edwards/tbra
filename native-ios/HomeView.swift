@@ -60,6 +60,35 @@ struct HomeView: View {
     // iOS-home-screen reorder: 1s long-press enters wiggle mode, cards
     // jiggle and become draggable (whole card), Done exits. No drag handle.
     @State private var wiggleMode = false
+    // Oscillation driver: jumps to -amplitude, then animates to +amplitude
+    // with repeatForever(autoreverses) so the cards ACTIVELY rock back and
+    // forth (a static rotationEffect keyed on wiggleMode only tilted them
+    // once). Cells alternate sign by index for the home-screen look.
+    @State private var wobble: Double = 0
+
+    private func setWiggle(_ on: Bool) {
+        wiggleMode = on
+        if on {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { wobble = -1.7 }
+            withAnimation(.easeInOut(duration: 0.14).repeatForever(autoreverses: true)) {
+                wobble = 1.7
+            }
+        } else {
+            withAnimation(.easeOut(duration: 0.15)) { wobble = 0 }
+        }
+    }
+
+    /// Exit wiggle mode, clearing any stuck drag ghost and persisting the
+    /// final order — the drop's performDrop does the same, but a drop that
+    /// ends outside a cell never fires it (that was the "stays grayed out /
+    /// didn't save" bug), so Done is the guaranteed commit point.
+    private func finishWiggle() {
+        setWiggle(false)
+        if dragging != nil { dragging = nil }
+        model.persistOrder()
+    }
     @State private var ready = false
     // Hoisted like the web's openStateDropdown so the whole Reading Now
     // section can be z-raised above the goal/streak cards while a card's
@@ -102,18 +131,11 @@ struct HomeView: View {
             .onLongPressGesture(minimumDuration: 1.0) {
                 guard !wiggleMode else { return }
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                withAnimation(.easeOut(duration: 0.15)) { wiggleMode = true }
+                setWiggle(true)
             }
             .background(HitFrameReporter(label: "upnext[\(index + 1)] \(item.title.prefix(14))"))
             .opacity(dragging?.id == item.id ? 0.4 : 1)
-            .rotationEffect(.degrees(wiggleMode ? (index.isMultiple(of: 2) ? 1.7 : -1.7) : 0))
-            .animation(
-                wiggleMode
-                    ? .easeInOut(duration: 0.13).repeatForever(autoreverses: true)
-                        .delay(Double(index % 4) * 0.03)
-                    : .easeOut(duration: 0.15),
-                value: wiggleMode
-            )
+            .rotationEffect(.degrees(index.isMultiple(of: 2) ? wobble : -wobble))
             .onDrop(of: [.text], delegate: GridReorderDelegate(
                 item: item,
                 items: $model.items,
@@ -225,7 +247,7 @@ struct HomeView: View {
                         Spacer()
                         if wiggleMode {
                             Button {
-                                withAnimation(.easeOut(duration: 0.15)) { wiggleMode = false }
+                                finishWiggle()
                             } label: {
                                 Text("Done")
                                     .font(Theme.body(13, .semibold))
@@ -254,6 +276,16 @@ struct HomeView: View {
                                 }
                             }
                         }
+                    }
+                    // Catch-all for drops that end in the grid's gaps or on
+                    // the dragged card itself — without this, performDrop
+                    // never fires there, so the ghost stayed at 40% opacity
+                    // and the new order was never persisted.
+                    .onDrop(of: [.text], isTargeted: nil) { _ in
+                        guard dragging != nil else { return false }
+                        dragging = nil
+                        model.persistOrder()
+                        return true
                     }
 
                     if model.items.isEmpty && !model.loading {
@@ -502,12 +534,12 @@ private struct ReadingNowCard: View {
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
             .shadow(color: .black.opacity(0.4), radius: 10, y: 4)
             .padding(.trailing, 16)
-            // Hang the whole menu BELOW the card so the Reading split button
-            // + chevron stay visible and tappable while the menu is open —
-            // user request 2026-07-11. bottomTrailing puts the menu's bottom
-            // at the card's bottom; +104 (menu height ~98 + 6 gap) drops its
-            // top just under the card edge.
-            .offset(y: 104)
+            // Hang the menu just below the Reading BUTTON (not the whole
+            // card) — user follow-up 2026-07-11. bottomTrailing puts the
+            // menu's bottom at the card's bottom; +88 lands its top ~10pt
+            // above the card edge, right under the button (button bottom sits
+            // 16pt above the card edge), overlapping only the card padding.
+            .offset(y: 88)
             .zIndex(10)
         }
     }
