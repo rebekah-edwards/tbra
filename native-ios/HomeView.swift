@@ -57,6 +57,9 @@ struct HomeView: View {
     @State private var model = UpNextModel()
     @State private var homeModel = HomeModel()
     @State private var dragging: UpNextItem?
+    // iOS-home-screen reorder: 1s long-press enters wiggle mode, cards
+    // jiggle and become draggable (whole card), Done exits. No drag handle.
+    @State private var wiggleMode = false
     @State private var ready = false
     // Hoisted like the web's openStateDropdown so the whole Reading Now
     // section can be z-raised above the goal/streak cards while a card's
@@ -79,41 +82,53 @@ struct HomeView: View {
         // cell one row down (tap/frame/payload logs all proved the tap, the
         // layout and the API data were correct; only the fired value was
         // wrong). A closure capturing `item` can't be misassociated.
-        Button {
-            path.append(BookRoute(idOrSlug: item.slug ?? item.bookId))
-        } label: {
-            UpNextCard(item: item, number: index + 1)
+        //
+        // Reorder = iOS-home-screen pattern (user request 2026-07-11): a 1s
+        // long-press enters wiggle mode; only THEN does the whole card carry
+        // .onDrag (attaching it permanently hijacked plain taps — the
+        // original glitchy-reorder bug). Taps are inert while wiggling.
+        //
+        // Plain gestures, NOT a Button: on iOS 27 neither
+        // simultaneousGesture(LongPressGesture) nor .onLongPressGesture ever
+        // fires on a Button in this scroll content (sim-verified), and the
+        // button's pressed-state also renders on the wrong card after a
+        // scroll. onTapGesture + onLongPressGesture compose correctly.
+        let core = UpNextCard(item: item, number: index + 1)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                guard !wiggleMode else { return }
+                path.append(BookRoute(idOrSlug: item.slug ?? item.bookId))
+            }
+            .onLongPressGesture(minimumDuration: 1.0) {
+                guard !wiggleMode else { return }
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                withAnimation(.easeOut(duration: 0.15)) { wiggleMode = true }
+            }
+            .background(HitFrameReporter(label: "upnext[\(index + 1)] \(item.title.prefix(14))"))
+            .opacity(dragging?.id == item.id ? 0.4 : 1)
+            .rotationEffect(.degrees(wiggleMode ? (index.isMultiple(of: 2) ? 1.7 : -1.7) : 0))
+            .animation(
+                wiggleMode
+                    ? .easeInOut(duration: 0.13).repeatForever(autoreverses: true)
+                        .delay(Double(index % 4) * 0.03)
+                    : .easeOut(duration: 0.15),
+                value: wiggleMode
+            )
+            .onDrop(of: [.text], delegate: GridReorderDelegate(
+                item: item,
+                items: $model.items,
+                dragging: $dragging,
+                commit: { model.persistOrder() }
+            ))
+
+        if wiggleMode {
+            core.onDrag {
+                dragging = item
+                return NSItemProvider(object: item.bookId as NSString)
+            }
+        } else {
+            core
         }
-        // NO TapScaleButtonStyle here: on iOS 27 the isPressed scaleEffect on
-        // these grid buttons made the ACTIVATION land on the card one row
-        // down (bisect-verified — data, frames and tap location were all
-        // correct; only the fired button was wrong). Default style is safe.
-        .background(HitFrameReporter(label: "upnext[\(index + 1)] \(item.title.prefix(14))"))
-        .opacity(dragging?.id == item.id ? 0.4 : 1)
-        // Reorder drag lives on the ≡ handle ONLY — on the whole card it
-        // hijacked plain taps (drag started + grid reordered mid-tap → the
-        // link fired with the wrong book).
-        .overlay(alignment: .topTrailing) {
-            DragHandleIcon()
-                .stroked(lineWidth: 2)
-                .frame(width: 11, height: 11)
-                .foregroundStyle(Theme.muted)
-                .frame(width: 34, height: 34)
-                .background(Theme.scrim)
-                .clipShape(Circle())
-                .padding(6)
-                .contentShape(Circle())
-                .onDrag {
-                    dragging = item
-                    return NSItemProvider(object: item.bookId as NSString)
-                }
-        }
-        .onDrop(of: [.text], delegate: GridReorderDelegate(
-            item: item,
-            items: $model.items,
-            dragging: $dragging,
-            commit: { model.persistOrder() }
-        ))
     }
 
     private var homeContent: some View {
@@ -132,7 +147,15 @@ struct HomeView: View {
                     .padding(.top, 120)
             } else {
                 homeSections
-                    .id("home-\(homeModel.home?.readingNow.isEmpty != false)-\(homeModel.home == nil)")
+                    // The discover flag is part of the key ON PURPOSE: the
+                    // deferred sections (Because You Liked / Friends Activity /
+                    // Discover) insert BELOW Up Next after first layout, and
+                    // iOS 27 keeps routing HELD touches (long-press, drag
+                    // lifts) by the pre-insertion offsets even though quick
+                    // taps follow the fresh layout — that stale routing was
+                    // the "glitchy reorder" all along. Rebuilding once when
+                    // the deferred sections arrive re-syncs the touch layer.
+                    .id("home-\(homeModel.home?.readingNow.isEmpty != false)-\(homeModel.home == nil)-\(homeModel.discover == nil)")
             }
         }
         .background(AmbientBackground())
@@ -196,8 +219,23 @@ struct HomeView: View {
 
                 // ── Up Next ──
                 VStack(alignment: .leading, spacing: 14) {
-                    SectionHeading("Up Next")
-                        .background(HitFrameReporter(label: "upnext-heading"))
+                    HStack {
+                        SectionHeading("Up Next")
+                            .background(HitFrameReporter(label: "upnext-heading"))
+                        Spacer()
+                        if wiggleMode {
+                            Button {
+                                withAnimation(.easeOut(duration: 0.15)) { wiggleMode = false }
+                            } label: {
+                                Text("Done")
+                                    .font(Theme.body(13, .semibold))
+                                    .foregroundStyle(.black)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 6)
+                                    .background(Theme.accent, in: Capsule())
+                            }
+                        }
+                    }
 
                     // NON-lazy 2-column grid. The one-row-off tap bug turned
                     // out to be TapScaleButtonStyle on the cells (see the
@@ -250,7 +288,18 @@ struct HomeView: View {
                     if !discover.friendsActivity.isEmpty {
                         VStack(alignment: .leading, spacing: 14) {
                             SectionHeading("Friends Activity")
-                            FriendsActivityRow(activity: discover.friendsActivity)
+                            FriendsActivityRow(activity: discover.friendsActivity) { item in
+                                // Reviews open the review itself; everything
+                                // else opens the book page.
+                                if item.type == "review", let reviewId = item.reviewId {
+                                    path.append(ReviewsRoute(
+                                        bookIdOrSlug: item.book.slug ?? item.book.id,
+                                        bookTitle: item.book.title,
+                                        scrollToReviewId: reviewId))
+                                } else {
+                                    path.append(BookRoute(idOrSlug: item.book.slug ?? item.book.id))
+                                }
+                            }
                         }
                     }
 
@@ -453,7 +502,12 @@ private struct ReadingNowCard: View {
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
             .shadow(color: .black.opacity(0.4), radius: 10, y: 4)
             .padding(.trailing, 16)
-            .offset(y: 44)
+            // Hang the whole menu BELOW the card so the Reading split button
+            // + chevron stay visible and tappable while the menu is open —
+            // user request 2026-07-11. bottomTrailing puts the menu's bottom
+            // at the card's bottom; +104 (menu height ~98 + 6 gap) drops its
+            // top just under the card edge.
+            .offset(y: 104)
             .zIndex(10)
         }
     }

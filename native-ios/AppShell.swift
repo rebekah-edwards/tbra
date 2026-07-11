@@ -581,15 +581,5 @@ struct PersonIcon: Shape {
     }
 }
 
-/// Drag handle (≡) used on Up Next cards.
-struct DragHandleIcon: Shape {
-    func path(in rect: CGRect) -> Path {
-        let s = rect.width / 24
-        var p = Path()
-        for y: CGFloat in [7, 12, 17] {
-            p.move(to: CGPoint(x: 6 * s, y: y * s))
-            p.addLine(to: CGPoint(x: 18 * s, y: y * s))
-        }
-        return p
-    }
-}
+// (Up Next's ≡ drag handle was removed 2026-07-11 — reorder is now the
+// iOS-home-screen wiggle mode: 1s long-press, whole-card drag, Done.)

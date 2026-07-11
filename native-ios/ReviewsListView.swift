@@ -5,7 +5,13 @@ import SwiftUI
 // when anonymous), stars, DNF badge, mood, review text, descriptor tag
 // chips, dimension mini-ratings, and the helpful-vote pill.
 
-struct ReviewsRoute: Hashable { let bookIdOrSlug: String; let bookTitle: String }
+struct ReviewsRoute: Hashable {
+    let bookIdOrSlug: String
+    let bookTitle: String
+    /// Scroll to (and highlight) this review on arrival — used by the
+    /// Friends Activity cards, which link to the individual review.
+    var scrollToReviewId: String? = nil
+}
 
 struct BookReviewEntry: Codable, Hashable, Identifiable {
     let id: String
@@ -70,14 +76,18 @@ final class ReviewsListModel {
 struct ReviewsListView: View {
     @Environment(\.dismiss) private var dismiss
     let bookTitle: String
+    /// When set, scroll to this review after load and highlight it briefly.
+    var scrollToReviewId: String? = nil
     @State private var model: ReviewsListModel
 
-    init(bookIdOrSlug: String, bookTitle: String) {
+    init(bookIdOrSlug: String, bookTitle: String, scrollToReviewId: String? = nil) {
         self.bookTitle = bookTitle
+        self.scrollToReviewId = scrollToReviewId
         _model = State(initialValue: ReviewsListModel(bookIdOrSlug: bookIdOrSlug))
     }
 
     var body: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 12) {
@@ -103,6 +113,12 @@ struct ReviewsListView: View {
                 } else {
                     ForEach(model.reviews) { review in
                         reviewCard(review)
+                            .id(review.id)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Theme.accent.opacity(
+                                        review.id == scrollToReviewId ? 0.7 : 0), lineWidth: 2)
+                            )
                     }
                 }
             }
@@ -112,8 +128,15 @@ struct ReviewsListView: View {
         .background(AmbientBackground())
         .floatingBack()
         .toolbar(.hidden, for: .navigationBar)
-        .task { await model.load() }
+        .task {
+            await model.load()
+            if let target = scrollToReviewId {
+                try? await Task.sleep(for: .milliseconds(150))
+                withAnimation { proxy.scrollTo(target, anchor: .center) }
+            }
+        }
         .refreshable { await model.load() }
+        }
     }
 
     private func reviewCard(_ review: BookReviewEntry) -> some View {

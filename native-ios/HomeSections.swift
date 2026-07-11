@@ -106,11 +106,13 @@ struct TbrSuggestionCard: View {
                             CoverThumb(url: book.coverImageUrl, width: 70, height: 105, radius: 8)
                                 .shadow(color: .black.opacity(0.3), radius: 5, y: 2)
                             VStack(alignment: .leading, spacing: 3) {
-                                // .tbr-reason-tag — lime in dark mode
+                                // .tbr-reason-tag — lime in dark mode; branded
+                                // BLUE in light mode (lime is unreadable on the
+                                // white card — user request 2026-07-11).
                                 Text((book.reason ?? "From Your TBR").uppercased())
                                     .font(Theme.body(10, .medium))
                                     .tracking(1.0)
-                                    .foregroundStyle(Theme.accent)
+                                    .foregroundStyle(Color(dark: "a3e635", light: "0ea5e9"))
                                 Text(book.title)
                                     .font(Theme.body(16, .bold))
                                     .foregroundStyle(Theme.foreground)
@@ -200,12 +202,14 @@ struct BecauseYouLikedSection: View {
 // ── Friends Activity — friends-activity.tsx ──
 struct FriendsActivityRow: View {
     let activity: [ActivityItem]
+    /// Card tap → book page (reviews → the review itself); wired by HomeView.
+    var onOpen: (ActivityItem) -> Void = { _ in }
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
                 ForEach(Array(activity.enumerated()), id: \.offset) { _, item in
-                    FriendsActivityCard(item: item)
+                    FriendsActivityCard(item: item, onOpen: { onOpen(item) })
                 }
             }
             .padding(.trailing, 48)
@@ -222,6 +226,7 @@ struct FriendsActivityRow: View {
 
 private struct FriendsActivityCard: View {
     let item: ActivityItem
+    var onOpen: () -> Void = {}
 
     private var actionLabel: (String, Color) {
         switch item.type {
@@ -244,60 +249,99 @@ private struct FriendsActivityCard: View {
         return nil
     }
 
+    /// Text over the banner scrim — white on dark, near-black on the light
+    /// frosted treatment (web .book-header-text flips the same way).
+    private let bannerText = Color(dark: "ffffff", light: "18181b")
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Cover banner: blurred cover backdrop + small cover bottom-left
-            ZStack(alignment: .bottomLeading) {
-                if let cover = item.book.coverImageUrl, let url = URL(string: cover) {
-                    AsyncImage(url: url) { image in
-                        image.resizable().aspectRatio(contentMode: .fill)
-                            .blur(radius: 16).saturation(1.5).opacity(0.4)
-                    } placeholder: { Theme.surfaceAlt }
-                    .frame(height: 64)
-                    .clipped()
-                    Color.black.opacity(0.25).frame(height: 64)
-                } else {
-                    Theme.surfaceAlt.frame(height: 64)
-                }
-                CoverThumb(url: item.book.coverImageUrl, width: 38, height: 56, radius: 4)
-                    .padding(.leading, 8)
-                    .padding(.bottom, 6)
+        // Plain Button — NavigationLink(value:) dies in sibling-card runs on
+        // iOS 27 (bug #3/#7 family); same cure as Reading Now / Up Next.
+        Button(action: onOpen) {
+            VStack(alignment: .leading, spacing: 0) {
+                banner
+                cardBody
+            }
+            .frame(width: 200, alignment: .leading)
+            .background(Theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // Banner: blurred cover backdrop (CoverBlurImage — frame-bounded per the
+    // iOS 27 rule, correct light-mode recipe) with the PERSON up top (avatar +
+    // name + time) and the book image + title below — user request 2026-07-11.
+    private var banner: some View {
+        ZStack(alignment: .bottomLeading) {
+            if let cover = item.book.coverImageUrl, let url = URL(string: cover) {
+                CoverBlurImage(url: url).frame(height: 92)
+                Theme.scrim.frame(height: 92).allowsHitTesting(false)
+            } else {
+                Theme.surfaceAlt.frame(height: 92)
             }
 
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
-                    // Avatar (lime fallback initial, like the web)
-                    Group {
-                        if let avatar = item.user.avatarUrl,
-                           let url = avatar.hasPrefix("/")
-                               ? URL(string: avatar, relativeTo: APIClient.baseURL)
-                               : URL(string: avatar) {
-                            AsyncImage(url: url) { image in
-                                image.resizable().aspectRatio(contentMode: .fill)
-                            } placeholder: { Theme.accent }
-                        } else {
-                            ZStack {
-                                Theme.accent
-                                Text(String(userName.prefix(1)).uppercased())
-                                    .font(Theme.body(9, .bold))
-                                    .foregroundStyle(.black)
-                            }
-                        }
-                    }
-                    .frame(width: 20, height: 20)
-                    .clipShape(Circle())
+            HStack(alignment: .bottom, spacing: 8) {
+                CoverThumb(url: item.book.coverImageUrl, width: 34, height: 50, radius: 4)
+                    .shadow(color: .black.opacity(0.35), radius: 4, y: 2)
+                Text(item.book.title)
+                    .font(Theme.body(12, .bold))
+                    .foregroundStyle(bannerText)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .padding(.bottom, 2)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 6)
+        }
+        .frame(height: 92)
+        .clipped()
+        .overlay(alignment: .topLeading) {
+            HStack(spacing: 6) {
+                avatar
+                Text(userName)
+                    .font(Theme.body(11, .semibold))
+                    .foregroundStyle(bannerText)
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Text(timeAgo(item.timestamp))
+                    .font(Theme.body(10))
+                    .foregroundStyle(bannerText.opacity(0.7))
+            }
+            .padding(.horizontal, 8)
+            .padding(.top, 7)
+        }
+    }
 
-                    Text(userName)
-                        .font(Theme.body(11, .semibold))
-                        .foregroundStyle(Theme.foreground)
-                        .lineLimit(1)
-                    Spacer(minLength: 4)
-                    Text(timeAgo(item.timestamp))
-                        .font(Theme.body(10))
-                        .foregroundStyle(Theme.muted)
+    private var avatar: some View {
+        // Avatar (lime fallback initial, like the web)
+        Group {
+            if let avatarUrl = item.user.avatarUrl,
+               let url = avatarUrl.hasPrefix("/")
+                   ? URL(string: avatarUrl, relativeTo: APIClient.baseURL)
+                   : URL(string: avatarUrl) {
+                AsyncImage(url: url) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: { Theme.accent }
+            } else {
+                ZStack {
+                    Theme.accent
+                    Text(String(userName.prefix(1)).uppercased())
+                        .font(Theme.body(9, .bold))
+                        .foregroundStyle(.black)
                 }
+            }
+        }
+        .frame(width: 20, height: 20)
+        .clipShape(Circle())
+    }
 
-                let (label, color) = actionLabel
+    private var cardBody: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            let (label, color) = actionLabel
+            HStack(spacing: 6) {
                 Text(label)
                     .font(Theme.body(9, .semibold))
                     .tracking(0.5)
@@ -305,33 +349,28 @@ private struct FriendsActivityCard: View {
                     .padding(.horizontal, 6).padding(.vertical, 2)
                     .background(color.opacity(0.15), in: Capsule())
                     .overlay(Capsule().stroke(color.opacity(0.2), lineWidth: 1))
-
-                Text(item.book.title)
-                    .font(Theme.body(12, .semibold))
-                    .foregroundStyle(Theme.foreground)
-                    .lineLimit(2)
-
                 if let rating = item.rating, rating > 0 {
                     StarRow(rating: rating)
                 }
-                if item.type == "reading_note", let progress = progressLabel {
-                    Text(progress)
-                        .font(Theme.body(10))
-                        .foregroundStyle(Theme.muted)
-                }
-                if let preview = item.reviewPreview, !preview.isEmpty {
-                    Text(preview)
-                        .font(Theme.body(10))
-                        .foregroundStyle(Theme.muted)
-                        .lineLimit(2)
-                }
             }
-            .padding(10)
+
+            if item.type == "reading_note" {
+                // Progress only — the note body is private and never even
+                // reaches the client (see activity-feed.ts).
+                Text(progressLabel ?? "Logged a private note")
+                    .font(Theme.body(10))
+                    .foregroundStyle(Theme.muted)
+            }
+            if let preview = item.reviewPreview, !preview.isEmpty, item.type != "reading_note" {
+                Text(preview)
+                    .font(Theme.body(10))
+                    .foregroundStyle(Theme.muted)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+            }
         }
-        .frame(width: 200, alignment: .leading)
-        .background(Theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
     }
 
     private func timeAgo(_ timestamp: String) -> String {

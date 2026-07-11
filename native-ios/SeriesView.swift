@@ -48,8 +48,36 @@ struct PushedScreenChrome: ViewModifier {
     @Environment(\.showsShellChrome) private var showsChrome
     @Environment(ChromeState.self) private var chrome: ChromeState?
 
+    @Environment(\.dismiss) private var dismiss
+
     func body(content: Content) -> some View {
         content
+            // Left-edge back swipe (user request 2026-07-11). Implemented as
+            // a NARROW leading overlay strip with its own drag gesture.
+            // iOS 27 bug #8: attaching the gesture to the whole screen via
+            // .simultaneousGesture desynced the scroll content's interaction
+            // layer — after any scroll, taps landed on the element one scroll-
+            // delta UP (sim-verified: Up Next tap opened a Reading Now book).
+            // The UIKit interactivePopGestureRecognizer is equally dead with
+            // a hidden nav bar on iOS 27 (delegate-nil trick ignored). The
+            // 18pt gutter is pure padding on every screen (content starts at
+            // 20pt), so the strip steals nothing that matters. On root
+            // screens dismiss is a harmless no-op.
+            .overlay(alignment: .leading) {
+                Color.clear
+                    .frame(width: 18)
+                    .frame(maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 25)
+                            .onEnded { v in
+                                if v.translation.width > 70,
+                                   abs(v.translation.height) < 90 {
+                                    dismiss()
+                                }
+                            }
+                    )
+            }
             // The negative paddings cancel the safeAreaInset spacers below —
             // overlays attached in the same chain get pushed by the insets,
             // so without the compensation the twins sat one bar-height off
@@ -116,6 +144,11 @@ struct FloatingBackButton: View {
     }
 }
 
+// (A UIKit interactivePopGestureRecognizer re-enabler was tried here first —
+// delegate = nil + isEnabled = true from a child VC. iOS 27 ignores it when
+// the navigation bar is hidden; the SwiftUI simultaneous edge-drag in
+// PushedScreenChrome is the working replacement.)
+
 extension View {
     /// The floating circular chrome treatment shared by the back chevron and
     /// the book-page share button: translucent fill + border, NO opaque base
@@ -168,7 +201,8 @@ struct AppDestinations: ViewModifier {
                     .modifier(PushedScreenChrome())
             }
             .navigationDestination(for: ReviewsRoute.self) { route in
-                ReviewsListView(bookIdOrSlug: route.bookIdOrSlug, bookTitle: route.bookTitle)
+                ReviewsListView(bookIdOrSlug: route.bookIdOrSlug, bookTitle: route.bookTitle,
+                                scrollToReviewId: route.scrollToReviewId)
                     .modifier(PushedScreenChrome())
             }
             .navigationDestination(for: BuddyReadRoute.self) { route in

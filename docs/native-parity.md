@@ -220,3 +220,23 @@ explicit user sign-off.
   mutations on branch / actions on main, deduped per book while unread). Verified sim +
   web both directions (square w/ image, rect without). Test data left: clanker_test has
   WoK active=audiobook (real queue entry + 1 unread admin ping for each super_admin).
+
+- 2026-07-11 (home punch list #2, user-requested): (1) Reading Now state menu hangs BELOW
+  the card (chevron stays tappable). (2) Up Next reorder = iOS-home-screen wiggle: 1s
+  long-press → jiggle + Done pill, whole-card drag, no handle; taps inert while wiggling.
+  (3) **iOS 27 BUG #8 pinned**: deferred home sections insert below Up Next after first
+  layout and HELD touches (long-press/drag lifts) keep routing by pre-insertion offsets
+  while quick taps follow fresh layout — this was the long-standing "glitchy reorder".
+  Fix: discover-loaded is part of the home content rebuild .id(). ALSO: Buttons in this
+  scroll never receive long-presses at all (cells now use onTap/onLongPress gestures),
+  and a whole-content simultaneousGesture RETRIGGERS bug #8 — never attach one to scroll
+  content. (4) Friends Activity: cards navigate (book page; reviews → the review via
+  ReviewsRoute.scrollToReviewId + lime highlight), avatar+name+time in banner w/ book
+  image (web mirrored, main 02e7e82), CoverBlurImage backdrop fixes light mode; note
+  bodies never leave the server. (5) Pick From Your Shelf tag: branded blue in light.
+  (6) Left-edge back swipe everywhere via an 18pt overlay strip in PushedScreenChrome
+  (UIKit interactive-pop delegate-nil trick is DEAD on iOS 27 w/ hidden nav bar).
+  FORWARD swipe not shipped: NavigationPath is opaque (can't know what was popped to
+  re-push it) — needs the typed-route refactor of every stack + NavigationLink first.
+  Sim-verified: dropdown open/act/cancel, wiggle enter/Done/exit, post-scroll taps,
+  friends card nav, back-swipe (incl. data-safe start zone <18pt), reading-now nav.
