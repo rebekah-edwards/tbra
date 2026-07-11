@@ -204,3 +204,19 @@ explicit user sign-off.
   chromeCircle() = shared opaque circle treatment (bg base + scrim + border + shadow)
   for back chevron + share button so the two match. Verified light+dark, scroll fade,
   back/logo taps. On phone (next open).
+
+- 2026-07-11 (audiobook square covers + admin queue, iOS commit + main e17048e): square
+  audiobook rendering everywhere (home Reading Now, My Library activity, book hero) now
+  gated on books.audiobook_cover_url actually existing — format choice alone NEVER
+  square-crops the 2:3 cover (was broken on live too; fixed both). Plumbing: getUserBooks
+  computes usesAudiobookCover (cover-cascade winner == audiobook image) → v1 home/library
+  pass through, v1 books/[id] computes from userState; native ReadingNowBook/LibraryBook/
+  BookDetailData decode it (optional Bool for old payloads). Native BookHero dropped the
+  audioLength&&pages==nil square heuristic; swaps to book.audiobookCoverUrl only when
+  flagged (80×80 home, square grid cell library, 110×110 hero). ADMIN: /admin/covers
+  "Audiobook" tab = live queue of books w/ audiobook marked (active reading/paused OR
+  owned) but no square image, paste-URL saves via setAudiobookCover; PLUS admin bell
+  ping on the marking event (notifyAdminsIfAudiobookCoverMissing, hooked in the format
+  mutations on branch / actions on main, deduped per book while unread). Verified sim +
+  web both directions (square w/ image, rect without). Test data left: clanker_test has
+  WoK active=audiobook (real queue entry + 1 unread admin ping for each super_admin).

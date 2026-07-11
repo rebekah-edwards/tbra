@@ -82,9 +82,22 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     }
   }
 
+  // Square audiobook hero: ONLY when a real square audiobook image exists
+  // AND the user's formats select it (mirrors getEffectiveCoverUrl branch 1).
+  // A format choice without an uploaded image must NOT square the display.
+  const activeFmts = userState?.activeFormats ?? [];
+  const ownedFmts = userState?.ownedFormats ?? [];
+  const isActivelyReading =
+    userState?.state === "currently_reading" || userState?.state === "paused";
+  const usesAudiobookCover =
+    !!book.audiobookCoverUrl &&
+    ((isActivelyReading && activeFmts.includes("audiobook")) ||
+      (ownedFmts.length === 1 && ownedFmts[0] === "audiobook"));
+
   return jsonOk({
     book, // full getBookWithDetails payload (authors, series, genres, ratings, summary, description, …)
     slug: resolved.book.slug,
+    usesAudiobookCover,
     userState, // { state, ownedFormats, activeFormats } | null
     hasCompleted: sessionData.hasCompleted,
     sessions: sessionData.sessions,

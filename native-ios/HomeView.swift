@@ -336,7 +336,12 @@ private struct ReadingNowCard: View {
             // Same disease as the Up Next grid; same cure.
             Button(action: onOpen) {
                 HStack(alignment: .center, spacing: 16) {
-                    CoverThumb(url: book.coverImageUrl, width: 60, height: 90, radius: 8)
+                    // Square 80×80 ONLY when the server resolved the cover to
+                    // the real square audiobook image; otherwise regular 2:3.
+                    CoverThumb(url: book.coverImageUrl,
+                               width: book.usesAudiobookCover == true ? 80 : 60,
+                               height: book.usesAudiobookCover == true ? 80 : 90,
+                               radius: 8)
                         .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
                         .overlay(alignment: .bottom) {
                             if let progress = book.progress, progress > 0 {

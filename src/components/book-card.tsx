@@ -13,15 +13,23 @@ interface BookCardProps {
   userRating?: number | null;
   aggregateRating?: number | null;
   activeFormats?: string[];
+  /** coverImageUrl is the real square audiobook image (see getUserBooks) */
+  usesAudiobookCover?: boolean;
   state?: string | null;
   hasContentConflict?: boolean;
   staggerIndex?: number;
   tbrNote?: string | null;
 }
 
-export function BookCard({ id, slug, title, coverImageUrl, userRating, aggregateRating, activeFormats, state, hasContentConflict, staggerIndex, tbrNote }: BookCardProps) {
+export function BookCard({ id, slug, title, coverImageUrl, userRating, aggregateRating, activeFormats, usesAudiobookCover, state, hasContentConflict, staggerIndex, tbrNote }: BookCardProps) {
   const isActivelyReading = state === "currently_reading" || state === "paused";
-  const isAudiobook = isActivelyReading && activeFormats?.length === 1 && activeFormats[0] === "audiobook";
+  // Square frame ONLY when the resolved cover is the real square audiobook
+  // image — an audiobook format choice alone must not square-crop a 2:3 cover.
+  const isAudiobook =
+    isActivelyReading &&
+    activeFormats?.length === 1 &&
+    activeFormats[0] === "audiobook" &&
+    usesAudiobookCover === true;
   const aspect = isAudiobook ? "aspect-square" : "aspect-[2/3]";
 
   return (

@@ -16,6 +16,8 @@ interface CurrentlyReadingBook {
   slug?: string | null;
   title: string;
   coverImageUrl: string | null;
+  /** coverImageUrl is the real square audiobook image (see getUserBooks) */
+  usesAudiobookCover?: boolean;
   authors: string[];
   activeFormats?: string[];
   progress?: number | null; // 0-100 percentage
@@ -216,7 +218,9 @@ function ReadingBookCard({ book, onReviewOpen }: {
   const [openStateDropdown, setOpenStateDropdown] = useState<string | null>(null);
   const stateDropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const router = useRouter();
-  const isAudiobook = book.activeFormats?.length === 1 && book.activeFormats[0] === "audiobook";
+  // Square frame ONLY when the resolved cover is the real square audiobook
+  // image — an audiobook format choice alone must not square-crop a 2:3 cover.
+  const isAudiobook = book.usesAudiobookCover === true;
 
   // Close state dropdown on outside click
   useEffect(() => {

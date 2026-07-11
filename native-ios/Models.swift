@@ -85,6 +85,10 @@ struct ReadingNowBook: Codable, Identifiable, Hashable {
     let slug: String?
     let title: String
     let coverImageUrl: String?
+    /// True when coverImageUrl is the admin-uploaded SQUARE audiobook image —
+    /// the only case where the cover renders in a square frame. Optional so
+    /// older server payloads still decode.
+    let usesAudiobookCover: Bool?
     let authors: [String]
     let pages: Int?
     let activeFormats: [String]
@@ -320,6 +324,8 @@ struct LibraryBook: Codable, Identifiable, Hashable {
     let slug: String?
     let title: String
     let coverImageUrl: String?
+    /// See ReadingNowBook.usesAudiobookCover — square frame gate.
+    let usesAudiobookCover: Bool?
     let authors: [String]
     let state: String?
     let ownedFormats: [String]
@@ -383,6 +389,8 @@ struct BookFull: Codable, Hashable {
     let asin: String?
     let isBoxSet: Bool?
     let isFiction: Bool?
+    /// Admin-uploaded SQUARE audiobook image (books.audiobook_cover_url).
+    let audiobookCoverUrl: String?
     let ratings: [ContentRating]
 }
 
@@ -438,6 +446,9 @@ struct BookDetailData: Codable, Hashable {
     let ok: Bool
     let book: BookFull
     let slug: String?
+    /// Server-computed: the user's formats select the audiobook AND a real
+    /// square image exists — hero renders square + swaps to that image.
+    let usesAudiobookCover: Bool?
     let userState: BookUserState?
     let hasCompleted: Bool
     let sessions: [ReadingSessionRow]

@@ -49,6 +49,10 @@ export interface UserBookWithDetails {
   slug: string | null;
   title: string;
   coverImageUrl: string | null;
+  /** True when coverImageUrl IS the admin-uploaded square audiobook cover —
+   *  the ONLY case where UIs may render the square frame. A format choice
+   *  alone must never square-crop the regular 2:3 cover. */
+  usesAudiobookCover: boolean;
   authors: string[];
   state: string | null;
   ownedFormats: string[];
@@ -146,6 +150,10 @@ export async function getUserBooks(
       slug: row.slug ?? null,
       title: row.title,
       coverImageUrl: effectiveCover,
+      // Square rendering is allowed only when the audiobook image actually
+      // won the cover cascade (i.e. a real square file exists).
+      usesAudiobookCover:
+        effectiveCover != null && effectiveCover === row.audiobookCoverUrl,
       authors: authorsMap.get(row.bookId) ?? [],
       state: row.state,
       ownedFormats: parsedOwned,

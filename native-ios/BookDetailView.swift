@@ -259,8 +259,13 @@ private struct BookHero: View {
     }
 
     private var heroCard: some View {
-        HStack(alignment: .center, spacing: 16) {   // web: items-center
-            CoverThumb(url: book.coverImageUrl, width: 110, height: book.audioLengthMinutes != nil && book.pages == nil ? 110 : 165, radius: 10)
+        // Square hero ONLY when the server says the user's formats select the
+        // audiobook AND a real square image exists (usesAudiobookCover) — a
+        // format choice alone must never square-crop the regular 2:3 cover.
+        let squareAudio = data.usesAudiobookCover == true
+        let heroCover = squareAudio ? (book.audiobookCoverUrl ?? book.coverImageUrl) : book.coverImageUrl
+        return HStack(alignment: .center, spacing: 16) {   // web: items-center
+            CoverThumb(url: heroCover, width: 110, height: squareAudio ? 110 : 165, radius: 10)
                 .shadow(color: .black.opacity(0.5), radius: 12, y: 6)
 
             VStack(alignment: .leading, spacing: 6) {

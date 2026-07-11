@@ -104,6 +104,7 @@ export async function GET(req: Request) {
     slug: b.slug ?? null,
     title: b.title,
     coverImageUrl: b.coverImageUrl ?? null,
+    usesAudiobookCover: b.usesAudiobookCover,
     authors: b.authors,
     pages: b.pages ?? null,
     activeFormats: b.activeFormats ?? [],

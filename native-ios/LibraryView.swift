@@ -257,8 +257,12 @@ private struct LibraryBookCard: View {
     let book: LibraryBook
 
     private var isAudiobookActive: Bool {
+        // Square frame ONLY when the resolved cover is the real square
+        // audiobook image (server-computed flag) — an audiobook format
+        // choice alone must not square-crop the regular 2:3 cover.
         (book.state == "currently_reading" || book.state == "paused")
             && book.activeFormats == ["audiobook"]
+            && book.usesAudiobookCover == true
     }
 
     var body: some View {
