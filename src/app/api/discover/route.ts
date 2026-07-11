@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isPremium } from "@/lib/auth";
 import { getDiscoverRecommendations, type DiscoverFilters } from "@/lib/queries/recommendations";
 import { getMoodFilters } from "@/lib/mood-genre-map";
 
@@ -15,10 +15,17 @@ import { getMoodFilters } from "@/lib/mood-genre-map";
  * }
  *
  * Returns personalized book recommendations filtered by mood, length, and content preferences.
- * Works for both logged-in and anonymous users (anonymous gets generic results).
+ * Premium-only (Based Reader tier) — the /discover page shows the upgrade
+ * prompt to everyone else, so a 403 here is a belt-and-suspenders backstop.
  */
 export async function POST(request: Request) {
   const user = await getCurrentUser();
+  if (!isPremium(user)) {
+    return NextResponse.json(
+      { error: "Find My Next Read is a Based Reader feature." },
+      { status: 403 }
+    );
+  }
   const body = await request.json();
 
   const moods: string[] = body.moods ?? [];
