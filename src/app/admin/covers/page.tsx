@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
 
-type Tab = "priority" | "all" | "abandon";
+type Tab = "priority" | "all" | "abandon" | "audiobook";
 
 type BookRow = {
   id: string;
@@ -23,7 +23,65 @@ type BookRow = {
   nytCoverUrl: string | null;
 };
 
+/**
+ * Audiobook queue: books where at least one user has the AUDIOBOOK format
+ * marked — as their active "reading now" format or as an owned format — but
+ * no square audiobook image is uploaded yet (books.audiobook_cover_url).
+ * The admin uploads these manually to save Brave API spend. The thumbnail
+ * shows the regular cover as reference; `users` counts demanding readers.
+ */
+async function loadAudiobookQueue(offset: number): Promise<BookRow[]> {
+  const rows = await db.all<{
+    id: string;
+    title: string;
+    slug: string | null;
+    cover_image_url: string | null;
+    cover_source: string | null;
+    created_at: string;
+    users: number;
+    author_names: string | null;
+  }>(sql.raw(`
+    WITH demand AS (
+      SELECT book_id, count(DISTINCT user_id) AS users
+      FROM user_book_state
+      WHERE (
+        (state IN ('currently_reading', 'paused') AND active_formats LIKE '%audiobook%')
+        OR owned_formats LIKE '%audiobook%'
+      )
+      GROUP BY book_id
+    )
+    SELECT
+      b.id, b.title, b.slug, b.cover_image_url, b.cover_source, b.created_at,
+      d.users,
+      (
+        SELECT group_concat(a.name, '|')
+        FROM book_authors ba
+        JOIN authors a ON a.id = ba.author_id
+        WHERE ba.book_id = b.id
+      ) as author_names
+    FROM books b
+    JOIN demand d ON d.book_id = b.id
+    WHERE (b.audiobook_cover_url IS NULL OR b.audiobook_cover_url = '')
+      AND b.visibility != 'hidden'
+    ORDER BY d.users DESC, b.created_at DESC
+    LIMIT ${PAGE_SIZE} OFFSET ${offset}
+  `));
+
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    slug: r.slug,
+    coverImageUrl: r.cover_image_url,
+    coverSource: r.cover_source,
+    createdAt: r.created_at,
+    userCount: Number(r.users ?? 0),
+    authorNames: r.author_names ? r.author_names.split("|").filter(Boolean) : [],
+    nytCoverUrl: null, // NYT covers are 2:3 — never offered for the square slot
+  }));
+}
+
 async function loadBooks(tab: Tab, offset: number): Promise<BookRow[]> {
+  if (tab === "audiobook") return loadAudiobookQueue(offset);
   // Wrap in a CTE so `users` (a correlated-subquery column alias) can be
   // filtered with WHERE in the outer query. Previously used HAVING without
   // GROUP BY — local SQLite permits it, but Turso's libsql parser rejects
@@ -98,7 +156,7 @@ async function loadBooks(tab: Tab, offset: number): Promise<BookRow[]> {
   );
 }
 
-async function loadCounts(): Promise<{ priority: number; all: number; abandon: number }> {
+async function loadCounts(): Promise<{ priority: number; all: number; abandon: number; audiobook: number }> {
   const rows = await db.all<{ tab: string; n: number }>(sql.raw(`
     WITH pending AS (
       SELECT
@@ -113,6 +171,18 @@ async function loadCounts(): Promise<{ priority: number; all: number; abandon: n
     SELECT 'all' as tab, count(*) as n FROM pending
     UNION ALL
     SELECT 'abandon' as tab, count(*) as n FROM pending WHERE users = 0
+    UNION ALL
+    SELECT 'audiobook' as tab, count(*) as n FROM books b
+    WHERE (b.audiobook_cover_url IS NULL OR b.audiobook_cover_url = '')
+      AND b.visibility != 'hidden'
+      AND EXISTS (
+        SELECT 1 FROM user_book_state s
+        WHERE s.book_id = b.id
+          AND (
+            (s.state IN ('currently_reading', 'paused') AND s.active_formats LIKE '%audiobook%')
+            OR s.owned_formats LIKE '%audiobook%'
+          )
+      )
   `));
 
   const map: Record<string, number> = {};
@@ -121,6 +191,7 @@ async function loadCounts(): Promise<{ priority: number; all: number; abandon: n
     priority: map.priority ?? 0,
     all: map.all ?? 0,
     abandon: map.abandon ?? 0,
+    audiobook: map.audiobook ?? 0,
   };
 }
 
@@ -133,7 +204,11 @@ export default async function AdminCoversPage({
   if (!user || !isAdmin(user)) redirect("/");
 
   const { tab: tabParam, page: pageParam } = await searchParams;
-  const tab: Tab = tabParam === "all" ? "all" : tabParam === "abandon" ? "abandon" : "priority";
+  const tab: Tab =
+    tabParam === "all" ? "all"
+    : tabParam === "abandon" ? "abandon"
+    : tabParam === "audiobook" ? "audiobook"
+    : "priority";
   const page = Math.max(1, Number(pageParam ?? 1) || 1);
   const offset = (page - 1) * PAGE_SIZE;
 

@@ -207,6 +207,15 @@ export async function setOwnedFormats(bookId: string, rawFormats: string[]) {
       );
   }
 
+  // Admin ping when audiobook was newly marked but the book has no square
+  // audiobook image (admin uploads those manually). Never throws.
+  if (formats.includes("audiobook") && !previousFormats.includes("audiobook")) {
+    const { notifyAdminsIfAudiobookCoverMissing } = await import(
+      "@/lib/notifications/audiobook-cover"
+    );
+    await notifyAdminsIfAudiobookCoverMissing({ bookId, formats });
+  }
+
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");
   revalidatePath("/");
@@ -319,6 +328,18 @@ export async function setActiveFormats(bookId: string, formats: string[]) {
 
   const formatsJson = formats.length > 0 ? JSON.stringify(formats) : null;
 
+  const previous = await db
+    .select({ activeFormats: userBookState.activeFormats })
+    .from(userBookState)
+    .where(
+      and(
+        eq(userBookState.userId, user.userId),
+        eq(userBookState.bookId, bookId)
+      )
+    )
+    .get();
+  const previousFormats = parseFormats(previous?.activeFormats);
+
   await db
     .update(userBookState)
     .set({
@@ -331,6 +352,15 @@ export async function setActiveFormats(bookId: string, formats: string[]) {
         eq(userBookState.bookId, bookId)
       )
     );
+
+  // Admin ping when audiobook was newly marked as the active reading format
+  // but the book has no square audiobook image. Never throws.
+  if (formats.includes("audiobook") && !previousFormats.includes("audiobook")) {
+    const { notifyAdminsIfAudiobookCoverMissing } = await import(
+      "@/lib/notifications/audiobook-cover"
+    );
+    await notifyAdminsIfAudiobookCoverMissing({ bookId, formats });
+  }
 
   // Mirror to the active reading session so stats (e.g. minutes-listened) can
   // see which formats were actually used. Without this, the session row keeps

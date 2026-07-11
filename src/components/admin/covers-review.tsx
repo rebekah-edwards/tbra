@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { saveManualCover, saveNytCover, archiveBook } from "@/lib/actions/covers";
+import { setAudiobookCover } from "@/lib/actions/books";
 
 type BookRow = {
   id: string;
@@ -18,8 +19,8 @@ type BookRow = {
   nytCoverUrl: string | null;
 };
 
-type Counts = { priority: number; all: number; abandon: number };
-type Tab = "priority" | "all" | "abandon";
+type Counts = { priority: number; all: number; abandon: number; audiobook: number };
+type Tab = "priority" | "all" | "abandon" | "audiobook";
 
 type Props = {
   books: BookRow[];
@@ -33,6 +34,7 @@ const TABS: { key: Tab; label: string; hint: string }[] = [
   { key: "priority", label: "Priority", hint: "Books users care about" },
   { key: "all", label: "All pending", hint: "Every book missing a cover" },
   { key: "abandon", label: "Abandon candidates", hint: "Zero user activity" },
+  { key: "audiobook", label: "Audiobook", hint: "Audiobook format marked by a reader, square image missing" },
 ];
 
 function sourceLabel(src: string | null) {
@@ -44,10 +46,13 @@ function sourceLabel(src: string | null) {
 
 function BookRow({
   book,
+  audiobookMode,
   onSaved,
   onArchived,
 }: {
   book: BookRow;
+  /** Audiobook tab: the pasted URL saves to audiobook_cover_url (square slot). */
+  audiobookMode: boolean;
   onSaved: () => void;
   onArchived: () => void;
 }) {
@@ -62,7 +67,9 @@ function BookRow({
     }
     setError(null);
     startTransition(async () => {
-      const res = await saveManualCover(book.id, url);
+      const res = audiobookMode
+        ? await setAudiobookCover(book.id, url)
+        : await saveManualCover(book.id, url);
       if (!res.success) {
         setError(res.error ?? "Save failed");
         return;
@@ -131,9 +138,11 @@ function BookRow({
               {book.authorNames.length > 0 ? book.authorNames.join(", ") : "— no author —"}
             </p>
             <div className="flex gap-2 text-[10px] text-muted/70 mt-1">
-              <span>{book.userCount} user{book.userCount === 1 ? "" : "s"}</span>
+              <span>
+                {book.userCount} {audiobookMode ? "audiobook reader" : "user"}{book.userCount === 1 ? "" : "s"}
+              </span>
               <span>·</span>
-              <span>source: {sourceLabel(book.coverSource)}</span>
+              <span>{audiobookMode ? "square audiobook image missing" : `source: ${sourceLabel(book.coverSource)}`}</span>
             </div>
           </div>
         </div>
@@ -165,7 +174,7 @@ function BookRow({
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="Paste Amazon cover URL..."
+            placeholder={audiobookMode ? "Paste SQUARE audiobook cover URL..." : "Paste Amazon cover URL..."}
             disabled={isPending}
             className="flex-1 rounded border border-border bg-surface-alt px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none"
             onKeyDown={(e) => {
@@ -256,6 +265,7 @@ export function CoversReview({ books, counts, activeTab, page, pageSize }: Props
             <BookRow
               key={b.id}
               book={b}
+              audiobookMode={activeTab === "audiobook"}
               onSaved={refresh}
               onArchived={refresh}
             />
