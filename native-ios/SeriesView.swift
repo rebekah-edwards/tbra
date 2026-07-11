@@ -118,12 +118,18 @@ struct FloatingBackButton: View {
 
 extension View {
     /// The floating circular chrome treatment shared by the back chevron and
-    /// the book-page share button: the ORIGINAL back-button recipe —
-    /// translucent scrim + border, NO opaque base (user preference
-    /// 2026-07-08: share must match this look, not the other way around).
+    /// the book-page share button: translucent fill + border, NO opaque base
+    /// (user preference 2026-07-08: share must match this look, not the
+    /// other way around). Light mode = scrim's white 35%, untouched; dark
+    /// mode = mid-GREY instead of scrim's black 25% — user found the black
+    /// circles too heavy on dark.
     func chromeCircle() -> some View {
         frame(width: 40, height: 40)
-            .background(Theme.scrim, in: Circle())
+            .background(Color(UIColor { trait in
+                trait.userInterfaceStyle == .light
+                    ? UIColor.white.withAlphaComponent(0.35)
+                    : UIColor(white: 0.55, alpha: 0.38)
+            }), in: Circle())
             .overlay(Circle().stroke(Theme.border, lineWidth: 1))
     }
 }
