@@ -145,6 +145,7 @@ struct HamburgerMenuSheet: View {
     @State private var findReadersOpen = false
     @State private var buddyReadsOpen = false
     @State private var browseOpen = false
+    @State private var adminOpen = false
 
     private struct WebItem { let label: String; let icon: String; let path: String }
     private let items: [WebItem] = [
@@ -214,6 +215,16 @@ struct HamburgerMenuSheet: View {
                 }
             }
 
+            // Admin — only for admin accounts, like the web menu. Opens the
+            // real /admin dashboards in an authenticated in-app browser.
+            if let user, ["admin", "super_admin"].contains(user.accountType) {
+                Button {
+                    adminOpen = true
+                } label: {
+                    menuRow(icon: "wrench.and.screwdriver", label: "Admin", tint: Theme.neonPurple)
+                }
+            }
+
             Divider().background(Theme.border.opacity(0.6)).padding(.vertical, 4)
 
             // Theme row — native equivalent of the web ThemeToggle
@@ -269,6 +280,9 @@ struct HamburgerMenuSheet: View {
                 BrowseView()
                     .appDestinations()
             }
+        }
+        .fullScreenCover(isPresented: $adminOpen) {
+            AdminSheet()
         }
     }
 

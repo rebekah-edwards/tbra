@@ -253,3 +253,18 @@ explicit user sign-off.
   thebasedreader.app/upgrade). Home's free "Discover Something New" strip untouched
   (per the tier sheet, only the /discover mood tool is premium). Sim-verified light mode:
   gate logic, black-on-green length, header+Shuffle, card grid, reason pills.
+
+- 2026-07-12 (Admin access from the app, user-requested): hamburger menu shows an
+  "Admin" row (neonPurple, wrench icon) ONLY for accountType admin/super_admin —
+  mirrors the web menu gating. Opens AdminSheet: fullScreenCover with a WKWebView
+  (AdminWebView.swift) loading APIClient.baseURL + /admin, authenticated by injecting
+  Keychain.accessToken as the `tbra-session` cookie (bearer + web cookie are the SAME
+  jose JWT; verifySessionToken serves both — no server change needed). Non-persistent
+  cookie store, re-injected per open; cookie set BEFORE load (races otherwise). Deliberate
+  choice: the real web dashboards instead of native rebuilds (no drift). Admin edits hit
+  the LOCAL DB like everything in the app and ride the nightly sync to live. NOTE: the
+  webview shows the full web chrome, so the web bottom-nav can wander out of /admin —
+  Done closes. NEW FILE gotcha: Tbra.xcodeproj is GITIGNORED; AdminWebView.swift was
+  added to project.pbxproj locally via the classic 4-entry pattern (PBXBuildFile +
+  PBXFileReference + group child + Sources phase). Sim-verified: gated row, hub renders
+  authenticated, Cover Review sub-page loads w/ tabs + save inputs. On phone (relaunched).
