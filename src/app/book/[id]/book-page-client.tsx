@@ -241,6 +241,70 @@ export function BookPageClient({
     });
   }, [editionSelections, activeFormats, isActivelyReading, userState.ownedFormats, baseCoverUrl, book.audiobookCoverUrl]);
 
+  // Admin cover picker: opens the modal and loads OL edition covers +
+  // external (ISBNdb + Google Books) candidates in parallel. Extracted from
+  // the hero's pencil onClick so ?editCover=1 can trigger it too — the
+  // native app deep-links here to reuse this picker instead of rebuilding it.
+  const openCoverEditor = useCallback(async () => {
+    setEditingCover(true);
+    setEditionCovers([]);
+    setExternalCovers([]);
+
+    // Fetch OL editions and external covers (ISBNdb + Google Books) in parallel
+    const olPromise = book.openLibraryKey ? (async () => {
+      setLoadingCovers(true);
+      try {
+        const res = await fetch(`/api/openlibrary/editions?workKey=${encodeURIComponent(book.openLibraryKey!)}&limit=100`);
+        if (res.ok) {
+          const data = await res.json();
+          const covers: { coverId: number; title: string; format?: string; year?: string }[] = [];
+          const seenIds = new Set<number>();
+          for (const ed of data.entries) {
+            if (ed.covers) {
+              for (const cid of ed.covers) {
+                if (cid > 0 && !seenIds.has(cid)) {
+                  seenIds.add(cid);
+                  covers.push({ coverId: cid, title: ed.title, format: ed.physical_format, year: ed.publish_date });
+                }
+              }
+            }
+          }
+          setEditionCovers(covers);
+        }
+      } catch { /* ignore */ }
+      setLoadingCovers(false);
+    })() : Promise.resolve();
+
+    const extPromise = (async () => {
+      setLoadingExternal(true);
+      try {
+        const params = new URLSearchParams();
+        if (book.isbn13) params.set("isbn13", book.isbn13);
+        params.set("title", book.title);
+        const authorNames = book.authors.filter(a => a.role === "author").map(a => a.name);
+        if (authorNames.length > 0) params.set("authors", authorNames.join(", "));
+        const res = await fetch(`/api/admin/covers?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          setExternalCovers(data.covers ?? []);
+        }
+      } catch { /* ignore */ }
+      setLoadingExternal(false);
+    })();
+
+    await Promise.all([olPromise, extPromise]);
+  }, [book.openLibraryKey, book.isbn13, book.title, book.authors]);
+
+  // ?editCover=1 — jump straight into the cover picker (admins only). Used
+  // by the native app's hero pencil, which opens this page in its
+  // authenticated webview.
+  useEffect(() => {
+    if (isAdmin && searchParams.get("editCover") === "1") {
+      openCoverEditor();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // When formats change, auto-link editions for any format that doesn't have one yet
   const handleActiveFormatsChange = useCallback(
     async (newFormats: string[]) => {
@@ -340,55 +404,7 @@ export function BookPageClient({
                 title={book.title}
               />
             }
-            onCoverEditClick={isAdmin ? async () => {
-              setEditingCover(true);
-              setEditionCovers([]);
-              setExternalCovers([]);
-
-              // Fetch OL editions and external covers (ISBNdb + Google Books) in parallel
-              const olPromise = book.openLibraryKey ? (async () => {
-                setLoadingCovers(true);
-                try {
-                  const res = await fetch(`/api/openlibrary/editions?workKey=${encodeURIComponent(book.openLibraryKey!)}&limit=100`);
-                  if (res.ok) {
-                    const data = await res.json();
-                    const covers: { coverId: number; title: string; format?: string; year?: string }[] = [];
-                    const seenIds = new Set<number>();
-                    for (const ed of data.entries) {
-                      if (ed.covers) {
-                        for (const cid of ed.covers) {
-                          if (cid > 0 && !seenIds.has(cid)) {
-                            seenIds.add(cid);
-                            covers.push({ coverId: cid, title: ed.title, format: ed.physical_format, year: ed.publish_date });
-                          }
-                        }
-                      }
-                    }
-                    setEditionCovers(covers);
-                  }
-                } catch { /* ignore */ }
-                setLoadingCovers(false);
-              })() : Promise.resolve();
-
-              const extPromise = (async () => {
-                setLoadingExternal(true);
-                try {
-                  const params = new URLSearchParams();
-                  if (book.isbn13) params.set("isbn13", book.isbn13);
-                  params.set("title", book.title);
-                  const authorNames = book.authors.filter(a => a.role === "author").map(a => a.name);
-                  if (authorNames.length > 0) params.set("authors", authorNames.join(", "));
-                  const res = await fetch(`/api/admin/covers?${params.toString()}`);
-                  if (res.ok) {
-                    const data = await res.json();
-                    setExternalCovers(data.covers ?? []);
-                  }
-                } catch { /* ignore */ }
-                setLoadingExternal(false);
-              })();
-
-              await Promise.all([olPromise, extPromise]);
-            } : undefined}
+            onCoverEditClick={isAdmin ? openCoverEditor : undefined}
           />
 
         {/* Desktop: actions panel — flows in flex layout so taller content pushes page down */}
