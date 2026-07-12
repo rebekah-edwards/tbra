@@ -284,3 +284,10 @@ explicit user sign-off.
   top-left slot, level with the actions bubble; slides back at top. Logo hit twin is
   already disabled when !atTop so no tap conflict. Sim-verified on book page: at-top
   overlap position, slide-up on scroll, tap-to-pop in the bar slot.
+
+- 2026-07-12 (webview auth fix, her report): WKHTTPCookieStore-injected cookies never
+  attach when the host is a raw IP (Tailscale) — device webviews were SIGNED OUT (book
+  page but no pencil/picker; sim/localhost masked it). Fix: GET /api/v1/auth/web-session
+  ?token&next — verifies bearer JWT, sets tbra-session via server Set-Cookie, redirects
+  (relative next only). AdminWebView loads through the bridge; no client cookie code.
+  Bridge curl-tested (bogus→401, real→307+Set-Cookie); sim pencil→picker re-verified.

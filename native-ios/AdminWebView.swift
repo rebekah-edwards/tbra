@@ -58,8 +58,8 @@ private struct AdminWebView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
-        // Non-persistent store: the only credential in here is the injected
-        // session cookie, refreshed from the Keychain on every open.
+        // Non-persistent store: the only credential in here is the session
+        // cookie the bridge route sets, refreshed on every open.
         config.websiteDataStore = .nonPersistent()
 
         let webView = WKWebView(frame: .zero, configuration: config)
@@ -67,28 +67,21 @@ private struct AdminWebView: UIViewRepresentable {
         webView.isOpaque = false
         webView.backgroundColor = .clear
 
-        var adminURL = APIClient.baseURL.appending(path: path)
-        if let query, var comps = URLComponents(url: adminURL, resolvingAgainstBaseURL: false) {
-            comps.percentEncodedQuery = query
-            adminURL = comps.url ?? adminURL
-        }
-        guard let host = APIClient.baseURL.host,
-              let token = Keychain.accessToken,
-              let cookie = HTTPCookie(properties: [
-                  .name: "tbra-session",
-                  .value: token,
-                  .domain: host,
-                  .path: "/",
-              ]) else {
-            webView.load(URLRequest(url: adminURL))
-            return webView
-        }
+        // Authenticate through the server-side bridge: it verifies the app's
+        // bearer token, sets the tbra-session cookie via Set-Cookie, and
+        // redirects to the target page. (Injecting the cookie with
+        // WKHTTPCookieStore silently failed on-device where the backend host
+        // is a raw Tailscale IP — the webview loaded pages signed out.)
+        var target = "/" + path
+        if let query { target += "?" + query }
 
-        // Set the cookie first, THEN load — otherwise the first request
-        // races the cookie store and lands signed-out.
-        config.websiteDataStore.httpCookieStore.setCookie(cookie) {
-            webView.load(URLRequest(url: adminURL))
-        }
+        var comps = URLComponents(url: APIClient.baseURL.appending(path: "api/v1/auth/web-session"),
+                                  resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            URLQueryItem(name: "token", value: Keychain.accessToken ?? ""),
+            URLQueryItem(name: "next", value: target),
+        ]
+        webView.load(URLRequest(url: comps.url!))
         return webView
     }
 
