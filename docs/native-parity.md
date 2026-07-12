@@ -268,3 +268,12 @@ explicit user sign-off.
   added to project.pbxproj locally via the classic 4-entry pattern (PBXBuildFile +
   PBXFileReference + group child + Sources phase). Sim-verified: gated row, hub renders
   authenticated, Cover Review sub-page loads w/ tabs + save inputs. On phone (relaunched).
+
+- 2026-07-12 (admin cover picker in the app, user-requested): native book hero shows the
+  admin-gated pencil (accountType admin/super_admin, same as web) on the cover's top-right.
+  Tap → AdminSheet("Edit Cover", path: book/<slug>, query: editCover=1): the authenticated
+  webview opens the book's web page and ?editCover=1 auto-opens the REAL cover picker
+  (extracted openCoverEditor() in book-page-client.tsx, main d94b736) — upload, paste-URL,
+  OL edition covers, ISBNdb/Google candidates. Book reloads onDismiss so the new cover
+  shows immediately. Sim-verified end-to-end (picker rendered w/ 34 OL + 8 external
+  candidates for Way of Kings). On phone (relaunched).

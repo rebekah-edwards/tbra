@@ -44,7 +44,7 @@ struct BookDetailView: View {
         ScrollView {
             if let data = model.data {
                 VStack(alignment: .leading, spacing: 20) {
-                    BookHero(data: data)
+                    BookHero(data: data, onCoverChanged: { await model.load() })
                     BookActionCluster(model: model, data: data)
                     BookStarsRow(data: data, onReviewSaved: { Task { await model.load() } })
                     if let summary = data.book.summary, !summary.isEmpty {
@@ -237,10 +237,22 @@ struct TbrNoteEditorSheet: View {
 // ── Hero — book-header.tsx ──
 private struct BookHero: View {
     let data: BookDetailData
+    /// Reload the book after the admin cover picker closes.
+    var onCoverChanged: () async -> Void = {}
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(AuthStore.self) private var auth
+    @State private var coverEditorOpen = false
 
     private var book: BookFull { data.book }
     private var isLight: Bool { colorScheme == .light }
+
+    /// Admin pencil gate — same accounts the web shows the pencil to.
+    private var isAdmin: Bool {
+        if case .signedIn(let user) = auth.phase {
+            return ["admin", "super_admin"].contains(user.accountType)
+        }
+        return false
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -267,6 +279,34 @@ private struct BookHero: View {
         return HStack(alignment: .center, spacing: 16) {   // web: items-center
             CoverThumb(url: heroCover, width: 110, height: squareAudio ? 110 : 165, radius: 10)
                 .shadow(color: .black.opacity(0.5), radius: 12, y: 6)
+                // Admin-only cover pencil (web: -top-1.5 -right-1.5 circle).
+                // Opens the REAL web cover picker for this book inside the
+                // authenticated webview (?editCover=1 auto-opens the modal) —
+                // OL edition covers, ISBNdb/Google candidates, custom URL,
+                // upload. One picker, zero drift.
+                .overlay(alignment: .topTrailing) {
+                    if isAdmin {
+                        Button {
+                            coverEditorOpen = true
+                        } label: {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(Theme.muted)
+                                .frame(width: 24, height: 24)
+                                .background(Theme.surface, in: Circle())
+                                .overlay(Circle().stroke(Theme.border, lineWidth: 1))
+                                .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+                        }
+                        .offset(x: 8, y: -8)
+                    }
+                }
+                .fullScreenCover(isPresented: $coverEditorOpen, onDismiss: {
+                    Task { await onCoverChanged() }
+                }) {
+                    AdminSheet(title: "Edit Cover",
+                               path: "book/\(data.slug ?? book.slug ?? book.id)",
+                               query: "editCover=1")
+                }
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(book.title)

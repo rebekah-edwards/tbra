@@ -17,11 +17,17 @@ import WebKit
 
 struct AdminSheet: View {
     @Environment(\.dismiss) private var dismiss
+    /// Sheet title; the web page underneath supplies its own heading too.
+    var title: String = "Admin"
+    /// Path on the app's backend to open (no leading slash).
+    var path: String = "admin"
+    /// Optional raw query string (e.g. "editCover=1").
+    var query: String? = nil
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Admin")
+                Text(title)
                     .font(Theme.heading(17, .bold))
                     .foregroundStyle(Theme.foreground)
                 Spacer()
@@ -39,7 +45,7 @@ struct AdminSheet: View {
 
             Divider().background(Theme.border.opacity(0.6))
 
-            AdminWebView()
+            AdminWebView(path: path, query: query)
                 .ignoresSafeArea(edges: .bottom)
         }
         .background(Theme.bg)
@@ -47,6 +53,9 @@ struct AdminSheet: View {
 }
 
 private struct AdminWebView: UIViewRepresentable {
+    var path: String = "admin"
+    var query: String? = nil
+
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         // Non-persistent store: the only credential in here is the injected
@@ -58,7 +67,11 @@ private struct AdminWebView: UIViewRepresentable {
         webView.isOpaque = false
         webView.backgroundColor = .clear
 
-        let adminURL = APIClient.baseURL.appending(path: "admin")
+        var adminURL = APIClient.baseURL.appending(path: path)
+        if let query, var comps = URLComponents(url: adminURL, resolvingAgainstBaseURL: false) {
+            comps.percentEncodedQuery = query
+            adminURL = comps.url ?? adminURL
+        }
         guard let host = APIClient.baseURL.host,
               let token = Keychain.accessToken,
               let cookie = HTTPCookie(properties: [
