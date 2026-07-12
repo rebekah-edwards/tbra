@@ -367,6 +367,38 @@ async function fetchLiveRows(table: string, cols: string[], page = 5000): Promis
     console.log(`  ⚠  cover sync: ${e.message.slice(0, 120)}`);
   }
 
+  // Audiobook covers are live-authoritative too — the admin uploads them on
+  // the live site (/admin/covers Audiobook tab or the book-page editor), and
+  // the app's square-audiobook display reads the LOCAL row. Historically
+  // setAudiobookCover didn't bump books.updated_at, so the timestamp path
+  // above never carried these; this pass mirrors them unconditionally
+  // (found 2026-07-11: Remarkably Bright Creatures).
+  console.log('\n→ Syncing audiobook covers (live → local; live authoritative)');
+  try {
+    const liveAudio = await remote.execute(
+      `SELECT id, audiobook_cover_url
+         FROM books
+        WHERE audiobook_cover_url IS NOT NULL AND audiobook_cover_url != ''`
+    );
+    let audioFixed = 0;
+    const updateAudio = local.prepare(
+      `UPDATE books
+          SET audiobook_cover_url = ?
+        WHERE id = ?
+          AND (audiobook_cover_url IS NULL OR audiobook_cover_url != ?)`
+    );
+    const trxAudio = local.transaction((rows: any[]) => {
+      for (const row of rows) {
+        const res = updateAudio.run(row.audiobook_cover_url, row.id, row.audiobook_cover_url);
+        if (res.changes > 0) audioFixed++;
+      }
+    });
+    trxAudio(liveAudio.rows);
+    console.log(`  ✓  audiobook covers                    ${audioFixed} synced from live`);
+  } catch (e: any) {
+    console.log(`  ⚠  audiobook cover sync: ${e.message.slice(0, 120)}`);
+  }
+
   console.log('\n────────────────────────────────────');
   console.log(`Totals: ${totalInserted} rows inserted, ${totalUpdated} rows updated`);
   if (errors.length > 0) {
