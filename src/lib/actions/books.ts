@@ -738,7 +738,11 @@ export async function setAudiobookCover(
 
   await db
     .update(books)
-    .set({ audiobookCoverUrl: coverUrl || null })
+    // updated_at bump matters: sync-pull's newer-timestamp path is what
+    // carries an audiobook cover uploaded on live down to the local DB the
+    // phone reads (found 2026-07-11 — Remarkably Bright Creatures never
+    // reached the app because this save left updated_at untouched).
+    .set({ audiobookCoverUrl: coverUrl || null, updatedAt: new Date().toISOString() })
     .where(eq(books.id, bookId));
 
   revalidatePath(`/book/${bookId}`);
