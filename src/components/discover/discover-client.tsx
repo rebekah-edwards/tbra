@@ -378,7 +378,6 @@ export function DiscoverClient() {
       <div ref={resultsRef}>
         {searched && results.length === 0 && !loading && (
           <div className="mt-8 text-center py-8">
-            <span className="text-4xl block mb-3">💎</span>
             <p className="text-sm font-medium mb-1">No matches found</p>
             <p className="text-xs text-muted">Try different moods or loosen your filters.</p>
           </div>
@@ -437,7 +436,6 @@ export function DiscoverClient() {
                   )}
                   {book.reason && (
                     <span className="gem-reason-tag flex items-start gap-1 text-[10px] mt-1.5 rounded-md bg-gradient-to-r from-accent/15 to-neon-blue/15 text-accent border border-accent/20 px-2 py-1 leading-snug">
-                      <span className="flex-shrink-0">💎</span>
                       <span className="line-clamp-2">{book.reason}</span>
                     </span>
                   )}

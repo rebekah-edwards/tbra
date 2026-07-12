@@ -232,7 +232,6 @@ struct DiscoverView: View {
                             if model.results.isEmpty {
                                 // Empty state — discover-client.tsx copy
                                 VStack(spacing: 6) {
-                                    Text("💎").font(.system(size: 34))
                                     Text("No matches found")
                                         .font(Theme.body(14, .medium))
                                         .foregroundStyle(Theme.foreground)
@@ -299,7 +298,7 @@ struct DiscoverView: View {
 
     // Result card — mirrors the web's discover result card: bordered surface
     // card, full-width 2:3 cover, title, authors, and the match-reason pill
-    // (💎 + reason on the lime→blue gradient — the card that explains the
+    // (reason on the lime→blue gradient — the card that explains the
     // match stays, per user direction; only the "gems" wording is gone).
     private func resultCard(_ book: LiteBook) -> some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -336,22 +335,19 @@ struct DiscoverView: View {
             }
 
             if let reason = model.reasons[book.id], !reason.isEmpty {
-                HStack(alignment: .top, spacing: 4) {
-                    Text("💎").font(.system(size: 10))
-                    Text(reason)
-                        .font(Theme.body(10, .medium))
-                        .foregroundStyle(Color(dark: "a3e635", light: "18181b"))
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    LinearGradient(colors: [Theme.accent.opacity(0.15), Theme.neonBlue.opacity(0.15)],
-                                   startPoint: .leading, endPoint: .trailing),
-                    in: RoundedRectangle(cornerRadius: 6))
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.accent.opacity(0.2), lineWidth: 1))
+                Text(reason)
+                    .font(Theme.body(10, .medium))
+                    .foregroundStyle(Color(dark: "a3e635", light: "18181b"))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        LinearGradient(colors: [Theme.accent.opacity(0.15), Theme.neonBlue.opacity(0.15)],
+                                       startPoint: .leading, endPoint: .trailing),
+                        in: RoundedRectangle(cornerRadius: 6))
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.accent.opacity(0.2), lineWidth: 1))
             }
         }
         .padding(10)
