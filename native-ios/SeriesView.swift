@@ -125,7 +125,20 @@ struct FloatingBackButton: View {
     /// `bare` = the plain muted chevron some screens use instead of the
     /// scrim circle (Shelves, shelf detail).
     var bare = false
+    var topPadding: CGFloat = 14
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.shellBarInsets) private var bars
+    @Environment(\.showsShellChrome) private var showsChrome
+    @Environment(ChromeState.self) private var chrome: ChromeState?
+
+    /// Scrolled: the wordmark has faded out, so the chevron slides up into
+    /// its vacated top-left slot in the bar zone (the logo's hit twin
+    /// disables itself when not at top, so the spot is free to tap) — user
+    /// request 2026-07-12. Skipped inside covers (no shell bars there).
+    private var slidUp: Bool {
+        showsChrome && bars.top > 0 && chrome?.atTop == false
+    }
+
     var body: some View {
         Button { dismiss() } label: {
             if bare {
@@ -141,6 +154,11 @@ struct FloatingBackButton: View {
             }
         }
         .padding(.leading, 20)
+        .padding(.top, topPadding)
+        // Rest 8pt into the 56pt bar zone → vertically centered, mirroring
+        // the logo pill's placement.
+        .offset(y: slidUp ? -(bars.top + topPadding - 8) : 0)
+        .animation(.easeOut(duration: 0.18), value: slidUp)
     }
 }
 
@@ -172,7 +190,9 @@ extension View {
     /// where the old in-content button rendered.
     func floatingBack(topPadding: CGFloat = 14, bare: Bool = false) -> some View {
         overlay(alignment: .topLeading) {
-            FloatingBackButton(bare: bare).padding(.top, topPadding)
+            // topPadding lives INSIDE the button so its slide-up offset math
+            // can account for it.
+            FloatingBackButton(bare: bare, topPadding: topPadding)
         }
     }
     func pushedScreenChrome() -> some View { modifier(PushedScreenChrome()) }

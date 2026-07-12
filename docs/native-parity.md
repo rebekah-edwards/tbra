@@ -277,3 +277,10 @@ explicit user sign-off.
   OL edition covers, ISBNdb/Google candidates. Book reloads onDismiss so the new cover
   shows immediately. Sim-verified end-to-end (picker rendered w/ 34 OL + 8 external
   candidates for Way of Kings). On phone (relaunched).
+
+- 2026-07-12 (chevron slide-up, user-requested): FloatingBackButton now reads chrome.atTop
+  + shellBarInsets; when !atTop (and showsShellChrome && bars.top>0) it offsets by
+  -(bars.top + topPadding - 8) with easeOut 0.18 — rides up into the faded wordmark's
+  top-left slot, level with the actions bubble; slides back at top. Logo hit twin is
+  already disabled when !atTop so no tap conflict. Sim-verified on book page: at-top
+  overlap position, slide-up on scroll, tap-to-pop in the bar slot.
