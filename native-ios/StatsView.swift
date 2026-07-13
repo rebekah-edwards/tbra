@@ -143,15 +143,18 @@ struct StatsView: View {
         HStack(spacing: 12) {
             miniStat(value: data.pageStats.totalPages >= 10000
                         ? String(format: "%.1fk", Double(data.pageStats.totalPages) / 1000)
-                        : "\(data.pageStats.totalPages)",
+                        : data.pageStats.totalPages.formatted(.number.grouping(.automatic)),
                      label: "PAGES READ")
             miniStat(value: data.readingPace.map { "\($0.avgDays)d" } ?? "—", label: "AVG PACE")
             miniStat(value: data.minutesListened > 0 ? formatMinutes(data.minutesListened) : "—", label: "LISTENED")
         }
     }
 
+    // Mirrors stats-client.tsx formatMinutes: "97h 10m", "97h", "45m".
     private func formatMinutes(_ mins: Int) -> String {
-        mins >= 60 ? "\(mins / 60)h" : "\(mins)m"
+        if mins < 60 { return "\(mins)m" }
+        let h = mins / 60, m = mins % 60
+        return m == 0 ? "\(h)h" : "\(h)h \(m)m"
     }
 
     private func miniStat(value: String, label: String) -> some View {

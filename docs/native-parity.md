@@ -323,3 +323,23 @@ explicit user sign-off.
   grid: avatar now rides INSIDE the rating pill (Top Shelf treatment, accent-star
   fallback), attached to the DNF pill when unrated; separate bottom-left badge
   removed. Web review-history.tsx matches (ReviewerAvatar in-pill).
+
+- **2026-07-12 — Stats parity: bidirectional user-activity sync.** Root cause of
+  "web shows 27 books, app shows 26": (a) sync-pull silently swallowed UNIQUE
+  collisions, so the same logical read recorded independently on both sides
+  (different session ids, same user+book+read_number) never converged — Nouscraft
+  stayed currently_reading locally while live said completed 2026-04-11; Space
+  Fleet Academy had two divergent sessions; (b) sync-push had NO user-activity
+  step (only up_next) — app-side activity never reached live at all. NEW
+  scripts/sync-user-activity.ts: guarded bidirectional sync of all user tables,
+  natural-key newest-wins merge (local adopts live ids; live rows updated in
+  place), PUSH SAFETY FILTER (only APP_USERS rows stamped ≥ 2026-06-20 — 83
+  local-only ghost sessions from live-side deletions must never be resurrected).
+  Runs every 30 min (task user-activity-sync, ET 10:00–02:59 window skipping the
+  nightly chain) + appended to sync-incremental.sh push. sync-pull.ts got the
+  same NATURAL_KEYS merge for its nightly path. Data repaired + verified: both
+  sides now 27 books / 29 sessions / 11,444 raw pages for Rebekah; "A Safe Place
+  to Die" pages metadata backfilled locally (322). StatsView: pages get comma
+  grouping under 10k and LISTENED shows "97h 10m" (exact stats-client.tsx
+  formatMinutes port). Deleted the clanker Skyward test review locally before
+  first push so it never lands on the live reviews page.

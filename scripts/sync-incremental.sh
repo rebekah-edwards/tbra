@@ -344,7 +344,13 @@ push)
   # sync-push.ts reads TURSO_DATABASE_URL + TURSO_AUTH_TOKEN from .env.vercel.local and talks
   # to Turso directly. Same semantics: INSERT OR IGNORE for new rows, never touches existing
   # book/user data. Landing-page tables still get full DELETE+INSERT (admin-managed).
-  exec npx tsx "$SCRIPT_DIR/sync-push.ts"
+  #
+  # 2026-07-12: sync-push.ts covers books/enrichment only — user-activity rows
+  # (sessions, states, ratings, reviews…) written by the native app were never
+  # pushed at all. sync-user-activity.ts closes that gap (bidirectional,
+  # newest-wins, ghost-guarded); it also runs every 30 min as its own task.
+  npx tsx "$SCRIPT_DIR/sync-push.ts" || exit $?
+  exec npx tsx "$SCRIPT_DIR/sync-user-activity.ts"
 
   # ── Legacy Python path kept below for reference; unreachable ──
   python3 << 'PYEOF'

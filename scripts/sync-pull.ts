@@ -138,6 +138,20 @@ const TABLES: Array<[string, string[], boolean]> = [
   ['rating_citations',         ['rating_id', 'citation_id'], false],
 ];
 
+// Tables whose id-PK coexists with a natural UNIQUE index — an insert that
+// trips the index means "same logical row, different id" and must be merged,
+// not skipped (see the collision handler below).
+const NATURAL_KEYS: Record<string, { key: string[]; childRefs?: Array<[string, string]> }> = {
+  reading_sessions:  { key: ['user_id', 'book_id', 'read_number'] },
+  user_book_reviews: { key: ['user_id', 'book_id'],
+    childRefs: [['user_book_dimension_ratings', 'review_id'], ['review_descriptor_tags', 'review_id'], ['review_helpful_votes', 'review_id']] },
+  user_book_ratings: { key: ['user_id', 'book_id'] },
+  reading_goals:     { key: ['user_id', 'year'] },
+  tbr_notes:         { key: ['user_id', 'book_id'] },
+  review_descriptor_tags: { key: ['review_id', 'dimension', 'tag'] },
+  user_book_dimension_ratings: { key: ['review_id', 'dimension'] },
+};
+
 function localCols(table: string): string[] {
   try {
     const rows = local.prepare(`PRAGMA table_info(${table})`).all() as any[];
@@ -227,7 +241,33 @@ async function fetchLiveRows(table: string, cols: string[], page = 5000): Promis
             insertStmt.run(...cols.map((c) => row[c]));
             inserted++;
           } catch (e: any) {
-            if (!String(e.message).includes('UNIQUE constraint')) {
+            if (String(e.message).includes('UNIQUE constraint')) {
+              // Natural-key twin: the same logical row exists locally under a
+              // DIFFERENT id (created independently on each side — e.g. the
+              // same read logged on web AND in the native app). Silently
+              // skipping froze these forever (2026-07-12: Rebekah's stats
+              // showed 26 books in the app vs 27 on web). Newest-wins: adopt
+              // the live row when live is same-or-newer.
+              const nat = NATURAL_KEYS[table];
+              if (nat) {
+                try {
+                  const twin = local.prepare(
+                    `SELECT * FROM ${table} WHERE ${nat.key.map((c: string) => `${c} = ?`).join(' AND ')}`
+                  ).get(...nat.key.map((c: string) => row[c])) as any;
+                  if (twin && String(row.updated_at ?? '') >= String(twin.updated_at ?? '')) {
+                    for (const [child, col] of nat.childRefs ?? []) {
+                      try { local.prepare(`UPDATE ${child} SET ${col} = ? WHERE ${col} = ?`).run(row.id, twin.id); } catch {}
+                    }
+                    local.prepare(`DELETE FROM ${table} WHERE ${pkCols.map((c) => `${c} = ?`).join(' AND ')}`)
+                      .run(...pkCols.map((c) => twin[c]));
+                    insertStmt.run(...cols.map((c) => row[c]));
+                    inserted++;
+                  }
+                } catch (e2: any) {
+                  errors.push(`${table} natural-merge: ${e2.message.slice(0, 100)}`);
+                }
+              }
+            } else {
               errors.push(`${table} insert: ${e.message.slice(0, 100)}`);
             }
           }
