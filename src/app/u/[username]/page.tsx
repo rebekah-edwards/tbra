@@ -68,14 +68,33 @@ export async function generateMetadata({
 
   const canonicalUrl = `https://thebasedreader.app/u/${user.username}`;
 
+  const title = `Follow ${displayName} on tbr*a | The Based Reader App`;
+  const description = `Check out ${displayName}'s reading profile on tbr*a. See their top shelf reads, reviews, and what they're reading now.`;
+
   return {
-    title: `Follow ${displayName} on tbr*a | Top Shelf Reads, Reviews & More`,
-    description: `Check out ${displayName}'s reading profile on tbr*a. See their top shelf reads, reviews, and what they're reading now.`,
+    title,
+    description,
     alternates: { canonical: canonicalUrl },
     openGraph: {
-      title: `Follow ${displayName} on tbr*a | Top Shelf Reads, Reviews & More`,
-      description: `Check out ${displayName}'s reading profile on tbr*a. See their top shelf reads, reviews, and what they're reading now.`,
+      title,
+      description,
       url: canonicalUrl,
+      siteName: "tbr*a",
+      type: "profile",
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: "tbr*a — The Based Reader App",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/og-image.png"],
     },
   };
 }
