@@ -6,9 +6,11 @@ import { NoCover } from "@/components/no-cover";
 
 interface ReviewHistoryProps {
   reviews: UserReviewWithBook[];
+  /** Owner's avatar — shown on covers that carry a written review. */
+  avatarUrl?: string | null;
 }
 
-export function ReviewHistory({ reviews }: ReviewHistoryProps) {
+export function ReviewHistory({ reviews, avatarUrl }: ReviewHistoryProps) {
   if (reviews.length === 0) {
     return (
       <section>
@@ -50,20 +52,33 @@ export function ReviewHistory({ reviews }: ReviewHistoryProps) {
                 <NoCover title={review.title} className="h-full w-full" size="sm" />
               )}
 
-              {/* Star rating badge — bottom right (larger, yellow star) */}
-              {review.rating && (
-                <span className="absolute bottom-1.5 right-1.5 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white backdrop-blur-sm flex items-center gap-0.5">
-                  {formatRating(review.rating)} <span className="text-yellow-400">★</span>
-                </span>
-              )}
+              {/* Bottom-right badges: star rating and/or red DNF tag */}
+              <span className="absolute bottom-1.5 right-1.5 flex items-center gap-1">
+                {review.rating && (
+                  <span className="rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white backdrop-blur-sm flex items-center gap-0.5">
+                    {formatRating(review.rating)} <span className="text-yellow-400">★</span>
+                  </span>
+                )}
+                {review.didNotFinish && (
+                  <span className="rounded-full bg-destructive/90 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+                    DNF
+                  </span>
+                )}
+              </span>
 
-              {/* Written review indicator — bottom left */}
+              {/* Written review indicator — bottom left: the reviewer's own
+                  avatar (falls back to the pencil badge without one) */}
               {review.reviewText && (
-                <span className="absolute bottom-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 backdrop-blur-sm" title="Has written review">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                  </svg>
+                <span className="absolute bottom-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 backdrop-blur-sm overflow-hidden ring-1 ring-white/30" title="Has written review">
+                  {avatarUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                  )}
                 </span>
               )}
             </div>

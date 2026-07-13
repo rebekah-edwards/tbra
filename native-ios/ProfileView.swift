@@ -24,7 +24,7 @@ struct ProfileRootView: View {
     @Binding var path: NavigationPath
     var body: some View {
         NavigationStack(path: $path) {
-            ProfileView()
+            ProfileView(path: $path)
                 .pushedScreenChrome()
                 .toolbar(.hidden, for: .navigationBar)
                 .appDestinations()
@@ -37,9 +37,12 @@ struct ProfileRootView: View {
 }
 
 struct ProfileView: View {
+    @Binding var path: NavigationPath
     @Environment(AuthStore.self) private var auth
     @State private var model = ProfileModel()
     @State private var copiedReferral = false
+    @State private var showAllReviews = false
+    @State private var showAllJournal = false
 
     var body: some View {
         ScrollView {
@@ -113,7 +116,10 @@ struct ProfileView: View {
                             UIApplication.shared.open(url)
                         }
                     } label: {
-                        Text("Edit Profile").font(Theme.body(14, .medium)).foregroundStyle(Theme.accent)
+                        // Lime in dark mode, branded blue in light — lime on
+                        // the light background was illegible.
+                        Text("Edit Profile").font(Theme.body(14, .medium))
+                            .foregroundStyle(Color(dark: "a3e635", light: "0ea5e9"))
                     }
                     Text("·").foregroundStyle(Theme.muted)
                     Button {
@@ -122,7 +128,8 @@ struct ProfileView: View {
                             UIApplication.shared.open(url)
                         }
                     } label: {
-                        Text("View public profile").font(Theme.body(14, .medium)).foregroundStyle(Theme.accent)
+                        Text("View public profile").font(Theme.body(14, .medium))
+                            .foregroundStyle(Color(dark: "a3e635", light: "0ea5e9"))
                     }
                 }
                 .padding(.top, 2)
@@ -314,6 +321,10 @@ struct ProfileView: View {
         }
     }
 
+    // Recent Reviews — mirrors review-history.tsx: a 3-up cover grid capped
+    // at the 6 most recent, star pill and/or red DNF tag bottom-right, the
+    // owner's avatar bottom-left when a written review exists, and a
+    // "View all reviews" link underneath.
     private func reviewsSection(_ data: ProfileData) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Recent Reviews")
@@ -324,45 +335,114 @@ struct ProfileView: View {
                     .font(Theme.body(16))
                     .foregroundStyle(Theme.muted)
             } else {
-                ForEach(data.reviews) { review in
-                    NavigationLink(value: BookRoute(idOrSlug: review.bookSlug ?? review.bookId)) {
-                        HStack(alignment: .top, spacing: 12) {
-                            CoverThumb(url: review.coverImageUrl, width: 44, height: 66, radius: 5)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(review.title)
-                                    .font(Theme.body(15, .semibold))
-                                    .foregroundStyle(Theme.foreground)
-                                    .multilineTextAlignment(.leading)
-                                HStack(spacing: 8) {
-                                    if let rating = review.rating {
-                                        StarRow(rating: rating)
-                                    }
-                                    if review.didNotFinish {
-                                        Text("DNF")
-                                            .font(Theme.body(10, .bold))
-                                            .foregroundStyle(Theme.destructive)
-                                            .padding(.horizontal, 6).padding(.vertical, 2)
-                                            .background(Theme.destructive.opacity(0.12), in: Capsule())
-                                    }
-                                }
-                                if let text = review.reviewText, !text.isEmpty {
-                                    Text(text)
-                                        .font(Theme.body(13))
-                                        .foregroundStyle(Theme.muted)
-                                        .lineLimit(3)
-                                        .multilineTextAlignment(.leading)
-                                }
-                            }
-                            Spacer(minLength: 0)
+                LazyVGrid(columns: [
+                    GridItem(.flexible(), spacing: 12),
+                    GridItem(.flexible(), spacing: 12),
+                    GridItem(.flexible(), spacing: 12),
+                ], spacing: 12) {
+                    ForEach(data.reviews.prefix(6)) { review in
+                        // Button + path.append, not NavigationLink — value
+                        // links misfire in sibling-card grids on iOS 27.
+                        Button {
+                            path.append(ReviewsRoute(
+                                bookIdOrSlug: review.bookSlug ?? review.bookId,
+                                bookTitle: review.title,
+                                scrollToReviewId: review.reviewId))
+                        } label: {
+                            reviewGridCell(review, avatarUrl: data.user.avatarUrl)
                         }
-                        .padding(12)
-                        .background(Theme.surface.opacity(0.55))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+                        .buttonStyle(.plain)
                     }
+                }
+
+                Button {
+                    showAllReviews = true
+                } label: {
+                    Text("View all reviews →")
+                        .font(Theme.body(13, .medium))
+                        .foregroundStyle(Theme.neonBlue)
+                        .frame(maxWidth: .infinity)
+                }
+                .padding(.top, 2)
+            }
+        }
+        .fullScreenCover(isPresented: $showAllReviews) {
+            NavigationStack {
+                AllReviewsView()
+                    .appDestinations()
+            }
+        }
+    }
+
+    private func reviewGridCell(_ review: UserReviewRow, avatarUrl: String?) -> some View {
+        GeometryReader { geo in
+            CoverThumb(url: review.coverImageUrl,
+                       width: geo.size.width,
+                       height: geo.size.width * 1.5,
+                       radius: 10)
+                .overlay(alignment: .bottomTrailing) {
+                    HStack(spacing: 4) {
+                        if let rating = review.rating, rating > 0 {
+                            HStack(spacing: 2) {
+                                Text(ratingLabel(rating))
+                                    .font(Theme.body(11, .semibold))
+                                    .foregroundStyle(.white)
+                                Text("★")
+                                    .font(Theme.body(11))
+                                    .foregroundStyle(.yellow)
+                            }
+                            .padding(.horizontal, 8).padding(.vertical, 4)
+                            .background(.black.opacity(0.7), in: Capsule())
+                        }
+                        if review.didNotFinish {
+                            Text("DNF")
+                                .font(Theme.body(9, .bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 7).padding(.vertical, 4)
+                                .background(Theme.destructive.opacity(0.9), in: Capsule())
+                        }
+                    }
+                    .padding(6)
+                }
+                .overlay(alignment: .bottomLeading) {
+                    if let text = review.reviewText, !text.isEmpty {
+                        profileAvatarBadge(avatarUrl)
+                            .padding(6)
+                    }
+                }
+        }
+        .aspectRatio(2 / 3, contentMode: .fit)
+        .contentShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// 20pt avatar circle marking covers with a written review (web parity).
+    private func profileAvatarBadge(_ avatarUrl: String?) -> some View {
+        Group {
+            if let avatarUrl,
+               let url = avatarUrl.hasPrefix("/")
+                   ? URL(string: avatarUrl, relativeTo: APIClient.baseURL)
+                   : URL(string: avatarUrl) {
+                AsyncImage(url: url) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: { Color.black.opacity(0.7) }
+            } else {
+                ZStack {
+                    Color.black.opacity(0.7)
+                    Image(systemName: "pencil")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.white)
                 }
             }
         }
+        .frame(width: 20, height: 20)
+        .clipShape(Circle())
+        .overlay(Circle().stroke(.white.opacity(0.3), lineWidth: 1))
+    }
+
+    private func ratingLabel(_ rating: Double) -> String {
+        rating.truncatingRemainder(dividingBy: 1) == 0
+            ? String(Int(rating))
+            : String(format: "%.2f", rating).replacingOccurrences(of: "0$", with: "", options: .regularExpression)
     }
 }
 
@@ -596,34 +676,101 @@ struct ShelfRailCase: View {
 }
 
 extension ProfileView {
-    // ── Reading Journal ──
+    // ── Reading Journal — mirrors reading-journal.tsx: the 3 most recently
+    // noted books, each showing only its LATEST note with "stacked card"
+    // peek edges when more exist, a per-book "View all N notes" link, and
+    // "View all N entries" for the full journal. (Previously every note of
+    // every book was listed out endlessly.)
     private func journalSection(_ data: ProfileData) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        // Group by book PRESERVING recency order (notes arrive newest-first).
+        var order: [String] = []
+        var groups: [String: [JournalNote]] = [:]
+        for note in data.journalNotes {
+            if groups[note.bookId] == nil { order.append(note.bookId) }
+            groups[note.bookId, default: []].append(note)
+        }
+        let displayed = order.prefix(3)
+
+        return VStack(alignment: .leading, spacing: 18) {
             Text("Reading Journal (\(data.journalNotes.count))")
                 .font(Theme.heading(20, .bold))
                 .foregroundStyle(Theme.foreground)
 
-            let grouped = Dictionary(grouping: data.journalNotes, by: \.bookId)
-            ForEach(Array(grouped.keys.sorted()), id: \.self) { bookId in
-                if let notes = grouped[bookId], let first = notes.first {
+            ForEach(Array(displayed), id: \.self) { bookId in
+                if let notes = groups[bookId], let top = notes.first {
                     VStack(alignment: .leading, spacing: 10) {
-                        NavigationLink(value: BookRoute(idOrSlug: first.bookSlug ?? bookId)) {
+                        NavigationLink(value: BookRoute(idOrSlug: top.bookSlug ?? bookId)) {
                             HStack(spacing: 10) {
-                                CoverThumb(url: first.bookCoverUrl, width: 34, height: 50, radius: 4)
-                                Text(first.bookTitle)
-                                    .font(Theme.body(17, .semibold))
+                                CoverThumb(url: top.bookCoverUrl, width: 24, height: 36, radius: 4)
+                                Text(top.bookTitle)
+                                    .font(Theme.body(15, .semibold))
                                     .foregroundStyle(Theme.foreground)
+                                    .lineLimit(1)
                                 Spacer()
                                 Text("\(notes.count) note\(notes.count == 1 ? "" : "s")")
-                                    .font(Theme.body(13))
+                                    .font(Theme.body(12))
                                     .foregroundStyle(Theme.muted)
                             }
                         }
-                        ForEach(notes) { note in
-                            noteCard(note)
+
+                        // Latest note with peeking stacked edges when more exist
+                        noteCard(top)
+                            .background(alignment: .bottom) {
+                                if notes.count >= 2 {
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(Theme.surface.opacity(0.7))
+                                        .overlay(RoundedRectangle(cornerRadius: 14)
+                                            .stroke(Theme.border.opacity(0.4), lineWidth: 1))
+                                        .frame(height: 24)
+                                        .padding(.horizontal, 6)
+                                        .offset(y: 6)
+                                }
+                            }
+                            .background(alignment: .bottom) {
+                                if notes.count >= 3 {
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(Theme.surface.opacity(0.45))
+                                        .overlay(RoundedRectangle(cornerRadius: 14)
+                                            .stroke(Theme.border.opacity(0.3), lineWidth: 1))
+                                        .frame(height: 24)
+                                        .padding(.horizontal, 12)
+                                        .offset(y: 12)
+                                }
+                            }
+                            .padding(.bottom, notes.count >= 3 ? 12 : (notes.count >= 2 ? 6 : 0))
+
+                        if notes.count > 1 {
+                            NavigationLink(value: BookRoute(idOrSlug: top.bookSlug ?? bookId)) {
+                                HStack(spacing: 3) {
+                                    Text("View all \(notes.count) notes")
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 9, weight: .semibold))
+                                }
+                                .font(Theme.body(12, .medium))
+                                .foregroundStyle(Theme.readMoreLink)
+                                .frame(maxWidth: .infinity)
+                            }
+                            .padding(.top, 2)
                         }
                     }
                 }
+            }
+
+            if order.count > 3 || data.journalNotes.count > 5 {
+                Button {
+                    showAllJournal = true
+                } label: {
+                    Text("View all \(data.journalNotes.count) entries →")
+                        .font(Theme.body(13, .medium))
+                        .foregroundStyle(Theme.readMoreLink)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showAllJournal) {
+            NavigationStack {
+                AllJournalView()
+                    .appDestinations()
             }
         }
     }
@@ -705,5 +852,199 @@ extension ProfileView {
                 .padding(.vertical, 12)
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.destructive.opacity(0.3), lineWidth: 1))
         }
+    }
+}
+
+// ── View-all screens (presented as covers from the profile) ─────────────
+
+/// Full review history — rows in the pre-grid style; taps open the book's
+/// reviews page scrolled to the review. Data: GET /api/v1/profile/reviews.
+struct AllReviewsView: View {
+    @State private var reviews: [UserReviewRow] = []
+    @State private var loaded = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    Color.clear.frame(width: 40, height: 40)
+                    Text("All Reviews\(loaded ? " (\(reviews.count))" : "")")
+                        .font(Theme.heading(24, .bold))
+                        .foregroundStyle(Theme.foreground)
+                }
+                .padding(.top, 14)
+
+                if !loaded {
+                    ProgressView().tint(Theme.accent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 60)
+                } else if reviews.isEmpty {
+                    Text("No reviews yet.")
+                        .font(Theme.body(15))
+                        .foregroundStyle(Theme.muted)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 40)
+                } else {
+                    ForEach(reviews) { review in
+                        NavigationLink(value: ReviewsRoute(
+                            bookIdOrSlug: review.bookSlug ?? review.bookId,
+                            bookTitle: review.title,
+                            scrollToReviewId: review.reviewId)) {
+                            HStack(alignment: .top, spacing: 12) {
+                                CoverThumb(url: review.coverImageUrl, width: 44, height: 66, radius: 5)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(review.title)
+                                        .font(Theme.body(15, .semibold))
+                                        .foregroundStyle(Theme.foreground)
+                                        .multilineTextAlignment(.leading)
+                                    HStack(spacing: 8) {
+                                        if let rating = review.rating {
+                                            StarRow(rating: rating)
+                                        }
+                                        if review.didNotFinish {
+                                            Text("DNF")
+                                                .font(Theme.body(10, .bold))
+                                                .foregroundStyle(Theme.destructive)
+                                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                                .background(Theme.destructive.opacity(0.12), in: Capsule())
+                                        }
+                                    }
+                                    if let text = review.reviewText, !text.isEmpty {
+                                        Text(text)
+                                            .font(Theme.body(13))
+                                            .foregroundStyle(Theme.muted)
+                                            .lineLimit(3)
+                                            .multilineTextAlignment(.leading)
+                                    }
+                                }
+                                Spacer(minLength: 0)
+                            }
+                            .padding(12)
+                            .background(Theme.surface.opacity(0.55))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+        }
+        .background(AmbientBackground())
+        .floatingBack()
+        .toolbar(.hidden, for: .navigationBar)
+        .task {
+            struct Res: Codable { let ok: Bool; let reviews: [UserReviewRow] }
+            if let res: Res = try? await APIClient.shared.get("/api/v1/profile/reviews") {
+                reviews = res.reviews
+            }
+            loaded = true
+        }
+    }
+}
+
+/// Full reading journal — every note, grouped by book, newest first.
+/// Data: GET /api/v1/profile/journal.
+struct AllJournalView: View {
+    @State private var notes: [JournalNote] = []
+    @State private var loaded = false
+
+    private var grouped: [(bookId: String, notes: [JournalNote])] {
+        var order: [String] = []
+        var groups: [String: [JournalNote]] = [:]
+        for note in notes {
+            if groups[note.bookId] == nil { order.append(note.bookId) }
+            groups[note.bookId, default: []].append(note)
+        }
+        return order.map { ($0, groups[$0] ?? []) }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(spacing: 12) {
+                    Color.clear.frame(width: 40, height: 40)
+                    Text("Reading Journal\(loaded ? " (\(notes.count))" : "")")
+                        .font(Theme.heading(24, .bold))
+                        .foregroundStyle(Theme.foreground)
+                }
+                .padding(.top, 14)
+
+                if !loaded {
+                    ProgressView().tint(Theme.accent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 60)
+                } else {
+                    ForEach(grouped, id: \.bookId) { group in
+                        if let top = group.notes.first {
+                            VStack(alignment: .leading, spacing: 10) {
+                                NavigationLink(value: BookRoute(idOrSlug: top.bookSlug ?? group.bookId)) {
+                                    HStack(spacing: 10) {
+                                        CoverThumb(url: top.bookCoverUrl, width: 24, height: 36, radius: 4)
+                                        Text(top.bookTitle)
+                                            .font(Theme.body(15, .semibold))
+                                            .foregroundStyle(Theme.foreground)
+                                            .lineLimit(1)
+                                        Spacer()
+                                        Text("\(group.notes.count) note\(group.notes.count == 1 ? "" : "s")")
+                                            .font(Theme.body(12))
+                                            .foregroundStyle(Theme.muted)
+                                    }
+                                }
+                                ForEach(group.notes) { note in
+                                    journalNoteCard(note)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+        }
+        .background(AmbientBackground())
+        .floatingBack()
+        .toolbar(.hidden, for: .navigationBar)
+        .task {
+            struct Res: Codable { let ok: Bool; let notes: [JournalNote] }
+            if let res: Res = try? await APIClient.shared.get("/api/v1/profile/journal") {
+                notes = res.notes
+            }
+            loaded = true
+        }
+    }
+
+    private func journalNoteCard(_ note: JournalNote) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                if let pct = note.percentComplete {
+                    Text("\(pct)%")
+                        .font(Theme.body(12, .medium))
+                        .foregroundStyle(Theme.muted)
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(Theme.surfaceAlt.opacity(0.7), in: Capsule())
+                } else if let page = note.pageNumber {
+                    Text("p. \(page)")
+                        .font(Theme.body(12, .medium))
+                        .foregroundStyle(Theme.muted)
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(Theme.surfaceAlt.opacity(0.7), in: Capsule())
+                }
+                if let mood = note.mood, let emoji = ["excited": "🔥", "tense": "😰", "emotional": "😢", "bored": "😴", "relaxed": "😌", "curious": "🤔", "confused": "😵", "nostalgic": "🥹"][mood] {
+                    Text(emoji)
+                }
+                Spacer()
+                Text(String(note.createdAt.prefix(10)))
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.muted)
+            }
+            Text(note.noteText)
+                .font(Theme.body(15))
+                .foregroundStyle(Theme.foreground.opacity(0.9))
+        }
+        .padding(14)
+        .background(Theme.surface.opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
     }
 }

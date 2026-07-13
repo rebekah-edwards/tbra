@@ -185,7 +185,7 @@ export default async function ProfilePage() {
       />
 
       {/* Recent Reviews */}
-      <ReviewHistory reviews={reviews} />
+      <ReviewHistory reviews={reviews} avatarUrl={user.avatarUrl} />
 
       {/* Reading Journal */}
       <ReadingJournal notes={journalNotes} />

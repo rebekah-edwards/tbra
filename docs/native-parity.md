@@ -299,3 +299,14 @@ explicit user sign-off.
   UIWindow.overrideUserInterfaceStyle across all windows (onAppear + onChange of
   themeOverride) — sheets/covers/alerts now follow the toggle too. Sim-verified full
   cycle light→dark→light live, menu sheet re-themes in place.
+
+- 2026-07-12 (profile finish, user-requested): Edit Profile / View public profile links
+  BLUE in light mode (lime illegible). Recent Reviews native → web grid parity: 3-up
+  covers capped 6, star pill + red DNF tag bottom-right, owner avatar bottom-left when
+  written review (web review-history.tsx got the DNF tag + avatar too, main a144fc2;
+  profile page passes avatarUrl). Cells Button+path.append → ReviewsRoute w/ scrollTo.
+  Reading Journal native → web stacked design: 3 most-recent books, latest note w/ peek
+  edges, per-book "View all N notes" → BookRoute, "View all N entries". NEW: AllReviewsView
+  + AllJournalView fullScreenCovers backed by GET /api/v1/profile/reviews + /journal
+  (500-cap; profile payload stays 6/20). Sim-verified light mode: blue links, grid pills +
+  avatar badge, stacked journal, All Reviews cover w/ rows + back.
