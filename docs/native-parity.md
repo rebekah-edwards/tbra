@@ -315,3 +315,11 @@ explicit user sign-off.
   "Reviews" heading is now a NavigationLink (neonBlue, chevron) to BookRoute —
   arriving from the profile's review grid previously left no path to the book
   itself. Sim-verified: Profile → review cell → "Skyward ›" → book page.
+
+- **2026-07-12 — Profile review pills + cover back-button fix.** (1) AllReviewsView/
+  AllJournalView fullScreenCovers now zero out shellBarInsets + showsShellChrome
+  (the AppShell cover pattern) — the back chevron was inheriting the presenting
+  screen's scrolled chrome state and sliding up out of reach. (2) Recent Reviews
+  grid: avatar now rides INSIDE the rating pill (Top Shelf treatment, accent-star
+  fallback), attached to the DNF pill when unrated; separate bottom-left badge
+  removed. Web review-history.tsx matches (ReviewerAvatar in-pill).

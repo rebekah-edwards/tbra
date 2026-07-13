@@ -371,6 +371,11 @@ struct ProfileView: View {
                 AllReviewsView()
                     .appDestinations()
             }
+            // Covers have no shell bars — without these overrides the back
+            // chevron inherits the presenting screen's bar insets + scrolled
+            // chrome state and slides up out of reach (user bug 2026-07-12).
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
+            .environment(\.showsShellChrome, false)
         }
     }
 
@@ -381,9 +386,13 @@ struct ProfileView: View {
                        height: geo.size.width * 1.5,
                        radius: 10)
                 .overlay(alignment: .bottomTrailing) {
+                    // Avatar rides INSIDE the pill, Top Shelf style (user
+                    // request 2026-07-12) — attached to the rating bubble,
+                    // or to the DNF bubble when there's no rating.
                     HStack(spacing: 4) {
                         if let rating = review.rating, rating > 0 {
-                            HStack(spacing: 2) {
+                            HStack(spacing: 3) {
+                                profileAvatarBubble(avatarUrl)
                                 Text(ratingLabel(rating))
                                     .font(Theme.body(11, .semibold))
                                     .foregroundStyle(.white)
@@ -391,32 +400,33 @@ struct ProfileView: View {
                                     .font(Theme.body(11))
                                     .foregroundStyle(.yellow)
                             }
-                            .padding(.horizontal, 8).padding(.vertical, 4)
-                            .background(.black.opacity(0.7), in: Capsule())
+                            .padding(.leading, 3).padding(.trailing, 8).padding(.vertical, 3)
+                            .background(.black.opacity(0.75), in: Capsule())
                         }
                         if review.didNotFinish {
-                            Text("DNF")
-                                .font(Theme.body(9, .bold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 7).padding(.vertical, 4)
-                                .background(Theme.destructive.opacity(0.9), in: Capsule())
+                            HStack(spacing: 3) {
+                                if (review.rating ?? 0) <= 0 {
+                                    profileAvatarBubble(avatarUrl)
+                                }
+                                Text("DNF")
+                                    .font(Theme.body(9, .bold))
+                                    .foregroundStyle(.white)
+                            }
+                            .padding(.leading, (review.rating ?? 0) > 0 ? 7 : 3)
+                            .padding(.trailing, 7).padding(.vertical, 3)
+                            .background(Theme.destructive.opacity(0.9), in: Capsule())
                         }
                     }
                     .padding(6)
-                }
-                .overlay(alignment: .bottomLeading) {
-                    if let text = review.reviewText, !text.isEmpty {
-                        profileAvatarBadge(avatarUrl)
-                            .padding(6)
-                    }
                 }
         }
         .aspectRatio(2 / 3, contentMode: .fit)
         .contentShape(RoundedRectangle(cornerRadius: 10))
     }
 
-    /// 20pt avatar circle marking covers with a written review (web parity).
-    private func profileAvatarBadge(_ avatarUrl: String?) -> some View {
+    /// 18pt avatar circle inside the rating/DNF pill (mirrors the Top Shelf
+    /// FavoriteShelfCover avatar bubble, incl. the accent-star fallback).
+    private func profileAvatarBubble(_ avatarUrl: String?) -> some View {
         Group {
             if let avatarUrl,
                let url = avatarUrl.hasPrefix("/")
@@ -424,19 +434,16 @@ struct ProfileView: View {
                    : URL(string: avatarUrl) {
                 AsyncImage(url: url) { image in
                     image.resizable().aspectRatio(contentMode: .fill)
-                } placeholder: { Color.black.opacity(0.7) }
+                } placeholder: { Theme.surfaceAlt }
             } else {
                 ZStack {
-                    Color.black.opacity(0.7)
-                    Image(systemName: "pencil")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.white)
+                    Theme.accent.opacity(0.6)
+                    Text("★").font(.system(size: 8, weight: .bold)).foregroundStyle(.black)
                 }
             }
         }
-        .frame(width: 20, height: 20)
+        .frame(width: 18, height: 18)
         .clipShape(Circle())
-        .overlay(Circle().stroke(.white.opacity(0.3), lineWidth: 1))
     }
 
     private func ratingLabel(_ rating: Double) -> String {
@@ -772,6 +779,8 @@ extension ProfileView {
                 AllJournalView()
                     .appDestinations()
             }
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
+            .environment(\.showsShellChrome, false)
         }
     }
 
