@@ -35,6 +35,7 @@ struct AppShell: View {
     private var tab: AppTab { chrome.tab }
     #if DEBUG && targetEnvironment(simulator)
     @State private var debugBookSlug: String?
+    @State private var debugCoverSlug: String?
     @State private var menuDebugOpen = false
     @State private var settingsDebugOpen = false
     #endif
@@ -160,6 +161,14 @@ struct AppShell: View {
                 .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
         }
+        .fullScreenCover(isPresented: Binding(
+            get: { debugCoverSlug != nil },
+            set: { if !$0 { debugCoverSlug = nil } }
+        )) {
+            AdminSheet(title: "Edit Cover",
+                       path: "book/\(debugCoverSlug ?? "")",
+                       query: "editCover=1")
+        }
         #endif
         #if DEBUG && targetEnvironment(simulator)
         // Headless verification hook: `SIMCTL_CHILD_TBRA_DEBUG_ROUTE=search
@@ -176,6 +185,8 @@ struct AppShell: View {
             case "profile": chrome.tab = .profile
             case let route? where route.hasPrefix("book:"):
                 debugBookSlug = String(route.dropFirst("book:".count))
+            case let route? where route.hasPrefix("cover:"):
+                debugCoverSlug = String(route.dropFirst("cover:".count))
             case "menu": menuDebugOpen = true
             case "settings": settingsDebugOpen = true
             default: break

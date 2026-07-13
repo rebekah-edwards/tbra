@@ -29,5 +29,11 @@ export async function GET(req: Request) {
   const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
 
   await setSessionCookie(token);
-  return NextResponse.redirect(new URL(safeNext, url.origin));
+  // Redirect to the host THE CLIENT called, not url.origin — behind the dev
+  // proxy url.origin is always localhost:3000, which sent the phone's
+  // webview (reaching us via the Tailscale IP) to its own localhost: an
+  // eternal black screen (found 2026-07-12).
+  const host = req.headers.get("host") ?? url.host;
+  const proto = req.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "");
+  return NextResponse.redirect(`${proto}://${host}${safeNext}`);
 }

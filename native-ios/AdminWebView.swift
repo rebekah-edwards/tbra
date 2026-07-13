@@ -23,6 +23,8 @@ struct AdminSheet: View {
     var path: String = "admin"
     /// Optional raw query string (e.g. "editCover=1").
     var query: String? = nil
+    @State private var loading = true
+    @State private var loadError: String? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -45,8 +47,31 @@ struct AdminSheet: View {
 
             Divider().background(Theme.border.opacity(0.6))
 
-            AdminWebView(path: path, query: query)
+            AdminWebView(path: path, query: query, loading: $loading, loadError: $loadError)
                 .ignoresSafeArea(edges: .bottom)
+                .overlay {
+                    // The dev server's first compile of a page takes seconds —
+                    // without this the sheet sits blank and reads as broken.
+                    if let loadError {
+                        VStack(spacing: 8) {
+                            Image(systemName: "wifi.exclamationmark")
+                                .font(.system(size: 28))
+                                .foregroundStyle(Theme.muted)
+                            Text("Couldn't load the page")
+                                .font(Theme.body(15, .semibold))
+                                .foregroundStyle(Theme.foreground)
+                            Text(loadError)
+                                .font(Theme.body(12))
+                                .foregroundStyle(Theme.muted)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 32)
+                        }
+                    } else if loading {
+                        ProgressView()
+                            .controlSize(.large)
+                            .tint(Theme.accent)
+                    }
+                }
         }
         .background(Theme.bg)
     }
@@ -55,6 +80,27 @@ struct AdminSheet: View {
 private struct AdminWebView: UIViewRepresentable {
     var path: String = "admin"
     var query: String? = nil
+    @Binding var loading: Bool
+    @Binding var loadError: String?
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, WKNavigationDelegate {
+        let parent: AdminWebView
+        init(_ parent: AdminWebView) { self.parent = parent }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            parent.loading = false
+        }
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            parent.loading = false
+            parent.loadError = error.localizedDescription
+        }
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            parent.loading = false
+            parent.loadError = error.localizedDescription
+        }
+    }
 
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
@@ -63,6 +109,7 @@ private struct AdminWebView: UIViewRepresentable {
         config.websiteDataStore = .nonPersistent()
 
         let webView = WKWebView(frame: .zero, configuration: config)
+        webView.navigationDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true
         webView.isOpaque = false
         webView.backgroundColor = .clear

@@ -343,3 +343,14 @@ explicit user sign-off.
   grouping under 10k and LISTENED shows "97h 10m" (exact stats-client.tsx
   formatMinutes port). Deleted the clanker Skyward test review locally before
   first push so it never lands on the live reviews page.
+
+- **2026-07-12 — Cover picker black-screen fix.** The web-session bridge built its
+  redirect from `url.origin`, which behind the dev proxy is ALWAYS localhost:3000 —
+  so the phone's webview (calling via the Tailscale IP) was 307'd to its own
+  localhost and sat black forever. Route now redirects to the Host header the
+  client actually used (curl-verified per-host; bogus token still 401). Server-side
+  fix = live for the phone immediately. AdminSheet also gained a loading spinner +
+  load-error state (dev-server first compile takes seconds — blank read as broken)
+  and a sim-only debug route `TBRA_DEBUG_ROUTE=cover:<slug>` used to verify the
+  editor headlessly (screen-locked Mac): upload/URL/OL(34)/ISBNdb sections all
+  render in-app.
