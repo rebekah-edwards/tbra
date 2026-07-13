@@ -20,10 +20,11 @@ struct TbraApp: App {
         WindowGroup {
             RootView()
                 .tint(Theme.accent)
-                .preferredColorScheme(
-                    themeOverride == "light" ? .light :
-                    themeOverride == "system" ? nil : .dark
-                )
+            // No .preferredColorScheme here: @AppStorage in an App struct
+            // doesn't re-evaluate the Scene, so this level pinned the LAUNCH
+            // theme and overrode live toggles (dark→light needed an app
+            // kill). RootView applies the theme via the UIKit window
+            // override instead — single source of truth.
         }
     }
 }

@@ -89,10 +89,13 @@ struct RootView: View {
                 AppShell()
             }
         }
-        .preferredColorScheme(
-            themeOverride == "light" ? .light :
-            themeOverride == "system" ? nil : .dark
-        )
+        // Theme via the UIKit window override, not .preferredColorScheme:
+        // the SwiftUI preference was applied at two levels (Scene + here)
+        // and the stale Scene copy won whenever they disagreed — dark→light
+        // only took effect after killing the app. The window override hits
+        // every presentation (sheets, covers, alerts) in one place.
+        .onAppear { applyTheme() }
+        .onChange(of: themeOverride) { applyTheme() }
         .environment(auth)
         .task {
             await auth.restore()
@@ -104,6 +107,19 @@ struct RootView: View {
                 await auth.login(email: "clankerinfrastructure@gmail.com", password: "testview123")
             }
             #endif
+        }
+    }
+
+    /// Push the chosen theme onto every window — the one place the theme is
+    /// applied (see the note on the modifier chain above).
+    private func applyTheme() {
+        let style: UIUserInterfaceStyle =
+            themeOverride == "light" ? .light :
+            themeOverride == "system" ? .unspecified : .dark
+        for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
+            for window in scene.windows {
+                window.overrideUserInterfaceStyle = style
+            }
         }
     }
 }

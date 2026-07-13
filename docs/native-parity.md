@@ -291,3 +291,11 @@ explicit user sign-off.
   ?token&next — verifies bearer JWT, sets tbra-session via server Set-Cookie, redirects
   (relative next only). AdminWebView loads through the bridge; no client cookie code.
   Bridge curl-tested (bogus→401, real→307+Set-Cookie); sim pencil→picker re-verified.
+
+- 2026-07-12 (theme toggle fix, her report): dark→light required an app kill. Cause:
+  .preferredColorScheme applied at BOTH Scene (TbraApp — @AppStorage in an App struct
+  never re-evaluates, pinning the launch theme) and RootView; the stale Scene copy won
+  on conflict. Fix: both removed; RootView.applyTheme() sets
+  UIWindow.overrideUserInterfaceStyle across all windows (onAppear + onChange of
+  themeOverride) — sheets/covers/alerts now follow the toggle too. Sim-verified full
+  cycle light→dark→light live, menu sheet re-themes in place.
