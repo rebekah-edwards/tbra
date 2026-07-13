@@ -96,10 +96,19 @@ struct ReviewsListView: View {
                         Text("Reviews")
                             .font(Theme.heading(24, .bold))
                             .foregroundStyle(Theme.foreground)
-                        Text(bookTitle)
-                            .font(Theme.body(13))
-                            .foregroundStyle(Theme.muted)
-                            .lineLimit(1)
+                        // Tappable — opens the book itself (user request
+                        // 2026-07-12: arriving from the profile there was no
+                        // path from a review to its book).
+                        NavigationLink(value: BookRoute(idOrSlug: model.bookIdOrSlug)) {
+                            HStack(spacing: 3) {
+                                Text(bookTitle)
+                                    .font(Theme.body(13, .medium))
+                                    .lineLimit(1)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 9, weight: .semibold))
+                            }
+                            .foregroundStyle(Theme.neonBlue)
+                        }
                     }
                 }
                 .padding(.top, 14)

@@ -310,3 +310,8 @@ explicit user sign-off.
   + AllJournalView fullScreenCovers backed by GET /api/v1/profile/reviews + /journal
   (500-cap; profile payload stays 6/20). Sim-verified light mode: blue links, grid pills +
   avatar badge, stacked journal, All Reviews cover w/ rows + back.
+
+- **2026-07-12 — Reviews page → book link.** The book-title subtitle under the
+  "Reviews" heading is now a NavigationLink (neonBlue, chevron) to BookRoute —
+  arriving from the profile's review grid previously left no path to the book
+  itself. Sim-verified: Profile → review cell → "Skyward ›" → book page.
