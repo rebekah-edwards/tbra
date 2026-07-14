@@ -451,3 +451,9 @@ explicit user sign-off.
   rejected, upload lands in /uploads/covers) + sim screenshot via new
   TBRA_DEBUG_ROUTE=coverpicker:<slug>. AdminSheet webview remains ONLY for the
   /admin hub pages.
+
+- **2026-07-13 — Web BottomSheet keyboard trap.** Tall sheets (cover picker) lifted
+  by --kb-lift kept their 85vh height, shoving the header + focused input off the
+  top of the screen with no way back (user report, mobile web). The visualViewport
+  handler now ALSO caps panel maxHeight to vv.height-8 while the keyboard is up,
+  so the top edge stays on-screen. Deployed to main.
