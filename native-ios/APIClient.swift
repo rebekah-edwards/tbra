@@ -73,9 +73,29 @@ actor APIClient {
 
     // MARK: Shelves
 
-    func shelves() async throws -> [ShelfSummary] {
+    func shelves() async throws -> (mine: [ShelfSummary], followed: [FollowedShelf]) {
         let res: ShelvesResponse = try await send("/api/v1/shelves", method: "GET")
-        return res.shelves
+        return (res.shelves, res.followed ?? [])
+    }
+
+    func createShelf(name: String, description: String?, isPublic: Bool, color: String?) async throws {
+        var body: [String: Any] = ["name": name, "isPublic": isPublic]
+        if let description, !description.isEmpty { body["description"] = description }
+        if let color { body["color"] = color }
+        _ = try await send("/api/v1/shelves", method: "POST", body: body) as OkResponse
+    }
+
+    func updateShelf(id: String, name: String, description: String?, isPublic: Bool, color: String?) async throws {
+        // Explicit JSON null clears the color back to the Amber default.
+        let body: [String: Any] = ["name": name,
+                                   "description": description ?? "",
+                                   "isPublic": isPublic,
+                                   "color": color ?? NSNull()]
+        _ = try await send("/api/v1/shelves/\(id)", method: "PATCH", body: body) as OkResponse
+    }
+
+    func deleteShelf(id: String) async throws {
+        _ = try await send("/api/v1/shelves/\(id)", method: "DELETE") as OkResponse
     }
 
     func shelf(id: String) async throws -> ShelfDetail {

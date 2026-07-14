@@ -354,3 +354,28 @@ explicit user sign-off.
   and a sim-only debug route `TBRA_DEBUG_ROUTE=cover:<slug>` used to verify the
   editor headlessly (screen-locked Mac): upload/URL/OL(34)/ISBNdb sections all
   render in-app.
+
+- **2026-07-13 — Library + My Shelves punch list #3.** (1) Sub-filter chips: stroke
+  was clipped by the horizontal ScrollView — chips now scroll full-bleed with
+  breathing padding. (2) Advanced Filters expander ported from web (TBR+Activity):
+  Year/Type/Format/Sort dropdowns, min-rating stars (Finished/DNF), genre pills,
+  active-count badge, Clear all; Owned tab gets the standalone Sort. (3) Library
+  rating pill → profile treatment: avatar bubble inside black capsule, exact
+  .25/.75 rendering (AvatarRatingPill, shared). (4) TBR note-to-self now shows
+  (green pencil badge on cover + 2-line note below, web BookCard parity).
+  (5) "Error cancelled" alert after backing out of Shelves: SwiftUI cancels the
+  covered screen's .task load — APIError.isCancellation() guard added to
+  Library/Shelves/ShelfDetail models. (6) Shelf card plank: thin (5pt) and
+  FULL-BLEED like the profile rails. (7) Card redesigned for title space: 2-line
+  title, count+Public second row, slimmer mosaic. (8) Following tab WIRED: root
+  cause — shelves + shelf_books were absent from EVERY sync path, so followed
+  live shelves had no local row; both added to sync-pull + sync-user-activity
+  (shelf_books push-guarded via owner-through-shelf lookup), v1 GET /shelves now
+  returns `followed`, native Following tab renders owner-attributed cards →
+  read-only shelf view. (9) Card tap = shelf view; pencil = EditShelfSheet
+  directly (new: name/description/8 color presets/public toggle/delete, backed by
+  new APIClient create/update/deleteShelf); detail-page Edit button opens the
+  same sheet (owner only). (10) Shelves + shelf detail back buttons → standard
+  glass chromeCircle floatingBack (sticky slide-up on scroll). Debug routes:
+  TBRA_DEBUG_ROUTE=shelves | library:activity. Sim-verified headless: chips,
+  filters toggle, TBR note card, 4.25★ avatar pill, shelves card layout.

@@ -28,8 +28,8 @@ struct ProfileRootView: View {
                 .pushedScreenChrome()
                 .toolbar(.hidden, for: .navigationBar)
                 .appDestinations()
-                .navigationDestination(for: String.self) { shelfId in
-                    ShelfDetailView(shelfId: shelfId)
+                .navigationDestination(for: ShelfRoute.self) { route in
+                    ShelfDetailView(route: route)
                         .pushedScreenChrome()
                 }
         }
@@ -309,7 +309,7 @@ struct ProfileView: View {
                             .font(Theme.body(14))
                             .foregroundStyle(Theme.muted)
                         Spacer()
-                        NavigationLink(value: shelf.id) {
+                        NavigationLink(value: ShelfRoute(shelfId: shelf.id)) {
                             Text("View →")
                                 .font(Theme.body(14, .medium))
                                 .foregroundStyle(Theme.readMoreLink)

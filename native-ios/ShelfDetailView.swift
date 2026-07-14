@@ -24,6 +24,7 @@ final class ShelfDetailModel {
             shelf = detail
             books = detail.books
         } catch {
+            guard !APIError.isCancellation(error) else { return }
             self.error = (error as? APIError)?.errorDescription ?? "Couldn't load shelf."
         }
     }
@@ -46,12 +47,18 @@ final class ShelfDetailModel {
 struct ShelfDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthStore.self) private var auth
+    let route: ShelfRoute
     @State private var model: ShelfDetailModel
     @State private var dragging: ShelfBook?
+    @State private var editingSeed: ShelfEditSeed?
 
-    init(shelfId: String) {
-        _model = State(initialValue: ShelfDetailModel(shelfId: shelfId))
+    init(route: ShelfRoute) {
+        self.route = route
+        _model = State(initialValue: ShelfDetailModel(shelfId: route.shelfId))
     }
+
+    /// Following-tab shelves are someone else's — no edit/reorder.
+    private var isOwner: Bool { route.ownerName == nil }
 
     private let columns = [
         GridItem(.flexible(), spacing: 14),
@@ -71,16 +78,22 @@ struct ShelfDetailView: View {
             .padding(.bottom, 40)
         }
         .background(AmbientBackground())
-        .floatingBack(topPadding: 18, bare: true)
+        .floatingBack(topPadding: 14)
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await model.load() }
         .task { await model.load() }
         .alert("Error", isPresented: .constant(model.error != nil)) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
+        .sheet(item: $editingSeed) { seed in
+            EditShelfSheet(seed: seed,
+                           onDone: { Task { await model.load() } },
+                           onDeleted: { dismiss() })
+        }
     }
 
     private var ownerName: String {
+        if let name = route.ownerName { return name }
         if case .signedIn(let user) = auth.phase {
             return user.displayName ?? user.username ?? "you"
         }
@@ -90,7 +103,7 @@ struct ShelfDetailView: View {
     private var header: some View {
         HStack(alignment: .top, spacing: 12) {
             // Placeholder — real back button is the .floatingBack overlay.
-            Color.clear.frame(width: 32, height: 36)
+            Color.clear.frame(width: 40, height: 40)
             VStack(alignment: .leading, spacing: 2) {
                 Text(model.shelf?.name ?? " ")
                     .font(Theme.heading(26, .bold))
@@ -149,13 +162,21 @@ struct ShelfDetailView: View {
 
             Spacer()
 
-            HStack(spacing: 5) {
-                Image(systemName: "pencil")
-                    .font(.system(size: 13))
-                Text("Edit")
-                    .font(Theme.body(15, .medium))
+            if isOwner {
+                Button {
+                    if let shelf = model.shelf {
+                        editingSeed = ShelfEditSeed(detail: shelf)
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 13))
+                        Text("Edit")
+                            .font(Theme.body(15, .medium))
+                    }
+                    .foregroundStyle(Theme.accent)
+                }
             }
-            .foregroundStyle(Theme.accent)
         }
     }
 
@@ -164,9 +185,10 @@ struct ShelfDetailView: View {
     private var booksCard: some View {
         LazyVGrid(columns: columns, spacing: 20) {
             ForEach(model.books) { book in
-                NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.bookId)) {
-                    BookCell(book: book)
-                }
+                if isOwner {
+                    NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.bookId)) {
+                        BookCell(book: book)
+                    }
                     .opacity(dragging?.id == book.id ? 0.4 : 1)
                     .onDrag {
                         dragging = book
@@ -178,6 +200,11 @@ struct ShelfDetailView: View {
                         dragging: $dragging,
                         commit: { model.persistOrder() }
                     ))
+                } else {
+                    NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.bookId)) {
+                        BookCell(book: book)
+                    }
+                }
             }
         }
         .padding(14)

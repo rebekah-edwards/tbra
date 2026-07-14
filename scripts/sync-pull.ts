@@ -114,6 +114,11 @@ const TABLES: Array<[string, string[], boolean]> = [
   ['user_hidden_books',        ['user_id', 'book_id'],    false],
   ['user_follows',             ['follower_id', 'followed_id'], false],
   ['author_follows',           ['user_id', 'author_id'],  false],
+  // shelves + shelf_books were absent from every sync path until 2026-07-13:
+  // a followed live shelf had no local row, so the native app's Following
+  // tab rendered empty. shelves must precede the tables referencing it.
+  ['shelves',                  ['id'],                    true],
+  ['shelf_books',              ['shelf_id', 'book_id'],   false],
   ['shelf_follows',            ['user_id', 'shelf_id'],   false],
   ['tbr_notes',                ['id'],                    true],
   ['user_owned_editions',      ['user_id', 'edition_id'], false],

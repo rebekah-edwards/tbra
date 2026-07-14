@@ -55,6 +55,8 @@ type TableSpec = {
   userCol?: string;
   /** Never push this table →live (live is authoritative for it). */
   noPush?: boolean;
+  /** Rows have no user column — owner resolves through shelves.user_id. */
+  ownerViaShelf?: boolean;
 };
 
 /** Accounts that write through the local v1 API (the native app). */
@@ -65,11 +67,17 @@ const APP_USERS = new Set([
 /** Rows older than this can't be app-created — the native app didn't exist. */
 const APP_ERA = '2026-06-20';
 
+/** shelf_books rows carry no user column — resolve the owner via the
+    LOCAL shelves table (populated lazily). */
+let localShelfOwner: Map<string, string> | null = null;
+
 /** May this local row be pushed to live? (Ghost-resurrection guard.) */
 function pushable(spec: TableSpec, row: any): boolean {
   if (spec.noPush) return false;
-  const owner = row[spec.userCol ?? 'user_id'];
-  if (!APP_USERS.has(String(owner))) return false;
+  const owner = spec.ownerViaShelf
+    ? localShelfOwner?.get(String(row.shelf_id))
+    : row[spec.userCol ?? 'user_id'];
+  if (!owner || !APP_USERS.has(String(owner))) return false;
   const stamps = [row.updated_at, row.created_at, row.added_at].filter(Boolean).map(String);
   if (stamps.length === 0) return true; // no timestamp columns — user filter only
   return stamps.some((s) => s >= APP_ERA);
@@ -88,6 +96,12 @@ const TABLES: TableSpec[] = [
   { name: 'user_hidden_books',          pk: ['user_id', 'book_id'], hasUpdatedAt: false },
   { name: 'user_follows',               pk: ['follower_id', 'followed_id'], hasUpdatedAt: false, userCol: 'follower_id' },
   { name: 'author_follows',             pk: ['user_id', 'author_id'], hasUpdatedAt: false },
+  // Shelves + their contents were absent from EVERY sync path until
+  // 2026-07-13 — a followed live shelf didn't exist locally, so the app's
+  // Following tab came back empty. shelves must sync before shelf_follows/
+  // shelf_books so their FK targets exist.
+  { name: 'shelves',                    pk: ['id'], hasUpdatedAt: true, naturalKey: ['user_id', 'slug'] },
+  { name: 'shelf_books',                pk: ['shelf_id', 'book_id'], hasUpdatedAt: false, ownerViaShelf: true },
   { name: 'shelf_follows',              pk: ['user_id', 'shelf_id'], hasUpdatedAt: false },
   { name: 'tbr_notes',                  pk: ['id'], hasUpdatedAt: true, naturalKey: ['user_id', 'book_id'] },
   { name: 'reading_goals',              pk: ['id'], hasUpdatedAt: true, naturalKey: ['user_id', 'year'] },
@@ -137,6 +151,14 @@ const TABLES: TableSpec[] = [
   for (const spec of TABLES) {
     const cols = localCols(spec.name);
     if (cols.length === 0) { console.log(`  ·  ${spec.name.padEnd(34)} not in local DB`); continue; }
+
+    // Owner map for shelf_books' push filter — rebuilt here so it reflects
+    // shelves pulled earlier in this same run (shelves precedes it in TABLES).
+    if (spec.ownerViaShelf) {
+      localShelfOwner = new Map(
+        (local.prepare('SELECT id, user_id FROM shelves').all() as any[])
+          .map((r) => [String(r.id), String(r.user_id)]));
+    }
 
     let liveRows: any[];
     try {

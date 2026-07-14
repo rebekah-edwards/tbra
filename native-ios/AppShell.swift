@@ -36,6 +36,7 @@ struct AppShell: View {
     #if DEBUG && targetEnvironment(simulator)
     @State private var debugBookSlug: String?
     @State private var debugCoverSlug: String?
+    @State private var shelvesDebugOpen = false
     @State private var menuDebugOpen = false
     @State private var settingsDebugOpen = false
     #endif
@@ -169,6 +170,18 @@ struct AppShell: View {
                        path: "book/\(debugCoverSlug ?? "")",
                        query: "editCover=1")
         }
+        .fullScreenCover(isPresented: $shelvesDebugOpen) {
+            NavigationStack {
+                LibraryShelvesView()
+                    .toolbar(.hidden, for: .navigationBar)
+                    .navigationDestination(for: ShelfRoute.self) { route in
+                        ShelfDetailView(route: route)
+                    }
+                    .appDestinations()
+            }
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
+            .environment(\.showsShellChrome, false)
+        }
         #endif
         #if DEBUG && targetEnvironment(simulator)
         // Headless verification hook: `SIMCTL_CHILD_TBRA_DEBUG_ROUTE=search
@@ -179,7 +192,7 @@ struct AppShell: View {
             try? await Task.sleep(for: .seconds(1.5))
             switch env["TBRA_DEBUG_ROUTE"] {
             case "search": searchOpen = true
-            case "library": chrome.tab = .library
+            case let route? where route.hasPrefix("library"): chrome.tab = .library
             case "discover": chrome.tab = .discover
             case "stats": chrome.tab = .stats
             case "profile": chrome.tab = .profile
@@ -189,6 +202,7 @@ struct AppShell: View {
                 debugCoverSlug = String(route.dropFirst("cover:".count))
             case "menu": menuDebugOpen = true
             case "settings": settingsDebugOpen = true
+            case "shelves": shelvesDebugOpen = true
             default: break
             }
         }

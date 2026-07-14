@@ -43,6 +43,20 @@ struct ShelfSummary: Codable, Identifiable, Hashable {
     let createdAt: String
 }
 
+/// A shelf the user follows (web: FollowedShelf in queries/shelves.ts).
+struct FollowedShelf: Codable, Identifiable, Hashable {
+    let id: String
+    let name: String
+    let slug: String
+    let description: String?
+    let color: String?
+    let bookCount: Int
+    let coverUrls: [String]
+    let ownerUsername: String
+    let ownerDisplayName: String?
+    let followedAt: String
+}
+
 struct ShelfBook: Codable, Identifiable, Hashable {
     // Books are unique within a shelf by bookId — use it as the identity.
     var id: String { bookId }
@@ -480,7 +494,12 @@ struct RefreshResponse: Codable {
 
 struct MeResponse: Codable { let user: PublicUser }
 struct UpNextResponse: Codable { let ok: Bool; let items: [UpNextItem] }
-struct ShelvesResponse: Codable { let ok: Bool; let shelves: [ShelfSummary] }
+struct ShelvesResponse: Codable {
+    let ok: Bool
+    let shelves: [ShelfSummary]
+    /// Shelves the user FOLLOWS (optional for decode-compat).
+    let followed: [FollowedShelf]?
+}
 struct ShelfResponse: Codable { let ok: Bool; let shelf: ShelfDetail }
 struct OkResponse: Codable { let ok: Bool }
 
@@ -499,5 +518,18 @@ enum APIError: Error, LocalizedError {
         case .decoding: return "Unexpected response from the server."
         case .transport(let e): return e.localizedDescription
         }
+    }
+
+    /// True when the failure is just a cancelled in-flight request — e.g.
+    /// SwiftUI cancels a `.task` load when its screen is pushed over. These
+    /// must never surface as user-facing alerts: the "Error: cancelled" that
+    /// popped after backing out of My Shelves (2026-07-13) was this.
+    static func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError { return true }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return true }
+        if case .transport(let inner) = error as? APIError {
+            return isCancellation(inner)
+        }
+        return false
     }
 }
