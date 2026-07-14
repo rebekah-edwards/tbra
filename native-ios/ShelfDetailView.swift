@@ -51,7 +51,6 @@ struct ShelfDetailView: View {
     let route: ShelfRoute
     @State private var model: ShelfDetailModel
     @State private var dragging: ShelfBook?
-    @State private var editingSeed: ShelfEditSeed?
 
     // SORT_OPTIONS from shelf-view-client.tsx
     enum ShelfSort: String, CaseIterable {
@@ -118,10 +117,10 @@ struct ShelfDetailView: View {
         .alert("Error", isPresented: .constant(model.error != nil)) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
-        .sheet(item: $editingSeed) { seed in
-            EditShelfSheet(seed: seed,
-                           onDone: { Task { await model.load() } },
-                           onDeleted: { dismiss() })
+        .onAppear {
+            // Refresh when returning from the pushed editor (the .task
+            // above only fires on first appearance).
+            if model.shelf != nil { Task { await model.load() } }
         }
     }
 
@@ -225,11 +224,10 @@ struct ShelfDetailView: View {
             Spacer()
 
             if isOwner {
-                Button {
-                    if let shelf = model.shelf {
-                        editingSeed = ShelfEditSeed(detail: shelf)
-                    }
-                } label: {
+                // Straight into the FULL editor page (web
+                // /library/shelves/[slug]): add books, reorder, notes,
+                // rename/recolor, share, delete.
+                NavigationLink(value: ShelfEditorRoute(shelfId: model.shelfId)) {
                     HStack(spacing: 5) {
                         Image(systemName: "pencil")
                             .font(.system(size: 13))
@@ -452,5 +450,507 @@ private struct BookOnShelfCell: View {
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// ── Full shelf editor (web: /library/shelves/[slug] owner view) ──
+//
+// The card tap opens the read view (ShelfDetailView); the ✎ opens THIS:
+// Add Books, Select/bulk-remove, Delete Shelf, drag-reorder rows, per-book
+// notes, ✕ remove, plus the header pencil (name/color sheet) and share.
+
+struct ShelfEditorRoute: Hashable {
+    let shelfId: String
+}
+
+struct ShelfEditorView: View {
+    @Environment(\.dismiss) private var dismiss
+    let shelfId: String
+    @State private var model: ShelfDetailModel
+    @State private var dragging: ShelfBook?
+    @State private var editingSeed: ShelfEditSeed?
+    @State private var addOpen = false
+    @State private var selectMode = false
+    @State private var selected: Set<String> = []
+    @State private var confirmDelete = false
+    @State private var editingNoteBookId: String?
+    @State private var noteText = ""
+    @State private var confirmRemoveBookId: String?
+
+    init(shelfId: String) {
+        self.shelfId = shelfId
+        _model = State(initialValue: ShelfDetailModel(shelfId: shelfId))
+    }
+
+    private var tint: Color {
+        if let hex = model.shelf?.color, hex.hasPrefix("#"), hex.count == 7 {
+            return Color(hex: String(hex.dropFirst()))
+        }
+        return Color(hex: "d97706")
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                header
+                metaRow
+                actionBar
+                bookList
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+        }
+        .background(AmbientBackground())
+        .floatingBack(topPadding: 14)
+        .toolbar(.hidden, for: .navigationBar)
+        .task { await model.load() }
+        .refreshable { await model.load() }
+        .alert("Error", isPresented: .constant(model.error != nil)) {
+            Button("OK") { model.error = nil }
+        } message: { Text(model.error ?? "") }
+        .alert("Delete \"\(model.shelf?.name ?? "this shelf")\"?", isPresented: $confirmDelete) {
+            Button("Yes, Delete", role: .destructive) { deleteShelf() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes the shelf and its book list. Your books are not affected.")
+        }
+        .sheet(item: $editingSeed) { seed in
+            EditShelfSheet(seed: seed,
+                           onDone: { Task { await model.load() } },
+                           onDeleted: { dismiss() })
+        }
+        .sheet(isPresented: $addOpen) {
+            AddBooksSheet(shelfId: shelfId,
+                          shelfBookIds: Set(model.books.map(\.bookId))) {
+                Task { await model.load() }
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 12) {
+            // Placeholder — real back button is the .floatingBack overlay.
+            Color.clear.frame(width: 40, height: 40)
+            Text(model.shelf?.name ?? " ")
+                .font(Theme.heading(24, .bold))
+                .foregroundStyle(Theme.foreground)
+                .lineLimit(2)
+            Spacer()
+            // Pencil — the name/description/color/visibility sheet.
+            Button {
+                if let shelf = model.shelf { editingSeed = ShelfEditSeed(detail: shelf) }
+            } label: {
+                Image(systemName: "pencil")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Theme.muted)
+                    .frame(width: 38, height: 38)
+                    .background(Theme.surfaceAlt.opacity(0.7), in: Circle())
+            }
+            if let shelf = model.shelf, shelf.isPublic, let username = shelf.ownerUsername,
+               let url = URL(string: "https://thebasedreader.app/u/\(username)/shelves/\(shelf.slug)") {
+                ShareLink(item: url) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Theme.muted)
+                        .frame(width: 38, height: 38)
+                        .background(Theme.surfaceAlt.opacity(0.7), in: Circle())
+                }
+            }
+        }
+        .padding(.top, 14)
+    }
+
+    private var metaRow: some View {
+        HStack(spacing: 8) {
+            Circle().fill(tint).frame(width: 10, height: 10)
+            Text("\(model.books.count) book\(model.books.count == 1 ? "" : "s")")
+                .font(Theme.body(14))
+                .foregroundStyle(Theme.muted)
+            if model.shelf?.isPublic == true {
+                Text("Public")
+                    .font(Theme.body(10, .medium))
+                    .foregroundStyle(Theme.muted)
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(Theme.surfaceAlt.opacity(0.8), in: Capsule())
+            }
+        }
+    }
+
+    @ViewBuilder private var actionBar: some View {
+        if selectMode {
+            HStack(spacing: 10) {
+                Text("\(selected.count) selected")
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.muted)
+                Spacer()
+                Button {
+                    bulkRemove()
+                } label: {
+                    Text("Remove Selected")
+                        .font(Theme.body(13, .medium))
+                        .foregroundStyle(Theme.destructive)
+                        .padding(.horizontal, 12).padding(.vertical, 9)
+                        .background(Theme.destructive.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10)
+                            .stroke(Theme.destructive.opacity(0.2), lineWidth: 1))
+                }
+                .disabled(selected.isEmpty)
+                .opacity(selected.isEmpty ? 0.4 : 1)
+                Button {
+                    selectMode = false; selected = []
+                } label: {
+                    Text("Cancel")
+                        .font(Theme.body(13, .medium))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+        } else {
+            HStack(spacing: 10) {
+                Button {
+                    addOpen = true
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("Add Books")
+                            .font(Theme.body(13, .medium))
+                    }
+                    .foregroundStyle(Theme.accentText)
+                    .padding(.horizontal, 12).padding(.vertical, 9)
+                    .background(Theme.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10)
+                        .stroke(Theme.accent.opacity(0.2), lineWidth: 1))
+                }
+                if !model.books.isEmpty {
+                    Button {
+                        selectMode = true
+                    } label: {
+                        Text("Select")
+                            .font(Theme.body(13, .medium))
+                            .foregroundStyle(Theme.muted)
+                            .padding(.horizontal, 12).padding(.vertical, 9)
+                            .background(Theme.surfaceAlt.opacity(0.7), in: RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10)
+                                .stroke(Theme.border, lineWidth: 1))
+                    }
+                }
+                Button {
+                    confirmDelete = true
+                } label: {
+                    Text("Delete Shelf")
+                        .font(Theme.body(13, .medium))
+                        .foregroundStyle(Theme.destructive)
+                        .padding(.horizontal, 12).padding(.vertical, 9)
+                        .background(Theme.destructive.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10)
+                            .stroke(Theme.destructive.opacity(0.2), lineWidth: 1))
+                }
+                Spacer()
+            }
+        }
+    }
+
+    @ViewBuilder private var bookList: some View {
+        if model.books.isEmpty {
+            VStack(spacing: 6) {
+                Text("No books on this shelf yet.")
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.muted)
+                Text("Add some from any book page, or use Add Books above.")
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.muted.opacity(0.6))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 40)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Theme.border, style: StrokeStyle(lineWidth: 1, dash: [5]))
+            )
+        } else {
+            VStack(spacing: 0) {
+                ForEach(model.books) { book in
+                    bookRow(book)
+                    if book.id != model.books.last?.id {
+                        Divider().background(Theme.border.opacity(0.5))
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .background(Theme.surface.opacity(0.5))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+        }
+    }
+
+    @ViewBuilder private func bookRow(_ book: ShelfBook) -> some View {
+        HStack(spacing: 10) {
+            if selectMode {
+                Button {
+                    if selected.contains(book.bookId) { selected.remove(book.bookId) }
+                    else { selected.insert(book.bookId) }
+                } label: {
+                    Image(systemName: selected.contains(book.bookId)
+                          ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 19))
+                        .foregroundStyle(selected.contains(book.bookId) ? Theme.accent : Theme.muted.opacity(0.5))
+                }
+            } else {
+                GripDots()
+                    .frame(width: 18, height: 40)
+                    .contentShape(Rectangle())
+                    .onDrag {
+                        dragging = book
+                        return NSItemProvider(object: book.bookId as NSString)
+                    }
+            }
+
+            CoverThumb(url: book.coverImageUrl, width: 44, height: 66, radius: 4)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(book.title)
+                    .font(Theme.body(14, .medium))
+                    .foregroundStyle(Theme.foreground)
+                    .lineLimit(1)
+                Text(book.authors.joined(separator: ", "))
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.muted)
+                    .lineLimit(1)
+                if editingNoteBookId == book.bookId {
+                    HStack(spacing: 6) {
+                        TextField("Add a note...", text: $noteText)
+                            .font(Theme.body(12))
+                            .padding(.horizontal, 8).padding(.vertical, 5)
+                            .background(Theme.surfaceAlt.opacity(0.8))
+                            .clipShape(RoundedRectangle(cornerRadius: 7))
+                            .onSubmit { saveNote(book) }
+                        Button {
+                            saveNote(book)
+                        } label: {
+                            Text("Save")
+                                .font(Theme.body(11, .medium))
+                                .foregroundStyle(Theme.accentText)
+                        }
+                    }
+                } else if let note = book.note, !note.isEmpty {
+                    Button {
+                        noteText = note
+                        editingNoteBookId = book.bookId
+                    } label: {
+                        Text(note)
+                            .font(Theme.body(11))
+                            .italic()
+                            .foregroundStyle(Theme.muted.opacity(0.7))
+                            .lineLimit(1)
+                    }
+                } else {
+                    Button {
+                        noteText = ""
+                        editingNoteBookId = book.bookId
+                    } label: {
+                        Text("+ Add note")
+                            .font(Theme.body(10))
+                            .foregroundStyle(Theme.muted.opacity(0.4))
+                    }
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            if !selectMode {
+                if confirmRemoveBookId == book.bookId {
+                    HStack(spacing: 5) {
+                        Button {
+                            withAnimation { model.remove(bookId: book.bookId) }
+                            confirmRemoveBookId = nil
+                        } label: {
+                            Text("Remove")
+                                .font(Theme.body(11, .medium))
+                                .foregroundStyle(Theme.destructive)
+                                .padding(.horizontal, 8).padding(.vertical, 5)
+                                .background(Theme.destructive.opacity(0.15), in: RoundedRectangle(cornerRadius: 7))
+                        }
+                        Button {
+                            confirmRemoveBookId = nil
+                        } label: {
+                            Text("Cancel")
+                                .font(Theme.body(11, .medium))
+                                .foregroundStyle(Theme.muted)
+                        }
+                    }
+                } else {
+                    Button {
+                        confirmRemoveBookId = book.bookId
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Theme.muted.opacity(0.5))
+                            .frame(width: 30, height: 30)
+                            .contentShape(Rectangle())
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 10)
+        .opacity(dragging?.id == book.id ? 0.4 : 1)
+        .onDrop(of: [.text], delegate: GridReorderDelegate(
+            item: book,
+            items: $model.books,
+            dragging: $dragging,
+            commit: { model.persistOrder() }
+        ))
+    }
+
+    private func saveNote(_ book: ShelfBook) {
+        let trimmed = noteText.trimmingCharacters(in: .whitespacesAndNewlines)
+        editingNoteBookId = nil
+        Task {
+            try? await APIClient.shared.updateShelfBookNote(
+                shelfId: shelfId, bookId: book.bookId,
+                note: trimmed.isEmpty ? nil : trimmed)
+            await model.load()
+        }
+    }
+
+    private func bulkRemove() {
+        let ids = selected
+        selected = []
+        selectMode = false
+        withAnimation { model.books.removeAll { ids.contains($0.bookId) } }
+        Task {
+            for id in ids {
+                try? await APIClient.shared.removeBook(fromShelf: shelfId, bookId: id)
+            }
+        }
+    }
+
+    private func deleteShelf() {
+        Task {
+            do {
+                try await APIClient.shared.deleteShelf(id: shelfId)
+                dismiss()
+            } catch {
+                model.error = (error as? APIError)?.errorDescription ?? "Couldn't delete the shelf."
+            }
+        }
+    }
+}
+
+// ── Add Books sheet (web: AddBooksModal — search your library, toggle) ──
+
+private struct AddBooksSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let shelfId: String
+    let shelfBookIds: Set<String>
+    var onChanged: () -> Void
+
+    @State private var allBooks: [LibraryBook] = []
+    @State private var search = ""
+    @State private var added: Set<String> = []
+    @State private var removed: Set<String> = []
+    @State private var loaded = false
+
+    private func isOnShelf(_ id: String) -> Bool {
+        if removed.contains(id) { return false }
+        if added.contains(id) { return true }
+        return shelfBookIds.contains(id)
+    }
+
+    private var filtered: [LibraryBook] {
+        let q = search.trimmingCharacters(in: .whitespaces).lowercased()
+        if q.isEmpty { return Array(allBooks.prefix(50)) }
+        return allBooks.filter {
+            $0.title.lowercased().contains(q)
+                || $0.authors.contains { $0.lowercased().contains(q) }
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Add Books")
+                    .font(Theme.heading(20, .bold))
+                    .foregroundStyle(Theme.foreground)
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+            .padding(.top, 20)
+
+            TextField("Search your library...", text: $search)
+                .font(Theme.body(15))
+                .padding(.horizontal, 12).padding(.vertical, 11)
+                .background(Theme.surfaceAlt.opacity(0.8))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    if !loaded {
+                        Text("Loading…")
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                            .padding(.vertical, 24)
+                    } else if filtered.isEmpty {
+                        Text("No books found")
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                            .padding(.vertical, 24)
+                    } else {
+                        ForEach(filtered) { book in
+                            Button {
+                                toggle(book)
+                            } label: {
+                                HStack(spacing: 10) {
+                                    CoverThumb(url: book.coverImageUrl, width: 32, height: 48, radius: 3)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(book.title)
+                                            .font(Theme.body(14))
+                                            .foregroundStyle(Theme.foreground)
+                                            .lineLimit(1)
+                                        Text(book.authors.joined(separator: ", "))
+                                            .font(Theme.body(12))
+                                            .foregroundStyle(Theme.muted)
+                                            .lineLimit(1)
+                                    }
+                                    Spacer()
+                                    Image(systemName: isOnShelf(book.id)
+                                          ? "checkmark.square.fill" : "square")
+                                        .font(.system(size: 19))
+                                        .foregroundStyle(isOnShelf(book.id) ? Theme.accent : Theme.muted.opacity(0.5))
+                                }
+                                .padding(.vertical, 7)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .background(Theme.bg)
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .task {
+            allBooks = (try? await APIClient.shared.library()) ?? []
+            loaded = true
+        }
+        .onDisappear { onChanged() }
+    }
+
+    private func toggle(_ book: LibraryBook) {
+        let on = isOnShelf(book.id)
+        if on {
+            added.remove(book.id); removed.insert(book.id)
+        } else {
+            removed.remove(book.id); added.insert(book.id)
+        }
+        Task {
+            if on { try? await APIClient.shared.removeBook(fromShelf: shelfId, bookId: book.id) }
+            else { try? await APIClient.shared.addBook(toShelf: shelfId, bookId: book.id) }
+        }
     }
 }

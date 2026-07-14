@@ -124,6 +124,33 @@ actor APIClient {
                            body: ["bookIds": bookIds]) as OkResponse
     }
 
+    /// Set or clear the per-book "note to self" on a shelf.
+    func updateShelfBookNote(shelfId: String, bookId: String, note: String?) async throws {
+        _ = try await send("/api/v1/shelves/\(shelfId)/books/\(bookId)", method: "PATCH",
+                           body: ["note": note ?? NSNull()]) as OkResponse
+    }
+
+    // MARK: Top Shelf (favorites)
+
+    struct FavoritesResponse: Codable { let ok: Bool; let favorites: [FavoriteBookRow] }
+
+    func favorites() async throws -> [FavoriteBookRow] {
+        let res: FavoritesResponse = try await send("/api/v1/favorites", method: "GET")
+        return res.favorites
+    }
+
+    /// Send the COMPLETE Top Shelf in the new order.
+    func reorderFavorites(bookIds: [String]) async throws {
+        _ = try await send("/api/v1/favorites", method: "PUT",
+                           body: ["bookIds": bookIds]) as OkResponse
+    }
+
+    /// Toggle a book off (or onto) the Top Shelf.
+    func toggleFavorite(bookId: String) async throws {
+        _ = try await send("/api/v1/books/\(bookId)/favorite", method: "POST",
+                           body: [String: String]()) as OkResponse
+    }
+
     // MARK: Register + public posts
 
     struct AuthPair: Codable { let token: String; let refreshToken: String; let user: PublicUser }

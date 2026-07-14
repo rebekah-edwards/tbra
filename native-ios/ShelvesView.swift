@@ -12,15 +12,19 @@ import Observation
 final class ShelvesModel {
     var shelves: [ShelfSummary] = []
     var followed: [FollowedShelf] = []
+    var favorites: [FavoriteBookRow] = []
     var error: String?
     var loading = false
 
     func load() async {
         loading = true; defer { loading = false }
         do {
-            let res = try await APIClient.shared.shelves()
+            async let shelvesRes = APIClient.shared.shelves()
+            async let favoritesRes = APIClient.shared.favorites()
+            let res = try await shelvesRes
             shelves = res.mine
             followed = res.followed
+            favorites = (try? await favoritesRes) ?? []
         } catch {
             guard !APIError.isCancellation(error) else { return }
             self.error = (error as? APIError)?.errorDescription ?? "Couldn't load shelves."
@@ -44,7 +48,6 @@ struct LibraryShelvesView: View {
     @State private var dragging: ShelfSummary?
     @State private var filter: ShelvesFilter = .mine
     @State private var createOpen = false
-    @State private var editingSeed: ShelfEditSeed?
 
     enum ShelvesFilter { case mine, following }
 
@@ -65,32 +68,48 @@ struct LibraryShelvesView: View {
                     filterPills
 
                     if filter == .mine {
+                        // Top Shelf — always first, full-width (no handle
+                        // indent), never reorderable or recolorable. Web:
+                        // the amber card above the custom shelf list.
+                        NavigationLink(value: TopShelfRoute()) {
+                            TopShelfListCard(favorites: model.favorites)
+                        }
+
                         VStack(spacing: 16) {
                             ForEach(model.shelves) { shelf in
-                                NavigationLink(value: ShelfRoute(shelfId: shelf.id)) {
-                                    ShelfCard(shelf: shelf)
-                                }
-                                // Pencil rides ON TOP of the link so its tap
-                                // wins — it opens the editor directly (user
-                                // request 2026-07-13: card = view, ✎ = edit).
-                                .overlay(alignment: .topTrailing) {
-                                    Button {
-                                        editingSeed = ShelfEditSeed(shelf: shelf)
-                                    } label: {
-                                        Image(systemName: "pencil")
-                                            .font(.system(size: 13, weight: .medium))
-                                            .foregroundStyle(Theme.foreground.opacity(0.85))
-                                            .frame(width: 34, height: 34)
-                                            .background(Theme.scrim)
-                                            .clipShape(Circle())
+                                // Web layout: a LEFT grip handle outside the
+                                // card (custom shelves sit indented under the
+                                // full-width Top Shelf). Drag starts on the
+                                // HANDLE, not the card, so card taps stay
+                                // clean; drops land anywhere on the row.
+                                HStack(spacing: 8) {
+                                    GripDots()
+                                        .frame(width: 22, height: 44)
+                                        .contentShape(Rectangle())
+                                        .onDrag {
+                                            dragging = shelf
+                                            return NSItemProvider(object: shelf.id as NSString)
+                                        }
+
+                                    NavigationLink(value: ShelfRoute(shelfId: shelf.id)) {
+                                        ShelfCard(shelf: shelf)
                                     }
-                                    .padding(10)
+                                    // Pencil rides ON TOP of the link so its
+                                    // tap wins — straight into the full shelf
+                                    // editor (web /library/shelves/[slug]).
+                                    .overlay(alignment: .topTrailing) {
+                                        NavigationLink(value: ShelfEditorRoute(shelfId: shelf.id)) {
+                                            Image(systemName: "pencil")
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundStyle(Theme.foreground.opacity(0.85))
+                                                .frame(width: 34, height: 34)
+                                                .background(Theme.scrim)
+                                                .clipShape(Circle())
+                                        }
+                                        .padding(10)
+                                    }
                                 }
                                 .opacity(dragging?.id == shelf.id ? 0.4 : 1)
-                                .onDrag {
-                                    dragging = shelf
-                                    return NSItemProvider(object: shelf.id as NSString)
-                                }
                                 .onDrop(of: [.text], delegate: GridReorderDelegate(
                                     item: shelf,
                                     items: $model.shelves,
@@ -156,9 +175,6 @@ struct LibraryShelvesView: View {
             } message: { Text(model.error ?? "") }
             .sheet(isPresented: $createOpen) {
                 EditShelfSheet(seed: nil) { Task { await model.load() } }
-            }
-            .sheet(item: $editingSeed) { seed in
-                EditShelfSheet(seed: seed) { Task { await model.load() } }
             }
     }
 
@@ -569,5 +585,277 @@ struct EditShelfSheet: View {
             }
             saving = false
         }
+    }
+}
+
+// ── Top Shelf on the shelves list (web: the amber card, always first) ──
+
+struct TopShelfRoute: Hashable {}
+
+/// The amber Top Shelf card: cover mosaic (or star placeholder), name + ★,
+/// count line, chevron, amber plank. Fixed amber — Top Shelf can't be
+/// recolored or reordered.
+struct TopShelfListCard: View {
+    let favorites: [FavoriteBookRow]
+    private let amber = Color(hex: "f59e0b")
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                let covers = favorites.sorted { $0.position < $1.position }
+                    .compactMap(\.coverImageUrl).prefix(3)
+                if covers.isEmpty {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8).fill(amber.opacity(0.1))
+                        Image(systemName: "star")
+                            .font(.system(size: 22))
+                            .foregroundStyle(amber)
+                    }
+                    .frame(width: 56, height: 56)
+                } else {
+                    HStack(spacing: 0) {
+                        ForEach(Array(covers.enumerated()), id: \.offset) { _, url in
+                            CoverThumb(url: url, width: 28, height: 72, radius: 0)
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+
+                VStack(alignment: .leading, spacing: 5) {
+                    HStack(spacing: 6) {
+                        Text("Top Shelf")
+                            .font(Theme.body(16, .bold))
+                            .foregroundStyle(Theme.foreground)
+                        Text("★")
+                            .font(Theme.body(11))
+                            .foregroundStyle(amber.opacity(0.6))
+                    }
+                    Text("\(favorites.count) book\(favorites.count == 1 ? "" : "s") · Your all-time favorites")
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
+                }
+                .padding(.top, 4)
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.muted.opacity(0.4))
+                    .padding(.top, 12)
+            }
+            .padding(14)
+
+            Rectangle()
+                .fill(LinearGradient(
+                    colors: [amber.opacity(0.30), amber.opacity(0.45)],
+                    startPoint: .top, endPoint: .bottom))
+                .frame(height: 5)
+            Color.clear.frame(height: 6)
+        }
+        .background(
+            LinearGradient(colors: [amber.opacity(0.07), amber.opacity(0.13)],
+                           startPoint: .top, endPoint: .bottom)
+                .background(Theme.surface.opacity(0.9))
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(amber.opacity(0.19), lineWidth: 1)
+        )
+    }
+}
+
+// ── Top Shelf screen (web: /library/shelves/top-shelf) ──
+
+@MainActor
+@Observable
+final class TopShelfModel {
+    var favorites: [FavoriteBookRow] = []
+    var loaded = false
+
+    func load() async {
+        if let favs = try? await APIClient.shared.favorites() {
+            favorites = favs.sorted { $0.position < $1.position }
+            loaded = true
+        }
+    }
+
+    func persistOrder() {
+        let ids = favorites.map(\.id)
+        Task {
+            do { try await APIClient.shared.reorderFavorites(bookIds: ids) }
+            catch { await load() }
+        }
+    }
+
+    func remove(bookId: String) {
+        favorites.removeAll { $0.id == bookId }
+        Task {
+            // The favorite endpoint is a toggle — the book is pinned, so
+            // this unpins it.
+            try? await APIClient.shared.toggleFavorite(bookId: bookId)
+        }
+    }
+}
+
+struct TopShelfView: View {
+    @Environment(AuthStore.self) private var auth
+    @State private var model = TopShelfModel()
+    @State private var dragging: FavoriteBookRow?
+
+    private var avatarUrl: String? {
+        if case .signedIn(let user) = auth.phase { return user.avatarUrl }
+        return nil
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 12) {
+                    Color.clear.frame(width: 40, height: 40)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Top Shelf")
+                            .font(Theme.heading(26, .bold))
+                            .foregroundStyle(Theme.foreground)
+                        Text("\(model.favorites.count) book\(model.favorites.count == 1 ? "" : "s") · Drag to reorder")
+                            .font(Theme.body(12))
+                            .foregroundStyle(Theme.muted)
+                    }
+                }
+                .padding(.top, 14)
+
+                if model.favorites.isEmpty {
+                    VStack(spacing: 10) {
+                        ZStack {
+                            Circle().fill(Color(hex: "f59e0b").opacity(0.1))
+                            Image(systemName: "star")
+                                .font(.system(size: 22))
+                                .foregroundStyle(Color(hex: "f59e0b"))
+                        }
+                        .frame(width: 48, height: 48)
+                        Text(model.loaded ? "No favorites yet" : "Loading…")
+                            .font(Theme.body(16, .bold))
+                            .foregroundStyle(Theme.foreground)
+                        if model.loaded {
+                            Text("Tap Top Shelf on any book page to add it here.")
+                                .font(Theme.body(13))
+                                .foregroundStyle(Theme.muted)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 48)
+                } else {
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12),
+                    ], spacing: 14) {
+                        ForEach(model.favorites) { fav in
+                            favoriteCell(fav)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+        }
+        .background(AmbientBackground())
+        .floatingBack()
+        .toolbar(.hidden, for: .navigationBar)
+        .task { await model.load() }
+        .refreshable { await model.load() }
+    }
+
+    @ViewBuilder private func favoriteCell(_ fav: FavoriteBookRow) -> some View {
+        // Plain view + tap gesture (NOT Button/NavigationLink): mixed
+        // tap-plus-drag cells inside scroll content misroute on iOS 27.
+        VStack(spacing: 0) {
+            GeometryReader { geo in
+                CoverThumb(url: fav.coverImageUrl,
+                           width: geo.size.width,
+                           height: geo.size.width * 1.5,
+                           radius: 8)
+                    .overlay(alignment: .bottomTrailing) {
+                        if let rating = fav.userRating, rating > 0 {
+                            HStack(spacing: 3) {
+                                favAvatarBubble
+                                Text("\(ratingText(rating)) ★")
+                                    .font(Theme.body(9, .medium))
+                                    .foregroundStyle(.white)
+                            }
+                            .padding(.leading, 2)
+                            .padding(.trailing, 6)
+                            .padding(.vertical, 2)
+                            .background(.black.opacity(0.75), in: Capsule())
+                            .padding(4)
+                        }
+                    }
+                    .overlay(alignment: .topTrailing) {
+                        Button {
+                            withAnimation { model.remove(bookId: fav.id) }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 22, height: 22)
+                                .background(.black.opacity(0.6), in: Circle())
+                        }
+                        .padding(4)
+                    }
+            }
+            .aspectRatio(2 / 3, contentMode: .fit)
+        }
+        .opacity(dragging?.id == fav.id ? 0.4 : 1)
+        .onDrag {
+            dragging = fav
+            return NSItemProvider(object: fav.id as NSString)
+        }
+        .onDrop(of: [.text], delegate: GridReorderDelegate(
+            item: fav,
+            items: $model.favorites,
+            dragging: $dragging,
+            commit: { model.persistOrder() }
+        ))
+    }
+
+    @ViewBuilder private var favAvatarBubble: some View {
+        if let avatarUrl,
+           let url = avatarUrl.hasPrefix("/")
+               ? URL(string: avatarUrl, relativeTo: APIClient.baseURL)
+               : URL(string: avatarUrl) {
+            AsyncImage(url: url) { image in
+                image.resizable().aspectRatio(contentMode: .fill)
+            } placeholder: { Theme.surfaceAlt }
+            .frame(width: 14, height: 14)
+            .clipShape(Circle())
+        } else {
+            Circle().fill(Theme.accent.opacity(0.6))
+                .frame(width: 14, height: 14)
+                .overlay(
+                    Text("★").font(.system(size: 7, weight: .bold)).foregroundStyle(.black)
+                )
+        }
+    }
+
+    private func ratingText(_ rating: Double) -> String {
+        rating.truncatingRemainder(dividingBy: 1) == 0
+            ? String(Int(rating))
+            : String(format: "%.2f", rating).replacingOccurrences(of: "0$", with: "", options: .regularExpression)
+    }
+}
+
+/// The 2×3-dot drag grip (web's reorder handle). Drawn by hand — no SF
+/// Symbol dependency.
+struct GripDots: View {
+    var body: some View {
+        VStack(spacing: 4) {
+            ForEach(0..<3, id: \.self) { _ in
+                HStack(spacing: 4) {
+                    Circle().frame(width: 3.5, height: 3.5)
+                    Circle().frame(width: 3.5, height: 3.5)
+                }
+            }
+        }
+        .foregroundStyle(Theme.muted.opacity(0.5))
     }
 }

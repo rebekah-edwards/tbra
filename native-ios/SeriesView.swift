@@ -233,6 +233,14 @@ struct AppDestinations: ViewModifier {
                 FollowListView(username: route.username, type: route.type)
                     .modifier(PushedScreenChrome())
             }
+            .navigationDestination(for: TopShelfRoute.self) { _ in
+                TopShelfView()
+                    .modifier(PushedScreenChrome())
+            }
+            .navigationDestination(for: ShelfEditorRoute.self) { route in
+                ShelfEditorView(shelfId: route.shelfId)
+                    .modifier(PushedScreenChrome())
+            }
     }
 }
 extension View {

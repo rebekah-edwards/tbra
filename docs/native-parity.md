@@ -397,3 +397,19 @@ explicit user sign-off.
   to a screen-level overlay, header keeps a placeholder. Debug route added:
   TBRA_DEBUG_ROUTE=shelf:<id>. Sim-verified light mode: blue links, Sky tint
   end-to-end, planked rows, overlay share + New Shelf.
+
+- **2026-07-13 — Shelves rework (user corrections).** Shelves list now matches web:
+  amber TOP SHELF card always first, full-width (mosaic of favorites, count line,
+  chevron; never reorderable/recolorable) → pushes new TopShelfView (3-col favorites
+  grid, drag-reorder, ✕ unpin, avatar+rating pills); custom shelves sit INDENTED
+  beneath with LEFT grip handles (hand-drawn GripDots — the circle.grid.2x3.fill
+  SF symbol silently renders EMPTY on the iOS 27 SDK, caught via headless
+  screenshot) — drag starts on the handle only, card tap = viewer. ✎ now pushes the
+  FULL editor (new ShelfEditorView, web /library/shelves/[slug] parity): Add Books
+  bottom sheet (search own library, checkbox toggle), Select mode + bulk remove,
+  Delete Shelf w/ confirm, drag-reorder rows, per-book notes (inline editor), ✕
+  remove w/ confirm, header pencil → name/color sheet + ShareLink. Shelf viewer's
+  Edit pill pushes the editor too; viewer reloads onAppear after editor pops.
+  NEW v1: GET/PUT /api/v1/favorites (list/reorder), PATCH shelves/:id/books/:bookId
+  ({note}, updateShelfBookNoteFor). Debug routes: TBRA_DEBUG_ROUTE=shelfeditor:<id>.
+  Sim-verified headless (screenshots): list layout + editor screen.

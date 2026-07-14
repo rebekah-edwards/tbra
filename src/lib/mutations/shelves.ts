@@ -309,3 +309,21 @@ export async function reorderShelfBooksFor(
 
   return { success: true, slug: shelf.slug };
 }
+
+// ─── Per-book shelf note ───
+
+export async function updateShelfBookNoteFor(
+  userId: string,
+  shelfId: string,
+  bookId: string,
+  note: string | null,
+): Promise<{ success: boolean }> {
+  const shelf = await db.select().from(shelves).where(eq(shelves.id, shelfId)).get();
+  if (!shelf || shelf.userId !== userId) return { success: false };
+
+  await db.run(sql`
+    UPDATE shelf_books SET note = ${note?.trim() || null}
+    WHERE shelf_id = ${shelfId} AND book_id = ${bookId}
+  `);
+  return { success: true };
+}
