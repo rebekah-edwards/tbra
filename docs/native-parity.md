@@ -418,3 +418,11 @@ explicit user sign-off.
   shelves-client Top Shelf card swapped from #f59e0b amber-orange to the profile
   bookcase's ShelfWood browns (amber-700/800/900), light+dark variants; ShelfWood
   palette made internal (was private to ProfileView). Sim-verified.
+
+- **2026-07-13 — Shelves list follow-ups.** Shelf names now actually wrap to 2 lines
+  in ShelfCard + FollowedShelfCard (`.fixedSize(horizontal:false, vertical:true)` —
+  without it SwiftUI rendered one truncated line despite lineLimit(2); verified with
+  a two-line test shelf). Free tier: custom-shelf list replaced by the web's
+  "Upgrade to Based Reader" prompt (custom shelves = premium-only). Clarified in
+  code comments: Top Shelf is NEVER recolorable/reorderable for any profile —
+  always the real-wood look (already enforced: no pencil/handle/edit path).

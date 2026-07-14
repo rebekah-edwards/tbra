@@ -69,12 +69,39 @@ struct LibraryShelvesView: View {
 
                     if filter == .mine {
                         // Top Shelf — always first, full-width (no handle
-                        // indent), never reorderable or recolorable. Web:
-                        // the amber card above the custom shelf list.
+                        // indent), NEVER reorderable or recolorable for any
+                        // profile: it's always the "real wood" look. Custom
+                        // shelves below are the premium-only feature with
+                        // editable colors.
                         NavigationLink(value: TopShelfRoute()) {
                             TopShelfListCard(favorites: model.favorites)
                         }
 
+                        if !isPremium {
+                            // Web parity: free users see the upgrade prompt
+                            // instead of a custom-shelf list.
+                            VStack(spacing: 6) {
+                                Text("Want to create custom shelves?")
+                                    .font(Theme.body(14))
+                                    .foregroundStyle(Theme.muted)
+                                if let url = URL(string: "https://thebasedreader.app/upgrade") {
+                                    Link("Upgrade to Based Reader →", destination: url)
+                                        .font(Theme.body(14, .medium))
+                                        .foregroundStyle(Theme.neonPurple)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 28)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(Theme.neonPurple.opacity(0.05))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Theme.neonPurple.opacity(0.2),
+                                            style: StrokeStyle(lineWidth: 1, dash: [5]))
+                            )
+                        } else {
                         VStack(spacing: 16) {
                             ForEach(model.shelves) { shelf in
                                 // Web layout: a LEFT grip handle outside the
@@ -117,6 +144,7 @@ struct LibraryShelvesView: View {
                                     commit: { model.persistOrder() }
                                 ))
                             }
+                        }
                         }
                     } else if model.followed.isEmpty {
                         Text("You're not following any shelves yet.")
@@ -246,6 +274,10 @@ private struct ShelfCard: View {
                         .foregroundStyle(Theme.foreground)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
+                        // Without this SwiftUI renders ONE truncated line in
+                        // this HStack — fixedSize is what makes lineLimit(2)
+                        // actually wrap (user report 2026-07-13).
+                        .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: 8) {
                         Text("\(shelf.bookCount) book\(shelf.bookCount == 1 ? "" : "s")")
                             .font(Theme.body(13))
@@ -330,6 +362,7 @@ private struct FollowedShelfCard: View {
                         .foregroundStyle(Theme.foreground)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text("by \(shelf.ownerDisplayName ?? "@\(shelf.ownerUsername)") · \(shelf.bookCount) book\(shelf.bookCount == 1 ? "" : "s")")
                         .font(Theme.body(11))
                         .foregroundStyle(Theme.muted)
