@@ -63,6 +63,13 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
       const panel = panelRef.current;
       if (!panel) return;
       panel.style.setProperty("--kb-lift", `${keyboardHeight}px`);
+      // Lifting alone is not enough for TALL sheets: bottom moves up by the
+      // keyboard height while max-height stays 85vh, so the sheet's TOP —
+      // header and whichever input was just focused — slides off the top of
+      // the screen with no way to scroll it back (cover-picker bug,
+      // 2026-07-13). While the keyboard is up, also cap the panel to the
+      // visible viewport so the top edge always stays on-screen.
+      panel.style.maxHeight = keyboardHeight > 0 ? `${vv.height - 8}px` : "";
     };
     update();
     vv.addEventListener("resize", update);
