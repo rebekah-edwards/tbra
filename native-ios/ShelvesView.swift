@@ -125,6 +125,31 @@ struct LibraryShelvesView: View {
             .task { await model.load() }
             .background(AmbientBackground())
             .floatingBack(topPadding: 16)
+            // The + New Shelf button lives in a screen-level overlay, NOT the
+            // scroll content — top-strip buttons inside scroll content go
+            // hit-test-dead on repeat pushes (iOS 27 bug #4, same reason the
+            // back chevron is an overlay). The header keeps a placeholder.
+            .overlay(alignment: .topTrailing) {
+                if isPremium && filter == .mine {
+                    Button {
+                        createOpen = true
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 13, weight: .bold))
+                            Text("New Shelf")
+                                .font(Theme.body(14, .semibold))
+                        }
+                        .foregroundStyle(Theme.onAccent)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Theme.accent)
+                        .clipShape(Capsule())
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.top, 16)
+                }
+            }
             .toolbar(.hidden, for: .navigationBar)
             .alert("Error", isPresented: .constant(model.error != nil)) {
                 Button("OK") { model.error = nil }
@@ -145,22 +170,10 @@ struct LibraryShelvesView: View {
                 .font(Theme.heading(26, .bold))
                 .foregroundStyle(Theme.foreground)
             Spacer()
+            // Placeholder — the tappable + New Shelf pill is a screen-level
+            // overlay (iOS 27 bug #4: buttons here go hit-test-dead).
             if isPremium && filter == .mine {
-                Button {
-                    createOpen = true
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 13, weight: .bold))
-                        Text("New Shelf")
-                            .font(Theme.body(14, .semibold))
-                    }
-                    .foregroundStyle(Theme.onAccent)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Theme.accent)
-                    .clipShape(Capsule())
-                }
+                Color.clear.frame(width: 120, height: 40)
             }
         }
         .padding(.top, 16)

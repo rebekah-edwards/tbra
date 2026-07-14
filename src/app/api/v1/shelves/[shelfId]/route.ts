@@ -1,5 +1,7 @@
 import { getApiUser } from "@/lib/auth";
 import { getShelfWithBooks } from "@/lib/queries/shelves";
+import { db } from "@/db";
+import { sql } from "drizzle-orm";
 import { updateShelfFor, deleteShelfFor } from "@/lib/mutations/shelves";
 import {
   jsonError,
@@ -24,7 +26,7 @@ export async function GET(
 ) {
   const user = await getApiUser(req);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    return jsonError("Unauthorized.", 401);
   }
 
   const { shelfId } = await context.params;
@@ -34,7 +36,21 @@ export async function GET(
     return jsonError("Shelf not found.", 404);
   }
 
-  return jsonOk({ shelf });
+  // Owner attribution for the native header ("by <name>" links to the
+  // owner's profile; the avatar rides in the shelf-book rating pills).
+  const ownerRows = await db.all(sql`
+    SELECT username, display_name, avatar_url FROM users WHERE id = ${shelf.userId}
+  `) as { username: string; display_name: string | null; avatar_url: string | null }[];
+  const owner = ownerRows[0];
+
+  return jsonOk({
+    shelf: {
+      ...shelf,
+      ownerUsername: owner?.username ?? null,
+      ownerDisplayName: owner?.display_name ?? null,
+      ownerAvatarUrl: owner?.avatar_url ?? null,
+    },
+  });
 }
 
 /**

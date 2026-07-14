@@ -379,3 +379,21 @@ explicit user sign-off.
   glass chromeCircle floatingBack (sticky slide-up on scroll). Debug routes:
   TBRA_DEBUG_ROUTE=shelves | library:activity. Sim-verified headless: chips,
   filters toggle, TBR note card, 4.25★ avatar pill, shelves card layout.
+
+- **2026-07-13 — Shelf detail punch list #4.** (1) "by <owner>" + Edit now blue in
+  light mode (lime kept in dark) via Color(dark:a3e635, light:0ea5e9). (2) Owner
+  name is a real link → public profile (v1 shelf GET now returns ownerUsername/
+  DisplayName/AvatarUrl). (3) Shelf color finally ports: count dot, bookcase
+  container gradient/border, and per-row planks all tint from shelf.color —
+  bookcase rebuilt as the web's chunked 3-up rows with floating shelf lines
+  (shelf-view-client parity); shelf-book covers gained spine shadow + owner-
+  avatar rating pills. (4) Share → real ShareLink to the public shelf URL
+  (public shelves only; lives in a screen overlay — iOS 27 bug #4 kills
+  top-strip buttons); Shelf Order → 8-option sort menu; Filters → genre +
+  ownership panel w/ clear; drag-reorder disabled while sorted/filtered.
+  (5) "Only 4 shelves show": her 5th ("On The King of Kings") was live-only —
+  the 2026-07-13 shelves sync gap fix already pulled it; no UI bug. (6) "+ New
+  Shelf did nothing": bug #4 again (top-strip button in scroll content) — moved
+  to a screen-level overlay, header keeps a placeholder. Debug route added:
+  TBRA_DEBUG_ROUTE=shelf:<id>. Sim-verified light mode: blue links, Sky tint
+  end-to-end, planked rows, overlay share + New Shelf.

@@ -37,6 +37,7 @@ struct AppShell: View {
     @State private var debugBookSlug: String?
     @State private var debugCoverSlug: String?
     @State private var shelvesDebugOpen = false
+    @State private var debugShelfId: String?
     @State private var menuDebugOpen = false
     @State private var settingsDebugOpen = false
     #endif
@@ -182,6 +183,18 @@ struct AppShell: View {
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
         }
+        .fullScreenCover(isPresented: Binding(
+            get: { debugShelfId != nil },
+            set: { if !$0 { debugShelfId = nil } }
+        )) {
+            NavigationStack {
+                ShelfDetailView(route: ShelfRoute(shelfId: debugShelfId ?? ""))
+                    .toolbar(.hidden, for: .navigationBar)
+                    .appDestinations()
+            }
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
+            .environment(\.showsShellChrome, false)
+        }
         #endif
         #if DEBUG && targetEnvironment(simulator)
         // Headless verification hook: `SIMCTL_CHILD_TBRA_DEBUG_ROUTE=search
@@ -203,6 +216,8 @@ struct AppShell: View {
             case "menu": menuDebugOpen = true
             case "settings": settingsDebugOpen = true
             case "shelves": shelvesDebugOpen = true
+            case let route? where route.hasPrefix("shelf:"):
+                debugShelfId = String(route.dropFirst("shelf:".count))
             default: break
             }
         }

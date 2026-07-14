@@ -90,6 +90,10 @@ struct ShelfDetail: Codable, Identifiable, Hashable {
     let createdAt: String
     let userId: String
     let books: [ShelfBook]
+    // Owner attribution (added 2026-07-13): header link + rating-pill avatar.
+    let ownerUsername: String?
+    let ownerDisplayName: String?
+    let ownerAvatarUrl: String?
 }
 
 // ─── Home (Reading Now + goal + streak) ───
