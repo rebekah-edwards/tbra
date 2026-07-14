@@ -157,23 +157,25 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
         href="/library/shelves/top-shelf"
         className="block mb-4"
       >
+        {/* Rich wood browns (amber-700/800/900), matching the profile
+            bookcase — not the old orange #f59e0b. */}
         <div
           className="rounded-xl border transition-all hover:scale-[1.01] active:scale-[0.99]"
           style={{
-            background: "linear-gradient(to bottom, #f59e0b12, #f59e0b22)",
-            borderColor: "#f59e0b30",
+            background: "linear-gradient(to bottom, #78350f1a, #92400e33)",
+            borderColor: "#92400e33",
           }}
         >
           <div className="flex items-start gap-3 px-4 pt-4 pb-2.5">
             {topShelfCovers.length > 0 ? (
               <ShelfCoverMosaic
                 coverUrls={topShelfCovers}
-                color="#f59e0b"
+                color="#92400e"
                 maxCovers={3}
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-amber-500/10">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-500">
+              <div className="flex h-14 w-14 items-center justify-center rounded-lg" style={{ background: "#b453091a" }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="1.5">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
               </div>
@@ -183,7 +185,7 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
                 <h3 className="font-heading text-sm font-bold text-foreground truncate">
                   Top Shelf
                 </h3>
-                <span className="text-[10px] text-amber-500/60 font-medium">★</span>
+                <span className="text-[10px] font-medium" style={{ color: "#b45309cc" }}>★</span>
               </div>
               <p className="text-[11px] text-muted mt-0.5">
                 {favorites.length} {favorites.length === 1 ? "book" : "books"} · Your all-time favorites
@@ -197,7 +199,7 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
           {/* Shelf edge */}
           <div
             className="h-[5px] shadow-[inset_0_2px_3px_rgba(0,0,0,0.1)]"
-            style={{ background: "linear-gradient(to bottom, #f59e0b30, #f59e0b45)" }}
+            style={{ background: "linear-gradient(to bottom, #92400e4d, #78350f66)" }}
           />
           <div className="h-1.5" />
         </div>
