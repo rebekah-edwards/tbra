@@ -426,3 +426,13 @@ explicit user sign-off.
   "Upgrade to Based Reader" prompt (custom shelves = premium-only). Clarified in
   code comments: Top Shelf is NEVER recolorable/reorderable for any profile —
   always the real-wood look (already enforced: no pencil/handle/edit path).
+
+- **2026-07-13 — Cover picker dead-on-device root cause: allowedDevOrigins.** Next
+  dev blocks /_next assets from non-allowlisted origins: pages served via the
+  Tailscale IP rendered (SSR) but NEVER hydrated — no clicks worked in ANY app
+  webview, ?editCover=1 silently no-oped, and the page showed the base cover
+  instead of the user's edition-selected one ("wrong cover for Between Two Fires";
+  live site was fine because it hydrates). Sim never reproduced it (localhost is
+  same-origin) until pointed at the IP via new sim-only TBRA_DEBUG_BASEURL env.
+  Fix: `allowedDevOrigins: ["100.84.95.103"]` in next.config.ts + dev-server
+  kickstart; sim-over-IP verified the picker auto-opens with all sections.

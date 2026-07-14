@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Dev-only: the native app's webviews (cover picker, admin) reach this dev
+  // server via the Mac's Tailscale IP. Without this, Next blocks the /_next
+  // assets cross-origin — pages render (SSR) but NEVER hydrate, so nothing
+  // is clickable and ?editCover=1 silently no-ops (found 2026-07-13).
+  allowedDevOrigins: ["100.84.95.103"],
   typescript: {
     // Type checking done locally; skip on Vercel to avoid memory/timeout issues
     ignoreBuildErrors: true,

@@ -13,7 +13,12 @@ actor APIClient {
     /// Set once at launch before any request; `nonisolated(unsafe)` is the
     /// standard Swift 6 escape hatch for a start-up-configured global.
     #if targetEnvironment(simulator)
-    nonisolated(unsafe) static var baseURL = URL(string: "http://localhost:3000")!
+    // TBRA_DEBUG_BASEURL lets the agent point the sim at the Tailscale IP to
+    // reproduce device-only host quirks (e.g. WKWebView cookie handling on
+    // IP-literal hosts) headlessly.
+    nonisolated(unsafe) static var baseURL =
+        ProcessInfo.processInfo.environment["TBRA_DEBUG_BASEURL"].flatMap(URL.init(string:))
+        ?? URL(string: "http://localhost:3000")!
     #else
     // Physical device: the Mac's Tailscale address (clanker-macmini).
     // Cleartext HTTP is fine here — the tailnet wraps it in WireGuard.
