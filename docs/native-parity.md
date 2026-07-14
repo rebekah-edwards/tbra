@@ -509,3 +509,9 @@ explicit user sign-off.
   review now route to ReviewsRoute(scrollTo: reviewId) — payload always carried
   reviewId, the Swift model just dropped it; label gains "· reviewed it" + quote
   icon; others still open the profile. Sim-verified all four.
+
+- **2026-07-15 — Owned/Shelves pills go SOLID when set.** Web parity
+  (owned-button.tsx / add-to-shelf-button.tsx): Owned fills solid purple once any
+  format is owned, Shelves fills solid blue once the book is on a shelf — the
+  native pills hardcoded solid:false. clusterPill also gains the web's soft
+  same-hue glow on solid. Sim-verified (Owned · 1 / Shelves · 1 solid w/ white text).

@@ -929,18 +929,20 @@ private struct BookActionCluster: View {
     }
 
     private var ownedButton: some View {
+        // Web owned-button.tsx: SOLID purple + white once owned.
         let owned = data.userState?.ownedFormats.filter { $0 != "unknown" } ?? []
         return clusterPill(icon: "books.vertical",
                            label: owned.isEmpty ? "Owned" : "Owned · \(owned.count)",
-                           tint: Theme.neonPurple, solid: false) {
+                           tint: Theme.neonPurple, solid: !owned.isEmpty) {
             showOwnedSheet = true
         }
     }
 
     private var shelvesButton: some View {
+        // Web add-to-shelf-button.tsx: SOLID blue once on any shelf.
         clusterPill(icon: "star",
                     label: data.bookShelfIds.isEmpty ? "Shelves" : "Shelves · \(data.bookShelfIds.count)",
-                    tint: Theme.neonBlue, solid: false) {
+                    tint: Theme.neonBlue, solid: !data.bookShelfIds.isEmpty) {
             showShelvesSheet = true
         }
     }
@@ -959,6 +961,8 @@ private struct BookActionCluster: View {
             .background(solid ? AnyShapeStyle(tint) : AnyShapeStyle(tint.opacity(0.08)))
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(tint.opacity(solid ? 1 : 0.35), lineWidth: 2))
+            // Web gives active pills a soft same-hue glow.
+            .shadow(color: tint.opacity(solid ? 0.3 : 0), radius: 8)
         }
     }
 
