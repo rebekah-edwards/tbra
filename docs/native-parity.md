@@ -413,3 +413,8 @@ explicit user sign-off.
   NEW v1: GET/PUT /api/v1/favorites (list/reorder), PATCH shelves/:id/books/:bookId
   ({note}, updateShelfBookNoteFor). Debug routes: TBRA_DEBUG_ROUTE=shelfeditor:<id>.
   Sim-verified headless (screenshots): list layout + editor screen.
+
+- **2026-07-13 — Top Shelf card: wood, not orange.** TopShelfListCard (app) + the web
+  shelves-client Top Shelf card swapped from #f59e0b amber-orange to the profile
+  bookcase's ShelfWood browns (amber-700/800/900), light+dark variants; ShelfWood
+  palette made internal (was private to ProfileView). Sim-verified.

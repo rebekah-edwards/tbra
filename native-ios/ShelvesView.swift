@@ -597,19 +597,22 @@ struct TopShelfRoute: Hashable {}
 /// recolored or reordered.
 struct TopShelfListCard: View {
     let favorites: [FavoriteBookRow]
-    private let amber = Color(hex: "f59e0b")
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
+        // Rich WOOD browns, matching the profile bookcase (TopShelfCase) —
+        // user request 2026-07-13: less orange, more shelf.
+        let isLight = colorScheme == .light
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
                 let covers = favorites.sorted { $0.position < $1.position }
                     .compactMap(\.coverImageUrl).prefix(3)
                 if covers.isEmpty {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 8).fill(amber.opacity(0.1))
+                        RoundedRectangle(cornerRadius: 8).fill(ShelfWood.amber700.opacity(0.12))
                         Image(systemName: "star")
                             .font(.system(size: 22))
-                            .foregroundStyle(amber)
+                            .foregroundStyle(ShelfWood.amber700)
                     }
                     .frame(width: 56, height: 56)
                 } else {
@@ -628,7 +631,7 @@ struct TopShelfListCard: View {
                             .foregroundStyle(Theme.foreground)
                         Text("★")
                             .font(Theme.body(11))
-                            .foregroundStyle(amber.opacity(0.6))
+                            .foregroundStyle(ShelfWood.amber700.opacity(0.8))
                     }
                     Text("\(favorites.count) book\(favorites.count == 1 ? "" : "s") · Your all-time favorites")
                         .font(Theme.body(12))
@@ -645,22 +648,28 @@ struct TopShelfListCard: View {
             }
             .padding(14)
 
+            // Shelf-edge plank — same wood gradient as the profile case.
             Rectangle()
                 .fill(LinearGradient(
-                    colors: [amber.opacity(0.30), amber.opacity(0.45)],
+                    colors: isLight
+                        ? [ShelfWood.amber800.opacity(0.30), ShelfWood.amber900.opacity(0.40)]
+                        : [ShelfWood.amber700.opacity(0.30), ShelfWood.amber800.opacity(0.40)],
                     startPoint: .top, endPoint: .bottom))
                 .frame(height: 5)
             Color.clear.frame(height: 6)
         }
         .background(
-            LinearGradient(colors: [amber.opacity(0.07), amber.opacity(0.13)],
-                           startPoint: .top, endPoint: .bottom)
+            LinearGradient(
+                colors: isLight
+                    ? [ShelfWood.amber900.opacity(0.10), ShelfWood.amber800.opacity(0.20)]
+                    : [ShelfWood.amber900.opacity(0.20), ShelfWood.amber800.opacity(0.30)],
+                startPoint: .top, endPoint: .bottom)
                 .background(Theme.surface.opacity(0.9))
         )
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(amber.opacity(0.19), lineWidth: 1)
+                .stroke((isLight ? ShelfWood.amber800 : ShelfWood.amber700).opacity(0.20), lineWidth: 1)
         )
     }
 }

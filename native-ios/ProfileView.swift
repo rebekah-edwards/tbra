@@ -492,7 +492,8 @@ extension View {
 }
 
 /// Tailwind amber tokens the web Top-Shelf case is built from.
-private enum ShelfWood {
+// Shared with the shelves list (TopShelfListCard) — the wood palette.
+enum ShelfWood {
     static let amber700 = Color(hex: "b45309")
     static let amber800 = Color(hex: "92400e")
     static let amber900 = Color(hex: "78350f")
