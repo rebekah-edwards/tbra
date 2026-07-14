@@ -58,6 +58,15 @@ struct BookDetailView: View {
                     if let summary = data.book.summary, !summary.isEmpty {
                         SummaryQuoteCard(summary: summary)
                     }
+                    // Just below the summary (user request 2026-07-14 — was
+                    // buried at the bottom of the page).
+                    if isAdmin {
+                        AdminEditSection(
+                            bookId: data.book.id,
+                            genres: data.book.genres,
+                            onChanged: { Task { await model.load() } }
+                        )
+                    }
                     if !data.readingNotes.isEmpty {
                         BookNotesSection(
                             bookId: data.book.id,
@@ -67,8 +76,12 @@ struct BookDetailView: View {
                         .id("notes")
                     }
                     if !data.friendsWhoRead.isEmpty {
-                        FriendsWhoReadSection(friends: data.friendsWhoRead)
-                            .id("friends")
+                        FriendsWhoReadSection(
+                            friends: data.friendsWhoRead,
+                            bookIdOrSlug: data.slug ?? data.book.id,
+                            bookTitle: data.book.title
+                        )
+                        .id("friends")
                     }
                     if !data.sessions.isEmpty {
                         ReadingHistorySection(
@@ -91,13 +104,6 @@ struct BookDetailView: View {
                         isHidden: data.isHidden,
                         onChanged: { Task { await model.load() } }
                     )
-                    if isAdmin {
-                        AdminEditSection(
-                            bookId: data.book.id,
-                            genres: data.book.genres,
-                            onChanged: { Task { await model.load() } }
-                        )
-                    }
                     SimilarBooksSection(bookId: data.book.id)
                         .id("similar")
                 }
@@ -1271,13 +1277,16 @@ private struct SummaryQuoteCard: View {
                 .padding(24)
                 .padding(.trailing, 32)
         }
-        // Giant serif ” — web: text-[280px] Georgia, top calc(100%-90px)
-        // right -15px, clipped by overflow-hidden.
+        // Giant serif ” overhanging the bottom-right corner. At the first
+        // offsets only the round HEADS of the marks stayed visible — two
+        // meaningless circles (user report 2026-07-14). Show most of the
+        // glyph's ink (heads + tails) with just the tail tips clipped, and
+        // bump opacity so it reads as quote marks.
         .overlay(alignment: .bottomTrailing) {
             Text("\u{201D}")
-                .font(.custom("Georgia", size: 280))
-                .foregroundStyle(Theme.foreground.opacity(isLight ? 0.05 : 0.07))
-                .offset(x: 15, y: 215)
+                .font(.custom("Georgia", size: 200))
+                .foregroundStyle(Theme.foreground.opacity(isLight ? 0.08 : 0.10))
+                .offset(x: 12, y: 78)
         }
         .background(isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.06))
         // Web mobile: rounded-r-2xl + pl-[calc(50vw-50%+1rem)] — the card

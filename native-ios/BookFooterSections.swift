@@ -7,43 +7,68 @@ import SwiftUI
 
 struct FriendsWhoReadSection: View {
     let friends: [FriendWhoRead]
+    /// For routing a friend's card to THEIR review of this book.
+    var bookIdOrSlug: String = ""
+    var bookTitle: String = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeading("Friends Who Read It")
             VStack(spacing: 10) {
                 ForEach(friends) { friend in
-                    NavigationLink(value: UserRoute(username: friend.username ?? "")) {
-                    HStack(spacing: 12) {
-                        avatar(friend)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(friend.displayName ?? friend.username ?? "Reader")
-                                .font(Theme.body(15, .semibold))
-                                .foregroundStyle(Theme.foreground)
-                            Text(stateLabel(friend.state))
-                                .font(Theme.body(13))
-                                .foregroundStyle(Theme.muted)
-                        }
-                        Spacer()
-                        if let rating = friend.rating {
-                            HStack(spacing: 3) {
-                                Image(systemName: "star.fill")
-                                    .font(.system(size: 11))
-                                Text(String(format: "%.2g", rating))
-                                    .font(Theme.body(13, .semibold))
+                    // Reviewed → jump to their review (web: reviews#review-id);
+                    // otherwise → their profile.
+                    Group {
+                        if let reviewId = friend.reviewId {
+                            NavigationLink(value: ReviewsRoute(
+                                bookIdOrSlug: bookIdOrSlug,
+                                bookTitle: bookTitle,
+                                scrollToReviewId: reviewId)) {
+                                row(friend)
                             }
-                            .foregroundStyle(Theme.accent)
+                        } else {
+                            NavigationLink(value: UserRoute(username: friend.username ?? "")) {
+                                row(friend)
+                            }
+                            .disabled(friend.username == nil)
                         }
                     }
-                    .padding(12)
-                    .background(Theme.surface.opacity(0.55))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
-                    }
-                    .disabled(friend.username == nil)
                 }
             }
         }
+    }
+
+    private func row(_ friend: FriendWhoRead) -> some View {
+        HStack(spacing: 12) {
+            avatar(friend)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(friend.displayName ?? friend.username ?? "Reader")
+                    .font(Theme.body(15, .semibold))
+                    .foregroundStyle(Theme.foreground)
+                Text(friend.reviewId != nil ? "\(stateLabel(friend.state)) · reviewed it" : stateLabel(friend.state))
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.muted)
+            }
+            Spacer()
+            if let rating = friend.rating {
+                HStack(spacing: 3) {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 11))
+                    Text(String(format: "%.2g", rating))
+                        .font(Theme.body(13, .semibold))
+                }
+                .foregroundStyle(Theme.accent)
+            }
+            if friend.reviewId != nil {
+                Image(systemName: "text.quote")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.neonBlue)
+            }
+        }
+        .padding(12)
+        .background(Theme.surface.opacity(0.55))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
     }
 
     private func avatar(_ friend: FriendWhoRead) -> some View {

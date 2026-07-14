@@ -499,3 +499,13 @@ explicit user sign-off.
   that used to show raw <div>s. (13) NATIVE Admin Edit panel on book page
   (super-admin): 13 fields + genre chips, GET/POST /api/v1/admin/books/[id]/fields
   + /genres (always bump updated_at; web updateBookFields patched to bump too).
+
+- **2026-07-14 — Book page round 6.** Admin Edit moved up to sit directly below the
+  summary card. Summary quote glyph fixed: at the old offset only the round HEADS
+  of the 280pt ” survived the clip — two meaningless circles on device; now 200pt
+  at y:78 shows heads+tails (opacity bumped to .08/.10). Reading Notes collapse to
+  a peek stack: newest note over disappearing edges (count-aware, profile-journal
+  pattern) + "View all N notes" / "Show latest only". Friends Who Read: rows with a
+  review now route to ReviewsRoute(scrollTo: reviewId) — payload always carried
+  reviewId, the Swift model just dropped it; label gains "· reviewed it" + quote
+  icon; others still open the profile. Sim-verified all four.

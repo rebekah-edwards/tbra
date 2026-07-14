@@ -458,6 +458,9 @@ struct FriendWhoRead: Codable, Hashable, Identifiable {
     let avatarUrl: String?
     let state: String?
     let rating: Double?
+    /// Their review of THIS book — the payload always carried it; tapping
+    /// the card opens it (user request 2026-07-14).
+    let reviewId: String?
 }
 
 struct BookDetailData: Codable, Hashable {

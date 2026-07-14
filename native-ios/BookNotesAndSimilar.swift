@@ -9,13 +9,56 @@ struct BookNotesSection: View {
     let bookId: String
     let notes: [BookNote]
     let onChanged: () -> Void
+    @State private var expanded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeading("Reading Notes")
-            VStack(spacing: 10) {
-                ForEach(notes) { note in
-                    BookNoteCard(note: note, onChanged: onChanged)
+            if expanded || notes.count == 1 {
+                VStack(spacing: 10) {
+                    ForEach(notes) { note in
+                        BookNoteCard(note: note, onChanged: onChanged)
+                    }
+                }
+                if notes.count > 1 {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) { expanded = false }
+                    } label: {
+                        Text("Show latest only")
+                            .font(Theme.body(13, .medium))
+                            .foregroundStyle(Theme.neonBlue)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+            } else if let latest = notes.first {
+                // Collapsed: the most recent note rides on a disappearing
+                // stack of the older ones (profile-journal peek pattern);
+                // "View all" opens the full list (user request 2026-07-14).
+                ZStack {
+                    if notes.count >= 3 {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Theme.surface.opacity(0.3))
+                            .overlay(RoundedRectangle(cornerRadius: 14)
+                                .stroke(Theme.border.opacity(0.4), lineWidth: 1))
+                            .padding(.horizontal, 24)
+                            .offset(y: 12)
+                    }
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Theme.surface.opacity(0.45))
+                        .overlay(RoundedRectangle(cornerRadius: 14)
+                            .stroke(Theme.border.opacity(0.55), lineWidth: 1))
+                        .padding(.horizontal, 12)
+                        .offset(y: 6)
+                    BookNoteCard(note: latest, onChanged: onChanged)
+                }
+                .padding(.bottom, 12)
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) { expanded = true }
+                } label: {
+                    Text("View all \(notes.count) notes")
+                        .font(Theme.body(13, .medium))
+                        .foregroundStyle(Theme.neonBlue)
+                        .frame(maxWidth: .infinity)
                 }
             }
         }
