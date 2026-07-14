@@ -336,6 +336,64 @@ const TABLES: TableSpec[] = [
     errors.push(`up_next: ${e.message.slice(0, 120)}`);
   }
 
+  // ── Recent book COVERS: newest-wins mirror of the cover fields ──
+  // Admin cover fixes happen on BOTH sides now (live web editor + the app's
+  // native picker). The books table otherwise rides the nightly sync only,
+  // which left same-day fixes invisible on the other side (user report
+  // 2026-07-14). Update-only by PK on rows touched in the last 7 days —
+  // never inserts, never touches non-cover fields.
+  console.log('\n→ recent book covers (newest-wins, last 7 days)');
+  try {
+    const CUTOFF = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+    const coverCols = ['cover_image_url', 'cover_source', 'cover_verified', 'audiobook_cover_url'];
+    const sel = `SELECT id, ${coverCols.join(',')}, updated_at FROM books WHERE updated_at >= ?`;
+    const liveRecent = (await remote.execute({ sql: sel, args: [CUTOFF] })).rows as any[];
+    const localRecent = local.prepare(sel).all(CUTOFF) as any[];
+    const localById = new Map(localRecent.map((r) => [String(r.id), r]));
+    const liveById = new Map(liveRecent.map((r) => [String(r.id), r]));
+    const differs = (a: any, b: any) => coverCols.some((c) => (a[c] ?? null) !== (b[c] ?? null));
+    const getLocal = local.prepare(`SELECT id, ${coverCols.join(',')}, updated_at FROM books WHERE id = ?`);
+    const updLocal = local.prepare(
+      `UPDATE books SET ${coverCols.map((c) => `${c} = ?`).join(', ')}, updated_at = ? WHERE id = ?`);
+    let coversToLocal = 0, coversToLive = 0;
+
+    // Only rows whose SOURCE side reflects an intentional admin action move.
+    // books.updated_at also bumps on enrichment metadata writes, so plain
+    // newest-wins could carry a STALE cover over a manual fix; restricting
+    // the source to manual/admin-removed scopes this pass to cover edits.
+    const adminSet = (r: any) => ['manual', 'admin-removed'].includes(String(r.cover_source));
+
+    for (const lv of liveRecent) {
+      if (!adminSet(lv)) continue;
+      const loc = (localById.get(String(lv.id)) ?? getLocal.get(lv.id)) as any;
+      if (!loc || !differs(lv, loc)) continue;
+      if (String(lv.updated_at ?? '') > String(loc.updated_at ?? '')) {
+        updLocal.run(...coverCols.map((c) => lv[c]), lv.updated_at, lv.id);
+        coversToLocal++;
+      }
+    }
+    for (const loc of localRecent) {
+      if (!adminSet(loc)) continue;
+      let lv = liveById.get(String(loc.id)) as any;
+      if (!lv) {
+        const r = await remote.execute({ sql: `SELECT id, ${coverCols.join(',')}, updated_at FROM books WHERE id = ?`, args: [loc.id] });
+        lv = r.rows[0];
+      }
+      if (!lv || !differs(loc, lv)) continue;
+      if (String(loc.updated_at ?? '') > String(lv.updated_at ?? '')) {
+        await remote.execute({
+          sql: `UPDATE books SET ${coverCols.map((c) => `${c} = ?`).join(', ')}, updated_at = ? WHERE id = ?`,
+          args: [...coverCols.map((c) => loc[c]), loc.updated_at, loc.id],
+        });
+        coversToLive++;
+      }
+    }
+    console.log(`  ${coversToLocal + coversToLive ? '✓' : '·'}  covers →local ${coversToLocal}, →live ${coversToLive}`);
+    totals.toLocal += coversToLocal; totals.toLive += coversToLive;
+  } catch (e: any) {
+    errors.push(`book covers: ${e.message.slice(0, 120)}`);
+  }
+
   console.log(`\nDone. →local ${totals.toLocal + totals.mergedLocal}, →live ${totals.toLive + totals.mergedLive}`);
   if (errors.length) {
     console.log(`\n${errors.length} error(s):`);

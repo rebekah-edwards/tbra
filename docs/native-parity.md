@@ -457,3 +457,17 @@ explicit user sign-off.
   top of the screen with no way back (user report, mobile web). The visualViewport
   handler now ALSO caps panel maxHeight to vv.height-8 while the keyboard is up,
   so the top edge stays on-screen. Deployed to main.
+
+- **2026-07-14 — "Wrong cover" mystery: edition covers + same-day cover sync.**
+  Diagnosis: Between Two Fires was never admin-overridden — the web book page shows
+  the user's OWNED-EDITION cover (getEffectiveCoverUrl branch 2) while the v1 book
+  payload only implemented the audiobook branch, so the app showed the canonical
+  cover. Fix: v1 books/[id] now runs the FULL cascade (getUserOwnedEditions +
+  getEffectiveCoverUrl, size L) → new `effectiveCoverUrl` field; BookHero uses it
+  (curl-verified with her real data: edition 15093954 over canonical 8044643).
+  ALSO: admin cover fixes only rode the NIGHTLY sync — sync-user-activity.ts gained
+  a recent-book-covers pass (last 7 days, newest-wins, update-only by PK, source
+  side must be cover_source manual/admin-removed so enrichment updated_at bumps
+  can't carry a stale cover over a manual fix). Needed idx_books_updated_at on
+  local + Turso (live scan timed out without it). Her two native-picker fixes
+  (Black Sun, Warp speed) verified on live same-day.

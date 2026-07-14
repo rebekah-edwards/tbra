@@ -467,6 +467,9 @@ struct BookDetailData: Codable, Hashable {
     /// Server-computed: the user's formats select the audiobook AND a real
     /// square image exists — hero renders square + swaps to that image.
     let usesAudiobookCover: Bool?
+    /// Server-computed full display-cover cascade (audiobook square →
+    /// owned-edition cover → canonical) — same as the web book page.
+    let effectiveCoverUrl: String?
     let userState: BookUserState?
     let hasCompleted: Bool
     let sessions: [ReadingSessionRow]

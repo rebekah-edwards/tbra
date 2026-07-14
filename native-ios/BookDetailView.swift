@@ -275,7 +275,11 @@ private struct BookHero: View {
         // audiobook AND a real square image exists (usesAudiobookCover) — a
         // format choice alone must never square-crop the regular 2:3 cover.
         let squareAudio = data.usesAudiobookCover == true
-        let heroCover = squareAudio ? (book.audiobookCoverUrl ?? book.coverImageUrl) : book.coverImageUrl
+        // effectiveCoverUrl carries the web book page's full cascade
+        // (audiobook square → owned-edition cover → canonical).
+        let heroCover = squareAudio
+            ? (book.audiobookCoverUrl ?? book.coverImageUrl)
+            : (data.effectiveCoverUrl ?? book.coverImageUrl)
         return HStack(alignment: .center, spacing: 16) {   // web: items-center
             CoverThumb(url: heroCover, width: 110, height: squareAudio ? 110 : 165, radius: 10)
                 .shadow(color: .black.opacity(0.5), radius: 12, y: 6)

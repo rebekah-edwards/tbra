@@ -13,6 +13,8 @@ import { getUserReview } from "@/lib/queries/review";
 import { getBookReadingNotes } from "@/lib/queries/reading-notes";
 import { getFollowedUsersWhoRead } from "@/lib/queries/follows";
 import { isBookHidden } from "@/lib/actions/hidden-books";
+import { getUserOwnedEditions } from "@/lib/queries/editions";
+import { getEffectiveCoverUrl } from "@/lib/covers";
 
 /**
  * GET /api/v1/books/[id]  (id = uuid or slug)
@@ -47,6 +49,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     bookNotes,
     friendsWhoRead,
     hidden,
+    ownedEditions,
   ] = await Promise.all([
     getUserBookState(user.userId, bookId),
     getBookSessionData(user.userId, bookId),
@@ -62,6 +65,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     getBookReadingNotes(user.userId, bookId),
     getFollowedUsersWhoRead(user.userId, bookId),
     isBookHidden(user.userId, bookId),
+    getUserOwnedEditions(user.userId, bookId),
   ]);
 
   // Content conflicts vs the user's tolerances (same logic as the web page)
@@ -94,10 +98,26 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     ((isActivelyReading && activeFmts.includes("audiobook")) ||
       (ownedFmts.length === 1 && ownedFmts[0] === "audiobook"));
 
+  // Full display-cover cascade, same as the web book page: audiobook square →
+  // the user's OWNED-EDITION cover → canonical book cover. Was missing here
+  // (only the audiobook branch existed), so a user whose selected edition has
+  // its own cover saw the canonical one in the app but their edition's on the
+  // web (Between Two Fires, 2026-07-14).
+  const effectiveCoverUrl = getEffectiveCoverUrl({
+    baseCoverUrl: book.coverImageUrl,
+    editionSelections: ownedEditions.map((e) => ({ format: e.format, coverId: e.coverId ?? null })),
+    activeFormats: activeFmts,
+    ownedFormats: ownedFmts,
+    isActivelyReading,
+    size: "L",
+    audiobookCoverUrl: book.audiobookCoverUrl,
+  });
+
   return jsonOk({
     book, // full getBookWithDetails payload (authors, series, genres, ratings, summary, description, …)
     slug: resolved.book.slug,
     usesAudiobookCover,
+    effectiveCoverUrl,
     userState, // { state, ownedFormats, activeFormats } | null
     hasCompleted: sessionData.hasCompleted,
     sessions: sessionData.sessions,
