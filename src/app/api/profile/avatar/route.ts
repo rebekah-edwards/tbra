@@ -11,7 +11,11 @@ import { revalidatePath } from "next/cache";
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
-const isProduction = !!process.env.TURSO_DATABASE_URL;
+// Use Blob whenever the token exists — including LOCAL dev: an avatar
+// uploaded through the Mac's dev server used to save to local disk with a
+// relative /uploads URL, which then SYNCED to live where the file doesn't
+// exist (user's public profile photo was blank, found 2026-07-16).
+const isProduction = !!process.env.BLOB_READ_WRITE_TOKEN;
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
