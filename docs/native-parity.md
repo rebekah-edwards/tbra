@@ -436,3 +436,18 @@ explicit user sign-off.
   same-origin) until pointed at the IP via new sim-only TBRA_DEBUG_BASEURL env.
   Fix: `allowedDevOrigins: ["100.84.95.103"]` in next.config.ts + dev-server
   kickstart; sim-over-IP verified the picker auto-opens with all sections.
+
+- **2026-07-13 — NATIVE cover picker (webview retired for the pencil).** User asked
+  why the picker was a web page — it isn't anymore. New CoverPickerSheet (SwiftUI,
+  in BookDetailView.swift): Choose Photo (PhotosPicker, client-side scale/compress
+  to the 2MB cap), paste-URL + Set, OL editions grid, ISBNdb/Google grid, audiobook
+  square URL field, Remove w/ confirm. Backed by new v1 admin routes: GET
+  /api/v1/admin/cover-editor?bookId= (server-side ISBNdb/Google/OL-candidate cascade
+  + OL edition covers in one payload; reuses the /api/admin/covers helpers) and
+  POST /api/v1/admin/books/[id]/cover (JSON {url|null} · {audiobookUrl|null} ·
+  multipart upload; mirrors setBookCover/setAudiobookCover/uploadBookCover
+  semantics, ALWAYS bumps updated_at for sync). requireApiAdmin (bearer + users.role)
+  in src/lib/api/admin.ts. curl-verified all branches (403 unauth, Amazon-page URL
+  rejected, upload lands in /uploads/covers) + sim screenshot via new
+  TBRA_DEBUG_ROUTE=coverpicker:<slug>. AdminSheet webview remains ONLY for the
+  /admin hub pages.

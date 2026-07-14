@@ -156,6 +156,64 @@ actor APIClient {
                            body: [String: String]()) as OkResponse
     }
 
+    // MARK: Admin — native cover picker
+
+    struct CoverEditorData: Codable {
+        struct BookCovers: Codable {
+            let id: String
+            let title: String
+            let coverImageUrl: String?
+            let audiobookCoverUrl: String?
+        }
+        struct External: Codable, Hashable {
+            let url: String
+            let source: String
+            let label: String
+        }
+        struct OLEdition: Codable, Hashable {
+            let coverId: Int
+            let title: String?
+            let format: String?
+            let year: String?
+        }
+        let ok: Bool
+        let book: BookCovers
+        let external: [External]
+        let olEditions: [OLEdition]
+    }
+
+    func coverEditor(bookId: String) async throws -> CoverEditorData {
+        try await send("/api/v1/admin/cover-editor", method: "GET",
+                       query: [URLQueryItem(name: "bookId", value: bookId)])
+    }
+
+    /// nil url = remove the cover (book lands on the /admin/covers queue).
+    func setCover(bookId: String, url: String?) async throws {
+        _ = try await send("/api/v1/admin/books/\(bookId)/cover", method: "POST",
+                           body: ["url": url ?? NSNull()]) as OkResponse
+    }
+
+    func setAudiobookCover(bookId: String, url: String?) async throws {
+        _ = try await send("/api/v1/admin/books/\(bookId)/cover", method: "POST",
+                           body: ["audiobookUrl": url ?? NSNull()]) as OkResponse
+    }
+
+    /// Multipart upload of a JPEG; returns the stored /uploads/... URL.
+    func uploadCover(bookId: String, jpeg: Data) async throws -> String {
+        struct Res: Codable { let ok: Bool; let url: String }
+        let boundary = "tbra-\(UUID().uuidString)"
+        var form = Data()
+        form.append("--\(boundary)\r\n".data(using: .utf8)!)
+        form.append("Content-Disposition: form-data; name=\"cover\"; filename=\"cover.jpg\"\r\n".data(using: .utf8)!)
+        form.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        form.append(jpeg)
+        form.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        let res: Res = try await send("/api/v1/admin/books/\(bookId)/cover", method: "POST",
+                                      bodyData: form,
+                                      contentType: "multipart/form-data; boundary=\(boundary)")
+        return res.url
+    }
+
     // MARK: Register + public posts
 
     struct AuthPair: Codable { let token: String; let refreshToken: String; let user: PublicUser }
@@ -336,6 +394,7 @@ actor APIClient {
         _ path: String, method: String,
         query: [URLQueryItem]? = nil,
         body: [String: Any]? = nil, bodyData: Data? = nil,
+        contentType: String = "application/json",
         authed: Bool = true, isRetry: Bool = false
     ) async throws -> T {
         var url = Self.baseURL.appending(path: path)
@@ -346,7 +405,7 @@ actor APIClient {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             req.httpBody = try JSONSerialization.data(withJSONObject: body)
         } else if let bodyData {
-            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.setValue(contentType, forHTTPHeaderField: "Content-Type")
             req.httpBody = bodyData
         }
         if authed, let token = Keychain.accessToken {

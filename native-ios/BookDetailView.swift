@@ -280,10 +280,9 @@ private struct BookHero: View {
             CoverThumb(url: heroCover, width: 110, height: squareAudio ? 110 : 165, radius: 10)
                 .shadow(color: .black.opacity(0.5), radius: 12, y: 6)
                 // Admin-only cover pencil (web: -top-1.5 -right-1.5 circle).
-                // Opens the REAL web cover picker for this book inside the
-                // authenticated webview (?editCover=1 auto-opens the modal) —
-                // OL edition covers, ISBNdb/Google candidates, custom URL,
-                // upload. One picker, zero drift.
+                // Opens the NATIVE cover picker (user request 2026-07-13 —
+                // no more webview): OL edition covers, ISBNdb/Google
+                // candidates, custom URL, photo upload, audiobook square.
                 .overlay(alignment: .topTrailing) {
                     if isAdmin {
                         Button {
@@ -300,12 +299,10 @@ private struct BookHero: View {
                         .offset(x: 8, y: -8)
                     }
                 }
-                .fullScreenCover(isPresented: $coverEditorOpen, onDismiss: {
+                .sheet(isPresented: $coverEditorOpen, onDismiss: {
                     Task { await onCoverChanged() }
                 }) {
-                    AdminSheet(title: "Edit Cover",
-                               path: "book/\(data.slug ?? book.slug ?? book.id)",
-                               query: "editCover=1")
+                    CoverPickerSheet(bookId: book.id, bookTitle: book.title)
                 }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -1291,4 +1288,313 @@ private struct WhatsInsideSection: View {
             }
         }
     }
+}
+
+// ── Native cover picker (user request 2026-07-13: no more webview) ──
+//
+// Mirrors the web book-page cover modal: photo upload, paste-URL + Set,
+// OpenLibrary edition covers, ISBNdb/Google candidates, audiobook square
+// URL, and Remove. Candidates come from GET /api/v1/admin/cover-editor
+// (server does the ISBN/OL lookups); saves hit the v1 admin cover route,
+// which stamps cover_source='manual' + updated_at so changes ride the sync.
+
+import PhotosUI
+
+struct CoverPickerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let bookId: String
+    let bookTitle: String
+
+    @State private var data: APIClient.CoverEditorData?
+    @State private var loadFailed = false
+    @State private var urlText = ""
+    @State private var audiobookUrlText = ""
+    @State private var saving = false
+    @State private var error: String?
+    @State private var audiobookSaved = false
+    @State private var photoItem: PhotosPickerItem?
+    @State private var confirmRemove = false
+
+    private let cols = [
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10),
+    ]
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack {
+                    Text("Cover for \u{201C}\(bookTitle)\u{201D}")
+                        .font(Theme.heading(18, .bold))
+                        .foregroundStyle(Theme.foreground)
+                        .lineLimit(2)
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Theme.muted)
+                    }
+                }
+                .padding(.top, 20)
+
+                if let error {
+                    Text(error)
+                        .font(Theme.body(13))
+                        .foregroundStyle(Theme.destructive)
+                }
+
+                // ── Upload ──
+                sectionLabel("UPLOAD COVER")
+                PhotosPicker(selection: $photoItem, matching: .images) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "photo.badge.plus")
+                            .font(.system(size: 13))
+                        Text("Choose Photo")
+                            .font(Theme.body(14, .semibold))
+                    }
+                    .foregroundStyle(Theme.onAccent)
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+                    .background(Theme.accent, in: RoundedRectangle(cornerRadius: 10))
+                }
+                .onChange(of: photoItem) { _, item in
+                    guard let item else { return }
+                    Task { await uploadPhoto(item) }
+                }
+                Text("JPG, PNG, or WebP. Large photos are scaled to fit 2MB.")
+                    .font(Theme.body(11))
+                    .foregroundStyle(Theme.muted)
+                    .padding(.top, -10)
+
+                // ── Paste URL ──
+                sectionLabel("PASTE COVER URL")
+                HStack(spacing: 8) {
+                    TextField("https://…", text: $urlText)
+                        .font(Theme.body(14))
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .padding(.horizontal, 12).padding(.vertical, 10)
+                        .background(Theme.surfaceAlt.opacity(0.8))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+                    Button {
+                        save(url: urlText.trimmingCharacters(in: .whitespaces))
+                    } label: {
+                        Text("Set")
+                            .font(Theme.body(14, .semibold))
+                            .foregroundStyle(Theme.onAccent)
+                            .padding(.horizontal, 16).padding(.vertical, 10)
+                            .background(Theme.accent, in: RoundedRectangle(cornerRadius: 10))
+                    }
+                    .disabled(saving || urlText.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+
+                // ── OpenLibrary editions ──
+                if let data {
+                    if !data.olEditions.isEmpty {
+                        sectionLabel("OPEN LIBRARY EDITIONS (\(data.olEditions.count))")
+                        LazyVGrid(columns: cols, spacing: 12) {
+                            ForEach(data.olEditions, id: \.coverId) { ed in
+                                Button {
+                                    save(url: "https://covers.openlibrary.org/b/id/\(ed.coverId)-L.jpg")
+                                } label: {
+                                    VStack(spacing: 4) {
+                                        CoverThumb(
+                                            url: "https://covers.openlibrary.org/b/id/\(ed.coverId)-M.jpg",
+                                            width: 76, height: 114, radius: 6)
+                                        Text(caption(ed))
+                                            .font(Theme.body(9))
+                                            .foregroundStyle(Theme.muted)
+                                            .lineLimit(1)
+                                    }
+                                }
+                                .disabled(saving)
+                            }
+                        }
+                    }
+
+                    // ── ISBNdb + Google ──
+                    if !data.external.isEmpty {
+                        sectionLabel("ISBNDB & GOOGLE BOOKS (\(data.external.count))")
+                        LazyVGrid(columns: cols, spacing: 12) {
+                            ForEach(data.external, id: \.url) { cand in
+                                Button {
+                                    save(url: cand.url)
+                                } label: {
+                                    VStack(spacing: 4) {
+                                        CoverThumb(url: cand.url, width: 76, height: 114, radius: 6)
+                                        Text(cand.label)
+                                            .font(Theme.body(9))
+                                            .foregroundStyle(Theme.muted)
+                                            .lineLimit(1)
+                                    }
+                                }
+                                .disabled(saving)
+                            }
+                        }
+                    }
+                } else if loadFailed {
+                    Text("Couldn't load cover candidates — URL and upload still work.")
+                        .font(Theme.body(13))
+                        .foregroundStyle(Theme.muted)
+                } else {
+                    HStack(spacing: 8) {
+                        ProgressView().tint(Theme.accent)
+                        Text("Finding covers…")
+                            .font(Theme.body(13))
+                            .foregroundStyle(Theme.muted)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                }
+
+                // ── Audiobook square ──
+                sectionLabel("AUDIOBOOK COVER (SQUARE)")
+                HStack(spacing: 8) {
+                    TextField("https://…", text: $audiobookUrlText)
+                        .font(Theme.body(14))
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .padding(.horizontal, 12).padding(.vertical, 10)
+                        .background(Theme.surfaceAlt.opacity(0.8))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+                    Button {
+                        saveAudiobook()
+                    } label: {
+                        Image(systemName: audiobookSaved ? "checkmark" : "arrow.down.circle")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(audiobookSaved ? Theme.accentText : Theme.onAccent)
+                            .padding(.horizontal, 14).padding(.vertical, 10)
+                            .background(audiobookSaved ? Theme.accent.opacity(0.15) : Theme.accent,
+                                        in: RoundedRectangle(cornerRadius: 10))
+                    }
+                    .disabled(saving)
+                }
+                Text("Only shows while the audiobook format is active. Clear the field and save to remove.")
+                    .font(Theme.body(11))
+                    .foregroundStyle(Theme.muted)
+                    .padding(.top, -10)
+
+                // ── Remove ──
+                Button {
+                    confirmRemove = true
+                } label: {
+                    Text("Remove cover")
+                        .font(Theme.body(13, .medium))
+                        .foregroundStyle(Theme.destructive)
+                }
+                .padding(.top, 4)
+                .padding(.bottom, 24)
+            }
+            .padding(.horizontal, 20)
+        }
+        .background(Theme.bg)
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .task {
+            do {
+                let res = try await APIClient.shared.coverEditor(bookId: bookId)
+                data = res
+                audiobookUrlText = res.book.audiobookCoverUrl ?? ""
+            } catch {
+                loadFailed = true
+            }
+        }
+        .alert("Remove this cover?", isPresented: $confirmRemove) {
+            Button("Remove", role: .destructive) { save(url: nil) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The book will appear on the /admin/covers queue until a new cover is set.")
+        }
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(Theme.body(11, .semibold))
+            .foregroundStyle(Theme.muted)
+            .kerning(0.5)
+    }
+
+    private func caption(_ ed: APIClient.CoverEditorData.OLEdition) -> String {
+        [ed.format, ed.year].compactMap { $0 }.joined(separator: " · ")
+            .ifEmpty(ed.title ?? "")
+    }
+
+    private func save(url: String?) {
+        saving = true; error = nil
+        Task {
+            do {
+                try await APIClient.shared.setCover(bookId: bookId, url: url)
+                dismiss()
+            } catch {
+                self.error = (error as? APIError)?.errorDescription ?? "Couldn't save the cover."
+            }
+            saving = false
+        }
+    }
+
+    private func saveAudiobook() {
+        let trimmed = audiobookUrlText.trimmingCharacters(in: .whitespaces)
+        saving = true; error = nil
+        Task {
+            do {
+                try await APIClient.shared.setAudiobookCover(
+                    bookId: bookId, url: trimmed.isEmpty ? nil : trimmed)
+                audiobookSaved = true
+                try? await Task.sleep(for: .seconds(1.2))
+                audiobookSaved = false
+            } catch {
+                self.error = (error as? APIError)?.errorDescription ?? "Couldn't save the audiobook cover."
+            }
+            saving = false
+        }
+    }
+
+    private func uploadPhoto(_ item: PhotosPickerItem) {
+        saving = true; error = nil
+        Task {
+            defer { saving = false; photoItem = nil }
+            guard let raw = try? await item.loadTransferable(type: Data.self),
+                  var image = UIImage(data: raw) else {
+                error = "Couldn't read that photo."
+                return
+            }
+            // Scale + recompress until it fits the 2MB server cap.
+            var quality: CGFloat = 0.85
+            var jpeg = image.jpegData(compressionQuality: quality)
+            while let d = jpeg, d.count > 2 * 1024 * 1024 {
+                if quality > 0.5 {
+                    quality -= 0.15
+                } else if image.size.width > 800 {
+                    let scale = 800 / image.size.width
+                    let newSize = CGSize(width: 800, height: image.size.height * scale)
+                    image = UIGraphicsImageRenderer(size: newSize).image { _ in
+                        image.draw(in: CGRect(origin: .zero, size: newSize))
+                    }
+                    quality = 0.8
+                } else {
+                    break
+                }
+                jpeg = image.jpegData(compressionQuality: quality)
+            }
+            guard let final = jpeg, final.count <= 2 * 1024 * 1024 else {
+                error = "Photo is too large even after compression."
+                return
+            }
+            do {
+                _ = try await APIClient.shared.uploadCover(bookId: bookId, jpeg: final)
+                dismiss()
+            } catch {
+                self.error = (error as? APIError)?.errorDescription ?? "Upload failed."
+            }
+        }
+    }
+}
+
+private extension String {
+    func ifEmpty(_ fallback: String) -> String { isEmpty ? fallback : self }
 }
