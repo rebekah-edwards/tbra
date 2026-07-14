@@ -229,13 +229,13 @@ export async function updateContentPreference(
 
   try {
     await db.insert(userContentPreferences)
-      .values({ userId: user.userId, categoryId, maxTolerance })
+      .values({ userId: user.userId, categoryId, maxTolerance, updatedAt: new Date().toISOString() })
       .onConflictDoUpdate({
         target: [
           userContentPreferences.userId,
           userContentPreferences.categoryId,
         ],
-        set: { maxTolerance },
+        set: { maxTolerance, updatedAt: new Date().toISOString() },
       })
       .run();
 

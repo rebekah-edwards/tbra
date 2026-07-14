@@ -123,9 +123,10 @@ struct ProfileView: View {
                     }
                     Text("·").foregroundStyle(Theme.muted)
                     Button {
-                        if let username = data.user.username,
-                           let url = URL(string: "https://thebasedreader.app/u/\(username)") {
-                            UIApplication.shared.open(url)
+                        // Native public profile, not the browser
+                        // (user request 2026-07-15).
+                        if let username = data.user.username {
+                            path.append(UserRoute(username: username))
                         }
                     } label: {
                         Text("View public profile").font(Theme.body(14, .medium))

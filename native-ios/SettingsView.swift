@@ -102,14 +102,7 @@ struct SettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 HStack(spacing: 12) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Theme.foreground.opacity(0.9))
-                            .frame(width: 40, height: 40)
-                            .background(.black.opacity(0.35), in: Circle())
-                            .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-                    }
+                    Color.clear.frame(width: 40, height: 40)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Settings")
                             .font(Theme.heading(26, .bold))
@@ -138,6 +131,7 @@ struct SettingsView: View {
             .padding(.bottom, 40)
         }
         .background(AmbientBackground())
+        .floatingBack()
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }
     }
@@ -166,12 +160,16 @@ struct SettingsView: View {
                             Button {
                                 Task { await model.setTolerance(pref.categoryId, level) }
                             } label: {
+                                // Unselected pills need a full-strength fill
+                                // + border — at 40% they vanished entirely in
+                                // light mode (user report 2026-07-15).
                                 Text(toleranceLabels[level])
                                     .font(Theme.body(10, .medium))
                                     .foregroundStyle(active ? .black : Theme.muted)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 7)
-                                    .background(active ? Theme.accent : Theme.surfaceAlt.opacity(0.4), in: Capsule())
+                                    .background(active ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.surfaceAlt), in: Capsule())
+                                    .overlay(Capsule().stroke(active ? .clear : Theme.border, lineWidth: 1))
                             }
                         }
                     }

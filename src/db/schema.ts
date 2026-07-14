@@ -549,6 +549,9 @@ export const userContentPreferences = sqliteTable("user_content_preferences", {
   userId: text("user_id").notNull().references(() => users.id),
   categoryId: text("category_id").notNull(), // e.g. 'violence_gore', 'romance_sex'
   maxTolerance: integer("max_tolerance").notNull(), // 0=none, 1=mild, 2=moderate, 3=heavy, 4=no limit
+  // Added 2026-07-15: without it tolerance CHANGES could never sync
+  // live<->local (insert-only) — web and app drifted apart.
+  updatedAt: text("updated_at"),
 }, (table) => [
   uniqueIndex("user_content_pref_unique").on(table.userId, table.categoryId),
 ]);

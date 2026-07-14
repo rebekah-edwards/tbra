@@ -108,7 +108,7 @@ const TABLES: TableSpec[] = [
   { name: 'reading_sessions',           pk: ['id'], hasUpdatedAt: true, naturalKey: ['user_id', 'book_id', 'read_number'] },
   { name: 'reading_notes',              pk: ['id'], hasUpdatedAt: false },
   { name: 'user_owned_editions',        pk: ['user_id', 'edition_id'], hasUpdatedAt: false },
-  { name: 'user_content_preferences',   pk: ['user_id', 'category_id'], hasUpdatedAt: false },
+  { name: 'user_content_preferences',   pk: ['user_id', 'category_id'], hasUpdatedAt: true },  // updated_at added 2026-07-15
   { name: 'user_reading_preferences',   pk: ['user_id'], hasUpdatedAt: true },
   { name: 'user_genre_preferences',     pk: ['user_id', 'genre_name'], hasUpdatedAt: false },
   { name: 'user_notification_preferences', pk: ['user_id'], hasUpdatedAt: true },

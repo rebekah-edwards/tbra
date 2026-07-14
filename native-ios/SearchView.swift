@@ -70,10 +70,11 @@ final class SearchModel {
 
 struct SearchRootView: View {
     @Environment(\.dismiss) private var dismiss
+    var initialQuery: String? = nil
 
     var body: some View {
         NavigationStack {
-            SearchView(onClose: { dismiss() })
+            SearchView(onClose: { dismiss() }, initialQuery: initialQuery)
                 .toolbar(.hidden, for: .navigationBar)
                 .appDestinations()
         }
@@ -82,6 +83,8 @@ struct SearchRootView: View {
 
 struct SearchView: View {
     let onClose: () -> Void
+    /// Pre-filled by the floating overlay's "See more results" hand-off.
+    var initialQuery: String? = nil
     @State private var model = SearchModel()
     @FocusState private var fieldFocused: Bool
 
@@ -91,14 +94,7 @@ struct SearchView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(spacing: 16) {
-                        Button(action: onClose) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Theme.foreground.opacity(0.9))
-                                .frame(width: 40, height: 40)
-                                .background(.black.opacity(0.35), in: Circle())
-                                .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-                        }
+                        Color.clear.frame(width: 40, height: 40)
                         Text("Search")
                             .font(Theme.heading(26, .bold))
                             .foregroundStyle(Theme.foreground)
@@ -162,8 +158,13 @@ struct SearchView: View {
                 .padding(.bottom, 40)
             }
         }
+        .floatingBack()
         .onAppear {
             fieldFocused = true
+            if let q = initialQuery, model.query.isEmpty {
+                model.query = q
+                model.queryChanged()
+            }
             #if DEBUG && targetEnvironment(simulator)
             // Headless verification: pre-fill the query from the launch env.
             if let q = ProcessInfo.processInfo.environment["TBRA_DEBUG_QUERY"], model.query.isEmpty {
@@ -450,5 +451,231 @@ private struct ExternalResultCard: View {
         .background(Theme.surface.opacity(0.65))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border.opacity(0.7), lineWidth: 1))
+    }
+}
+
+// ── Floating search overlay — web nav search-bar.tsx parity (2026-07-15) ──
+// The search icon opens THIS (pill + grouped quick results over a dimmed
+// backdrop), not a full page. The footer and Return key hand off to the
+// full SearchRootView cover for deep results + external add.
+
+struct FloatingSearchOverlay: View {
+    @Binding var open: Bool
+    let onOpenBook: (String) -> Void
+    let onOpenSeries: (String) -> Void
+    let onOpenAuthor: (String) -> Void
+    let onFullSearch: (String) -> Void
+
+    struct Res: Codable {
+        struct Hit: Codable { let id: String; let name: String; let bookCount: Int }
+        struct Book: Codable {
+            let id: String; let slug: String?; let title: String
+            let coverImageUrl: String?; let authors: [String]
+            let publicationYear: Int?; let state: String?
+        }
+        let ok: Bool
+        let books: [Book]
+        let series: [Hit]
+        let authors: [Hit]
+        let sectionOrder: [String]
+    }
+
+    @State private var query = ""
+    @State private var res: Res?
+    @State private var searching = false
+    @State private var debounce: Task<Void, Never>?
+    @FocusState private var focused: Bool
+
+    private var trimmed: String { query.trimmingCharacters(in: .whitespaces) }
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .onTapGesture { close() }
+
+            VStack(spacing: 8) {
+                pill
+                if trimmed.count >= 2 { resultsPanel }
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+        }
+        .onAppear { focused = true }
+    }
+
+    private var pill: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Theme.muted)
+            TextField("Search books, authors, series...", text: $query)
+                .font(Theme.body(16))
+                .foregroundStyle(Theme.foreground)
+                .focused($focused)
+                .submitLabel(.search)
+                .autocorrectionDisabled()
+                .onSubmit { if trimmed.count >= 2 { handOff() } }
+                .onChange(of: query) { runSearch() }
+            if searching {
+                ProgressView().tint(Theme.accent).scaleEffect(0.8)
+            } else if !query.isEmpty {
+                Button {
+                    query = ""; res = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Theme.muted.opacity(0.7))
+                }
+            }
+            Button("Cancel") { close() }
+                .font(Theme.body(12, .medium))
+                .foregroundStyle(Theme.muted)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 13)
+        .background(Theme.surface, in: Capsule())
+        .overlay(Capsule().stroke(Theme.border, lineWidth: 1))
+        .shadow(color: .black.opacity(0.25), radius: 16, y: 6)
+    }
+
+    private var resultsPanel: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                if let res {
+                    ForEach(res.sectionOrder, id: \.self) { section in
+                        switch section {
+                        case "books": ForEach(res.books, id: \.id) { bookRow($0) }
+                        case "series": ForEach(res.series, id: \.id) { hitRow($0, kind: "series") }
+                        case "authors": ForEach(res.authors, id: \.id) { hitRow($0, kind: "author") }
+                        default: EmptyView()
+                        }
+                    }
+                    if res.books.isEmpty && res.series.isEmpty && res.authors.isEmpty && !searching {
+                        Text("No books found")
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                            .padding(.vertical, 20)
+                    }
+                }
+                Button { handOff() } label: {
+                    Text("See more results or add a book")
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .overlay(alignment: .top) { Divider().background(Theme.border.opacity(0.5)) }
+            }
+        }
+        .frame(maxHeight: UIScreen.main.bounds.height * 0.55)
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
+        .shadow(color: .black.opacity(0.25), radius: 16, y: 6)
+    }
+
+    private func bookRow(_ book: Res.Book) -> some View {
+        Button {
+            onOpenBook(book.slug ?? book.id)
+            close()
+        } label: {
+            HStack(spacing: 12) {
+                CoverThumb(url: book.coverImageUrl, width: 40, height: 60, radius: 5)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(book.title)
+                        .font(Theme.body(14, .medium))
+                        .foregroundStyle(Theme.foreground)
+                        .lineLimit(1)
+                    Text([book.authors.prefix(2).joined(separator: ", "),
+                          book.publicationYear.map(String.init) ?? ""]
+                        .filter { !$0.isEmpty }.joined(separator: " · "))
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
+                        .lineLimit(1)
+                }
+                Spacer()
+                if let state = book.state, let label = Self.stateLabels[state] {
+                    Text(label)
+                        .font(Theme.body(10, .medium))
+                        .foregroundStyle(Theme.accentText)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(Theme.accent.opacity(0.12), in: Capsule())
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Theme.muted.opacity(0.5))
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10)
+        }
+        .overlay(alignment: .bottom) { Divider().background(Theme.border.opacity(0.35)) }
+    }
+
+    private func hitRow(_ hit: Res.Hit, kind: String) -> some View {
+        Button {
+            if kind == "series" { onOpenSeries(hit.id) } else { onOpenAuthor(hit.id) }
+            close()
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill((kind == "series" ? Theme.accent : Theme.neonBlue).opacity(0.1))
+                    Image(systemName: kind == "series" ? "books.vertical" : "person")
+                        .font(.system(size: 15))
+                        .foregroundStyle(kind == "series" ? Theme.accentText : Theme.neonBlue)
+                }
+                .frame(width: 40, height: 60)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(hit.name)
+                        .font(Theme.body(14, .medium))
+                        .foregroundStyle(Theme.foreground)
+                        .lineLimit(1)
+                    Text("\(hit.bookCount) book\(hit.bookCount == 1 ? "" : "s")\(kind == "series" ? " in series" : "")")
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.muted.opacity(0.5))
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10)
+        }
+        .overlay(alignment: .bottom) { Divider().background(Theme.border.opacity(0.35)) }
+    }
+
+    private static let stateLabels: [String: String] = [
+        "completed": "Finished", "currently_reading": "Reading",
+        "tbr": "TBR", "paused": "Paused", "dnf": "DNF",
+    ]
+
+    private func runSearch() {
+        debounce?.cancel()
+        let q = trimmed
+        guard q.count >= 2 else { res = nil; return }
+        debounce = Task {
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled else { return }
+            searching = true
+            defer { searching = false }
+            do {
+                let r: Res = try await APIClient.shared.get(
+                    "/api/v1/search/unified", query: [URLQueryItem(name: "q", value: q)])
+                if !Task.isCancelled { res = r }
+            } catch {
+                NSLog("TBRA-DEBUG overlay search failed: %@", String(describing: error))
+            }
+        }
+    }
+
+    private func handOff() {
+        let q = trimmed
+        close()
+        onFullSearch(q)
+    }
+
+    private func close() {
+        open = false
+        query = ""; res = nil
     }
 }

@@ -170,18 +170,10 @@ struct SimilarBooksSection: View {
                         HStack(alignment: .top, spacing: 12) {
                             ForEach(books) { book in
                                 NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
+                                    // Web card = cover + italic reason ONLY
+                                    // (no title/author — user request 2026-07-15).
                                     VStack(alignment: .leading, spacing: 5) {
                                         CoverThumb(url: book.coverImageUrl, width: 120, height: 180, radius: 8)
-                                        Text(book.title)
-                                            .font(Theme.body(12, .medium))
-                                            .foregroundStyle(Theme.foreground.opacity(0.9))
-                                            .lineLimit(2)
-                                            .multilineTextAlignment(.leading)
-                                        Text(book.authors.joined(separator: ", "))
-                                            .font(Theme.body(11))
-                                            .foregroundStyle(Theme.muted)
-                                            .lineLimit(1)
-                                        // Web: centered italic muted caption
                                         if let reason = reasons[book.id], !reason.isEmpty {
                                             Text(reason)
                                                 .font(Theme.body(10).italic())

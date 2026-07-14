@@ -122,7 +122,7 @@ const TABLES: Array<[string, string[], boolean]> = [
   ['shelf_follows',            ['user_id', 'shelf_id'],   false],
   ['tbr_notes',                ['id'],                    true],
   ['user_owned_editions',      ['user_id', 'edition_id'], false],
-  ['user_content_preferences', ['user_id', 'category_id'],false],
+  ['user_content_preferences', ['user_id', 'category_id'],true],  // updated_at added 2026-07-15
   ['user_reading_preferences', ['user_id'],               true],
   ['user_genre_preferences',   ['user_id', 'genre_name'], false],
   ['user_notification_preferences', ['user_id'],          true],

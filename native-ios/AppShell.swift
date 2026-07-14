@@ -14,6 +14,10 @@ enum AppTab: Hashable {
 struct AppShell: View {
     @Environment(AuthStore.self) private var auth
     @State private var searchOpen = false
+    @State private var fullSearchOpen = false
+    @State private var fullSearchQuery: String?
+    @State private var presentedSeriesId: String?
+    @State private var presentedAuthorId: String?
     @State private var bellOpen = false
     @State private var menuOpen = false
     @State private var notifications = NotificationsModel()
@@ -125,10 +129,48 @@ struct AppShell: View {
                 .presentationDetents([.large])
                 .presentationBackground(Theme.bg)
         }
-        .fullScreenCover(isPresented: $searchOpen) {
-            SearchRootView()
+        // Search icon → FLOATING overlay (web nav-bar parity, 2026-07-15).
+        // The full search page remains reachable via the overlay's footer.
+        .overlay {
+            if searchOpen {
+                FloatingSearchOverlay(
+                    open: $searchOpen,
+                    onOpenBook: { presentedBookSlug = $0 },
+                    onOpenSeries: { presentedSeriesId = $0 },
+                    onOpenAuthor: { presentedAuthorId = $0 },
+                    onFullSearch: { q in fullSearchQuery = q; fullSearchOpen = true }
+                )
+                .zIndex(60)
+            }
+        }
+        .fullScreenCover(isPresented: $fullSearchOpen) {
+            SearchRootView(initialQuery: fullSearchQuery)
                 .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
+        }
+        .fullScreenCover(isPresented: Binding(
+            get: { presentedSeriesId != nil },
+            set: { if !$0 { presentedSeriesId = nil } }
+        )) {
+            NavigationStack {
+                SeriesView(slug: presentedSeriesId ?? "")
+                    .toolbar(.hidden, for: .navigationBar)
+                    .appDestinations()
+            }
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
+            .environment(\.showsShellChrome, false)
+        }
+        .fullScreenCover(isPresented: Binding(
+            get: { presentedAuthorId != nil },
+            set: { if !$0 { presentedAuthorId = nil } }
+        )) {
+            NavigationStack {
+                AuthorView(idOrSlug: presentedAuthorId ?? "")
+                    .toolbar(.hidden, for: .navigationBar)
+                    .appDestinations()
+            }
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
+            .environment(\.showsShellChrome, false)
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedBookSlug != nil },

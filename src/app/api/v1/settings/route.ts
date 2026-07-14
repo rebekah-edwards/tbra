@@ -78,10 +78,10 @@ export async function PATCH(req: Request) {
   if (typeof body.categoryId === "string" && typeof body.maxTolerance === "number") {
     const tolerance = Math.max(0, Math.min(4, Math.round(body.maxTolerance)));
     await db.insert(userContentPreferences)
-      .values({ userId: user.userId, categoryId: body.categoryId, maxTolerance: tolerance })
+      .values({ userId: user.userId, categoryId: body.categoryId, maxTolerance: tolerance, updatedAt: new Date().toISOString() })
       .onConflictDoUpdate({
         target: [userContentPreferences.userId, userContentPreferences.categoryId],
-        set: { maxTolerance: tolerance },
+        set: { maxTolerance: tolerance, updatedAt: new Date().toISOString() },
       })
       .run();
     return jsonOk({});

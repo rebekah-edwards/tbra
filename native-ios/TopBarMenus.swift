@@ -150,7 +150,6 @@ struct HamburgerMenuSheet: View {
     private struct WebItem { let label: String; let icon: String; let path: String }
     private let items: [WebItem] = [
         WebItem(label: "Import Your Library", icon: "tray.and.arrow.down", path: "/import"),
-        WebItem(label: "Contact Us", icon: "envelope", path: "/contact"),
     ]
 
     private var user: PublicUser? {
@@ -213,6 +212,16 @@ struct HamburgerMenuSheet: View {
                 } label: {
                     menuRow(icon: item.icon, label: item.label)
                 }
+            }
+
+            // Contact Us — straight into a pre-addressed email, no browser
+            // (user request 2026-07-15).
+            Button {
+                if let url = URL(string: "mailto:hello@thebasedreader.app") {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                menuRow(icon: "envelope", label: "Contact Us")
             }
 
             // Admin — only for admin accounts, like the web menu. Opens the

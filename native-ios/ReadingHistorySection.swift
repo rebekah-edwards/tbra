@@ -102,11 +102,13 @@ private struct SessionRow: View {
                             .overlay(Capsule().stroke(Theme.neonPurple.opacity(0.4), lineWidth: 1))
                     }
                     if session.state == "currently_reading" {
+                        // Green pill ⇒ BLACK text, always (brand rule; the
+                        // lime-on-lime version was unreadable — 2026-07-15).
                         Text("Reading")
-                            .font(Theme.body(11, .medium))
-                            .foregroundStyle(Theme.accent)
+                            .font(Theme.body(11, .semibold))
+                            .foregroundStyle(.black)
                             .padding(.horizontal, 8).padding(.vertical, 3)
-                            .background(Theme.accent.opacity(0.12), in: Capsule())
+                            .background(Theme.accent, in: Capsule())
                     }
                     Spacer()
                     Image(systemName: "chevron.down")

@@ -515,3 +515,26 @@ explicit user sign-off.
   format is owned, Shelves fills solid blue once the book is on a shelf — the
   native pills hardcoded solid:false. clusterPill also gains the web's soft
   same-hue glow on solid. Sim-verified (Owned · 1 / Shelves · 1 solid w/ white text).
+
+- **2026-07-15 — Punch list #7 (9 items).** (1) Reading-history "Reading" pill =
+  solid lime + BLACK text. (2) Similar Books cards = cover + reason only (web).
+  (3) View public profile → native UserRoute push. (4) Goodreads + StoryGraph
+  import wiring VERIFIED end-to-end w/ fixture CSVs via session-cookie bridge
+  (parse→JSON-batch stream + multipart stream; matched catalog books, 0 new rows,
+  states set, then cleaned). (5) FLOATING SEARCH OVERLAY (web nav-bar parity):
+  search icon → pill + grouped quick results (sectionOrder; series/author rows
+  open native covers; book rows → book cover; footer/Return → full search page
+  prefilled) backed by new GET /api/v1/search/unified (v1 books search + Meili
+  series/authors). (6) Browse parity: search box, 6 web sort options in a menu,
+  collapsible filter panel (genre 22 / type / length / audience / owned / social),
+  cover-only cards w/ black-60 white "N.N ★" badge (no green, no titles), Load
+  More. (7) Search/Find Readers/Settings: dark-grey in-content back circles
+  (.black 35% — grey in light mode, scrolled away) → standard sticky floatingBack.
+  (8) Contact Us menu item → mailto:hello@thebasedreader.app. (9) Settings:
+  unselected tolerance pills full-strength fill + border (invisible at 40% in
+  light); PERSISTENCE: user_content_preferences gained updated_at (local + Turso
+  ALTER), stamped by BOTH write paths (web action + v1 PATCH), sync specs flipped
+  to newest-wins updates — tolerance changes now propagate web↔app. GOTCHA hit
+  during verification: dev server wedged (30-46s responses) after heavy route
+  churn → launchctl kickstart fixed; the overlay's earlier "empty results" was
+  exactly that.
