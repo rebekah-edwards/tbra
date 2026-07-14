@@ -75,12 +75,12 @@ private struct SessionRow: View {
     }
 
     private var leadFormat: String? {
-        // leadFormatIcon: audiobook wins, then ebook, then print
+        // Web leadFormatIcon: ONE format → its own icon (hardcover ≠
+        // paperback ≠ ebook ≠ audiobook); multiple → neutral stack.
         let f = session.activeFormats ?? []
-        if f.contains("audiobook") { return "headphones" }
-        if f.contains("ebook") { return "ipad" }
-        if f.contains("hardcover") || f.contains("paperback") { return "book.closed" }
-        return nil
+        if f.isEmpty { return nil }
+        if f.count == 1 { return FormatIcon.symbol(for: f[0]) }
+        return "books.vertical"
     }
 
     var body: some View {

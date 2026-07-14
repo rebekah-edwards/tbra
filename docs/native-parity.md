@@ -471,3 +471,31 @@ explicit user sign-off.
   can't carry a stale cover over a manual fix). Needed idx_books_updated_at on
   local + Turso (live scan timed out without it). Her two native-picker fixes
   (Black Sun, Warp speed) verified on live same-day.
+
+- **2026-07-14 — Book-page punch list #5 (13 items) + home titles.** (1) Home
+  Reading Now titles wrap to 3 lines (fixedSize). (2) Audio length next to year
+  ONLY when effective format is audiobook (web showAudioLength); else "N pages" —
+  verified: Skyward(audio)=15h 28m, BTF=456 pages. (3) NEW FormatIcon helper
+  (Models.swift) mirrors web leadFormatIcon: hardcover=book.closed, paperback=book,
+  ebook=ipad, audiobook=headphones, multiple/none=books.vertical — Format button no
+  longer hardcodes headphones; history rows per-format. (4) Hero bleed extends
+  behind the status bar (-140 top, 460h) — no hard line. (5) Bleed + card blur use
+  effectiveCoverUrl (edition cover drives the wash color). (6) Reading-state
+  dropdown closes on any outside tap (oversized clear catcher under the menu).
+  (7) Buddy Read: confirm dialog before create + cover env overrides (was the
+  unreachable-back bug again). (8) Summary card = web frosted variant: visible
+  border both modes, breathing purple/blue radial blobs (6s), Georgia ” at 280pt
+  overhanging bottom-right, clipped. (9+12) SIMILAR BOOKS + SERIES RAIL were
+  PERMANENTLY DEAD: body was EmptyView while books empty, and EmptyView never
+  fires onAppear/.task → fetch never ran (iOS 27 fires appear lazily; .task also
+  cancelled on scroll-past). Fix: 1pt clear placeholder + unstructured Task in
+  onAppear. Rails now match web: "Similar Books" heading, 120pt cards w/ italic
+  reason captions; "More In This Series" includes current book w/ lime ring,
+  integer-position filter, auto-centers. (10) Rate & review = RoundedRectangle 14
+  like every other button. (11) ReviewHTML parser (ReviewsListView.swift): sanitized
+  HTML → styled AttributedString (p/div/br/b/i/u/s/lists/entities) + spoiler-tag
+  spans as tappable links — hidden = transparent text on surface-alt chip (web
+  parity), tap reveals/re-hides each independently. Verified on the Skyward review
+  that used to show raw <div>s. (13) NATIVE Admin Edit panel on book page
+  (super-admin): 13 fields + genre chips, GET/POST /api/v1/admin/books/[id]/fields
+  + /genres (always bump updated_at; web updateBookFields patched to bump too).

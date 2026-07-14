@@ -197,10 +197,10 @@ struct ReviewsListView: View {
             }
 
             if let text = review.reviewText, !text.isEmpty {
-                Text(text)
-                    .font(Theme.body(15))
-                    .foregroundStyle(Theme.foreground.opacity(0.9))
-                    .lineSpacing(2)
+                // Reviews are stored as sanitized HTML — render it styled
+                // (p/div/br/bold/italic/lists) with tap-to-reveal spoilers,
+                // never as raw tags (user report 2026-07-14).
+                ReviewHTMLText(html: text)
             }
 
             // Descriptor tag chips (flattened, like review-card)
@@ -237,5 +237,178 @@ struct ReviewsListView: View {
         .background(Theme.surface.opacity(0.55))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+    }
+}
+
+// ── Review HTML rendering — web review-card.tsx parity (2026-07-14) ──
+// The editor saves sanitized HTML (p/div/br/strong/em/u/s/ul/ol/li/
+// blockquote + span.spoiler-tag). The web renders it directly; natively we
+// parse to styled segments. Spoilers reproduce the web effect exactly:
+// text hidden by a solid surface-alt chip (transparent text, NOT blur),
+// tap to reveal, tap again to re-hide — each spoiler independently.
+
+enum ReviewHTML {
+    struct Segment: Hashable {
+        var text: String
+        var bold = false
+        var italic = false
+        var underline = false
+        var strike = false
+        var spoilerIndex: Int? = nil
+    }
+
+    static func parse(_ html: String) -> [Segment] {
+        var segments: [Segment] = []
+        var current = ""
+        var bold = 0, italic = 0, underline = 0, strike = 0
+        var spoilerDepth = 0
+        var spoilerCount = 0
+        var currentSpoiler: Int? = nil
+
+        func flush() {
+            guard !current.isEmpty else { return }
+            segments.append(Segment(
+                text: current, bold: bold > 0, italic: italic > 0,
+                underline: underline > 0, strike: strike > 0,
+                spoilerIndex: currentSpoiler))
+            current = ""
+        }
+        func newline(_ n: Int = 1) {
+            // Collapse runs — never more than one blank line.
+            let trailing = current.isEmpty
+                ? (segments.last?.text.suffix(2) ?? "")
+                : current.suffix(2)
+            if trailing.hasSuffix("\n\n") { return }
+            current += trailing.hasSuffix("\n") ? String(repeating: "\n", count: max(0, n - 1)) : String(repeating: "\n", count: n)
+        }
+
+        var i = html.startIndex
+        while i < html.endIndex {
+            let ch = html[i]
+            if ch == "<" {
+                guard let close = html[i...].firstIndex(of: ">") else { break }
+                let rawTag = String(html[html.index(after: i)..<close]).trimmingCharacters(in: .whitespaces)
+                let isClosing = rawTag.hasPrefix("/")
+                let name = rawTag.drop(while: { $0 == "/" })
+                    .prefix(while: { $0.isLetter || $0.isNumber }).lowercased()
+                switch name {
+                case "br":
+                    current += "\n"
+                case "p", "div", "blockquote":
+                    if isClosing { flush(); newline(2) }
+                case "li":
+                    if !isClosing { flush(); newline(1); current += "•  " }
+                case "ul", "ol":
+                    if isClosing { flush(); newline(2) }
+                case "strong", "b":
+                    flush(); bold += isClosing ? -1 : 1; bold = max(0, bold)
+                case "em", "i":
+                    flush(); italic += isClosing ? -1 : 1; italic = max(0, italic)
+                case "u":
+                    flush(); underline += isClosing ? -1 : 1; underline = max(0, underline)
+                case "s", "strike", "del":
+                    flush(); strike += isClosing ? -1 : 1; strike = max(0, strike)
+                case "span":
+                    if !isClosing && rawTag.contains("spoiler-tag") {
+                        flush()
+                        currentSpoiler = spoilerCount
+                        spoilerDepth += 1
+                        spoilerCount += 1
+                    } else if isClosing && spoilerDepth > 0 {
+                        flush()
+                        spoilerDepth -= 1
+                        if spoilerDepth == 0 { currentSpoiler = nil }
+                    }
+                default:
+                    break // unknown tag — ignore
+                }
+                i = html.index(after: close)
+            } else if ch == "&" {
+                // Minimal entity decode (the sanitizer only emits these)
+                let rest = html[i...]
+                let entities: [(String, String)] = [
+                    ("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"),
+                    ("&quot;", "\""), ("&#39;", "'"), ("&apos;", "'"), ("&nbsp;", " "),
+                ]
+                if let (ent, repl) = entities.first(where: { rest.hasPrefix($0.0) }) {
+                    current += repl
+                    i = html.index(i, offsetBy: ent.count)
+                } else {
+                    current += "&"
+                    i = html.index(after: i)
+                }
+            } else {
+                current += String(ch)
+                i = html.index(after: i)
+            }
+        }
+        flush()
+        // Trim leading/trailing whitespace-only shape
+        while let first = segments.first, first.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            segments.removeFirst()
+        }
+        while let last = segments.last, last.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            segments.removeLast()
+        }
+        if var last = segments.popLast() {
+            while last.text.hasSuffix("\n") { last.text.removeLast() }
+            segments.append(last)
+        }
+        return segments
+    }
+
+    static func attributed(_ segments: [Segment], revealed: Set<Int>, baseSize: CGFloat = 15) -> AttributedString {
+        var out = AttributedString()
+        for seg in segments {
+            var part = AttributedString(seg.text)
+            var font = Theme.body(baseSize)
+            if seg.bold && seg.italic { font = Theme.body(baseSize, .bold).italic() }
+            else if seg.bold { font = Theme.body(baseSize, .bold) }
+            else if seg.italic { font = font.italic() }
+            part.font = font
+            if seg.underline { part.underlineStyle = .single }
+            if seg.strike { part.strikethroughStyle = .single }
+            if let idx = seg.spoilerIndex {
+                part.link = URL(string: "tbra-spoiler://\(idx)")
+                if revealed.contains(idx) {
+                    part.foregroundColor = Theme.foreground.opacity(0.9)
+                    part.backgroundColor = .clear
+                } else {
+                    // Web .spoiler-tag: transparent text over a solid
+                    // surface-alt block.
+                    part.foregroundColor = .clear
+                    part.backgroundColor = Theme.surfaceAlt
+                }
+            } else {
+                part.foregroundColor = Theme.foreground.opacity(0.9)
+            }
+            out += part
+        }
+        return out
+    }
+}
+
+/// Drop-in replacement for the plain review Text — parses the stored HTML
+/// and handles per-spoiler tap-to-reveal via link taps.
+struct ReviewHTMLText: View {
+    let html: String
+    var baseSize: CGFloat = 15
+    @State private var revealed: Set<Int> = []
+
+    private var segments: [ReviewHTML.Segment] { ReviewHTML.parse(html) }
+
+    var body: some View {
+        Text(ReviewHTML.attributed(segments, revealed: revealed, baseSize: baseSize))
+            .lineSpacing(2)
+            .environment(\.openURL, OpenURLAction { url in
+                if url.scheme == "tbra-spoiler", let idx = Int(url.host() ?? "") {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        if revealed.contains(idx) { revealed.remove(idx) }
+                        else { revealed.insert(idx) }
+                    }
+                    return .handled
+                }
+                return .systemAction
+            })
     }
 }

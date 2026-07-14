@@ -540,3 +540,30 @@ enum APIError: Error, LocalizedError {
         return false
     }
 }
+
+// ── Format icons — mirrors web format-button.tsx leadFormatIcon ──
+enum FormatIcon {
+    /// One SF Symbol per reading format (web FormatIcon SVGs).
+    static func symbol(for format: String?) -> String {
+        switch format {
+        case "hardcover": return "book.closed"
+        case "paperback": return "book"
+        case "ebook": return "ipad"
+        case "audiobook": return "headphones"
+        case "set": return "books.vertical"
+        default: return "books.vertical"
+        }
+    }
+
+    /// Web leadFormatIcon: exactly one active format → its icon; multiple →
+    /// neutral stack; none → single owned format, else audiobook if owned,
+    /// else neutral. NEVER defaults to a specific format's icon.
+    static func lead(active: [String], owned: [String]) -> String {
+        if active.count == 1 { return symbol(for: active[0]) }
+        if active.count > 1 { return "books.vertical" }
+        let realOwned = owned.filter { $0 != "unknown" }
+        if realOwned.count == 1 { return symbol(for: realOwned[0]) }
+        if realOwned.contains("audiobook") { return "headphones" }
+        return "books.vertical"
+    }
+}

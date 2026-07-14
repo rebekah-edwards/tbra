@@ -113,15 +113,22 @@ struct SimilarBooksSection: View {
 
     var body: some View {
         Group {
-            if !books.isEmpty {
+            if books.isEmpty {
+                // NOT EmptyView: an EmptyView never "appears", so the
+                // onAppear fetch below would never fire — the section was
+                // permanently dead on iOS 27 (found 2026-07-14). A 1pt clear
+                // placeholder participates in layout and triggers it.
+                Color.clear.frame(height: 1)
+            } else {
                 VStack(alignment: .leading, spacing: 12) {
-                    SectionHeading("More Like This")
+                    // Web heading is "Similar Books" (similar-books.tsx)
+                    SectionHeading("Similar Books")
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(alignment: .top, spacing: 12) {
                             ForEach(books) { book in
                                 NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
                                     VStack(alignment: .leading, spacing: 5) {
-                                        CoverThumb(url: book.coverImageUrl, width: 100, height: 150, radius: 8)
+                                        CoverThumb(url: book.coverImageUrl, width: 120, height: 180, radius: 8)
                                         Text(book.title)
                                             .font(Theme.body(12, .medium))
                                             .foregroundStyle(Theme.foreground.opacity(0.9))
@@ -131,14 +138,17 @@ struct SimilarBooksSection: View {
                                             .font(Theme.body(11))
                                             .foregroundStyle(Theme.muted)
                                             .lineLimit(1)
+                                        // Web: centered italic muted caption
                                         if let reason = reasons[book.id], !reason.isEmpty {
                                             Text(reason)
-                                                .font(Theme.body(9, .medium))
-                                                .foregroundStyle(Theme.accent)
-                                                .lineLimit(2)
+                                                .font(Theme.body(10).italic())
+                                                .foregroundStyle(Theme.muted.opacity(0.7))
+                                                .lineLimit(3)
+                                                .multilineTextAlignment(.center)
+                                                .frame(width: 120)
                                         }
                                     }
-                                    .frame(width: 100, alignment: .leading)
+                                    .frame(width: 120, alignment: .leading)
                                 }
                             }
                         }
@@ -154,21 +164,32 @@ struct SimilarBooksSection: View {
                 }
             }
         }
-        .task {
+        // onAppear + UNSTRUCTURED Task on purpose: .task is cancelled the
+        // moment the section scrolls back off-screen (iOS 27 fires appear
+        // lazily for scroll content), so a fast scroll-past killed the fetch
+        // mid-flight and `loaded` blocked every retry — the section then
+        // never rendered (found 2026-07-14, same for the series rail).
+        .onAppear {
             guard !loaded else { return }
             loaded = true
-            struct Row: Codable {
-                let id: String; let slug: String?; let title: String
-                let coverImageUrl: String?; let authors: [String]
-                let reason: String?; let hasContentConflict: Bool
+            Task {
+                struct Row: Codable {
+                    let id: String; let slug: String?; let title: String
+                    let coverImageUrl: String?; let authors: [String]
+                    let reason: String?; let hasContentConflict: Bool
+                }
+                struct Res: Codable { let ok: Bool; let results: [Row] }
+                do {
+                    let res: Res = try await APIClient.shared.get("/api/v1/books/\(bookId)/similar")
+                    books = res.results.map {
+                        LiteBook(id: $0.id, slug: $0.slug, title: $0.title, coverImageUrl: $0.coverImageUrl,
+                                 authors: $0.authors, aggregateRating: nil, hasContentConflict: $0.hasContentConflict)
+                    }
+                    for row in res.results where row.reason != nil { reasons[row.id] = row.reason }
+                } catch {
+                    NSLog("TBRA-DEBUG similar books failed: %@", String(describing: error))
+                }
             }
-            struct Res: Codable { let ok: Bool; let results: [Row] }
-            guard let res: Res = try? await APIClient.shared.get("/api/v1/books/\(bookId)/similar") else { return }
-            books = res.results.map {
-                LiteBook(id: $0.id, slug: $0.slug, title: $0.title, coverImageUrl: $0.coverImageUrl,
-                         authors: $0.authors, aggregateRating: nil, hasContentConflict: $0.hasContentConflict)
-            }
-            for row in res.results where row.reason != nil { reasons[row.id] = row.reason }
         }
     }
 }
@@ -182,10 +203,14 @@ struct BookSeriesRail: View {
 
     var body: some View {
         Group {
-            if !books.isEmpty {
+            if books.isEmpty {
+                // See SimilarBooksSection — EmptyView never appears, which
+                // dead-locked the onAppear fetch forever.
+                Color.clear.frame(height: 1)
+            } else {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        SectionHeading("More in this Series")
+                        SectionHeading("More In This Series")
                         Spacer()
                         NavigationLink(value: SeriesRoute(slug: series.slug ?? series.id)) {
                             HStack(spacing: 3) {
@@ -196,46 +221,79 @@ struct BookSeriesRail: View {
                             .foregroundStyle(Theme.neonBlue)
                         }
                     }
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(alignment: .top, spacing: 12) {
-                            ForEach(books) { book in
-                                NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        CoverThumb(url: book.coverImageUrl, width: 92, height: 138, radius: 8)
-                                        if let pos = book.position {
-                                            Text(pos.truncatingRemainder(dividingBy: 1) == 0
-                                                 ? "Book \(Int(pos))" : "Book \(String(format: "%.1f", pos))")
-                                                .font(Theme.body(11, .medium))
-                                                .foregroundStyle(Theme.muted)
+                    // Web book-series.tsx: 120pt cards, the CURRENT book is
+                    // INCLUDED with a lime ring and the rail auto-centers on
+                    // it; siblings render at 80% opacity.
+                    ScrollViewReader { proxy in
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(alignment: .top, spacing: 12) {
+                                ForEach(books) { book in
+                                    let isCurrent = book.id == currentBookId
+                                    NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
+                                        VStack(alignment: .leading, spacing: 5) {
+                                            CoverThumb(url: book.coverImageUrl, width: 120, height: 180, radius: 8)
+                                                .overlay {
+                                                    if isCurrent {
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .stroke(Theme.accent, lineWidth: 2)
+                                                            .padding(-4)
+                                                    }
+                                                }
+                                                .opacity(isCurrent ? 1 : 0.8)
+                                            if let pos = book.position {
+                                                Text(pos.truncatingRemainder(dividingBy: 1) == 0
+                                                     ? "Book \(Int(pos))" : "Book \(String(format: "%.1f", pos))")
+                                                    .font(Theme.body(11, .medium))
+                                                    .foregroundStyle(Theme.muted)
+                                            }
+                                            Text(book.title)
+                                                .font(Theme.body(12, .medium))
+                                                .foregroundStyle(Theme.foreground.opacity(0.9))
+                                                .lineLimit(2)
+                                                .multilineTextAlignment(.leading)
+                                                .frame(width: 120, alignment: .leading)
                                         }
-                                        Text(book.title)
-                                            .font(Theme.body(12, .medium))
-                                            .foregroundStyle(Theme.foreground.opacity(0.9))
-                                            .lineLimit(2)
-                                            .multilineTextAlignment(.leading)
-                                            .frame(width: 92, alignment: .leading)
                                     }
+                                    .disabled(isCurrent)
+                                    .id(book.id)
                                 }
                             }
+                            .padding(.vertical, 6)
+                            .padding(.trailing, 32)
                         }
-                        .padding(.trailing, 32)
+                        .mask(
+                            LinearGradient(stops: [
+                                .init(color: .black, location: 0),
+                                .init(color: .black, location: 0.85),
+                                .init(color: .clear, location: 1),
+                            ], startPoint: .leading, endPoint: .trailing)
+                        )
+                        .onChange(of: books) {
+                            proxy.scrollTo(currentBookId, anchor: .center)
+                        }
                     }
-                    .mask(
-                        LinearGradient(stops: [
-                            .init(color: .black, location: 0),
-                            .init(color: .black, location: 0.85),
-                            .init(color: .clear, location: 1),
-                        ], startPoint: .leading, endPoint: .trailing)
-                    )
                 }
             }
         }
-        .task {
+        // Unstructured Task — see SimilarBooksSection: .task cancels on
+        // scroll-past and the section never recovered.
+        .onAppear {
             guard !loaded else { return }
             loaded = true
-            struct Res: Codable { let ok: Bool; let name: String; let books: [SeriesBookRow] }
-            guard let res: Res = try? await APIClient.shared.get("/api/v1/series/\(series.slug ?? series.id)") else { return }
-            books = res.books.filter { $0.id != currentBookId && !$0.isBoxSet }
+            Task {
+                struct Res: Codable { let ok: Bool; let name: String; let books: [SeriesBookRow] }
+                do {
+                    let res: Res = try await APIClient.shared.get("/api/v1/series/\(series.slug ?? series.id)")
+                    // Web filter: only integer-position "core" books (drops .5
+                    // novellas and unnumbered volumes), box sets excluded.
+                    books = res.books.filter { book in
+                        guard !book.isBoxSet, let pos = book.position else { return false }
+                        return pos.truncatingRemainder(dividingBy: 1) == 0
+                    }
+                } catch {
+                    NSLog("TBRA-DEBUG series rail failed: %@", String(describing: error))
+                }
+            }
         }
     }
 }

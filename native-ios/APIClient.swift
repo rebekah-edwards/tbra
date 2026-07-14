@@ -261,6 +261,12 @@ actor APIClient {
         try await send(path, method: method)
     }
 
+    /// Untyped-JSON request (admin field editor — heterogeneous payloads
+    /// with strings/numbers/bools/NSNull).
+    func request<T: Decodable>(_ path: String, method: String, body: [String: Any]) async throws -> T {
+        try await send(path, method: method, body: body)
+    }
+
     // MARK: Profile
 
     func profile() async throws -> ProfileData {

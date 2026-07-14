@@ -33,10 +33,18 @@ final class BookDetailModel {
 
 struct BookDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthStore.self) private var auth
     @State private var model: BookDetailModel
 
     init(idOrSlug: String) {
         _model = State(initialValue: BookDetailModel(idOrSlug: idOrSlug))
+    }
+
+    private var isAdmin: Bool {
+        if case .signedIn(let user) = auth.phase {
+            return ["admin", "super_admin"].contains(user.accountType)
+        }
+        return false
     }
 
     var body: some View {
@@ -83,6 +91,13 @@ struct BookDetailView: View {
                         isHidden: data.isHidden,
                         onChanged: { Task { await model.load() } }
                     )
+                    if isAdmin {
+                        AdminEditSection(
+                            bookId: data.book.id,
+                            genres: data.book.genres,
+                            onChanged: { Task { await model.load() } }
+                        )
+                    }
                     SimilarBooksSection(bookId: data.book.id)
                         .id("similar")
                 }
@@ -333,12 +348,21 @@ private struct BookHero: View {
                 }
                 HStack(spacing: 6) {
                     if let year = book.publicationYear { Text(String(year)) }
-                    if let mins = book.audioLengthMinutes {
+                    // Audio length ONLY when the user's effective format is
+                    // the audiobook (web showAudioLength: active formats while
+                    // reading, owned otherwise, single 'audiobook'). Everyone
+                    // else sees the page count.
+                    let activeF = data.userState?.activeFormats ?? []
+                    let ownedF = data.userState?.ownedFormats ?? []
+                    let isReading = data.userState?.state == "currently_reading"
+                        || data.userState?.state == "paused"
+                    let effective = (isReading && !activeF.isEmpty) ? activeF : ownedF
+                    if effective == ["audiobook"], let mins = book.audioLengthMinutes {
                         Text("·")
                         Label("\(mins / 60)h \(mins % 60)m", systemImage: "headphones")
                     } else if let pages = book.pages {
                         Text("·")
-                        Text("\(pages)p")
+                        Text("\(pages) pages")
                     }
                 }
                 .font(Theme.body(14))
@@ -434,7 +458,7 @@ private struct BookHero: View {
             // through the card (the CSS screen-blend effect, achieved by
             // layering instead of blending).
             isLight ? Color.white.opacity(0.55) : Theme.surfaceAlt.opacity(1)
-            if let cover = book.coverImageUrl, let url = URL(string: cover) {
+            if let cover = data.effectiveCoverUrl ?? book.coverImageUrl, let url = URL(string: cover) {
                 CoverBlurImage(url: url)
                 (isLight ? Color.white.opacity(0.38) : Color.black.opacity(0.30))
             }
@@ -445,7 +469,10 @@ private struct BookHero: View {
     /// dark: opacity .6, saturate 1.5, brightness 1.1, blur 64, scale 1.5
     /// light: opacity .9, blur 64, saturate 2.5, brightness 1.6, screen
     @ViewBuilder private var heroBleed: some View {
-        if let cover = book.coverImageUrl, let url = URL(string: cover) {
+        // The bleed follows the DISPLAY cover (edition/audiobook override),
+        // not the canonical one — so a red edition cover gets a red wash
+        // (user request 2026-07-14, Between Two Fires).
+        if let cover = data.effectiveCoverUrl ?? book.coverImageUrl, let url = URL(string: cover) {
             AsyncImage(url: url) { image in
                 Group {
                     if isLight {
@@ -465,19 +492,22 @@ private struct BookHero: View {
                             .opacity(0.6)
                     }
                 }
-                .frame(height: 380)
+                .frame(height: 460)
                 .clipped()
                 .mask(
                     LinearGradient(stops: [
                         .init(color: .black, location: 0),
-                        .init(color: .black, location: 0.55),
+                        .init(color: .black, location: 0.62),
                         .init(color: .clear, location: 1),
                     ], startPoint: .top, endPoint: .bottom)
                 )
                 .allowsHitTesting(false)
             } placeholder: { Color.clear }
             .padding(.horizontal, -20)
-            .padding(.top, -60)
+            // -140 puts the bleed's top edge OFF-SCREEN (behind the status
+            // bar) — at -60 it stopped just below it as a visible hard line
+            // (user report 2026-07-14).
+            .padding(.top, -140)
         }
     }
 }
@@ -542,6 +572,7 @@ private struct BookActionCluster: View {
     @State private var showRemoveConfirm = false
     @State private var showTbrNoteEditor = false
     @State private var createdBuddyReadSlug: String?
+    @State private var confirmBuddyRead = false
     @State private var showBuyDialog = false
     @State private var showFormatSheet = false
     @State private var showOwnedSheet = false
@@ -583,6 +614,19 @@ private struct BookActionCluster: View {
             }
         }
         .opacity(busy ? 0.6 : 1)
+        // Oversized invisible catcher UNDER the menu: tapping any blank part
+        // of the page closes the dropdown (user request 2026-07-14). Sits in
+        // a LOWER overlay than the menu so menu taps still win.
+        .overlay {
+            if stateDropdownOpen {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .frame(width: 3000, height: 3000)
+                    .onTapGesture {
+                        withAnimation(.easeOut(duration: 0.15)) { stateDropdownOpen = false }
+                    }
+            }
+        }
         .overlay(alignment: .top) { dropdown }
         .zIndex(stateDropdownOpen ? 50 : 0)
         .sheet(isPresented: $showDatePicker) {
@@ -636,6 +680,11 @@ private struct BookActionCluster: View {
                 BuddyReadDetailView(slug: createdBuddyReadSlug ?? "")
                     .appDestinations()
             }
+            // Covers have no shell bars — without these the back chevron
+            // inherits scrolled chrome state and slides out of reach (the
+            // AllReviews bug; user hit it again here 2026-07-14).
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
+            .environment(\.showsShellChrome, false)
         }
         .sheet(isPresented: $showTbrNoteEditor) {
             TbrNoteEditorSheet(bookId: book.id, existing: data.tbrNote) {
@@ -643,6 +692,22 @@ private struct BookActionCluster: View {
             }
             .presentationDetents([.medium])
             .presentationBackground(Theme.surface)
+        }
+        .confirmationDialog("Start a buddy read?", isPresented: $confirmBuddyRead, titleVisibility: .visible) {
+            Button("Start Buddy Read") {
+                Task {
+                    struct Body: Codable, Sendable { let bookId: String }
+                    struct Ok: Codable { let ok: Bool; let slug: String? }
+                    if let res: Ok = try? await APIClient.shared.request(
+                        "/api/v1/buddy-reads", method: "POST", json: Body(bookId: book.id)),
+                       let slug = res.slug {
+                        createdBuddyReadSlug = slug
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You'll get an invite code to read \u{201C}\(book.title)\u{201D} together with friends.")
         }
         .confirmationDialog("Remove from Library?", isPresented: $showRemoveConfirm, titleVisibility: .visible) {
             Button("Remove Everything", role: .destructive) {
@@ -732,18 +797,11 @@ private struct BookActionCluster: View {
                     }
                     Divider().background(Theme.border.opacity(0.5))
                 }
-                // Buddy Read → creates one for this book, opens the detail
+                // Buddy Read → confirm, then create + open the detail screen
+                // (was creating instantly on tap — surprising side effect).
                 Button {
                     stateDropdownOpen = false
-                    Task {
-                        struct Body: Codable, Sendable { let bookId: String }
-                        struct Ok: Codable { let ok: Bool; let slug: String? }
-                        if let res: Ok = try? await APIClient.shared.request(
-                            "/api/v1/buddy-reads", method: "POST", json: Body(bookId: book.id)),
-                           let slug = res.slug {
-                            createdBuddyReadSlug = slug
-                        }
-                    }
+                    confirmBuddyRead = true
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "person.2").font(.system(size: 13))
@@ -853,7 +911,10 @@ private struct BookActionCluster: View {
     }
 
     private var formatButton: some View {
-        clusterPill(icon: "headphones",
+        // Icon follows the web's leadFormatIcon — a hardcover read gets the
+        // closed book, not headphones (user report 2026-07-14).
+        clusterPill(icon: FormatIcon.lead(active: data.userState?.activeFormats ?? [],
+                                          owned: data.userState?.ownedFormats ?? []),
                     label: (data.userState?.activeFormats.first).map(formatLabel) ?? "Format",
                     tint: Theme.neonBlue,
                     solid: !(data.userState?.activeFormats.isEmpty ?? true)) {
@@ -1131,12 +1192,14 @@ private struct BookStarsRow: View {
                 Button {
                     wizardOpen = true
                 } label: {
+                    // Same 14pt rounding as every other book-page button
+                    // (user request 2026-07-14 — was the lone capsule).
                     Text(data.userRating != nil ? "Edit your review" : "Rate & review")
                         .font(Theme.body(15, .semibold))
                         .foregroundStyle(Theme.accentText)
                         .padding(.horizontal, 20).padding(.vertical, 9)
-                        .background(Theme.accent.opacity(0.1), in: Capsule())
-                        .overlay(Capsule().stroke(Theme.accent.opacity(0.45), lineWidth: 1))
+                        .background(Theme.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.accent.opacity(0.45), lineWidth: 1))
                 }
             } else {
                 Text("Mark as finished to review")
@@ -1164,31 +1227,76 @@ private struct BookStarsRow: View {
     }
 }
 
-// ── Summary quote card — book-summary.tsx frosted card ──
+// ── Summary quote card — book-summary.tsx `frosted` variant ──
+// Frosted glass w/ a BREATHING two-tone radial glow (purple + sky), visible
+// border in both modes, and a giant serif ” overhanging the bottom-right,
+// clipped by the card (user request 2026-07-14: outline was lost + quote
+// marks too small).
 private struct SummaryQuoteCard: View {
     let summary: String
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var breathe = false
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        let isLight = colorScheme == .light
+        ZStack {
+            // frosted-breathe: two radial ellipses, 6s ease-in-out infinite,
+            // opacity .6→1 + scale 1→1.05 (globals.css frosted-blob).
+            GeometryReader { geo in
+                ZStack {
+                    Ellipse()
+                        .fill(RadialGradient(
+                            colors: [isLight ? Color(hex: "7c3aed").opacity(0.10)
+                                             : Color(hex: "a855f7").opacity(0.18), .clear],
+                            center: .center, startRadius: 0, endRadius: geo.size.width * 0.35))
+                        .frame(width: geo.size.width * 0.7, height: geo.size.height * 1.6)
+                        .position(x: geo.size.width * 0.3, y: geo.size.height * 0.5)
+                    Ellipse()
+                        .fill(RadialGradient(
+                            colors: [isLight ? Color(hex: "2563eb").opacity(0.07)
+                                             : Color(hex: "38bdf8").opacity(0.12), .clear],
+                            center: .center, startRadius: 0, endRadius: geo.size.width * 0.3))
+                        .frame(width: geo.size.width * 0.6, height: geo.size.height * 1.2)
+                        .position(x: geo.size.width * 0.7, y: geo.size.height * 0.5)
+                }
+                .opacity(breathe ? 1.0 : 0.6)
+                .scaleEffect(breathe ? 1.05 : 1.0)
+            }
+
             Text(summary)
-                .font(Theme.body(17))
-                .foregroundStyle(Theme.foreground.opacity(0.92))
+                .font(Theme.body(15))
+                .foregroundStyle(Theme.foreground.opacity(0.7))
                 .lineSpacing(5)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(22)
-                .padding(.trailing, 30)
-            Text("\u{201D}")
-                .font(Theme.heading(90, .bold))
-                .foregroundStyle(Theme.foreground.opacity(0.07))
-                .offset(x: -6, y: 34)
+                .padding(24)
+                .padding(.trailing, 32)
         }
-        .background(.white.opacity(0.05))
+        // Giant serif ” — web: text-[280px] Georgia, top calc(100%-90px)
+        // right -15px, clipped by overflow-hidden.
+        .overlay(alignment: .bottomTrailing) {
+            Text("\u{201D}")
+                .font(.custom("Georgia", size: 280))
+                .foregroundStyle(Theme.foreground.opacity(isLight ? 0.05 : 0.07))
+                .offset(x: 15, y: 215)
+        }
+        .background(isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.06))
         // Web mobile: rounded-r-2xl + pl-[calc(50vw-50%+1rem)] — the card
         // bleeds off the LEFT screen edge; only right corners round.
         .clipShape(UnevenRoundedRectangle(
             topLeadingRadius: 0, bottomLeadingRadius: 0,
             bottomTrailingRadius: 16, topTrailingRadius: 16))
+        .overlay(
+            UnevenRoundedRectangle(
+                topLeadingRadius: 0, bottomLeadingRadius: 0,
+                bottomTrailingRadius: 16, topTrailingRadius: 16)
+                .stroke(isLight ? Color.black.opacity(0.08) : Color.white.opacity(0.06), lineWidth: 1)
+        )
         .padding(.leading, -20)   // cancel the page gutter → full-bleed left
+        .onAppear {
+            withAnimation(.easeInOut(duration: 6).repeatForever(autoreverses: true)) {
+                breathe = true
+            }
+        }
     }
 }
 
@@ -1601,4 +1709,298 @@ struct CoverPickerSheet: View {
 
 private extension String {
     func ifEmpty(_ fallback: String) -> String { isEmpty ? fallback : self }
+}
+
+// ── Admin Edit — web admin-edit-panel.tsx, native (user request 2026-07-14) ──
+// Collapsible section, super-admin only: the 13 scalar fields + genre chips.
+// Data comes from GET /api/v1/admin/books/[id]/fields (the book payload
+// doesn't carry publisher/language/isbn10/date); saves POST the same route
+// and always bump updated_at so edits ride the sync.
+
+struct AdminEditSection: View {
+    let bookId: String
+    let genres: [String]
+    let onChanged: () -> Void
+    @State private var expanded = false
+    @State private var fields: [String: AdminFieldValue] = [:]
+    @State private var loaded = false
+    @State private var editingField: AdminFieldDef?
+    @State private var newGenre = ""
+    @State private var busy = false
+    @State private var error: String?
+
+    enum AdminFieldValue: Hashable {
+        case string(String?)
+        case number(Int?)
+        case bool(Bool)
+
+        var display: String {
+            switch self {
+            case .string(let s): return s?.isEmpty == false ? s! : "—"
+            case .number(let n): return n.map(String.init) ?? "—"
+            case .bool(let b): return b ? "Yes" : "No"
+            }
+        }
+    }
+
+    struct AdminFieldDef: Identifiable {
+        let key: String
+        let label: String
+        let kind: Kind
+        enum Kind { case text, number, multiline, boolean }
+        var id: String { key }
+    }
+
+    static let defs: [AdminFieldDef] = [
+        .init(key: "title", label: "Title", kind: .text),
+        .init(key: "publicationYear", label: "Publication Year", kind: .number),
+        .init(key: "publicationDate", label: "Publication Date", kind: .text),
+        .init(key: "pages", label: "Pages", kind: .number),
+        .init(key: "audioLengthMinutes", label: "Audio Length (min)", kind: .number),
+        .init(key: "publisher", label: "Publisher", kind: .text),
+        .init(key: "language", label: "Language", kind: .text),
+        .init(key: "isbn13", label: "ISBN-13", kind: .text),
+        .init(key: "isbn10", label: "ISBN-10", kind: .text),
+        .init(key: "asin", label: "ASIN", kind: .text),
+        .init(key: "isFiction", label: "Fiction", kind: .boolean),
+        .init(key: "description", label: "Description", kind: .multiline),
+        .init(key: "summary", label: "Summary", kind: .multiline),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button {
+                withAnimation(.easeOut(duration: 0.2)) { expanded.toggle() }
+            } label: {
+                HStack(spacing: 8) {
+                    SectionHeading("Admin Edit")
+                    Image(systemName: "wrench.and.screwdriver")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Theme.neonPurple)
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Theme.muted)
+                        .rotationEffect(.degrees(expanded ? 180 : 0))
+                }
+            }
+
+            if expanded {
+                if let error {
+                    Text(error).font(Theme.body(12)).foregroundStyle(Theme.destructive)
+                }
+                VStack(spacing: 0) {
+                    ForEach(Self.defs) { def in
+                        Button {
+                            if def.kind == .boolean {
+                                toggleBool(def)
+                            } else {
+                                editingField = def
+                            }
+                        } label: {
+                            HStack(alignment: .top) {
+                                Text(def.label)
+                                    .font(Theme.body(13, .medium))
+                                    .foregroundStyle(Theme.muted)
+                                    .frame(width: 130, alignment: .leading)
+                                Text(fields[def.key]?.display ?? "…")
+                                    .font(Theme.body(13))
+                                    .foregroundStyle(Theme.foreground.opacity(0.9))
+                                    .lineLimit(def.kind == .multiline ? 2 : 1)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Image(systemName: def.kind == .boolean ? "switch.2" : "pencil")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Theme.muted.opacity(0.6))
+                            }
+                            .padding(.horizontal, 14).padding(.vertical, 10)
+                        }
+                        .disabled(busy || !loaded)
+                        Divider().background(Theme.border.opacity(0.4))
+                    }
+
+                    // Genres
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Genres")
+                            .font(Theme.body(13, .medium))
+                            .foregroundStyle(Theme.muted)
+                        FlowLayout(spacing: 6) {
+                            ForEach(genres, id: \.self) { g in
+                                HStack(spacing: 4) {
+                                    Text(g).font(Theme.body(12))
+                                    Image(systemName: "xmark").font(.system(size: 8, weight: .bold))
+                                }
+                                .foregroundStyle(Theme.foreground.opacity(0.85))
+                                .padding(.horizontal, 10).padding(.vertical, 5)
+                                .background(Theme.surfaceAlt.opacity(0.8), in: Capsule())
+                                .onTapGesture { genre(remove: g) }
+                            }
+                        }
+                        HStack(spacing: 8) {
+                            TextField("Add genre…", text: $newGenre)
+                                .font(Theme.body(13))
+                                .padding(.horizontal, 10).padding(.vertical, 7)
+                                .background(Theme.surfaceAlt.opacity(0.6))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            Button("Add") { genre(add: newGenre) }
+                                .font(Theme.body(13, .semibold))
+                                .foregroundStyle(Theme.neonBlue)
+                                .disabled(newGenre.trimmingCharacters(in: .whitespaces).isEmpty || busy)
+                        }
+                    }
+                    .padding(14)
+                }
+                .background(Theme.surface.opacity(0.55))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.neonPurple.opacity(0.25), lineWidth: 1))
+            }
+        }
+        .task(id: expanded) {
+            guard expanded, !loaded else { return }
+            await load()
+        }
+        .sheet(item: $editingField) { def in
+            AdminFieldEditorSheet(
+                def: def,
+                initial: fields[def.key] ?? .string(nil),
+                onSave: { newValue in save(def: def, value: newValue) }
+            )
+            .presentationDetents(def.kind == .multiline ? [.large] : [.medium])
+            .presentationBackground(Theme.bg)
+        }
+    }
+
+    private func load() async {
+        struct Res: Codable {
+            let ok: Bool
+            let fields: Raw
+            struct Raw: Codable {
+                let title: String?; let publicationYear: Int?; let publicationDate: String?
+                let pages: Int?; let audioLengthMinutes: Int?; let publisher: String?
+                let language: String?; let isbn13: String?; let isbn10: String?
+                let asin: String?; let isFiction: Bool?; let description: String?; let summary: String?
+            }
+        }
+        guard let res: Res = try? await APIClient.shared.get("/api/v1/admin/books/\(bookId)/fields") else {
+            error = "Couldn't load fields."
+            return
+        }
+        let r = res.fields
+        fields = [
+            "title": .string(r.title), "publicationYear": .number(r.publicationYear),
+            "publicationDate": .string(r.publicationDate), "pages": .number(r.pages),
+            "audioLengthMinutes": .number(r.audioLengthMinutes), "publisher": .string(r.publisher),
+            "language": .string(r.language), "isbn13": .string(r.isbn13), "isbn10": .string(r.isbn10),
+            "asin": .string(r.asin), "isFiction": .bool(r.isFiction ?? true),
+            "description": .string(r.description), "summary": .string(r.summary),
+        ]
+        loaded = true
+    }
+
+    private func toggleBool(_ def: AdminFieldDef) {
+        guard case .bool(let current) = fields[def.key] else { return }
+        save(def: def, value: .bool(!current))
+    }
+
+    private func save(def: AdminFieldDef, value: AdminFieldValue) {
+        busy = true; error = nil
+        Task {
+            defer { busy = false }
+            var payload: [String: Any] = [:]
+            switch value {
+            case .string(let s): payload[def.key] = s ?? NSNull()
+            case .number(let n): payload[def.key] = n ?? NSNull()
+            case .bool(let b): payload[def.key] = b
+            }
+            struct Ok: Codable { let ok: Bool }
+            do {
+                let _: Ok = try await APIClient.shared.request(
+                    "/api/v1/admin/books/\(bookId)/fields", method: "POST",
+                    body: ["fields": payload])
+                fields[def.key] = value
+                onChanged()
+            } catch {
+                self.error = "Couldn't save \(def.label)."
+            }
+        }
+    }
+
+    private func genre(add: String? = nil, remove: String? = nil) {
+        busy = true; error = nil
+        Task {
+            defer { busy = false }
+            struct Ok: Codable { let ok: Bool }
+            var body: [String: Any] = [:]
+            if let add { body["add"] = add.trimmingCharacters(in: .whitespaces) }
+            if let remove { body["remove"] = remove }
+            do {
+                let _: Ok = try await APIClient.shared.request(
+                    "/api/v1/admin/books/\(bookId)/genres", method: "POST", body: body)
+                newGenre = ""
+                onChanged()
+            } catch {
+                self.error = "Couldn't update genres."
+            }
+        }
+    }
+}
+
+private struct AdminFieldEditorSheet: View {
+    let def: AdminEditSection.AdminFieldDef
+    let initial: AdminEditSection.AdminFieldValue
+    let onSave: (AdminEditSection.AdminFieldValue) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var text: String = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text(def.label)
+                    .font(Theme.heading(18, .bold))
+                    .foregroundStyle(Theme.foreground)
+                Spacer()
+                Button("Save") {
+                    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    switch def.kind {
+                    case .number:
+                        onSave(.number(Int(trimmed)))
+                    case .boolean:
+                        break
+                    default:
+                        onSave(.string(trimmed.isEmpty ? nil : trimmed))
+                    }
+                    dismiss()
+                }
+                .font(Theme.body(15, .semibold))
+                .foregroundStyle(Theme.neonBlue)
+            }
+            if def.kind == .multiline {
+                TextEditor(text: $text)
+                    .scrollContentBackground(.hidden)
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.foreground)
+                    .padding(10)
+                    .background(Theme.surfaceAlt.opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+            } else {
+                TextField(def.label, text: $text)
+                    .font(Theme.body(15))
+                    .keyboardType(def.kind == .number ? .numberPad : .default)
+                    .padding(.horizontal, 12).padding(.vertical, 10)
+                    .background(Theme.surfaceAlt.opacity(0.6))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+                Spacer()
+            }
+        }
+        .padding(20)
+        .background(Theme.bg)
+        .onAppear {
+            switch initial {
+            case .string(let s): text = s ?? ""
+            case .number(let n): text = n.map(String.init) ?? ""
+            case .bool: text = ""
+            }
+        }
+    }
 }

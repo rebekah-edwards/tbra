@@ -438,11 +438,16 @@ private struct ReadingNowCard: View {
                         }
 
                     VStack(alignment: .leading, spacing: 4) {
+                        // Web allows 3 title lines (user request 2026-07-14 —
+                        // "Remarkably Bright Creatures" was truncating at one).
+                        // fixedSize is what makes lineLimit actually wrap in
+                        // an HStack (same lesson as the shelf cards).
                         Text(book.title)
                             .font(Theme.body(16, .bold))
                             .foregroundStyle(Theme.foreground)
-                            .lineLimit(2)
+                            .lineLimit(3)
                             .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
                         Text(book.authors.joined(separator: ", "))
                             .font(Theme.body(14))
                             .foregroundStyle(Theme.foreground.opacity(0.70))
