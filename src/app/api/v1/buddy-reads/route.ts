@@ -1,4 +1,4 @@
-import { getApiUser } from "@/lib/auth";
+import { getApiUser, hasPremiumAccess } from "@/lib/auth";
 import { jsonError, jsonOk, parseJsonBody } from "@/lib/api/http";
 import { getUserBuddyReads } from "@/lib/queries/buddy-reads";
 import { createBuddyReadFor, joinBuddyReadByCodeFor } from "@/lib/actions/buddy-reads";
@@ -21,6 +21,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const user = await getApiUser(req);
   if (!user) return jsonError("Unauthorized.", 401);
+  // Buddy Reads = Based Reader feature (2026-07-15): create + join gated.
+  if (!hasPremiumAccess(user)) {
+    return jsonError("Buddy Reads are a Based Reader feature. Upgrade to read together with friends.", 403);
+  }
 
   const body = await parseJsonBody(req);
   if (!body) return jsonError("Invalid JSON body.", 400);

@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { buddyReads, buddyReadMembers, buddyReadMessages, userNotifications, users, userBookState, books } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isPremium } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 const INVITE_CODE_CHARSET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -36,6 +36,7 @@ export async function createBuddyRead(
 ): Promise<{ success: boolean; slug?: string; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  if (!isPremium(user)) return { success: false, error: "Buddy Reads are a Based Reader feature. Upgrade to read together with friends." };
   return createBuddyReadFor(user.userId, bookId, description, isPublic, startDate, endDate);
 }
 
@@ -196,6 +197,7 @@ export async function joinBuddyRead(
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  if (!isPremium(user)) return { success: false, error: "Buddy Reads are a Based Reader feature. Upgrade to read together with friends." };
 
   const buddyRead = await db
     .select({ slug: buddyReads.slug, bookId: buddyReads.bookId, isPublic: buddyReads.isPublic, maxMembers: buddyReads.maxMembers, createdBy: buddyReads.createdBy, status: buddyReads.status })
@@ -298,6 +300,7 @@ export async function joinBuddyReadByCode(
 ): Promise<{ success: boolean; slug?: string; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  if (!isPremium(user)) return { success: false, error: "Buddy Reads are a Based Reader feature. Upgrade to read together with friends." };
   return joinBuddyReadByCodeFor(user.userId, inviteCode);
 }
 

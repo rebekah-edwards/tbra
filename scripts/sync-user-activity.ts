@@ -112,6 +112,7 @@ const TABLES: TableSpec[] = [
   { name: 'user_reading_preferences',   pk: ['user_id'], hasUpdatedAt: true },
   { name: 'user_genre_preferences',     pk: ['user_id', 'genre_name'], hasUpdatedAt: false },
   { name: 'user_notification_preferences', pk: ['user_id'], hasUpdatedAt: true },
+  { name: 'discover_usage',             pk: ['user_id', 'month'], hasUpdatedAt: true },  // free-tier Discover meter (2026-07-15)
 ];
 
 (async () => {

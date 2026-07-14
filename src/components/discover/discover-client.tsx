@@ -57,7 +57,15 @@ const MOOD_TINTS: Record<string, { idle: string; selected: string }> = {
   sciencey:       { idle: "bg-teal-500/8 border-teal-500/20",          selected: "bg-gradient-to-br from-teal-500/25 to-teal-900/15 border-teal-500/50" },
 };
 
-export function DiscoverClient() {
+export function DiscoverClient({
+  isPremium = true,
+  initialRemaining = null,
+}: {
+  /** Based Reader = unlimited searches; free shows the 3/month meter. */
+  isPremium?: boolean;
+  initialRemaining?: number | null;
+} = {}) {
+  const [remaining, setRemaining] = useState<number | null>(initialRemaining);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -144,7 +152,16 @@ export function DiscoverClient() {
           ignorePreferences,
         }),
       });
-      const data: DiscoverResult[] = await res.json();
+      if (res.status === 403) {
+        // Free-tier quota exhausted
+        setRemaining(0);
+        setResults([]);
+        setSearched(true);
+        return;
+      }
+      const payload: { results: DiscoverResult[]; remaining: number | null } = await res.json();
+      const data = payload.results ?? [];
+      if (payload.remaining !== null && payload.remaining !== undefined) setRemaining(payload.remaining);
       setResults(data);
       setSearched(true);
       // Cache results so back navigation restores them instantly
@@ -367,12 +384,35 @@ export function DiscoverClient() {
         )}
         <button
           onClick={handleDiscover}
-          disabled={selectedMoods.length === 0 || loading}
+          disabled={selectedMoods.length === 0 || loading || (!isPremium && remaining === 0)}
           className="relative w-full rounded-2xl bg-accent py-3.5 text-sm font-semibold text-black shadow-[0_0_20px_rgba(163,230,53,0.25)] hover:shadow-[0_0_28px_rgba(163,230,53,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Finding books..." : `Find Books${selectedMoods.length > 0 ? ` (${selectedMoods.length} mood${selectedMoods.length > 1 ? "s" : ""})` : ""}`}
         </button>
       </div>
+
+      {/* Free-tier meter: 3 searches/month, unlimited on Based Reader */}
+      {!isPremium && remaining !== null && (
+        remaining > 0 ? (
+          <p className="mt-2 text-center text-xs text-muted">
+            {remaining} of 3 free searches left this month ·{" "}
+            <a href="/upgrade" className="text-neon-blue font-medium">Go unlimited</a>
+          </p>
+        ) : (
+          <div className="mt-3 rounded-xl border border-neon-purple/30 bg-neon-purple/5 p-4 text-center">
+            <p className="text-sm font-semibold">You&apos;ve used your 3 free searches this month</p>
+            <p className="mt-1 text-xs text-muted">
+              Upgrade to Based Reader for unlimited Find My Next Read searches.
+            </p>
+            <a
+              href="/upgrade"
+              className="mt-3 inline-block rounded-xl bg-neon-purple px-5 py-2.5 text-sm font-semibold text-white"
+            >
+              Upgrade to Based Reader
+            </a>
+          </div>
+        )
+      )}
 
       {/* ─── Results ─── */}
       <div ref={resultsRef}>

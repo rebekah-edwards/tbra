@@ -9,19 +9,14 @@ export const metadata: Metadata = {
 
 const PREMIUM_FEATURES = [
   {
+    title: "Unlimited Find My Next Read",
+    description: "Mood-based book discovery with no limits. Free accounts get 3 searches a month.",
+    icon: "zap",
+  },
+  {
     title: "Custom Shelves",
-    description: "Create your own book lists beyond TBR, Reading, and Finished.",
+    description: "Create your own book lists beyond TBR, Reading, and Finished. Everyone keeps Top Shelf Reads.",
     icon: "shelves",
-  },
-  {
-    title: "Custom Themes",
-    description: "Personalize your app with unique color schemes, fonts, and visual styles.",
-    icon: "palette",
-  },
-  {
-    title: "Family Accounts",
-    description: "Up to 4 reader profiles per account — perfect for managing your kids' reading without mixing recommendations.",
-    icon: "users",
   },
   {
     title: "Buddy Reads",
@@ -29,34 +24,29 @@ const PREMIUM_FEATURES = [
     icon: "heart",
   },
   {
-    title: "Reading Challenges",
-    description: "Join structured reading challenges with rewards from our partners.",
+    title: "Notes to Self",
+    description: "Leave a private note on any TBR book so future-you remembers why it's there.",
+    icon: "user",
+  },
+  {
+    title: "Ad-Free Forever",
+    description: "tbr*a stays clean and distraction-free for Based Readers, always.",
     icon: "trophy",
   },
   {
+    title: "Family Accounts",
+    description: "Coming soon: reader profiles for your kids — track their TBRs without mixing recommendations.",
+    icon: "users",
+  },
+  {
     title: "Advanced Stats",
-    description: "Deeper reading analytics, trends, and insights about your reading habits.",
+    description: "Coming soon: deeper reading analytics, trends, and insights.",
     icon: "chart",
   },
   {
     title: "Custom App Icons",
-    description: "Choose from alternative app icon designs to make tbr*a yours.",
-    icon: "zap",
-  },
-  {
-    title: "Profile Customization",
-    description: "More control over how your public profile looks and what it shows.",
-    icon: "user",
-  },
-  {
-    title: "Full Data Exports",
-    description: "Export all your reading data — books, reviews, notes, stats, and more.",
-    icon: "download",
-  },
-  {
-    title: "Priority Support",
-    description: "Your issue reports and content detail submissions get processed first.",
-    icon: "zap",
+    description: "Coming soon: alternative app icon designs to make tbr*a yours.",
+    icon: "palette",
   },
 ];
 

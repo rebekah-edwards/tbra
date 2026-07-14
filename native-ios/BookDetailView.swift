@@ -579,6 +579,7 @@ private struct BookActionCluster: View {
     @State private var showTbrNoteEditor = false
     @State private var createdBuddyReadSlug: String?
     @State private var confirmBuddyRead = false
+    @State private var buddyReadError: String?
     @State private var showBuyDialog = false
     @State private var showFormatSheet = false
     @State private var showOwnedSheet = false
@@ -704,10 +705,13 @@ private struct BookActionCluster: View {
                 Task {
                     struct Body: Codable, Sendable { let bookId: String }
                     struct Ok: Codable { let ok: Bool; let slug: String? }
-                    if let res: Ok = try? await APIClient.shared.request(
-                        "/api/v1/buddy-reads", method: "POST", json: Body(bookId: book.id)),
-                       let slug = res.slug {
-                        createdBuddyReadSlug = slug
+                    do {
+                        let res: Ok = try await APIClient.shared.request(
+                            "/api/v1/buddy-reads", method: "POST", json: Body(bookId: book.id))
+                        if let slug = res.slug { createdBuddyReadSlug = slug }
+                    } catch {
+                        // 403 = free tier — surface the premium message.
+                        buddyReadError = (error as? APIError)?.errorDescription ?? "Couldn't start the buddy read."
                     }
                 }
             }
@@ -715,6 +719,12 @@ private struct BookActionCluster: View {
         } message: {
             Text("You'll get an invite code to read \u{201C}\(book.title)\u{201D} together with friends.")
         }
+        .alert("Buddy Reads", isPresented: Binding(
+            get: { buddyReadError != nil },
+            set: { if !$0 { buddyReadError = nil } }
+        )) {
+            Button("OK") { buddyReadError = nil }
+        } message: { Text(buddyReadError ?? "") }
         .confirmationDialog("Remove from Library?", isPresented: $showRemoveConfirm, titleVisibility: .visible) {
             Button("Remove Everything", role: .destructive) {
                 Task {

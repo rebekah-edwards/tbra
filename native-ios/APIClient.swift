@@ -276,14 +276,14 @@ actor APIClient {
     // MARK: Discover
 
     /// Returns (books, reasons-by-book-id).
-    func discover(body: [String: Any]) async throws -> (books: [LiteBook], reasons: [String: String]) {
+    func discover(body: [String: Any]) async throws -> (books: [LiteBook], reasons: [String: String], remaining: Int?) {
         struct Row: Codable {
             let id: String; let slug: String?; let title: String
             let coverImageUrl: String?; let authors: [String]
             let aggregateRating: Double?; let hasContentConflict: Bool
             let reason: String?
         }
-        struct Res: Codable { let ok: Bool; let results: [Row] }
+        struct Res: Codable { let ok: Bool; let results: [Row]; let remaining: Int? }
         let res: Res = try await send("/api/v1/discover", method: "POST", body: body)
         let books = res.results.map {
             LiteBook(id: $0.id, slug: $0.slug, title: $0.title, coverImageUrl: $0.coverImageUrl,
@@ -292,7 +292,7 @@ actor APIClient {
         }
         var reasons: [String: String] = [:]
         for row in res.results where row.reason != nil { reasons[row.id] = row.reason }
-        return (books, reasons)
+        return (books, reasons, res.remaining)
     }
 
     // MARK: Stats

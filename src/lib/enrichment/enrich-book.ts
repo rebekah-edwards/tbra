@@ -57,6 +57,21 @@ export interface EnrichOptions {
    * want to grow the catalog — e.g. fixing specific shelf books.
    */
   skipAuthorDiscovery?: boolean;
+  /**
+   * Metadata-only pass: skip the Brave content research + Grok content analysis
+   * + content-ratings/summary writes + the (Brave) audiobook lookup entirely.
+   * The book still gets everything from the FREE structured sources run earlier
+   * (OL / ISBNdb / LoC / Google Books metadata + genres) and the free cover
+   * cascade tiers. Content ratings are DEFERRED to the content-ratings backfill,
+   * which picks these public books up later on its own Brave budget.
+   *
+   * This is the ONLY way to make enrichBook genuinely spend ZERO Brave budget:
+   * `skipBrave` alone does NOT — the content searches and audiobook lookup below
+   * ignore it. Use for lanes that must stay strictly off the Brave budget
+   * regardless of what other jobs have already spent (e.g. upcoming-releases).
+   * Implies no Grok call, so no thin ratings are ever baked in.
+   */
+  skipContentSearch?: boolean;
 }
 
 /**
@@ -89,7 +104,12 @@ export async function enrichBook(bookId: string, options?: EnrichOptions): Promi
   // back off here to avoid hammering a dead key + flooding the admin inbox —
   // visibility for the key-invalid case is guaranteed by the distinct log status,
   // the escalated email below, and the nightly key-health canary, not by retrying.
-  const recentStop = await db.all(sql`
+  //
+  // Metadata-only calls (skipContentSearch) make ZERO Brave/Grok calls, so a
+  // recent Brave exhaustion is irrelevant to them — don't let it block the
+  // free-source metadata + cover work. This is what lets the upcoming-releases
+  // lane still land complete preorders on a night the Brave budget is spent.
+  const recentStop = opts.skipContentSearch ? [] : await db.all(sql`
     SELECT status, count(*) as count FROM enrichment_log
     WHERE status IN ('api_exhausted', 'api_key_invalid')
     AND created_at > datetime('now', '-1 hour')
@@ -664,6 +684,19 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     }
   }
 
+  // ── Metadata-only escape hatch (skipContentSearch) ──
+  // Everything above this point uses only FREE structured sources (OL / ISBNdb /
+  // LoC / Google Books) — no Brave. Everything BELOW (content research searches,
+  // Grok analysis, ratings, the audiobook lookup) spends Brave unconditionally,
+  // ignoring skipBrave. So a caller that must stay strictly off the Brave budget
+  // stops here, runs the free cover cascade + finalize, and leaves content
+  // ratings for the content-ratings backfill. See EnrichOptions.skipContentSearch.
+  if (opts.skipContentSearch) {
+    console.log(`[enrichment] Metadata-only (skipContentSearch) for "${book.title}" — no Brave/Grok; content ratings deferred to the backfill`);
+    await finalize();
+    return;
+  }
+
   // ── Full or description mode: need genres and searches ──
   const bookGenreRows = await db
     .select({ name: genres.name })
@@ -1044,6 +1077,14 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     await searchAudiobookLength(bookId, book.title, authorNames);
   }
 
+  await finalize();
+
+  // ── Shared finalize: free cover cascade + review flag + search index ──
+  // Runs on BOTH the full pipeline and the metadata-only (skipContentSearch)
+  // early return above. Declared as a hoisted function so that early return can
+  // call it. The cover cascade's Brave tier is gated on skipBrave inside
+  // resolveBookCover, so this stays Brave-free when the caller wants it to be.
+  async function finalize() {
   // 7. Resolve cover if missing or not yet verified — multi-tier cascade
   // NEVER overwrite manually-set covers (cover_source = 'manual' or Amazon URLs)
   // Also skip re-fetching for books that have already been through the cascade
@@ -1107,6 +1148,7 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     await updateSearchIndex(bookId);
   } catch {
     // Best-effort — don't let index update failure break enrichment
+  }
   }
 }
 

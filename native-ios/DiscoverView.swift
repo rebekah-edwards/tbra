@@ -46,6 +46,9 @@ final class DiscoverModel {
     var reasons: [String: String] = [:]
     var searching = false
     var searched = false
+    /// Free-tier meter (nil = premium/unknown). 0 + exhausted = out for the month.
+    var remaining: Int? = nil
+    var quotaExhausted = false
 
     func find() async {
         searching = true; defer { searching = false }
@@ -59,10 +62,20 @@ final class DiscoverModel {
         if let audience { body["audience"] = audience }
         if let libraryFilter { body["libraryFilter"] = libraryFilter }
 
-        if let found = try? await APIClient.shared.discover(body: body) {
+        do {
+            let found = try await APIClient.shared.discover(body: body)
             results = found.books
             reasons = found.reasons
+            remaining = found.remaining
             searched = true
+        } catch {
+            // A 403 here = the free monthly quota is spent.
+            if case APIError.server(let status, _) = error, status == 403 {
+                quotaExhausted = true
+                remaining = 0
+                searched = true
+                results = []
+            }
         }
     }
 }
@@ -102,11 +115,9 @@ struct DiscoverView: View {
     }
 
     var body: some View {
-        if isPremium {
-            discoverBody
-        } else {
-            gateBody
-        }
+        // Everyone gets the page now — free accounts have a 3/month meter
+        // (2026-07-15); the hard gate is gone on web too.
+        discoverBody
     }
 
     // Non-premium: the standard upgrade prompt (mirrors PremiumGate on web).
@@ -226,6 +237,38 @@ struct DiscoverView: View {
                         if model.searching { ProgressView().tint(Theme.onAccent) } else { Text("Find Books") }
                     }
                     .buttonStyle(AccentButtonStyle())
+                    .disabled(model.quotaExhausted)
+
+                    // Free-tier meter (web parity, 2026-07-15): 3/month.
+                    if model.quotaExhausted {
+                        VStack(spacing: 8) {
+                            Text("You've used your 3 free searches this month")
+                                .font(Theme.body(14, .semibold))
+                                .foregroundStyle(Theme.foreground)
+                            Text("Upgrade to Based Reader for unlimited Find My Next Read searches.")
+                                .font(Theme.body(12))
+                                .foregroundStyle(Theme.muted)
+                                .multilineTextAlignment(.center)
+                            Link(destination: URL(string: "https://thebasedreader.app/upgrade")!) {
+                                Text("Upgrade to Based Reader")
+                                    .font(Theme.body(14, .semibold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 20).padding(.vertical, 10)
+                                    .background(Theme.neonPurple, in: RoundedRectangle(cornerRadius: 12))
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(16)
+                        .background(Theme.neonPurple.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14)
+                            .stroke(Theme.neonPurple.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [5])))
+                    } else if let remaining = model.remaining {
+                        Text("\(remaining) of 3 free searches left this month")
+                            .font(Theme.body(12))
+                            .foregroundStyle(Theme.muted)
+                            .frame(maxWidth: .infinity)
+                    }
 
                     if model.searched {
                         VStack(alignment: .leading, spacing: 14) {

@@ -538,3 +538,20 @@ explicit user sign-off.
   during verification: dev server wedged (30-46s responses) after heavy route
   churn → launchctl kickstart fixed; the overlay's earlier "empty results" was
   exactly that.
+
+- **2026-07-15 — Premium v1 delineation + app icon.** Discover: FREE = 3
+  searches/mo (discover_usage table local+Turso, consumeDiscoverSearch in
+  src/lib/discover-quota.ts, metered in /api/discover + /api/v1/discover, counter
+  + exhausted upsell in web client & native DiscoverView; premium unlimited;
+  e2e-verified: 3 consumed → 4th 403). Buddy Reads create/join premium-gated
+  (web actions + v1 route 403 + native alert). Notes-to-self already gated.
+  Custom shelves already gated. Upgrade page rewritten to the v1 feature list
+  (unlimited Discover, custom shelves, buddy reads, notes to self, ad-free) +
+  post-v1 "coming soon" (family accounts, advanced stats, custom icons).
+  PAYMENTS: none yet — needs Stripe (her account) for web; Apple IAP for iOS
+  post-TestFlight. APP ICON: new Assets.xcassets/AppIcon (1024 any + dark
+  luminosity variants — gradient asterisk on soft lavender / charcoal), drawn
+  programmatically, registered in pbxproj, verified on springboard. BONUS BUG:
+  getCategoryNameMap used unstable_cache around a Map — JSON round-trip turns it
+  into {} → 500s on every discover/similar cache HIT; now caches rows + rebuilds
+  the Map (fix also needed on PROD — deployed).

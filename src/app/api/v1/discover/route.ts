@@ -1,4 +1,5 @@
 import { getApiUser, hasPremiumAccess } from "@/lib/auth";
+import { consumeDiscoverSearch } from "@/lib/discover-quota";
 import { jsonError, jsonOk, parseJsonBody } from "@/lib/api/http";
 import { getDiscoverRecommendations, type DiscoverFilters } from "@/lib/queries/recommendations";
 import { getMoodFilters } from "@/lib/mood-genre-map";
@@ -12,8 +13,14 @@ import { getMoodFilters } from "@/lib/mood-genre-map";
 export async function POST(req: Request) {
   const user = await getApiUser(req);
   if (!user) return jsonError("Unauthorized.", 401);
+  // Free tier: 3 searches/month (2026-07-15); Based Reader unlimited.
+  let remaining: number | null = null;
   if (!hasPremiumAccess(user)) {
-    return jsonError("Find My Next Read is a Based Reader feature.", 403);
+    const quota = await consumeDiscoverSearch(user.userId);
+    if (!quota.allowed) {
+      return jsonError("You've used your 3 free searches this month. Upgrade to Based Reader for unlimited searches.", 403);
+    }
+    remaining = quota.remaining;
   }
 
   const body = (await parseJsonBody(req)) ?? {};
@@ -58,5 +65,6 @@ export async function POST(req: Request) {
       hasContentConflict: (b.contentWarnings?.length ?? 0) > 0,
       reason: b.reason ?? null,
     })),
+    remaining,
   });
 }
