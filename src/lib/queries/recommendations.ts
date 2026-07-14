@@ -1162,17 +1162,24 @@ function exceedsContentTolerance(
 /**
  * Cached category ID → display name map.
  */
-const getCategoryNameMap = unstable_cache(
-  async (): Promise<Map<string, string>> => {
-    const rows = await db
+// unstable_cache JSON-serializes its value — a Map round-trips as `{}`
+// and `.get` explodes on every cache HIT (500s across discover/similar,
+// found 2026-07-15). Cache the plain rows; rebuild the Map per call.
+const getCategoryNameRows = unstable_cache(
+  async (): Promise<{ id: string; name: string }[]> => {
+    return db
       .select({ id: taxonomyCategories.id, name: taxonomyCategories.name })
       .from(taxonomyCategories)
       .all();
-    return new Map(rows.map((r) => [r.id, r.name]));
   },
   ["category-name-map"],
   { revalidate: 3600 }
 );
+
+async function getCategoryNameMap(): Promise<Map<string, string>> {
+  const rows = await getCategoryNameRows();
+  return new Map(rows.map((r) => [r.id, r.name]));
+}
 
 /**
  * Compute content warnings for a book given its ratings and the user's tolerances.

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, isPremium } from "@/lib/auth";
+import { consumeDiscoverSearch, FREE_DISCOVER_SEARCHES_PER_MONTH } from "@/lib/discover-quota";
 import { getDiscoverRecommendations, type DiscoverFilters } from "@/lib/queries/recommendations";
 import { getMoodFilters } from "@/lib/mood-genre-map";
 
@@ -20,11 +21,24 @@ import { getMoodFilters } from "@/lib/mood-genre-map";
  */
 export async function POST(request: Request) {
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Sign in to use Find My Next Read." }, { status: 401 });
+  }
+  // Free tier: 3 searches/month; Based Reader: unlimited (remaining null).
+  let remaining: number | null = null;
   if (!isPremium(user)) {
-    return NextResponse.json(
-      { error: "Find My Next Read is a Based Reader feature." },
-      { status: 403 }
-    );
+    const quota = await consumeDiscoverSearch(user.userId);
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          error: "You've used your 3 free searches this month. Upgrade to Based Reader for unlimited searches.",
+          remaining: 0,
+          freeLimit: FREE_DISCOVER_SEARCHES_PER_MONTH,
+        },
+        { status: 403 }
+      );
+    }
+    remaining = quota.remaining;
   }
   const body = await request.json();
 
@@ -67,5 +81,5 @@ export async function POST(request: Request) {
     12
   );
 
-  return NextResponse.json(results);
+  return NextResponse.json({ results, remaining });
 }

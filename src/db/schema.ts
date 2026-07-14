@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, uniqueIndex, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, uniqueIndex, index, primaryKey } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 // ─── Core tables ───
@@ -543,6 +543,16 @@ export const userGenrePreferences = sqliteTable("user_genre_preferences", {
   preference: text("preference").notNull(), // 'love' | 'dislike'
 }, (table) => [
   uniqueIndex("user_genre_pref_unique").on(table.userId, table.genreName),
+]);
+
+// Free-tier Discover metering: 3 searches/month (premium = unlimited).
+export const discoverUsage = sqliteTable("discover_usage", {
+  userId: text("user_id").notNull(),
+  month: text("month").notNull(), // 'YYYY-MM'
+  count: integer("count").notNull().default(0),
+  updatedAt: text("updated_at"),
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.month] }),
 ]);
 
 export const userContentPreferences = sqliteTable("user_content_preferences", {

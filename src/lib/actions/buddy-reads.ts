@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { buddyReads, buddyReadMembers, buddyReadMessages, userNotifications, users, userBookState, books } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isPremium } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 const INVITE_CODE_CHARSET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -36,6 +36,7 @@ export async function createBuddyRead(
 ): Promise<{ success: boolean; slug?: string; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  if (!isPremium(user)) return { success: false, error: "Buddy Reads are a Based Reader feature. Upgrade to read together with friends." };
 
   // Look up book title to auto-name the buddy read
   const book = await db.select({ title: books.title }).from(books).where(eq(books.id, bookId)).get();
@@ -104,6 +105,7 @@ export async function inviteToBuddyRead(
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  if (!isPremium(user)) return { success: false, error: "Buddy Reads are a Based Reader feature. Upgrade to read together with friends." };
 
   // Check caller is host or active member
   const membership = await db
@@ -185,6 +187,7 @@ export async function joinBuddyRead(
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  if (!isPremium(user)) return { success: false, error: "Buddy Reads are a Based Reader feature. Upgrade to read together with friends." };
 
   const buddyRead = await db
     .select({ slug: buddyReads.slug, bookId: buddyReads.bookId, isPublic: buddyReads.isPublic, maxMembers: buddyReads.maxMembers, createdBy: buddyReads.createdBy, status: buddyReads.status })
@@ -287,6 +290,7 @@ export async function joinBuddyReadByCode(
 ): Promise<{ success: boolean; slug?: string; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  if (!isPremium(user)) return { success: false, error: "Buddy Reads are a Based Reader feature. Upgrade to read together with friends." };
 
   const buddyRead = await db
     .select({
@@ -390,6 +394,7 @@ export async function leaveBuddyRead(
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  if (!isPremium(user)) return { success: false, error: "Buddy Reads are a Based Reader feature. Upgrade to read together with friends." };
 
   const membership = await db
     .select({ id: buddyReadMembers.id, role: buddyReadMembers.role, status: buddyReadMembers.status })
@@ -423,6 +428,7 @@ export async function completeBuddyRead(
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  if (!isPremium(user)) return { success: false, error: "Buddy Reads are a Based Reader feature. Upgrade to read together with friends." };
 
   // Verify host
   const membership = await db
@@ -478,6 +484,7 @@ export async function postBuddyReadMessage(
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  if (!isPremium(user)) return { success: false, error: "Buddy Reads are a Based Reader feature. Upgrade to read together with friends." };
 
   // Validate active membership
   const membership = await db
@@ -518,6 +525,7 @@ export async function declineBuddyRead(
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  if (!isPremium(user)) return { success: false, error: "Buddy Reads are a Based Reader feature. Upgrade to read together with friends." };
 
   const membership = await db
     .select({ id: buddyReadMembers.id, status: buddyReadMembers.status })
