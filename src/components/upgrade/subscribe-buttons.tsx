@@ -2,13 +2,36 @@
 
 import { useState } from "react";
 
-// Display prices — placeholders until final pricing is chosen. Keep in sync
-// with the Stripe Price objects (STRIPE_PRICE_MONTHLY / STRIPE_PRICE_ANNUAL).
-const MONTHLY_LABEL = "$4.99/month";
-const ANNUAL_LABEL = "$49.99/year";
-const ANNUAL_NOTE = "2 months free";
+// Display prices — keep in sync with the Stripe Price objects
+// (STRIPE_PRICE_MONTHLY / STRIPE_PRICE_ANNUAL). Final pricing 2026-07-15:
+// $4.99/mo · $39.99/yr (≈ 4 months free vs monthly).
+const PLANS = [
+  {
+    plan: "monthly",
+    price: "$4.99",
+    per: "per month",
+    note: "Billed monthly",
+    badge: null,
+    highlight: false,
+  },
+  {
+    plan: "annual",
+    price: "$39.99",
+    per: "per year",
+    note: "That's $3.33 a month",
+    badge: "4 months free",
+    highlight: true,
+  },
+] as const;
 
-export function SubscribeButtons({ isPremium }: { isPremium: boolean }) {
+export function SubscribeButtons({
+  isPremium,
+  preview = false,
+}: {
+  isPremium: boolean;
+  /** Staff accounts: show the cards users see, but don't let them buy. */
+  preview?: boolean;
+}) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +56,9 @@ export function SubscribeButtons({ isPremium }: { isPremium: boolean }) {
     setBusy(null);
   }
 
-  if (isPremium) {
+  // Staff preview shows the pricing cards even though isPremium(staff) is
+  // true — otherwise admins could never see what readers see.
+  if (isPremium && !preview) {
     return (
       <div className="text-center">
         <button
@@ -51,31 +76,48 @@ export function SubscribeButtons({ isPremium }: { isPremium: boolean }) {
 
   return (
     <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <button
-          onClick={() => go("/api/stripe/checkout", { plan: "monthly" })}
-          disabled={busy !== null}
-          className="rounded-xl border-2 border-border bg-surface px-6 py-4 text-center hover:border-neon-purple/50 transition-colors disabled:opacity-50"
-        >
-          <span className="block font-heading text-lg font-bold text-foreground">{MONTHLY_LABEL}</span>
-          <span className="block mt-1 text-xs text-muted">Billed monthly · cancel anytime</span>
-        </button>
-        <button
-          onClick={() => go("/api/stripe/checkout", { plan: "annual" })}
-          disabled={busy !== null}
-          className="relative rounded-xl border-2 border-neon-purple/50 bg-neon-purple/5 px-6 py-4 text-center hover:bg-neon-purple/10 transition-colors disabled:opacity-50"
-        >
-          <span className="absolute -top-2.5 right-4 rounded-full bg-neon-purple px-2.5 py-0.5 text-[10px] font-bold text-white">
-            {ANNUAL_NOTE}
-          </span>
-          <span className="block font-heading text-lg font-bold text-foreground">{ANNUAL_LABEL}</span>
-          <span className="block mt-1 text-xs text-muted">Billed yearly · cancel anytime</span>
-        </button>
+      <div className="grid grid-cols-2 gap-3">
+        {PLANS.map((p) => (
+          <button
+            key={p.plan}
+            onClick={() => !preview && go("/api/stripe/checkout", { plan: p.plan })}
+            disabled={busy !== null || preview}
+            className={
+              p.highlight
+                ? "upgrade-card-glow relative rounded-2xl border-2 border-neon-purple/60 bg-neon-purple/10 px-4 py-5 text-center backdrop-blur-sm hover:bg-neon-purple/15 transition-colors disabled:opacity-90"
+                : "relative rounded-2xl border-2 border-border bg-surface/70 px-4 py-5 text-center backdrop-blur-sm hover:border-neon-purple/40 transition-colors disabled:opacity-90"
+            }
+          >
+            {p.badge && (
+              <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-neon-purple px-2.5 py-0.5 text-[10px] font-bold text-white">
+                {p.badge}
+              </span>
+            )}
+            <span className="block font-heading text-3xl font-extrabold text-foreground">
+              {p.price}
+            </span>
+            <span className="block text-xs text-muted mt-0.5">{p.per}</span>
+            <span className={`mt-3 block rounded-lg py-2 text-xs font-bold ${
+              p.highlight
+                ? "bg-neon-purple text-white"
+                : "bg-surface-alt text-foreground"
+            }`}>
+              {busy ? "Redirecting…" : isPremiumLabel(p.plan)}
+            </span>
+            <span className="block text-[10px] text-muted mt-2">{p.note}</span>
+          </button>
+        ))}
       </div>
-      <p className="mt-3 text-center text-xs text-muted">
-        Secure checkout by Stripe. {busy ? "Redirecting…" : ""}
+      <p className="mt-3 text-center text-[11px] text-muted">
+        {preview
+          ? "Admin preview — this is what reader accounts see. Staff accounts can't subscribe."
+          : "Cancel anytime. Secure checkout by Stripe."}
       </p>
       {error && <p className="mt-2 text-center text-xs text-destructive">{error}</p>}
     </div>
   );
+}
+
+function isPremiumLabel(plan: string) {
+  return plan === "annual" ? "Get the year" : "Go monthly";
 }
