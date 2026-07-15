@@ -555,3 +555,15 @@ explicit user sign-off.
   getCategoryNameMap used unstable_cache around a Map — JSON round-trip turns it
   into {} → 500s on every discover/similar cache HIT; now caches rows + rebuilds
   the Map (fix also needed on PROD — deployed).
+
+- **2026-07-15 — Stripe subscriptions LIVE (test mode).** Product "Based Reader"
+  (prod_Ut3LmtfmlQ9VYl) + monthly $4.99 / annual $49.99 PLACEHOLDER prices (await
+  final pricing); webhook we_1TtHEc… → /api/stripe/webhook. New: lib/stripe.ts,
+  api/stripe/checkout|webhook|portal, upgrade-page SubscribeButtons (billing
+  portal for subscribers; staff accounts excluded both UI + route). users gained
+  stripe_customer_id + updated_at (both DBs; webhook stamps updated_at so premium
+  flips ride user-activity sync to the app). Webhook flips ONLY reader⇄premium —
+  admin/beta never touched. Verified locally end-to-end: real checkout session
+  created; hand-signed events (real whsec HMAC) flipped reader→premium→reader.
+  All 4 env vars on Vercel prod. TO GO LIVE: swap sk_test→sk_live key +
+  live-mode product/prices/webhook, update price consts in subscribe-buttons.
