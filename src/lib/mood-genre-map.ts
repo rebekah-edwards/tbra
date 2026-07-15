@@ -134,6 +134,14 @@ export const DISCOVER_MOODS: MoodDefinition[] = [
     antiKeywords: ["romance", "fairy", "devotional"],
     fictionBias: "nonfiction",
   },
+  {
+    key: "dystopian",
+    label: "Dystopian",
+    emoji: "🌆",
+    genreKeywords: ["dystopia", "dystopian", "post-apocalyptic", "apocalyp", "totalitarian", "survival", "rebellion", "speculative"],
+    antiKeywords: ["cozy", "feel-good", "devotional", "cookbook"],
+    fictionBias: "fiction",
+  },
 ];
 
 /**

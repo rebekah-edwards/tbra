@@ -48,17 +48,45 @@ export async function searchBooksMeilisearch(
 ): Promise<SearchResult[]> {
   const index = getClient().index("books");
   const effectiveQuery = stripStopWords(query);
-  const results = await index.search(effectiveQuery, {
-    limit,
-    attributesToRetrieve: ["id"],
-    matchingStrategy: pickStrategy(query),
-  });
 
-  return results.hits.map((hit, i) => ({
-    bookId: hit.id as string,
-    // Meilisearch returns results in relevance order; assign synthetic rank
-    rank: -(limit - i),
-  }));
+  // Space-tolerance: "Heaven breaker" can never match the single indexed
+  // token "Heavenbreaker" under matchingStrategy "all" (each word must match
+  // separately, and Meilisearch has no split/concat handling configured).
+  // For short multi-word queries, ALSO search the concatenated form and
+  // merge, concatenated hits first-class (found 2026-07-15).
+  const tokens = effectiveQuery.split(/\s+/).filter(Boolean);
+  const concatenated = tokens.length >= 2 && tokens.length <= 3 && effectiveQuery.length <= 30
+    ? tokens.join("")
+    : null;
+
+  const [results, concatResults] = await Promise.all([
+    index.search(effectiveQuery, {
+      limit,
+      attributesToRetrieve: ["id"],
+      matchingStrategy: pickStrategy(query),
+    }),
+    concatenated
+      ? index.search(concatenated, {
+          limit: 5,
+          attributesToRetrieve: ["id"],
+          matchingStrategy: "last",
+        })
+      : Promise.resolve(null),
+  ]);
+
+  const seen = new Set<string>();
+  const merged: SearchResult[] = [];
+  // Concatenated exact-ish hits rank ABOVE the split-token hits: if someone
+  // typed the split form of a one-word title, that title is the best answer.
+  for (const hit of concatResults?.hits ?? []) {
+    const id = hit.id as string;
+    if (!seen.has(id)) { seen.add(id); merged.push({ bookId: id, rank: -(limit + 5 - merged.length) }); }
+  }
+  for (const hit of results.hits) {
+    const id = hit.id as string;
+    if (!seen.has(id)) { seen.add(id); merged.push({ bookId: id, rank: -(limit - merged.length) }); }
+  }
+  return merged.slice(0, limit);
 }
 
 /**
