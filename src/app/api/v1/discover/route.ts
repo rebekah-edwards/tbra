@@ -26,9 +26,10 @@ export async function POST(req: Request) {
   const body = (await parseJsonBody(req)) ?? {};
 
   const moods: string[] = Array.isArray(body.moods) ? body.moods.filter((m): m is string => typeof m === "string") : [];
-  const length = (body.length ?? null) as "short" | "medium" | "long" | null;
+  // length + audience accept a single value (legacy) or an array (multi-select).
+  const length = ([] as string[]).concat(body.length ?? []).filter((v) => typeof v === "string");
   const fictionFilter = (body.fictionFilter ?? null) as "fiction" | "nonfiction" | "both" | null;
-  const audience = (body.audience ?? null) as "adult" | "ya" | "teen" | "mg" | "any" | null;
+  const audience = ([] as string[]).concat(body.audience ?? []).filter((v) => typeof v === "string" && v !== "any");
   const libraryFilter = (body.libraryFilter ?? null) as "tbr" | "owned" | null;
   const seriesStartersOnly = body.seriesStartersOnly === true;
   const ignorePreferences = body.ignorePreferences === true;
@@ -45,8 +46,8 @@ export async function POST(req: Request) {
     penaltyKeywords: moodFilters?.penaltyKeywords ?? [],
     contentMaxima: moodFilters?.contentMaxima ?? {},
     fictionBias,
-    lengthPreference: length,
-    audience: audience === "any" ? null : audience ?? null,
+    lengthPreference: length as DiscoverFilters["lengthPreference"],
+    audience: audience as DiscoverFilters["audience"],
     libraryFilter,
     seriesStartersOnly,
     ignorePreferences,

@@ -277,6 +277,51 @@ const TABLES: TableSpec[] = [
     totals.mergedLocal += mergedLocal; totals.mergedLive += mergedLive;
   }
 
+  // ── Fresh cover mirror (live → local, last 3 days) ──
+  // The app reads LOCAL covers; nightly pull converges them once a day, which
+  // left same-day admin fixes/clears and prod-enrichment covers looking stale
+  // in the app all day (user report 2026-07-15). This mirrors JUST the cover
+  // fields for recently-touched live books every 30 min. Live is authoritative
+  // for covers (including clears — cover_source proves intent).
+  console.log('\n→ Fresh covers (live → local, 3-day window)');
+  try {
+    const cutoff = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
+    const rows = (await remote.execute({
+      sql: `SELECT id, cover_image_url, cover_source, cover_verified, audiobook_cover_url, updated_at
+              FROM books WHERE updated_at >= ?`,
+      args: [cutoff],
+    })).rows as any[];
+    const upd = local.prepare(
+      `UPDATE books
+          SET cover_image_url = ?, cover_source = ?, cover_verified = ?, audiobook_cover_url = ?
+        WHERE id = ?
+          AND (IFNULL(cover_image_url,'') != IFNULL(?, '')
+               OR IFNULL(cover_source,'') != IFNULL(?, '')
+               OR IFNULL(audiobook_cover_url,'') != IFNULL(?, ''))
+          AND (updated_at IS NULL OR updated_at <= ?)`
+    );
+    let freshened = 0;
+    const trxCovers = local.transaction((rs: any[]) => {
+      for (const r of rs) {
+        // Never null a local cover from a live NULL unless the clear is
+        // intentional (cover_source marker) — protects local enrichment
+        // covers awaiting the nightly push.
+        const liveCover = r.cover_image_url ?? null;
+        const clearedMarkers = ['isbndb-placeholder-cleared', 'gbooks-placeholder-cleared',
+                                'openlibrary-placeholder-cleared', 'admin-removed'];
+        if (!liveCover && !clearedMarkers.includes(String(r.cover_source))) continue;
+        const res = upd.run(
+          liveCover, r.cover_source, r.cover_verified, r.audiobook_cover_url,
+          r.id, liveCover, r.cover_source, r.audiobook_cover_url, r.updated_at);
+        if (res.changes > 0) freshened++;
+      }
+    });
+    trxCovers(rows);
+    console.log(`  ${freshened ? '✓' : '·'}  ${freshened} cover(s) freshened (${rows.length} candidates)`);
+  } catch (e: any) {
+    errors.push(`fresh covers: ${e.message.slice(0, 120)}`);
+  }
+
   // ── up_next: whole-queue mirror per user, newest side wins ──
   console.log('\n→ up_next queues (whole-queue mirror, newest side wins)');
   try {

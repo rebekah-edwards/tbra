@@ -29,6 +29,7 @@ let ALL_MOODS: [Mood] = [
     Mood(key: "fantastical", label: "Fantastical", emoji: "🐉", tint: Color(hex: "6366f1")),
     Mood(key: "historical", label: "Historical", emoji: "🏛️", tint: Color(hex: "b45309")),
     Mood(key: "sciencey", label: "Science-y", emoji: "🔬", tint: Color(hex: "14b8a6")),
+    Mood(key: "dystopian", label: "Dystopian", emoji: "🌆", tint: Color(hex: "78716c")),
 ]
 
 @MainActor
@@ -36,8 +37,9 @@ let ALL_MOODS: [Mood] = [
 final class DiscoverModel {
     var moods: Set<String> = []
     var fictionFilter: String? = nil       // fiction | nonfiction | both
-    var length: String? = nil              // short | medium | long
-    var audience: String? = nil            // adult | ya | teen | mg | any
+    // MULTI-select (2026-07-15) — the API takes arrays; OR semantics.
+    var lengths: Set<String> = []          // short | medium | long
+    var audiences: Set<String> = []        // adult | ya | teen | mg | any
     var libraryFilter: String? = nil       // nil = All Books | tbr | owned
     var seriesStartersOnly = false
     var ignorePreferences = false
@@ -58,8 +60,8 @@ final class DiscoverModel {
             "ignorePreferences": ignorePreferences,
         ]
         if let fictionFilter { body["fictionFilter"] = fictionFilter }
-        if let length { body["length"] = length }
-        if let audience { body["audience"] = audience }
+        if !lengths.isEmpty { body["length"] = Array(lengths) }
+        if !audiences.isEmpty { body["audience"] = Array(audiences) }
         if let libraryFilter { body["libraryFilter"] = libraryFilter }
 
         do {
@@ -207,13 +209,20 @@ struct DiscoverView: View {
                     }
 
                     sectionLabel("Audience")
-                    FlowLayout(spacing: 10) {
-                        choicePill("Adult", selected: model.audience == "adult") { toggleChoice(\.audience, "adult") }
-                        choicePill("Young Adult", selected: model.audience == "ya") { toggleChoice(\.audience, "ya") }
-                        choicePill("Teen", selected: model.audience == "teen") { toggleChoice(\.audience, "teen") }
-                        choicePill("Middle Grade", selected: model.audience == "mg") { toggleChoice(\.audience, "mg") }
-                        choicePill("Any", selected: model.audience == "any") { toggleChoice(\.audience, "any") }
+                    // MULTI-select + CENTERED (user request 2026-07-15).
+                    // "Any" clears the others; picking a real one clears "Any".
+                    VStack(spacing: 10) {
+                        HStack(spacing: 10) {
+                            choicePill("Adult", selected: model.audiences.contains("adult")) { toggleAudience("adult") }
+                            choicePill("Young Adult", selected: model.audiences.contains("ya")) { toggleAudience("ya") }
+                            choicePill("Teen", selected: model.audiences.contains("teen")) { toggleAudience("teen") }
+                        }
+                        HStack(spacing: 10) {
+                            choicePill("Middle Grade", selected: model.audiences.contains("mg")) { toggleAudience("mg") }
+                            choicePill("Any", selected: model.audiences.contains("any")) { toggleAudience("any") }
+                        }
                     }
+                    .frame(maxWidth: .infinity)
 
                     sectionLabel("Search in")
                     HStack(spacing: 10) {
@@ -448,10 +457,21 @@ struct DiscoverView: View {
         }
     }
 
+    /// "Any" clears the others; picking a real audience clears "Any".
+    private func toggleAudience(_ key: String) {
+        if key == "any" {
+            model.audiences = model.audiences.contains("any") ? [] : ["any"]
+        } else {
+            model.audiences.remove("any")
+            if model.audiences.contains(key) { model.audiences.remove(key) }
+            else { model.audiences.insert(key) }
+        }
+    }
+
     private func lengthCard(_ title: String, _ sub: String, key: String) -> some View {
-        let selected = model.length == key
+        let selected = model.lengths.contains(key)
         return Button {
-            model.length = selected ? nil : key
+            if selected { model.lengths.remove(key) } else { model.lengths.insert(key) }
         } label: {
             VStack(spacing: 3) {
                 Text(title)

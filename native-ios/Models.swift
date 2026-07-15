@@ -391,6 +391,12 @@ struct BookFull: Codable, Hashable {
     let slug: String?
     let title: String
     let coverImageUrl: String?
+    // Details tab (2026-07-15) — the v1 payload spreads the full book row,
+    // these were just never declared for decoding.
+    let publicationDate: String?
+    let publisher: String?
+    let language: String?
+    let isbn10: String?
     let authors: [BookAuthor]
     let seriesInfo: BookSeriesInfo?
     let seriesPosition: Int?

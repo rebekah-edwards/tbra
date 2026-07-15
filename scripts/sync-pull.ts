@@ -57,7 +57,10 @@ const local = new Database(path.join(process.cwd(), 'data', 'tbra.db'));
 local.pragma('foreign_keys = OFF');
 
 // ─── Per-query timeout + stall detector (mirror of sync-push) ───
-const QUERY_TIMEOUT_MS = 30_000;
+// Env-overridable (2026-07-15): Turso occasionally serves large scans slowly;
+// a one-shot backlog run can use PULL_QUERY_TIMEOUT_MS=120000 while the
+// nightly default stays tight so a genuine hang still dies fast.
+const QUERY_TIMEOUT_MS = Number(process.env.PULL_QUERY_TIMEOUT_MS) || 30_000;
 const STALL_TIMEOUT_MS = 5 * 60_000;
 let lastProgressMs = Date.now();
 function markProgress() { lastProgressMs = Date.now(); }
@@ -375,11 +378,27 @@ async function fetchLiveRows(table: string, cols: string[], page = 5000): Promis
   // push (step 5b pushes local cover_source back on top of the live value).
   console.log('\n→ Syncing covers (live → local; live covers authoritative)');
   try {
-    const liveCovers = await remote.execute(
-      `SELECT id, cover_image_url, cover_source, cover_verified
-         FROM books
-        WHERE cover_image_url IS NOT NULL AND cover_image_url != ''`
-    );
+    // PAGED on purpose (2026-07-15): the single-shot query grew to ~72k rows
+    // / 100+ seconds and silently died on the 30s per-query timeout EVERY
+    // NIGHT — cover fixes stopped reaching local (the app showed stale junk
+    // covers for weeks). Each 10k page returns in a few seconds.
+    const liveCoverRows: any[] = [];
+    {
+      let offset = 0;
+      const page = 10000;
+      while (true) {
+        const r = await remote.execute(
+          `SELECT id, cover_image_url, cover_source, cover_verified
+             FROM books
+            WHERE cover_image_url IS NOT NULL AND cover_image_url != ''
+            ORDER BY id LIMIT ${page} OFFSET ${offset}`
+        );
+        for (const row of r.rows as any[]) liveCoverRows.push(row);
+        if (r.rows.length < page) break;
+        offset += page;
+      }
+    }
+    const liveCovers = { rows: liveCoverRows };
     let coverFixed = 0;
     const updateCover = local.prepare(
       `UPDATE books
@@ -410,6 +429,37 @@ async function fetchLiveRows(table: string, cols: string[], page = 5000): Promis
     console.log(`  ✓  covers                              ${coverFixed} synced from live`);
   } catch (e: any) {
     console.log(`  ⚠  cover sync: ${e.message.slice(0, 120)}`);
+  }
+
+  // CLEARED covers are live-authoritative too (found 2026-07-15): the pass
+  // above only copies NON-NULL live covers, so a cover cleared on live
+  // (placeholder-clear, admin remove) stayed on local FOREVER — the app kept
+  // showing junk covers the admin had already killed. Mirror the clear when
+  // live's cover_source proves it was an intentional clear, not missing data.
+  console.log('\n→ Clearing covers that live cleared (placeholder/admin clears)');
+  try {
+    const liveCleared = await remote.execute(
+      `SELECT id, cover_source, cover_verified FROM books
+        WHERE (cover_image_url IS NULL OR cover_image_url = '')
+          AND cover_source IN ('isbndb-placeholder-cleared', 'gbooks-placeholder-cleared',
+                               'openlibrary-placeholder-cleared', 'admin-removed')`
+    );
+    let cleared = 0;
+    const clearCover = local.prepare(
+      `UPDATE books
+          SET cover_image_url = NULL, cover_source = ?, cover_verified = ?
+        WHERE id = ? AND cover_image_url IS NOT NULL`
+    );
+    const trxClear = local.transaction((rows: any[]) => {
+      for (const row of rows) {
+        const res = clearCover.run(row.cover_source, row.cover_verified, row.id);
+        if (res.changes > 0) cleared++;
+      }
+    });
+    trxClear(liveCleared.rows);
+    console.log(`  ✓  cleared covers                      ${cleared} mirrored from live`);
+  } catch (e: any) {
+    console.log(`  ⚠  cleared-cover sync: ${e.message.slice(0, 120)}`);
   }
 
   // Audiobook covers are live-authoritative too — the admin uploads them on

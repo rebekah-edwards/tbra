@@ -48,6 +48,26 @@ export async function updateSearchIndex(bookId: string): Promise<void> {
       sql`INSERT INTO search_index (book_id, title, author_names, series_name)
           VALUES (${bookId}, ${book.title}, ${authorNames}, ${seriesName})`,
     );
+
+    // ALSO upsert into Meilisearch immediately (2026-07-15): the nightly
+    // 8:45am sync was the ONLY writer, so a book imported during the day was
+    // invisible to nav search until the next morning ("Heavenbreaker",
+    // added 6:09pm, unfindable all evening). Best-effort, needs the admin
+    // key (the search key can't write).
+    if (process.env.MEILISEARCH_HOST && process.env.MEILISEARCH_ADMIN_KEY) {
+      try {
+        const { Meilisearch } = await import("meilisearch");
+        const client = new Meilisearch({
+          host: process.env.MEILISEARCH_HOST,
+          apiKey: process.env.MEILISEARCH_ADMIN_KEY,
+        });
+        await client.index("books").addDocuments([
+          { id: bookId, title: book.title, authorNames, seriesName, visibility: "public", isBoxSet: false },
+        ]);
+      } catch (err) {
+        console.warn(`[search-index] Meilisearch upsert failed for ${bookId}:`, err);
+      }
+    }
   } catch (err) {
     // FTS index updates are best-effort — don't let a failure here break
     // the parent operation (enrichment, import, etc). The nightly rebuild

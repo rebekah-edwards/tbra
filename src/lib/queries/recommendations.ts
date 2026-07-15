@@ -1379,10 +1379,11 @@ export interface DiscoverFilters {
   contentMaxima?: Record<string, number>;
   /** Fiction/nonfiction bias from mood selection */
   fictionBias?: "fiction" | "nonfiction" | null;
-  /** Page count preferences */
-  lengthPreference?: "short" | "medium" | "long" | null;
-  /** Target audience */
-  audience?: "adult" | "ya" | "teen" | "mg" | null;
+  /** Page count preferences — single value or MULTI-select (OR semantics:
+   *  a book fitting any selected length takes no penalty). */
+  lengthPreference?: ("short" | "medium" | "long")[] | "short" | "medium" | "long" | null;
+  /** Target audience — single value or MULTI-select (OR semantics). */
+  audience?: ("adult" | "ya" | "teen" | "mg")[] | "adult" | "ya" | "teen" | "mg" | null;
   /** Library scope: "tbr" = user's TBR only, "owned" = owned but unfinished, null = all books */
   libraryFilter?: "tbr" | "owned" | null;
   /** Ignore user's content/genre preferences for this search */
@@ -1602,8 +1603,11 @@ export async function getDiscoverRecommendations(
     if (filters.fictionBias === "fiction" && !c.isFiction) score -= 15;
     if (filters.fictionBias === "nonfiction" && c.isFiction) score -= 15;
 
-    // Audience adjustment using pre-built genre name map (not per-book .find())
-    if (filters.audience) {
+    // Audience adjustment using pre-built genre name map (not per-book .find()).
+    // MULTI-select (2026-07-15): a book keeps the BEST adjustment across the
+    // selected audiences — fitting any one of them means no penalty.
+    const audiences = ([] as string[]).concat(filters.audience ?? []).filter(Boolean);
+    if (audiences.length > 0) {
       const genreNamesLower = c.genreIds
         .map((gid) => genreNameMap.get(gid) ?? "")
         .filter(Boolean);
@@ -1620,25 +1624,26 @@ export async function getDiscoverRecommendations(
       );
       const isKidsOrYoung = isYA || isTeen || isMG;
 
-      if (filters.audience === "adult" && isKidsOrYoung) score -= 20;
-      if (filters.audience === "ya" && !isYA) score -= 15;
-      if (filters.audience === "teen" && !isTeen) score -= 15;
-      if (filters.audience === "mg") {
-        if (isMG) score += 5;
-        else if (!isKidsOrYoung) score -= 20;
-      }
+      const adjustments = audiences.map((a) => {
+        if (a === "adult") return isKidsOrYoung ? -20 : 0;
+        if (a === "ya") return isYA ? 0 : -15;
+        if (a === "teen") return isTeen ? 0 : -15;
+        if (a === "mg") return isMG ? 5 : (isKidsOrYoung ? 0 : -20);
+        return 0;
+      });
+      score += Math.max(...adjustments);
     }
 
-    // Length preference adjustment
-    if (filters.lengthPreference && c.pages) {
-      if (filters.lengthPreference === "short" && c.pages > 250) {
-        score -= Math.min(10, (c.pages - 250) / 50);
-      } else if (filters.lengthPreference === "long" && c.pages < 350) {
-        score -= Math.min(10, (350 - c.pages) / 50);
-      }
-      if (filters.lengthPreference === "medium" && (c.pages < 200 || c.pages > 400)) {
-        score -= 5;
-      }
+    // Length preference adjustment — same multi-select OR semantics.
+    const lengths = ([] as string[]).concat(filters.lengthPreference ?? []).filter(Boolean);
+    if (lengths.length > 0 && c.pages) {
+      const adjustments = lengths.map((l) => {
+        if (l === "short" && c.pages! > 250) return -Math.min(10, (c.pages! - 250) / 50);
+        if (l === "long" && c.pages! < 350) return -Math.min(10, (350 - c.pages!) / 50);
+        if (l === "medium" && (c.pages! < 200 || c.pages! > 400)) return -5;
+        return 0;
+      });
+      score += Math.max(...adjustments);
     }
 
     // Jitter for variety: ±15 so refreshes feel genuinely different (was ±5)

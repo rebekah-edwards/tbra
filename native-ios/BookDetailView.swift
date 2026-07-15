@@ -96,8 +96,16 @@ struct BookDetailView: View {
                             .id("series")
                     }
                     if !data.book.ratings.isEmpty {
-                        WhatsInsideSection(ratings: data.book.ratings)
+                        WhatsInsideSection(
+                            ratings: data.book.ratings,
+                            bookId: data.book.id,
+                            isAdmin: isAdmin,
+                            onChanged: { Task { await model.load() } }
+                        )
                     }
+                    // About / Details — web renders these right after the
+                    // content profile (user report 2026-07-15: missing).
+                    BookAboutDetailsSection(book: data.book)
                     BookFooterActions(
                         bookId: data.book.id,
                         bookTitle: data.book.title,
@@ -1326,18 +1334,82 @@ private struct SummaryQuoteCard: View {
 // ── What's Inside — content-profile.tsx, spoiler gate + 2-col grid ──
 private struct WhatsInsideSection: View {
     let ratings: [ContentRating]
+    var bookId: String = ""
+    var isAdmin: Bool = false
+    var onChanged: () -> Void = {}
     @State private var revealed = false
     @State private var expanded: Set<String> = []
+    @State private var editing: ContentRating?
+    @State private var verifyingAll = false
+    @State private var verifiedOverride: Set<String> = []
 
     private let columns = [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
 
+    // Web content-profile.tsx CATEGORY_ORDER — display order is authoritative
+    // here, NOT the API order (user request 2026-07-15: Romance/Sex first).
+    private static let categoryOrder: [String] = [
+        "romance_sex", "violence_gore", "profanity_language", "substance_use",
+        "lgbtqia_representation", "religious_content", "magic_witchcraft",
+        "occult_demonology", "political_ideological", "self_harm_suicide",
+        "abuse_suffering", "other",
+    ]
+    // Web SHORT_NAMES — compact single-line labels.
+    private static let shortNames: [String: String] = [
+        "romance_sex": "Romance & sex",
+        "lgbtqia_representation": "LGBTQ+ Rep.",
+        "profanity_language": "Profanity",
+        "political_ideological": "Political content",
+        "magic_witchcraft": "Magic & witchcraft",
+        "occult_demonology": "Occult / demonology",
+        "abuse_suffering": "Abuse & suffering",
+    ]
+
+    private var orderedRatings: [ContentRating] {
+        ratings.sorted {
+            (Self.categoryOrder.firstIndex(of: $0.categoryKey) ?? 999)
+                < (Self.categoryOrder.firstIndex(of: $1.categoryKey) ?? 999)
+        }
+    }
+
+    private func isVerified(_ r: ContentRating) -> Bool {
+        r.evidenceLevel == "human_verified" || verifiedOverride.contains(r.categoryId)
+    }
+    private var allVerified: Bool {
+        !ratings.isEmpty && orderedRatings.allSatisfy(isVerified)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionHeading("What's Inside")
+            HStack(spacing: 10) {
+                SectionHeading("What's Inside")
+                Spacer()
+                if isAdmin && !bookId.isEmpty {
+                    if allVerified {
+                        Text("All Verified")
+                            .font(Theme.body(11, .semibold))
+                            .foregroundStyle(Theme.accentText)
+                            .padding(.horizontal, 10).padding(.vertical, 4)
+                            .background(Theme.accent.opacity(0.12), in: Capsule())
+                            .overlay(Capsule().stroke(Theme.accent.opacity(0.4), lineWidth: 1))
+                    } else {
+                        Button {
+                            verifyAll()
+                        } label: {
+                            Text(verifyingAll ? "Verifying…" : "Verify All")
+                                .font(Theme.body(11, .semibold))
+                                .foregroundStyle(Theme.accentText)
+                                .padding(.horizontal, 10).padding(.vertical, 4)
+                                .background(Theme.accent.opacity(0.1), in: Capsule())
+                                .overlay(Capsule().stroke(Theme.accent.opacity(0.3), lineWidth: 1))
+                        }
+                        .disabled(verifyingAll)
+                    }
+                }
+            }
 
             ZStack {
                 LazyVGrid(columns: columns, alignment: .leading, spacing: 22) {
-                    ForEach(ratings) { rating in
+                    ForEach(orderedRatings) { rating in
                         ratingCell(rating)
                     }
                 }
@@ -1363,6 +1435,33 @@ private struct WhatsInsideSection: View {
                 }
             }
         }
+        .sheet(item: $editing) { rating in
+            AdminRatingEditorSheet(
+                bookId: bookId,
+                rating: rating,
+                displayName: Self.shortNames[rating.categoryKey] ?? rating.categoryName,
+                onSaved: {
+                    verifiedOverride.insert(rating.categoryId)
+                    onChanged()
+                }
+            )
+            .presentationDetents([.medium])
+            .presentationBackground(Theme.bg)
+        }
+    }
+
+    private func verifyAll() {
+        verifyingAll = true
+        Task {
+            defer { verifyingAll = false }
+            struct Ok: Codable { let ok: Bool }
+            if let _: Ok = try? await APIClient.shared.request(
+                "/api/v1/admin/books/\(bookId)/content-verify", method: "POST",
+                body: ["all": true]) {
+                for r in ratings { verifiedOverride.insert(r.categoryId) }
+                onChanged()
+            }
+        }
     }
 
     private func intensityColor(_ level: Int) -> Color {
@@ -1379,17 +1478,36 @@ private struct WhatsInsideSection: View {
         let isExpanded = expanded.contains(rating.categoryId)
         return VStack(alignment: .leading, spacing: 7) {
             HStack(alignment: .top, spacing: 6) {
-                Text(rating.categoryName)
+                Text(Self.shortNames[rating.categoryKey] ?? rating.categoryName)
                     .font(Theme.body(15, .semibold))
                     .foregroundStyle(Theme.foreground)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 2)
-                if rating.evidenceLevel == "human_verified" {
+                // Web evidenceBadge: "Verified" for human_verified, "AI"
+                // otherwise — both visible to all users.
+                if isVerified(rating) {
                     Text("Verified")
                         .font(Theme.body(10, .medium))
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(Theme.accentText)
                         .padding(.horizontal, 8).padding(.vertical, 3)
                         .background(Theme.accent.opacity(0.12), in: Capsule())
+                } else {
+                    Text("AI")
+                        .font(Theme.body(10, .medium))
+                        .foregroundStyle(Theme.muted)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(Theme.surfaceAlt.opacity(0.8), in: Capsule())
+                }
+                if isAdmin && !bookId.isEmpty {
+                    Button {
+                        editing = rating
+                    } label: {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Theme.muted)
+                            .frame(width: 22, height: 22)
+                            .background(Theme.surfaceAlt.opacity(0.6), in: Circle())
+                    }
                 }
             }
 
@@ -2025,5 +2143,251 @@ private struct AdminFieldEditorSheet: View {
             case .bool: text = ""
             }
         }
+    }
+}
+
+// ── Admin rating editor — web AdminEditModal (content-profile.tsx) ──
+// Intensity 0-4 segmented + notes (≤500) + "Save & Verify": saving an edit
+// also verifies that single category (evidence_level = human_verified).
+struct AdminRatingEditorSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let bookId: String
+    let rating: ContentRating
+    let displayName: String
+    let onSaved: () -> Void
+
+    @State private var intensity: Int
+    @State private var notes: String
+    @State private var saving = false
+    @State private var error: String?
+
+    private static let intensityLabels = ["None", "Mild", "Moderate", "Significant", "Extreme"]
+
+    init(bookId: String, rating: ContentRating, displayName: String, onSaved: @escaping () -> Void) {
+        self.bookId = bookId
+        self.rating = rating
+        self.displayName = displayName
+        self.onSaved = onSaved
+        _intensity = State(initialValue: rating.intensity)
+        _notes = State(initialValue: rating.notes ?? "")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Edit \u{201C}\(displayName)\u{201D}")
+                    .font(Theme.heading(18, .bold))
+                    .foregroundStyle(Theme.foreground)
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+            .padding(.top, 18)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("INTENSITY")
+                    .font(Theme.body(11, .semibold)).kerning(0.5)
+                    .foregroundStyle(Theme.muted)
+                HStack(spacing: 6) {
+                    ForEach(0...4, id: \.self) { level in
+                        Button {
+                            intensity = level
+                        } label: {
+                            Text(Self.intensityLabels[level])
+                                .font(Theme.body(11, .semibold))
+                                .foregroundStyle(intensity == level ? .black : Theme.muted)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 9)
+                                .background(intensity == level ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.surfaceAlt.opacity(0.7)),
+                                            in: RoundedRectangle(cornerRadius: 9))
+                        }
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("NOTE (OPTIONAL, ≤500)")
+                    .font(Theme.body(11, .semibold)).kerning(0.5)
+                    .foregroundStyle(Theme.muted)
+                TextEditor(text: $notes)
+                    .scrollContentBackground(.hidden)
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.foreground)
+                    .frame(minHeight: 90)
+                    .padding(10)
+                    .background(Theme.surfaceAlt.opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                    .onChange(of: notes) {
+                        if notes.count > 500 { notes = String(notes.prefix(500)) }
+                    }
+            }
+
+            if let error {
+                Text(error).font(Theme.body(12)).foregroundStyle(Theme.destructive)
+            }
+
+            Button {
+                save()
+            } label: {
+                Text(saving ? "Saving…" : "Save & Verify")
+                    .font(Theme.body(15, .semibold))
+                    .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background(Theme.accent, in: RoundedRectangle(cornerRadius: 14))
+            }
+            .disabled(saving)
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .background(Theme.bg)
+    }
+
+    private func save() {
+        saving = true; error = nil
+        Task {
+            defer { saving = false }
+            struct Ok: Codable { let ok: Bool }
+            var body: [String: Any] = ["categoryKey": rating.categoryKey, "intensity": intensity]
+            let trimmed = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            body["notes"] = trimmed.isEmpty ? NSNull() : trimmed
+            do {
+                let _: Ok = try await APIClient.shared.request(
+                    "/api/v1/admin/books/\(bookId)/content-verify", method: "POST", body: body)
+                onSaved()
+                dismiss()
+            } catch {
+                self.error = "Couldn't save."
+            }
+        }
+    }
+}
+
+// ── About / Details — web book-about-details.tsx ──
+// Two tabs (only when both exist): About = description with 500-char
+// read-more; Details = labeled rows in the web's exact order.
+struct BookAboutDetailsSection: View {
+    let book: BookFull
+    @State private var tab = "about"
+    @State private var descExpanded = false
+
+    private var hasDescription: Bool { !(book.description ?? "").isEmpty }
+
+    private var detailRows: [(String, String)] {
+        var rows: [(String, String)] = []
+        if let date = formattedReleaseDate() { rows.append(("Release date", date)) }
+        if let pages = book.pages { rows.append(("Pages", String(pages))) }
+        if let mins = book.audioLengthMinutes {
+            let h = mins / 60, m = mins % 60
+            rows.append(("Audio length", h > 0 ? (m > 0 ? "\(h)h \(m)m" : "\(h)h") : "\(m)m"))
+        }
+        if let lang = book.language, !lang.isEmpty { rows.append(("Language", lang)) }
+        if let pub = book.publisher, !pub.isEmpty { rows.append(("Publisher", pub)) }
+        if let isbn = book.isbn13 ?? book.isbn10, !isbn.isEmpty { rows.append(("ISBN", isbn)) }
+        if let asin = book.asin, !asin.isEmpty { rows.append(("ASIN", asin)) }
+        if let fiction = book.isFiction { rows.append(("Type", fiction ? "Fiction" : "Nonfiction")) }
+        if let series = book.seriesInfo {
+            rows.append(("Series", book.seriesPosition.map { "\(series.name) #\($0)" } ?? series.name))
+        }
+        return rows
+    }
+
+    var body: some View {
+        let hasDetails = !detailRows.isEmpty
+        if hasDescription || hasDetails {
+            VStack(alignment: .leading, spacing: 14) {
+                // Tab headers (both) or single heading (one)
+                if hasDescription && hasDetails {
+                    HStack(spacing: 18) {
+                        tabButton("About", key: "about")
+                        tabButton("Details", key: "details")
+                        Spacer()
+                    }
+                } else {
+                    SectionHeading(hasDescription ? "About" : "Details")
+                }
+
+                if (tab == "about" && hasDescription) || (hasDescription && !hasDetails) {
+                    aboutBody
+                } else {
+                    detailsTable
+                }
+            }
+        }
+    }
+
+    private func tabButton(_ label: String, key: String) -> some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.15)) { tab = key }
+        } label: {
+            VStack(spacing: 5) {
+                Text(label)
+                    .font(Theme.heading(20, .bold))
+                    .foregroundStyle(tab == key ? Theme.neonBlue : Theme.muted.opacity(0.4))
+                Capsule()
+                    .fill(tab == key ? Theme.neonBlue : .clear)
+                    .frame(width: 34, height: 3)
+            }
+        }
+    }
+
+    @ViewBuilder private var aboutBody: some View {
+        let description = book.description ?? ""
+        let isLong = description.count > 500
+        let shown = isLong && !descExpanded ? String(description.prefix(500)) + "…" : description
+        VStack(alignment: .leading, spacing: 6) {
+            // Descriptions carry publisher HTML (<p>/<br>/<b>/<i>) — reuse the
+            // review HTML renderer so tags never show raw.
+            ReviewHTMLText(html: shown, baseSize: 14)
+            if isLong {
+                Button {
+                    withAnimation { descExpanded.toggle() }
+                } label: {
+                    Text(descExpanded ? "Show less" : "Read more")
+                        .font(Theme.body(13, .semibold))
+                        .foregroundStyle(Theme.neonBlue)
+                }
+            }
+        }
+    }
+
+    private var detailsTable: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(detailRows, id: \.0) { row in
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(row.0.uppercased())
+                        .font(Theme.body(11, .medium)).kerning(0.5)
+                        .foregroundStyle(Theme.muted)
+                        .frame(width: 100, alignment: .leading)
+                    Text(row.1)
+                        .font(Theme.body(14))
+                        .foregroundStyle(Theme.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    /// Web formatReleaseDate: full date → "April 1, 2026"; "2025-12" →
+    /// "December 2025"; else the bare year.
+    private func formattedReleaseDate() -> String? {
+        let months = ["January", "February", "March", "April", "May", "June", "July",
+                      "August", "September", "October", "November", "December"]
+        if let d = book.publicationDate, !d.isEmpty {
+            let parts = d.split(separator: "-").map(String.init)
+            if parts.count >= 3, let m = Int(parts[1]), let day = Int(parts[2]), (1...12).contains(m) {
+                return "\(months[m - 1]) \(day), \(parts[0])"
+            }
+            if parts.count == 2, let m = Int(parts[1]), (1...12).contains(m) {
+                return "\(months[m - 1]) \(parts[0])"
+            }
+            return d
+        }
+        if let year = book.publicationYear { return String(year) }
+        return nil
     }
 }

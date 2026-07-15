@@ -68,8 +68,9 @@ export async function POST(request: Request) {
       ...(contentOverrides ?? {}),
     },
     fictionBias,
-    lengthPreference: length,
-    audience: audience === "any" ? null : audience ?? null,
+    // Accept single value (legacy) or array (multi-select, 2026-07-15).
+    lengthPreference: ([] as string[]).concat(length ?? []).filter(Boolean) as DiscoverFilters["lengthPreference"],
+    audience: ([] as string[]).concat(audience ?? []).filter((a) => a && a !== "any") as DiscoverFilters["audience"],
     libraryFilter,
     seriesStartersOnly,
     ignorePreferences,

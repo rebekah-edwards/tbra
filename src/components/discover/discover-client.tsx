@@ -42,13 +42,14 @@ const AUDIENCE_OPTIONS = [
 // Mood-specific tints: [idle bg, idle border, selected bg gradient, selected border]
 const MOOD_TINTS: Record<string, { idle: string; selected: string }> = {
   cozy:           { idle: "bg-amber-500/8 border-amber-500/20",        selected: "bg-gradient-to-br from-amber-500/25 to-amber-900/15 border-amber-500/50" },
-  dark_gritty:    { idle: "bg-slate-500/10 border-slate-500/20",       selected: "bg-gradient-to-br from-slate-500/25 to-slate-900/15 border-slate-400/50" },
+  dark:           { idle: "bg-slate-500/10 border-slate-500/20",       selected: "bg-gradient-to-br from-slate-500/25 to-slate-900/15 border-slate-400/50" },
   thrilling:      { idle: "bg-yellow-500/8 border-yellow-500/20",      selected: "bg-gradient-to-br from-yellow-500/25 to-yellow-900/15 border-yellow-500/50" },
   romantic:       { idle: "bg-pink-500/8 border-pink-500/20",          selected: "bg-gradient-to-br from-pink-500/25 to-pink-900/15 border-pink-500/50" },
   funny:          { idle: "bg-orange-500/8 border-orange-500/20",      selected: "bg-gradient-to-br from-orange-500/25 to-orange-900/15 border-orange-500/50" },
   emotional:      { idle: "bg-rose-500/8 border-rose-500/20",          selected: "bg-gradient-to-br from-rose-500/25 to-rose-900/15 border-rose-500/50" },
   adventurous:    { idle: "bg-emerald-500/8 border-emerald-500/20",    selected: "bg-gradient-to-br from-emerald-500/25 to-emerald-900/15 border-emerald-500/50" },
-  mind_bending:   { idle: "bg-violet-500/8 border-violet-500/20",      selected: "bg-gradient-to-br from-violet-500/25 to-violet-900/15 border-violet-500/50" },
+  mindblowing:    { idle: "bg-violet-500/8 border-violet-500/20",      selected: "bg-gradient-to-br from-violet-500/25 to-violet-900/15 border-violet-500/50" },
+  dystopian:      { idle: "bg-stone-500/10 border-stone-500/20",       selected: "bg-gradient-to-br from-stone-500/25 to-red-950/15 border-stone-400/50" },
   spooky:         { idle: "bg-purple-500/8 border-purple-500/20",      selected: "bg-gradient-to-br from-purple-500/25 to-purple-900/15 border-purple-500/50" },
   inspiring:      { idle: "bg-lime-500/8 border-lime-500/20",          selected: "bg-gradient-to-br from-lime-500/25 to-lime-900/15 border-lime-500/50" },
   informative:    { idle: "bg-cyan-500/8 border-cyan-500/20",          selected: "bg-gradient-to-br from-cyan-500/25 to-cyan-900/15 border-cyan-500/50" },
@@ -74,9 +75,16 @@ export function DiscoverClient({
     const p = searchParams.get("moods");
     return p ? p.split(",").filter(Boolean) : [];
   });
-  const [lengthPref, setLengthPref] = useState<string | null>(() => searchParams.get("length"));
+  // length + audience are MULTI-select (2026-07-15) — comma-joined in the URL.
+  const [lengthPref, setLengthPref] = useState<string[]>(() => {
+    const p = searchParams.get("length");
+    return p ? p.split(",").filter(Boolean) : [];
+  });
   const [fictionPref, setFictionPref] = useState<string | null>(() => searchParams.get("fiction"));
-  const [audiencePref, setAudiencePref] = useState<string | null>(() => searchParams.get("audience"));
+  const [audiencePref, setAudiencePref] = useState<string[]>(() => {
+    const p = searchParams.get("audience");
+    return p ? p.split(",").filter(Boolean) : [];
+  });
   const [libraryFilter, setLibraryFilter] = useState<string | null>(() => searchParams.get("library"));
   const [seriesStarters, setSeriesStarters] = useState(() => searchParams.get("starters") === "1");
   const [ignorePreferences, setIgnorePreferences] = useState(() => searchParams.get("ignore") === "1");
@@ -101,12 +109,12 @@ export function DiscoverClient({
   const initialLoadDone = useRef(false);
 
   // Sync filter state → URL params (replaces current history entry so back still works)
-  const syncUrl = useCallback((moods: string[], length: string | null, fiction: string | null, audience: string | null, library: string | null, starters: boolean, ignore: boolean, hasResults: boolean) => {
+  const syncUrl = useCallback((moods: string[], length: string[], fiction: string | null, audience: string[], library: string | null, starters: boolean, ignore: boolean, hasResults: boolean) => {
     const params = new URLSearchParams();
     if (moods.length > 0) params.set("moods", moods.join(","));
-    if (length) params.set("length", length);
+    if (length.length > 0) params.set("length", length.join(","));
     if (fiction) params.set("fiction", fiction);
-    if (audience) params.set("audience", audience);
+    if (audience.length > 0) params.set("audience", audience.join(","));
     if (library) params.set("library", library);
     if (starters) params.set("starters", "1");
     if (ignore) params.set("ignore", "1");
@@ -280,9 +288,11 @@ export function DiscoverClient({
           {LENGTH_OPTIONS.map((opt) => (
             <button
               key={opt.key}
-              onClick={() => setLengthPref((prev) => (prev === opt.key ? null : opt.key))}
+              onClick={() => setLengthPref((prev) =>
+                prev.includes(opt.key) ? prev.filter((k) => k !== opt.key) : [...prev, opt.key]
+              )}
               className={`rounded-lg px-3 py-2 text-center border-2 transition-all ${
-                lengthPref === opt.key
+                lengthPref.includes(opt.key)
                   ? "border-accent bg-accent/15 text-accent"
                   : "border-border bg-surface-alt/50 text-muted hover:border-accent/30"
               }`}
@@ -306,9 +316,14 @@ export function DiscoverClient({
           {AUDIENCE_OPTIONS.map((opt) => (
             <button
               key={opt.key}
-              onClick={() => setAudiencePref((prev) => (prev === opt.key ? null : opt.key))}
+              onClick={() => setAudiencePref((prev) => {
+                // "Any" clears the others; picking a real audience clears "any".
+                if (opt.key === "any") return prev.includes("any") ? [] : ["any"];
+                const without = prev.filter((k) => k !== opt.key && k !== "any");
+                return prev.includes(opt.key) ? without : [...without, opt.key];
+              })}
               className={`rounded-lg px-3 py-2 text-sm font-medium border-2 transition-all ${
-                audiencePref === opt.key
+                audiencePref.includes(opt.key)
                   ? "border-accent bg-accent/15 text-accent"
                   : "border-border bg-surface-alt/50 text-muted hover:border-accent/30"
               }`}

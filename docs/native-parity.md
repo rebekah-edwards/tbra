@@ -578,3 +578,26 @@ explicit user sign-off.
   was orphaned for non-gated users. Verified: sim (menu row + full screen render,
   super-admin preview), v1 checkout returns live Stripe URL for a reader account.
   NOTE: account flip lands on the app after the next user-activity sync (≤30 min).
+
+- **2026-07-15 — Punch list #8.** COVERS root cause: sync-pull's cover pass (72k
+  rows, 104s) died on its 30s query timeout EVERY night → paged 10k + env
+  PULL_QUERY_TIMEOUT_MS; new cleared-covers pass (live NULL + cleared marker →
+  clears local); fresh-cover mirror in the 30-min user-activity sync (3-day
+  window); one-shot: local↔live cover diff now 0 both directions (1,635 local
+  covers pushed to blank live slots, fill-blank only). SEARCH: (a) space
+  tolerance — searchBooksMeilisearch also queries the concatenated form for 2-3
+  token queries ("Heaven breaker"→"heavenbreaker"), merged first; (b) NEW books
+  now upsert into Meilisearch IMMEDIATELY in updateSearchIndex (nightly 8:45am
+  was the only writer — same-day imports were unfindable; Heavenbreaker proof);
+  MEILISEARCH_ADMIN_KEY added to Vercel; 1,393 recent books backfilled.
+  Verified: "Heaven breaker" → Heavenbreaker. NATIVE book page: About/Details
+  tabs (web spec: 500-char read-more, Details rows Release date/Pages/Audio
+  length/Language/Publisher/ISBN/ASIN/Type/Series); What's Inside reordered to
+  web CATEGORY_ORDER (Romance & sex first) + SHORT_NAMES + AI/Verified badges +
+  admin Verify All pill + per-category editor (intensity 0-4 + note ≤500 +
+  Save & Verify) via NEW POST /api/v1/admin/books/[id]/content-verify (sim-
+  verified end-to-end; BTF evidence levels restored after test). DISCOVER:
+  dystopian mood (🌆, web+iOS), length+audience MULTI-select w/ OR scoring
+  (arrays accepted, legacy single value still works), audience rows centered
+  (iOS), MOOD_TINTS key fix (dark/mindblowing). BookFull gained
+  publicationDate/publisher/language/isbn10 (payload already carried them).
