@@ -1,6 +1,7 @@
 import { getCurrentUser, isPremium } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { SubscribeButtons } from "@/components/upgrade/subscribe-buttons";
 
 export const metadata: Metadata = {
   title: "Upgrade to Based Reader",
@@ -175,17 +176,11 @@ export default async function UpgradePage() {
         ))}
       </div>
 
-      {/* CTA */}
-      {!userIsPremium && (
-        <div className="rounded-xl border border-neon-purple/30 bg-neon-purple/5 p-6 text-center">
-          <p className="font-heading text-lg font-bold text-foreground mb-2">
-            Coming Soon
-          </p>
-          <p className="text-sm text-muted max-w-md mx-auto">
-            Premium subscriptions are launching soon. We'll notify you when Based Reader is available
-            for purchase.
-          </p>
-        </div>
+      {/* CTA — Stripe checkout (subscribers get the billing portal). Staff
+          accounts (admin/beta) see neither: they already have everything and
+          the checkout route rejects them. */}
+      {["reader", "premium"].includes(user.accountType) && (
+        <SubscribeButtons isPremium={userIsPremium} />
       )}
     </div>
   );

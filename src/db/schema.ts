@@ -233,6 +233,11 @@ export const users = sqliteTable("users", {
   // Referrals
   referralCode: text("referral_code"),
   referredByUserId: text("referred_by_user_id"),
+  // Stripe subscription (2026-07-15). updated_at exists so account_type
+  // flips made by the live webhook propagate to the local/app DB via the
+  // user-activity sync (users is otherwise pull-only with no timestamp).
+  stripeCustomerId: text("stripe_customer_id"),
+  updatedAt: text("updated_at"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   uniqueIndex("users_referral_code_unique").on(table.referralCode),
