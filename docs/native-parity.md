@@ -601,3 +601,6 @@ explicit user sign-off.
   (arrays accepted, legacy single value still works), audience rows centered
   (iOS), MOOD_TINTS key fix (dark/mindblowing). BookFull gained
   publicationDate/publisher/language/isbn10 (payload already carried them).
+
+- **2026-07-15 — About/Details moved directly below the summary** (web position),
+  ahead of Admin Edit; removed from the pre-footer slot. Sim-verified.

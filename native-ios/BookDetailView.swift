@@ -58,8 +58,11 @@ struct BookDetailView: View {
                     if let summary = data.book.summary, !summary.isEmpty {
                         SummaryQuoteCard(summary: summary)
                     }
-                    // Just below the summary (user request 2026-07-14 — was
-                    // buried at the bottom of the page).
+                    // About / Details directly under the summary, like the
+                    // web (user request 2026-07-15).
+                    BookAboutDetailsSection(book: data.book)
+                    // Just below the summary block (user request 2026-07-14 —
+                    // was buried at the bottom of the page).
                     if isAdmin {
                         AdminEditSection(
                             bookId: data.book.id,
@@ -103,9 +106,6 @@ struct BookDetailView: View {
                             onChanged: { Task { await model.load() } }
                         )
                     }
-                    // About / Details — web renders these right after the
-                    // content profile (user report 2026-07-15: missing).
-                    BookAboutDetailsSection(book: data.book)
                     BookFooterActions(
                         bookId: data.book.id,
                         bookTitle: data.book.title,
