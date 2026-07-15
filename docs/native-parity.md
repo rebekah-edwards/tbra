@@ -567,3 +567,14 @@ explicit user sign-off.
   created; hand-signed events (real whsec HMAC) flipped reader→premium→reader.
   All 4 env vars on Vercel prod. TO GO LIVE: swap sk_test→sk_live key +
   live-mode product/prices/webhook, update price consts in subscribe-buttons.
+
+- **2026-07-15 — Based Reader pricing IN the app + menu everywhere.** Native
+  BasedReaderScreen (TopBarMenus.swift): aurora hero, gradient wordmark, $4.99/
+  $39.99 cards, features/roadmap/trust — hamburger "Based Reader" row (everyone
+  sees it). Checkout/portal via NEW POST /api/v1/stripe (bearer twin of web
+  routes) → opens in an IN-APP SFSafariViewController sheet (user request: never
+  kick to browser). Staff = preview mode (cards visible, buying disabled). Web
+  hamburger menu gained a "Based Reader" → /upgrade row (star icon) — the page
+  was orphaned for non-gated users. Verified: sim (menu row + full screen render,
+  super-admin preview), v1 checkout returns live Stripe URL for a reader account.
+  NOTE: account flip lands on the app after the next user-activity sync (≤30 min).
