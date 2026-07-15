@@ -8,48 +8,62 @@ export const metadata: Metadata = {
   description: "Unlock premium features on tbr*a",
 };
 
-const PREMIUM_FEATURES = [
+const LIVE_FEATURES = [
   {
     title: "Unlimited Find My Next Read",
     description: "Mood-based book discovery with no limits. Free accounts get 3 searches a month.",
     icon: "zap",
+    tint: "lime",
   },
   {
     title: "Custom Shelves",
     description: "Create your own book lists beyond TBR, Reading, and Finished. Everyone keeps Top Shelf Reads.",
     icon: "shelves",
+    tint: "purple",
   },
   {
     title: "Buddy Reads",
     description: "Read together with friends and track your progress side by side.",
     icon: "heart",
+    tint: "blue",
   },
   {
     title: "Notes to Self",
     description: "Leave a private note on any TBR book so future-you remembers why it's there.",
     icon: "user",
+    tint: "purple",
   },
   {
     title: "Ad-Free Forever",
     description: "tbr*a stays clean and distraction-free for Based Readers, always.",
     icon: "trophy",
+    tint: "lime",
   },
+];
+
+const COMING_SOON = [
   {
     title: "Family Accounts",
-    description: "Coming soon: reader profiles for your kids — track their TBRs without mixing recommendations.",
+    description: "Reader profiles for your kids — track their TBRs without mixing recommendations.",
     icon: "users",
   },
   {
     title: "Advanced Stats",
-    description: "Coming soon: deeper reading analytics, trends, and insights.",
+    description: "Deeper reading analytics, trends, and insights.",
     icon: "chart",
   },
   {
     title: "Custom App Icons",
-    description: "Coming soon: alternative app icon designs to make tbr*a yours.",
+    description: "Alternative app icon designs to make tbr*a yours.",
     icon: "palette",
   },
 ];
+
+const TINTS: Record<string, string> = {
+  lime: "bg-accent/15 text-accent",
+  purple: "bg-neon-purple/15 text-neon-purple",
+  blue: "bg-neon-blue/15 text-neon-blue",
+};
 
 function FeatureIcon({ icon }: { icon: string }) {
   switch (icon) {
@@ -125,63 +139,98 @@ export default async function UpgradePage() {
   if (!user) redirect("/login");
 
   const userIsPremium = isPremium(user);
+  const isStaff = !["reader", "premium"].includes(user.accountType);
 
   return (
-    <div className="lg:w-[60%] lg:mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="font-heading text-2xl font-bold text-foreground">
-          {userIsPremium ? "You're a Based Reader" : "Become a Based Reader"}
-        </h1>
-        <p className="mt-2 text-muted">
-          {userIsPremium
-            ? "You have access to all premium features."
-            : "Unlock the full tbr*a experience with premium features."}
-        </p>
-      </div>
+    <div className="relative lg:w-[60%] lg:mx-auto">
+      {/* Aurora backdrop — breathes slowly, purple-led (the premium color) */}
+      <div className="upgrade-aurora pointer-events-none absolute -inset-x-8 -top-16 h-[560px]" aria-hidden />
 
-      {/* Current plan indicator */}
-      <div className="rounded-xl border border-border bg-surface p-4 mb-6 flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-foreground">Current plan</p>
-          <p className="text-xs text-muted mt-0.5">
-            {userIsPremium ? "Based Reader (Premium)" : "Free Reader"}
+      <div className="relative">
+        {/* Hero */}
+        <div className="text-center pt-6 mb-10">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-neon-purple/30 bg-neon-purple/10 px-3 py-1 text-[11px] font-bold tracking-[0.14em] text-neon-purple uppercase">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.2L21 9l-5 4.4L17.5 20 12 16.4 6.5 20 8 13.4 3 9l6.6-.8L12 2z" /></svg>
+            Premium
+          </span>
+          <h1 className="mt-4 font-heading text-4xl font-extrabold leading-tight text-foreground">
+            Become a<br />
+            <span className="upgrade-gradient-text">Based Reader</span>
+          </h1>
+          <p className="mt-3 text-sm text-muted max-w-sm mx-auto">
+            {userIsPremium
+              ? "You have access to everything below. Thanks for backing tbr*a."
+              : "Every tool we build for readers who take their shelves seriously."}
           </p>
-        </div>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-            userIsPremium
-              ? "bg-neon-purple/15 text-neon-purple border border-neon-purple/30"
-              : "bg-surface-alt text-muted border border-border"
-          }`}
-        >
-          {userIsPremium ? "Active" : "Free"}
-        </span>
-      </div>
-
-      {/* Features grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
-        {PREMIUM_FEATURES.map((feature) => (
-          <div
-            key={feature.title}
-            className="rounded-xl border border-border bg-surface p-4 flex gap-3"
-          >
-            <div className="flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-lg bg-neon-purple/15 text-neon-purple">
-              <FeatureIcon icon={feature.icon} />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">{feature.title}</h3>
-              <p className="text-xs text-muted mt-0.5">{feature.description}</p>
-            </div>
+          {/* Current plan chip */}
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-3.5 py-1.5 backdrop-blur-sm">
+            <span className="text-[11px] text-muted">Current plan</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                userIsPremium
+                  ? "bg-neon-purple/15 text-neon-purple"
+                  : "bg-surface-alt text-muted"
+              }`}
+            >
+              {userIsPremium ? "Based Reader" : isStaff ? user.accountType.replace("_", " ") : "Free Reader"}
+            </span>
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* CTA — Stripe checkout (subscribers get the billing portal). Staff
-          accounts (admin/beta) see neither: they already have everything and
-          the checkout route rejects them. */}
-      {["reader", "premium"].includes(user.accountType) && (
-        <SubscribeButtons isPremium={userIsPremium} />
-      )}
+        {/* Pricing — first, before the pitch */}
+        <SubscribeButtons isPremium={userIsPremium} preview={isStaff} />
+
+        {/* Live features */}
+        <h2 className="section-heading text-sm mt-12 mb-4">Everything you unlock</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {LIVE_FEATURES.map((feature) => (
+            <div
+              key={feature.title}
+              className="rounded-2xl border border-border bg-surface/70 p-4 flex gap-3 backdrop-blur-sm"
+            >
+              <div className={`flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-xl ${TINTS[feature.tint]}`}>
+                <FeatureIcon icon={feature.icon} />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">{feature.title}</h3>
+                <p className="text-xs text-muted mt-0.5 leading-relaxed">{feature.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Roadmap */}
+        <h2 className="section-heading text-sm mt-10 mb-4">On the roadmap</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {COMING_SOON.map((feature) => (
+            <div
+              key={feature.title}
+              className="relative rounded-2xl border border-dashed border-border/80 bg-surface/40 p-4"
+            >
+              <span className="absolute top-3 right-3 rounded-full bg-surface-alt px-2 py-0.5 text-[10px] font-semibold text-muted">
+                Soon
+              </span>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-alt text-muted/70">
+                <FeatureIcon icon={feature.icon} />
+              </div>
+              <h3 className="mt-2.5 text-sm font-semibold text-foreground/80">{feature.title}</h3>
+              <p className="text-xs text-muted/80 mt-0.5 leading-relaxed">{feature.description}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Trust row */}
+        <div className="mt-10 mb-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[11px] text-muted">
+          <span className="inline-flex items-center gap-1.5">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect width="18" height="11" x="3" y="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+            Secure checkout by Stripe
+          </span>
+          <span>Cancel anytime</span>
+          <a href="mailto:hello@thebasedreader.app" className="text-neon-blue hover:text-neon-blue/80">
+            Questions? hello@thebasedreader.app
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

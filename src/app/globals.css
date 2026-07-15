@@ -783,3 +783,34 @@ h1, h2, h3, .font-heading {
 }
 
 /* mask-fade-right is always active — grid sections use lg:overflow-visible which removes scroll anyway */
+
+/* ── /upgrade — Based Reader pricing page (2026-07-15) ──
+   Aurora backdrop + gradient wordmark treatment. Reuses the summary card's
+   frosted-breathe keyframes for the slow glow. */
+.upgrade-aurora {
+  background:
+    radial-gradient(ellipse 70% 50% at 20% 0%, rgba(168, 85, 247, 0.16), transparent 65%),
+    radial-gradient(ellipse 55% 45% at 85% 12%, rgba(96, 165, 250, 0.12), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 55% 45%, rgba(163, 230, 53, 0.07), transparent 70%);
+  animation: frosted-breathe 7s ease-in-out infinite;
+}
+[data-theme="light"] .upgrade-aurora {
+  background:
+    radial-gradient(ellipse 70% 50% at 20% 0%, rgba(124, 58, 237, 0.10), transparent 65%),
+    radial-gradient(ellipse 55% 45% at 85% 12%, rgba(37, 99, 235, 0.08), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 55% 45%, rgba(101, 163, 13, 0.06), transparent 70%);
+}
+.upgrade-gradient-text {
+  background: linear-gradient(100deg, #c084fc 0%, #60a5fa 55%, #a3e635 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+[data-theme="light"] .upgrade-gradient-text {
+  background: linear-gradient(100deg, #7c3aed 0%, #2563eb 55%, #4d7c0f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.upgrade-card-glow {
+  box-shadow: 0 0 28px rgba(192, 132, 252, 0.20), 0 0 6px rgba(192, 132, 252, 0.10);
+}
