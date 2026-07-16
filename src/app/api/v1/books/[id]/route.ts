@@ -6,7 +6,8 @@ import { getBookAggregateRating } from "@/lib/queries/rating";
 import { getBookSessionData } from "@/lib/queries/reading-session";
 import { isBookInUpNext, getUpNextCount } from "@/lib/queries/up-next";
 import { isBookFavorited } from "@/lib/queries/favorites";
-import { getUserContentSensitivities } from "@/lib/queries/reading-preferences";
+import { getUserContentSensitivities, getBookContentWarningMatchesForUser } from "@/lib/queries/reading-preferences";
+import { getWarningLabel } from "@/lib/content-warnings/vocabulary";
 import { getUserShelves, getBookShelves } from "@/lib/queries/shelves";
 import { getTbrNote } from "@/lib/queries/tbr-notes";
 import { getUserReview } from "@/lib/queries/review";
@@ -67,6 +68,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     isBookHidden(user.userId, bookId),
     getUserOwnedEditions(user.userId, bookId),
   ]);
+  const warningMatches = await getBookContentWarningMatchesForUser(user.userId, bookId);
 
   // Content conflicts vs the user's tolerances (same logic as the web page)
   const contentConflicts: { categoryName: string; bookIntensity: number; userMax: number }[] = [];
@@ -133,5 +135,24 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     friendsWhoRead,
     isHidden: hidden,
     contentConflicts,
+    // Reviewer-flagged + admin-note "topics to avoid" hits, labels resolved
+    // and deduped server-side exactly like the web banner (2026-07-16):
+    // a canonical covered by a reviewer flag doesn't repeat as a note hit,
+    // and repeated note canonicals merge their category lists.
+    reviewerWarnings: warningMatches.tagMatches.map((m) => ({
+      label: getWarningLabel(m.canonicalId),
+      count: m.count,
+    })),
+    noteWarnings: (() => {
+      const reviewerIds = new Set(warningMatches.tagMatches.map((m) => m.canonicalId));
+      const merged = new Map<string, { label: string; categories: string[] }>();
+      for (const n of warningMatches.noteMatches) {
+        if (reviewerIds.has(n.canonicalId)) continue;
+        const entry = merged.get(n.canonicalId) ?? { label: getWarningLabel(n.canonicalId), categories: [] };
+        if (!entry.categories.includes(n.categoryName)) entry.categories.push(n.categoryName);
+        merged.set(n.canonicalId, entry);
+      }
+      return [...merged.values()];
+    })(),
   });
 }

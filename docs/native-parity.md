@@ -614,3 +614,12 @@ explicit user sign-off.
   “suspenseful” · fast-paced · 4.5★", genre-keyword fallback otherwise. Verified
   locally (thrilling+dystopian: tagged books outrank pure genre matches). No app
   rebuild needed — native shows API reason strings.
+
+- **2026-07-16 — Content comfort-zone banner on the book page (native).** v1 book
+  payload now carries contentConflicts + reviewerWarnings + noteWarnings
+  (server-resolved labels, deduped like the web ContentWarningBanner); BookHero
+  renders the amber warning card with per-category "exceeds your comfort zone"
+  rows, reviewer-flag counts, and note-topic chips. Built pre-restart; committed
+  and pushed post-restart after the Simulator-autorestore incident (Simulator
+  now fully shut down after every verification session — it re-launches at login
+  and starves the machine otherwise).

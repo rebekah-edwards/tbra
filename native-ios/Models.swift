@@ -493,6 +493,30 @@ struct BookDetailData: Codable, Hashable {
     let userShelves: [BookPageShelf]
     let bookShelfIds: [String]
     let tbrNote: String?
+    // Content comfort-zone flags (2026-07-16) — server-computed, mirrors
+    // the web ContentWarningBanner inputs. Optional: older payloads decode.
+    let contentConflicts: [ContentConflict]?
+    let reviewerWarnings: [ReviewerWarning]?
+    let noteWarnings: [NoteWarning]?
+}
+
+/// Book intensity exceeds the user's max tolerance for a category.
+struct ContentConflict: Codable, Hashable {
+    let categoryName: String
+    let bookIntensity: Int
+    let userMax: Int
+}
+
+/// Reviewers flagged a topic on the user's avoid list.
+struct ReviewerWarning: Codable, Hashable {
+    let label: String
+    let count: Int
+}
+
+/// A topic on the user's avoid list appears in admin content notes.
+struct NoteWarning: Codable, Hashable {
+    let label: String
+    let categories: [String]
 }
 
 // ─── Response envelopes ───

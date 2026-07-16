@@ -55,6 +55,16 @@ struct BookDetailView: View {
                     BookHero(data: data, onCoverChanged: { await model.load() })
                     BookActionCluster(model: model, data: data)
                     BookStarsRow(data: data, onReviewSaved: { Task { await model.load() } })
+                    // Comfort-zone flags — web places the banner between the
+                    // action area and the summary on mobile.
+                    ContentFlagsBanner(
+                        conflicts: data.contentConflicts ?? [],
+                        reviewerWarnings: data.reviewerWarnings ?? [],
+                        noteWarnings: data.noteWarnings ?? [],
+                        onSeeDetails: {
+                            withAnimation { scrollProxy.scrollTo("whats-inside", anchor: .top) }
+                        }
+                    )
                     if let summary = data.book.summary, !summary.isEmpty {
                         SummaryQuoteCard(summary: summary)
                     }
@@ -105,6 +115,7 @@ struct BookDetailView: View {
                             isAdmin: isAdmin,
                             onChanged: { Task { await model.load() } }
                         )
+                        .id("whats-inside")
                     }
                     BookFooterActions(
                         bookId: data.book.id,
@@ -2389,5 +2400,104 @@ struct BookAboutDetailsSection: View {
         }
         if let year = book.publicationYear { return String(year) }
         return nil
+    }
+}
+
+// ── Content comfort-zone banner — web content-warning-banner.tsx (2026-07-16) ──
+// Yellow expandable banner under the stars row: "N content flags for your
+// settings" → per-flag rows (intensity conflicts, reviewer flags, note hits)
+// + "See all content details ↓" which scrolls to What's Inside.
+
+struct ContentFlagsBanner: View {
+    let conflicts: [ContentConflict]
+    let reviewerWarnings: [ReviewerWarning]
+    let noteWarnings: [NoteWarning]
+    let onSeeDetails: () -> Void
+    @State private var expanded = false
+
+    private static let intensityLabels = ["none", "mild", "moderate", "significant", "extreme"]
+    private let yellow = Color(hex: "eab308")
+
+    private var totalFlags: Int { conflicts.count + reviewerWarnings.count + noteWarnings.count }
+
+    var body: some View {
+        if totalFlags > 0 {
+            VStack(alignment: .leading, spacing: 0) {
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) { expanded.toggle() }
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(yellow)
+                        Text("\(totalFlags) content \(totalFlags == 1 ? "flag" : "flags") for your settings")
+                            .font(Theme.body(14, .medium))
+                            .foregroundStyle(Theme.foreground.opacity(0.9))
+                        Spacer()
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(yellow.opacity(0.6))
+                            .rotationEffect(.degrees(expanded ? 180 : 0))
+                    }
+                    .padding(.horizontal, 16).padding(.vertical, 12)
+                }
+
+                if expanded {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(conflicts, id: \.categoryName) { c in
+                            flagRow(
+                                title: c.categoryName,
+                                detail: "\(Self.intensityLabels[safe: c.bookIntensity] ?? "present") · max \(Self.intensityLabels[safe: c.userMax] ?? "limited")"
+                            )
+                        }
+                        ForEach(reviewerWarnings, id: \.label) { w in
+                            flagRow(
+                                title: w.label,
+                                detail: "\(w.count) \(w.count == 1 ? "reviewer" : "reviewers") flagged · you asked to avoid"
+                            )
+                        }
+                        ForEach(noteWarnings, id: \.label) { w in
+                            flagRow(
+                                title: w.label,
+                                detail: "noted in \(w.categories.joined(separator: ", ")) · you asked to avoid"
+                            )
+                        }
+                        Button {
+                            withAnimation(.easeOut(duration: 0.2)) { expanded = false }
+                            onSeeDetails()
+                        } label: {
+                            Text("See all content details ↓")
+                                .font(Theme.body(12, .medium))
+                                .foregroundStyle(Theme.neonBlue)
+                        }
+                        .padding(.top, 6)
+                    }
+                    .padding(.horizontal, 16).padding(.bottom, 12)
+                }
+            }
+            .background(yellow.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(yellow.opacity(0.3), lineWidth: 1))
+        }
+    }
+
+    private func flagRow(title: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(Theme.body(12, .medium))
+                .foregroundStyle(Theme.foreground)
+            Text(detail)
+                .font(Theme.body(11))
+                .foregroundStyle(Theme.foreground.opacity(0.7))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(yellow.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
