@@ -84,6 +84,12 @@ struct RootView: View {
     /// doesn't reliably re-evaluate the Scene, which left the theme toggle
     /// dead on device.
     @AppStorage("themeOverride") private var themeOverride = "dark"
+    /// First-launch onboarding: shown once per install, before the login
+    /// screen. Signing out later goes straight to LoginView.
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    /// Set when onboarding ends via "Create account" so LoginView opens
+    /// with the signup sheet already presented.
+    @State private var wantsSignup = false
 
     var body: some View {
         Group {
@@ -94,7 +100,14 @@ struct RootView: View {
                     ProgressView().controlSize(.large).tint(Theme.accent)
                 }
             case .signedOut:
-                LoginView()
+                if hasSeenOnboarding {
+                    LoginView(startWithSignup: wantsSignup)
+                } else {
+                    OnboardingView { startSignup in
+                        wantsSignup = startSignup
+                        hasSeenOnboarding = true
+                    }
+                }
             case .signedIn:
                 AppShell()
             }
@@ -108,6 +121,15 @@ struct RootView: View {
         .onChange(of: themeOverride) { applyTheme() }
         .environment(auth)
         .task {
+            #if DEBUG && targetEnvironment(simulator)
+            // Headless onboarding verification: force the carousel (skips the
+            // sim auto-login below). TBRA_DEBUG_ONBOARDING_PAGE jumps to a page.
+            if ProcessInfo.processInfo.environment["TBRA_DEBUG_ONBOARDING"] != nil {
+                hasSeenOnboarding = false
+                auth.phase = .signedOut
+                return
+            }
+            #endif
             await auth.restore()
             #if DEBUG && targetEnvironment(simulator)
             // Simulator-only dev convenience: the Simulator's hardware-keyboard
@@ -139,6 +161,12 @@ struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var busy = false
+
+    /// Onboarding hands off here with the signup sheet pre-opened when the
+    /// user tapped "Create account" on the final page.
+    init(startWithSignup: Bool = false) {
+        _signupOpen = State(initialValue: startWithSignup)
+    }
 
     var body: some View {
         ZStack {
@@ -330,5 +358,230 @@ struct ForgotPasswordSheet: View {
         }
         .padding(.horizontal, 28)
         .background(Theme.bg)
+    }
+}
+
+// ── First-launch onboarding ─────────────────────────────────────────────
+// Shown once per install (hasSeenOnboarding), before LoginView. Pages walk
+// the three pillars: content ratings, tracking, discovery/social. The web
+// app gets a mirrored flow (docs/native-parity.md).
+
+struct OnboardingView: View {
+    /// Called exactly once; `startSignup` is true when the user chose
+    /// "Create account" (LoginView then opens with the signup sheet up).
+    let onFinish: (_ startSignup: Bool) -> Void
+
+    @State private var page: Int
+
+    init(onFinish: @escaping (_ startSignup: Bool) -> Void) {
+        self.onFinish = onFinish
+        var initial = 0
+        #if DEBUG && targetEnvironment(simulator)
+        if let p = ProcessInfo.processInfo.environment["TBRA_DEBUG_ONBOARDING_PAGE"],
+           let n = Int(p) { initial = n }
+        #endif
+        _page = State(initialValue: initial)
+    }
+
+    private static let pageCount = 4
+
+    var body: some View {
+        ZStack {
+            AmbientBackground()
+
+            VStack(spacing: 0) {
+                // Skip — goes straight to sign-in, still one-shot.
+                HStack {
+                    Spacer()
+                    if page < Self.pageCount - 1 {
+                        Button("Skip") { onFinish(false) }
+                            .font(Theme.body(15, .medium))
+                            .foregroundStyle(Theme.muted)
+                            .padding(.trailing, 24)
+                            .padding(.top, 10)
+                    } else {
+                        // Reserve the row so the layout doesn't jump.
+                        Text("Skip").font(Theme.body(15, .medium)).opacity(0)
+                            .padding(.trailing, 24).padding(.top, 10)
+                    }
+                }
+
+                TabView(selection: $page) {
+                    welcomePage.tag(0)
+                    contentPage.tag(1)
+                    trackPage.tag(2)
+                    discoverPage.tag(3)
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .animation(.easeInOut(duration: 0.25), value: page)
+
+                // Custom page dots — lime for the active page.
+                HStack(spacing: 8) {
+                    ForEach(0..<Self.pageCount, id: \.self) { i in
+                        Capsule()
+                            .fill(i == page ? Theme.accent : Theme.muted.opacity(0.35))
+                            .frame(width: i == page ? 22 : 7, height: 7)
+                            .animation(.spring(duration: 0.3), value: page)
+                    }
+                }
+                .padding(.bottom, 18)
+
+                // Bottom CTA area
+                VStack(spacing: 10) {
+                    if page < Self.pageCount - 1 {
+                        Button { page += 1 } label: {
+                            Text("Continue")
+                        }
+                        .buttonStyle(AccentButtonStyle())
+                    } else {
+                        Button { onFinish(true) } label: {
+                            Text("Create account")
+                        }
+                        .buttonStyle(AccentButtonStyle())
+                        Button("I already have an account") { onFinish(false) }
+                            .font(Theme.body(15, .medium))
+                            .foregroundStyle(Theme.neonBlue)
+                            .padding(.top, 2)
+                    }
+                }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 34)
+            }
+        }
+    }
+
+    // ── Pages ──
+
+    private var welcomePage: some View {
+        OnboardPage(
+            art: {
+                AnyView(
+                    VStack(spacing: 10) {
+                        Text("tbr*a")
+                            .font(Theme.logo(56))
+                            .foregroundStyle(Theme.logoGradient)
+                        Text("The Based Reader App")
+                            .font(Theme.body(15, .medium))
+                            .foregroundStyle(Theme.muted)
+                    }
+                )
+            },
+            headline: "Know what's in a book\nbefore you read it",
+            copy: "Track your reading, get honest content information, and find books that actually fit you — all in one place."
+        )
+    }
+
+    private var contentPage: some View {
+        OnboardPage(
+            art: {
+                AnyView(
+                    VStack(spacing: 12) {
+                        Image(systemName: "shield.lefthalf.filled")
+                            .font(.system(size: 64, weight: .medium))
+                            .foregroundStyle(Theme.accent)
+                        // Mini content-rating chips, echoing the What's Inside section
+                        HStack(spacing: 8) {
+                            OnboardChip(label: "Violence · Mild", tint: Theme.accent)
+                            OnboardChip(label: "Language · None", tint: Theme.neonBlue)
+                        }
+                        OnboardChip(label: "Romance / Sex · Moderate", tint: Color(red: 0.75, green: 0.55, blue: 0.95))
+                    }
+                )
+            },
+            headline: "See What's Inside",
+            copy: "Every book gets detailed content ratings — violence, language, romance, and more. Set your comfort zone once and we'll flag anything that crosses it."
+        )
+    }
+
+    private var trackPage: some View {
+        OnboardPage(
+            art: {
+                AnyView(
+                    VStack(spacing: 12) {
+                        Image(systemName: "books.vertical.fill")
+                            .font(.system(size: 64, weight: .medium))
+                            .foregroundStyle(Theme.neonBlue)
+                        HStack(spacing: 8) {
+                            OnboardChip(label: "Reading Now", tint: Theme.accent)
+                            OnboardChip(label: "TBR", tint: Theme.neonBlue)
+                            OnboardChip(label: "Finished ✓", tint: Color(red: 0.75, green: 0.55, blue: 0.95))
+                        }
+                    }
+                )
+            },
+            headline: "Your Library, Your Story",
+            copy: "Log what you're reading in any format — print, ebook, or audio. Reading goals, streaks, stats, and re-reads all tracked automatically."
+        )
+    }
+
+    private var discoverPage: some View {
+        OnboardPage(
+            art: {
+                AnyView(
+                    VStack(spacing: 12) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 64, weight: .medium))
+                            .foregroundStyle(Color(red: 0.75, green: 0.55, blue: 0.95))
+                        HStack(spacing: 8) {
+                            OnboardChip(label: "🕯️ Cozy", tint: Theme.accent)
+                            OnboardChip(label: "⚡ Thrilling", tint: Theme.neonBlue)
+                            OnboardChip(label: "🐉 Fantastical", tint: Color(red: 0.75, green: 0.55, blue: 0.95))
+                        }
+                    }
+                )
+            },
+            headline: "Find Your Next Read",
+            copy: "Tell Discover your mood and we'll match books to your taste — plus custom shelves, buddy reads, and friends' reviews when you want them."
+        )
+    }
+}
+
+/// One onboarding page: centered art block + headline + body copy.
+private struct OnboardPage: View {
+    let art: () -> AnyView
+    let headline: String
+    let copy: String
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            art()
+                .frame(height: 190)
+            Spacer().frame(height: 34)
+            Text(headline)
+                .font(Theme.heading(28, .bold))
+                .foregroundStyle(Theme.foreground)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(copy)
+                .font(Theme.body(15))
+                .foregroundStyle(Theme.muted)
+                .multilineTextAlignment(.center)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12)
+                .padding(.horizontal, 8)
+            Spacer()
+            Spacer()
+        }
+        .padding(.horizontal, 32)
+    }
+}
+
+/// Translucent brand chip used in onboarding art (never a solid fill —
+/// pill/badge styles are translucent per BRANDING.md).
+private struct OnboardChip: View {
+    let label: String
+    let tint: Color
+
+    var body: some View {
+        Text(label)
+            .font(Theme.body(13, .semibold))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(tint.opacity(0.14))
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(tint.opacity(0.35), lineWidth: 1))
     }
 }
