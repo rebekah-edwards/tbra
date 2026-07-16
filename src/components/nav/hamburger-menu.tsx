@@ -10,13 +10,17 @@ import { logout } from "@/lib/actions/auth";
 interface HamburgerMenuProps {
   isLoggedIn: boolean;
   isAdmin?: boolean;
+  /** premium / beta_tester / admin / super_admin — free accounts see "Upgrade to Premium" */
+  isPremium?: boolean;
   isSuperAdmin?: boolean;
   avatarUrl?: string | null;
   displayName?: string | null;
 }
 
 const MENU_ITEMS = [
-  { label: "Based Reader", href: "/upgrade", icon: "star", authRequired: true },
+  // Label is plan-aware — see the render loop ("Upgrade to Premium" for
+  // free accounts, "Based Reader Premium" for subscribers/staff).
+  { label: "Based Reader Premium", href: "/upgrade", icon: "star", authRequired: true },
   { label: "Find Readers", href: "/people", icon: "people", authRequired: true },
   { label: "Buddy Reads", href: "/buddy-reads", icon: "buddy-reads", authRequired: true },
   { label: "Browse All Books", href: "/browse", icon: "browse" },
@@ -101,7 +105,7 @@ function MenuIcon({ icon }: { icon: string }) {
   }
 }
 
-export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = false, avatarUrl, displayName }: HamburgerMenuProps) {
+export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = false, isPremium = false, avatarUrl, displayName }: HamburgerMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -259,7 +263,7 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
                   <span className="text-muted">
                     <MenuIcon icon={item.icon} />
                   </span>
-                  {item.label}
+                  {item.href === "/upgrade" && !isPremium ? "Upgrade to Premium" : item.label}
                 </Link>
               ))}
               {isAdmin && (

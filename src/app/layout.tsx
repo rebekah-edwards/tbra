@@ -74,6 +74,8 @@ export default async function RootLayout({
 
   const userIsAdmin = isAdmin(session);
   const userIsSuperAdmin = isSuperAdmin(session);
+  const userIsPremium = !!session &&
+    ["premium", "beta_tester", "admin", "super_admin"].includes(session.accountType);
 
   // Fetch avatar for bottom nav profile icon — static imports are faster than dynamic
   let avatarUrl: string | null = null;
@@ -240,7 +242,7 @@ export default async function RootLayout({
                 )}
                 <SearchBar isLoggedIn={!!session} />
                 {session && <NotificationBell />}
-                <HamburgerMenu isLoggedIn={!!session} isAdmin={userIsAdmin} isSuperAdmin={userIsSuperAdmin} avatarUrl={avatarUrl} displayName={displayName} />
+                <HamburgerMenu isLoggedIn={!!session} isAdmin={userIsAdmin} isSuperAdmin={userIsSuperAdmin} isPremium={userIsPremium} avatarUrl={avatarUrl} displayName={displayName} />
                 {!session && (
                   <div className="hidden lg:flex items-center gap-3">
                     <Link
