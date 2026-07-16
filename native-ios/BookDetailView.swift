@@ -120,6 +120,7 @@ struct BookDetailView: View {
                             onChanged: { Task { await model.load() } }
                         )
                         .id("whats-inside")
+                        .coachAnchor("whats-inside")
                     }
                     BookFooterActions(
                         bookId: data.book.id,
@@ -127,6 +128,7 @@ struct BookDetailView: View {
                         isHidden: data.isHidden,
                         onChanged: { Task { await model.load() } }
                     )
+                    .id("tour-report")
                     SimilarBooksSection(bookId: data.book.id)
                         .id("similar")
                 }
@@ -182,6 +184,16 @@ struct BookDetailView: View {
             }
         }
         #endif
+        // First-book guided tour: content details, then reporting. Waits for
+        // ratings to exist so the What's Inside anchor is actually on screen.
+        .guidedTour("book", steps: [
+            CoachStep(id: "whats-inside", title: "What's Inside",
+                      text: "Every book's content profile lives here — category-by-category ratings for violence, language, sexual content, and more, so you know exactly what you're picking up."),
+            CoachStep(id: "tour-report", title: "See something off?",
+                      text: "tbr*a is new — if a cover, rating, or detail looks wrong, tap Report an issue and we'll fix it fast."),
+        ], onStep: { step in
+            withAnimation { scrollProxy.scrollTo(step.id, anchor: step.id == "whats-inside" ? .top : .center) }
+        })
         }
     }
 

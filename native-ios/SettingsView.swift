@@ -258,6 +258,7 @@ struct SettingsView: View {
     }
 
     var body: some View {
+        ScrollViewReader { tourProxy in
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 HStack(spacing: 12) {
@@ -275,8 +276,12 @@ struct SettingsView: View {
 
                 if model.loaded {
                     readingPreferencesCard
+                        .id("tour-comfort")
+                        .coachAnchor("tour-comfort")
                     displaySection
                     locationSection
+                        .id("tour-privacy")
+                        .coachAnchor("tour-privacy")
                     notificationsSection
                     exportSection
                     if !model.hiddenBooks.isEmpty { hiddenBooksSection }
@@ -315,6 +320,16 @@ struct SettingsView: View {
             .presentationDetents([.medium])
             .presentationBackground(Theme.bg)
         }
+        // First-visit guided tour: comfort zone, then privacy (scrolled into view).
+        .guidedTour("settings", steps: [
+            CoachStep(id: "tour-comfort", title: "Your Content Comfort Zone",
+                      text: "Open Reading Preferences to set the most you're okay with in each category — books that cross a limit get flagged before you read them. You can also heart the genres you love and dismiss the ones you don't."),
+            CoachStep(id: "tour-privacy", title: "Your privacy",
+                      text: "Your profile is public under your username, so choose what you share. Control who can see your location here — everything else, like notes to self, stays private to you."),
+        ], onStep: { step in
+            withAnimation { tourProxy.scrollTo(step.id, anchor: step.id == "tour-privacy" ? .center : .top) }
+        })
+        } // ScrollViewReader
     }
 
     // ── 1. Reading Preferences (4 accordions) ──

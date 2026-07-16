@@ -184,6 +184,12 @@ struct AppShell: View {
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
         }
+        // First-run guided tour (home): where imports + settings live. Runs
+        // after the bar overlays in the chain so the dim covers them.
+        .guidedTour("home", steps: [
+            CoachStep(id: "tour-menu", title: "Start here",
+                      text: "This menu is home base: Import Your Library brings your whole Goodreads or StoryGraph history over in about a minute, and Settings holds your privacy and content preferences."),
+        ])
         #if DEBUG && targetEnvironment(simulator)
         .fullScreenCover(isPresented: Binding(
             get: { debugBookSlug != nil },
@@ -418,7 +424,14 @@ struct TopBarActions: View {
                             .opacity(unreadCount > 0 ? 1 : 0)
                     }
                 }
-            iconButton("line.3.horizontal", action: onMenu)
+            if hitLayerOnly {
+                iconButton("line.3.horizontal", action: onMenu)
+            } else {
+                // Tour target: only the VISIBLE bar copy anchors (the invisible
+                // hit-layer twins would fight over the preference key).
+                iconButton("line.3.horizontal", action: onMenu)
+                    .coachAnchor("tour-menu")
+            }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 11)
@@ -689,3 +702,246 @@ struct PersonIcon: Shape {
 
 // (Up Next's ≡ drag handle was removed 2026-07-11 — reorder is now the
 // iOS-home-screen wiggle mode: 1s long-press, whole-card drag, Done.)
+
+// ── Guided tour (coach marks) ────────────────────────────────────────────
+// Spotlight walkthroughs: dim the screen, cut a hole around a real control,
+// explain it, and force Next/Done stepping. Each tour runs ONCE per install
+// (AppStorage "tour-<key>"). Mark targets with .coachAnchor("id"); attach
+// .guidedTour("key", steps:) to the screen root. onStep lets a screen
+// scroll a below-the-fold target into view before the spotlight lands.
+
+struct CoachStep: Identifiable {
+    let id: String      // matches a .coachAnchor id
+    let title: String
+    let text: String
+}
+
+struct CoachAnchorKey: PreferenceKey {
+    static let defaultValue: [String: Anchor<CGRect>] = [:]
+    static func reduce(value: inout [String: Anchor<CGRect>], nextValue: () -> [String: Anchor<CGRect>]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
+/// Equatable twin of CoachAnchorKey (Anchor isn't Equatable, so the tour
+/// watches THIS to know when its first target has actually rendered —
+/// activating on a fixed delay spotlighted thin air while screens loaded).
+struct CoachAnchorIdsKey: PreferenceKey {
+    static let defaultValue: Set<String> = []
+    static func reduce(value: inout Set<String>, nextValue: () -> Set<String>) {
+        value.formUnion(nextValue())
+    }
+}
+
+extension View {
+    /// Tag a control as a tour target.
+    func coachAnchor(_ id: String) -> some View {
+        anchorPreference(key: CoachAnchorKey.self, value: .bounds) { [id: $0] }
+            .preference(key: CoachAnchorIdsKey.self, value: [id])
+    }
+
+    /// Attach to a screen root. Presents the steps once per install.
+    func guidedTour(_ tourKey: String, steps: [CoachStep],
+                    onStep: ((CoachStep) -> Void)? = nil) -> some View {
+        modifier(GuidedTourModifier(tourKey: tourKey, steps: steps, onStep: onStep))
+    }
+}
+
+private struct GuidedTourModifier: ViewModifier {
+    let steps: [CoachStep]
+    var onStep: ((CoachStep) -> Void)?
+    @AppStorage private var done: Bool
+    @State private var active = false
+    @State private var started = false
+    @State private var index = 0
+    @State private var appeared = false
+    @State private var availableIds: Set<String> = []
+
+    init(tourKey: String, steps: [CoachStep], onStep: ((CoachStep) -> Void)?) {
+        self.steps = steps
+        self.onStep = onStep
+        _done = AppStorage(wrappedValue: false, "tour-\(tourKey)")
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .onPreferenceChange(CoachAnchorIdsKey.self) { ids in
+                availableIds = ids
+                tryStart()
+            }
+            .overlayPreferenceValue(CoachAnchorKey.self) { anchors in
+                if active, index < steps.count {
+                    GeometryReader { geo in
+                        CoachOverlay(
+                            step: steps[index], number: index + 1, total: steps.count,
+                            target: anchors[steps[index].id].map { geo[$0] },
+                            onNext: advance, onSkip: finish
+                        )
+                    }
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                }
+            }
+            .onAppear {
+                #if DEBUG && targetEnvironment(simulator)
+                // Headless verification: force tours despite the once-flag.
+                if ProcessInfo.processInfo.environment["TBRA_DEBUG_TOUR"] != nil { done = false }
+                #endif
+                appeared = true
+                tryStart()
+            }
+    }
+
+    /// Fires once the screen has appeared AND the first target has rendered
+    /// (data-loading screens publish their anchors late).
+    private func tryStart() {
+        guard appeared, !done, !started, availableIds.contains(steps[0].id) else { return }
+        started = true  // reserve immediately so a second preference tick can't double-fire
+        onStep?(steps[0])
+        // Overlay fades in after the settle/scroll beat.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            withAnimation(.easeInOut(duration: 0.25)) { active = true }
+        }
+    }
+
+    private func advance() {
+        if index + 1 < steps.count {
+            onStep?(steps[index + 1])
+            withAnimation(.easeInOut(duration: 0.25)) { index += 1 }
+        } else {
+            finish()
+        }
+    }
+
+    private func finish() {
+        withAnimation(.easeInOut(duration: 0.2)) { active = false }
+        done = true
+    }
+}
+
+/// Fullscreen dim with an even-odd cutout over the target.
+private struct CoachCutout: Shape {
+    let target: CGRect?
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.addRect(rect)
+        if let t = target {
+            p.addRoundedRect(in: t, cornerSize: CGSize(width: 12, height: 12))
+        }
+        return p
+    }
+}
+
+private struct CoachOverlay: View {
+    let step: CoachStep
+    let number: Int
+    let total: Int
+    let target: CGRect?   // nil → centered card, no spotlight
+    let onNext: () -> Void
+    let onSkip: () -> Void
+
+    var body: some View {
+        GeometryReader { geo in
+            let padded = target?.insetBy(dx: -8, dy: -8)
+            ZStack {
+                CoachCutout(target: padded)
+                    .fill(Color.black.opacity(0.72), style: FillStyle(eoFill: true))
+                    // Swallow ALL taps (including inside the cutout) — the
+                    // tour is deliberately modal; Next/Skip are the only exits.
+                    .contentShape(Rectangle())
+                    .onTapGesture {}
+                if let t = padded {
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Theme.accent, lineWidth: 2)
+                        .frame(width: t.width, height: t.height)
+                        .position(x: t.midX, y: t.midY)
+                }
+                card(in: geo.size, target: padded)
+            }
+        }
+    }
+
+    private func card(in size: CGSize, target: CGRect?) -> some View {
+        let cardWidth = min(size.width - 48, 340)
+        let below = (target?.midY ?? 0) < size.height * 0.5
+        let cardY: CGFloat = {
+            guard let t = target else { return size.height / 2 }
+            return below ? t.maxY + 16 : t.minY - 16
+        }()
+        let arrowX: CGFloat = {
+            guard let t = target else { return size.width / 2 }
+            return min(max(t.midX, 44), size.width - 44)
+        }()
+
+        return VStack(spacing: 0) {
+            if target != nil && below { arrow(pointingUp: true, at: arrowX, cardWidth: cardWidth, screen: size) }
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(step.title)
+                        .font(Theme.heading(17, .bold))
+                        .foregroundStyle(Theme.foreground)
+                    Spacer()
+                    Text("\(number) of \(total)")
+                        .font(Theme.body(12, .medium))
+                        .foregroundStyle(Theme.muted)
+                }
+                Text(step.text)
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.muted)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Button("Skip tour", action: onSkip)
+                        .font(Theme.body(13, .medium))
+                        .foregroundStyle(Theme.muted)
+                    Spacer()
+                    Button(action: onNext) {
+                        Text(number == total ? "Done" : "Next")
+                            .font(Theme.body(14, .semibold))
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 8)
+                            .background(Theme.accent, in: Capsule())
+                    }
+                }
+                .padding(.top, 4)
+            }
+            .padding(16)
+            .frame(width: cardWidth)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
+            .shadow(color: .black.opacity(0.4), radius: 18, y: 6)
+            if target != nil && !below { arrow(pointingUp: false, at: arrowX, cardWidth: cardWidth, screen: size) }
+        }
+        .position(x: size.width / 2, y: cardY + (below ? cardHalfGuess : -cardHalfGuess))
+    }
+
+    // The card centers on .position; a fixed half-height estimate keeps the
+    // math simple and looks right for 2-4 line captions.
+    private var cardHalfGuess: CGFloat { 78 }
+
+    private func arrow(pointingUp: Bool, at x: CGFloat, cardWidth: CGFloat, screen: CGSize) -> some View {
+        Triangle(pointingUp: pointingUp)
+            .fill(Theme.surface)
+            .frame(width: 18, height: 9)
+            .offset(x: x - screen.width / 2)
+    }
+}
+
+private struct Triangle: Shape {
+    let pointingUp: Bool
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        if pointingUp {
+            p.move(to: CGPoint(x: rect.midX, y: rect.minY))
+            p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+            p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        } else {
+            p.move(to: CGPoint(x: rect.midX, y: rect.maxY))
+            p.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+            p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        }
+        p.closeSubpath()
+        return p
+    }
+}
