@@ -24,6 +24,18 @@ export const PLACEHOLDERS: PlaceholderFingerprint[] = [
     sourceField: "isbndb-placeholder-cleared",
   },
   {
+    // Added 2026-07-16 — "book cover not available" card found via
+    // /book/blackbringer-laini-taylor + /book/magic-huntress-renee-joiner.
+    // 200×248 px, ABOVE the 100px micro-image threshold, which is how it
+    // slipped past dimension detection.
+    label: "isbndb-v5",
+    urlPatternLike: "https://images.isbndb.com/covers/%",
+    urlPatternRegex: /^https:\/\/images\.isbndb\.com\/covers\//,
+    size: 3531,
+    hash: "7630cf533baa09196736692b89ca6114190c7219dc8492efdf836f14359f993b",
+    sourceField: "isbndb-placeholder-cleared",
+  },
+  {
     // Added 2026-04-20 — second ISBNdb "no cover" variant found via
     // /book/the-ending-writes-itself. Same hostname as v1 but a different
     // placeholder image (12008 bytes, 350x500 px progressive JPEG).

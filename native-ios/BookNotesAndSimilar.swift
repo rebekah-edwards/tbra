@@ -294,6 +294,10 @@ struct BookSeriesRail: View {
                                 }
                             }
                             .padding(.vertical, 6)
+                            // Leading room for the current-book ring — it
+                            // draws 4pt OUTSIDE the cover and was clipped
+                            // when the current book is first in the rail.
+                            .padding(.leading, 5)
                             .padding(.trailing, 32)
                         }
                         .mask(

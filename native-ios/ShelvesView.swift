@@ -171,6 +171,7 @@ struct LibraryShelvesView: View {
             .refreshable { await model.load() }
             .task { await model.load() }
             .background(AmbientBackground())
+            .tracksScrollAtTop()
             .floatingBack(topPadding: 16)
             // The + New Shelf button lives in a screen-level overlay, NOT the
             // scroll content — top-strip buttons inside scroll content go
@@ -802,6 +803,7 @@ struct TopShelfView: View {
             .padding(.bottom, 40)
         }
         .background(AmbientBackground())
+        .tracksScrollAtTop()
         .floatingBack()
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }

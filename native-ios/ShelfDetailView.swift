@@ -97,6 +97,7 @@ struct ShelfDetailView: View {
             .padding(.bottom, 40)
         }
         .background(AmbientBackground())
+        .tracksScrollAtTop()
         .floatingBack(topPadding: 14)
         .overlay(alignment: .topTrailing) {
             if let shelf = model.shelf, shelf.isPublic, let username = shelf.ownerUsername,
@@ -501,6 +502,7 @@ struct ShelfEditorView: View {
             .padding(.bottom, 40)
         }
         .background(AmbientBackground())
+        .tracksScrollAtTop()
         .floatingBack(topPadding: 14)
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }

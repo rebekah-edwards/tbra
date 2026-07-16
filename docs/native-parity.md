@@ -623,3 +623,13 @@ explicit user sign-off.
   and pushed post-restart after the Simulator-autorestore incident (Simulator
   now fully shut down after every verification session — it re-launches at login
   and starves the machine otherwise).
+
+- **2026-07-16 — Punch list #9, part 1.** (a) Web change-password button: black
+  text on lime (was text-background = white in light mode). (b) NEW isbndb-v5
+  placeholder fingerprint (3531B, sha 7630cf53…, 200×248 — above the micro-image
+  threshold, which is how it evaded dimension detection); blackbringer +
+  magic-huntress covers cleared on BOTH DBs → /admin/covers queue. (c) Series
+  rail: 5pt leading inset so the current-book ring isn't clipped when first.
+  (d) Shelves list + Top Shelf + shelf detail + shelf editor now
+  .tracksScrollAtTop() so the back chevron slides into the logo slot on scroll
+  like every other pushed screen.
