@@ -276,8 +276,6 @@ struct SettingsView: View {
 
                 if model.loaded {
                     readingPreferencesCard
-                        .id("tour-comfort")
-                        .coachAnchor("tour-comfort")
                     displaySection
                     locationSection
                         .id("tour-privacy")
@@ -320,14 +318,32 @@ struct SettingsView: View {
             .presentationDetents([.medium])
             .presentationBackground(Theme.bg)
         }
-        // First-visit guided tour: comfort zone, then privacy (scrolled into view).
+        // First-visit guided tour: genres → comfort zone (each accordion
+        // auto-opens for its step, closes on advance) → privacy.
         .guidedTour("settings", steps: [
-            CoachStep(id: "tour-comfort", title: "Your Content Comfort Zone",
-                      text: "Open Reading Preferences to set the most you're okay with in each category — books that cross a limit get flagged before you read them. You can also heart the genres you love and dismiss the ones you don't."),
+            CoachStep(id: "tour-genres", title: "Pick your genres",
+                      text: "Tap a genre once to heart it, twice to hide it. Your picks shape what search and Discover recommend — more of what you love, none of what you don't."),
+            CoachStep(id: "tour-comfort-zone", title: "Your Content Comfort Zone",
+                      text: "The heart of tbr*a. Set the most you're okay with for violence, language, sexual content, and more. Books beyond your limits become less likely to be recommended — and any book that crosses them shows a clear flag right on its page."),
             CoachStep(id: "tour-privacy", title: "Your privacy",
                       text: "Your profile is public under your username, so choose what you share. Control who can see your location here — everything else, like notes to self, stays private to you."),
         ], onStep: { step in
-            withAnimation { tourProxy.scrollTo(step.id, anchor: step.id == "tour-privacy" ? .center : .top) }
+            // Open the accordion the step teaches; close it when moving on.
+            switch step.id {
+            case "tour-genres": openSection = "genres"
+            case "tour-comfort-zone": openSection = "content"
+            default: openSection = nil
+            }
+            // Scroll AFTER the accordion insert settles (same-transaction
+            // scrollTo silently no-ops), and never pin targets at the very
+            // top where the floating back chevron sits (y 0.16).
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation {
+                    tourProxy.scrollTo(step.id, anchor: step.id == "tour-privacy"
+                        ? UnitPoint(x: 0.5, y: 0.45)
+                        : UnitPoint(x: 0.5, y: 0.16))
+                }
+            }
         })
         } // ScrollViewReader
     }
@@ -359,6 +375,8 @@ struct SettingsView: View {
                     genreGroup("Nonfiction", SettingsCatalog.nonfictionGenres)
                 }
             }
+            .id("tour-genres")
+            .coachAnchor("tour-genres")
             accordion("style", title: "Reading Style") {
                 VStack(alignment: .leading, spacing: 16) {
                     styleRow("I read mostly") {
@@ -409,6 +427,8 @@ struct SettingsView: View {
                     topicsToAvoid
                 }
             }
+            .id("tour-comfort-zone")
+            .coachAnchor("tour-comfort-zone")
         }
         .background(Theme.surface.opacity(0.6))
         .clipShape(RoundedRectangle(cornerRadius: 16))

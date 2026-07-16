@@ -20,6 +20,9 @@ struct AppShell: View {
     @State private var presentedAuthorId: String?
     @State private var bellOpen = false
     @State private var menuOpen = false
+    /// Home tour's "Go to Settings" CTA opens Settings directly (same
+    /// presentation the hamburger menu uses).
+    @State private var tourSettingsOpen = false
     @State private var notifications = NotificationsModel()
     // Per-tab navigation paths, lifted here so re-tapping the ACTIVE tab
     // pops its stack to root (web: bottom nav always goes to the page top).
@@ -189,7 +192,13 @@ struct AppShell: View {
         .guidedTour("home", steps: [
             CoachStep(id: "tour-menu", title: "Start here",
                       text: "This menu is home base: Import Your Library brings your whole Goodreads or StoryGraph history over in about a minute, and Settings holds your privacy and content preferences."),
-        ])
+        ], ctaLabel: "Go to Settings", onCTA: { tourSettingsOpen = true })
+        .fullScreenCover(isPresented: $tourSettingsOpen) {
+            NavigationStack {
+                SettingsView()
+                    .appDestinations()
+            }
+        }
         #if DEBUG && targetEnvironment(simulator)
         .fullScreenCover(isPresented: Binding(
             get: { debugBookSlug != nil },
@@ -741,15 +750,22 @@ extension View {
     }
 
     /// Attach to a screen root. Presents the steps once per install.
+    /// ctaLabel/onCTA turn the LAST step's primary button into a call to
+    /// action (e.g. "Go to Settings") that finishes the tour, then acts.
     func guidedTour(_ tourKey: String, steps: [CoachStep],
-                    onStep: ((CoachStep) -> Void)? = nil) -> some View {
-        modifier(GuidedTourModifier(tourKey: tourKey, steps: steps, onStep: onStep))
+                    onStep: ((CoachStep) -> Void)? = nil,
+                    ctaLabel: String? = nil,
+                    onCTA: (() -> Void)? = nil) -> some View {
+        modifier(GuidedTourModifier(tourKey: tourKey, steps: steps, onStep: onStep,
+                                    ctaLabel: ctaLabel, onCTA: onCTA))
     }
 }
 
 private struct GuidedTourModifier: ViewModifier {
     let steps: [CoachStep]
     var onStep: ((CoachStep) -> Void)?
+    var ctaLabel: String?
+    var onCTA: (() -> Void)?
     @AppStorage private var done: Bool
     @State private var active = false
     @State private var started = false
@@ -757,9 +773,12 @@ private struct GuidedTourModifier: ViewModifier {
     @State private var appeared = false
     @State private var availableIds: Set<String> = []
 
-    init(tourKey: String, steps: [CoachStep], onStep: ((CoachStep) -> Void)?) {
+    init(tourKey: String, steps: [CoachStep], onStep: ((CoachStep) -> Void)?,
+         ctaLabel: String? = nil, onCTA: (() -> Void)? = nil) {
         self.steps = steps
         self.onStep = onStep
+        self.ctaLabel = ctaLabel
+        self.onCTA = onCTA
         _done = AppStorage(wrappedValue: false, "tour-\(tourKey)")
     }
 
@@ -775,6 +794,7 @@ private struct GuidedTourModifier: ViewModifier {
                         CoachOverlay(
                             step: steps[index], number: index + 1, total: steps.count,
                             target: anchors[steps[index].id].map { geo[$0] },
+                            primaryLabel: index == steps.count - 1 ? ctaLabel : nil,
                             onNext: advance, onSkip: finish
                         )
                     }
@@ -795,9 +815,16 @@ private struct GuidedTourModifier: ViewModifier {
     /// Fires once the screen has appeared AND the first target has rendered
     /// (data-loading screens publish their anchors late).
     private func tryStart() {
-        guard appeared, !done, !started, availableIds.contains(steps[0].id) else { return }
+        var startIndex = 0
+        #if DEBUG && targetEnvironment(simulator)
+        // Headless verification of later steps.
+        if let s = ProcessInfo.processInfo.environment["TBRA_DEBUG_TOUR_STEP"],
+           let n = Int(s), n < steps.count { startIndex = n }
+        #endif
+        guard appeared, !done, !started, availableIds.contains(steps[startIndex].id) else { return }
         started = true  // reserve immediately so a second preference tick can't double-fire
-        onStep?(steps[0])
+        index = startIndex
+        onStep?(steps[startIndex])
         // Overlay fades in after the settle/scroll beat.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
             withAnimation(.easeInOut(duration: 0.25)) { active = true }
@@ -809,7 +836,10 @@ private struct GuidedTourModifier: ViewModifier {
             onStep?(steps[index + 1])
             withAnimation(.easeInOut(duration: 0.25)) { index += 1 }
         } else {
+            // Last step's primary button: finish, then run the CTA (if any).
+            // Skip never triggers the CTA.
             finish()
+            onCTA?()
         }
     }
 
@@ -837,12 +867,38 @@ private struct CoachOverlay: View {
     let number: Int
     let total: Int
     let target: CGRect?   // nil → centered card, no spotlight
+    var primaryLabel: String? = nil
     let onNext: () -> Void
     let onSkip: () -> Void
 
     var body: some View {
         GeometryReader { geo in
-            let padded = target?.insetBy(dx: -8, dy: -8)
+            // Clamp oversized targets (e.g. the whole What's Inside grid) to
+            // their top 40% so the caption card always has room and stays
+            // readable; drop targets that are (still) fully off-screen so we
+            // show a centered card instead of invisible UI.
+            let padded: CGRect? = {
+                guard var t = target?.insetBy(dx: -8, dy: -8) else { return nil }
+                // TALL content blocks that scroll under the status bar / back
+                // chevron get their ring top clamped below that zone. Small
+                // targets (toolbar icons) legitimately live up there — leave
+                // their ring alone.
+                if t.height > 120 && t.minY < 118 {
+                    let cut = 118 - t.minY
+                    t = CGRect(x: t.minX, y: 118, width: t.width, height: max(t.height - cut, 44))
+                }
+                let maxH = geo.size.height * 0.40
+                if t.height > maxH {
+                    t = CGRect(x: t.minX, y: t.minY, width: t.width, height: maxH)
+                }
+                // Trim (don't drop) rings that spill past the bottom edge.
+                if t.maxY > geo.size.height - 8 {
+                    t = CGRect(x: t.minX, y: t.minY, width: t.width,
+                               height: max(geo.size.height - 8 - t.minY, 44))
+                }
+                if t.maxY < 60 || t.minY > geo.size.height - 70 { return nil }
+                return t
+            }()
             ZStack {
                 CoachCutout(target: padded)
                     .fill(Color.black.opacity(0.72), style: FillStyle(eoFill: true))
@@ -866,7 +922,9 @@ private struct CoachOverlay: View {
         let below = (target?.midY ?? 0) < size.height * 0.5
         let cardY: CGFloat = {
             guard let t = target else { return size.height / 2 }
-            return below ? t.maxY + 16 : t.minY - 16
+            let raw = below ? t.maxY + 16 : t.minY - 16
+            // Never let the card ride under the status bar or bottom edge.
+            return min(max(raw, 110), size.height - 130)
         }()
         let arrowX: CGFloat = {
             guard let t = target else { return size.width / 2 }
@@ -896,7 +954,7 @@ private struct CoachOverlay: View {
                         .foregroundStyle(Theme.muted)
                     Spacer()
                     Button(action: onNext) {
-                        Text(number == total ? "Done" : "Next")
+                        Text(primaryLabel ?? (number == total ? "Done" : "Next"))
                             .font(Theme.body(14, .semibold))
                             .foregroundStyle(.black)
                             .padding(.horizontal, 18)

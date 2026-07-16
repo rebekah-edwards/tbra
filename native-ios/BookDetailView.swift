@@ -192,7 +192,19 @@ struct BookDetailView: View {
             CoachStep(id: "tour-report", title: "See something off?",
                       text: "tbr*a is new — if a cover, rating, or detail looks wrong, tap Report an issue and we'll fix it fast."),
         ], onStep: { step in
-            withAnimation { scrollProxy.scrollTo(step.id, anchor: step.id == "whats-inside" ? .top : .center) }
+            // Deferred + repeated: a scrollTo in the same transaction as the
+            // overlay's state change silently no-ops (ScrollViewReader race),
+            // and late image loads can shift layout after the first scroll.
+            let scrollId = step.id == "tour-report" ? "tour-report" : "whats-inside"
+            for delay in [0.25, 0.85] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    withAnimation {
+                        scrollProxy.scrollTo(scrollId, anchor: step.id == "whats-inside"
+                            ? UnitPoint(x: 0.5, y: 0.14)
+                            : UnitPoint(x: 0.5, y: 0.62))
+                    }
+                }
+            }
         })
         }
     }

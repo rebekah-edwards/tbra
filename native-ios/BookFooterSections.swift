@@ -142,6 +142,7 @@ struct BookFooterActions: View {
                     .font(Theme.body(13, .medium))
                     .foregroundStyle(Theme.muted)
             }
+            .coachAnchor("tour-report")
         }
         .padding(.top, 6)
         .sheet(isPresented: $reportOpen) {
