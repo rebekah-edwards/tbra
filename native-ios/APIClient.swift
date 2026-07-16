@@ -19,11 +19,15 @@ actor APIClient {
     nonisolated(unsafe) static var baseURL =
         ProcessInfo.processInfo.environment["TBRA_DEBUG_BASEURL"].flatMap(URL.init(string:))
         ?? URL(string: "http://localhost:3000")!
-    #else
-    // Physical device: the Mac's Tailscale address (clanker-macmini).
-    // Cleartext HTTP is fine here — the tailnet wraps it in WireGuard.
-    // The Mac's dev server (port 3000) must be running.
+    #elseif DEBUG
+    // Physical device, Debug (push-to-phone.sh): the Mac's Tailscale address
+    // (clanker-macmini). Cleartext HTTP is fine here — the tailnet wraps it
+    // in WireGuard. The Mac's dev server (port 3000) must be running.
     nonisolated(unsafe) static var baseURL = URL(string: "http://100.84.95.103:3000")!
+    #else
+    // Release (TestFlight / App Store): production. Info.plist (the Release
+    // one) has no ATS exception, so this must stay https.
+    nonisolated(unsafe) static var baseURL = URL(string: "https://thebasedreader.app")!
     #endif
 
     private let session = URLSession.shared
