@@ -10,6 +10,7 @@ import { SearchBar } from "@/components/nav/search-bar";
 import { BottomTabs } from "@/components/nav/bottom-tabs";
 import { BackButton } from "@/components/nav/back-button";
 import { HamburgerMenu } from "@/components/nav/hamburger-menu";
+import { OnboardingGate } from "@/components/onboarding/welcome-carousel";
 import { DesktopNav } from "@/components/nav/desktop-nav";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { GlobalReportButton } from "@/components/global-report-button";
@@ -74,6 +75,8 @@ export default async function RootLayout({
 
   const userIsAdmin = isAdmin(session);
   const userIsSuperAdmin = isSuperAdmin(session);
+  const userIsPremium = !!session &&
+    ["premium", "beta_tester", "admin", "super_admin"].includes(session.accountType);
 
   // Fetch avatar for bottom nav profile icon — static imports are faster than dynamic
   let avatarUrl: string | null = null;
@@ -240,7 +243,8 @@ export default async function RootLayout({
                 )}
                 <SearchBar isLoggedIn={!!session} />
                 {session && <NotificationBell />}
-                <HamburgerMenu isLoggedIn={!!session} isAdmin={userIsAdmin} isSuperAdmin={userIsSuperAdmin} avatarUrl={avatarUrl} displayName={displayName} />
+                <HamburgerMenu isLoggedIn={!!session} isAdmin={userIsAdmin} isSuperAdmin={userIsSuperAdmin} isPremium={userIsPremium} avatarUrl={avatarUrl} displayName={displayName} />
+                <OnboardingGate isLoggedIn={!!session} />
                 {!session && (
                   <div className="hidden lg:flex items-center gap-3">
                     <Link
