@@ -224,22 +224,34 @@ async function processRow(
       // Create a reading session for completed, dnf, or paused books
       if ((row.readStatus === "completed" || row.readStatus === "dnf") && row.lastDateRead) {
         const dateStr = row.lastDateRead;
-        const lastSession = await db.all(sql`
-          SELECT MAX(read_number) as max_num FROM reading_sessions
+        // Same-date guard: a session for this read may already exist from a
+        // Goodreads import of the same library (users migrating often import
+        // both). MAX(read_number)+1 would happily append a duplicate, double-
+        // counting the read in stats.
+        const dupe = await db.all(sql`
+          SELECT 1 FROM reading_sessions
           WHERE user_id = ${userId} AND book_id = ${bookId}
-        `) as { max_num: number | null }[];
-        const readNumber = (lastSession[0]?.max_num ?? 0) + 1;
+            AND completion_date = ${dateStr}
+          LIMIT 1
+        `) as unknown[];
+        if (dupe.length === 0) {
+          const lastSession = await db.all(sql`
+            SELECT MAX(read_number) as max_num FROM reading_sessions
+            WHERE user_id = ${userId} AND book_id = ${bookId}
+          `) as { max_num: number | null }[];
+          const readNumber = (lastSession[0]?.max_num ?? 0) + 1;
 
-        await db.insert(readingSessions).values({
-          id: crypto.randomUUID(),
-          userId,
-          bookId,
-          readNumber,
-          startedAt: dateStr,
-          completionDate: dateStr,
-          completionPrecision: "exact",
-          state: row.readStatus,
-        }).onConflictDoNothing();
+          await db.insert(readingSessions).values({
+            id: crypto.randomUUID(),
+            userId,
+            bookId,
+            readNumber,
+            startedAt: dateStr,
+            completionDate: dateStr,
+            completionPrecision: "exact",
+            state: row.readStatus,
+          }).onConflictDoNothing();
+        }
       } else if (row.readStatus === "paused") {
         // Create a paused session so it has a start date
         const lastSession = await db.all(sql`
