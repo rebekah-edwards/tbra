@@ -17,7 +17,7 @@ import {
   readingNotes,
   reportCorrections,
 } from "@/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import { getCurrentUser, clearSessionCookie } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { unlink } from "fs/promises";
@@ -99,6 +99,31 @@ export async function deleteAccount(confirmPhrase: string): Promise<ActionResult
       .get();
 
     await deleteAllUserData(user.userId);
+    // Every REMAINING table with a users FK (2026-07-16) — without these the
+    // users DELETE throws SQLITE_CONSTRAINT_FOREIGNKEY and account deletion
+    // silently failed for any user with prefs/follows/shelves. Kept in sync
+    // with /api/v1/settings/danger.
+    const uid = user.userId;
+    await db.run(sql`DELETE FROM buddy_read_messages WHERE user_id = ${uid} OR buddy_read_id IN (SELECT id FROM buddy_reads WHERE created_by = ${uid})`);
+    await db.run(sql`DELETE FROM buddy_read_members WHERE user_id = ${uid} OR buddy_read_id IN (SELECT id FROM buddy_reads WHERE created_by = ${uid})`);
+    await db.run(sql`DELETE FROM buddy_reads WHERE created_by = ${uid}`);
+    await db.run(sql`DELETE FROM shelf_follows WHERE user_id = ${uid} OR shelf_id IN (SELECT id FROM shelves WHERE user_id = ${uid})`);
+    await db.run(sql`DELETE FROM shelf_books WHERE shelf_id IN (SELECT id FROM shelves WHERE user_id = ${uid})`);
+    await db.run(sql`DELETE FROM shelves WHERE user_id = ${uid}`);
+    await db.run(sql`DELETE FROM user_follows WHERE follower_id = ${uid} OR followed_id = ${uid}`);
+    await db.run(sql`DELETE FROM author_follows WHERE user_id = ${uid}`);
+    await db.run(sql`DELETE FROM tbr_notes WHERE user_id = ${uid}`);
+    await db.run(sql`DELETE FROM user_hidden_books WHERE user_id = ${uid}`);
+    await db.run(sql`DELETE FROM user_genre_preferences WHERE user_id = ${uid}`);
+    await db.run(sql`DELETE FROM user_content_preferences WHERE user_id = ${uid}`);
+    await db.run(sql`DELETE FROM user_reading_preferences WHERE user_id = ${uid}`);
+    await db.run(sql`DELETE FROM user_notification_preferences WHERE user_id = ${uid}`);
+    await db.run(sql`DELETE FROM user_notifications WHERE user_id = ${uid}`);
+    await db.run(sql`DELETE FROM user_previous_usernames WHERE user_id = ${uid}`);
+    await db.run(sql`DELETE FROM reported_issues WHERE user_id = ${uid}`);
+    await db.run(sql`DELETE FROM auth_refresh_tokens WHERE user_id = ${uid}`);
+    await db.run(sql`DELETE FROM password_reset_tokens WHERE user_id = ${uid}`);
+    await db.run(sql`UPDATE users SET referred_by_user_id = NULL WHERE referred_by_user_id = ${uid}`);
     await db.delete(users).where(eq(users.id, user.userId)).run();
 
     // Delete avatar file from disk

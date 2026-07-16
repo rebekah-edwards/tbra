@@ -633,3 +633,23 @@ explicit user sign-off.
   (d) Shelves list + Top Shelf + shelf detail + shelf editor now
   .tracksScrollAtTop() so the back chevron slides into the logo slot on scroll
   like every other pushed screen.
+
+- **2026-07-16 — Settings rebuilt to full web parity (punch list #9 pt2).**
+  Native: Reading Preferences card (Auto-saved chip + counts line) w/ four
+  single-open accordions — Genre Preferences (fiction/nonfiction tri-state
+  chips ♥/✕), Reading Style (read-mostly trio, pace multi+Any, length
+  Short/Medium/Long/Any, 19 moods), Story Preferences (focus + 14 tri-state
+  tropes), Content Comfort Zone (tolerance rows + custom topics, labels now
+  None/Mild/Moderate/Significant/Any like web) — then Display (Light/System/
+  Dark + Text Size), Location (+visibility, Save), Notifications card (web
+  copy), Export Your Data (CSV free / JSON premium → in-app share sheet),
+  Hidden Books collapsible, Change Password (black-on-lime), Account email,
+  Danger Zone (4 ops, type-to-confirm sheets; delete-account signs out).
+  API: /api/v1/settings GET now returns genrePrefs/readingStyle/location/
+  email; PATCH gained genre + readingStyle + location branches; NEW routes
+  settings/password, settings/unhide, settings/danger, /api/v1/export
+  (generators extracted to src/lib/export-data.ts, shared with /api/export).
+  FOUND+FIXED: delete-account threw SQLITE_CONSTRAINT_FOREIGNKEY on BOTH
+  platforms for any user with prefs/follows/shelves — full FK cleanup list
+  (pragma-derived, 20 tables) added to v1 danger route AND web account.ts.
+  All endpoints curl-verified incl. destructive paths on a throwaway account.
