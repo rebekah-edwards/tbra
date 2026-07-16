@@ -62,7 +62,11 @@ struct BookDetailView: View {
                         reviewerWarnings: data.reviewerWarnings ?? [],
                         noteWarnings: data.noteWarnings ?? [],
                         onSeeDetails: {
-                            withAnimation { scrollProxy.scrollTo("whats-inside", anchor: .top) }
+                            // Next runloop: let the button's own layout pass
+                            // finish before measuring the scroll target.
+                            DispatchQueue.main.async {
+                                withAnimation { scrollProxy.scrollTo("whats-inside", anchor: .top) }
+                            }
                         }
                     )
                     if let summary = data.book.summary, !summary.isEmpty {
@@ -2463,7 +2467,9 @@ struct ContentFlagsBanner: View {
                             )
                         }
                         Button {
-                            withAnimation(.easeOut(duration: 0.2)) { expanded = false }
+                            // Web parity: the link ONLY scrolls — no collapse.
+                            // (Collapsing in the same transaction shifted the
+                            // layout mid-scroll and the scroll went nowhere.)
                             onSeeDetails()
                         } label: {
                             Text("See all content details ↓")
