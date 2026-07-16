@@ -99,6 +99,16 @@ enum SettingsCatalog {
     ]
     // Web TOLERANCE_LABELS: None/Mild/Moderate/Significant/Any
     static let toleranceLabels = ["None", "Mild", "Moderate", "Significant", "Any"]
+    /// Shown under the selector for the CURRENT level — beta testers were
+    /// overshooting (e.g. "None" everywhere) without realizing how strict
+    /// each step is. Keep these short; they mirror the web editor.
+    static let toleranceHints = [
+        "Strictest — flags even a passing mention.",
+        "Brief or non-graphic content is okay; more gets flagged.",
+        "Recurring but non-graphic content is okay.",
+        "Graphic or frequent content is okay — only extremes get flagged.",
+        "No limit — this category is never flagged for you.",
+    ]
 }
 
 @MainActor
@@ -376,7 +386,7 @@ struct SettingsView: View {
             }
             accordion("content", title: "Content Comfort Zone", isLast: true) {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("The most you're comfortable with in each category. Books above your limit get flagged before you read them.")
+                    Text("The most you're comfortable with in each category. Books above your limit get flagged before you read them.\n\nTip: each step is a maximum, not a preference — \"None\" flags even a passing mention. Most readers start at Mild or Moderate and adjust after a few books.")
                         .font(Theme.body(12)).foregroundStyle(Theme.muted)
                     ForEach(model.contentPrefs) { pref in
                         toleranceRow(pref)
@@ -594,6 +604,11 @@ struct SettingsView: View {
                     }
                 }
             }
+            // Live hint for the selected level (overshoot guard)
+            Text(SettingsCatalog.toleranceHints[pref.maxTolerance])
+                .font(Theme.body(11))
+                .foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)
         .background(Theme.surface.opacity(0.5))
