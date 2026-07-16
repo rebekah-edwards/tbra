@@ -481,17 +481,11 @@ export function DiscoverClient({
                       </span>
                     )}
                   </div>
-                  <h3 className="text-xs font-semibold leading-tight line-clamp-2 group-hover:text-accent transition-colors">
-                    {book.title}
-                  </h3>
-                  {book.authors.length > 0 && (
-                    <p className="text-[10px] text-muted mt-0.5 truncate">
-                      {book.authors.join(", ")}
-                    </p>
-                  )}
+                  {/* No title/author — the cover carries them; the branded-
+                      purple reason pill is the caption (2026-07-16). */}
                   {book.reason && (
-                    <span className="gem-reason-tag flex items-start gap-1 text-[10px] mt-1.5 rounded-md bg-gradient-to-r from-accent/15 to-neon-blue/15 text-accent border border-accent/20 px-2 py-1 leading-snug">
-                      <span className="line-clamp-2">{book.reason}</span>
+                    <span className="flex items-start gap-1 text-[10px] mt-1.5 rounded-md bg-neon-purple/12 text-foreground/85 border border-neon-purple/30 px-2 py-1 leading-snug">
+                      <span className="line-clamp-3">{book.reason}</span>
                     </span>
                   )}
                 </Link>
