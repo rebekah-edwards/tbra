@@ -12,6 +12,16 @@ final class AuthStore {
     var loginError: String?
 
     func restore() async {
+        #if DEBUG
+        // Headless-verification hook: seed a session on a FRESH simulator
+        // (whose keychain has never held tokens) via
+        // SIMCTL_CHILD_TBRA_DEBUG_TOKEN / _REFRESH. Debug builds only.
+        let env = ProcessInfo.processInfo.environment
+        if Keychain.accessToken == nil, let t = env["TBRA_DEBUG_TOKEN"] {
+            Keychain.accessToken = t
+            Keychain.refreshToken = env["TBRA_DEBUG_REFRESH"]
+        }
+        #endif
         guard Keychain.accessToken != nil || Keychain.refreshToken != nil else {
             phase = .signedOut
             return
