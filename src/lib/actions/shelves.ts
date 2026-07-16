@@ -1,14 +1,30 @@
 "use server";
 
 import { db } from "@/db";
-import { shelves, shelfBooks, shelfFollows, userNotifications, users } from "@/db/schema";
-import { eq, and, asc, sql, desc } from "drizzle-orm";
-import { getCurrentUser, hasPremiumAccess } from "@/lib/auth";
+import { shelves, shelfBooks, userNotifications, users } from "@/db/schema";
+import { eq, and, asc, sql } from "drizzle-orm";
+import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { generateShelfSlug } from "@/lib/utils/slugify";
+import {
+  createShelfFor,
+  updateShelfFor,
+  deleteShelfFor,
+  reorderShelvesFor,
+  addBookToShelfFor,
+  removeBookFromShelfFor,
+  reorderShelfBooksFor,
+} from "@/lib/mutations/shelves";
 
-const MAX_SHELVES = 50;
-const MAX_BOOKS_PER_SHELF = 500;
+/**
+ * Web server actions for shelves. The core write logic lives in
+ * @/lib/mutations/shelves (shared with the native API); these wrappers resolve
+ * the session user and handle web-only cache revalidation. Return shapes are
+ * unchanged from before the extraction.
+ *
+ * The functions still defined inline below (bulk remove, toggle, note,
+ * follow/unfollow) are not yet used by the native API and keep their original
+ * implementation until a later slice needs them.
+ */
 
 // ─── Create shelf ───
 
@@ -20,58 +36,14 @@ export async function createShelf(
 ): Promise<{ success: boolean; shelfId?: string; slug?: string; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
-  if (!hasPremiumAccess({ accountType: user.accountType })) {
-    return { success: false, error: "Premium required" };
+
+  const result = await createShelfFor(user.userId, user.accountType, name, description, isPublic, color);
+
+  if (result.success) {
+    revalidatePath("/library/shelves");
+    revalidatePath("/profile");
   }
-
-  const trimmed = name.trim();
-  if (!trimmed || trimmed.length > 100) {
-    return { success: false, error: "Shelf name must be 1-100 characters" };
-  }
-
-  // Check count
-  const existing = await db
-    .select({ id: shelves.id })
-    .from(shelves)
-    .where(eq(shelves.userId, user.userId))
-    .all();
-
-  if (existing.length >= MAX_SHELVES) {
-    return { success: false, error: `Maximum ${MAX_SHELVES} shelves` };
-  }
-
-  // Generate unique slug
-  const baseSlug = generateShelfSlug(trimmed);
-  let slug = baseSlug;
-  let suffix = 2;
-  while (true) {
-    const dup = await db
-      .select({ id: shelves.id })
-      .from(shelves)
-      .where(and(eq(shelves.userId, user.userId), eq(shelves.slug, slug)))
-      .get();
-    if (!dup) break;
-    slug = `${baseSlug}-${suffix}`;
-    suffix++;
-  }
-
-  const nextPosition = existing.length + 1;
-  const id = crypto.randomUUID();
-
-  await db.insert(shelves).values({
-    id,
-    userId: user.userId,
-    name: trimmed,
-    slug,
-    description: description?.trim() || null,
-    color: color || null,
-    isPublic: isPublic ?? false,
-    position: nextPosition,
-  });
-
-  revalidatePath("/library/shelves");
-  revalidatePath("/profile");
-  return { success: true, shelfId: id, slug };
+  return result;
 }
 
 // ─── Update shelf ───
@@ -83,50 +55,14 @@ export async function updateShelf(
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
 
-  const shelf = await db.select().from(shelves).where(eq(shelves.id, shelfId)).get();
-  if (!shelf || shelf.userId !== user.userId) {
-    return { success: false, error: "Shelf not found" };
+  const result = await updateShelfFor(user.userId, shelfId, data);
+
+  if (result.success) {
+    revalidatePath("/library/shelves");
+    revalidatePath(`/library/shelves/${result.slug}`);
+    revalidatePath("/profile");
   }
-
-  const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
-  let newSlug = shelf.slug;
-
-  if (data.name !== undefined) {
-    const trimmed = data.name.trim();
-    if (!trimmed || trimmed.length > 100) {
-      return { success: false, error: "Shelf name must be 1-100 characters" };
-    }
-    updates.name = trimmed;
-
-    // Re-slug if name changed
-    const baseSlug = generateShelfSlug(trimmed);
-    let slug = baseSlug;
-    let suffix = 2;
-    while (true) {
-      const dup = await db
-        .select({ id: shelves.id })
-        .from(shelves)
-        .where(and(eq(shelves.userId, user.userId), eq(shelves.slug, slug)))
-        .get();
-      if (!dup || dup.id === shelfId) break;
-      slug = `${baseSlug}-${suffix}`;
-      suffix++;
-    }
-    updates.slug = slug;
-    newSlug = slug;
-  }
-
-  if (data.description !== undefined) updates.description = data.description?.trim() || null;
-  if (data.isPublic !== undefined) updates.isPublic = data.isPublic;
-  if (data.color !== undefined) updates.color = data.color;
-  if (data.coverImageUrl !== undefined) updates.coverImageUrl = data.coverImageUrl;
-
-  await db.update(shelves).set(updates).where(eq(shelves.id, shelfId));
-
-  revalidatePath("/library/shelves");
-  revalidatePath(`/library/shelves/${newSlug}`);
-  revalidatePath("/profile");
-  return { success: true, slug: newSlug };
+  return result;
 }
 
 // ─── Delete shelf ───
@@ -135,24 +71,13 @@ export async function deleteShelf(shelfId: string): Promise<{ success: boolean; 
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
 
-  const shelf = await db.select().from(shelves).where(eq(shelves.id, shelfId)).get();
-  if (!shelf || shelf.userId !== user.userId) {
-    return { success: false, error: "Shelf not found" };
+  const result = await deleteShelfFor(user.userId, shelfId);
+
+  if (result.success) {
+    revalidatePath("/library/shelves");
+    revalidatePath("/profile");
   }
-
-  // CASCADE deletes shelf_books
-  await db.delete(shelves).where(eq(shelves.id, shelfId));
-
-  // Reorder remaining shelves
-  await db.run(sql`
-    UPDATE shelves
-    SET position = position - 1
-    WHERE user_id = ${user.userId} AND position > ${shelf.position}
-  `);
-
-  revalidatePath("/library/shelves");
-  revalidatePath("/profile");
-  return { success: true };
+  return result;
 }
 
 // ─── Reorder shelves ───
@@ -161,21 +86,10 @@ export async function reorderShelves(shelfIds: string[]): Promise<{ success: boo
   const user = await getCurrentUser();
   if (!user) return { success: false };
 
-  // Phase 1: negative positions to avoid UNIQUE conflicts
-  for (let i = 0; i < shelfIds.length; i++) {
-    await db.update(shelves).set({ position: -(i + 1) }).where(
-      and(eq(shelves.id, shelfIds[i]), eq(shelves.userId, user.userId)),
-    );
-  }
-  // Phase 2: final positions
-  for (let i = 0; i < shelfIds.length; i++) {
-    await db.update(shelves).set({ position: i + 1 }).where(
-      and(eq(shelves.id, shelfIds[i]), eq(shelves.userId, user.userId)),
-    );
-  }
+  const result = await reorderShelvesFor(user.userId, shelfIds);
 
-  revalidatePath("/library/shelves");
-  return { success: true };
+  if (result.success) revalidatePath("/library/shelves");
+  return result;
 }
 
 // ─── Add book to shelf ───
@@ -188,70 +102,14 @@ export async function addBookToShelf(
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
 
-  const shelf = await db.select().from(shelves).where(eq(shelves.id, shelfId)).get();
-  if (!shelf || shelf.userId !== user.userId) {
-    return { success: false, error: "Shelf not found" };
+  const result = await addBookToShelfFor(user.userId, shelfId, bookId, note);
+
+  if (result.added) {
+    revalidatePath("/library/shelves");
+    revalidatePath(`/library/shelves/${result.slug}`);
+    revalidatePath(`/book/${bookId}`);
   }
-
-  // Check if already on shelf
-  const existing = await db
-    .select()
-    .from(shelfBooks)
-    .where(and(eq(shelfBooks.shelfId, shelfId), eq(shelfBooks.bookId, bookId)))
-    .get();
-  if (existing) return { success: true }; // Already on shelf
-
-  // Check book count
-  const count = await db
-    .select({ id: shelfBooks.bookId })
-    .from(shelfBooks)
-    .where(eq(shelfBooks.shelfId, shelfId))
-    .all();
-  if (count.length >= MAX_BOOKS_PER_SHELF) {
-    return { success: false, error: `Maximum ${MAX_BOOKS_PER_SHELF} books per shelf` };
-  }
-
-  const nextPosition = count.length + 1;
-  await db.insert(shelfBooks).values({
-    shelfId,
-    bookId,
-    position: nextPosition,
-    note: note?.trim() || null,
-  });
-
-  revalidatePath("/library/shelves");
-  revalidatePath(`/library/shelves/${shelf.slug}`);
-  revalidatePath(`/book/${bookId}`);
-
-  // Notify followers of this shelf (if public)
-  if (shelf.isPublic) {
-    notifyShelfFollowers(shelfId, shelf.name, bookId).catch(() => {});
-  }
-
-  return { success: true };
-}
-
-async function notifyShelfFollowers(shelfId: string, shelfName: string, bookId: string) {
-  // Get book title and shelf slug for the notification
-  const bookRow = await db.all(sql`SELECT title FROM books WHERE id = ${bookId}`) as { title: string }[];
-  const bookTitle = bookRow[0]?.title || "a book";
-  const shelfRow = await db.all(sql`SELECT slug FROM shelves WHERE id = ${shelfId}`) as { slug: string }[];
-  const shelfSlug = shelfRow[0]?.slug;
-
-  // Get all followers of this shelf
-  const followers = await db.all(sql`
-    SELECT user_id FROM shelf_follows WHERE shelf_id = ${shelfId}
-  `) as { user_id: string }[];
-
-  for (const follower of followers) {
-    await db.insert(userNotifications).values({
-      userId: follower.user_id,
-      type: "shelf_update",
-      title: `New book on "${shelfName}"`,
-      message: `"${bookTitle}" was added to a shelf you follow.`,
-      linkUrl: `/library/shelves/${shelfSlug}`,
-    });
-  }
+  return { success: result.success, error: result.error };
 }
 
 // ─── Remove book from shelf ───
@@ -263,31 +121,29 @@ export async function removeBookFromShelf(
   const user = await getCurrentUser();
   if (!user) return { success: false };
 
-  const shelf = await db.select().from(shelves).where(eq(shelves.id, shelfId)).get();
-  if (!shelf || shelf.userId !== user.userId) return { success: false };
+  const result = await removeBookFromShelfFor(user.userId, shelfId, bookId);
 
-  const row = await db
-    .select({ position: shelfBooks.position })
-    .from(shelfBooks)
-    .where(and(eq(shelfBooks.shelfId, shelfId), eq(shelfBooks.bookId, bookId)))
-    .get();
-  if (!row) return { success: true };
+  if (result.removed) {
+    revalidatePath("/library/shelves");
+    revalidatePath(`/library/shelves/${result.slug}`);
+    revalidatePath(`/book/${bookId}`);
+  }
+  return { success: result.success };
+}
 
-  await db.delete(shelfBooks).where(
-    and(eq(shelfBooks.shelfId, shelfId), eq(shelfBooks.bookId, bookId)),
-  );
+// ─── Reorder books within shelf ───
 
-  // Reorder
-  await db.run(sql`
-    UPDATE shelf_books
-    SET position = position - 1
-    WHERE shelf_id = ${shelfId} AND position > ${row.position}
-  `);
+export async function reorderShelfBooks(
+  shelfId: string,
+  bookIds: string[],
+): Promise<{ success: boolean }> {
+  const user = await getCurrentUser();
+  if (!user) return { success: false };
 
-  revalidatePath("/library/shelves");
-  revalidatePath(`/library/shelves/${shelf.slug}`);
-  revalidatePath(`/book/${bookId}`);
-  return { success: true };
+  const result = await reorderShelfBooksFor(user.userId, shelfId, bookIds);
+
+  if (result.success) revalidatePath(`/library/shelves/${result.slug}`);
+  return { success: result.success };
 }
 
 // ─── Bulk remove books from shelf ───
@@ -347,37 +203,6 @@ export async function toggleBookOnShelf(
     const result = await addBookToShelf(shelfId, bookId);
     return { success: result.success, isOnShelf: result.success, error: result.error };
   }
-}
-
-// ─── Reorder books within shelf ───
-
-export async function reorderShelfBooks(
-  shelfId: string,
-  bookIds: string[],
-): Promise<{ success: boolean }> {
-  const user = await getCurrentUser();
-  if (!user) return { success: false };
-
-  const shelf = await db.select().from(shelves).where(eq(shelves.id, shelfId)).get();
-  if (!shelf || shelf.userId !== user.userId) return { success: false };
-
-  // Phase 1: negative positions
-  for (let i = 0; i < bookIds.length; i++) {
-    await db.run(sql`
-      UPDATE shelf_books SET position = ${-(i + 1)}
-      WHERE shelf_id = ${shelfId} AND book_id = ${bookIds[i]}
-    `);
-  }
-  // Phase 2: final positions
-  for (let i = 0; i < bookIds.length; i++) {
-    await db.run(sql`
-      UPDATE shelf_books SET position = ${i + 1}
-      WHERE shelf_id = ${shelfId} AND book_id = ${bookIds[i]}
-    `);
-  }
-
-  revalidatePath(`/library/shelves/${shelf.slug}`);
-  return { success: true };
 }
 
 // ─── Update book note ───

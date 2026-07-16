@@ -401,9 +401,9 @@ export const upNext = sqliteTable("up_next", {
   position: integer("position").notNull(), // 1-5
   addedAt: text("added_at").notNull().default(sql`(datetime('now'))`),
   // Touched on EVERY queue mutation (add/remove/reorder) across ALL of the
-  // user's rows — the local<->Turso sync compares MAX(updated_at) per side
-  // to decide which copy of the whole queue is newer (deletes/reorders
-  // leave no per-row trace). Column exists on Turso since 2026-07-08.
+  // user's rows — sync-pull/push compare MAX(updated_at) per side to decide
+  // which copy of the whole queue is newer (the queue syncs as one unit
+  // because deletes/reorders leave no per-row trace).
   updatedAt: text("updated_at"),
 }, (table) => [
   uniqueIndex("up_next_user_book_unique").on(table.userId, table.bookId),
@@ -755,4 +755,23 @@ export const buddyReadMessages = sqliteTable("buddy_read_messages", {
 }, (table) => [
   index("buddy_read_messages_read_idx").on(table.buddyReadId),
   index("buddy_read_messages_read_created_idx").on(table.buddyReadId, table.createdAt),
+]);
+
+// ─── Auth refresh tokens (native app "never log out") ───
+// Only the SHA-256 hash of each refresh token is stored (the raw token is a
+// high-entropy random string given once to the client). Tokens are rotated on
+// use — each refresh revokes the presented token and issues a new one — and
+// can be revoked server-side (logout / "log out everywhere"). See
+// src/lib/auth/refresh-tokens.ts.
+export const authRefreshTokens = sqliteTable("auth_refresh_tokens", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  lastUsedAt: text("last_used_at"),
+  revokedAt: text("revoked_at"),
+}, (table) => [
+  uniqueIndex("auth_refresh_tokens_hash_unique").on(table.tokenHash),
+  index("auth_refresh_tokens_user_idx").on(table.userId),
 ]);

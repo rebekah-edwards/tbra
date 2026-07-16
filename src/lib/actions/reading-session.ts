@@ -7,6 +7,7 @@ import { userBookState, readingSessions } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { getLatestSession, getActiveSession, getNextReadNumber } from "@/lib/queries/reading-session";
+import { setBookStateWithCompletionFor } from "@/lib/mutations/reading-state";
 
 /**
  * Combined action for marking a book as completed or DNF.
@@ -21,208 +22,19 @@ export async function setBookStateWithCompletion(
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  // 1. Update user_book_state (the cache table)
-  const existing = await db
-    .select()
-    .from(userBookState)
-    .where(
-      and(
-        eq(userBookState.userId, user.userId),
-        eq(userBookState.bookId, bookId)
-      )
-    )
-    .get();
-
-  // Capture the user's current format selection BEFORE we null it on the cache,
-  // so we can preserve it on the reading session below (so stats know how the
-  // book was read).
-  const cachedFormats = existing?.activeFormats ?? null;
-
-  if (existing) {
-    await db
-      .update(userBookState)
-      .set({ state, activeFormats: null, updatedAt: new Date().toISOString() })
-      .where(
-        and(
-          eq(userBookState.userId, user.userId),
-          eq(userBookState.bookId, bookId)
-        )
-      );
-  } else {
-    await db.insert(userBookState).values({
-      userId: user.userId,
-      bookId,
-      state,
-    });
-  }
-
-  // 2. Update or create the reading session
-  const activeSession = await getActiveSession(user.userId, bookId);
-
-  if (activeSession) {
-    // Complete the active session — preserve activeFormats as a record of how it was read.
-    // Since the user was actively reading, default the finish date to today if they
-    // didn't pick one (they most likely just finished today).
-    const today = new Date().toISOString().split("T")[0];
-
-    // Determine final activeFormats: prefer whatever's already on the session,
-    // otherwise fall back to the cached selection from user_book_state.
-    //
-    // getActiveSession() returns activeFormats already parsed to a string[], so
-    // it MUST be re-serialized with JSON.stringify before it goes into the text
-    // column. Assigning a JS array straight to a text column coerces it via
-    // String() to a bare value like "paperback" (single element) or throws
-    // "Too many parameter values" (multi element). A bare "paperback" is not
-    // valid JSON, so every reader that JSON.parse()s it later threw — this was
-    // the root cause of the "Something went wrong" crash on finished books.
-    // cachedFormats is already a JSON string (or null) from user_book_state.
-    const finalFormats =
-      activeSession.activeFormats.length > 0
-        ? JSON.stringify(activeSession.activeFormats)
-        : cachedFormats;
-
-    // If the user picked a completion date that's before the recorded start
-    // date, the recorded start can't be right — drop it so the UI shows
-    // "No start date" instead of an impossible timeline (e.g. "Apr 27, 2026 → 2024").
-    let startedAtUpdate: { startedAtExplicit?: boolean } = {};
-    if (
-      completionDate &&
-      activeSession.startedAt &&
-      activeSession.startedAt.split("T")[0] > completionDate
-    ) {
-      startedAtUpdate = { startedAtExplicit: false };
-    }
-
-    // If the active session was paused, accumulate the time it spent in the
-    // paused state into total_paused_days so stats only count Reading-Now days.
-    let pausedUpdate: { totalPausedDays?: number; pausedAt?: string | null } = {};
-    if (activeSession.state === "paused" && activeSession.pausedAt) {
-      const pausedMs = Date.now() - new Date(activeSession.pausedAt).getTime();
-      const additionalPausedDays = Math.max(0, Math.round(pausedMs / (1000 * 60 * 60 * 24)));
-      const totalPaused = (activeSession.totalPausedDays ?? 0) + additionalPausedDays;
-      pausedUpdate = { totalPausedDays: totalPaused, pausedAt: null };
-    }
-
-    await db
-      .update(readingSessions)
-      .set({
-        state,
-        completionDate: completionDate ?? today,
-        completionPrecision: completionPrecision ?? "exact",
-        activeFormats: finalFormats,
-        ...startedAtUpdate,
-        ...pausedUpdate,
-        updatedAt: new Date().toISOString(),
-      })
-      .where(eq(readingSessions.id, activeSession.id));
-  } else {
-    // No active session — create one (e.g., user clicked "Finished" directly without "Reading Now" first).
-    // The user never indicated a start OR finish date; leave both unspecified if they skipped.
-    // Preserve any cached format selection (user_book_state.activeFormats) so
-    // stats know how the book was read.
-    const readNumber = await getNextReadNumber(user.userId, bookId);
-    await db.insert(readingSessions).values({
-      userId: user.userId,
-      bookId,
-      readNumber,
-      state,
-      startedAt: new Date().toISOString(),
-      startedAtExplicit: false,
-      completionDate,
-      completionPrecision,
-      activeFormats: cachedFormats,
-    });
-  }
+  // Shared user-scoped implementation (also used by /api/v1) — see
+  // src/lib/mutations/reading-state.ts. Behavior is the exact former body
+  // of this action.
+  await setBookStateWithCompletionFor(userId, bookId, state, completionDate, completionPrecision);
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");
   revalidatePath("/profile");
 }
 
-/**
- * Create a new reading session when entering "currently_reading".
- * If an active session exists, this is a no-op.
- * If the latest session is completed/dnf, creates a new session (re-read).
- */
-export async function ensureReadingSession(
-  userId: string,
-  bookId: string,
-  activeFormats: string | null
-): Promise<void> {
-  const active = await getActiveSession(userId, bookId);
-  if (active) {
-    // Already have an active session, just update formats if needed
-    if (activeFormats !== null) {
-      await db
-        .update(readingSessions)
-        .set({ activeFormats, updatedAt: new Date().toISOString() })
-        .where(eq(readingSessions.id, active.id));
-    }
-    return;
-  }
-
-  // No active session — create a new one
-  // User clicked "Reading Now" so the start date is explicitly today
-  const readNumber = await getNextReadNumber(userId, bookId);
-  await db.insert(readingSessions).values({
-    userId,
-    bookId,
-    readNumber,
-    state: "currently_reading",
-    startedAt: new Date().toISOString(),
-    startedAtExplicit: true,
-    activeFormats,
-  });
-}
-
-/**
- * Pause the active reading session.
- */
-export async function pauseActiveSession(
-  userId: string,
-  bookId: string
-): Promise<void> {
-  const active = await getActiveSession(userId, bookId);
-  if (active) {
-    await db
-      .update(readingSessions)
-      .set({
-        state: "paused",
-        pausedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-      .where(eq(readingSessions.id, active.id));
-  }
-}
-
-/**
- * Resume a paused session back to currently_reading.
- */
-export async function resumeActiveSession(
-  userId: string,
-  bookId: string
-): Promise<void> {
-  const active = await getActiveSession(userId, bookId);
-  if (active && active.state === "paused") {
-    // Calculate days spent paused and add to running total
-    let additionalPausedDays = 0;
-    if (active.pausedAt) {
-      const pausedMs = Date.now() - new Date(active.pausedAt).getTime();
-      additionalPausedDays = Math.max(0, Math.round(pausedMs / (1000 * 60 * 60 * 24)));
-    }
-    const totalPaused = (active.totalPausedDays ?? 0) + additionalPausedDays;
-
-    await db
-      .update(readingSessions)
-      .set({
-        state: "currently_reading",
-        pausedAt: null,
-        totalPausedDays: totalPaused,
-        updatedAt: new Date().toISOString(),
-      })
-      .where(eq(readingSessions.id, active.id));
-  }
-}
+// ensureReadingSession / pauseActiveSession / resumeActiveSession moved to
+// src/lib/mutations/reading-session.ts (plain module, shared with /api/v1 —
+// and no longer exposed as server actions trusting a caller-supplied userId).
 
 /**
  * Update fields on an existing reading session.
@@ -245,7 +57,20 @@ export async function updateReadingSession(
 ) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  return updateReadingSessionFor(userId, sessionId, data);
+}
 
+/** Core update, callable with an explicit user id (used by /api/v1). */
+export async function updateReadingSessionFor(
+  userId: string,
+  sessionId: string,
+  data: {
+    startedAt?: string;
+    completionDate?: string | null;
+    pausedAt?: string | null;
+    activeFormats?: string[] | null;
+  }
+) {
   // Verify ownership
   const session = await db
     .select()
@@ -253,7 +78,7 @@ export async function updateReadingSession(
     .where(eq(readingSessions.id, sessionId))
     .get();
 
-  if (!session || session.userId !== user.userId) {
+  if (!session || session.userId !== userId) {
     throw new Error("Session not found");
   }
 
@@ -300,12 +125,20 @@ export async function addRereadSession(
 ) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  return addRereadSessionFor(userId, bookId, data);
+}
 
-  const readNumber = await getNextReadNumber(user.userId, bookId);
+/** Core re-read insert, callable with an explicit user id (used by /api/v1). */
+export async function addRereadSessionFor(
+  userId: string,
+  bookId: string,
+  data: { startedAt?: string; completionDate?: string | null }
+) {
+  const readNumber = await getNextReadNumber(userId, bookId);
   const now = new Date().toISOString();
 
   await db.insert(readingSessions).values({
-    userId: user.userId,
+    userId: userId,
     bookId,
     readNumber,
     state: "completed",
@@ -326,7 +159,11 @@ export async function addRereadSession(
 export async function deleteReadingSession(sessionId: string) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  return deleteReadingSessionFor(userId, sessionId);
+}
 
+/** Core delete, callable with an explicit user id (used by /api/v1). */
+export async function deleteReadingSessionFor(userId: string, sessionId: string) {
   // Verify ownership
   const session = await db
     .select()
@@ -334,7 +171,7 @@ export async function deleteReadingSession(sessionId: string) {
     .where(eq(readingSessions.id, sessionId))
     .get();
 
-  if (!session || session.userId !== user.userId) {
+  if (!session || session.userId !== userId) {
     throw new Error("Session not found");
   }
 

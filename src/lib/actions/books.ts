@@ -833,6 +833,10 @@ export async function updateBookFields(
     return { success: false, error: "No fields to update" };
   }
 
+  // updated_at bump: without it a metadata fix never rides the nightly
+  // live↔local sync (same lesson as setAudiobookCover, 2026-07-11).
+  updateSet.updatedAt = new Date().toISOString();
+
   await db.update(books).set(updateSet).where(eq(books.id, bookId));
 
   const { revalidatePath } = await import("next/cache");

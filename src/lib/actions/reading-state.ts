@@ -8,8 +8,15 @@ import { userBookState, userOwnedEditions, books, userBookReviews, userBookDimen
 import { eq, and, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { importFromOpenLibraryAndReturn } from "@/lib/actions/books";
-import { ensureReadingSession, pauseActiveSession, resumeActiveSession } from "@/lib/actions/reading-session";
+import { ensureReadingSession, pauseActiveSession, resumeActiveSession } from "@/lib/mutations/reading-session";
 import { removeFromUpNext } from "@/lib/actions/up-next";
+import {
+  setBookStateFor,
+  removeBookStateFor,
+  removeFromLibraryFor,
+  setOwnedFormatsFor,
+  setActiveFormatsFor,
+} from "@/lib/mutations/reading-state";
 import { getActiveSession } from "@/lib/queries/reading-session";
 import type { OLSearchResult } from "@/lib/openlibrary";
 
@@ -17,71 +24,10 @@ export async function setBookState(bookId: string, state: string) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const existing = await db
-    .select()
-    .from(userBookState)
-    .where(
-      and(
-        eq(userBookState.userId, user.userId),
-        eq(userBookState.bookId, bookId)
-      )
-    )
-    .get();
-
-  // Preserve activeFormats when entering currently_reading, clear when leaving
-  // If entering with exactly one owned format, pre-select it
-  let activeFormats: string | null = null;
-  if (state === "currently_reading") {
-    if (existing?.activeFormats) {
-      activeFormats = existing.activeFormats;
-    } else {
-      const formats = parseFormats(existing?.ownedFormats);
-      if (formats.length === 1) {
-        activeFormats = JSON.stringify(formats);
-      }
-    }
-  }
-
-  if (existing) {
-    await db
-      .update(userBookState)
-      .set({ state, activeFormats, updatedAt: new Date().toISOString() })
-      .where(
-        and(
-          eq(userBookState.userId, user.userId),
-          eq(userBookState.bookId, bookId)
-        )
-      );
-  } else {
-    await db.insert(userBookState).values({
-      userId: user.userId,
-      bookId,
-      state,
-      activeFormats,
-    });
-  }
-
-  // Remove from Up Next when starting to read
-  if (state === "currently_reading") {
-    await removeFromUpNext(bookId);
-  }
-
-  // Sync reading session
-  if (state === "currently_reading") {
-    await ensureReadingSession(user.userId, bookId, activeFormats);
-    // If the active session was paused (user clicked "Reading Now" to resume),
-    // properly resume it so the paused-time gets accumulated into total_paused_days
-    // and the stats only count Reading-Now days.
-    await resumeActiveSession(user.userId, bookId);
-  } else if (state === "paused") {
-    // Ensure a reading session exists before pausing — if a book goes straight
-    // to "paused" (e.g., imported without a session), create one first so
-    // the reader has a start date, then pause it.
-    await ensureReadingSession(user.userId, bookId, activeFormats);
-    await pauseActiveSession(user.userId, bookId);
-  }
-  // Note: "completed" and "dnf" are handled by setBookStateWithCompletion (called from UI with date info)
-  // "tbr" doesn't need a session
+  // Shared user-scoped implementation (also used by /api/v1) — see
+  // src/lib/mutations/reading-state.ts. Behavior is the exact former body
+  // of this action.
+  await setBookStateFor(user.userId, bookId, state);
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");
@@ -92,42 +38,8 @@ export async function removeBookState(bookId: string) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const existing = await db
-    .select()
-    .from(userBookState)
-    .where(
-      and(
-        eq(userBookState.userId, user.userId),
-        eq(userBookState.bookId, bookId)
-      )
-    )
-    .get();
-
-  if (!existing) return;
-
-  const formats = parseFormats(existing.ownedFormats);
-
-  if (formats.length > 0) {
-    // Keep the row for owned formats, just clear the state and active formats
-    await db
-      .update(userBookState)
-      .set({ state: null, activeFormats: null, updatedAt: new Date().toISOString() })
-      .where(
-        and(
-          eq(userBookState.userId, user.userId),
-          eq(userBookState.bookId, bookId)
-        )
-      );
-  } else {
-    await db
-      .delete(userBookState)
-      .where(
-        and(
-          eq(userBookState.userId, user.userId),
-          eq(userBookState.bookId, bookId)
-        )
-      );
-  }
+  // Shared user-scoped implementation (also used by /api/v1).
+  await removeBookStateFor(user.userId, bookId);
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");
@@ -138,83 +50,9 @@ export async function setOwnedFormats(bookId: string, rawFormats: string[]) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  // "unknown" is an import placeholder meaning "owned, format unspecified".
-  // As soon as the user picks a real format it must be dropped — otherwise it
-  // lingers alongside the real format and inflates the "Owned · N" count
-  // (e.g. ["unknown","paperback"] showed as "Owned · 2").
-  const formats = rawFormats.some((f) => f !== "unknown")
-    ? rawFormats.filter((f) => f !== "unknown")
-    : rawFormats;
-
-  const existing = await db
-    .select()
-    .from(userBookState)
-    .where(
-      and(
-        eq(userBookState.userId, user.userId),
-        eq(userBookState.bookId, bookId)
-      )
-    )
-    .get();
-
-  // Determine which formats were removed so we can clean up edition associations
-  const previousFormats = parseFormats(existing?.ownedFormats);
-  const removedFormats = previousFormats.filter((f) => !formats.includes(f));
-
-  if (existing) {
-    if (formats.length === 0 && !existing.state) {
-      // No formats and no state — delete the row
-      await db
-        .delete(userBookState)
-        .where(
-          and(
-            eq(userBookState.userId, user.userId),
-            eq(userBookState.bookId, bookId)
-          )
-        );
-    } else {
-      await db
-        .update(userBookState)
-        .set({
-          ownedFormats: formats.length > 0 ? JSON.stringify(formats) : null,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(
-          and(
-            eq(userBookState.userId, user.userId),
-            eq(userBookState.bookId, bookId)
-          )
-        );
-    }
-  } else if (formats.length > 0) {
-    await db.insert(userBookState).values({
-      userId: user.userId,
-      bookId,
-      ownedFormats: JSON.stringify(formats),
-    });
-  }
-
-  // Clean up edition associations for removed formats
-  if (removedFormats.length > 0) {
-    await db
-      .delete(userOwnedEditions)
-      .where(
-        and(
-          eq(userOwnedEditions.userId, user.userId),
-          eq(userOwnedEditions.bookId, bookId),
-          inArray(userOwnedEditions.format, removedFormats)
-        )
-      );
-  }
-
-  // Admin ping when audiobook was newly marked but the book has no square
-  // audiobook image (admin uploads those manually). Never throws.
-  if (formats.includes("audiobook") && !previousFormats.includes("audiobook")) {
-    const { notifyAdminsIfAudiobookCoverMissing } = await import(
-      "@/lib/notifications/audiobook-cover"
-    );
-    await notifyAdminsIfAudiobookCoverMissing({ bookId, formats });
-  }
+  // Shared user-scoped implementation (also used by /api/v1) — includes the
+  // "unknown" placeholder rule and edition-association cleanup.
+  await setOwnedFormatsFor(user.userId, bookId, rawFormats);
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");
@@ -326,53 +164,9 @@ export async function setActiveFormats(bookId: string, formats: string[]) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const formatsJson = formats.length > 0 ? JSON.stringify(formats) : null;
-
-  const previous = await db
-    .select({ activeFormats: userBookState.activeFormats })
-    .from(userBookState)
-    .where(
-      and(
-        eq(userBookState.userId, user.userId),
-        eq(userBookState.bookId, bookId)
-      )
-    )
-    .get();
-  const previousFormats = parseFormats(previous?.activeFormats);
-
-  await db
-    .update(userBookState)
-    .set({
-      activeFormats: formatsJson,
-      updatedAt: new Date().toISOString(),
-    })
-    .where(
-      and(
-        eq(userBookState.userId, user.userId),
-        eq(userBookState.bookId, bookId)
-      )
-    );
-
-  // Admin ping when audiobook was newly marked as the active reading format
-  // but the book has no square audiobook image. Never throws.
-  if (formats.includes("audiobook") && !previousFormats.includes("audiobook")) {
-    const { notifyAdminsIfAudiobookCoverMissing } = await import(
-      "@/lib/notifications/audiobook-cover"
-    );
-    await notifyAdminsIfAudiobookCoverMissing({ bookId, formats });
-  }
-
-  // Mirror to the active reading session so stats (e.g. minutes-listened) can
-  // see which formats were actually used. Without this, the session row keeps
-  // the formats it had at session creation (often null) even after the user
-  // picks a format mid-read.
-  const active = await getActiveSession(user.userId, bookId);
-  if (active) {
-    await db
-      .update(readingSessions)
-      .set({ activeFormats: formatsJson, updatedAt: new Date().toISOString() })
-      .where(eq(readingSessions.id, active.id));
-  }
+  // Shared user-scoped implementation (also used by /api/v1) — mirrors the
+  // selection onto the active reading session for stats.
+  await setActiveFormatsFor(user.userId, bookId, formats);
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");
@@ -387,37 +181,10 @@ export async function removeFromLibrary(bookId: string) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  // Delete review data (tags, dimension ratings, review, synced rating)
-  const review = await db
-    .select({ id: userBookReviews.id })
-    .from(userBookReviews)
-    .where(and(eq(userBookReviews.userId, user.userId), eq(userBookReviews.bookId, bookId)))
-    .get();
-
-  if (review) {
-    await db.delete(reviewDescriptorTags).where(eq(reviewDescriptorTags.reviewId, review.id));
-    await db.delete(userBookDimensionRatings).where(eq(userBookDimensionRatings.reviewId, review.id));
-    await db.delete(userBookReviews).where(eq(userBookReviews.id, review.id));
-  }
-
-  await db
-    .delete(userBookRatings)
-    .where(and(eq(userBookRatings.userId, user.userId), eq(userBookRatings.bookId, bookId)));
-
-  // Delete owned editions
-  await db
-    .delete(userOwnedEditions)
-    .where(and(eq(userOwnedEditions.userId, user.userId), eq(userOwnedEditions.bookId, bookId)));
-
-  // Delete reading sessions
-  await db
-    .delete(readingSessions)
-    .where(and(eq(readingSessions.userId, user.userId), eq(readingSessions.bookId, bookId)));
-
-  // Delete reading state row entirely
-  await db
-    .delete(userBookState)
-    .where(and(eq(userBookState.userId, user.userId), eq(userBookState.bookId, bookId)));
+  // Shared user-scoped implementation (also used by /api/v1): deletes review
+  // data (tags, dimension ratings, review, synced rating), owned editions,
+  // reading sessions, and the state row.
+  await removeFromLibraryFor(user.userId, bookId);
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");

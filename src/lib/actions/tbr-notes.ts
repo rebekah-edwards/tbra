@@ -14,7 +14,15 @@ export async function saveTbrNote(
 ): Promise<{ success: boolean; error?: string }> {
   const session = await getCurrentUser();
   if (!session) return { success: false, error: "Not logged in" };
+  return saveTbrNoteFor(session, bookId, noteText);
+}
 
+/** Core save, callable with an explicit user (used by /api/v1). */
+export async function saveTbrNoteFor(
+  session: { userId: string; accountType?: string },
+  bookId: string,
+  noteText: string
+): Promise<{ success: boolean; error?: string }> {
   if (!hasPremiumAccess(session)) {
     return { success: false, error: "Based Reader required" };
   }
@@ -77,13 +85,20 @@ export async function deleteTbrNote(
 ): Promise<{ success: boolean; error?: string }> {
   const session = await getCurrentUser();
   if (!session) return { success: false, error: "Not logged in" };
+  return deleteTbrNoteFor(session.userId, bookId);
+}
 
+/** Core delete, callable with an explicit user id (used by /api/v1). */
+export async function deleteTbrNoteFor(
+  userId: string,
+  bookId: string
+): Promise<{ success: boolean; error?: string }> {
   try {
     await db
       .delete(tbrNotes)
       .where(
         and(
-          eq(tbrNotes.userId, session.userId),
+          eq(tbrNotes.userId, userId),
           eq(tbrNotes.bookId, bookId)
         )
       );

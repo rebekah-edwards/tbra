@@ -11,8 +11,15 @@ export async function followUser(
 ): Promise<{ success: boolean; error?: string }> {
   const session = await getCurrentUser();
   if (!session) return { success: false, error: "Not logged in" };
+  return followUserFor(session.userId, targetUserId);
+}
 
-  if (session.userId === targetUserId) {
+/** Core follow, callable with an explicit user id (used by /api/v1). */
+export async function followUserFor(
+  userId: string,
+  targetUserId: string
+): Promise<{ success: boolean; error?: string }> {
+  if (userId === targetUserId) {
     return { success: false, error: "Cannot follow yourself" };
   }
 
@@ -22,7 +29,7 @@ export async function followUser(
     .from(userFollows)
     .where(
       and(
-        eq(userFollows.followerId, session.userId),
+        eq(userFollows.followerId, userId),
         eq(userFollows.followedId, targetUserId)
       )
     )
@@ -31,7 +38,7 @@ export async function followUser(
   if (existing) return { success: true }; // Already following
 
   await db.insert(userFollows).values({
-    followerId: session.userId,
+    followerId: userId,
     followedId: targetUserId,
   });
 
@@ -40,7 +47,7 @@ export async function followUser(
     const follower = await db
       .select({ displayName: users.displayName, username: users.username })
       .from(users)
-      .where(eq(users.id, session.userId))
+      .where(eq(users.id, userId))
       .get();
 
     const followerName = follower?.displayName || (follower?.username ? `@${follower.username}` : "Someone");
@@ -66,12 +73,19 @@ export async function unfollowUser(
 ): Promise<{ success: boolean; error?: string }> {
   const session = await getCurrentUser();
   if (!session) return { success: false, error: "Not logged in" };
+  return unfollowUserFor(session.userId, targetUserId);
+}
 
+/** Core unfollow, callable with an explicit user id (used by /api/v1). */
+export async function unfollowUserFor(
+  userId: string,
+  targetUserId: string
+): Promise<{ success: boolean; error?: string }> {
   await db
     .delete(userFollows)
     .where(
       and(
-        eq(userFollows.followerId, session.userId),
+        eq(userFollows.followerId, userId),
         eq(userFollows.followedId, targetUserId)
       )
     );

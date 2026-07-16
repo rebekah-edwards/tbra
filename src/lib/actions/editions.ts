@@ -49,19 +49,27 @@ export async function setOwnedEdition(
 ) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  await setOwnedEditionFor(user.userId, bookId, editionId, format);
+  revalidatePath(`/book/${bookId}`);
+}
 
+/** Core write, callable with an explicit user id (used by /api/v1). */
+export async function setOwnedEditionFor(
+  userId: string,
+  bookId: string,
+  editionId: string,
+  format: string
+) {
   // Insert or ignore (unique constraint handles duplicates)
   await db
     .insert(userOwnedEditions)
     .values({
-      userId: user.userId,
+      userId,
       bookId,
       editionId,
       format,
     })
     .onConflictDoNothing();
-
-  revalidatePath(`/book/${bookId}`);
 }
 
 export async function removeOwnedEdition(
@@ -71,19 +79,27 @@ export async function removeOwnedEdition(
 ) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  await removeOwnedEditionFor(user.userId, bookId, editionId, format);
+  revalidatePath(`/book/${bookId}`);
+}
 
+/** Core delete, callable with an explicit user id (used by /api/v1). */
+export async function removeOwnedEditionFor(
+  userId: string,
+  bookId: string,
+  editionId: string,
+  format: string
+) {
   await db
     .delete(userOwnedEditions)
     .where(
       and(
-        eq(userOwnedEditions.userId, user.userId),
+        eq(userOwnedEditions.userId, userId),
         eq(userOwnedEditions.bookId, bookId),
         eq(userOwnedEditions.editionId, editionId),
         eq(userOwnedEditions.format, format)
       )
     );
-
-  revalidatePath(`/book/${bookId}`);
 }
 
 /**
