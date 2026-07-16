@@ -42,7 +42,9 @@ const PAGES = [
   {
     key: "welcome",
     art: (
-      <div className="flex flex-col items-center gap-4">
+      // Wider spacing on this page per user review — logo stays put, the
+      // definition card and headline breathe.
+      <div className="flex flex-col items-center gap-8">
         <span className="logo-gradient font-logo text-4xl tracking-tight">tbr*a</span>
         <div className="w-full max-w-sm rounded-2xl border border-border bg-surface/75 p-4 text-left">
           <div className="flex items-baseline gap-2">
@@ -60,6 +62,7 @@ const PAGES = [
     ),
     headline: "Know what's in a book before you read it",
     copy: "Decide exactly what you do (and don't) want to read. Track your reading, manage your owned library, and see reviews from other based readers — all in one place.",
+    tallArt: true,
   },
   {
     key: "content",
@@ -106,6 +109,7 @@ const PAGES = [
     art: (
       <div className="flex flex-col items-center gap-3">
         <svg width="56" height="56" viewBox="0 0 24 24" fill="#c084fc"><circle cx="12" cy="12" r="10" opacity="0.25" /><path d="M12 6l1.85 3.75 4.15.6-3 2.93.71 4.12L12 15.45 8.29 17.4 9 13.28l-3-2.93 4.15-.6z" /></svg>
+        <span className="text-xs font-bold tracking-[0.12em] text-neon-purple">BASED READER PREMIUM</span>
         <div className="flex flex-wrap justify-center gap-2">
           <Chip label="Custom Shelves" tint="purple" />
           <Chip label="Notes to Self" tint="blue" />
@@ -117,7 +121,7 @@ const PAGES = [
       </div>
     ),
     headline: "Make It Yours",
-    copy: "Organize books any way you like with custom shelves, keep private notes on your TBR, and read together with buddy reads. Then let Discover match books to your exact taste — so every recommendation actually fits.",
+    copy: "Go premium to organize books any way you like with custom shelves, keep private notes on your TBR, and read together with buddy reads. Then let Discover match books to your exact taste — so every recommendation actually fits.",
   },
 ];
 
@@ -151,7 +155,7 @@ export function WelcomeCarousel() {
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
-        <div className="mb-8 min-h-[190px] w-full max-w-md content-center">{p.art}</div>
+        <div className={`w-full max-w-md content-center ${"tallArt" in p && p.tallArt ? "mb-12 min-h-[270px]" : "mb-8 min-h-[190px]"}`}>{p.art}</div>
         <h1 className="font-heading text-[26px] font-bold leading-tight text-foreground">
           {p.headline}
         </h1>

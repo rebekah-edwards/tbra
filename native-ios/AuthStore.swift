@@ -456,7 +456,9 @@ struct OnboardingView: View {
         OnboardPage(
             art: {
                 AnyView(
-                    VStack(spacing: 14) {
+                    // Wider spacing on this page per user review — logo sits
+                    // where it is, the definition card and headline breathe.
+                    VStack(spacing: 30) {
                         Text("tbr*a")
                             .font(Theme.logo(40))
                             .foregroundStyle(Theme.logoGradient)
@@ -488,7 +490,9 @@ struct OnboardingView: View {
                 )
             },
             headline: "Know what's in a book\nbefore you read it",
-            copy: "Decide exactly what you do (and don't) want to read. Track your reading, manage your owned library, and see reviews from other based readers — all in one place."
+            copy: "Decide exactly what you do (and don't) want to read. Track your reading, manage your owned library, and see reviews from other based readers — all in one place.",
+            artHeight: 270,
+            gap: 52
         )
     }
 
@@ -548,6 +552,10 @@ struct OnboardingView: View {
                         Image(systemName: "star.circle.fill")
                             .font(.system(size: 56, weight: .medium))
                             .foregroundStyle(Theme.neonPurple)
+                        Text("BASED READER PREMIUM")
+                            .font(Theme.body(12, .bold))
+                            .kerning(1.2)
+                            .foregroundStyle(Theme.neonPurple)
                         HStack(spacing: 8) {
                             OnboardChip(label: "Custom Shelves", systemImage: "books.vertical", tint: Theme.neonPurple)
                             OnboardChip(label: "Notes to Self", systemImage: "note.text", tint: Theme.neonBlue)
@@ -560,7 +568,8 @@ struct OnboardingView: View {
                 )
             },
             headline: "Make It Yours",
-            copy: "Organize books any way you like with custom shelves, keep private notes on your TBR, and read together with buddy reads. Then let Discover match books to your exact taste — so every recommendation actually fits."
+            copy: "Go premium to organize books any way you like with custom shelves, keep private notes on your TBR, and read together with buddy reads. Then let Discover match books to your exact taste — so every recommendation actually fits.",
+            artHeight: 230
         )
     }
 }
@@ -570,13 +579,17 @@ private struct OnboardPage: View {
     let art: () -> AnyView
     let headline: String
     let copy: String
+    /// Welcome page overrides these — taller art (logo + definition card)
+    /// and a wider art→headline gap.
+    var artHeight: CGFloat = 190
+    var gap: CGFloat = 34
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
             art()
-                .frame(height: 190)
-            Spacer().frame(height: 34)
+                .frame(height: artHeight)
+            Spacer().frame(height: gap)
             Text(headline)
                 .font(Theme.heading(28, .bold))
                 .foregroundStyle(Theme.foreground)
