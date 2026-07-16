@@ -456,9 +456,9 @@ struct OnboardingView: View {
         OnboardPage(
             art: {
                 AnyView(
-                    // Wider spacing on this page per user review — logo sits
-                    // where it is, the definition card and headline breathe.
-                    VStack(spacing: 30) {
+                    // Equal 36pt gaps: logo→definition here, definition→headline
+                    // via gap below (artHeight 0 = natural height, no frame slack).
+                    VStack(spacing: 36) {
                         Text("tbr*a")
                             .font(Theme.logo(40))
                             .foregroundStyle(Theme.logoGradient)
@@ -491,8 +491,8 @@ struct OnboardingView: View {
             },
             headline: "Know what's in a book\nbefore you read it",
             copy: "Decide exactly what you do (and don't) want to read. Track your reading, manage your owned library, and see reviews from other based readers — all in one place.",
-            artHeight: 270,
-            gap: 52
+            artHeight: 0,
+            gap: 36
         )
     }
 
@@ -579,16 +579,19 @@ private struct OnboardPage: View {
     let art: () -> AnyView
     let headline: String
     let copy: String
-    /// Welcome page overrides these — taller art (logo + definition card)
-    /// and a wider art→headline gap.
+    /// Welcome page overrides these — artHeight 0 lets the art size itself
+    /// (logo + definition card) so the art→headline gap is exact.
     var artHeight: CGFloat = 190
     var gap: CGFloat = 34
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            art()
-                .frame(height: artHeight)
+            if artHeight > 0 {
+                art().frame(height: artHeight)
+            } else {
+                art()
+            }
             Spacer().frame(height: gap)
             Text(headline)
                 .font(Theme.heading(28, .bold))
