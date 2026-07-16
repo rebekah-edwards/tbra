@@ -1779,23 +1779,45 @@ export async function getDiscoverRecommendations(
     // genre-keyword matches only when nothing richer fired.
     const parts: string[] = [];
     const receipts = receiptsByBook.get(book.id);
+    const pace = pacingByBook.get(book.id);
+    const agg = ratingByBook.get(book.id);
     if (receipts && receipts.tags.length > 0) {
       const quoted = receipts.tags.map((t) => `“${t}”`).join(" & ");
       parts.push(`Reviewers call it ${quoted}`);
-    }
-    const pace = pacingByBook.get(book.id);
-    if (receipts?.pacingHit && pace) parts.push(`${pace}-paced`);
-    const agg = ratingByBook.get(book.id);
-    if (agg && agg.count >= 2 && agg.avg >= 4) parts.push(`${agg.avg.toFixed(1)}★`);
-    if (parts.length === 0) {
-      const matchedMoods = filters.boostKeywords?.filter((kw) =>
-        book.genreIds.some((gid) => {
+      if (pace) parts.push(`${pace}-paced`);
+    } else {
+      // Natural-language fallback (2026-07-16): most catalog books have no
+      // reviews yet, but pacing + genre are known for nearly all of them —
+      // phrase what we DO know instead of "Matches: dark".
+      let matchedGenre: string | undefined;
+      outer: for (const kw of filters.boostKeywords ?? []) {
+        for (const gid of book.genreIds) {
           const genre = allGenres.find((g) => g.id === gid);
-          return genre && genre.name.toLowerCase().includes(kw);
-        })
-      ) ?? [];
-      if (matchedMoods.length > 0) parts.push(`Matches: ${matchedMoods.slice(0, 3).join(", ")}`);
+          if (genre && genre.name.toLowerCase().includes(kw)) {
+            matchedGenre = genre.name;
+            break outer;
+          }
+        }
+      }
+      const lead = pace === "fast" ? "A fast-paced"
+        : pace === "slow" ? "A slow-burn"
+        : pace === "medium" ? "A steady-paced"
+        : "A";
+      if (matchedGenre) {
+        // The genre name itself carries the mood connection — echoing the
+        // raw keyword stem ("dystop") read as a bug.
+        parts.push(`${lead} ${matchedGenre} pick`);
+      } else {
+        // Last tier: any genre beats an empty pill (books without pacing
+        // AND without a keyword-matched genre were showing nothing).
+        const firstGenre = book.genreIds
+          .map((gid) => allGenres.find((g) => g.id === gid)?.name)
+          .find(Boolean);
+        if (firstGenre) parts.push(`${lead} ${firstGenre} pick`);
+        else if (pace) parts.push(`${lead} match for your picks`);
+      }
     }
+    if (agg && agg.count >= 2 && agg.avg >= 4) parts.push(`${agg.avg.toFixed(1)}★`);
 
     results.push({
       id: book.id,

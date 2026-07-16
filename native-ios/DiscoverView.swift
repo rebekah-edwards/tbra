@@ -240,6 +240,12 @@ struct DiscoverView: View {
                     Button {
                         Task {
                             await model.find()
+                            // The results section is INSERTED by this same
+                            // update — give it a beat to lay out or the
+                            // anchor isn't measurable yet and the scroll
+                            // silently no-ops (same race as the content
+                            // banner link).
+                            try? await Task.sleep(for: .milliseconds(150))
                             withAnimation { proxy.scrollTo("results", anchor: .top) }
                         }
                     } label: {
@@ -373,33 +379,20 @@ struct DiscoverView: View {
             .aspectRatio(2 / 3, contentMode: .fit)
             .shadow(color: .black.opacity(0.25), radius: 5, y: 2)
 
-            Text(book.title)
-                .font(Theme.body(12, .semibold))
-                .foregroundStyle(Theme.foreground)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-
-            if !book.authors.isEmpty {
-                Text(book.authors.joined(separator: ", "))
-                    .font(Theme.body(10))
-                    .foregroundStyle(Theme.muted)
-                    .lineLimit(1)
-            }
-
+            // No title/author — the cover already carries them (user
+            // request 2026-07-16); the reason pill is the caption, in the
+            // branded purple.
             if let reason = model.reasons[book.id], !reason.isEmpty {
                 Text(reason)
                     .font(Theme.body(10, .medium))
-                    .foregroundStyle(Color(dark: "a3e635", light: "18181b"))
-                    .lineLimit(2)
+                    .foregroundStyle(Theme.foreground.opacity(0.85))
+                    .lineLimit(3)
                     .multilineTextAlignment(.leading)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 5)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        LinearGradient(colors: [Theme.accent.opacity(0.15), Theme.neonBlue.opacity(0.15)],
-                                       startPoint: .leading, endPoint: .trailing),
-                        in: RoundedRectangle(cornerRadius: 6))
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.accent.opacity(0.2), lineWidth: 1))
+                    .background(Theme.neonPurple.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.neonPurple.opacity(0.3), lineWidth: 1))
             }
         }
         .padding(10)
