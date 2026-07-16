@@ -142,8 +142,8 @@ export default async function UpgradePage() {
   const isStaff = !["reader", "premium"].includes(user.accountType);
 
   return (
-    {/* overflow-x-clip: the aurora bleeds 32px past both edges (-inset-x-8)
-        and was widening the page into a horizontal scroll on phones. */}
+    // overflow-x-clip: the aurora bleeds 32px past both edges (-inset-x-8)
+    // and was widening the page into a horizontal scroll on phones.
     <div className="relative overflow-x-clip lg:w-[60%] lg:mx-auto">
       {/* Aurora backdrop — breathes slowly, purple-led (the premium color) */}
       <div className="upgrade-aurora pointer-events-none absolute -inset-x-8 -top-16 h-[560px]" aria-hidden />
