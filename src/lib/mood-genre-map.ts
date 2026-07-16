@@ -189,3 +189,52 @@ export function getMoodFilters(moodKeys: string[]) {
       : null,
   };
 }
+
+// ─── Discover scoring v2 signals (2026-07-15) ───
+// Beyond genre names: each mood maps to the review DESCRIPTOR TAGS readers
+// actually apply (review_descriptor_tags vocabulary), a preferred PACING,
+// and keywords matched against What's-Inside note text. All matching is
+// lowercase-substring, so "Twisty" and "twisty" both hit.
+
+export interface MoodSignals {
+  tags: string[];
+  pacing?: Array<"fast" | "medium" | "slow">;
+  noteTerms?: string[];
+}
+
+const MOOD_SIGNALS: Record<string, MoodSignals> = {
+  cozy:        { tags: ["heartwarming", "gentle", "charming", "comforting", "wholesome", "sweet", "feel-good"], pacing: ["slow", "medium"] },
+  dark:        { tags: ["grim", "brutal", "bleak", "haunting", "disturbing", "gritty", "devastating"], noteTerms: ["grim", "brutal", "violence", "bleak", "horror"] },
+  thrilling:   { tags: ["gripping", "suspenseful", "twisty", "tense", "action-packed", "page-turner", "unputdownable"], pacing: ["fast"] },
+  romantic:    { tags: ["swoony", "steamy", "tender", "slow-burn", "chemistry", "heartfelt"] },
+  funny:       { tags: ["hilarious", "witty", "laugh-out-loud", "quirky", "satirical", "irreverent"] },
+  emotional:   { tags: ["moving", "devastating", "heartbreaking", "poignant", "tear-jerker", "cathartic", "bittersweet"] },
+  adventurous: { tags: ["epic", "sweeping", "action-packed", "immersive", "quest"], pacing: ["fast", "medium"] },
+  mindblowing: { tags: ["twisty", "layered", "complex", "thought-provoking", "mind-bending", "clever", "original"] },
+  spooky:      { tags: ["creepy", "eerie", "atmospheric", "chilling", "haunting", "unsettling"], noteTerms: ["supernatural", "ghost", "haunt", "demonic", "occult"] },
+  inspiring:   { tags: ["uplifting", "hopeful", "empowering", "life-changing", "motivating"] },
+  informative: { tags: ["insightful", "well-researched", "eye-opening", "accessible", "thorough"], pacing: ["medium", "slow"] },
+  fantastical: { tags: ["immersive", "epic", "magical", "imaginative", "worldbuilding", "enchanting"] },
+  historical:  { tags: ["evocative", "richly detailed", "atmospheric", "well-researched", "transporting"] },
+  sciencey:    { tags: ["futuristic", "extraterrestrial", "thought-provoking", "speculative", "hard sci-fi"] },
+  dystopian:   { tags: ["dystopian", "bleak", "gripping", "unsettling", "rebellious", "speculative"], noteTerms: ["totalitarian", "oppress", "surveillance", "collapse", "apocalyp"] },
+};
+
+/** Merged signals for the selected moods (dedup'd, lowercased). */
+export function getMoodSignals(moodKeys: string[]): MoodSignals {
+  const tags = new Set<string>();
+  const pacing = new Set<"fast" | "medium" | "slow">();
+  const noteTerms = new Set<string>();
+  for (const key of moodKeys) {
+    const s = MOOD_SIGNALS[key];
+    if (!s) continue;
+    s.tags.forEach((t) => tags.add(t.toLowerCase()));
+    s.pacing?.forEach((p) => pacing.add(p));
+    s.noteTerms?.forEach((n) => noteTerms.add(n.toLowerCase()));
+  }
+  return {
+    tags: [...tags],
+    pacing: pacing.size > 0 ? [...pacing] : undefined,
+    noteTerms: noteTerms.size > 0 ? [...noteTerms] : undefined,
+  };
+}

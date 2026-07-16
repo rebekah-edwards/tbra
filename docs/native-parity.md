@@ -604,3 +604,13 @@ explicit user sign-off.
 
 - **2026-07-15 — About/Details moved directly below the summary** (web position),
   ahead of Admin Edit; removed from the pre-footer slot. Sim-verified.
+
+- **2026-07-15 — Discover scoring v2 (server-side, both apps).** The engine now
+  reads the rich data: review DESCRIPTOR TAGS per mood (+3/application, cap +18;
+  MOOD_SIGNALS map in mood-genre-map.ts), pacing fit (+6/-4), What's-Inside note
+  keywords for dark/spooky/dystopian (+4/term, cap +8), and an aggregate-rating
+  quality prior (count-weighted, centered 3.4★). Jitter cut ±15→±5 (was drowning
+  real signals). Reasons now carry RECEIPTS: "Reviewers call it “gripping” &
+  “suspenseful” · fast-paced · 4.5★", genre-keyword fallback otherwise. Verified
+  locally (thrilling+dystopian: tagged books outrank pure genre matches). No app
+  rebuild needed — native shows API reason strings.

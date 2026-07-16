@@ -42,6 +42,7 @@ export async function POST(req: Request) {
   else if (fictionFilter === "both") fictionBias = null;
 
   const filters: DiscoverFilters = {
+    moodKeys: moods,
     boostKeywords: moodFilters?.boostKeywords ?? [],
     penaltyKeywords: moodFilters?.penaltyKeywords ?? [],
     contentMaxima: moodFilters?.contentMaxima ?? {},

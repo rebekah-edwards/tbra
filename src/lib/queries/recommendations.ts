@@ -18,7 +18,10 @@ import {
   userContentPreferences,
   userHiddenBooks,
   taxonomyCategories,
+  userBookReviews,
+  reviewDescriptorTags,
 } from "@/db/schema";
+import { getMoodSignals } from "@/lib/mood-genre-map";
 import { eq, sql, and, isNotNull, inArray } from "drizzle-orm";
 import { isEnglishTitle, looksLikeMidSeriesTitle } from "@/lib/queries/books";
 import { batchFetchBookAuthors } from "@/lib/queries/batch-helpers";
@@ -1371,6 +1374,8 @@ export const getSmartDiscoveryBooks = (
  * preference profile for scoring.
  */
 export interface DiscoverFilters {
+  /** Selected mood keys — drives descriptor-tag/pacing/note scoring (v2). */
+  moodKeys?: string[];
   /** Mood-derived genre keyword boosts (matched against genre names) */
   boostKeywords?: string[];
   /** Mood-derived genre keyword penalties */
@@ -1567,6 +1572,52 @@ export async function getDiscoverRecommendations(
   const totalMoodKeywords = (filters.boostKeywords?.length ?? 0);
   const multipleMoodsSelected = totalMoodKeywords > 5; // >5 keywords ≈ 2+ moods selected
 
+  // ── Scoring v2 signal fetch (2026-07-15) ──
+  // Descriptor tags from reviews, pacing, avg rating, and What's-Inside note
+  // text for the FILTERED candidates — the rich data the old scorer ignored.
+  const signals = getMoodSignals(filters.moodKeys ?? []);
+  const candIds = filteredCandidates.map((c) => c.id);
+  const tagsByBook = new Map<string, Map<string, number>>();
+  const pacingByBook = new Map<string, string>();
+  const ratingByBook = new Map<string, { avg: number; count: number }>();
+  const notesByBook = new Map<string, string>();
+  for (let i = 0; i < candIds.length; i += 500) {
+    const chunk = candIds.slice(i, i + 500);
+    const [tagRows, paceRows, ratingRows] = await Promise.all([
+      db.select({ bookId: userBookReviews.bookId, tag: reviewDescriptorTags.tag })
+        .from(reviewDescriptorTags)
+        .innerJoin(userBookReviews, eq(userBookReviews.id, reviewDescriptorTags.reviewId))
+        .where(inArray(userBookReviews.bookId, chunk)),
+      db.select({ id: books.id, pacing: books.pacing })
+        .from(books).where(and(inArray(books.id, chunk), isNotNull(books.pacing))),
+      db.select({
+        bookId: userBookRatings.bookId,
+        avg: sql<number>`AVG(${userBookRatings.rating})`,
+        count: sql<number>`COUNT(*)`,
+      }).from(userBookRatings).where(inArray(userBookRatings.bookId, chunk))
+        .groupBy(userBookRatings.bookId),
+    ]);
+    for (const r of tagRows) {
+      const tag = r.tag?.toLowerCase() ?? "";
+      if (!tag || tag.startsWith("pacing:") || tag.startsWith("custom:")) continue;
+      const m = tagsByBook.get(r.bookId) ?? new Map<string, number>();
+      m.set(tag, (m.get(tag) ?? 0) + 1);
+      tagsByBook.set(r.bookId, m);
+    }
+    for (const r of paceRows) if (r.pacing) pacingByBook.set(r.id, r.pacing);
+    for (const r of ratingRows) if (r.count > 0) ratingByBook.set(r.bookId, { avg: r.avg, count: r.count });
+    if (signals.noteTerms?.length) {
+      const noteRows = await db.select({
+        bookId: bookCategoryRatings.bookId,
+        notes: sql<string>`GROUP_CONCAT(COALESCE(${bookCategoryRatings.notes}, ''), ' ')`,
+      }).from(bookCategoryRatings).where(inArray(bookCategoryRatings.bookId, chunk))
+        .groupBy(bookCategoryRatings.bookId);
+      for (const r of noteRows) if (r.notes?.trim()) notesByBook.set(r.bookId, r.notes.toLowerCase());
+    }
+  }
+  /** Per-book receipts collected during scoring, keyed by book id. */
+  const receiptsByBook = new Map<string, { tags: string[]; pacingHit: boolean }>();
+
   // Score with mood-aware adjustments
   const scored = filteredCandidates.map((c) => {
     // Base score from user preference profile (0-100 range)
@@ -1646,8 +1697,66 @@ export async function getDiscoverRecommendations(
       score += Math.max(...adjustments);
     }
 
-    // Jitter for variety: ±15 so refreshes feel genuinely different (was ±5)
-    score += Math.random() * 30 - 15;
+    // ── Scoring v2 (2026-07-15): the rich-data signals ──
+    const receipts = { tags: [] as string[], pacingHit: false };
+
+    // Descriptor tags: readers hand-labeled the FEEL of the book. +3 per
+    // matching tag-application (a tag counted twice = two reviewers agree),
+    // capped at +18.
+    const bookTags = tagsByBook.get(c.id);
+    if (bookTags && signals.tags.length > 0) {
+      let tagBoost = 0;
+      const matched: Array<[string, number]> = [];
+      for (const [tag, count] of bookTags) {
+        if (signals.tags.some((s) => tag.includes(s) || s.includes(tag))) {
+          tagBoost += Math.min(count, 3) * 3;
+          matched.push([tag, count]);
+        }
+      }
+      if (tagBoost > 0) {
+        score += Math.min(tagBoost, 18);
+        matched.sort((a, b) => b[1] - a[1]);
+        receipts.tags = matched.slice(0, 2).map(([t]) => t);
+      }
+    }
+
+    // Pacing fit: Thrilling wants fast, Cozy tolerates slow.
+    const pace = pacingByBook.get(c.id);
+    if (pace && signals.pacing) {
+      if (signals.pacing.includes(pace as "fast" | "medium" | "slow")) {
+        score += 6;
+        receipts.pacingHit = true;
+      } else if (
+        (signals.pacing.includes("fast") && pace === "slow") ||
+        (signals.pacing.includes("slow") && pace === "fast")
+      ) {
+        score -= 4;
+      }
+    }
+
+    // What's-Inside note text: Dark/Spooky/Dystopian terms in the notes.
+    if (signals.noteTerms?.length) {
+      const notes = notesByBook.get(c.id);
+      if (notes) {
+        let hits = 0;
+        for (const term of signals.noteTerms) if (notes.includes(term)) hits++;
+        score += Math.min(hits * 4, 8);
+      }
+    }
+
+    // Quality prior: a well-rated book should beat an unrated one at equal
+    // fit. Confidence scales with rating count (caps at 5 ratings);
+    // centered on 3.4★ so mediocre books aren't boosted.
+    const agg = ratingByBook.get(c.id);
+    if (agg) {
+      score += Math.min(agg.count, 5) * (agg.avg - 3.4) * 2.2;
+    }
+
+    receiptsByBook.set(c.id, receipts);
+
+    // Jitter breaks ties — it must never overturn genuinely better matches
+    // (was ±15, which drowned the real signals; now ±5).
+    score += Math.random() * 10 - 5;
 
     return { ...c, score };
   });
@@ -1664,13 +1773,29 @@ export async function getDiscoverRecommendations(
   const results: RecommendedBook[] = [];
   for (const book of diversified) {
     const authorNames = diversifiedAuthorMap.get(book.id) ?? [];
-    // Generate a reason based on what matched
-    const matchedMoods = filters.boostKeywords?.filter((kw) =>
-      book.genreIds.some((gid) => {
-        const genre = allGenres.find((g) => g.id === gid);
-        return genre && genre.name.toLowerCase().includes(kw);
-      })
-    ) ?? [];
+
+    // ── Reason WITH receipts (2026-07-15): show why it's here, using what
+    // actually scored — reviewer tags, pacing, rating — and fall back to
+    // genre-keyword matches only when nothing richer fired.
+    const parts: string[] = [];
+    const receipts = receiptsByBook.get(book.id);
+    if (receipts && receipts.tags.length > 0) {
+      const quoted = receipts.tags.map((t) => `“${t}”`).join(" & ");
+      parts.push(`Reviewers call it ${quoted}`);
+    }
+    const pace = pacingByBook.get(book.id);
+    if (receipts?.pacingHit && pace) parts.push(`${pace}-paced`);
+    const agg = ratingByBook.get(book.id);
+    if (agg && agg.count >= 2 && agg.avg >= 4) parts.push(`${agg.avg.toFixed(1)}★`);
+    if (parts.length === 0) {
+      const matchedMoods = filters.boostKeywords?.filter((kw) =>
+        book.genreIds.some((gid) => {
+          const genre = allGenres.find((g) => g.id === gid);
+          return genre && genre.name.toLowerCase().includes(kw);
+        })
+      ) ?? [];
+      if (matchedMoods.length > 0) parts.push(`Matches: ${matchedMoods.slice(0, 3).join(", ")}`);
+    }
 
     results.push({
       id: book.id,
@@ -1679,9 +1804,7 @@ export async function getDiscoverRecommendations(
       coverImageUrl: book.coverImageUrl,
       authors: authorNames,
       score: book.score,
-      reason: matchedMoods.length > 0
-        ? `Matches: ${matchedMoods.slice(0, 3).join(", ")}`
-        : undefined,
+      reason: parts.length > 0 ? parts.join(" · ") : undefined,
       contentWarnings: computeContentWarnings(contentRatingsByBook.get(book.id), mergedContentTolerances, categoryNames),
     });
   }
