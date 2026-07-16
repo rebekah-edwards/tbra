@@ -42,9 +42,9 @@ const PAGES = [
   {
     key: "welcome",
     art: (
-      // Wider spacing on this page per user review — logo stays put, the
-      // definition card and headline breathe.
-      <div className="flex flex-col items-center gap-8">
+      // Equal 36px gaps: logo→definition here (gap-9), definition→headline
+      // via the tallArt wrapper margin below.
+      <div className="flex flex-col items-center gap-9">
         <span className="logo-gradient font-logo text-4xl tracking-tight">tbr*a</span>
         <div className="w-full max-w-sm rounded-2xl border border-border bg-surface/75 p-4 text-left">
           <div className="flex items-baseline gap-2">
@@ -155,7 +155,7 @@ export function WelcomeCarousel() {
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
-        <div className={`w-full max-w-md content-center ${"tallArt" in p && p.tallArt ? "mb-12 min-h-[270px]" : "mb-8 min-h-[190px]"}`}>{p.art}</div>
+        <div className={`w-full max-w-md content-center ${"tallArt" in p && p.tallArt ? "mb-9" : "mb-8 min-h-[190px]"}`}>{p.art}</div>
         <h1 className="font-heading text-[26px] font-bold leading-tight text-foreground">
           {p.headline}
         </h1>
