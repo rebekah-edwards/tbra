@@ -410,7 +410,7 @@ struct OnboardingView: View {
                     welcomePage.tag(0)
                     contentPage.tag(1)
                     trackPage.tag(2)
-                    discoverPage.tag(3)
+                    premiumPage.tag(3)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .animation(.easeInOut(duration: 0.25), value: page)
@@ -456,18 +456,39 @@ struct OnboardingView: View {
         OnboardPage(
             art: {
                 AnyView(
-                    VStack(spacing: 10) {
+                    VStack(spacing: 14) {
                         Text("tbr*a")
-                            .font(Theme.logo(56))
+                            .font(Theme.logo(40))
                             .foregroundStyle(Theme.logoGradient)
-                        Text("The Based Reader App")
-                            .font(Theme.body(15, .medium))
-                            .foregroundStyle(Theme.muted)
+                        // Dictionary-entry card defining the brand.
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                Text("based")
+                                    .font(Theme.heading(24, .bold))
+                                    .foregroundStyle(Theme.foreground)
+                                Text("/beɪst/")
+                                    .font(Theme.body(14))
+                                    .foregroundStyle(Theme.muted)
+                                Text("adj.")
+                                    .font(Theme.body(14).italic())
+                                    .foregroundStyle(Theme.muted)
+                            }
+                            Rectangle().fill(Theme.border).frame(height: 1)
+                            Text("being authentically yourself, unapologetic, and confident in your beliefs, regardless of what others think")
+                                .font(Theme.body(14).italic())
+                                .foregroundStyle(Theme.foreground.opacity(0.85))
+                                .lineSpacing(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(16)
+                        .background(Theme.surface.opacity(0.75))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
                     }
                 )
             },
             headline: "Know what's in a book\nbefore you read it",
-            copy: "Track your reading, get honest content information, and find books that actually fit you — all in one place."
+            copy: "Decide exactly what you do (and don't) want to read. Track your reading, manage your owned library, and see reviews from other based readers — all in one place."
         )
     }
 
@@ -477,19 +498,24 @@ struct OnboardingView: View {
                 AnyView(
                     VStack(spacing: 12) {
                         Image(systemName: "shield.lefthalf.filled")
-                            .font(.system(size: 64, weight: .medium))
+                            .font(.system(size: 56, weight: .medium))
                             .foregroundStyle(Theme.accent)
                         // Mini content-rating chips, echoing the What's Inside section
                         HStack(spacing: 8) {
-                            OnboardChip(label: "Violence · Mild", tint: Theme.accent)
+                            OnboardChip(label: "Violence · Mild", tint: Theme.accent, textTint: Theme.accentText)
                             OnboardChip(label: "Language · None", tint: Theme.neonBlue)
                         }
-                        OnboardChip(label: "Romance / Sex · Moderate", tint: Color(red: 0.75, green: 0.55, blue: 0.95))
+                        OnboardChip(label: "Sexual Content · Moderate", tint: Theme.neonPurple)
+                        // Genre fine-tuning: what you DO want, not just what to avoid
+                        HStack(spacing: 8) {
+                            OnboardChip(label: "Fantasy", systemImage: "heart.fill", tint: Theme.accent, textTint: Theme.accentText)
+                            OnboardChip(label: "Horror", systemImage: "hand.thumbsdown.fill", tint: Theme.neonBlue)
+                        }
                     }
                 )
             },
             headline: "See What's Inside",
-            copy: "Every book gets detailed content ratings — violence, language, romance, and more. Set your comfort zone once and we'll flag anything that crosses it."
+            copy: "Every book gets detailed content ratings — violence, language, sexual content, and more. Set your comfort zone once and we'll flag anything that crosses it. Then fine-tune what you DO want: heart the genres you love and dismiss the ones you don't."
         )
     }
 
@@ -502,36 +528,39 @@ struct OnboardingView: View {
                             .font(.system(size: 64, weight: .medium))
                             .foregroundStyle(Theme.neonBlue)
                         HStack(spacing: 8) {
-                            OnboardChip(label: "Reading Now", tint: Theme.accent)
+                            OnboardChip(label: "Reading Now", tint: Theme.accent, textTint: Theme.accentText)
                             OnboardChip(label: "TBR", tint: Theme.neonBlue)
-                            OnboardChip(label: "Finished ✓", tint: Color(red: 0.75, green: 0.55, blue: 0.95))
+                            OnboardChip(label: "Finished ✓", tint: Theme.neonPurple)
                         }
                     }
                 )
             },
-            headline: "Your Library, Your Story",
-            copy: "Log what you're reading in any format — print, ebook, or audio. Reading goals, streaks, stats, and re-reads all tracked automatically."
+            headline: "Know Your Library",
+            copy: "Log what you're reading in any format — hardcover, paperback, eBook, or audio. Your reading goals, streaks, stats, re-reads, and owned library are all tracked automatically."
         )
     }
 
-    private var discoverPage: some View {
+    private var premiumPage: some View {
         OnboardPage(
             art: {
                 AnyView(
                     VStack(spacing: 12) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 64, weight: .medium))
-                            .foregroundStyle(Color(red: 0.75, green: 0.55, blue: 0.95))
+                        Image(systemName: "star.circle.fill")
+                            .font(.system(size: 56, weight: .medium))
+                            .foregroundStyle(Theme.neonPurple)
                         HStack(spacing: 8) {
-                            OnboardChip(label: "🕯️ Cozy", tint: Theme.accent)
-                            OnboardChip(label: "⚡ Thrilling", tint: Theme.neonBlue)
-                            OnboardChip(label: "🐉 Fantastical", tint: Color(red: 0.75, green: 0.55, blue: 0.95))
+                            OnboardChip(label: "Custom Shelves", systemImage: "books.vertical", tint: Theme.neonPurple)
+                            OnboardChip(label: "Notes to Self", systemImage: "note.text", tint: Theme.neonBlue)
+                        }
+                        HStack(spacing: 8) {
+                            OnboardChip(label: "Buddy Reads", systemImage: "person.2.fill", tint: Theme.accent, textTint: Theme.accentText)
+                            OnboardChip(label: "Discover", systemImage: "sparkles", tint: Theme.neonPurple)
                         }
                     }
                 )
             },
-            headline: "Find Your Next Read",
-            copy: "Tell Discover your mood and we'll match books to your taste — plus custom shelves, buddy reads, and friends' reviews when you want them."
+            headline: "Make It Yours",
+            copy: "Organize books any way you like with custom shelves, keep private notes on your TBR, and read together with buddy reads. Then let Discover match books to your exact taste — so every recommendation actually fits."
         )
     }
 }
@@ -569,19 +598,29 @@ private struct OnboardPage: View {
 }
 
 /// Translucent brand chip used in onboarding art (never a solid fill —
-/// pill/badge styles are translucent per BRANDING.md).
+/// pill/badge styles are translucent per BRANDING.md). Accent-tinted chips
+/// MUST pass textTint: Theme.accentText — lime text on a light background is
+/// unreadable, so light mode flips it to near-black (same as the web's
+/// global text-accent override).
 private struct OnboardChip: View {
     let label: String
+    var systemImage: String? = nil
     let tint: Color
+    var textTint: Color? = nil
 
     var body: some View {
-        Text(label)
-            .font(Theme.body(13, .semibold))
-            .foregroundStyle(tint)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(tint.opacity(0.14))
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(tint.opacity(0.35), lineWidth: 1))
+        HStack(spacing: 5) {
+            if let systemImage {
+                Image(systemName: systemImage).font(.system(size: 11, weight: .semibold))
+            }
+            Text(label)
+        }
+        .font(Theme.body(13, .semibold))
+        .foregroundStyle(textTint ?? tint)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(tint.opacity(0.14))
+        .clipShape(Capsule())
+        .overlay(Capsule().stroke(tint.opacity(0.35), lineWidth: 1))
     }
 }
