@@ -158,6 +158,11 @@ struct HamburgerMenuSheet: View {
         return nil
     }
 
+    /// Same tier set as the premium feature gates (staff preview included).
+    private var isPremiumUser: Bool {
+        ["premium", "beta_tester", "admin", "super_admin"].contains(user?.accountType ?? "")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // User card
@@ -184,7 +189,11 @@ struct HamburgerMenuSheet: View {
             Button {
                 basedReaderOpen = true
             } label: {
-                menuRow(icon: "star.circle.fill", label: "Based Reader", tint: Theme.neonPurple)
+                // Plan-aware label (web hamburger mirrors this): free accounts
+                // get an explicit upsell, members see their tier name.
+                menuRow(icon: "star.circle.fill",
+                        label: isPremiumUser ? "Based Reader Premium" : "Upgrade to Premium",
+                        tint: Theme.neonPurple)
             }
 
             Button {
