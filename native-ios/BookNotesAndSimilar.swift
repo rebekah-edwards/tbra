@@ -173,7 +173,7 @@ struct SimilarBooksSection: View {
                                     // Web card = cover + italic reason ONLY
                                     // (no title/author — user request 2026-07-15).
                                     VStack(alignment: .leading, spacing: 5) {
-                                        CoverThumb(url: book.coverImageUrl, width: 120, height: 180, radius: 8)
+                                        CoverThumb(url: book.coverImageUrl, width: 120, height: 180, radius: 8, title: book.title)
                                         if let reason = reasons[book.id], !reason.isEmpty {
                                             Text(reason)
                                                 .font(Theme.body(10).italic())
@@ -266,7 +266,7 @@ struct BookSeriesRail: View {
                                     let isCurrent = book.id == currentBookId
                                     NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
                                         VStack(alignment: .leading, spacing: 5) {
-                                            CoverThumb(url: book.coverImageUrl, width: 120, height: 180, radius: 8)
+                                            CoverThumb(url: book.coverImageUrl, width: 120, height: 180, radius: 8, title: book.title)
                                                 .overlay {
                                                     if isCurrent {
                                                         RoundedRectangle(cornerRadius: 8)

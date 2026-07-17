@@ -385,7 +385,7 @@ struct ProfileView: View {
             CoverThumb(url: review.coverImageUrl,
                        width: geo.size.width,
                        height: geo.size.width * 1.5,
-                       radius: 10)
+                       radius: 10, title: review.title)
                 .overlay(alignment: .bottomTrailing) {
                     // Avatar rides INSIDE the pill, Top Shelf style (user
                     // request 2026-07-12) — attached to the rating bubble,
@@ -564,7 +564,7 @@ struct FavoriteShelfCover: View {
     let avatarUrl: String?
 
     var body: some View {
-        CoverThumb(url: fav.coverImageUrl, width: 72, height: 108, radius: 3)
+        CoverThumb(url: fav.coverImageUrl, width: 72, height: 108, radius: 3, title: fav.title)
             .overlay(alignment: .leading) {
                 LinearGradient(colors: [.black.opacity(0.20), .clear],
                                startPoint: .leading, endPoint: .trailing)
@@ -902,7 +902,7 @@ struct AllReviewsView: View {
                             bookTitle: review.title,
                             scrollToReviewId: review.reviewId)) {
                             HStack(alignment: .top, spacing: 12) {
-                                CoverThumb(url: review.coverImageUrl, width: 44, height: 66, radius: 5)
+                                CoverThumb(url: review.coverImageUrl, width: 44, height: 66, radius: 5, title: review.title)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(review.title)
                                         .font(Theme.body(15, .semibold))

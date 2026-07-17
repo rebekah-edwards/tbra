@@ -818,7 +818,7 @@ struct TopShelfView: View {
                 CoverThumb(url: fav.coverImageUrl,
                            width: geo.size.width,
                            height: geo.size.width * 1.5,
-                           radius: 8)
+                           radius: 8, title: fav.title)
                     .overlay(alignment: .bottomTrailing) {
                         if let rating = fav.userRating, rating > 0 {
                             HStack(spacing: 3) {

@@ -364,7 +364,7 @@ struct DiscoverView: View {
                 CoverThumb(url: book.coverImageUrl,
                            width: geo.size.width,
                            height: geo.size.width * 1.5,
-                           radius: 8)
+                           radius: 8, title: book.title)
                     .overlay(alignment: .topLeading) {
                         if book.hasContentConflict {
                             Text("!")

@@ -252,7 +252,7 @@ struct PublicProfileView: View {
             ForEach(model.reviews) { review in
                 NavigationLink(value: BookRoute(idOrSlug: review.bookSlug ?? review.bookId)) {
                     HStack(alignment: .top, spacing: 12) {
-                        CoverThumb(url: review.coverImageUrl, width: 44, height: 66, radius: 5)
+                        CoverThumb(url: review.coverImageUrl, width: 44, height: 66, radius: 5, title: review.title)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(review.title)
                                 .font(Theme.body(15, .semibold))

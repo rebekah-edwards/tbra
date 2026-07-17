@@ -165,7 +165,7 @@ struct BuddyReadsView: View {
                     ForEach(model.buddyReads) { br in
                         NavigationLink(value: BuddyReadRoute(slug: br.slug)) {
                             HStack(spacing: 12) {
-                                CoverThumb(url: br.book.coverImageUrl, width: 52, height: 78, radius: 6)
+                                CoverThumb(url: br.book.coverImageUrl, width: 52, height: 78, radius: 6, title: br.book.title)
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(br.name)
                                         .font(Theme.body(16, .semibold))
@@ -275,7 +275,7 @@ struct BuddyReadDetailView: View {
                     // Book header
                     NavigationLink(value: BookRoute(idOrSlug: detail.book.slug ?? detail.book.id)) {
                         HStack(spacing: 12) {
-                            CoverThumb(url: detail.book.coverImageUrl, width: 60, height: 90, radius: 7)
+                            CoverThumb(url: detail.book.coverImageUrl, width: 60, height: 90, radius: 7, title: detail.book.title)
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(detail.book.title)
                                     .font(Theme.body(16, .semibold))

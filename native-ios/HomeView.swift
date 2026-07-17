@@ -422,7 +422,7 @@ private struct ReadingNowCard: View {
                     CoverThumb(url: book.coverImageUrl,
                                width: book.usesAudiobookCover == true ? 80 : 60,
                                height: book.usesAudiobookCover == true ? 80 : 90,
-                               radius: 8)
+                               radius: 8, title: book.title)
                         .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
                         .overlay(alignment: .bottom) {
                             if let progress = book.progress, progress > 0 {
@@ -896,7 +896,7 @@ private struct UpNextCard: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            CoverThumb(url: item.coverImageUrl, width: 52, height: 78, radius: 8)
+            CoverThumb(url: item.coverImageUrl, width: 52, height: 78, radius: 8, title: item.title)
                 .overlay(alignment: .topLeading) {
                     Text("\(number)")
                         .font(Theme.body(12, .bold))

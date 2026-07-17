@@ -162,7 +162,7 @@ struct AuthorView: View {
                                 ForEach(group.books) { book in
                                     NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
                                         VStack(alignment: .leading, spacing: 5) {
-                                            CoverThumb(url: book.coverImageUrl, width: 100, height: 150, radius: 8)
+                                            CoverThumb(url: book.coverImageUrl, width: 100, height: 150, radius: 8, title: book.title)
                                             Text(book.title)
                                                 .font(Theme.body(12, .medium))
                                                 .foregroundStyle(Theme.foreground.opacity(0.9))

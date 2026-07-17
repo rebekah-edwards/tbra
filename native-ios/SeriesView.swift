@@ -387,7 +387,7 @@ struct SeriesView: View {
         VStack(alignment: .leading, spacing: 0) {
             NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
                 HStack(alignment: .top, spacing: 14) {
-                    CoverThumb(url: book.coverImageUrl, width: 74, height: 111, radius: 8)
+                    CoverThumb(url: book.coverImageUrl, width: 74, height: 111, radius: 8, title: book.title)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(book.title)
                             .font(Theme.body(18, .bold))

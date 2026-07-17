@@ -210,7 +210,7 @@ private struct SearchResultCard: View {
         VStack(alignment: .leading, spacing: 0) {
             NavigationLink(value: BookRoute(idOrSlug: result.slug ?? result.id)) {
                 HStack(alignment: .top, spacing: 14) {
-                    CoverThumb(url: result.coverImageUrl, width: 74, height: 111, radius: 8)
+                    CoverThumb(url: result.coverImageUrl, width: 74, height: 111, radius: 8, title: result.title)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(result.title)
                             .font(Theme.body(18, .bold))
@@ -380,7 +380,7 @@ private struct ExternalResultCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 14) {
-                CoverThumb(url: result.coverUrl, width: 74, height: 111, radius: 8)
+                CoverThumb(url: result.coverUrl, width: 74, height: 111, radius: 8, title: result.title)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(result.title)
                         .font(Theme.body(18, .bold))
@@ -580,7 +580,7 @@ struct FloatingSearchOverlay: View {
             close()
         } label: {
             HStack(spacing: 12) {
-                CoverThumb(url: book.coverImageUrl, width: 40, height: 60, radius: 5)
+                CoverThumb(url: book.coverImageUrl, width: 40, height: 60, radius: 5, title: book.title)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(book.title)
                         .font(Theme.body(14, .medium))

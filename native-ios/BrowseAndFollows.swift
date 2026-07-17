@@ -262,7 +262,7 @@ struct BrowseView: View {
                         // Web card: COVER ONLY, rating badge bottom-right
                         // (black/60, white text) — no title/author, no green.
                         NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
-                            CoverThumb(url: book.coverImageUrl, width: 104, height: 156, radius: 8)
+                            CoverThumb(url: book.coverImageUrl, width: 104, height: 156, radius: 8, title: book.title)
                                 .overlay(alignment: .bottomTrailing) {
                                     if let rating = book.aggregateRating, rating > 0 {
                                         Text("\(String(format: "%.1f", rating)) ★")

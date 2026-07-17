@@ -207,22 +207,81 @@ extension View {
 
 // ── Shared row building blocks ──
 
-/// Book cover thumbnail with the app's placeholder treatment.
+/// Web `NoCover` parity: blue→purple gradient, faint crosshatch, centered
+/// title + "NO COVER" label (src/components/no-cover.tsx + globals.css).
+struct NoCoverView: View {
+    let title: String
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                LinearGradient(stops: [
+                    .init(color: Color(red: 0x3b/255, green: 0x59/255, blue: 0x98/255), location: 0),
+                    .init(color: Color(red: 0x6b/255, green: 0x3f/255, blue: 0xa0/255), location: 0.4),
+                    .init(color: Color(red: 0x8b/255, green: 0x5c/255, blue: 0xf6/255), location: 0.7),
+                    .init(color: Color(red: 0x4c/255, green: 0x6e/255, blue: 0xf5/255), location: 1),
+                ], startPoint: .topLeading, endPoint: .bottomTrailing)
+                Canvas { ctx, size in
+                    var path = Path()
+                    let step: CGFloat = 16
+                    var x = -size.height
+                    while x < size.width {
+                        path.move(to: CGPoint(x: x, y: 0))
+                        path.addLine(to: CGPoint(x: x + size.height, y: size.height))
+                        path.move(to: CGPoint(x: x + size.height, y: 0))
+                        path.addLine(to: CGPoint(x: x, y: size.height))
+                        x += step
+                    }
+                    ctx.stroke(path, with: .color(.white.opacity(0.07)), lineWidth: 1)
+                }
+                VStack(spacing: max(2, geo.size.height * 0.02)) {
+                    Text(title)
+                        .font(Theme.body(max(8, geo.size.width * 0.11), .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .multilineTextAlignment(.center)
+                        .lineLimit(4)
+                        .minimumScaleFactor(0.6)
+                    Text("NO COVER")
+                        .font(Theme.body(max(5, geo.size.width * 0.055), .medium))
+                        .tracking(1.5)
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+                .padding(.horizontal, geo.size.width * 0.1)
+            }
+        }
+    }
+}
+
+/// Book cover thumbnail with the app's placeholder treatment. Pass `title`
+/// to get the web-parity NoCover art when the book has no cover; without it
+/// (or while an image loads) the neutral book-glyph placeholder shows.
 struct CoverThumb: View {
     let url: String?
     var width: CGFloat = 44
     var height: CGFloat = 66
     var radius: CGFloat = 5
+    var title: String? = nil
+
+    private var hasUrl: Bool { !(url ?? "").isEmpty }
 
     var body: some View {
-        AsyncImage(url: url.flatMap(URL.init(string:))) { image in
-            image.resizable().aspectRatio(contentMode: .fill)
-        } placeholder: {
-            ZStack {
-                Theme.surfaceAlt
-                Image(systemName: "book.closed")
-                    .font(.system(size: min(width, height) * 0.32))
-                    .foregroundStyle(Theme.muted.opacity(0.6))
+        Group {
+            if !hasUrl, let title {
+                NoCoverView(title: title)
+            } else {
+                AsyncImage(url: url.flatMap(URL.init(string:))) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    if let title, !hasUrl {
+                        NoCoverView(title: title)
+                    } else {
+                        ZStack {
+                            Theme.surfaceAlt
+                            Image(systemName: "book.closed")
+                                .font(.system(size: min(width, height) * 0.32))
+                                .foregroundStyle(Theme.muted.opacity(0.6))
+                        }
+                    }
+                }
             }
         }
         .frame(width: width, height: height)

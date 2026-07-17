@@ -11,7 +11,7 @@ struct BookCardMini: View {
     let book: LiteBook
 
     var body: some View {
-        CoverThumb(url: book.coverImageUrl, width: 130, height: 195, radius: 10)
+        CoverThumb(url: book.coverImageUrl, width: 130, height: 195, radius: 10, title: book.title)
             .overlay(alignment: .bottomTrailing) {
                 if let rating = book.aggregateRating, rating > 0 {
                     Text("\(String(format: "%.1f", rating)) ★")
@@ -103,7 +103,7 @@ struct TbrSuggestionCard: View {
                 VStack(spacing: 0) {
                     NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
                         HStack(spacing: 16) {
-                            CoverThumb(url: book.coverImageUrl, width: 70, height: 105, radius: 8)
+                            CoverThumb(url: book.coverImageUrl, width: 70, height: 105, radius: 8, title: book.title)
                                 .shadow(color: .black.opacity(0.3), radius: 5, y: 2)
                             VStack(alignment: .leading, spacing: 3) {
                                 // .tbr-reason-tag — lime in dark mode; branded
@@ -283,7 +283,7 @@ private struct FriendsActivityCard: View {
             }
 
             HStack(alignment: .bottom, spacing: 8) {
-                CoverThumb(url: item.book.coverImageUrl, width: 34, height: 50, radius: 4)
+                CoverThumb(url: item.book.coverImageUrl, width: 34, height: 50, radius: 4, title: item.book.title)
                     .shadow(color: .black.opacity(0.35), radius: 4, y: 2)
                 Text(item.book.title)
                     .font(Theme.body(12, .bold))

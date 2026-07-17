@@ -423,7 +423,7 @@ private struct BookOnShelfCell: View {
                 CoverThumb(url: book.coverImageUrl,
                            width: geo.size.width,
                            height: geo.size.width * 1.5,
-                           radius: 4)
+                           radius: 4, title: book.title)
                     .overlay(alignment: .leading) {
                         LinearGradient(colors: [.black.opacity(0.20), .clear],
                                        startPoint: .leading, endPoint: .trailing)
@@ -706,7 +706,7 @@ struct ShelfEditorView: View {
                     }
             }
 
-            CoverThumb(url: book.coverImageUrl, width: 44, height: 66, radius: 4)
+            CoverThumb(url: book.coverImageUrl, width: 44, height: 66, radius: 4, title: book.title)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(book.title)
@@ -906,7 +906,7 @@ private struct AddBooksSheet: View {
                                 toggle(book)
                             } label: {
                                 HStack(spacing: 10) {
-                                    CoverThumb(url: book.coverImageUrl, width: 32, height: 48, radius: 3)
+                                    CoverThumb(url: book.coverImageUrl, width: 32, height: 48, radius: 3, title: book.title)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(book.title)
                                             .font(Theme.body(14))

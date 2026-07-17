@@ -354,7 +354,7 @@ private struct BookHero: View {
             ? (book.audiobookCoverUrl ?? book.coverImageUrl)
             : (data.effectiveCoverUrl ?? book.coverImageUrl)
         return HStack(alignment: .center, spacing: 16) {   // web: items-center
-            CoverThumb(url: heroCover, width: 110, height: squareAudio ? 110 : 165, radius: 10)
+            CoverThumb(url: heroCover, width: 110, height: squareAudio ? 110 : 165, radius: 10, title: book.title)
                 .shadow(color: .black.opacity(0.5), radius: 12, y: 6)
                 // Admin-only cover pencil (web: -top-1.5 -right-1.5 circle).
                 // Opens the NATIVE cover picker (user request 2026-07-13 —

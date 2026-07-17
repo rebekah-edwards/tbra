@@ -919,7 +919,7 @@ struct SettingsView: View {
                         .font(Theme.body(13)).foregroundStyle(Theme.muted)
                     ForEach(model.hiddenBooks) { book in
                         HStack(spacing: 12) {
-                            CoverThumb(url: book.coverImageUrl, width: 36, height: 54, radius: 4)
+                            CoverThumb(url: book.coverImageUrl, width: 36, height: 54, radius: 4, title: book.title)
                             Text(book.title)
                                 .font(Theme.body(14, .medium))
                                 .foregroundStyle(Theme.foreground)

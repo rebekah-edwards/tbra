@@ -533,7 +533,7 @@ private struct LibraryBookCard: View {
                 CoverThumb(url: book.coverImageUrl,
                            width: geo.size.width,
                            height: isAudiobookActive ? geo.size.width : geo.size.width * 1.5,
-                           radius: 10)
+                           radius: 10, title: book.title)
                     .overlay(alignment: .topTrailing) {
                         if book.tbrNote?.isEmpty == false {
                             ZStack {
