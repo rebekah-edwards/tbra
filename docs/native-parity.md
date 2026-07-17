@@ -593,7 +593,7 @@ explicit user sign-off.
   Verified: "Heaven breaker" → Heavenbreaker. NATIVE book page: About/Details
   tabs (web spec: 500-char read-more, Details rows Release date/Pages/Audio
   length/Language/Publisher/ISBN/ASIN/Type/Series); What's Inside reordered to
-  web CATEGORY_ORDER (Romance & sex first) + SHORT_NAMES + AI/Verified badges +
+  web CATEGORY_ORDER (Sexual content first, shared via src/lib/content-category-order.ts) + SHORT_NAMES + AI/Verified badges +
   admin Verify All pill + per-category editor (intensity 0-4 + note ≤500 +
   Save & Verify) via NEW POST /api/v1/admin/books/[id]/content-verify (sim-
   verified end-to-end; BTF evidence levels restored after test). DISCOVER:
