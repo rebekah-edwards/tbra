@@ -189,7 +189,7 @@ struct AppShell: View {
         }
         // First-run guided tour (home): where imports + settings live. Runs
         // after the bar overlays in the chain so the dim covers them.
-        .guidedTour("home", steps: [
+        .guidedTour("home-r2", steps: [
             CoachStep(id: "tour-menu", title: "Start here",
                       text: "This menu is home base: Import Your Library brings your whole Goodreads or StoryGraph history over in about a minute, and Settings holds your privacy and content preferences."),
         ], ctaLabel: "Go to Settings", onCTA: { tourSettingsOpen = true })

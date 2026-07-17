@@ -320,7 +320,7 @@ struct SettingsView: View {
         }
         // First-visit guided tour: genres → comfort zone (each accordion
         // auto-opens for its step, closes on advance) → privacy.
-        .guidedTour("settings", steps: [
+        .guidedTour("settings-r2", steps: [
             CoachStep(id: "tour-genres", title: "Pick your genres",
                       text: "Tap a genre once to heart it, twice to hide it. Your picks shape what search and Discover recommend — more of what you love, none of what you don't."),
             CoachStep(id: "tour-comfort-zone", title: "Your Content Comfort Zone",

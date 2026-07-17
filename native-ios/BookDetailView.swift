@@ -186,7 +186,7 @@ struct BookDetailView: View {
         #endif
         // First-book guided tour: content details, then reporting. Waits for
         // ratings to exist so the What's Inside anchor is actually on screen.
-        .guidedTour("book", steps: [
+        .guidedTour("book-r2", steps: [
             CoachStep(id: "whats-inside", title: "What's Inside",
                       text: "Every book's content profile lives here — category-by-category ratings for violence, language, sexual content, and more, so you know exactly what you're picking up."),
             CoachStep(id: "tour-report", title: "See something off?",
