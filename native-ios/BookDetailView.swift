@@ -1932,7 +1932,7 @@ struct AdminEditSection: View {
         let key: String
         let label: String
         let kind: Kind
-        enum Kind { case text, number, multiline, boolean }
+        enum Kind { case text, number, multiline, boolean, pacing }
         var id: String { key }
     }
 
@@ -1942,6 +1942,9 @@ struct AdminEditSection: View {
         .init(key: "publicationDate", label: "Publication Date", kind: .text),
         .init(key: "pages", label: "Pages", kind: .number),
         .init(key: "audioLengthMinutes", label: "Audio Length (min)", kind: .number),
+        // Tap cycles none -> Slow -> Medium -> Fast -> none (saves each tap).
+        // Normally set by enrichment; editable for author-confirmed pacing.
+        .init(key: "pacing", label: "Pacing", kind: .pacing),
         .init(key: "publisher", label: "Publisher", kind: .text),
         .init(key: "language", label: "Language", kind: .text),
         .init(key: "isbn13", label: "ISBN-13", kind: .text),
@@ -1979,6 +1982,8 @@ struct AdminEditSection: View {
                         Button {
                             if def.kind == .boolean {
                                 toggleBool(def)
+                            } else if def.kind == .pacing {
+                                cyclePacing(def)
                             } else {
                                 editingField = def
                             }
@@ -1988,12 +1993,14 @@ struct AdminEditSection: View {
                                     .font(Theme.body(13, .medium))
                                     .foregroundStyle(Theme.muted)
                                     .frame(width: 130, alignment: .leading)
-                                Text(fields[def.key]?.display ?? "…")
+                                Text(def.kind == .pacing
+                                     ? Self.pacingLabel(fields[def.key]) : (fields[def.key]?.display ?? "…"))
                                     .font(Theme.body(13))
                                     .foregroundStyle(Theme.foreground.opacity(0.9))
                                     .lineLimit(def.kind == .multiline ? 2 : 1)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                Image(systemName: def.kind == .boolean ? "switch.2" : "pencil")
+                                Image(systemName: def.kind == .boolean ? "switch.2"
+                                      : def.kind == .pacing ? "arrow.triangle.2.circlepath" : "pencil")
                                     .font(.system(size: 11))
                                     .foregroundStyle(Theme.muted.opacity(0.6))
                             }
@@ -2062,7 +2069,7 @@ struct AdminEditSection: View {
                 let title: String?; let publicationYear: Int?; let publicationDate: String?
                 let pages: Int?; let audioLengthMinutes: Int?; let publisher: String?
                 let language: String?; let isbn13: String?; let isbn10: String?
-                let asin: String?; let isFiction: Bool?; let description: String?; let summary: String?
+                let asin: String?; let isFiction: Bool?; let pacing: String?; let description: String?; let summary: String?
             }
         }
         guard let res: Res = try? await APIClient.shared.get("/api/v1/admin/books/\(bookId)/fields") else {
@@ -2076,6 +2083,7 @@ struct AdminEditSection: View {
             "audioLengthMinutes": .number(r.audioLengthMinutes), "publisher": .string(r.publisher),
             "language": .string(r.language), "isbn13": .string(r.isbn13), "isbn10": .string(r.isbn10),
             "asin": .string(r.asin), "isFiction": .bool(r.isFiction ?? true),
+            "pacing": .string(r.pacing),
             "description": .string(r.description), "summary": .string(r.summary),
         ]
         loaded = true
@@ -2084,6 +2092,24 @@ struct AdminEditSection: View {
     private func toggleBool(_ def: AdminFieldDef) {
         guard case .bool(let current) = fields[def.key] else { return }
         save(def: def, value: .bool(!current))
+    }
+
+    static func pacingLabel(_ v: AdminFieldValue?) -> String {
+        guard case .string(let s) = v, let s, !s.isEmpty else { return "—" }
+        return s.prefix(1).uppercased() + s.dropFirst() + "-paced"
+    }
+
+    private func cyclePacing(_ def: AdminFieldDef) {
+        var current: String? = nil
+        if case .string(let s) = fields[def.key] { current = s }
+        let next: String?
+        switch current {
+        case nil, "": next = "slow"
+        case "slow": next = "medium"
+        case "medium": next = "fast"
+        default: next = nil
+        }
+        save(def: def, value: .string(next))
     }
 
     private func save(def: AdminFieldDef, value: AdminFieldValue) {

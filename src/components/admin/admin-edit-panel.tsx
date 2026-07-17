@@ -29,6 +29,7 @@ interface AdminEditPanelProps {
     isbn10: string | null;
     asin: string | null;
     isFiction: boolean | null;
+    pacing: string | null;
     description: string | null;
     summary: string | null;
     genres: string[];
@@ -38,21 +39,25 @@ interface AdminEditPanelProps {
 type EditingField = {
   key: string;
   label: string;
-  type: "text" | "number" | "boolean" | "textarea";
+  type: "text" | "number" | "boolean" | "textarea" | "select";
+  options?: string[];
   value: string | number | boolean | null;
 } | null;
 
 const FIELD_DEFS: {
   key: string;
   label: string;
-  type: "text" | "number" | "boolean" | "textarea";
+  type: "text" | "number" | "boolean" | "textarea" | "select";
   mapKey: keyof AdminEditPanelProps["currentValues"];
+  options?: string[];
 }[] = [
   { key: "title", label: "Title", type: "text", mapKey: "title" },
   { key: "publicationYear", label: "Publication Year", type: "number", mapKey: "publicationYear" },
   { key: "publicationDate", label: "Publication Date", type: "text", mapKey: "publicationDate" },
   { key: "pages", label: "Pages", type: "number", mapKey: "pages" },
   { key: "audioLengthMinutes", label: "Audio Length (min)", type: "number", mapKey: "audioLengthMinutes" },
+  // Normally set by enrichment; editable for author-confirmed pacing (2026-07-17)
+  { key: "pacing", label: "Pacing", type: "select", mapKey: "pacing", options: ["slow", "medium", "fast"] },
   { key: "publisher", label: "Publisher", type: "text", mapKey: "publisher" },
   { key: "language", label: "Language", type: "text", mapKey: "language" },
   { key: "isbn13", label: "ISBN-13", type: "text", mapKey: "isbn13" },
@@ -92,6 +97,7 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
       key: fieldDef.key,
       label: fieldDef.label,
       type: fieldDef.type,
+      options: fieldDef.options,
       value: val,
     });
     setEditValue(val === null || val === undefined ? "" : String(val));
@@ -230,6 +236,9 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
     const val = currentValues[fieldDef.mapKey];
     if (val === null || val === undefined) return "—";
     if (fieldDef.type === "boolean") return val ? "Fiction" : "Nonfiction";
+    if (fieldDef.key === "pacing" && typeof val === "string") {
+      return val.charAt(0).toUpperCase() + val.slice(1) + "-paced";
+    }
     if (fieldDef.key === "audioLengthMinutes" && typeof val === "number") {
       const h = Math.floor(val / 60);
       const m = val % 60;
@@ -336,7 +345,23 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
           title={`Edit ${editing.label}`}
         >
           <div className="px-1 pb-4">
-            {editing.type === "boolean" ? (
+            {editing.type === "select" ? (
+              <div className="flex gap-2">
+                {(editing.options ?? []).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setEditValue(v)}
+                    className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium border-2 transition-all ${
+                      editValue === v
+                        ? "border-primary bg-primary/15 text-primary"
+                        : "border-border bg-surface-alt/50 text-muted hover:border-primary/30"
+                    }`}
+                  >
+                    {v.charAt(0).toUpperCase() + v.slice(1)}
+                  </button>
+                ))}
+              </div>
+            ) : editing.type === "boolean" ? (
               <div className="flex gap-2">
                 {["true", "false"].map((v) => (
                   <button

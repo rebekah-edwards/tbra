@@ -797,6 +797,7 @@ type EditableBookFields = {
   isbn10?: string | null;
   asin?: string | null;
   isFiction?: boolean | null;
+  pacing?: string | null;
   description?: string | null;
   summary?: string | null;
 };
@@ -826,6 +827,13 @@ export async function updateBookFields(
   if (fields.isbn10 !== undefined) updateSet.isbn10 = fields.isbn10;
   if (fields.asin !== undefined) updateSet.asin = fields.asin;
   if (fields.isFiction !== undefined) updateSet.isFiction = fields.isFiction;
+  if (fields.pacing !== undefined) {
+    // Constrained vocabulary — matches the book-header PACING map.
+    if (fields.pacing !== null && !["slow", "medium", "fast"].includes(fields.pacing)) {
+      return { success: false, error: "Invalid pacing value" };
+    }
+    updateSet.pacing = fields.pacing;
+  }
   if (fields.description !== undefined) updateSet.description = fields.description;
   if (fields.summary !== undefined) updateSet.summary = fields.summary;
 
