@@ -64,7 +64,7 @@ export function ContentWarningBanner({
   const reviewerWarningIds = new Set(customWarningMatches.map((m) => m.canonicalId));
   // Collapse repeated canonicals across categories into a single entry with
   // the category list merged — previously a warning noted in both
-  // "Romance & sex" and "Other" rendered as two separate rows.
+  // "Sexual content" and "Other" rendered as two separate rows.
   const noteMergedMap = new Map<string, { canonicalId: string; categoryNames: string[] }>();
   for (const n of noteWarningMatches) {
     if (reviewerWarningIds.has(n.canonicalId)) continue;

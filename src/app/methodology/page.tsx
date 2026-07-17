@@ -22,7 +22,7 @@ const INTENSITY_LEVELS = [
 
 const CATEGORIES = [
   {
-    name: "Romance & sex",
+    name: "Sexual content",
     description: "On-page vs fade-to-black romantic and sexual content, including explicitness and frequency. Notes may describe sexual-assault context where relevant.",
   },
   {

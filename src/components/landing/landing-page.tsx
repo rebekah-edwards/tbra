@@ -37,7 +37,7 @@ const INTENSITY_COLORS = [
 ];
 
 const SHORT_NAMES: Record<string, string> = {
-  romance_sex: "Romance & sex",
+  romance_sex: "Sexual content",
   lgbtqia_representation: "LGBTQ+ Rep.",
   profanity_language: "Profanity",
   political_ideological: "Political content",

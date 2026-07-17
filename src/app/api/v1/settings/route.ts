@@ -1,6 +1,7 @@
 import { getApiUser } from "@/lib/auth";
 import { jsonError, jsonOk, parseJsonBody } from "@/lib/api/http";
 import { db } from "@/db";
+import { byContentCategoryOrder } from "@/lib/content-category-order";
 import { taxonomyCategories, userContentPreferences, userReadingPreferences, userNotificationPreferences, userGenrePreferences, users } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getUserReadingPreferences } from "@/lib/queries/reading-preferences";
@@ -58,10 +59,11 @@ export async function GET(req: Request) {
       .where(eq(userReadingPreferences.userId, user.userId)).get(),
   ]);
 
-  // Same "Other" exclusion + sort as the web settings page
+  // Same "Other" exclusion as the web settings page; ordered to match the
+  // book page's What's Inside grid (canonical order, sexual content first).
   const activeCategories = activeCategoriesRaw
     .filter((c) => c.key !== "other")
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort(byContentCategoryOrder);
 
   const toleranceById = new Map(
     (prefs?.contentPreferences ?? []).map((cp) => [cp.categoryId, cp.maxTolerance])

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/db";
 import { taxonomyCategories } from "@/db/schema";
+import { byContentCategoryOrder } from "@/lib/content-category-order";
 import { eq } from "drizzle-orm";
 
 export const metadata: Metadata = {
@@ -42,7 +43,8 @@ export default async function SettingsPage() {
   // + note blobs across ALL categories (including Other) automatically.
   const activeCategories = activeCategoriesRaw
     .filter((c) => c.key !== "other")
-    .sort((a, b) => a.name.localeCompare(b.name));
+    // Matches the book page's What's Inside order (sexual content first)
+    .sort(byContentCategoryOrder);
 
   return (
     <div className="space-y-6 lg:w-[60%] lg:mx-auto">

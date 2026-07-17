@@ -19,7 +19,7 @@ const db = drizzle(sqlite);
 const categories = [
   {
     key: "romance_sex",
-    name: "Romance & sex",
+    name: "Sexual content",
     description:
       "On-page vs fade-to-black romantic and sexual content, including explicitness and frequency. Notes may include sexual-assault context where relevant.",
   },
@@ -94,7 +94,7 @@ const categories = [
     key: "sexual_assault_coercion",
     name: "Sexual assault / coercion (archived)",
     description:
-      "Archived 2026-04-17. Content merged into Romance & Sex and Abuse & suffering notes.",
+      "Archived 2026-04-17. Content merged into Sexual content and Abuse & suffering notes.",
     active: false,
   },
 ];
