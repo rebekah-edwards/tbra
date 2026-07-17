@@ -1,5 +1,7 @@
 "use client";
 
+import { useIsTwa } from "@/lib/use-twa";
+
 import { useState } from "react";
 
 // Display prices — keep in sync with the Stripe Price objects
@@ -34,6 +36,17 @@ export function SubscribeButtons({
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const isTwa = useIsTwa();
+
+  // Google Play payments policy: no non-Play purchase flows inside the
+  // Play-distributed app. Neutral copy, no outbound purchase links.
+  if (isTwa && !isPremium) {
+    return (
+      <p className="text-sm text-muted text-center py-6">
+        Premium subscriptions aren&rsquo;t available for purchase in this app.
+      </p>
+    );
+  }
 
   async function go(path: string, body?: object) {
     setBusy(path + JSON.stringify(body ?? {}));
