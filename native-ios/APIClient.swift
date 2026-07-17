@@ -35,6 +35,19 @@ actor APIClient {
 
     // MARK: Auth
 
+    /// Sign in with Apple: exchanges the ASAuthorization identityToken for
+    /// the native session pair. fullName only arrives on FIRST authorization.
+    func appleLogin(identityToken: String, fullName: String?) async throws -> LoginResponse {
+        var body: [String: Any] = ["identityToken": identityToken]
+        if let fullName, !fullName.isEmpty { body["fullName"] = fullName }
+        let res: LoginResponse = try await send(
+            "/api/v1/auth/apple", method: "POST", body: body, authed: false
+        )
+        Keychain.accessToken = res.token
+        Keychain.refreshToken = res.refreshToken
+        return res
+    }
+
     func login(email: String, password: String) async throws -> LoginResponse {
         let res: LoginResponse = try await send(
             "/api/v1/auth/login", method: "POST",

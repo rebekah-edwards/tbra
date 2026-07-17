@@ -78,6 +78,34 @@ final class AuthStore {
         phase = .signedOut
     }
 
+    /// Sign in with Apple: the button hands us an ASAuthorization; we send its
+    /// identityToken to /api/v1/auth/apple (JWKS-verified server-side, same
+    /// account linking rules as Google).
+    func signInWithApple(_ result: Result<ASAuthorization, Error>) async {
+        loginError = nil
+        switch result {
+        case .failure(let err):
+            if let ae = err as? ASAuthorizationError, ae.code == .canceled { return }
+            loginError = "Apple sign-in failed."
+        case .success(let auth):
+            guard let cred = auth.credential as? ASAuthorizationAppleIDCredential,
+                  let tokenData = cred.identityToken,
+                  let token = String(data: tokenData, encoding: .utf8) else {
+                loginError = "Apple sign-in failed."
+                return
+            }
+            let name = [cred.fullName?.givenName, cred.fullName?.familyName]
+                .compactMap { $0 }.joined(separator: " ")
+            do {
+                let res = try await APIClient.shared.appleLogin(
+                    identityToken: token, fullName: name.isEmpty ? nil : name)
+                phase = .signedIn(res.user)
+            } catch {
+                loginError = (error as? APIError)?.errorDescription ?? "Apple sign-in failed."
+            }
+        }
+    }
+
     /// Google Sign-In via the web OAuth flow in an ASWebAuthenticationSession.
     /// The backend (?native=1) returns the token pair on tbra://google-auth
     /// instead of setting the web cookie — all account linking/creation logic
@@ -309,6 +337,16 @@ struct LoginView: View {
                 }
                 .padding(.vertical, 2)
 
+                SignInWithAppleButton(.continue) { req in
+                    req.requestedScopes = [.fullName, .email]
+                } onCompletion: { result in
+                    Task { busy = true; await auth.signInWithApple(result); busy = false }
+                }
+                .signInWithAppleButtonStyle(.white)
+                .frame(height: 47)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .disabled(busy)
+
                 GoogleSignInButton {
                     Task { busy = true; await auth.signInWithGoogle(); busy = false }
                 }
@@ -402,6 +440,21 @@ struct SignupSheet: View {
                 .buttonStyle(AccentButtonStyle())
                 .disabled(busy || email.isEmpty || password.isEmpty || confirm.isEmpty)
                 .padding(.top, 4)
+
+                SignInWithAppleButton(.signUp) { req in
+                    req.requestedScopes = [.fullName, .email]
+                } onCompletion: { result in
+                    Task {
+                        busy = true
+                        await auth.signInWithApple(result)
+                        busy = false
+                        if case .signedIn = auth.phase { dismiss() }
+                    }
+                }
+                .signInWithAppleButtonStyle(.white)
+                .frame(height: 47)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .disabled(busy)
 
                 GoogleSignInButton(label: "Sign up with Google") {
                     Task {
