@@ -285,6 +285,21 @@ export default async function BookPage({
   // the overlay/pill (via isRecentlyImported) so they stay consistent.
   const needsEnrichment = book.ratings.length === 0;
 
+  // Distinguish "actively enriching, wait a few seconds" from "stranded by a
+  // spent API budget". If the book's most recent enrichment attempt hit the
+  // budget wall, the blocking overlay + reload loop would spin forever —
+  // show the calm queued notice instead (the nightly retry lane picks these
+  // up right after the daily budget resets).
+  let enrichmentQueued = false;
+  if (needsEnrichment) {
+    const { db } = await import("@/db");
+    const { sql } = await import("drizzle-orm");
+    const last = await db.all<{ status: string }>(sql`
+      SELECT status FROM enrichment_log WHERE book_id = ${book.id}
+      ORDER BY created_at DESC LIMIT 1`);
+    enrichmentQueued = last[0]?.status === "api_exhausted";
+  }
+
   if (needsEnrichment && process.env.ENRICHMENT_PAUSED !== "true") {
     after(() => triggerEnrichment(book.id));
   }
@@ -358,7 +373,8 @@ export default async function BookPage({
         upNextPosition={upNextPosition}
         upNextCount={upNextCount}
         isFavorited={isFavorited}
-        isRecentlyImported={needsEnrichment}
+        isRecentlyImported={needsEnrichment && !enrichmentQueued}
+        enrichmentQueued={enrichmentQueued}
         isHidden={isHidden}
         contentConflicts={contentConflicts}
         customWarningMatches={contentWarningMatches.tagMatches}

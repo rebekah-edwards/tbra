@@ -75,6 +75,9 @@ interface BookPageClientProps {
   upNextCount: number;
   isFavorited: boolean;
   isRecentlyImported?: boolean;
+  /** Last enrichment attempt hit the API budget wall — content details are
+   *  queued for the nightly retry, not seconds away. Non-blocking notice. */
+  enrichmentQueued?: boolean;
   isHidden?: boolean;
   canReport?: boolean;
   contentConflicts?: { categoryName: string; bookIntensity: number; userMax: number }[];
@@ -111,6 +114,7 @@ export function BookPageClient({
   upNextCount,
   isFavorited,
   isRecentlyImported = false,
+  enrichmentQueued = false,
   isAdmin = false,
   isHidden: initialIsHidden = false,
   canReport = false,
@@ -375,6 +379,17 @@ export function BookPageClient({
               This book is currently being added to our database. Please wait 10&ndash;20 seconds for content details to be added.
             </p>
           </div>
+        </div>
+      )}
+      {enrichmentQueued && (
+        <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <svg className="mt-0.5 flex-shrink-0 text-amber-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+          </svg>
+          <p className="text-sm text-foreground/90 leading-relaxed">
+            This book is in our enrichment queue — the summary and What&rsquo;s Inside
+            content details will appear within a day. Everything else is ready now.
+          </p>
         </div>
       )}
 
