@@ -219,6 +219,7 @@ export const users = sqliteTable("users", {
   // Google OAuth — Google's stable subject id ('sub'). Nullable: only set for
   // accounts linked to Google. UNIQUE allows many NULLs (email/password users).
   googleSub: text("google_sub").unique(),
+  appleSub: text("apple_sub").unique(),
   // Social handles (stored without @)
   instagram: text("instagram"),
   tiktok: text("tiktok"),
