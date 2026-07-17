@@ -1,5 +1,6 @@
 import SwiftUI
 import Observation
+import AuthenticationServices
 
 /// App-wide session state. On launch it tries to restore a session from the
 /// stored token (validated via /auth/me, which auto-refreshes on 401).
@@ -76,6 +77,92 @@ final class AuthStore {
         await APIClient.shared.logout()
         phase = .signedOut
     }
+
+    /// Google Sign-In via the web OAuth flow in an ASWebAuthenticationSession.
+    /// The backend (?native=1) returns the token pair on tbra://google-auth
+    /// instead of setting the web cookie — all account linking/creation logic
+    /// stays server-side (api/auth/google/callback).
+    func signInWithGoogle() async {
+        loginError = nil
+        var comps = URLComponents(url: APIClient.baseURL.appending(path: "api/auth/google"),
+                                  resolvingAgainstBaseURL: false)!
+        comps.queryItems = [URLQueryItem(name: "native", value: "1")]
+        do {
+            let callback = try await GoogleAuthSession.run(url: comps.url!)
+            let items = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            func item(_ name: String) -> String? { items.first(where: { $0.name == name })?.value }
+            if let err = item("error") {
+                loginError = "Google sign-in failed (\(err.replacingOccurrences(of: "google_", with: "")))."
+                return
+            }
+            guard let token = item("token"), let refresh = item("refresh") else {
+                loginError = "Google sign-in failed."
+                return
+            }
+            Keychain.accessToken = token
+            Keychain.refreshToken = refresh
+            let user = try await APIClient.shared.me()
+            phase = .signedIn(user)
+        } catch let err as ASWebAuthenticationSessionError where err.code == .canceledLogin {
+            // User closed the sheet — not an error.
+        } catch {
+            loginError = "Google sign-in failed."
+        }
+    }
+}
+
+/// One-shot ASWebAuthenticationSession wrapper (presentation anchor + async).
+@MainActor
+private final class GoogleAuthSession: NSObject, ASWebAuthenticationPresentationContextProviding {
+    private static var current: GoogleAuthSession?
+    private var session: ASWebAuthenticationSession?
+
+    static func run(url: URL) async throws -> URL {
+        let helper = GoogleAuthSession()
+        current = helper
+        defer { current = nil }
+        return try await withCheckedThrowingContinuation { cont in
+            let s = ASWebAuthenticationSession(url: url, callbackURLScheme: "tbra") { cb, err in
+                if let cb { cont.resume(returning: cb) }
+                else { cont.resume(throwing: err ?? URLError(.userCancelledAuthentication)) }
+            }
+            s.presentationContextProvider = helper
+            // Share Safari's cookie jar so an existing Google session is offered.
+            s.prefersEphemeralWebBrowserSession = false
+            helper.session = s
+            s.start()
+        }
+    }
+
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.keyWindow }
+            .first ?? ASPresentationAnchor()
+    }
+}
+
+/// White "Continue with Google" button (web GoogleButton parity: official G
+/// mark, white field, black label — identical in both themes).
+struct GoogleSignInButton: View {
+    var label = "Continue with Google"
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image("GoogleG")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
+                Text(label)
+                    .font(Theme.body(15, .semibold))
+                    .foregroundStyle(.black)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 13)
+            .background(.white, in: RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.black.opacity(0.12), lineWidth: 1))
+        }
+    }
 }
 
 struct RootView: View {
@@ -135,7 +222,10 @@ struct RootView: View {
             // Simulator-only dev convenience: the Simulator's hardware-keyboard
             // bridge is unreliable for automated typing, so signed-out sim runs
             // auto-login with the test account. NEVER compiled for device builds.
-            if case .signedOut = auth.phase {
+            // TBRA_DEBUG_NO_AUTOLOGIN=1 keeps the login screen up so the
+            // signed-out UI itself can be verified headlessly.
+            if case .signedOut = auth.phase,
+               ProcessInfo.processInfo.environment["TBRA_DEBUG_NO_AUTOLOGIN"] == nil {
                 await auth.login(email: "clankerinfrastructure@gmail.com", password: "testview123")
             }
             #endif
@@ -211,6 +301,18 @@ struct LoginView: View {
                 .buttonStyle(AccentButtonStyle())
                 .disabled(busy || email.isEmpty || password.isEmpty)
                 .padding(.top, 4)
+
+                HStack(spacing: 12) {
+                    Rectangle().fill(Theme.border).frame(height: 1)
+                    Text("or").font(Theme.body(12)).foregroundStyle(Theme.muted)
+                    Rectangle().fill(Theme.border).frame(height: 1)
+                }
+                .padding(.vertical, 2)
+
+                GoogleSignInButton {
+                    Task { busy = true; await auth.signInWithGoogle(); busy = false }
+                }
+                .disabled(busy)
 
                 HStack(spacing: 18) {
                     Button("Create account") { signupOpen = true }
@@ -300,6 +402,16 @@ struct SignupSheet: View {
                 .buttonStyle(AccentButtonStyle())
                 .disabled(busy || email.isEmpty || password.isEmpty || confirm.isEmpty)
                 .padding(.top, 4)
+
+                GoogleSignInButton(label: "Sign up with Google") {
+                    Task {
+                        busy = true
+                        await auth.signInWithGoogle()
+                        busy = false
+                        if case .signedIn = auth.phase { dismiss() }
+                    }
+                }
+                .disabled(busy)
 
                 Text("We'll email you a verification link.")
                     .font(Theme.body(12))

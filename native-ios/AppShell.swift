@@ -23,6 +23,8 @@ struct AppShell: View {
     /// Home tour's "Go to Settings" CTA opens Settings directly (same
     /// presentation the hamburger menu uses).
     @State private var tourSettingsOpen = false
+    /// Bumped when Settings closes after a text-size change (see Theme).
+    @State private var fontEpoch = 0
     @State private var notifications = NotificationsModel()
     // Per-tab navigation paths, lifted here so re-tapping the ACTIVE tab
     // pops its stack to root (web: bottom nav always goes to the page top).
@@ -71,6 +73,13 @@ struct AppShell: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Text Size: rebuild every screen at the new Theme.textScale once
+            // Settings closes (fonts are computed in body, invisible to
+            // SwiftUI's dependency tracking — an id bump is the rerender).
+            .id("fonts-\(fontEpoch)")
+            .onReceive(NotificationCenter.default.publisher(for: Theme.textSizeChanged)) { _ in
+                fontEpoch += 1
+            }
         }
         // The floating bars are plain OVERLAYS, not safeAreaInsets: an inset
         // applied outside the NavigationStacks collapses (and z-fights) on

@@ -235,6 +235,9 @@ struct SettingsView: View {
     @State private var model = SettingsModel()
     @AppStorage("themeOverride") private var themeOverride = "dark"
     @AppStorage("textSize") private var textSizeLocal = "medium"
+    /// Snapshot on appear — if the size differs when Settings closes, the
+    /// shell is told to re-render every screen at the new Theme.textScale.
+    @State private var textSizeOnAppear: String?
     @State private var openSection: String? = nil
     @State private var warningInput = ""
     @State private var locationSaved = false
@@ -304,6 +307,12 @@ struct SettingsView: View {
         .floatingBack()
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }
+        .onAppear { if textSizeOnAppear == nil { textSizeOnAppear = textSizeLocal } }
+        .onDisappear {
+            if let was = textSizeOnAppear, was != textSizeLocal {
+                NotificationCenter.default.post(name: Theme.textSizeChanged, object: nil)
+            }
+        }
         .sheet(isPresented: Binding(get: { exportURL != nil }, set: { if !$0 { exportURL = nil } })) {
             if let exportURL {
                 ShareSheet(items: [exportURL])

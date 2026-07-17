@@ -1399,7 +1399,7 @@ private struct WhatsInsideSection: View {
     ]
     // Web SHORT_NAMES — compact single-line labels.
     private static let shortNames: [String: String] = [
-        "romance_sex": "Romance & sex",
+        "romance_sex": "Sexual content",
         "lgbtqia_representation": "LGBTQ+ Rep.",
         "profanity_language": "Profanity",
         "political_ideological": "Political content",

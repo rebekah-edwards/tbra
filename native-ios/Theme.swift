@@ -77,11 +77,30 @@ enum Theme {
     )
 
     // ── Fonts (bundled, same families the web loads via next/font) ──
+
+    /// Settings → Text Size, mirroring the web's base font sizes
+    /// (14/16/18px → 0.875/1.0/1.125). Read live from UserDefaults; the
+    /// AppShell root re-ids on change so the visible tree re-renders.
+    /// Logo is exempt (brand mark + top-bar layout stay fixed).
+    static var textScale: CGFloat {
+        switch UserDefaults.standard.string(forKey: "textSize") {
+        case "small": return 0.875
+        case "large": return 1.125
+        default: return 1.0
+        }
+    }
+
+    /// Posted by SettingsView when it closes after a text-size change;
+    /// AppShell re-ids the tab tree so every screen re-renders at the new
+    /// scale. (Not fired on each tap — a rebuild would dismiss the Settings
+    /// cover the user is standing in; Settings itself re-renders live.)
+    static let textSizeChanged = Notification.Name("tbra.textSizeChanged")
+
     static func body(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        .custom("Plus Jakarta Sans", size: size).weight(weight)
+        .custom("Plus Jakarta Sans", size: size * textScale).weight(weight)
     }
     static func heading(_ size: CGFloat, _ weight: Font.Weight = .bold) -> Font {
-        .custom("Outfit", size: size).weight(weight)
+        .custom("Outfit", size: size * textScale).weight(weight)
     }
     static func logo(_ size: CGFloat) -> Font {
         .custom("Space Grotesk", size: size).weight(.medium)
