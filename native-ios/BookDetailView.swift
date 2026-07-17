@@ -113,6 +113,11 @@ struct BookDetailView: View {
                             .id("series")
                     }
                     if !data.book.ratings.isEmpty {
+                        // 1pt scroll marker: scrolling a tiny target to a
+                        // fixed viewport point is deterministic; scrolling the
+                        // tall section itself lands mid-section (proportional
+                        // anchors) and cuts the heading off above the ring.
+                        Color.clear.frame(height: 1).id("whats-inside-top")
                         WhatsInsideSection(
                             ratings: data.book.ratings,
                             bookId: data.book.id,
@@ -186,7 +191,7 @@ struct BookDetailView: View {
         #endif
         // First-book guided tour: content details, then reporting. Waits for
         // ratings to exist so the What's Inside anchor is actually on screen.
-        .guidedTour("book-r2", steps: [
+        .guidedTour("book-r3", steps: [
             CoachStep(id: "whats-inside", title: "What's Inside",
                       text: "Every book's content profile lives here — category-by-category ratings for violence, language, sexual content, and more, so you know exactly what you're picking up."),
             CoachStep(id: "tour-report", title: "See something off?",
@@ -195,12 +200,12 @@ struct BookDetailView: View {
             // Deferred + repeated: a scrollTo in the same transaction as the
             // overlay's state change silently no-ops (ScrollViewReader race),
             // and late image loads can shift layout after the first scroll.
-            let scrollId = step.id == "tour-report" ? "tour-report" : "whats-inside"
+            let scrollId = step.id == "tour-report" ? "tour-report" : "whats-inside-top"
             for delay in [0.25, 0.85] {
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                     withAnimation {
                         scrollProxy.scrollTo(scrollId, anchor: step.id == "whats-inside"
-                            ? UnitPoint(x: 0.5, y: 0.14)
+                            ? UnitPoint(x: 0.5, y: 0.15)
                             : UnitPoint(x: 0.5, y: 0.62))
                     }
                 }

@@ -275,6 +275,10 @@ struct SettingsView: View {
                 .padding(.top, 14)
 
                 if model.loaded {
+                    // 1pt scroll marker for the tour (see BookDetailView note:
+                    // tall sections scroll unpredictably with proportional
+                    // anchors; a tiny target lands exactly where asked).
+                    Color.clear.frame(height: 1).id("tour-prefs-top")
                     readingPreferencesCard
                     displaySection
                     locationSection
@@ -320,7 +324,7 @@ struct SettingsView: View {
         }
         // First-visit guided tour: genres → comfort zone (each accordion
         // auto-opens for its step, closes on advance) → privacy.
-        .guidedTour("settings-r2", steps: [
+        .guidedTour("settings-r3", steps: [
             CoachStep(id: "tour-genres", title: "Pick your genres",
                       text: "Tap a genre once to heart it, twice to hide it. Your picks shape what search and Discover recommend — more of what you love, none of what you don't."),
             CoachStep(id: "tour-comfort-zone", title: "Your Content Comfort Zone",
@@ -335,13 +339,17 @@ struct SettingsView: View {
             default: openSection = nil
             }
             // Scroll AFTER the accordion insert settles (same-transaction
-            // scrollTo silently no-ops), and never pin targets at the very
-            // top where the floating back chevron sits (y 0.16).
+            // scrollTo silently no-ops). The genres/comfort steps scroll the
+            // 1pt marker above the card so the accordion HEADER is always
+            // visible below the chrome — scrolling the tall open section
+            // itself lands mid-list and hides its title above the ring.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 withAnimation {
-                    tourProxy.scrollTo(step.id, anchor: step.id == "tour-privacy"
-                        ? UnitPoint(x: 0.5, y: 0.45)
-                        : UnitPoint(x: 0.5, y: 0.16))
+                    if step.id == "tour-privacy" {
+                        tourProxy.scrollTo(step.id, anchor: UnitPoint(x: 0.5, y: 0.45))
+                    } else {
+                        tourProxy.scrollTo("tour-prefs-top", anchor: UnitPoint(x: 0.5, y: 0.13))
+                    }
                 }
             }
         })
