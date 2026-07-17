@@ -1,5 +1,7 @@
 "use client";
 
+import { useIsTwa } from "@/lib/use-twa";
+
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -106,6 +108,7 @@ function MenuIcon({ icon }: { icon: string }) {
 }
 
 export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = false, isPremium = false, avatarUrl, displayName }: HamburgerMenuProps) {
+  const isTwa = useIsTwa();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -254,7 +257,7 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
                 Settings
               </Link>
               <div className="border-t border-border my-1" />
-              {MENU_ITEMS.map((item) => (
+              {MENU_ITEMS.filter((item) => !(item.href === "/upgrade" && isTwa && !isPremium)).map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
