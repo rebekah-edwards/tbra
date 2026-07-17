@@ -471,6 +471,7 @@ export default async function BookPage({
                 isbn10: book.isbn10 ?? null,
                 asin: book.asin ?? null,
                 isFiction: book.isFiction ?? null,
+                pacing: book.pacing ?? null,
                 description: book.description ?? null,
                 summary: book.summary ?? null,
                 genres: book.allGenreNames,

@@ -32,6 +32,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
       isbn10: b.isbn10,
       asin: b.asin,
       isFiction: b.isFiction,
+      pacing: b.pacing,
       description: b.description,
       summary: b.summary,
     },
@@ -77,6 +78,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if ("isFiction" in fields) {
     if (typeof fields.isFiction !== "boolean") return jsonError("isFiction must be a boolean.", 400);
     updateSet.isFiction = fields.isFiction;
+  }
+  if ("pacing" in fields) {
+    const v = fields.pacing;
+    if (v !== null && v !== "slow" && v !== "medium" && v !== "fast") {
+      return jsonError("pacing must be slow, medium, fast, or null.", 400);
+    }
+    updateSet.pacing = v;
   }
 
   if (Object.keys(updateSet).length === 0) return jsonError("No fields to update.", 400);
