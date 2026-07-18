@@ -108,12 +108,17 @@ enum Theme {
 
     /// Mirror the web nav bars: Outfit titles in plain foreground (no gradient).
     /// Call once at app start.
+    // Lexically OUTSIDE the @MainActor func below: a dynamic-provider closure
+    // written inside a @MainActor context carries actor isolation and traps
+    // if UIKit resolves it off-main (the chromeCircle TestFlight crash).
+    private static let navTitleForeground = UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0xe4/255, green: 0xe2/255, blue: 0xef/255, alpha: 1)
+            : UIColor(red: 0x18/255, green: 0x18/255, blue: 0x1b/255, alpha: 1)
+    }
+
     @MainActor static func configureNavigationBarAppearance() {
-        let fg = UIColor { trait in
-            trait.userInterfaceStyle == .dark
-                ? UIColor(red: 0xe4/255, green: 0xe2/255, blue: 0xef/255, alpha: 1)
-                : UIColor(red: 0x18/255, green: 0x18/255, blue: 0x1b/255, alpha: 1)
-        }
+        let fg = navTitleForeground
         let appearance = UINavigationBarAppearance()
         appearance.configureWithTransparentBackground()
         if let outfitLarge = UIFont(name: "Outfit", size: 32) {

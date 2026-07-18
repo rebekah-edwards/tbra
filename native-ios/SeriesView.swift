@@ -167,22 +167,34 @@ struct FloatingBackButton: View {
 // the navigation bar is hidden; the SwiftUI simultaneous edge-drag in
 // PushedScreenChrome is the working replacement.)
 
-extension View {
-    /// The floating circular chrome treatment shared by the back chevron and
-    /// the book-page share button: translucent fill + border, NO opaque base
-    /// (user preference 2026-07-08: share must match this look, not the
-    /// other way around). Light mode = scrim's white 35%, untouched; dark
-    /// mode = mid-GREY instead of scrim's black 25% — user found the black
-    /// circles too heavy on dark.
-    func chromeCircle() -> some View {
-        frame(width: 40, height: 40)
-            .background(Color(UIColor { trait in
-                trait.userInterfaceStyle == .light
-                    ? UIColor.white.withAlphaComponent(0.35)
-                    : UIColor(white: 0.55, alpha: 0.38)
-            }), in: Circle())
+/// The floating circular chrome treatment shared by the back chevron and
+/// the book-page share button: translucent fill + border, NO opaque base
+/// (user preference 2026-07-08: share must match this look, not the
+/// other way around). Light mode = scrim's white 35%, untouched; dark
+/// mode = mid-GREY instead of scrim's black 25% — user found the black
+/// circles too heavy on dark.
+///
+/// A ViewModifier reading colorScheme, NOT a `UIColor {trait}` dynamic
+/// provider: a provider closure created inside a @MainActor View method
+/// carries actor isolation, and UIKit resolves it on SwiftUI's background
+/// render thread during trait changes → dispatch_assert_queue trap
+/// (TestFlight build 3 crash, 2026-07-18).
+private struct ChromeCircle: ViewModifier {
+    @Environment(\.colorScheme) private var scheme
+    func body(content: Content) -> some View {
+        content
+            .frame(width: 40, height: 40)
+            .background(
+                scheme == .light
+                    ? Color.white.opacity(0.35)
+                    : Color(white: 0.55).opacity(0.38),
+                in: Circle()
+            )
             .overlay(Circle().stroke(Theme.border, lineWidth: 1))
     }
+}
+extension View {
+    func chromeCircle() -> some View { modifier(ChromeCircle()) }
 }
 extension View {
     /// Overlay a working back button on a pushed screen. `topPadding`
