@@ -1381,7 +1381,13 @@ private struct WhatsInsideSection: View {
     var bookId: String = ""
     var isAdmin: Bool = false
     var onChanged: () -> Void = {}
+    // Headless-verification hook: TBRA_DEBUG_REVEAL=1 skips the spoiler
+    // blur so screenshots can read the grid (sim only).
+    #if DEBUG && targetEnvironment(simulator)
+    @State private var revealed = ProcessInfo.processInfo.environment["TBRA_DEBUG_REVEAL"] == "1"
+    #else
     @State private var revealed = false
+    #endif
     @State private var expanded: Set<String> = []
     @State private var editing: ContentRating?
     @State private var verifyingAll = false
@@ -1522,35 +1528,42 @@ private struct WhatsInsideSection: View {
         let isExpanded = expanded.contains(rating.categoryId)
         return VStack(alignment: .leading, spacing: 7) {
             HStack(alignment: .top, spacing: 6) {
+                // 13pt (was 15), with the badge + admin pencil stacked in a
+                // trailing column instead of sharing the title row — the two
+                // of them side-by-side ate half the column and wrapped even
+                // short names (user request 2026-07-18: most titles must fit
+                // one line).
                 Text(Self.shortNames[rating.categoryKey] ?? rating.categoryName)
-                    .font(Theme.body(15, .semibold))
+                    .font(Theme.body(13, .semibold))
                     .foregroundStyle(Theme.foreground)
                     .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 2)
-                // Web evidenceBadge: "Verified" for human_verified, "AI"
-                // otherwise — both visible to all users.
-                if isVerified(rating) {
-                    Text("Verified")
-                        .font(Theme.body(10, .medium))
-                        .foregroundStyle(Theme.accentText)
-                        .padding(.horizontal, 8).padding(.vertical, 3)
-                        .background(Theme.accent.opacity(0.12), in: Capsule())
-                } else {
-                    Text("AI")
-                        .font(Theme.body(10, .medium))
-                        .foregroundStyle(Theme.muted)
-                        .padding(.horizontal, 8).padding(.vertical, 3)
-                        .background(Theme.surfaceAlt.opacity(0.8), in: Capsule())
-                }
-                if isAdmin && !bookId.isEmpty {
-                    Button {
-                        editing = rating
-                    } label: {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 11, weight: .medium))
+                Spacer(minLength: 4)
+                VStack(alignment: .trailing, spacing: 4) {
+                    // Web evidenceBadge: "Verified" for human_verified, "AI"
+                    // otherwise — both visible to all users.
+                    if isVerified(rating) {
+                        Text("Verified")
+                            .font(Theme.body(10, .medium))
+                            .foregroundStyle(Theme.accentText)
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(Theme.accent.opacity(0.12), in: Capsule())
+                    } else {
+                        Text("AI")
+                            .font(Theme.body(10, .medium))
                             .foregroundStyle(Theme.muted)
-                            .frame(width: 22, height: 22)
-                            .background(Theme.surfaceAlt.opacity(0.6), in: Circle())
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(Theme.surfaceAlt.opacity(0.8), in: Capsule())
+                    }
+                    if isAdmin && !bookId.isEmpty {
+                        Button {
+                            editing = rating
+                        } label: {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(Theme.muted)
+                                .frame(width: 22, height: 22)
+                                .background(Theme.surfaceAlt.opacity(0.6), in: Circle())
+                        }
                     }
                 }
             }

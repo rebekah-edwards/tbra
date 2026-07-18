@@ -84,12 +84,6 @@ struct PublicProfileView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                HStack(spacing: 12) {
-                    Color.clear.frame(width: 40, height: 40)
-                    Spacer()
-                }
-                .padding(.top, 14)
-
                 if model.isPrivate {
                     privateGate
                 } else if let user = model.user {
@@ -111,9 +105,11 @@ struct PublicProfileView: View {
                 }
             }
             .padding(.horizontal, 20)
+            .padding(.top, 14)
             .padding(.bottom, 40)
         }
         .background(AmbientBackground())
+        .tracksScrollAtTop()
         .floatingBack()
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }
@@ -140,7 +136,12 @@ struct PublicProfileView: View {
     }
 
     private func header(_ user: ProfileUser) -> some View {
-        HStack(alignment: .top, spacing: 16) {
+        // The 40pt clear slot keeps the avatar clear of the floating back
+        // chevron (leading 20 / top 14 overlay), so the whole header sits on
+        // the chevron's row instead of a line below it (user request
+        // 2026-07-18).
+        HStack(alignment: .top, spacing: 12) {
+            Color.clear.frame(width: 40, height: 40)
             Group {
                 if let avatarUrl = user.avatarUrl, let url = URL(string: avatarUrl) {
                     AsyncImage(url: url) { image in
@@ -163,6 +164,10 @@ struct PublicProfileView: View {
                 Text(user.displayName ?? user.username ?? "Reader")
                     .font(Theme.heading(21, .bold))
                     .foregroundStyle(Theme.foreground)
+                    // Keep the name clear of the floating share circle; the
+                    // lower rows can use the full column width.
+                    .padding(.trailing, 44)
+                accountBadge(user.accountType)
                 if let username = user.username {
                     Text("@\(username)")
                         .font(Theme.body(14))
@@ -194,6 +199,50 @@ struct PublicProfileView: View {
                     .padding(.top, 4)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        // Share the web profile URL — a universal link, so recipients with
+        // the app installed open it natively and everyone else lands on the
+        // website. Overlaid (not in the HStack flow) so the follower-count
+        // row keeps the full column width and doesn't wrap.
+        .overlay(alignment: .topTrailing) {
+            if let username = user.username,
+               let url = URL(string: "https://thebasedreader.app/u/\(username)") {
+                ShareLink(item: url) {
+                    // chromeCircle to match the back chevron, same pairing
+                    // as the book page.
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Theme.foreground.opacity(0.9))
+                        .chromeCircle()
+                }
+            }
+        }
+    }
+
+    /// Web AccountBadge parity: purple for admin/premium tiers, accent for
+    /// reader/beta. Sits below the display name (user request 2026-07-18 —
+    /// keeps the shifted-right header narrow).
+    @ViewBuilder
+    private func accountBadge(_ type: String?) -> some View {
+        if let type, type != "user" {
+            let label: String = {
+                switch type {
+                case "super_admin": return "Super Admin"
+                case "admin": return "Admin"
+                case "premium": return "Based Reader"
+                case "beta_tester": return "Beta Tester"
+                case "reader": return "Reader"
+                default: return type.replacingOccurrences(of: "_", with: " ").capitalized
+                }
+            }()
+            let isPurple = ["super_admin", "admin", "premium"].contains(type)
+            Text(label)
+                .font(Theme.body(11, .medium))
+                .foregroundStyle(isPurple ? Theme.neonPurple : Theme.accentText)
+                .padding(.horizontal, 10).padding(.vertical, 4)
+                .background((isPurple ? Theme.neonPurple : Theme.accent).opacity(0.12), in: Capsule())
+                .overlay(Capsule().stroke((isPurple ? Theme.neonPurple : Theme.accent).opacity(0.5), lineWidth: 1))
         }
     }
 

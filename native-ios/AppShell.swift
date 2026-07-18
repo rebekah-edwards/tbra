@@ -34,6 +34,8 @@ struct AppShell: View {
     @State private var profilePath = NavigationPath()
     /// Book page presented from outside the tab stacks (notification links).
     @State private var presentedBookSlug: String?
+    /// Public profile presented from a universal link (shared profile URL).
+    @State private var presentedProfileUsername: String?
     // Measured bar heights, forwarded to pushed screens (see shellBarInsets).
     @State private var topBarHeight: CGFloat = 0
     @State private var bottomNavHeight: CGFloat = 0
@@ -196,6 +198,31 @@ struct AppShell: View {
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
         }
+        .fullScreenCover(isPresented: Binding(
+            get: { presentedProfileUsername != nil },
+            set: { if !$0 { presentedProfileUsername = nil } }
+        )) {
+            NavigationStack {
+                PublicProfileView(username: presentedProfileUsername ?? "")
+                    .toolbar(.hidden, for: .navigationBar)
+                    .appDestinations()
+            }
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
+            .environment(\.showsShellChrome, false)
+        }
+        // Universal links (https://thebasedreader.app/…) land here in the
+        // SwiftUI lifecycle. AASA on the site covers /book/* and /u/*; any
+        // other path stays in Safari and never reaches the app.
+        .onOpenURL { url in
+            guard url.host()?.hasSuffix("thebasedreader.app") == true else { return }
+            let parts = url.pathComponents.filter { $0 != "/" }
+            guard parts.count >= 2 else { return }
+            switch parts[0] {
+            case "book": presentedBookSlug = parts[1]
+            case "u": presentedProfileUsername = parts[1]
+            default: break
+            }
+        }
         // First-run guided tour (home): where imports + settings live. Runs
         // after the bar overlays in the chain so the dim covers them.
         .guidedTour("home-r2", steps: [
@@ -297,6 +324,8 @@ struct AppShell: View {
             case "profile": chrome.tab = .profile
             case let route? where route.hasPrefix("book:"):
                 debugBookSlug = String(route.dropFirst("book:".count))
+            case let route? where route.hasPrefix("user:"):
+                presentedProfileUsername = String(route.dropFirst("user:".count))
             case let route? where route.hasPrefix("cover:"):
                 debugCoverSlug = String(route.dropFirst("cover:".count))
             case "menu": menuDebugOpen = true
