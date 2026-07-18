@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["E5ZFZ263ET.app.tbra.ios"],
+        "components": [
+          { "/": "/book/*" },
+          { "/": "/u/*" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["E5ZFZ263ET.app.tbra.ios"]
+  }
+}

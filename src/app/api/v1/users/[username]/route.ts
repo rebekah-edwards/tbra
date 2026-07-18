@@ -42,6 +42,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ username: strin
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
       bio: user.bio ?? null,
+      accountType: user.accountType,
       createdAt: user.createdAt,
     },
     isOwner,

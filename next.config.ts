@@ -26,6 +26,16 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // Universal links: Apple's CDN requires application/json on the AASA
+        // file (the extensionless static file would otherwise serve as
+        // octet-stream).
+        source: "/.well-known/apple-app-site-association",
+        headers: [
+          { key: "Content-Type", value: "application/json" },
+          { key: "Cache-Control", value: "public, max-age=3600" },
+        ],
+      },
+      {
         source: "/book/:slug*",
         headers: [
           { key: "Cache-Control", value: "public, s-maxage=60, stale-while-revalidate=300" },
