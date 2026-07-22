@@ -29,10 +29,14 @@ const PLANS = [
 export function SubscribeButtons({
   isPremium,
   preview = false,
+  manageBilling = false,
 }: {
   isPremium: boolean;
   /** Staff accounts: show the cards users see, but don't let them buy. */
   preview?: boolean;
+  /** Only Stripe subscribers get the billing portal — beta testers are
+   *  members without a subscription to manage. */
+  manageBilling?: boolean;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +75,19 @@ export function SubscribeButtons({
 
   // Staff preview shows the pricing cards even though isPremium(staff) is
   // true — otherwise admins could never see what readers see.
+  if (isPremium && !preview && !manageBilling) {
+    // Member without a Stripe subscription (beta tester): nothing to bill,
+    // nothing to manage — just confirm the membership is active.
+    return (
+      <div className="text-center">
+        <span className="inline-flex items-center gap-1.5 rounded-xl border-2 border-neon-purple/40 bg-neon-purple/10 px-6 py-3 text-sm font-semibold text-neon-purple">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.2L21 9l-5 4.4L17.5 20 12 16.4 6.5 20 8 13.4 3 9l6.6-.8L12 2z" /></svg>
+          Based Reader — included with your account
+        </span>
+      </div>
+    );
+  }
+
   if (isPremium && !preview) {
     return (
       <div className="text-center">

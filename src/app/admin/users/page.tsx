@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser, isSuperAdmin } from "@/lib/auth";
 import { db } from "@/db";
-import { users } from "@/db/schema";
-import { desc } from "drizzle-orm";
+import { users, userFollows } from "@/db/schema";
+import { desc, eq } from "drizzle-orm";
 import { UserManagement } from "@/components/admin/user-management";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +23,11 @@ export default async function AdminUsersPage() {
     .from(users)
     .orderBy(desc(users.createdAt));
 
+  const following = await db
+    .select({ followedId: userFollows.followedId })
+    .from(userFollows)
+    .where(eq(userFollows.followerId, user.userId));
+
   return (
     <div className="space-y-6 lg:w-[60%] lg:mx-auto">
       <div>
@@ -37,7 +42,11 @@ export default async function AdminUsersPage() {
         </p>
       </div>
 
-      <UserManagement users={allUsers} currentUserId={user.userId} />
+      <UserManagement
+        users={allUsers}
+        currentUserId={user.userId}
+        initiallyFollowing={following.map((f) => f.followedId)}
+      />
     </div>
   );
 }
