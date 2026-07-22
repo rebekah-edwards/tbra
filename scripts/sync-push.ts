@@ -131,17 +131,21 @@ async function batchInsert(table: string, cols: string[], rows: any[][]) {
 
 async function fetchIdSet(table: string, col = 'id'): Promise<Set<string>> {
   const set = new Set<string>();
-  // Page deterministically — LIMIT/OFFSET without ORDER BY can skip/repeat rows under load
-  let offset = 0;
+  // Keyset pagination (2026-07-22): the old LIMIT/OFFSET walk made Turso
+  // re-scan from row 0 for every page — O(n²) on 70k+ row tables. Walking the
+  // unique column directly keeps every page O(page) and stays deterministic.
+  let cursor: string | null = null;
   const page = 10000;
   while (true) {
     const r = await remote.execute(
-      `SELECT ${col} FROM ${table} ORDER BY ${col} LIMIT ${page} OFFSET ${offset}`
+      cursor === null
+        ? { sql: `SELECT ${col} FROM ${table} ORDER BY ${col} LIMIT ${page}`, args: [] as any[] }
+        : { sql: `SELECT ${col} FROM ${table} WHERE ${col} > ? ORDER BY ${col} LIMIT ${page}`, args: [cursor] }
     );
     if (r.rows.length === 0) break;
     for (const row of r.rows as any[]) set.add(String(row[col]));
+    cursor = String((r.rows[r.rows.length - 1] as any)[col]);
     if (r.rows.length < page) break;
-    offset += page;
   }
   return set;
 }
@@ -318,12 +322,14 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
   const liveGenresAfter = await fetchIdSet('genres');
 
   // table, pk cols, [(col name, live set to check)]
+  // book_category_ratings + enrichment_log are handled by the delta pass
+  // BELOW this loop (2026-07-22) — at ~500k/~300k live rows, building their
+  // full live PK sets here was the CPU hang that got whole pushes watchdog-
+  // reaped at step 5c on 2026-07-19/20 (so 5e never ran either).
   const JUNCTION_TABLES: Array<[string, string[], Array<[string, Set<string>]>]> = [
     ['book_authors',          ['book_id', 'author_id'],   [['book_id', liveBooksAfter], ['author_id', liveAuthorsAfter]]],
     ['book_genres',           ['book_id', 'genre_id'],    [['book_id', liveBooksAfter], ['genre_id',  liveGenresAfter]]],
     ['book_series',           ['book_id', 'series_id'],   [['book_id', liveBooksAfter], ['series_id', liveSeriesAfter]]],
-    ['book_category_ratings', ['id'],                     [['book_id', liveBooksAfter]]],
-    ['enrichment_log',        ['id'],                     [['book_id', liveBooksAfter]]],
   ];
 
   for (const [tbl, pk, fkChecks] of JUNCTION_TABLES) {
@@ -331,18 +337,22 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
       const cols = getCols(tbl);
       if (cols.length === 0) continue;
 
-      // Build live PK set
+      // Build live PK set — rowid keyset walk (2026-07-22); the old
+      // LIMIT/OFFSET pagination re-scanned from row 0 every page.
       const liveSet = new Set<string>();
-      let offset = 0;
-      const page = 20000;
-      while (true) {
-        const r = await remote.execute(
-          `SELECT ${pk.join(',')} FROM ${tbl} ORDER BY ${pk[0]} LIMIT ${page} OFFSET ${offset}`
-        );
-        if (r.rows.length === 0) break;
-        for (const row of r.rows as any[]) liveSet.add(pk.map((c) => String(row[c])).join('\x1f'));
-        if (r.rows.length < page) break;
-        offset += page;
+      {
+        let cursor = -1;
+        const page = 20000;
+        while (true) {
+          const r = await remote.execute({
+            sql: `SELECT ${pk.join(',')}, rowid AS __rid FROM ${tbl} WHERE rowid > ? ORDER BY rowid LIMIT ${page}`,
+            args: [cursor],
+          });
+          if (r.rows.length === 0) break;
+          for (const row of r.rows as any[]) liveSet.add(pk.map((c) => String(row[c])).join('\x1f'));
+          cursor = Number((r.rows[r.rows.length - 1] as any).__rid);
+          if (r.rows.length < page) break;
+        }
       }
 
       // Pre-filter: drop rows whose FKs aren't present on Turso
@@ -368,6 +378,56 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
       const n = await batchInsert(tbl, cols, toPush);
       const orphanNote = orphanedCount > 0 ? ` [${orphanedCount} orphaned rows skipped]` : '';
       console.log(`     ✓ ${tbl}: pushed ${n} / ${toPush.length} missing rows${orphanNote}`);
+    } catch (e: any) {
+      console.log(`     ⚠ ${tbl}: ${e.message.slice(0, 120)}`);
+    }
+  }
+
+  // ─── 5c-delta: big junction tables via timestamp window ───────
+  // (2026-07-22) book_category_ratings (~500k) and enrichment_log (~300k)
+  // can't be full-diffed like the tables above — building their live PK sets
+  // was a 20+ minute CPU hang that got whole pushes watchdog-reaped. Every
+  // local write to these tables stamps a fresh timestamp, so only recent
+  // local rows can be unpushed: take a generous 21-day window, FK-filter,
+  // ask live which of exactly those ids it already has (chunked IN), and
+  // insert the missing ones. INSERT OR IGNORE semantics unchanged.
+  const DELTA_JUNCTION: Array<[string, string]> = [
+    ['book_category_ratings', 'updated_at'],
+    ['enrichment_log',        'created_at'],
+  ];
+  for (const [tbl, dcol] of DELTA_JUNCTION) {
+    try {
+      const cols = getCols(tbl);
+      if (cols.length === 0) continue;
+      const candidates = local.prepare(
+        `SELECT ${cols.join(',')} FROM ${tbl} WHERE ${dcol} > datetime('now', '-21 days')`
+      ).all() as any[];
+      let orphaned = 0;
+      const eligible = candidates.filter((r: any) => {
+        if (r.book_id != null && !liveBooksAfter.has(String(r.book_id))) { orphaned++; return false; }
+        return true;
+      });
+
+      const liveHas = new Set<string>();
+      for (let i = 0; i < eligible.length; i += 400) {
+        const chunk = eligible.slice(i, i + 400);
+        const r = await remote.execute({
+          sql: `SELECT id FROM ${tbl} WHERE id IN (${chunk.map(() => '?').join(',')})`,
+          args: chunk.map((c: any) => c.id),
+        });
+        for (const row of r.rows as any[]) liveHas.add(String(row.id));
+      }
+
+      const toPush = eligible
+        .filter((r: any) => !liveHas.has(String(r.id)))
+        .map((r: any) => cols.map((c) => r[c]));
+      const orphanNote = orphaned > 0 ? ` [${orphaned} orphaned rows skipped]` : '';
+      if (toPush.length === 0) {
+        console.log(`     · ${tbl}: in sync (checked ${eligible.length.toLocaleString()} recent rows)${orphanNote}`);
+        continue;
+      }
+      const n = await batchInsert(tbl, cols, toPush);
+      console.log(`     ✓ ${tbl}: pushed ${n} / ${toPush.length} missing recent rows${orphanNote}`);
     } catch (e: any) {
       console.log(`     ⚠ ${tbl}: ${e.message.slice(0, 120)}`);
     }

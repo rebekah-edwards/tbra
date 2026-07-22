@@ -177,20 +177,40 @@ function pkSetLocal(table: string, pk: string[]): Set<string> {
   return set;
 }
 
-async function fetchLiveRows(table: string, cols: string[], page = 5000): Promise<any[]> {
+// Keyset pagination on rowid (2026-07-22): the old LIMIT/OFFSET walk made
+// Turso re-scan from row 0 for every page — on ~500k-row tables
+// (book_category_ratings) deep pages took minutes each, so the pull either
+// tripped the stall detector (exit 3) or got watchdog-reaped, and the `&&`
+// chains behind it never ran (the 2026-07-19/20 zero-book nights). Walking
+// rowid keeps every page O(page). `extraWhere`/`params` restrict the walk
+// server-side — used by the delta pull below.
+async function fetchLiveRows(table: string, cols: string[], page = 5000, extraWhere = '', params: any[] = []): Promise<any[]> {
   const rows: any[] = [];
-  let offset = 0;
+  let cursor = -1;
   while (true) {
-    const r = await remote.execute(
-      `SELECT ${cols.join(',')} FROM ${table} ORDER BY ${cols[0]} LIMIT ${page} OFFSET ${offset}`
-    );
+    const where = `WHERE rowid > ?${extraWhere ? ` AND (${extraWhere})` : ''}`;
+    const r = await remote.execute({
+      sql: `SELECT ${cols.join(',')}, rowid AS __rid FROM ${table} ${where} ORDER BY rowid LIMIT ${page}`,
+      args: [cursor, ...params],
+    });
     if (r.rows.length === 0) break;
     for (const row of r.rows as any[]) rows.push(row);
+    cursor = Number((r.rows[r.rows.length - 1] as any).__rid);
     if (r.rows.length < page) break;
-    offset += page;
   }
   return rows;
 }
+
+// Delta pull for the two huge append/update-heavy tables (2026-07-22): a full
+// nightly transfer moved ~800k combined rows to find a few thousand changed
+// ones. Every write to these tables stamps a fresh timestamp, so pulling only
+// rows newer than the local watermark (minus a 3-day margin for partial runs
+// and clock skew) is lossless. Empty local table → falls back to a full
+// keyset walk.
+const DELTA_TABLES: Record<string, string> = {
+  book_category_ratings: 'updated_at',
+  enrichment_log: 'created_at',
+};
 
 (async () => {
   console.log('→ Pulling live changes into local SQLite via @libsql/client\n');
@@ -206,9 +226,18 @@ async function fetchLiveRows(table: string, cols: string[], page = 5000): Promis
       continue;
     }
 
+    const deltaCol = DELTA_TABLES[table];
+    let watermark: string | null = null;
+    if (deltaCol) {
+      const w = local.prepare(`SELECT datetime(MAX(${deltaCol}), '-3 days') AS w FROM ${table}`).get() as any;
+      watermark = w?.w ?? null;
+    }
+
     let liveRows: any[];
     try {
-      liveRows = await fetchLiveRows(table, cols);
+      liveRows = watermark
+        ? await fetchLiveRows(table, cols, 5000, `${deltaCol} > ?`, [watermark])
+        : await fetchLiveRows(table, cols);
     } catch (e: any) {
       errors.push(`${table} fetch: ${e.message}`);
       console.log(`  ✗  ${table}: fetch failed (${e.message.slice(0, 80)})`);
@@ -216,7 +245,7 @@ async function fetchLiveRows(table: string, cols: string[], page = 5000): Promis
     }
 
     if (liveRows.length === 0) {
-      console.log(`  ·  ${table.padEnd(35)} empty on live`);
+      console.log(`  ·  ${table.padEnd(35)} ${watermark ? 'no live changes since watermark' : 'empty on live'}`);
       continue;
     }
 

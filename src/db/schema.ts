@@ -181,6 +181,9 @@ export const bookCategoryRatings = sqliteTable("book_category_ratings", {
 }, (table) => [
   index("idx_bcr_book_id").on(table.bookId),
   uniqueIndex("idx_bcr_book_category").on(table.bookId, table.categoryId),
+  // 2026-07-22: sync-pull/push read this table by updated_at delta; without
+  // the index that filter full-scans ~500k rows and times out on Turso.
+  index("idx_bcr_updated_at").on(table.updatedAt),
 ]);
 
 // ─── Citations / evidence ───
