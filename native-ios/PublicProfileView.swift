@@ -226,17 +226,19 @@ struct PublicProfileView: View {
     @ViewBuilder
     private func accountBadge(_ type: String?) -> some View {
         if let type, type != "user" {
+            // Public rule (2026-07-22): beta testers read as Based Readers —
+            // only admin surfaces show the real tier.
+            let display = type == "beta_tester" ? "premium" : type
             let label: String = {
-                switch type {
+                switch display {
                 case "super_admin": return "Super Admin"
                 case "admin": return "Admin"
                 case "premium": return "Based Reader"
-                case "beta_tester": return "Beta Tester"
                 case "reader": return "Reader"
-                default: return type.replacingOccurrences(of: "_", with: " ").capitalized
+                default: return display.replacingOccurrences(of: "_", with: " ").capitalized
                 }
             }()
-            let isPurple = ["super_admin", "admin", "premium"].contains(type)
+            let isPurple = ["super_admin", "admin", "premium"].contains(display)
             Text(label)
                 .font(Theme.body(11, .medium))
                 .foregroundStyle(isPurple ? Theme.neonPurple : Theme.accentText)

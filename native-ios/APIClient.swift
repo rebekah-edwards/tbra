@@ -30,6 +30,13 @@ actor APIClient {
     nonisolated(unsafe) static var baseURL = URL(string: "https://thebasedreader.app")!
     #endif
 
+    /// Admin surfaces ALWAYS talk to production (2026-07-22): admin actions
+    /// (account upgrades, report triage, cover fixes) must land on the live
+    /// DB — on the Mac's dev copy they'd strand behind the user-table sync
+    /// safety filter. Local dev and prod share AUTH_SECRET, so the app's
+    /// session token verifies on both hosts (confirmed before switching).
+    nonisolated static let adminBaseURL = URL(string: "https://thebasedreader.app")!
+
     private let session = URLSession.shared
     private let decoder = JSONDecoder()
 
@@ -284,6 +291,16 @@ actor APIClient {
         try await send(path, method: method, body: body)
     }
 
+    // MARK: Admin (production-targeted — see adminBaseURL)
+
+    func adminGet<T: Decodable>(_ path: String) async throws -> T {
+        try await send(path, method: "GET", base: Self.adminBaseURL)
+    }
+
+    func adminRequest<T: Decodable>(_ path: String, method: String, body: [String: Any]) async throws -> T {
+        try await send(path, method: method, body: body, base: Self.adminBaseURL)
+    }
+
     // MARK: Profile
 
     func profile() async throws -> ProfileData {
@@ -418,9 +435,10 @@ actor APIClient {
         query: [URLQueryItem]? = nil,
         body: [String: Any]? = nil, bodyData: Data? = nil,
         contentType: String = "application/json",
-        authed: Bool = true, isRetry: Bool = false
+        authed: Bool = true, isRetry: Bool = false,
+        base: URL? = nil
     ) async throws -> T {
-        var url = Self.baseURL.appending(path: path)
+        var url = (base ?? Self.baseURL).appending(path: path)
         if let query { url.append(queryItems: query) }
         var req = URLRequest(url: url)
         req.httpMethod = method
@@ -446,7 +464,7 @@ actor APIClient {
         if http.statusCode == 401 && authed && !isRetry {
             // Access token expired — rotate once and retry.
             try await refreshAccessToken()
-            return try await send(path, method: method, query: query, body: body, bodyData: bodyData, authed: authed, isRetry: true)
+            return try await send(path, method: method, query: query, body: body, bodyData: bodyData, authed: authed, isRetry: true, base: base)
         }
 
         guard (200..<300).contains(http.statusCode) else {

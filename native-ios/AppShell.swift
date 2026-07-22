@@ -53,6 +53,8 @@ struct AppShell: View {
     @State private var debugCoverPickerId: String?
     @State private var menuDebugOpen = false
     @State private var settingsDebugOpen = false
+    @State private var adminUsersDebugOpen = false
+    @State private var basedReaderDebugOpen = false
     #endif
 
     var body: some View {
@@ -258,6 +260,16 @@ struct AppShell: View {
                 .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
         }
+        .fullScreenCover(isPresented: $adminUsersDebugOpen) {
+            AdminUsersSheet()
+                .environment(\.shellBarInsets, (top: 0, bottom: 0))
+                .environment(\.showsShellChrome, false)
+        }
+        .fullScreenCover(isPresented: $basedReaderDebugOpen) {
+            NavigationStack { BasedReaderScreen().appDestinations() }
+                .environment(\.shellBarInsets, (top: 0, bottom: 0))
+                .environment(\.showsShellChrome, false)
+        }
         .fullScreenCover(isPresented: Binding(
             get: { debugCoverSlug != nil },
             set: { if !$0 { debugCoverSlug = nil } }
@@ -330,6 +342,8 @@ struct AppShell: View {
                 debugCoverSlug = String(route.dropFirst("cover:".count))
             case "menu": menuDebugOpen = true
             case "settings": settingsDebugOpen = true
+            case "admin-users": adminUsersDebugOpen = true
+            case "based-reader": basedReaderDebugOpen = true
             case "shelves": shelvesDebugOpen = true
             case let route? where route.hasPrefix("shelf:"):
                 debugShelfId = String(route.dropFirst("shelf:".count))

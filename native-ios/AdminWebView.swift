@@ -5,15 +5,17 @@ import WebKit
 //
 // The admin dashboards (covers, issues, ARC reviews, users, landing…) are
 // large, admin-only, and change often — rebuilding them natively would just
-// create drift. Instead the app opens the REAL admin pages against the same
-// backend it already talks to, authenticated by injecting the Keychain
-// access token as the `tbra-session` cookie: the bearer token and the web
-// session cookie are the same jose JWT, verified by the same
-// verifySessionToken() on the server, so the web pages simply see a
-// signed-in admin session.
+// create drift. Instead the app opens the REAL admin pages, authenticated
+// through the web-session bridge: the bearer token and the web session
+// cookie are the same jose JWT, verified by the same verifySessionToken()
+// on the server, so the web pages simply see a signed-in admin session.
 //
-// Data note: like everything in the app, these pages operate on the local
-// database and changes ride the existing sync to the live site.
+// Data note (changed 2026-07-22): admin pages ALWAYS load PRODUCTION
+// (APIClient.adminBaseURL), even in Debug builds — admin actions must land
+// on the live DB directly, and this also stops the sheet from 500ing
+// whenever the Mac's dev server is down or mid-panic (the Turbopack error
+// Rebekah hit on her phone). Local + prod share AUTH_SECRET, so the
+// Debug token authenticates against prod.
 
 struct AdminSheet: View {
     @Environment(\.dismiss) private var dismiss
@@ -122,7 +124,7 @@ private struct AdminWebView: UIViewRepresentable {
         var target = "/" + path
         if let query { target += "?" + query }
 
-        var comps = URLComponents(url: APIClient.baseURL.appending(path: "api/v1/auth/web-session"),
+        var comps = URLComponents(url: APIClient.adminBaseURL.appending(path: "api/v1/auth/web-session"),
                                   resolvingAgainstBaseURL: false)!
         comps.queryItems = [
             URLQueryItem(name: "token", value: Keychain.accessToken ?? ""),

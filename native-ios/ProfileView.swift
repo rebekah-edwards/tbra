@@ -142,7 +142,9 @@ struct ProfileView: View {
         switch type {
         case "super_admin": return "Super Admin"
         case "admin": return "Admin"
-        case "based_reader": return "Based Reader"
+        // Beta testers see themselves as Based Readers (rule 2026-07-22) —
+        // the delineation lives only on admin surfaces.
+        case "based_reader", "premium", "beta_tester": return "Based Reader"
         default: return type.replacingOccurrences(of: "_", with: " ").capitalized
         }
     }

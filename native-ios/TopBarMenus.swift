@@ -146,6 +146,7 @@ struct HamburgerMenuSheet: View {
     @State private var buddyReadsOpen = false
     @State private var browseOpen = false
     @State private var adminOpen = false
+    @State private var manageUsersOpen = false
     @State private var basedReaderOpen = false
 
     private struct WebItem { let label: String; let icon: String; let path: String }
@@ -248,6 +249,14 @@ struct HamburgerMenuSheet: View {
                 } label: {
                     menuRow(icon: "wrench.and.screwdriver", label: "Admin", tint: Theme.neonPurple)
                 }
+                // Native user management (super-admin only, like /admin/users).
+                if user.accountType == "super_admin" {
+                    Button {
+                        manageUsersOpen = true
+                    } label: {
+                        menuRow(icon: "person.crop.circle.badge.checkmark", label: "Manage Users", tint: Theme.neonPurple)
+                    }
+                }
             }
 
             Divider().background(Theme.border.opacity(0.6)).padding(.vertical, 4)
@@ -309,6 +318,11 @@ struct HamburgerMenuSheet: View {
         .fullScreenCover(isPresented: $adminOpen) {
             AdminSheet()
         }
+        .fullScreenCover(isPresented: $manageUsersOpen) {
+            AdminUsersSheet()
+                .environment(\.shellBarInsets, (top: 0, bottom: 0))
+                .environment(\.showsShellChrome, false)
+        }
         .fullScreenCover(isPresented: $basedReaderOpen) {
             NavigationStack {
                 BasedReaderScreen()
@@ -364,20 +378,29 @@ struct BasedReaderScreen: View {
         if case .signedIn(let u) = auth.phase { return u.accountType }
         return "reader"
     }
-    private var isStaff: Bool { !["reader", "premium"].contains(accountType) }
+    // Front-end parity rule (2026-07-22): beta testers are full members —
+    // indistinguishable from paying Based Readers. Only admin/super_admin
+    // count as staff (pricing preview + staff plan chip, i.e. Rebekah).
+    private var isMember: Bool { ["premium", "beta_tester", "admin", "super_admin"].contains(accountType) }
+    private var isAdminStaff: Bool { ["admin", "super_admin"].contains(accountType) }
     private var isSubscriber: Bool { accountType == "premium" }
+    private var isBeta: Bool { accountType == "beta_tester" }
 
     private let liveFeatures: [(icon: String, tint: Color, title: String, blurb: String)] = [
         ("bolt.fill", Theme.accent, "Unlimited Find My Next Read", "Mood-based book discovery with no limits. Free accounts get 3 searches a month."),
         ("books.vertical.fill", Theme.neonPurple, "Custom Shelves", "Create your own book lists beyond TBR, Reading, and Finished. Everyone keeps Top Shelf Reads."),
         ("heart.fill", Theme.neonBlue, "Buddy Reads", "Read together with friends and track your progress side by side."),
         ("note.text", Theme.neonPurple, "Notes to Self", "Leave a private note on any TBR book so future-you remembers why it's there."),
+        ("arrow.down.doc.fill", Theme.neonBlue, "Full Data Export", "Download your entire library — shelves, ratings, reviews — as JSON anytime. CSV stays free for everyone."),
         ("checkmark.seal.fill", Theme.accent, "Ad-Free Forever", "tbr*a stays clean and distraction-free for Based Readers, always."),
     ]
     private let roadmap: [(icon: String, title: String, blurb: String)] = [
         ("person.2.fill", "Family Accounts", "Reader profiles for your kids — track their TBRs without mixing recommendations."),
         ("chart.line.uptrend.xyaxis", "Advanced Stats", "Deeper reading analytics, trends, and insights."),
+        ("paintbrush.fill", "Custom Themes", "Full looks for the app — fonts, colors, everything — not just a font swap."),
         ("app.gift.fill", "Custom App Icons", "Alternative app icon designs to make tbr*a yours."),
+        ("trophy.fill", "Reading Challenges", "Structured challenges with perks and discounts from book-loving partners."),
+        ("text.bubble.fill", "AI Book Discovery Chat", "Describe exactly what you want — \"cozy fantasy, no romance, under 300 pages\" — and get real matches."),
     ]
 
     var body: some View {
@@ -396,7 +419,7 @@ struct BasedReaderScreen: View {
                     .overlay(Capsule().stroke(Theme.neonPurple.opacity(0.3), lineWidth: 1))
 
                     VStack(spacing: 2) {
-                        Text("Become a")
+                        Text(isMember ? "You're a" : "Become a")
                             .font(Theme.heading(34, .heavy))
                             .foregroundStyle(Theme.foreground)
                         Text("Based Reader")
@@ -409,8 +432,8 @@ struct BasedReaderScreen: View {
                                     startPoint: .leading, endPoint: .trailing)
                             )
                     }
-                    Text(isSubscriber || isStaff
-                         ? "You have access to everything below."
+                    Text(isMember
+                         ? "Every Based Reader benefit below is active on your account."
                          : "Every tool we build for readers who take their shelves seriously.")
                         .font(Theme.body(14))
                         .foregroundStyle(Theme.muted)
@@ -419,11 +442,11 @@ struct BasedReaderScreen: View {
 
                     HStack(spacing: 8) {
                         Text("Current plan").font(Theme.body(11)).foregroundStyle(Theme.muted)
-                        Text(isSubscriber ? "Based Reader" : isStaff ? accountType.replacingOccurrences(of: "_", with: " ") : "Free Reader")
+                        Text(isAdminStaff ? accountType.replacingOccurrences(of: "_", with: " ") : isMember ? "Based Reader" : "Free Reader")
                             .font(Theme.body(11, .semibold))
-                            .foregroundStyle(isSubscriber || isStaff ? Theme.neonPurple : Theme.muted)
+                            .foregroundStyle(isMember ? Theme.neonPurple : Theme.muted)
                             .padding(.horizontal, 8).padding(.vertical, 3)
-                            .background((isSubscriber || isStaff ? Theme.neonPurple.opacity(0.15) : Theme.surfaceAlt).opacity(1), in: Capsule())
+                            .background((isMember ? Theme.neonPurple.opacity(0.15) : Theme.surfaceAlt).opacity(1), in: Capsule())
                     }
                     .padding(.horizontal, 14).padding(.vertical, 7)
                     .background(Theme.surface.opacity(0.7), in: Capsule())
@@ -462,6 +485,18 @@ struct BasedReaderScreen: View {
                     .disabled(busy)
                     Text("Update payment, switch plans, or cancel anytime.")
                         .font(Theme.body(11)).foregroundStyle(Theme.muted).padding(.top, 8)
+                } else if isBeta {
+                    // Member without a Stripe subscription: nothing to bill,
+                    // nothing to manage — just confirm the membership.
+                    HStack(spacing: 6) {
+                        Image(systemName: "star.fill").font(.system(size: 12))
+                        Text("Based Reader — included with your account")
+                            .font(Theme.body(14, .semibold))
+                    }
+                    .foregroundStyle(Theme.neonPurple)
+                    .padding(.horizontal, 22).padding(.vertical, 12)
+                    .background(Theme.neonPurple.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.neonPurple.opacity(0.4), lineWidth: 2))
                 } else {
                     HStack(spacing: 12) {
                         priceCard(price: "$4.99", per: "per month", cta: "Go monthly",
@@ -470,7 +505,7 @@ struct BasedReaderScreen: View {
                                   note: "That's $3.33 a month", plan: "annual", highlight: true, badge: "4 months free")
                     }
                     .padding(.horizontal, 20)
-                    Text(isStaff
+                    Text(isAdminStaff
                          ? "Admin preview — this is what reader accounts see. Staff accounts can't subscribe."
                          : "Cancel anytime. Secure checkout by Stripe.")
                         .font(Theme.body(11)).foregroundStyle(Theme.muted)
@@ -483,7 +518,7 @@ struct BasedReaderScreen: View {
 
                 // ── Features ──
                 VStack(alignment: .leading, spacing: 12) {
-                    SectionHeading("Everything you unlock")
+                    SectionHeading(isMember ? "Included in your membership" : "Everything you unlock")
                     ForEach(liveFeatures, id: \.title) { f in
                         HStack(alignment: .top, spacing: 12) {
                             Image(systemName: f.icon)
@@ -600,7 +635,7 @@ struct BasedReaderScreen: View {
             }
             .shadow(color: highlight ? Theme.neonPurple.opacity(0.25) : .clear, radius: 14)
         }
-        .disabled(busy || isStaff)
+        .disabled(busy || isAdminStaff)
     }
 
     private func openBilling(action: String, plan: String? = nil) {
