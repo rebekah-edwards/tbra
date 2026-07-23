@@ -30,8 +30,13 @@ export async function addReadingNoteFor(
   const percentComplete = input.percentComplete ?? null;
 
   if (!bookId) return { success: false, error: "Book ID required" };
-  if (!noteText) return { success: false, error: "Note text required" };
-  if (noteText.length > 2000) return { success: false, error: "Note too long (max 2000 chars)" };
+  // Progress-only entries are allowed (user request 2026-07-23): a note is
+  // required only when there's no page/percent to save. note_text is NOT
+  // NULL in the schema, so progress-only rows store "".
+  if (!noteText && pageNumber === null && percentComplete === null) {
+    return { success: false, error: "Add a note or a progress position" };
+  }
+  if (noteText && noteText.length > 2000) return { success: false, error: "Note too long (max 2000 chars)" };
 
   // Validate the book is in currently_reading state
   const state = await db
@@ -85,7 +90,9 @@ export async function addReadingNoteFor(
         if (pageNumber) parts.push(`p.${pageNumber}`);
         if (percentComplete !== null) parts.push(`${percentComplete}%`);
         const progressInfo = parts.length > 0 ? ` (${parts.join(", ")})` : "";
-        const message = `📖 Reading update${progressInfo}: ${noteText}`;
+        const message = noteText
+          ? `📖 Reading update${progressInfo}: ${noteText}`
+          : `📖 Reading update${progressInfo}`;
         await db.insert(buddyReadMessages).values({
           buddyReadId,
           userId,

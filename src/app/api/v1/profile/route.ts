@@ -39,6 +39,13 @@ export async function GET(req: Request) {
       avatarUrl: user.avatarUrl,
       accountType: user.accountType,
       createdAt: user.createdAt,
+      // Edit-Profile prefill (native, 2026-07-23)
+      bio: user.bio ?? null,
+      instagram: user.instagram ?? null,
+      tiktok: user.tiktok ?? null,
+      threads: user.threads ?? null,
+      twitter: user.twitter ?? null,
+      isPrivate: user.isPrivate ?? false,
     },
     stats,
     favorites,
