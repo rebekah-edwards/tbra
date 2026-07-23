@@ -107,19 +107,17 @@ export async function removeBookStateFor(userId: string, bookId: string) {
 
   if (!existing) return;
 
-  const formats = parseFormats(existing.ownedFormats);
-
-  if (formats.length > 0) {
-    // Keep the row for owned formats, just clear the state and active formats
-    await db
-      .update(userBookState)
-      .set({ state: null, activeFormats: null, updatedAt: new Date().toISOString() })
-      .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
-  } else {
-    await db
-      .delete(userBookState)
-      .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
-  }
+  // SOFT-REMOVE ONLY (2026-07-22): the row is kept with state=NULL and a
+  // fresh updated_at for ALL removals, owned or not. Hard-deleting the row
+  // made removals unsyncable — the bidirectional sync never deletes, so the
+  // other side's copy resurrected every removal on the next tick (Rebekah
+  // lost an evening of TBR cleanup to this). A NULL-state row propagates as
+  // a normal newest-wins update. NULL-state unowned rows render nowhere, so
+  // UI behavior is unchanged.
+  await db
+    .update(userBookState)
+    .set({ state: null, activeFormats: null, updatedAt: new Date().toISOString() })
+    .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
 }
 
 /** "Remove Everything": review + tags + dimension ratings + rating + editions + sessions + state. */
@@ -148,8 +146,12 @@ export async function removeFromLibraryFor(userId: string, bookId: string) {
     .delete(readingSessions)
     .where(and(eq(readingSessions.userId, userId), eq(readingSessions.bookId, bookId)));
 
+  // Soft-remove the state row (2026-07-22): hard deletes resurrect via the
+  // bidirectional sync (it never deletes). NULL everything + fresh
+  // updated_at propagates as a normal newest-wins update.
   await db
-    .delete(userBookState)
+    .update(userBookState)
+    .set({ state: null, activeFormats: null, ownedFormats: null, updatedAt: new Date().toISOString() })
     .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
 }
 
@@ -169,20 +171,16 @@ export async function setOwnedFormatsFor(userId: string, bookId: string, rawForm
   const removedFormats = previousFormats.filter((f) => !formats.includes(f));
 
   if (existing) {
-    if (formats.length === 0 && !existing.state) {
-      // No formats and no state — delete the row
-      await db
-        .delete(userBookState)
-        .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
-    } else {
-      await db
-        .update(userBookState)
-        .set({
-          ownedFormats: formats.length > 0 ? JSON.stringify(formats) : null,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
-    }
+    // Always UPDATE, never delete (2026-07-22): an emptied row (no formats,
+    // no state) must survive as a NULL row so the removal syncs — hard
+    // deletes resurrect from the other side on the next sync tick.
+    await db
+      .update(userBookState)
+      .set({
+        ownedFormats: formats.length > 0 ? JSON.stringify(formats) : null,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(and(eq(userBookState.userId, userId), eq(userBookState.bookId, bookId)));
   } else if (formats.length > 0) {
     await db.insert(userBookState).values({
       userId,
