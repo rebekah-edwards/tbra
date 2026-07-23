@@ -4,8 +4,8 @@ import { updateReadingSessionFor, deleteReadingSessionFor } from "@/lib/actions/
 
 /**
  * PATCH /api/v1/reading-sessions/[sessionId]
- * Body: { startedAt?, completionDate?, activeFormats? } — the per-session
- * editor in Reading History (dates + format retro-tag).
+ * Body: { startedAt?, completionDate?, pausedAt?, activeFormats? } — the
+ * per-session editor in Reading History (dates + format retro-tag).
  */
 export async function PATCH(req: Request, ctx: { params: Promise<{ sessionId: string }> }) {
   const user = await getApiUser(req);
@@ -18,11 +18,18 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ sessionId: st
   const data: {
     startedAt?: string;
     completionDate?: string | null;
+    pausedAt?: string | null;
     activeFormats?: string[] | null;
   } = {};
   if (typeof body.startedAt === "string") data.startedAt = body.startedAt;
   if ("completionDate" in body) {
     data.completionDate = typeof body.completionDate === "string" ? body.completionDate : null;
+  }
+  // Paused-date editing (2026-07-22): the web session editor supported it via
+  // the server action, but this route silently dropped the field — the native
+  // app couldn't move a pause date at all.
+  if ("pausedAt" in body) {
+    data.pausedAt = typeof body.pausedAt === "string" ? body.pausedAt : null;
   }
   if ("activeFormats" in body) {
     data.activeFormats = Array.isArray(body.activeFormats)

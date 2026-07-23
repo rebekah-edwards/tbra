@@ -468,7 +468,9 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
             </svg>
             Filters
             {advancedFilterCount > 0 && (
-              <span className="bg-accent/20 text-accent text-[10px] font-medium rounded-full px-1.5 py-0.5">
+              {/* text-foreground, NOT text-accent: the count was rendering
+                  lime-on-lime in light mode (user report 2026-07-22). */}
+              <span className="bg-accent/20 text-foreground text-[10px] font-medium rounded-full px-1.5 py-0.5">
                 {advancedFilterCount}
               </span>
             )}
