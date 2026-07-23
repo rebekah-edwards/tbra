@@ -126,7 +126,11 @@ export async function analyzeBookContent(
     const timeout = setTimeout(() => controller.abort(), 90_000);
     response = await client.chat.completions.create(
       {
-        model: "grok-3",
+        // Env-overridable (2026-07-23): grok-3 no longer appears in the
+        // account's /v1/models list — it still answers as a legacy alias,
+        // but the migration path to grok-4.5 should be a config change,
+        // not a deploy.
+        model: process.env.XAI_ANALYZE_MODEL || "grok-3",
         messages: [
           {
             role: "user",
