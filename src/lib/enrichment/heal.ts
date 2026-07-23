@@ -316,7 +316,9 @@ async function rewriteSummary(title: string, currentSummary: string): Promise<st
 
     const response = await client.chat.completions.create(
       {
-        model: "grok-3-mini",
+        // Env-overridable (2026-07-23) — see analyze.ts; grok-3-mini is a
+        // legacy alias no longer listed on the account.
+        model: process.env.XAI_HEAL_MODEL || "grok-3-mini",
         messages: [
           {
             role: "user",
