@@ -72,6 +72,11 @@ export function GlobalReportButton() {
         title="Report Issue"
       >
         <div className="px-5 py-4 space-y-4">
+          <p className="text-xs text-muted leading-relaxed">
+            Spotted something off — a bug, a glitch, or info that isn&rsquo;t right?
+            Describe it here and it goes straight to the tbr*a team with the page
+            you&rsquo;re on.
+          </p>
           <div className="text-xs text-muted">
             <span className="font-medium text-foreground">Page</span>
             <span className="mx-1.5">·</span>

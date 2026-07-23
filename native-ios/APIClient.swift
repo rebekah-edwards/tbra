@@ -313,6 +313,42 @@ actor APIClient {
         try await send("/api/v1/profile", method: "GET")
     }
 
+    /// Native Edit Profile (2026-07-23) — same validation as the web form
+    /// (shared server core). Throws APIError.server with the validation
+    /// message on username conflicts / rate limits.
+    func updateProfile(displayName: String?, username: String?, bio: String?,
+                       instagram: String?, tiktok: String?, threads: String?,
+                       twitter: String?, isPrivate: Bool) async throws {
+        struct Ok: Codable { let ok: Bool }
+        let _: Ok = try await send("/api/v1/profile/update", method: "PATCH", body: [
+            "displayName": displayName ?? NSNull(),
+            "username": username ?? NSNull(),
+            "bio": bio ?? NSNull(),
+            "instagram": instagram ?? NSNull(),
+            "tiktok": tiktok ?? NSNull(),
+            "threads": threads ?? NSNull(),
+            "twitter": twitter ?? NSNull(),
+            "isPrivate": isPrivate,
+        ])
+    }
+
+    /// Avatar upload — same web route the /profile/edit page posts to
+    /// (bearer-authenticated since 2026-07-23). Returns the new avatar URL.
+    func uploadAvatar(jpeg: Data) async throws -> String {
+        struct Res: Codable { let avatarUrl: String }
+        let boundary = "tbra-\(UUID().uuidString)"
+        var form = Data()
+        form.append("--\(boundary)\r\n".data(using: .utf8)!)
+        form.append("Content-Disposition: form-data; name=\"avatar\"; filename=\"avatar.jpg\"\r\n".data(using: .utf8)!)
+        form.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        form.append(jpeg)
+        form.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        let res: Res = try await send("/api/profile/avatar", method: "POST",
+                                      bodyData: form,
+                                      contentType: "multipart/form-data; boundary=\(boundary)")
+        return res.avatarUrl
+    }
+
     // MARK: Discover
 
     /// Returns (books, reasons-by-book-id).

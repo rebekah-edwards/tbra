@@ -39,7 +39,9 @@ struct ProfileRootView: View {
 struct ProfileView: View {
     @Binding var path: NavigationPath
     @Environment(AuthStore.self) private var auth
+    @Environment(ChromeState.self) private var chrome: ChromeState?
     @State private var model = ProfileModel()
+    @State private var editProfileOpen = false
     @State private var copiedReferral = false
     @State private var showAllReviews = false
     @State private var showAllJournal = false
@@ -72,6 +74,12 @@ struct ProfileView: View {
         .reportsPage("/profile")
         .refreshable { await model.load() }
         .task { await model.load() }
+        .sheet(isPresented: $editProfileOpen) {
+            if let user = model.data?.user {
+                EditProfileSheet(user: user, onSaved: { await model.load() })
+                    .presentationBackground(Theme.bg)
+            }
+        }
         .alert("Error", isPresented: .constant(model.error != nil)) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
@@ -110,12 +118,11 @@ struct ProfileView: View {
                 .font(Theme.body(14))
                 .foregroundStyle(Theme.foreground.opacity(0.85))
 
-                // Edit/public-profile flows open the live site until they go native
                 HStack(spacing: 8) {
                     Button {
-                        if let url = URL(string: "https://thebasedreader.app/profile/edit") {
-                            UIApplication.shared.open(url)
-                        }
+                        // Native Edit Profile sheet (2026-07-23) — used to
+                        // bounce out to the web app.
+                        editProfileOpen = true
                     } label: {
                         // Lime in dark mode, branded blue in light — lime on
                         // the light background was illegible.
@@ -186,29 +193,39 @@ struct ProfileView: View {
         return out.string(from: date)
     }
 
-    // ── Stat pills ──
+    // ── Stat pills — tappable, deep-link into My Library (2026-07-23) ──
     private func statPills(_ data: ProfileData) -> some View {
         HStack(spacing: 12) {
-            statPill("\(data.stats.completed)", "Read", tint: Theme.neonPurple)
-            statPill("\(data.stats.currentlyReading)", "Reading", tint: Theme.neonBlue)
-            statPill("\(data.stats.tbr)", "TBR", tint: Theme.accent)
+            statPill("\(data.stats.completed)", "Read", tint: Theme.neonPurple,
+                     dest: (group: "activity", filter: "completed"))
+            statPill("\(data.stats.currentlyReading)", "Reading", tint: Theme.neonBlue,
+                     dest: (group: "activity", filter: "currently_reading"))
+            statPill("\(data.stats.tbr)", "TBR", tint: Theme.accent,
+                     dest: (group: "tbr", filter: "all"))
         }
     }
 
-    private func statPill(_ value: String, _ label: String, tint: Color) -> some View {
-        VStack(spacing: 2) {
-            Text(value)
-                .font(Theme.heading(26, .bold))
-                .foregroundStyle(Theme.foreground)
-            Text(label)
-                .font(Theme.body(14))
-                .foregroundStyle(Theme.muted)
+    private func statPill(_ value: String, _ label: String, tint: Color,
+                          dest: (group: String, filter: String)) -> some View {
+        Button {
+            chrome?.pendingLibrarySelection = dest
+            chrome?.selectTab(.library)
+        } label: {
+            VStack(spacing: 2) {
+                Text(value)
+                    .font(Theme.heading(26, .bold))
+                    .foregroundStyle(Theme.foreground)
+                Text(label)
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.muted)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(tint.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(tint.opacity(0.35), lineWidth: 1))
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(tint.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(tint.opacity(0.35), lineWidth: 1))
+        .buttonStyle(.plain)
     }
 
     // ── Invite Friends ──

@@ -397,6 +397,10 @@ final class ChromeState {
     /// — screens stamp it via .reportsPage(); the global report button files
     /// it as reported_issues.page_url, same as the web's GlobalReportButton.
     var currentPage = "/"
+    /// One-shot library deep-link: profile stat pills set this + switch to
+    /// the Library tab; LibraryView consumes it in onAppear ("tbr"/"activity"/
+    /// "owned" + sub-filter key) and clears it.
+    var pendingLibrarySelection: (group: String, filter: String)?
     // Wired by AppShell:
     var goHome: @MainActor () -> Void = {}
     var openSearch: @MainActor () -> Void = {}

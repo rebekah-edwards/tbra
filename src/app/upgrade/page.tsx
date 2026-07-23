@@ -34,6 +34,12 @@ const LIVE_FEATURES = [
     tint: "purple",
   },
   {
+    title: "Full Data Export",
+    description: "Download your entire library — shelves, ratings, reviews — as JSON anytime. CSV stays free for everyone.",
+    icon: "download",
+    tint: "blue",
+  },
+  {
     title: "Ad-Free Forever",
     description: "tbr*a stays clean and distraction-free for Based Readers, always.",
     icon: "trophy",
@@ -53,9 +59,24 @@ const COMING_SOON = [
     icon: "chart",
   },
   {
+    title: "Custom Themes",
+    description: "Full looks for the app — fonts, colors, everything — not just a font swap.",
+    icon: "brush",
+  },
+  {
     title: "Custom App Icons",
     description: "Alternative app icon designs to make tbr*a yours.",
     icon: "palette",
+  },
+  {
+    title: "Reading Challenges",
+    description: "Structured challenges with perks and discounts from book-loving partners.",
+    icon: "trophy",
+  },
+  {
+    title: "AI Book Discovery Chat",
+    description: "Describe exactly what you want — “cozy fantasy, no romance, under 300 pages” — and get real matches.",
+    icon: "chat",
   },
 ];
 
@@ -129,6 +150,20 @@ function FeatureIcon({ icon }: { icon: string }) {
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" />
         </svg>
       );
+    case "brush":
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08" />
+          <path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z" />
+        </svg>
+      );
+    case "chat":
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+          <path d="M8 12h.01" /><path d="M12 12h.01" /><path d="M16 12h.01" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -139,7 +174,10 @@ export default async function UpgradePage() {
   if (!user) redirect("/login");
 
   const userIsPremium = isPremium(user);
-  const isStaff = !["reader", "premium"].includes(user.accountType);
+  // Beta testers are full members on the front end (rule 2026-07-22) — only
+  // admin/super_admin get the staff pricing preview.
+  const isAdminStaff = ["admin", "super_admin"].includes(user.accountType);
+  const hasStripeSub = user.accountType === "premium";
 
   return (
     // overflow-x-clip: the aurora bleeds 32px past both edges (-inset-x-8)
@@ -156,12 +194,12 @@ export default async function UpgradePage() {
             Premium
           </span>
           <h1 className="mt-4 font-heading text-4xl font-extrabold leading-tight text-foreground">
-            Become a<br />
+            {userIsPremium ? "You’re a" : "Become a"}<br />
             <span className="upgrade-gradient-text">Based Reader</span>
           </h1>
           <p className="mt-3 text-sm text-muted max-w-sm mx-auto">
             {userIsPremium
-              ? "You have access to everything below. Thanks for backing tbr*a."
+              ? "Every Based Reader benefit below is active on your account. Thanks for backing tbr*a."
               : "Every tool we build for readers who take their shelves seriously."}
           </p>
           {/* Current plan chip */}
@@ -174,16 +212,18 @@ export default async function UpgradePage() {
                   : "bg-surface-alt text-muted"
               }`}
             >
-              {userIsPremium ? "Based Reader" : isStaff ? user.accountType.replace("_", " ") : "Free Reader"}
+              {isAdminStaff ? user.accountType.replace("_", " ") : userIsPremium ? "Based Reader" : "Free Reader"}
             </span>
           </div>
         </div>
 
         {/* Pricing — first, before the pitch */}
-        <SubscribeButtons isPremium={userIsPremium} preview={isStaff} />
+        <SubscribeButtons isPremium={userIsPremium} preview={isAdminStaff} manageBilling={hasStripeSub} />
 
         {/* Live features */}
-        <h2 className="section-heading text-sm mt-12 mb-4">Everything you unlock</h2>
+        <h2 className="section-heading text-sm mt-12 mb-4">
+          {userIsPremium ? "Included in your membership" : "Everything you unlock"}
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {LIVE_FEATURES.map((feature) => (
             <div

@@ -298,37 +298,161 @@ struct PublicProfileView: View {
         }
     }
 
+    // Truncated to 5 with a "View all" push (user request 2026-07-23) —
+    // the full list gets the web's search + DNF/Written filters.
     private var reviewsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeading("Recent Reviews")
-            ForEach(model.reviews) { review in
-                NavigationLink(value: BookRoute(idOrSlug: review.bookSlug ?? review.bookId)) {
-                    HStack(alignment: .top, spacing: 12) {
-                        CoverThumb(url: review.coverImageUrl, width: 44, height: 66, radius: 5, title: review.title)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(review.title)
-                                .font(Theme.body(15, .semibold))
-                                .foregroundStyle(Theme.foreground)
-                                .multilineTextAlignment(.leading)
-                            if let rating = review.rating {
-                                StarRow(rating: rating)
-                            }
-                            if let text = review.reviewText, !text.isEmpty {
-                                Text(text)
-                                    .font(Theme.body(13))
-                                    .foregroundStyle(Theme.muted)
-                                    .lineLimit(3)
-                                    .multilineTextAlignment(.leading)
-                            }
-                        }
-                        Spacer()
-                    }
-                    .padding(12)
-                    .background(Theme.surface.opacity(0.55))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+            ForEach(model.reviews.prefix(5)) { review in
+                PublicReviewRow(review: review)
+            }
+            if model.reviews.count > 5 {
+                NavigationLink {
+                    AllPublicReviewsView(reviews: model.reviews,
+                                         displayName: model.user?.displayName ?? "@\(model.username)")
+                } label: {
+                    Text("View all \(model.reviews.count) reviews")
+                        .font(Theme.body(14, .semibold))
+                        .foregroundStyle(Theme.neonBlue)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(Theme.surface.opacity(0.55), in: RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
                 }
             }
+        }
+    }
+}
+
+// One public-review card — shared by the profile's 5-row preview and the
+// View-all list. Review text renders through ReviewHTMLText so formatting
+// tags never show as raw code (user report 2026-07-23).
+struct PublicReviewRow: View {
+    let review: UserReviewRow
+
+    var body: some View {
+        NavigationLink(value: BookRoute(idOrSlug: review.bookSlug ?? review.bookId)) {
+            HStack(alignment: .top, spacing: 12) {
+                CoverThumb(url: review.coverImageUrl, width: 44, height: 66, radius: 5, title: review.title)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(review.title)
+                            .font(Theme.body(15, .semibold))
+                            .foregroundStyle(Theme.foreground)
+                            .multilineTextAlignment(.leading)
+                        if review.didNotFinish {
+                            Text("DNF")
+                                .font(Theme.body(10, .semibold))
+                                .foregroundStyle(Theme.destructive)
+                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                .overlay(Capsule().stroke(Theme.destructive.opacity(0.5), lineWidth: 1))
+                        }
+                    }
+                    if let rating = review.rating {
+                        StarRow(rating: rating)
+                    }
+                    if let text = review.reviewText, !text.isEmpty {
+                        ReviewHTMLText(html: text, baseSize: 13)
+                            .foregroundStyle(Theme.muted)
+                            .lineLimit(3)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                Spacer()
+            }
+            .padding(12)
+            .background(Theme.surface.opacity(0.55))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+        }
+    }
+}
+
+// ── View-all reviews — web PublicReviewHistory parity: text search over
+// title/author/review body + All/DNF/Written chips. ──
+struct AllPublicReviewsView: View {
+    let reviews: [UserReviewRow]
+    let displayName: String
+    @State private var search = ""
+    @State private var filter = "all"   // all | dnf | written
+
+    private var filtered: [UserReviewRow] {
+        var result = reviews
+        if filter == "dnf" { result = result.filter { $0.didNotFinish } }
+        if filter == "written" { result = result.filter { !($0.reviewText ?? "").isEmpty } }
+        let q = search.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return result }
+        return result.filter {
+            $0.title.lowercased().contains(q)
+            || $0.authors.contains { $0.lowercased().contains(q) }
+            || ($0.reviewText ?? "").lowercased().contains(q)
+        }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    Color.clear.frame(width: 40, height: 40)
+                    Text("\(displayName)'s Reviews")
+                        .font(Theme.heading(22, .bold))
+                        .foregroundStyle(Theme.foreground)
+                    Spacer()
+                }
+                .padding(.top, 14)
+
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Theme.muted)
+                    TextField("Search reviews...", text: $search)
+                        .font(Theme.body(15))
+                        .foregroundStyle(Theme.foreground)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                }
+                .padding(.horizontal, 12).padding(.vertical, 9)
+                .background(Theme.surface.opacity(0.7), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+
+                if reviews.count > 3 {
+                    HStack(spacing: 8) {
+                        filterChip("all", "All")
+                        filterChip("dnf", "DNF")
+                        filterChip("written", "Written")
+                        Spacer()
+                    }
+                }
+
+                if filtered.isEmpty {
+                    Text("No reviews match.")
+                        .font(Theme.body(14))
+                        .foregroundStyle(Theme.muted)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 40)
+                } else {
+                    ForEach(filtered) { review in
+                        PublicReviewRow(review: review)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+        }
+        .background(AmbientBackground())
+        .floatingBack()
+        .toolbar(.hidden, for: .navigationBar)
+        .tracksScrollAtTop()
+    }
+
+    private func filterChip(_ key: String, _ label: String) -> some View {
+        Button { filter = key } label: {
+            Text(label)
+                .font(Theme.body(13, .medium))
+                .foregroundStyle(filter == key ? Theme.accentText : Theme.muted)
+                .padding(.horizontal, 13).padding(.vertical, 6)
+                .background(filter == key ? Theme.accent.opacity(0.15) : Theme.surfaceAlt.opacity(0.5), in: Capsule())
+                .overlay(Capsule().stroke(filter == key ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1))
         }
     }
 }

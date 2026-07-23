@@ -23,6 +23,9 @@ export async function GET(req: NextRequest) {
 
   const state = crypto.randomUUID();
   const redirectTo = req.nextUrl.searchParams.get("redirectTo") || "/";
+  // Native app (ASWebAuthenticationSession): the callback returns the token
+  // pair via a tbra:// redirect instead of setting the web session cookie.
+  const isNative = req.nextUrl.searchParams.get("native") === "1";
 
   const params = new URLSearchParams({
     client_id: clientId,
@@ -45,5 +48,6 @@ export async function GET(req: NextRequest) {
   res.cookies.set("g_oauth_state", state, cookieOpts);
   // Only allow internal relative redirects to avoid open-redirect abuse.
   res.cookies.set("g_oauth_redirect", redirectTo.startsWith("/") ? redirectTo : "/", cookieOpts);
+  if (isNative) res.cookies.set("g_oauth_native", "1", cookieOpts);
   return res;
 }

@@ -398,7 +398,7 @@ private struct BookHero: View {
                 if let series = book.seriesInfo, let pos = book.seriesPosition {
                     NavigationLink(value: SeriesRoute(slug: series.slug ?? series.id)) {
                         HStack(spacing: 3) {
-                            Text("#\(pos) in \(series.name)")
+                            Text("#\(SeriesPos.label(pos)) in \(series.name)")
                             Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
                         }
                         .font(Theme.body(14, .medium))
@@ -2388,7 +2388,7 @@ struct BookAboutDetailsSection: View {
         if let asin = book.asin, !asin.isEmpty { rows.append(("ASIN", asin)) }
         if let fiction = book.isFiction { rows.append(("Type", fiction ? "Fiction" : "Nonfiction")) }
         if let series = book.seriesInfo {
-            rows.append(("Series", book.seriesPosition.map { "\(series.name) #\($0)" } ?? series.name))
+            rows.append(("Series", book.seriesPosition.map { "\(series.name) #\(SeriesPos.label($0))" } ?? series.name))
         }
         return rows
     }

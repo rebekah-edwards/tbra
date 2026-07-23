@@ -59,6 +59,7 @@ final class LibraryModel {
 
 struct LibraryView: View {
     @Environment(AuthStore.self) private var auth
+    @Environment(ChromeState.self) private var chrome: ChromeState?
     @State private var model = LibraryModel()
     // TBRA_DEBUG_ROUTE=library:activity lands on the Activity tab so the
     // agent can screenshot it headless (sim-only, like AppShell's hook).
@@ -156,6 +157,19 @@ struct LibraryView: View {
         .tracksScrollAtTop()
         .refreshable { await model.load() }
         .task { await model.load() }
+        .onAppear {
+            // Consume a one-shot deep-link from the profile stat pills
+            // (Read → Activity/Finished, Reading → Activity/Current, TBR).
+            if let sel = chrome?.pendingLibrarySelection {
+                switch sel.group {
+                case "activity": group = .activity
+                case "owned": group = .owned
+                default: group = .tbr
+                }
+                subFilter = sel.filter
+                chrome?.pendingLibrarySelection = nil
+            }
+        }
         .alert("Error", isPresented: .constant(model.error != nil)) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }

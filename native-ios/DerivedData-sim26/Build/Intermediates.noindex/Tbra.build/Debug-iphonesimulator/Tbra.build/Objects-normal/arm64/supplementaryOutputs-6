@@ -1,0 +1,23 @@
+{
+  "/Users/clankeredwards/claude/tbra/native-ios/LibraryView.swift" : {
+    "const-values" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/LibraryView.swiftconstvalues",
+    "dependencies" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/LibraryView.d",
+    "diagnostics" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/LibraryView.dia",
+    "object" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/LibraryView.o",
+    "swift-dependencies" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/LibraryView.swiftdeps"
+  },
+  "/Users/clankeredwards/claude/tbra/native-ios/Models.swift" : {
+    "const-values" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/Models.swiftconstvalues",
+    "dependencies" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/Models.d",
+    "diagnostics" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/Models.dia",
+    "object" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/Models.o",
+    "swift-dependencies" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/Models.swiftdeps"
+  },
+  "/Users/clankeredwards/claude/tbra/native-ios/ProfileView.swift" : {
+    "const-values" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/ProfileView.swiftconstvalues",
+    "dependencies" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/ProfileView.d",
+    "diagnostics" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/ProfileView.dia",
+    "object" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/ProfileView.o",
+    "swift-dependencies" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/ProfileView.swiftdeps"
+  }
+}

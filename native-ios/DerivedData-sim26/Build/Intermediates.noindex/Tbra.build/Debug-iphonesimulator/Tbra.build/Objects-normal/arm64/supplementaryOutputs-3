@@ -1,0 +1,23 @@
+{
+  "/Users/clankeredwards/claude/tbra/native-ios/BrowseAndFollows.swift" : {
+    "const-values" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/BrowseAndFollows.swiftconstvalues",
+    "dependencies" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/BrowseAndFollows.d",
+    "diagnostics" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/BrowseAndFollows.dia",
+    "object" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/BrowseAndFollows.o",
+    "swift-dependencies" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/BrowseAndFollows.swiftdeps"
+  },
+  "/Users/clankeredwards/claude/tbra/native-ios/BuddyReadsView.swift" : {
+    "const-values" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/BuddyReadsView.swiftconstvalues",
+    "dependencies" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/BuddyReadsView.d",
+    "diagnostics" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/BuddyReadsView.dia",
+    "object" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/BuddyReadsView.o",
+    "swift-dependencies" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/BuddyReadsView.swiftdeps"
+  },
+  "/Users/clankeredwards/claude/tbra/native-ios/CompactStatePill.swift" : {
+    "const-values" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/CompactStatePill.swiftconstvalues",
+    "dependencies" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/CompactStatePill.d",
+    "diagnostics" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/CompactStatePill.dia",
+    "object" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/CompactStatePill.o",
+    "swift-dependencies" : "/Users/clankeredwards/claude/tbra/native-ios/DerivedData-sim26/Build/Intermediates.noindex/Tbra.build/Debug-iphonesimulator/Tbra.build/Objects-normal/arm64/CompactStatePill.swiftdeps"
+  }
+}

@@ -55,6 +55,12 @@ private struct GlobalReportSheet: View {
             Text("Report an issue")
                 .font(Theme.heading(20, .bold))
                 .foregroundStyle(Theme.foreground)
+            // Beta-tester framing (user request 2026-07-23) — mirrors the
+            // book-page report sheet's explanatory line.
+            Text("Spotted something off — a bug, a glitch, or info that isn't right? Describe it here and it goes straight to the tbr*a team with the page you're on.")
+                .font(Theme.body(13))
+                .foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
             Text(pageUrl)
                 .font(Theme.body(12))
                 .foregroundStyle(Theme.muted)

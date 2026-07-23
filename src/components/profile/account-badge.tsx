@@ -4,6 +4,10 @@ import type { AccountType } from "@/lib/auth";
 
 interface AccountBadgeProps {
   accountType: string;
+  /** Admin surfaces: show the REAL tier. Public default folds beta_tester
+   *  into the Based Reader badge — testers are indistinguishable from
+   *  paying members everywhere users can see (rule 2026-07-22). */
+  exact?: boolean;
 }
 
 const badgeConfig: Record<
@@ -35,8 +39,9 @@ const badgeConfig: Record<
   },
 };
 
-export function AccountBadge({ accountType }: AccountBadgeProps) {
-  const config = badgeConfig[accountType as AccountType] ?? badgeConfig.reader;
+export function AccountBadge({ accountType, exact = false }: AccountBadgeProps) {
+  const effective = !exact && accountType === "beta_tester" ? "premium" : accountType;
+  const config = badgeConfig[effective as AccountType] ?? badgeConfig.reader;
 
   return (
     <span

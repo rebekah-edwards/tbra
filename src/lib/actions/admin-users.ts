@@ -5,6 +5,7 @@ import type { AccountType } from "@/lib/auth";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { followUserFor, unfollowUserFor } from "@/lib/actions/follows";
 
 const VALID_ACCOUNT_TYPES: AccountType[] = [
   "reader",
@@ -35,8 +36,26 @@ export async function updateUserAccountType(
 
   await db
     .update(users)
-    .set({ accountType: newAccountType })
+    .set({
+      accountType: newAccountType,
+      // The Admin Edit panel requires BOTH account_type AND role='admin' —
+      // keep role in sync so tier changes fully take effect.
+      role: ["admin", "super_admin"].includes(newAccountType) ? "admin" : "user",
+    })
     .where(eq(users.id, targetUserId));
 
   return { success: true };
+}
+
+/** Follow/unfollow from the admin user list (any signed-in user; follow-by-id
+ *  so accounts without a username still work). */
+export async function setUserFollow(
+  targetUserId: string,
+  follow: boolean
+): Promise<{ success: boolean; error?: string }> {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: "Unauthorized" };
+  return follow
+    ? followUserFor(currentUser.userId, targetUserId)
+    : unfollowUserFor(currentUser.userId, targetUserId);
 }

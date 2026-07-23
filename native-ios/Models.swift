@@ -221,6 +221,14 @@ struct ProfileUser: Codable, Hashable {
     let avatarUrl: String?
     let accountType: String?
     let createdAt: String
+    // Edit-Profile prefill — only the own-profile payload sends these;
+    // public-profile decodes leave them nil.
+    let bio: String?
+    let instagram: String?
+    let tiktok: String?
+    let threads: String?
+    let twitter: String?
+    let isPrivate: Bool?
 }
 
 struct ProfileStats: Codable, Hashable {
@@ -243,6 +251,13 @@ struct JournalNote: Codable, Hashable, Identifiable {
     let pace: String?
     let isPrivate: Bool?
     let createdAt: String
+}
+
+/// "4" for whole series positions, "4.5" for novella slots.
+enum SeriesPos {
+    static func label(_ pos: Double) -> String {
+        pos.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(pos)) : String(format: "%.1f", pos)
+    }
 }
 
 struct FavoriteBookRow: Codable, Hashable, Identifiable {
@@ -402,7 +417,10 @@ struct BookFull: Codable, Hashable {
     let isbn10: String?
     let authors: [BookAuthor]
     let seriesInfo: BookSeriesInfo?
-    let seriesPosition: Int?
+    // Double, NOT Int: novellas sit at fractional positions (Fairest = Lunar
+    // Chronicles #3.5) — Int? made the whole book page fail to decode
+    // (2026-07-23 "Unexpected response from the server" on 3 of her TBR taps).
+    let seriesPosition: Double?
     let genres: [String]
     let topLevelGenre: String?
     let ageCategory: String?

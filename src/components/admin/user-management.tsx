@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { updateUserAccountType } from "@/lib/actions/admin-users";
+import { updateUserAccountType, setUserFollow } from "@/lib/actions/admin-users";
 import { syncUsersFromLive } from "@/lib/actions/admin-sync";
 import { AccountBadge } from "@/components/profile/account-badge";
 
@@ -27,13 +27,19 @@ const ACCOUNT_TYPE_OPTIONS = [
 export function UserManagement({
   users,
   currentUserId,
+  initiallyFollowing = [],
 }: {
   users: UserRow[];
   currentUserId: string;
+  initiallyFollowing?: string[];
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [localUsers, setLocalUsers] = useState(users);
+  const [following, setFollowing] = useState<Set<string>>(
+    () => new Set(initiallyFollowing)
+  );
+  const [followPendingId, setFollowPendingId] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{
@@ -86,6 +92,34 @@ export function UserManagement({
       setPendingId(null);
       setTimeout(() => setFeedback(null), 3000);
     });
+  }
+
+  async function handleFollowToggle(userId: string) {
+    const wasFollowing = following.has(userId);
+    setFollowPendingId(userId);
+    // Optimistic — revert on failure.
+    setFollowing((prev) => {
+      const next = new Set(prev);
+      if (wasFollowing) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+    const result = await setUserFollow(userId, !wasFollowing);
+    if (!result.success) {
+      setFollowing((prev) => {
+        const next = new Set(prev);
+        if (wasFollowing) next.add(userId);
+        else next.delete(userId);
+        return next;
+      });
+      setFeedback({
+        id: userId,
+        message: result.error ?? "Follow failed",
+        type: "error",
+      });
+      setTimeout(() => setFeedback(null), 3000);
+    }
+    setFollowPendingId(null);
   }
 
   async function handleSync() {
@@ -171,7 +205,8 @@ export function UserManagement({
                       {user.displayName || user.email.split("@")[0]}
                     </p>
                   )}
-                  <AccountBadge accountType={user.accountType} />
+                  {/* exact: admins see the real tier (beta vs premium) */}
+                  <AccountBadge accountType={user.accountType} exact />
                   {isSelf && (
                     <span className="text-[10px] text-muted">(you)</span>
                   )}
@@ -188,6 +223,19 @@ export function UserManagement({
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
+                {!isSelf && (
+                  <button
+                    onClick={() => handleFollowToggle(user.id)}
+                    disabled={followPendingId === user.id}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                      following.has(user.id)
+                        ? "border-accent/50 bg-accent/15 text-accent"
+                        : "border-border bg-surface text-foreground hover:border-accent/60"
+                    }`}
+                  >
+                    {following.has(user.id) ? "Following" : "Follow"}
+                  </button>
+                )}
                 <select
                   value={user.accountType}
                   onChange={(e) => handleTypeChange(user.id, e.target.value)}

@@ -27,7 +27,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ username: strin
   const [stats, favorites, reviews, followerCount, followingCount, currentlyFollowing, publicShelves] = await Promise.all([
     getUserStats(user.id),
     getUserFavorites(user.id),
-    getUserReviewsWithBooks(user.id, 50),
+    getUserReviewsWithBooks(user.id, 500),
     getFollowerCount(user.id),
     getFollowingCount(user.id),
     isFollowing(viewer.userId, user.id),
@@ -49,7 +49,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ username: strin
     isFollowing: currentlyFollowing,
     stats,
     favorites,
-    reviews: reviews.filter((r) => !r.isAnonymous).slice(0, 12),
+    // 500, matching the web /u page load — the native profile shows 5 and
+    // its View-all screen searches/filters the rest client-side.
+    reviews: reviews.filter((r) => !r.isAnonymous).slice(0, 500),
     followerCount,
     followingCount,
     publicShelves,

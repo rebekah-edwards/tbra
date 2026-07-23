@@ -14,3 +14,19 @@ export async function requireApiAdmin(req: Request) {
   const row = await db.select({ role: users.role }).from(users).where(eq(users.id, user.userId)).get();
   return row?.role === "admin" ? user : null;
 }
+
+/**
+ * Stricter gate for user management: the JWT carries neither role nor
+ * accountType, so read accountType from the DB and require super_admin —
+ * same bar as the web /admin/users page.
+ */
+export async function requireApiSuperAdmin(req: Request) {
+  const user = await getApiUser(req);
+  if (!user) return null;
+  const row = await db
+    .select({ accountType: users.accountType })
+    .from(users)
+    .where(eq(users.id, user.userId))
+    .get();
+  return row?.accountType === "super_admin" ? user : null;
+}

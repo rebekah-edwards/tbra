@@ -49,7 +49,9 @@ export function ReadingNoteEntry({ books, activeBuddyReads = [] }: ReadingNoteEn
   const matchingBuddyRead = activeBuddyReads.find((br) => br.bookId === selectedBook);
 
   function handleSubmit() {
-    if (!noteText.trim()) return;
+    // A note OR a progress position is enough (2026-07-23) — progress-only
+    // saves are allowed via the second button.
+    if (!noteText.trim() && !pageValue) return;
     const formData = new FormData();
     formData.set("bookId", selectedBook);
     formData.set("noteText", noteText.trim());
@@ -225,6 +227,15 @@ export function ReadingNoteEntry({ books, activeBuddyReads = [] }: ReadingNoteEn
         >
           {isPending ? "Saving..." : "Save Note"}
         </button>
+        {!noteText.trim() && (
+          <button
+            onClick={handleSubmit}
+            disabled={isPending || !pageValue}
+            className="rounded-lg border border-accent/50 bg-accent/10 px-4 py-1.5 text-xs font-semibold text-accent disabled:opacity-50"
+          >
+            {isPending ? "Saving..." : "Save progress only"}
+          </button>
+        )}
         <button
           onClick={() => { setExpanded(false); setNoteText(""); setMood(null); setPace(null); setShowExtras(false); }}
           className="text-xs text-muted hover:text-foreground"

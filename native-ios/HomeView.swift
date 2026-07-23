@@ -754,6 +754,23 @@ private struct TrackProgressSheet: View {
                     }
                     .buttonStyle(AccentButtonStyle())
                     .disabled(busy || noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                    // Progress can be saved without writing anything (user
+                    // request 2026-07-23) — mirrored on the web entry form.
+                    if noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Button {
+                            Task { await save() }
+                        } label: {
+                            if busy { ProgressView().tint(Theme.accentText) } else { Text("Save progress only") }
+                        }
+                        .font(Theme.body(15, .semibold))
+                        .foregroundStyle(Theme.accentText)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Theme.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.accent.opacity(0.45), lineWidth: 1))
+                        .disabled(busy || Int(pageValue) == nil)
+                    }
                 }
             }
             .padding(20)
