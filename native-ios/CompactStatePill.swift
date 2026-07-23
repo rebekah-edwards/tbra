@@ -8,6 +8,9 @@ struct CompactStatePill: View {
     let bookId: String
     @State var state: String?
     var onChanged: ((String?) -> Void)? = nil
+    /// Lets the host row elevate its zIndex / drop its clip while the
+    /// dropdown is open (series cards clipped the menu — 2026-07-22).
+    var onDropdownChange: ((Bool) -> Void)? = nil
 
     @State private var dropdownOpen = false
     @State private var showDatePicker = false
@@ -49,6 +52,7 @@ struct CompactStatePill: View {
                 .frame(width: 1, height: 20)
             Button {
                 withAnimation(.easeOut(duration: 0.12)) { dropdownOpen.toggle() }
+                onDropdownChange?(dropdownOpen)
             } label: {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 11, weight: .bold))
@@ -79,6 +83,7 @@ struct CompactStatePill: View {
                 ForEach(states, id: \.0) { value, label in
                     Button {
                         dropdownOpen = false
+                        onDropdownChange?(false)
                         Task { await selectState(value) }
                     } label: {
                         HStack {
@@ -158,5 +163,94 @@ struct OwnedPill: View {
             .padding(.horizontal, 14).padding(.vertical, 9)
             .background(Capsule().stroke(Theme.neonPurple.opacity(0.35), lineWidth: 1.5))
         }
+    }
+}
+
+/// Web compact-owned-button.tsx parity (2026-07-22): ALWAYS visible — solid
+/// purple when any format is owned, translucent outline when none — and taps
+/// open a format checklist that writes owned formats directly from the list.
+struct CompactOwnedButton: View {
+    let bookId: String
+    @State var formats: Set<String>
+    var onDropdownChange: ((Bool) -> Void)? = nil
+
+    @State private var open = false
+    @State private var busy = false
+
+    init(bookId: String, formats: [String], onDropdownChange: ((Bool) -> Void)? = nil) {
+        self.bookId = bookId
+        _formats = State(initialValue: Set(formats.filter { $0 != "unknown" }))
+        self.onDropdownChange = onDropdownChange
+    }
+
+    private let all: [(String, String, String)] = [
+        ("hardcover", "book.closed", "Hardcover"),
+        ("paperback", "book", "Paperback"),
+        ("ebook", "ipad", "eBook"),
+        ("audiobook", "headphones", "Audiobook"),
+    ]
+
+    private var isOwned: Bool { !formats.isEmpty }
+
+    var body: some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.12)) { open.toggle() }
+            onDropdownChange?(open)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "books.vertical").font(.system(size: 12))
+                Text(isOwned ? (formats.count == 1 ? "Owned" : "Owned · \(formats.count)") : "Owned")
+                    .font(Theme.body(14, .medium))
+            }
+            .foregroundStyle(isOwned ? .white : Theme.muted)
+            .padding(.horizontal, 14).padding(.vertical, 9)
+            .background(isOwned ? AnyShapeStyle(Theme.neonPurple) : AnyShapeStyle(Theme.neonPurple.opacity(0.1)))
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(Theme.neonPurple.opacity(isOwned ? 1 : 0.4), lineWidth: 1.5))
+        }
+        .opacity(busy ? 0.6 : 1)
+        .overlay(alignment: .topLeading) { dropdown }
+        .zIndex(open ? 40 : 0)
+    }
+
+    @ViewBuilder private var dropdown: some View {
+        if open {
+            VStack(spacing: 0) {
+                ForEach(all, id: \.0) { key, icon, label in
+                    Button {
+                        Task { await toggle(key) }
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: formats.contains(key) ? "checkmark.square.fill" : "square")
+                                .font(.system(size: 14))
+                                .foregroundStyle(formats.contains(key) ? Theme.neonPurple : Theme.muted)
+                            Image(systemName: icon).font(.system(size: 12)).foregroundStyle(Theme.muted)
+                            Text(label)
+                                .font(Theme.body(13, formats.contains(key) ? .medium : .regular))
+                                .foregroundStyle(formats.contains(key) ? Theme.foreground : Theme.muted)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 12).padding(.vertical, 9)
+                    }
+                    if key != "audiobook" { Divider().background(Theme.border.opacity(0.5)) }
+                }
+            }
+            .frame(width: 170)
+            .background(Theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+            .shadow(color: .black.opacity(0.5), radius: 12, y: 4)
+            .offset(y: 42)
+        }
+    }
+
+    private func toggle(_ key: String) async {
+        busy = true; defer { busy = false }
+        var next = formats
+        if next.contains(key) { next.remove(key) } else { next.insert(key) }
+        do {
+            try await APIClient.shared.setFormats(bookId: bookId, owned: Array(next))
+            formats = next
+        } catch { /* keep prior state on failure */ }
     }
 }

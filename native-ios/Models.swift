@@ -354,6 +354,9 @@ struct LibraryBook: Codable, Identifiable, Hashable {
     let genres: [String]
     let completionYear: Int?
     let tbrNote: String?
+    /// Server-computed "a rating exceeds the viewer's comfort zone"
+    /// (2026-07-22) — drives the ⚠ cover badge + the Flagged sub-filter.
+    let hasContentConflict: Bool?
 }
 
 struct LibraryResponse: Codable {
@@ -443,6 +446,7 @@ struct ReadingSessionRow: Codable, Hashable, Identifiable {
     let completionDate: String?
     let completionPrecision: String?
     let activeFormats: [String]?
+    let pausedAt: String?
 }
 
 struct BookNote: Codable, Hashable, Identifiable {

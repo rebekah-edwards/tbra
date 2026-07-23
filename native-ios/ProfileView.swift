@@ -69,6 +69,7 @@ struct ProfileView: View {
         }
         .background(AmbientBackground())
         .tracksScrollAtTop()
+        .reportsPage("/profile")
         .refreshable { await model.load() }
         .task { await model.load() }
         .alert("Error", isPresented: .constant(model.error != nil)) {

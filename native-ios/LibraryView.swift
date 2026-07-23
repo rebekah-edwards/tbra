@@ -107,7 +107,8 @@ struct LibraryView: View {
                     ("paused", "Paused"), ("dnf", "DNF")]
         case .tbr:
             return [("all", "All"), ("owned", "Owned"), ("not_owned", "Not Owned"),
-                    ("fiction", "Fiction"), ("nonfiction", "Non-Fiction")]
+                    ("fiction", "Fiction"), ("nonfiction", "Non-Fiction"),
+                    ("flagged", "⚠ Flagged")]
         case .owned:
             return [("all", "All"), ("hardcover", "Hardcover"), ("paperback", "Paperback"),
                     ("ebook", "eBook"), ("audiobook", "Audiobook")]
@@ -265,9 +266,11 @@ struct LibraryView: View {
                         Text("Filters")
                             .font(Theme.body(16))
                         if advancedFilterCount > 0 {
+                            // accentText, NOT accent: the count was rendering
+                            // lime-on-lime in light mode (user report 2026-07-22).
                             Text("\(advancedFilterCount)")
                                 .font(Theme.body(11, .medium))
-                                .foregroundStyle(Theme.accent)
+                                .foregroundStyle(Theme.accentText)
                                 .padding(.horizontal, 7).padding(.vertical, 2)
                                 .background(Theme.accent.opacity(0.2), in: Capsule())
                         }
@@ -500,6 +503,7 @@ struct LibraryView: View {
             case "not_owned": return tbr.filter { $0.ownedFormats.isEmpty }
             case "fiction": return tbr.filter { $0.isFiction == true }
             case "nonfiction": return tbr.filter { $0.isFiction == false }
+            case "flagged": return tbr.filter { $0.hasContentConflict == true }
             default: return tbr
             }
         case .owned:
@@ -544,6 +548,18 @@ private struct LibraryBookCard: View {
                             }
                             .frame(width: 20, height: 20)
                             .padding(5)
+                        }
+                    }
+                    // Web book-card.tsx parity: yellow "!" pill top-LEFT when
+                    // a rating exceeds the viewer's comfort zone.
+                    .overlay(alignment: .topLeading) {
+                        if book.hasContentConflict == true {
+                            Text("!")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.black)
+                                .frame(width: 20, height: 20)
+                                .background(Color(hex: "eab308").opacity(0.9), in: Circle())
+                                .padding(5)
                         }
                     }
                     .overlay(alignment: .bottomTrailing) {

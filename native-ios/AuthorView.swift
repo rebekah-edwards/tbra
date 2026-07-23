@@ -188,6 +188,7 @@ struct AuthorView: View {
         }
         .background(AmbientBackground())
         .floatingBack()
+        .reportsPage("/author/\(model.idOrSlug)")
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await model.load() }
         .task { await model.load() }

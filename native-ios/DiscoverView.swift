@@ -168,6 +168,7 @@ struct DiscoverView: View {
         }
         .background(AmbientBackground())
         .tracksScrollAtTop()
+        .reportsPage("/discover")
     }
 
     private var discoverBody: some View {

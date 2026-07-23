@@ -156,6 +156,7 @@ struct BookDetailView: View {
         // (card top = 20; chevron spans 0…40 → 20pt over the card) while
         // keeping clear air below the logo pill.
         .floatingBack(topPadding: 0)
+        .reportsPage("/book/\(model.idOrSlug)")
         .toolbar(.hidden, for: .navigationBar)
         .task {
             await model.load()
@@ -1272,6 +1273,10 @@ private struct BookStarsRow: View {
                         .padding(.horizontal, 20).padding(.vertical, 9)
                         .background(Theme.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
                         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.accent.opacity(0.45), lineWidth: 1))
+                        // Pin the hit region to the visible pill — taps near
+                        // its lower edge were sometimes claimed by the
+                        // content-flags banner below (user report 2026-07-22).
+                        .contentShape(RoundedRectangle(cornerRadius: 14))
                 }
             } else {
                 Text("Mark as finished to review")
@@ -1280,6 +1285,10 @@ private struct BookStarsRow: View {
             }
         }
         .padding(.top, 4)
+        // Wins any hit-region overlap against the content-flags banner
+        // rendered directly below in the page VStack (iOS 27 lets a
+        // full-bleed sibling button's region bleed across the gap).
+        .zIndex(1)
         #if DEBUG && targetEnvironment(simulator)
         .task {
             if ProcessInfo.processInfo.environment["TBRA_DEBUG_REVIEW"] != nil {
@@ -1528,17 +1537,18 @@ private struct WhatsInsideSection: View {
         let isExpanded = expanded.contains(rating.categoryId)
         return VStack(alignment: .leading, spacing: 7) {
             HStack(alignment: .top, spacing: 6) {
-                // 13pt (was 15), with the badge + admin pencil stacked in a
-                // trailing column instead of sharing the title row — the two
-                // of them side-by-side ate half the column and wrapped even
-                // short names (user request 2026-07-18: most titles must fit
-                // one line).
+                // 13pt (was 15) so the title fits one line. The badge + admin
+                // pencil live in a trailing group kept on a SINGLE row (HStack)
+                // — an earlier pass stacked them in a VStack, which for admins
+                // pushed the pencil onto its own line and made the row two lines
+                // tall again, negating the whole point (user request
+                // 2026-07-18: badge + pencil must stay inline, one line).
                 Text(Self.shortNames[rating.categoryKey] ?? rating.categoryName)
                     .font(Theme.body(13, .semibold))
                     .foregroundStyle(Theme.foreground)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 4)
-                VStack(alignment: .trailing, spacing: 4) {
+                HStack(spacing: 4) {
                     // Web evidenceBadge: "Verified" for human_verified, "AI"
                     // otherwise — both visible to all users.
                     if isVerified(rating) {
@@ -1558,14 +1568,18 @@ private struct WhatsInsideSection: View {
                         Button {
                             editing = rating
                         } label: {
+                            // Compact pencil (18×18, no oversized circle) so the
+                            // inline badge + pencil pair stays narrow enough to
+                            // keep the title on one line for admins too.
                             Image(systemName: "pencil")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(Theme.muted)
-                                .frame(width: 22, height: 22)
+                                .frame(width: 18, height: 18)
                                 .background(Theme.surfaceAlt.opacity(0.6), in: Circle())
                         }
                     }
                 }
+                .fixedSize()
             }
 
             // 4-segment intensity bar
@@ -2418,6 +2432,25 @@ struct BookAboutDetailsSection: View {
         }
     }
 
+    /// Web renderMarkdown parity (book-about-details.tsx): descriptions also
+    /// carry markdown-ish inline marks from enrichment sources — convert them
+    /// to the HTML tags ReviewHTML already parses so asterisks/underscores
+    /// never render literally (user report 2026-07-22). Order matters:
+    /// triple → double → single, mirroring (and slightly hardening) the web.
+    private func markdownLiteToHTML(_ s: String) -> String {
+        var out = s
+        func re(_ pattern: String, _ template: String) {
+            guard let rx = try? NSRegularExpression(pattern: pattern) else { return }
+            out = rx.stringByReplacingMatches(in: out, range: NSRange(out.startIndex..., in: out), withTemplate: template)
+        }
+        re("\\*\\*\\*(.+?)\\*\\*\\*", "<b><i>$1</i></b>")
+        re("\\*\\*(.+?)\\*\\*", "<b>$1</b>")
+        re("__(.+?)__", "<b>$1</b>")
+        re("\\*(.+?)\\*", "<i>$1</i>")
+        re("(?<!\\w)_(.+?)_(?!\\w)", "<i>$1</i>")
+        return out
+    }
+
     @ViewBuilder private var aboutBody: some View {
         let description = book.description ?? ""
         let isLong = description.count > 500
@@ -2425,7 +2458,8 @@ struct BookAboutDetailsSection: View {
         VStack(alignment: .leading, spacing: 6) {
             // Descriptions carry publisher HTML (<p>/<br>/<b>/<i>) — reuse the
             // review HTML renderer so tags never show raw.
-            ReviewHTMLText(html: shown, baseSize: 14)
+            ReviewHTMLText(html: markdownLiteToHTML(shown), baseSize: 14)
+                .id("about") // headless-verification scroll anchor
             if isLong {
                 Button {
                     withAnimation { descExpanded.toggle() }
@@ -2512,7 +2546,12 @@ struct ContentFlagsBanner: View {
                             .rotationEffect(.degrees(expanded ? 180 : 0))
                     }
                     .padding(.horizontal, 16).padding(.vertical, 12)
+                    // Pin the toggle's tap region to its own padded bounds —
+                    // it was intermittently claiming taps aimed at the review
+                    // button rendered above (user report 2026-07-22).
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
 
                 if expanded {
                     VStack(alignment: .leading, spacing: 6) {

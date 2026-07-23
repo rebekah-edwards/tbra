@@ -111,6 +111,7 @@ struct PublicProfileView: View {
         .background(AmbientBackground())
         .tracksScrollAtTop()
         .floatingBack()
+        .reportsPage("/u/\(model.username)")
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }
     }

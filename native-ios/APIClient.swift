@@ -297,6 +297,12 @@ actor APIClient {
         try await send(path, method: "GET", base: Self.adminBaseURL)
     }
 
+    /// Admin GET with query items (same "never bake ?k=v into the path" rule
+    /// as the normal get(_:query:)).
+    func adminGet<T: Decodable>(_ path: String, query: [URLQueryItem]) async throws -> T {
+        try await send(path, method: "GET", query: query, base: Self.adminBaseURL)
+    }
+
     func adminRequest<T: Decodable>(_ path: String, method: String, body: [String: Any]) async throws -> T {
         try await send(path, method: method, body: body, base: Self.adminBaseURL)
     }

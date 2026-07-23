@@ -187,6 +187,7 @@ struct HomeView: View {
             }
         )
         .tracksScrollAtTop()
+        .reportsPage("/")
         .refreshable {
             async let a: Void = model.load()
             async let b: Void = homeModel.load()

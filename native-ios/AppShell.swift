@@ -46,6 +46,7 @@ struct AppShell: View {
     private var tab: AppTab { chrome.tab }
     #if DEBUG && targetEnvironment(simulator)
     @State private var debugBookSlug: String?
+    @State private var debugSeriesSlug: String?
     @State private var debugCoverSlug: String?
     @State private var shelvesDebugOpen = false
     @State private var debugShelfId: String?
@@ -250,6 +251,18 @@ struct AppShell: View {
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
         }
+        .fullScreenCover(isPresented: Binding(
+            get: { debugSeriesSlug != nil },
+            set: { if !$0 { debugSeriesSlug = nil } }
+        )) {
+            NavigationStack {
+                SeriesView(slug: debugSeriesSlug ?? "")
+                    .toolbar(.hidden, for: .navigationBar)
+                    .appDestinations()
+            }
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
+                .environment(\.showsShellChrome, false)
+        }
         .sheet(isPresented: $menuDebugOpen) {
             HamburgerMenuSheet(onProfile: { chrome.tab = .profile })
                 .presentationDetents([.large])
@@ -336,6 +349,8 @@ struct AppShell: View {
             case "profile": chrome.tab = .profile
             case let route? where route.hasPrefix("book:"):
                 debugBookSlug = String(route.dropFirst("book:".count))
+            case let route? where route.hasPrefix("series:"):
+                debugSeriesSlug = String(route.dropFirst("series:".count))
             case let route? where route.hasPrefix("user:"):
                 presentedProfileUsername = String(route.dropFirst("user:".count))
             case let route? where route.hasPrefix("cover:"):
@@ -378,6 +393,10 @@ struct AppShell: View {
 final class ChromeState {
     var atTop = true
     var tab: AppTab = .home
+    /// Web-path equivalent of the current screen ("/book/<slug>", "/library"…)
+    /// — screens stamp it via .reportsPage(); the global report button files
+    /// it as reported_issues.page_url, same as the web's GlobalReportButton.
+    var currentPage = "/"
     // Wired by AppShell:
     var goHome: @MainActor () -> Void = {}
     var openSearch: @MainActor () -> Void = {}

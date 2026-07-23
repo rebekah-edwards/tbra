@@ -67,6 +67,7 @@ struct StatsView: View {
         }
         .background(AmbientBackground())
         .tracksScrollAtTop()
+        .reportsPage("/stats")
         .refreshable { await model.load() }
         .task { await model.load() }
         .alert("Error", isPresented: .constant(model.error != nil)) {

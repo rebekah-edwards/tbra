@@ -107,6 +107,17 @@ struct PushedScreenChrome: ViewModifier {
                         .padding(.bottom, -bars.bottom)
                 }
             }
+            // Global report button — web GlobalReportButton parity
+            // (2026-07-22): floating flag above the bottom bar on EVERY
+            // screen, super-admin + beta testers only. Lives inside the
+            // screen (not the shell) so it reliably wins hit-testing.
+            .overlay(alignment: .bottomTrailing) {
+                if showsChrome {
+                    GlobalReportButton()
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 8)
+                }
+            }
             .safeAreaInset(edge: .top, spacing: 0) {
                 Color.clear.frame(height: bars.top)
             }
@@ -273,12 +284,29 @@ struct SeriesBookRow: Codable, Hashable, Identifiable {
     let userRating: Double?
 }
 
+struct SeriesRef: Codable, Hashable, Identifiable {
+    let id: String
+    let name: String
+    let slug: String?
+}
+
+struct ChildSeriesRow: Codable, Hashable, Identifiable {
+    let id: String
+    let name: String
+    let slug: String?
+    let bookCount: Int
+    let coverImageUrl: String?
+}
+
 @MainActor
 @Observable
 final class SeriesModel {
     let slug: String
+    var seriesId: String?
     var name = ""
     var books: [SeriesBookRow] = []
+    var parentSeries: SeriesRef?
+    var childSeries: [ChildSeriesRow] = []
     var error: String?
     var loading = false
 
@@ -286,21 +314,51 @@ final class SeriesModel {
 
     func load() async {
         loading = true; defer { loading = false }
-        struct Res: Codable { let ok: Bool; let name: String; let books: [SeriesBookRow] }
+        struct Res: Codable {
+            let ok: Bool; let id: String?; let name: String; let books: [SeriesBookRow]
+            let parentSeries: SeriesRef?; let childSeries: [ChildSeriesRow]?
+        }
         do {
             let res: Res = try await APIClient.shared.get("/api/v1/series/\(slug)") as Res
+            seriesId = res.id
             name = res.name
             books = res.books
+            parentSeries = res.parentSeries
+            childSeries = res.childSeries ?? []
         } catch {
             self.error = (error as? APIError)?.errorDescription ?? "Couldn't load this series."
         }
+    }
+
+    /// Franchise assignment — admin action, lands on PROD (adminBaseURL).
+    func setParent(_ parentId: String?) async -> Bool {
+        guard let seriesId else { return false }
+        struct Ok: Codable { let ok: Bool }
+        do {
+            let _: Ok = try await APIClient.shared.adminRequest(
+                "/api/v1/admin/series/\(seriesId)/parent", method: "POST",
+                body: ["parentSeriesId": parentId as Any])
+            await load()
+            return true
+        } catch { return false }
+    }
+
+    func searchFranchises(_ q: String) async -> [SeriesRef] {
+        struct Res: Codable { let ok: Bool; let series: [SeriesRef] }
+        let res: Res? = try? await APIClient.shared.adminGet(
+            "/api/v1/admin/series/search", query: [URLQueryItem(name: "q", value: q)])
+        return (res?.series ?? []).filter { $0.id != seriesId }
     }
 }
 
 struct SeriesView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthStore.self) private var auth
     @State private var model: SeriesModel
     @State private var tab: Tab = .core
+    /// Which card's state/owned dropdown is open — that card gets elevated
+    /// zIndex so the menu renders over the neighbors instead of under them.
+    @State private var expandedControlsId: String?
 
     enum Tab: String, CaseIterable {
         case core = "Core", all = "All", sets = "Sets"
@@ -308,6 +366,13 @@ struct SeriesView: View {
 
     init(slug: String) {
         _model = State(initialValue: SeriesModel(slug: slug))
+    }
+
+    private var isAdmin: Bool {
+        if case .signedIn(let u) = auth.phase {
+            return ["admin", "super_admin"].contains(u.accountType)
+        }
+        return false
     }
 
     var body: some View {
@@ -322,18 +387,32 @@ struct SeriesView: View {
                 }
                 .padding(.top, 14)
 
-                segmented
-
-                if tab == .core {
-                    Text("Main series novels")
+                if !model.childSeries.isEmpty {
+                    // Franchise page — grid of sub-series, mirroring the web's
+                    // FranchiseSeriesGrid branch.
+                    Text("\(model.childSeries.count) series · \(model.childSeries.reduce(0) { $0 + $1.bookCount }) books")
                         .font(Theme.body(15))
                         .foregroundStyle(Theme.muted)
+                    franchiseGrid
+                } else {
+                    segmented
+
+                    if tab == .core {
+                        Text("Main series novels")
+                            .font(Theme.body(15))
+                            .foregroundStyle(Theme.muted)
+                    }
+
+                    VStack(spacing: 14) {
+                        ForEach(filtered) { book in
+                            seriesCard(book)
+                                .zIndex(expandedControlsId == book.id ? 30 : 0)
+                        }
+                    }
                 }
 
-                VStack(spacing: 14) {
-                    ForEach(filtered) { book in
-                        seriesCard(book)
-                    }
+                if isAdmin {
+                    FranchiseAdminControls(model: model)
                 }
             }
             .padding(.horizontal, 20)
@@ -341,12 +420,38 @@ struct SeriesView: View {
         }
         .background(AmbientBackground())
         .floatingBack()
+        .reportsPage("/series/\(model.slug)")
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await model.load() }
         .task { await model.load() }
         .alert("Error", isPresented: .constant(model.error != nil)) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
+    }
+
+    private var franchiseGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)],
+                  alignment: .leading, spacing: 18) {
+            ForEach(model.childSeries) { child in
+                NavigationLink(value: SeriesRoute(slug: child.slug ?? child.id)) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        GeometryReader { geo in
+                            CoverThumb(url: child.coverImageUrl, width: geo.size.width,
+                                       height: geo.size.width * 1.5, radius: 12, title: child.name)
+                        }
+                        .aspectRatio(2 / 3, contentMode: .fit)
+                        Text(child.name)
+                            .font(Theme.body(15, .semibold))
+                            .foregroundStyle(Theme.foreground)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                        Text("\(child.bookCount) book\(child.bookCount == 1 ? "" : "s")")
+                            .font(Theme.body(12))
+                            .foregroundStyle(Theme.muted)
+                    }
+                }
+            }
+        }
     }
 
     // series-books-view.tsx filters, 1:1
@@ -428,15 +533,106 @@ struct SeriesView: View {
             }
 
             HStack(spacing: 10) {
-                CompactStatePill(bookId: book.id, state: book.currentState)
-                OwnedPill(count: book.ownedFormats.filter { $0 != "unknown" }.count)
+                CompactStatePill(bookId: book.id, state: book.currentState,
+                                 onDropdownChange: { open in expandedControlsId = open ? book.id : nil })
+                // Web CompactOwnedButton parity: always visible, unfilled when
+                // nothing is owned, tap opens the format checklist.
+                CompactOwnedButton(bookId: book.id, formats: book.ownedFormats,
+                                   onDropdownChange: { open in expandedControlsId = open ? book.id : nil })
                 Spacer()
             }
             .padding(.horizontal, 14)
             .padding(.bottom, 14)
         }
-        .background(Theme.surface.opacity(0.65))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        // Shape background WITHOUT clipShape (2026-07-22): clipping the card
+        // cut off the state/owned dropdowns; the expanded card's zIndex (set
+        // by the host list) keeps the menu above neighboring cards.
+        .background(Theme.surface.opacity(0.65), in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
+    }
+}
+
+// ── Franchise admin controls — franchise-admin-controls.tsx parity ──
+// "Part of: X · Remove" when assigned; otherwise "Assign to franchise" with
+// an inline search. Admin-only; writes land on PROD via adminBaseURL.
+private struct FranchiseAdminControls: View {
+    let model: SeriesModel
+    @State private var open = false
+    @State private var query = ""
+    @State private var results: [SeriesRef] = []
+    @State private var busy = false
+    @State private var message: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let message {
+                Text(message).font(Theme.body(12)).foregroundStyle(Theme.accentText)
+            }
+            if let parent = model.parentSeries {
+                HStack(spacing: 10) {
+                    Text("Part of: \(parent.name)")
+                        .font(Theme.body(13))
+                        .foregroundStyle(Theme.muted)
+                    Button {
+                        busy = true
+                        Task {
+                            let ok = await model.setParent(nil)
+                            message = ok ? "Removed from franchise" : "Couldn't remove"
+                            busy = false
+                        }
+                    } label: {
+                        Text("Remove").font(Theme.body(13, .medium)).foregroundStyle(Theme.destructive)
+                    }
+                    .disabled(busy)
+                }
+            } else {
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) { open.toggle() }
+                } label: {
+                    Text(open ? "Cancel" : "Assign to franchise")
+                        .font(Theme.body(13, .medium))
+                        .foregroundStyle(Theme.neonBlue)
+                }
+            }
+
+            if open && model.parentSeries == nil {
+                TextField("Search franchise...", text: $query)
+                    .font(Theme.body(14))
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .padding(.horizontal, 12).padding(.vertical, 9)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+                    .onChange(of: query) {
+                        let q = query
+                        guard q.count >= 2 else { results = []; return }
+                        Task {
+                            let r = await model.searchFranchises(q)
+                            if q == query { results = r }
+                        }
+                    }
+                ForEach(results) { r in
+                    Button {
+                        busy = true
+                        Task {
+                            let ok = await model.setParent(r.id)
+                            message = ok ? "Assigned to \(r.name)" : "Couldn't assign"
+                            if ok { open = false; query = ""; results = [] }
+                            busy = false
+                        }
+                    } label: {
+                        Text(r.name)
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.foreground)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 12).padding(.vertical, 9)
+                            .background(Theme.surfaceAlt.opacity(0.6), in: RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+                    }
+                    .disabled(busy)
+                }
+            }
+        }
+        .padding(.top, 8)
     }
 }

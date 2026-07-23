@@ -59,6 +59,7 @@ private struct SessionRow: View {
 
     @State private var startDate: Date = .init()
     @State private var endDate: Date = .init()
+    @State private var pausedDate: Date = .init()
     @State private var hasEnd = false
     @State private var formats: Set<String>
     @State private var showDeleteConfirm = false
@@ -151,6 +152,7 @@ private struct SessionRow: View {
     private func seedDates() {
         if let s = session.startedAt, let d = DateFmt.parse(s) { startDate = d }
         if let c = session.completionDate, let d = DateFmt.parse(c) { endDate = d; hasEnd = true }
+        if let p = session.pausedAt, let d = DateFmt.parse(p) { pausedDate = d }
     }
 
     private var editor: some View {
@@ -161,6 +163,16 @@ private struct SessionRow: View {
                 .font(Theme.body(14))
                 .tint(Theme.accent)
                 .onChange(of: startDate) { save(["startedAt": DateFmt.iso(startDate)]) }
+
+            // Paused date — only for paused sessions, mirroring the web
+            // session editor (user request 2026-07-22: couldn't move a
+            // pause date from iOS at all).
+            if session.state == "paused" {
+                DatePicker("Paused", selection: $pausedDate, displayedComponents: .date)
+                    .font(Theme.body(14))
+                    .tint(Theme.accent)
+                    .onChange(of: pausedDate) { save(["pausedAt": DateFmt.iso(pausedDate)]) }
+            }
 
             if session.state != "currently_reading" {
                 HStack {
@@ -181,7 +193,10 @@ private struct SessionRow: View {
             Text("FORMAT")
                 .font(Theme.body(10, .semibold)).tracking(1.2)
                 .foregroundStyle(Theme.muted)
-            HStack(spacing: 8) {
+            // 2×2 grid: four chips in one HStack overflowed the card and
+            // wrapped mid-word ("Hardcov/er" — user report 2026-07-22).
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
+                      alignment: .leading, spacing: 8) {
                 formatChip("hardcover", icon: "book.closed", label: "Hardcover")
                 formatChip("paperback", icon: "book", label: "Paperback")
                 formatChip("ebook", icon: "ipad", label: "eBook")
@@ -208,9 +223,10 @@ private struct SessionRow: View {
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: icon).font(.system(size: 11))
-                Text(label).font(Theme.body(12, .medium))
+                Text(label).font(Theme.body(12, .medium)).lineLimit(1).fixedSize()
             }
-            .foregroundStyle(selected ? Theme.accent : Theme.muted)
+            .foregroundStyle(selected ? Theme.accentText : Theme.muted)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 10).padding(.vertical, 7)
             .background(selected ? Theme.accent.opacity(0.12) : Theme.surfaceAlt.opacity(0.5), in: Capsule())
             .overlay(Capsule().stroke(selected ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1))
@@ -224,21 +240,24 @@ private struct SessionRow: View {
             struct Patch: Codable, Sendable {
                 var startedAt: String?
                 var completionDate: String??
+                var pausedAt: String?
                 var activeFormats: [String]?
 
-                enum CodingKeys: String, CodingKey { case startedAt, completionDate, activeFormats }
+                enum CodingKeys: String, CodingKey { case startedAt, completionDate, pausedAt, activeFormats }
                 func encode(to encoder: Encoder) throws {
                     var c = encoder.container(keyedBy: CodingKeys.self)
                     try c.encodeIfPresent(startedAt, forKey: .startedAt)
                     if let completionDate {
                         try c.encode(completionDate, forKey: .completionDate) // encodes value or explicit null
                     }
+                    try c.encodeIfPresent(pausedAt, forKey: .pausedAt)
                     try c.encodeIfPresent(activeFormats, forKey: .activeFormats)
                 }
             }
             var patch = Patch()
             if let v = fields["startedAt"] as? String { patch.startedAt = v }
             if fields.keys.contains("completionDate") { patch.completionDate = .some(fields["completionDate"] as? String) }
+            if let v = fields["pausedAt"] as? String { patch.pausedAt = v }
             if let v = fields["activeFormats"] as? [String] { patch.activeFormats = v }
             struct Ok: Codable { let ok: Bool }
             let _: Ok? = try? await APIClient.shared.request("/api/v1/reading-sessions/\(session.id)", method: "PATCH", json: patch)

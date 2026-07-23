@@ -401,6 +401,30 @@ const DELTA_TABLES: Record<string, string> = {
     console.log(`  ✗  up_next mirror: ${e.message.slice(0, 100)}`);
   }
 
+  // Series curation fields are live-authoritative (2026-07-22): franchise
+  // assignment + cover style are admin actions that land on PROD (native
+  // admin talks to prod), and series has no updated_at for the timestamp
+  // path — mirror the two fields unconditionally. Tiny table, one pass.
+  console.log('\n→ Syncing series curation (parent_series_id, cover_style)');
+  try {
+    const liveSeries = await fetchLiveRows('series', ['id', 'parent_series_id', 'cover_style']);
+    let fixed = 0;
+    const upd = local.prepare(
+      `UPDATE series SET parent_series_id = ?, cover_style = ?
+        WHERE id = ? AND (IFNULL(parent_series_id,'') != IFNULL(?, '') OR cover_style != ?)`
+    );
+    const trxSeries = local.transaction((rows: any[]) => {
+      for (const r of rows) {
+        const res = upd.run(r.parent_series_id, r.cover_style, r.id, r.parent_series_id, r.cover_style);
+        if (res.changes > 0) fixed++;
+      }
+    });
+    trxSeries(liveSeries);
+    console.log(`  ✓  series curation                     ${fixed} mirrored from live`);
+  } catch (e: any) {
+    console.log(`  ⚠  series curation sync: ${e.message.slice(0, 120)}`);
+  }
+
   // Always sync covers live → local (live is authoritative).
   // Pull cover_image_url, cover_source, and cover_verified together — otherwise
   // a `manual` flag set on live via /admin/covers gets stripped on the next
