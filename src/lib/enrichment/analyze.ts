@@ -57,10 +57,25 @@ ${categoryList}
 
 INTENSITY SCALE:
 0 = Not present
-1 = Minor — brief, background, or fleeting
+1 = Mild — brief, background, or fleeting
 2 = Moderate — recurring but not dominant
-3 = Major — frequent or central to the story
+3 = Significant — frequent or central to the story
 4 = Extreme — graphic, pervasive, or defining
+
+CALIBRATION ANCHORS — the scale above is the ONLY scale; do not invent your
+own thresholds. Match these per-category anchors, which reflect our
+published methodology and the existing catalog:
+- romance_sex: 1 = kissing, attraction, fade-to-black; 2 = non-graphic on-page intimacy or recurring sensual content; 3 = explicit on-page scenes; 4 = frequent graphic content. A closed-door cozy romance is 1-2, never 3.
+- violence_gore: 1 = mild peril or minor injuries; 2 = battles or deaths without graphic detail; 3 = graphic violence, blood, on-page deaths; 4 = torture, dismemberment, body horror.
+- profanity_language: 1 = rare mild words; 2 = occasional strong language; 3 = frequent strong profanity; 4 = pervasive or extreme.
+- substance_use: 1 = social drinking mentions; 2 = recurring use; 3 = abuse or addiction themes; 4 = graphic addiction as a central thread.
+- lgbtqia_representation: presence, not judgment. 1 = passing mention or minor side character; 2 = recurring side character or subplot; 3 = primary character or central relationship; 4 = identity themes are the book's focus.
+- religious_content: 1 = passing references; 2 = recurring themes or practices; 3 = faith central to plot or characters; 4 = devotional/theological focus.
+- magic_witchcraft: FANTASY-genre magic presence. 1 = background magical elements; 2 = recurring magic; 3 = magic central to the premise (a magic school, a spellshop, a dragon cafe); 4 = a pervasive, defining magic system. Catalog reference points: Harry Potter #1 = 3, A Wizard of Earthsea = 4. Real-world occult practice belongs in occult_demonology, NOT here — but centrality still counts here even when the magic is whimsical or cozy.
+- occult_demonology: real-world occult content (seances, tarot, demons, ritual or Satanic content). 1 = brief references; 2 = recurring elements; 3 = central; 4 = graphic or pervasive. Fantasy-genre magic does NOT raise this score.
+- political_ideological: 1 = light background politics; 2 = recurring social or political themes; 3 = central political messaging or allegory; 4 = the book is primarily message-driven.
+- self_harm_suicide: 1 = brief mention or backstory; 2 = ideation discussed; 3 = on-page self-harm or an attempt; 4 = graphic or recurring depiction.
+- abuse_suffering: 1 = referenced or off-page; 2 = recurring but not graphic; 3 = on-page depiction; 4 = graphic or sustained cruelty.
 
 RULES:
 - ACCURACY IS CRITICAL. Readers rely on these ratings to make informed decisions. A false "not present" for content that IS in the book is worse than an over-rating. When in doubt, rate HIGHER rather than lower.
