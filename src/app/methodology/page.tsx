@@ -14,9 +14,9 @@ export const metadata: Metadata = {
 
 const INTENSITY_LEVELS = [
   { level: 0, label: "None", description: "Not present in the book", color: "bg-intensity-0" },
-  { level: 1, label: "Minor", description: "Brief, background, or fleeting", color: "bg-intensity-1" },
+  { level: 1, label: "Mild", description: "Brief, background, or fleeting", color: "bg-intensity-1" },
   { level: 2, label: "Moderate", description: "Recurring but not dominant", color: "bg-intensity-2" },
-  { level: 3, label: "Major", description: "Frequent or central to the story", color: "bg-intensity-3" },
+  { level: 3, label: "Significant", description: "Frequent or central to the story", color: "bg-intensity-3" },
   { level: 4, label: "Extreme", description: "Graphic, pervasive, or defining", color: "bg-intensity-4" },
 ];
 
