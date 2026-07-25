@@ -386,7 +386,11 @@ async function searchAuthors(query: string) {
     })
     .from(authors)
     .innerJoin(bookAuthors, eq(bookAuthors.authorId, authors.id))
-    .where(sql`${authors.name} LIKE ${`%${query}%`} COLLATE NOCASE`)
+    // Second arm matches initials regardless of period/space style —
+    // "jk rowling", "j k rowling", "j.k. rowling" all hit "J.K. Rowling"
+    // by comparing period-and-space-stripped forms (2026-07-25).
+    .where(sql`(${authors.name} LIKE ${`%${query}%`} COLLATE NOCASE
+      OR REPLACE(REPLACE(${authors.name}, '.', ''), ' ', '') LIKE ${`%${query.replace(/[.\s]/g, "")}%`} COLLATE NOCASE)`)
     .groupBy(authors.id)
     .orderBy(sql`count(${bookAuthors.bookId}) desc`)
     .limit(3);
