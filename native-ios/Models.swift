@@ -495,6 +495,13 @@ struct BookDetailData: Codable, Hashable {
     let ok: Bool
     let book: BookFull
     let slug: String?
+    /// Server-computed (2026-07-25): no content ratings yet — enrichment
+    /// hasn't completed. Fetching the payload also auto-triggers enrichment
+    /// server-side, so the client just polls until this flips false.
+    let needsEnrichment: Bool?
+    /// The last enrichment attempt hit the spent API budget — show the calm
+    /// "queued" notice instead of the blocking wait overlay.
+    let enrichmentQueued: Bool?
     /// Server-computed: the user's formats select the audiobook AND a real
     /// square image exists — hero renders square + swaps to that image.
     let usesAudiobookCover: Bool?

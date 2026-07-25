@@ -87,6 +87,10 @@ struct SearchView: View {
     var initialQuery: String? = nil
     @State private var model = SearchModel()
     @FocusState private var fieldFocused: Bool
+    /// Set when an external result finishes importing — pushes straight into
+    /// the (auto-enriching) book page instead of silently adding to the TBR
+    /// (user request 2026-07-25).
+    @State private var importedRoute: BookRoute?
 
     var body: some View {
         ZStack {
@@ -149,7 +153,9 @@ struct SearchView: View {
                             .foregroundStyle(Theme.muted.opacity(0.8))
                         VStack(spacing: 14) {
                             ForEach(model.external) { result in
-                                ExternalResultCard(result: result)
+                                ExternalResultCard(result: result) { bookId in
+                                    importedRoute = BookRoute(idOrSlug: bookId)
+                                }
                             }
                         }
                     }
@@ -159,6 +165,10 @@ struct SearchView: View {
             }
         }
         .floatingBack()
+        .navigationDestination(item: $importedRoute) { route in
+            BookDetailView(idOrSlug: route.idOrSlug)
+                .modifier(PushedScreenChrome())
+        }
         .onAppear {
             fieldFocused = true
             if let q = initialQuery, model.query.isEmpty {
@@ -368,13 +378,16 @@ private struct SearchResultCard: View {
 }
 
 
-// External (ISBNdb) result — importing happens on first state selection:
-// POST /search/import creates the book (+ background enrichment), then the
-// normal reading-state endpoint runs. Mirrors setBookStateWithImport.
+// External (ISBNdb) result — "Add to tbr*a" imports the book (POST
+// /search/import creates the row + kicks background enrichment) and then
+// navigates INTO the book page, which shows the enrichment wait overlay
+// until content details land. No reading state is set — shelving is the
+// user's explicit choice on the book page (user request 2026-07-25; the
+// old flow silently added to the TBR and dead-ended in search).
 private struct ExternalResultCard: View {
     let result: ExternalResult
+    let onImported: (String) -> Void
     @State private var importedBookId: String?
-    @State private var state: String?
     @State private var busy = false
 
     var body: some View {
@@ -407,41 +420,39 @@ private struct ExternalResultCard: View {
                     busy = true
                     Task {
                         defer { busy = false }
-                        let bookId: String
                         if let importedBookId {
-                            bookId = importedBookId
-                        } else {
-                            struct Body: Codable, Sendable {
-                                let isbn: String; let title: String; let authors: [String]
-                                let coverUrl: String?; let publicationYear: Int?; let pages: Int?
-                            }
-                            struct Ok: Codable { let ok: Bool; let bookId: String }
-                            guard let res: Ok = try? await APIClient.shared.request(
-                                "/api/v1/search/import", method: "POST",
-                                json: Body(isbn: result.isbn, title: result.title, authors: result.authors,
-                                           coverUrl: result.coverUrl, publicationYear: result.publicationYear,
-                                           pages: result.pages)) else { return }
-                            importedBookId = res.bookId
-                            bookId = res.bookId
+                            onImported(importedBookId)
+                            return
                         }
-                        try? await APIClient.shared.setReadingState(bookId: bookId, state: state == nil ? "tbr" : "none")
-                        state = state == nil ? "tbr" : nil
+                        struct Body: Codable, Sendable {
+                            let isbn: String; let title: String; let authors: [String]
+                            let coverUrl: String?; let publicationYear: Int?; let pages: Int?
+                        }
+                        struct Ok: Codable { let ok: Bool; let bookId: String }
+                        guard let res: Ok = try? await APIClient.shared.request(
+                            "/api/v1/search/import", method: "POST",
+                            json: Body(isbn: result.isbn, title: result.title, authors: result.authors,
+                                       coverUrl: result.coverUrl, publicationYear: result.publicationYear,
+                                       pages: result.pages)) else { return }
+                        importedBookId = res.bookId
+                        onImported(res.bookId)
                     }
                 } label: {
                     HStack(spacing: 5) {
                         if busy {
-                            ProgressView().tint(state != nil ? .black : Theme.foreground).scaleEffect(0.7)
-                        } else if state == nil {
-                            Image(systemName: "plus").font(.system(size: 12, weight: .semibold))
+                            ProgressView().tint(Theme.foreground).scaleEffect(0.7)
+                        } else {
+                            Image(systemName: importedBookId == nil ? "plus" : "book")
+                                .font(.system(size: 12, weight: .semibold))
                         }
-                        Text(state == nil ? "Add to tbr*a" : "On your TBR ✓")
+                        Text(importedBookId == nil ? "Add to tbr*a" : "View book")
                             .font(Theme.body(14, .medium))
                     }
-                    .foregroundStyle(state != nil ? .black : Theme.foreground)
+                    .foregroundStyle(Theme.foreground)
                     .padding(.horizontal, 16).padding(.vertical, 9)
-                    .background(state != nil ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.accent.opacity(0.2)))
+                    .background(AnyShapeStyle(Theme.accent.opacity(0.2)))
                     .clipShape(Capsule())
-                    .overlay(Capsule().stroke(Theme.accent.opacity(state != nil ? 1 : 0.6), lineWidth: 1.5))
+                    .overlay(Capsule().stroke(Theme.accent.opacity(0.6), lineWidth: 1.5))
                 }
                 Spacer()
             }

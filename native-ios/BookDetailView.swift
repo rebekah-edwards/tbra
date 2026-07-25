@@ -14,6 +14,49 @@ struct BookRoute: Hashable {
     let idOrSlug: String
 }
 
+/// Blocking overlay while a freshly imported book runs enrichment — mirrors
+/// the web book page's fixed z-100 "being added" screen (same copy).
+struct EnrichmentWaitOverlay: View {
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.7).ignoresSafeArea()
+            VStack(spacing: 16) {
+                ProgressView()
+                    .tint(Theme.accent)
+                    .scaleEffect(1.4)
+                Text("This book is currently being added to our database. Please wait 10–20 seconds for content details to be added.")
+                    .font(Theme.body(16))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+            }
+        }
+        .transition(.opacity)
+    }
+}
+
+/// Calm non-blocking notice: enrichment is queued behind the daily API
+/// budget — mirrors the web's amber banner (same copy, 2026-07-17 honesty
+/// pass: never a spinner that can't finish).
+struct EnrichmentQueuedBanner: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "clock")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color(red: 0.98, green: 0.75, blue: 0.14))
+                .padding(.top, 2)
+            Text("This book is in our enrichment queue — the summary and What's Inside content details will appear within a day. Everything else is ready now.")
+                .font(Theme.body(14))
+                .foregroundStyle(Theme.foreground.opacity(0.9))
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .background(Color(red: 0.98, green: 0.75, blue: 0.14).opacity(0.10),
+                    in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14)
+            .stroke(Color(red: 0.98, green: 0.75, blue: 0.14).opacity(0.3), lineWidth: 1))
+    }
+}
+
 @MainActor
 @Observable
 final class BookDetailModel {
@@ -35,9 +78,27 @@ struct BookDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthStore.self) private var auth
     @State private var model: BookDetailModel
+    /// Reload attempts while waiting for enrichment (web parity: overlay +
+    /// reload loop with a bounded budget, then fall back to the calm notice).
+    @State private var enrichPolls = 0
 
     init(idOrSlug: String) {
         _model = State(initialValue: BookDetailModel(idOrSlug: idOrSlug))
+    }
+
+    /// Blocking "being added, wait 10–20s" overlay: enrichment is actively
+    /// running server-side (fetching the payload auto-triggers it).
+    private var showEnrichWait: Bool {
+        model.data?.needsEnrichment == true
+            && model.data?.enrichmentQueued != true
+            && enrichPolls < 9
+    }
+
+    /// Calm non-blocking notice: enrichment is stranded behind the spent
+    /// daily API budget (or our wait budget ran out) — the nightly retry
+    /// lane picks it up after the reset.
+    private var showEnrichQueued: Bool {
+        model.data?.needsEnrichment == true && !showEnrichWait
     }
 
     private var isAdmin: Bool {
@@ -52,6 +113,9 @@ struct BookDetailView: View {
         ScrollView {
             if let data = model.data {
                 VStack(alignment: .leading, spacing: 20) {
+                    if showEnrichQueued {
+                        EnrichmentQueuedBanner()
+                    }
                     BookHero(data: data, onCoverChanged: { await model.load() })
                     BookActionCluster(model: model, data: data)
                     BookStarsRow(data: data, onReviewSaved: { Task { await model.load() } })
@@ -156,6 +220,11 @@ struct BookDetailView: View {
         // (card top = 20; chevron spans 0…40 → 20pt over the card) while
         // keeping clear air below the logo pill.
         .floatingBack(topPadding: 0)
+        .overlay {
+            if showEnrichWait {
+                EnrichmentWaitOverlay()
+            }
+        }
         .reportsPage("/book/\(model.idOrSlug)")
         .toolbar(.hidden, for: .navigationBar)
         .task {
@@ -166,6 +235,17 @@ struct BookDetailView: View {
                 withAnimation { scrollProxy.scrollTo(anchor, anchor: .top) }
             }
             #endif
+            // Unenriched book: the payload fetch auto-triggered enrichment
+            // server-side; poll until the ratings land (web parity — overlay
+            // + reload loop, ~45s budget, then the calm queued notice).
+            while model.data?.needsEnrichment == true,
+                  model.data?.enrichmentQueued != true,
+                  enrichPolls < 9,
+                  !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(5))
+                enrichPolls += 1
+                await model.load()
+            }
         }
         .refreshable { await model.load() }
         .alert("Error", isPresented: .constant(model.error != nil)) {
