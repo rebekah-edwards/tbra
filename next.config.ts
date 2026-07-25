@@ -114,6 +114,10 @@ const nextConfig: NextConfig = {
         hostname: "static01.nyt.com",
         pathname: "/bestsellers/**",
       },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
     ],
   },
 };
