@@ -4,8 +4,25 @@
 // (AppShell/SettingsView/BookDetailView .guidedTour calls). Key names match
 // the iOS AppStorage keys so a copy revision bumps both platforms together.
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { GuidedTour } from "./guided-tour";
+
+/** Single mount point for all web tours, rendered from the root layout for
+ *  signed-in users. Mounting from the layout shell matters: it hydrates with
+ *  the nav immediately, while page bodies stream in and hydrate lazily —
+ *  a tour mounted inside a streamed subtree may never wake up (the anchors
+ *  are found by document query, so where the tour mounts is independent of
+ *  where its targets live). Route decides which tour is eligible; the
+ *  engine's anchor poll + one-shot localStorage keys handle the rest. */
+export function CoachMarksTours() {
+  const pathname = usePathname();
+  if (pathname === "/") return <HomeTour />;
+  if (pathname === "/settings") return <SettingsTour />;
+  // Book tour: the whats-inside anchor only renders when the book has
+  // ratings, so the anchor poll self-gates on ratings-less books.
+  if (pathname.startsWith("/book/")) return <BookTour />;
+  return null;
+}
 
 /** Home: where imports + settings live. CTA chains into the settings tour
  *  (navigating there is enough — the settings tour self-starts if unseen). */

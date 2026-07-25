@@ -364,7 +364,6 @@ export default async function BookPage({
         isLoggedIn={!!user}
         isAdmin={isAdmin(user)}
         canReport={!!user && ["beta_tester", "admin", "super_admin"].includes(user.accountType)}
-        hasRatings={book.ratings.length > 0}
         editionSelections={editionSelections}
         userReview={userReview}
         aggregate={aggregate}

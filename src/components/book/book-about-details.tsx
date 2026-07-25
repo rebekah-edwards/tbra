@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { sanitizeHtml } from "@/lib/sanitize";
 
 interface BookAboutDetailsProps {
   description: string | null;
@@ -36,13 +35,15 @@ function renderMarkdown(text: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, text: string, url: string) => {
-      const safeUrl = /^https?:\/\//i.test(url) ? url : '#';
+      // Quote-encode so a crafted URL can't break out of the href attribute
+      // (the surrounding text is already entity-escaped above).
+      const safeUrl = (/^https?:\/\//i.test(url) ? url : '#').replace(/"/g, "%22");
       return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-primary hover:text-primary-dark underline">${text}</a>`;
     })
     .replace(/\[([^\]]+)\]\[([^\]]+)\]/g, (_match, linkText: string, ref: string) => {
       const url = refLinks[ref];
       if (url) {
-        const safeUrl = /^https?:\/\//i.test(url) ? url : '#';
+        const safeUrl = (/^https?:\/\//i.test(url) ? url : '#').replace(/"/g, "%22");
         return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-primary hover:text-primary-dark underline">${linkText}</a>`;
       }
       return linkText;
@@ -173,7 +174,7 @@ export function BookAboutDetails({
             <div>
               <div
                 className="text-sm leading-relaxed text-muted"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(`<p>${html}</p>`) }}
+                dangerouslySetInnerHTML={{ __html: `<p>${html}</p>` }}
               />
               {isLong && (
                 <button
@@ -197,7 +198,7 @@ export function BookAboutDetails({
           >About</h2>
           <div
             className="mt-2 text-sm leading-relaxed text-muted"
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(`<p>${html}</p>`) }}
+            dangerouslySetInnerHTML={{ __html: `<p>${html}</p>` }}
           />
           {isLong && (
             <button

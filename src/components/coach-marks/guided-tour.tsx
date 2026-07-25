@@ -35,7 +35,31 @@ const RING_PAD = 6;
 const RING_RADIUS = 14;
 
 function anchorEl(anchor: string): HTMLElement | null {
-  return document.querySelector<HTMLElement>(`[data-coach-anchor="${anchor}"]`);
+  // A selector can match a node still inside Next's HIDDEN streaming
+  // container (zero-size, position 0,0) before React moves it into the live
+  // tree — spotlighting that gives a ring in the top-left corner and a
+  // scrollIntoView that no-ops. Only accept an element that is actually
+  // laid out.
+  const els = document.querySelectorAll<HTMLElement>(`[data-coach-anchor="${anchor}"]`);
+  for (const el of els) {
+    const r = el.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) return el;
+  }
+  return null;
+}
+
+/** Manual scroll (no scrollIntoView): mutating scroll-margin on server-
+ *  rendered anchors caused hydration mismatches, and smooth programmatic
+ *  scrolls are swallowed by the app's body scroller. Tall targets align
+ *  their top under the nav; others center. */
+function scrollToAnchor(el: HTMLElement) {
+  const r = el.getBoundingClientRect();
+  const vh = window.innerHeight;
+  const tall = r.height > vh * 0.5;
+  const target = tall
+    ? window.scrollY + r.top - 84
+    : window.scrollY + r.top - (vh - r.height) / 2;
+  window.scrollTo({ top: Math.max(0, target), behavior: "auto" });
 }
 
 export function GuidedTour({
@@ -92,14 +116,7 @@ export function GuidedTour({
     const timers = [350, 900].map((delay) =>
       setTimeout(() => {
         const el = anchorEl(step.anchor);
-        if (!el) return;
-        // Tall targets (open accordions) scroll to their TOP so the header
-        // stays visible — centering lands mid-list and hides the title
-        // (same clamp rationale as the iOS spotlight). scroll-margin keeps
-        // the top clear of the sticky nav.
-        el.style.scrollMarginTop = "84px";
-        const tall = el.offsetHeight > window.innerHeight * 0.5;
-        el.scrollIntoView({ behavior: "smooth", block: tall ? "start" : "center" });
+        if (el) scrollToAnchor(el);
       }, delay)
     );
     return () => timers.forEach(clearTimeout);
@@ -111,6 +128,11 @@ export function GuidedTour({
   useEffect(() => {
     if (index === null) return;
     const step = steps[index];
+    // Self-healing scroll: streamed content can shift layout AFTER the
+    // step's initial scroll fired, leaving the target far off-screen. If the
+    // ring is fully out of view, re-nudge (throttled so smooth scrolls and
+    // the user's own scrolling aren't fought).
+    let lastNudge = Date.now();
     const measure = () => {
       const el = anchorEl(step.anchor);
       setViewport({ w: window.innerWidth, h: window.innerHeight });
@@ -119,6 +141,10 @@ export function GuidedTour({
         return;
       }
       const r = el.getBoundingClientRect();
+      if ((r.top > window.innerHeight - 40 || r.bottom < 40) && Date.now() - lastNudge > 2000) {
+        lastNudge = Date.now();
+        scrollToAnchor(el);
+      }
       setRect((prev) =>
         prev &&
         Math.abs(prev.top - r.top) < 1 &&
