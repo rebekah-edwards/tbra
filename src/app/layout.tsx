@@ -14,6 +14,7 @@ import { OnboardingGate } from "@/components/onboarding/welcome-carousel";
 import { DesktopNav } from "@/components/nav/desktop-nav";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { GlobalReportButton } from "@/components/global-report-button";
+import { CoachMarksTours } from "@/components/coach-marks/tours";
 import { NotificationBell } from "@/components/nav/notification-bell";
 import { TextSizeInitializer } from "@/components/settings/text-size-selector";
 import Script from "next/script";
@@ -279,6 +280,10 @@ export default async function RootLayout({
             </p>
           </footer>
           {(userIsSuperAdmin || session?.accountType === "beta_tester") && <GlobalReportButton />}
+          {/* First-run guided tours (web twin of the iOS engine). Mounted
+              from the layout shell so it hydrates with the nav — page bodies
+              stream/hydrate lazily and tours mounted there may never wake. */}
+          {session && <CoachMarksTours />}
           {isVerified && <BottomTabs isLoggedIn={!!session} avatarUrl={avatarUrl} />}
         </ThemeProvider>
       </body>
