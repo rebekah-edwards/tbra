@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   updateReadingStyle,
@@ -144,6 +144,16 @@ export function ReadingPreferencesEditor({
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  // Settings guided tour: each step auto-opens the accordion it teaches
+  // (null closes them all). Mirrors the iOS onStep openSection behavior.
+  useEffect(() => {
+    const onCoach = (e: Event) => {
+      setOpenSection((e as CustomEvent<string | null>).detail);
+    };
+    window.addEventListener("tbra-coach-open-section", onCoach);
+    return () => window.removeEventListener("tbra-coach-open-section", onCoach);
+  }, []);
 
   // No prefs yet — show setup prompt
   if (!initialPrefs) {
@@ -309,6 +319,7 @@ export function ReadingPreferencesEditor({
       {/* Genres */}
       <AccordionSection
         title="Genre Preferences"
+        anchorId="tour-genres"
         open={openSection === "genres"}
         onToggle={() => toggleSection("genres")}
       >
@@ -556,6 +567,7 @@ export function ReadingPreferencesEditor({
       {/* Content Comfort Zone */}
       <AccordionSection
         title="Content Comfort Zone"
+        anchorId="tour-comfort-zone"
         open={openSection === "content"}
         onToggle={() => toggleSection("content")}
       >
@@ -695,14 +707,17 @@ function AccordionSection({
   open,
   onToggle,
   children,
+  anchorId,
 }: {
   title: string;
   open: boolean;
   onToggle: () => void;
   children: React.ReactNode;
+  /** data-coach-anchor id for the guided tour */
+  anchorId?: string;
 }) {
   return (
-    <div className="border-b border-border last:border-b-0">
+    <div className="border-b border-border last:border-b-0" data-coach-anchor={anchorId}>
       <button
         onClick={onToggle}
         className="flex w-full items-center justify-between px-5 py-3.5 text-sm font-medium text-foreground hover:bg-surface-alt/50 transition-colors"

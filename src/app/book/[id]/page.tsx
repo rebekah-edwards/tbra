@@ -32,6 +32,7 @@ import { AdminEditPanel } from "@/components/admin/admin-edit-panel";
 import { FriendsWhoRead } from "@/components/book/friends-who-read";
 import { BookSummary } from "@/components/book/book-summary";
 import { HideBookButton } from "@/components/book/hide-book-button";
+import { ReportIssueButton } from "@/components/book/report-issue-button";
 import { ReadingHistory } from "@/components/book/reading-history";
 import { getFollowedUsersWhoRead } from "@/lib/queries/follows";
 import { scanTextForCanonicals } from "@/lib/content-warnings/vocabulary";
@@ -363,6 +364,7 @@ export default async function BookPage({
         isLoggedIn={!!user}
         isAdmin={isAdmin(user)}
         canReport={!!user && ["beta_tester", "admin", "super_admin"].includes(user.accountType)}
+        hasRatings={book.ratings.length > 0}
         editionSelections={editionSelections}
         userReview={userReview}
         aggregate={aggregate}
@@ -544,8 +546,12 @@ export default async function BookPage({
       <ContentProfile ratings={book.ratings} bookId={bookId} isLoggedIn={!!user} isAdmin={isAdmin(user)} />
 
       {user && (
-        <div className="mt-10 flex justify-center">
+        <div className="mt-10 flex items-center justify-center gap-8">
           <HideBookButton bookId={bookId} bookTitle={book.title} initialIsHidden={isHidden} />
+          {/* iOS-parity footer control (BookFooterSections): every logged-in
+              reader can flag a bad cover/rating/detail from the book page.
+              Also the anchor for the book tour's report step. */}
+          <ReportIssueButton bookId={bookId} bookTitle={book.title} labeled />
         </div>
       )}
       <div className="book-page-divider">{""}</div>

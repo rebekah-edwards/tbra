@@ -421,7 +421,7 @@ export function ContentProfile({ ratings, bookId, isLoggedIn, isAdmin }: Content
   });
 
   return (
-    <section className="mt-8">
+    <section className="mt-8" data-coach-anchor="whats-inside">
       <div id="whats-inside" className="flex items-center justify-between scroll-mt-20">
         <h2 className="section-heading text-xl">What&apos;s Inside</h2>
         <div className="flex items-center gap-2">

@@ -10,6 +10,9 @@ interface ReportIssueButtonProps {
   bookTitle?: string;
   seriesId?: string;
   seriesName?: string;
+  /** render as a labeled "Report an issue" control (book footer, iOS parity)
+   *  instead of the bare flag icon */
+  labeled?: boolean;
 }
 
 export function ReportIssueButton({
@@ -17,6 +20,7 @@ export function ReportIssueButton({
   bookTitle,
   seriesId,
   seriesName,
+  labeled = false,
 }: ReportIssueButtonProps) {
   const contextLabel = bookTitle || seriesName || "Unknown";
   const [open, setOpen] = useState(false);
@@ -77,8 +81,13 @@ export function ReportIssueButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="p-1.5 rounded-lg text-muted hover:text-yellow-500 hover:bg-yellow-500/10 transition-colors"
+        className={
+          labeled
+            ? "flex items-center gap-1.5 text-[13px] font-medium text-muted hover:text-yellow-500 transition-colors"
+            : "p-1.5 rounded-lg text-muted hover:text-yellow-500 hover:bg-yellow-500/10 transition-colors"
+        }
         title="Report data issue"
+        data-coach-anchor={labeled ? "tour-report" : undefined}
       >
         <svg
           width="16"
@@ -93,6 +102,7 @@ export function ReportIssueButton({
           <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
           <line x1="4" x2="4" y1="22" y2="15" />
         </svg>
+        {labeled && "Report an issue"}
       </button>
 
       <BottomSheet

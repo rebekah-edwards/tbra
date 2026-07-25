@@ -20,6 +20,7 @@ import { ContentWarningBanner } from "@/components/book/content-warning-banner";
 import { BookSummary } from "@/components/book/book-summary";
 import { ReportIssueButton } from "@/components/book/report-issue-button";
 import { ShareButton } from "@/components/book/share-button";
+import { BookTour } from "@/components/coach-marks/tours";
 import type { UserReview } from "@/lib/queries/review";
 
 export type EditionSelection = {
@@ -86,6 +87,8 @@ interface BookPageClientProps {
   isPremium?: boolean;
   initialTbrNote?: string | null;
   prePublication?: boolean;
+  /** book has content ratings — gates the first-book guided tour */
+  hasRatings?: boolean;
 }
 
 function formatReadDate(dateStr: string, precision: string | null): string {
@@ -124,6 +127,7 @@ export function BookPageClient({
   isPremium: userIsPremium = false,
   initialTbrNote = null,
   prePublication = false,
+  hasRatings = false,
 }: BookPageClientProps) {
   const [currentState, setCurrentState] = useState(userState.state);
   const [activeFormats, setActiveFormats] = useState(userState.activeFormats);
@@ -370,6 +374,11 @@ export function BookPageClient({
 
   return (
     <>
+      {/* First-book guided tour (iOS parity). Mounted from this component
+          because it hydrates immediately — the page's lower sections hydrate
+          lazily, which never wakes the tour. Anchors are looked up globally,
+          so the What's Inside section + report button are still found. */}
+      {isLoggedIn && hasRatings && <BookTour />}
       {showConfetti && <Confetti onDone={() => setShowConfetti(false)} />}
       {mounted && showEnrichmentBanner && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">

@@ -21,6 +21,7 @@ import { ThemeSelector } from "@/components/settings/theme-selector";
 import { LocationSettings } from "@/components/settings/location-settings";
 import { getHiddenBooks } from "@/lib/actions/hidden-books";
 import { ExportSection } from "@/components/settings/export-section";
+import { SettingsTour } from "@/components/coach-marks/tours";
 import { isPremium } from "@/lib/auth";
 
 export default async function SettingsPage() {
@@ -75,10 +76,12 @@ export default async function SettingsPage() {
       </div>
 
       {/* Location */}
-      <div>
+      <div data-coach-anchor="tour-privacy">
         <h2 className="section-heading text-lg mb-3">Location</h2>
         <LocationSettings userId={user.userId} />
       </div>
+
+      <SettingsTour />
 
       <NotificationPreferences initialPrefs={notifPrefs} />
 
