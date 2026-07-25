@@ -301,7 +301,13 @@ export default async function BookPage({
     enrichmentQueued = last[0]?.status === "api_exhausted";
   }
 
-  if (needsEnrichment && process.env.ENRICHMENT_PAUSED !== "true") {
+  // Signed-in visitors only (2026-07-25): anonymous traffic here is
+  // overwhelmingly crawlers walking the sitemap, and every visit to an
+  // unrated book was burning a full enrichment (~6 Brave calls) — ~1,250
+  // bot-triggered enrichments/day exhausted the entire shared daily budget
+  // with zero human involvement. Real readers still get the on-visit
+  // enrich; the zero-rating backlog drains via the nightly backfill lane.
+  if (needsEnrichment && user && process.env.ENRICHMENT_PAUSED !== "true") {
     after(() => triggerEnrichment(book.id));
   }
 
