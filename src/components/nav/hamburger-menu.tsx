@@ -148,6 +148,7 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
         className="flex h-9 w-9 items-center justify-center rounded-full text-muted hover:text-foreground hover:bg-surface-alt transition-colors"
         aria-label="Menu"
         aria-expanded={isOpen}
+        data-coach-anchor="tour-menu"
       >
         {/* Mobile: hamburger / close icon (always shown) */}
         {/* Desktop logged-out: also show hamburger */}
