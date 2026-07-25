@@ -59,8 +59,14 @@ export function matchesAllDiscriminatingTokens(
 ): boolean {
   if (discriminatingTokens.length <= 1) return true;
   const combinedLower = combined.toLowerCase();
+  // Compact fallback (2026-07-25): initials queries fuse letters the source
+  // writes separated — "jk" must match "J. K. Rowling". Comparing period/
+  // space-stripped forms admits those without loosening word-level matches.
+  const combinedCompact = combinedLower.replace(/[.\s]/g, "");
   for (const token of discriminatingTokens) {
-    if (!combinedLower.includes(token)) return false;
+    if (!combinedLower.includes(token) && !combinedCompact.includes(token.replace(/[.\s]/g, ""))) {
+      return false;
+    }
   }
   return true;
 }

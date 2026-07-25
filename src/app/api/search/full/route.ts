@@ -466,7 +466,10 @@ async function searchAuthorCandidates(queryLower: string) {
     })
     .from(authors)
     .innerJoin(bookAuthors, eq(bookAuthors.authorId, authors.id))
-    .where(sql`${authors.name} LIKE ${`%${queryLower}%`} COLLATE NOCASE`)
+    // Initials-tolerant (2026-07-25): also compare period/space-stripped
+    // forms so "jk rowling" matches "J.K. Rowling".
+    .where(sql`(${authors.name} LIKE ${`%${queryLower}%`} COLLATE NOCASE
+      OR REPLACE(REPLACE(${authors.name}, '.', ''), ' ', '') LIKE ${`%${queryLower.replace(/[.\s]/g, "")}%`} COLLATE NOCASE)`)
     .groupBy(authors.id)
     .orderBy(sql`count(${bookAuthors.bookId}) desc`)
     .limit(10);

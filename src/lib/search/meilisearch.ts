@@ -126,7 +126,26 @@ export async function searchAuthorsMeilisearch(
     matchingStrategy: pickStrategy(query),
   });
 
-  return results.hits.map((hit) => ({
+  let hits = results.hits;
+
+  // Initials fallback (2026-07-25): "jk rowling" can't match "J.K. Rowling"
+  // — the index tokenizes the name as "j"+"k" while the query holds a fused
+  // "jk" token. When a leading 2-3 letter cluster yields no hits, retry with
+  // the cluster split into single letters ("j k rowling").
+  if (hits.length === 0) {
+    const m = effectiveQuery.match(/^([a-z]{2,3})\s+(.+)$/i);
+    if (m) {
+      const expanded = `${m[1].split("").join(" ")} ${m[2]}`;
+      const retry = await index.search(expanded, {
+        limit,
+        attributesToRetrieve: ["id", "name", "bookCount"],
+        matchingStrategy: pickStrategy(expanded),
+      });
+      hits = retry.hits;
+    }
+  }
+
+  return hits.map((hit) => ({
     id: hit.id as string,
     name: hit.name as string,
     bookCount: (hit.bookCount as number) ?? 0,
