@@ -241,6 +241,7 @@ async function main() {
 
   let ok = 0, skippedLocal = 0, skippedTurso = 0, errors = 0;
   let totalMoved = 0, totalDeleted = 0;
+  let chunkDidWork = false; // real merges this chunk (skips are free)
   const started = Date.now();
   const errorList: { pair: any; err: string }[] = [];
 
@@ -259,6 +260,7 @@ async function main() {
 
       if (localR.exists || tursoR.exists) {
         ok++;
+        chunkDidWork = true;
         totalMoved += localR.activityMoved + tursoR.activityMoved;
         totalDeleted += localR.rowsDeleted + tursoR.rowsDeleted;
       }
@@ -278,10 +280,15 @@ async function main() {
       );
     }
 
-    // Chunk cooldown
+    // Chunk cooldown — only after chunks that actually merged something.
+    // All-skip chunks (resuming after an interrupted run) touch nothing on
+    // Turso, and paying 60s per 5 skips slow-walked a resume for 45 minutes.
     if (APPLY && (i + 1) % CHUNK === 0 && i < pairs.length - 1) {
-      heartbeat(`chunk ${Math.ceil((i + 1) / CHUNK)} — cooldown ${COOLDOWN_SEC}s  (ok=${ok}, err=${errors})`);
-      await sleep(COOLDOWN_SEC * 1000);
+      if (chunkDidWork) {
+        heartbeat(`chunk ${Math.ceil((i + 1) / CHUNK)} — cooldown ${COOLDOWN_SEC}s  (ok=${ok}, err=${errors})`);
+        await sleep(COOLDOWN_SEC * 1000);
+      }
+      chunkDidWork = false;
     }
   }
 
