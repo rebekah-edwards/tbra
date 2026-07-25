@@ -1,5 +1,7 @@
+import { after } from "next/server";
 import { getApiUser } from "@/lib/auth";
 import { jsonError, jsonOk } from "@/lib/api/http";
+import { triggerEnrichment } from "@/lib/enrichment/trigger";
 import { resolveBook, getBookWithDetails } from "@/lib/queries/books";
 import { getUserBookState } from "@/lib/queries/reading-state";
 import { getBookAggregateRating } from "@/lib/queries/rating";
@@ -115,9 +117,30 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     audiobookCoverUrl: book.audiobookCoverUrl,
   });
 
+  // Unenriched-book handling, identical to the web book page: ratings are the
+  // canonical "enrichment completed" signal; a latest api_exhausted log row
+  // means "stranded by the spent budget" (calm queued notice, no spinner).
+  // Visiting also auto-triggers enrichment — before this, a book imported
+  // from native search never got a retry until the nightly lane found it.
+  const needsEnrichment = book.ratings.length === 0;
+  let enrichmentQueued = false;
+  if (needsEnrichment) {
+    const { db } = await import("@/db");
+    const { sql } = await import("drizzle-orm");
+    const last = await db.all<{ status: string }>(sql`
+      SELECT status FROM enrichment_log WHERE book_id = ${bookId}
+      ORDER BY created_at DESC LIMIT 1`);
+    enrichmentQueued = last[0]?.status === "api_exhausted";
+    if (process.env.ENRICHMENT_PAUSED !== "true") {
+      after(() => triggerEnrichment(bookId));
+    }
+  }
+
   return jsonOk({
     book, // full getBookWithDetails payload (authors, series, genres, ratings, summary, description, …)
     slug: resolved.book.slug,
+    needsEnrichment,
+    enrichmentQueued,
     usesAudiobookCover,
     effectiveCoverUrl,
     userState, // { state, ownedFormats, activeFormats } | null
