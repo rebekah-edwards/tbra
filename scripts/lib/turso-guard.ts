@@ -80,7 +80,14 @@ export async function createGuardedTurso(opts: GuardOptions): Promise<GuardedTur
   }
 
   const lockPath = `/tmp/tbra-${name}.lock`;
-  const exemptionPath = `/tmp/tbra-longrun-${process.pid}`;
+  // Exempt BOTH this process and its parent from the launchd watchdog: when
+  // launched via `npx tsx` / node_modules/.bin/tsx, the watchdog sees the
+  // parent shim process too, and killing the unexempted parent takes the
+  // exempted child down with it (killed the 2026-07-25 dedup run at 60min).
+  const exemptionPaths = [
+    `/tmp/tbra-longrun-${process.pid}`,
+    `/tmp/tbra-longrun-${process.ppid}`,
+  ];
 
   // ── PID lockfile ──────────────────────────────────────────────────────
   try {
@@ -104,9 +111,11 @@ export async function createGuardedTurso(opts: GuardOptions): Promise<GuardedTur
   fs.writeFileSync(lockPath, String(process.pid));
 
   if (longRunning) {
-    try {
-      fs.writeFileSync(exemptionPath, String(Date.now()));
-    } catch { /* ignore */ }
+    for (const p of exemptionPaths) {
+      try {
+        fs.writeFileSync(p, String(Date.now()));
+      } catch { /* ignore */ }
+    }
   }
 
   // ── Wall-clock self-abort ─────────────────────────────────────────────
@@ -143,7 +152,9 @@ export async function createGuardedTurso(opts: GuardOptions): Promise<GuardedTur
     clearTimeout(deadline);
     try { inner.close(); } catch { /* libsql client may already be closed */ }
     try { fs.unlinkSync(lockPath); } catch { /* ignore */ }
-    try { fs.unlinkSync(exemptionPath); } catch { /* ignore */ }
+    for (const p of exemptionPaths) {
+      try { fs.unlinkSync(p); } catch { /* ignore */ }
+    }
   };
   // beforeExit fires when the event loop is empty (no pending tasks,
   // no other handles). At that point we know the script's work is done
