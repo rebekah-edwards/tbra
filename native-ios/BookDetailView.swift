@@ -36,24 +36,24 @@ struct EnrichmentWaitOverlay: View {
 }
 
 /// Calm non-blocking notice: enrichment is queued behind the daily API
-/// budget — mirrors the web's amber banner (same copy, 2026-07-17 honesty
-/// pass: never a spinner that can't finish).
+/// budget — mirrors the web's amber banner copy. Solid amber chip with
+/// BLACK text/icon in both modes (user callout 2026-07-25: the translucent
+/// version washed out to green-on-green over bright ambient backdrops —
+/// black-on-solid is the brand rule for filled chips).
 struct EnrichmentQueuedBanner: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "clock")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Color(red: 0.98, green: 0.75, blue: 0.14))
+                .foregroundStyle(.black)
                 .padding(.top, 2)
             Text("This book is in our enrichment queue — the summary and What's Inside content details will appear within a day. Everything else is ready now.")
-                .font(Theme.body(14))
-                .foregroundStyle(Theme.foreground.opacity(0.9))
+                .font(Theme.body(14, .medium))
+                .foregroundStyle(.black)
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
-        .background(Color(red: 0.98, green: 0.75, blue: 0.14).opacity(0.10),
+        .background(Color(red: 0.99, green: 0.82, blue: 0.33),
                     in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14)
-            .stroke(Color(red: 0.98, green: 0.75, blue: 0.14).opacity(0.3), lineWidth: 1))
     }
 }
 
@@ -114,7 +114,14 @@ struct BookDetailView: View {
             if let data = model.data {
                 VStack(alignment: .leading, spacing: 20) {
                     if showEnrichQueued {
+                        // zIndex keeps the chip above the ambient/hero blur;
+                        // the extra top padding shifts the whole page down so
+                        // the shell logo + top-right actions stay visible and
+                        // the back chevron only just overlaps the chip's top
+                        // (chevron spans 0…40pt; chip top lands at 36pt).
                         EnrichmentQueuedBanner()
+                            .zIndex(5)
+                            .padding(.top, 36)
                     }
                     BookHero(data: data, onCoverChanged: { await model.load() })
                     BookActionCluster(model: model, data: data)

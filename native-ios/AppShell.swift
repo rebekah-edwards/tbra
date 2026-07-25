@@ -161,7 +161,12 @@ struct AppShell: View {
             }
         }
         .fullScreenCover(isPresented: $fullSearchOpen) {
-            SearchRootView(initialQuery: fullSearchQuery)
+            // Books open OUTSIDE this cover (in the chromed book cover) so
+            // they carry the logo/menu/bottom-nav like every other book page.
+            SearchRootView(initialQuery: fullSearchQuery, onOpenBook: { slug in
+                fullSearchOpen = false
+                presentedBookSlug = slug
+            })
                 .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
         }
@@ -193,13 +198,22 @@ struct AppShell: View {
             get: { presentedBookSlug != nil },
             set: { if !$0 { presentedBookSlug = nil } }
         )) {
-            NavigationStack {
-                BookDetailView(idOrSlug: presentedBookSlug ?? "")
-                    .toolbar(.hidden, for: .navigationBar)
-                    .appDestinations()
-            }
-            .environment(\.shellBarInsets, (top: 0, bottom: 0))
-                .environment(\.showsShellChrome, false)
+            // Chromed book cover (2026-07-25): books opened from search /
+            // notifications / universal links get the SAME top bar + bottom
+            // nav as main-stack book pages — the bare cover ("logo and top
+            // menu just missing") read as broken. Actions dismiss the cover
+            // first, then drive the shell.
+            PresentedBookCover(
+                idOrSlug: presentedBookSlug ?? "",
+                barInsets: (top: topBarHeight, bottom: bottomNavHeight),
+                unreadCount: notifications.unreadCount,
+                avatarUrl: currentAvatarUrl,
+                onGoHome: { presentedBookSlug = nil; chrome.goHome() },
+                onSearch: { presentedBookSlug = nil; searchOpen = true },
+                onBell: { presentedBookSlug = nil; bellOpen = true },
+                onMenu: { presentedBookSlug = nil; menuOpen = true },
+                onSelectTab: { presentedBookSlug = nil; chrome.selectTab($0) }
+            )
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedProfileUsername != nil },
@@ -441,6 +455,62 @@ extension View {
                 .background(.ultraThinMaterial, in: Capsule())
                 .overlay(Capsule().stroke(Theme.border.opacity(0.6), lineWidth: 0.5))
                 .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
+        }
+    }
+}
+
+/// Full-screen book cover WITH shell chrome. Owns a cover-local ChromeState
+/// so the PushedScreenChrome hit twins inside the book screen drive
+/// dismiss-then-act closures instead of the (covered, unreachable) shell
+/// sheets. Visible bar copies render here, display-only, exactly like the
+/// shell's (see "chrome bars exist in TWO modes" below).
+struct PresentedBookCover: View {
+    let idOrSlug: String
+    let barInsets: (top: CGFloat, bottom: CGFloat)
+    let unreadCount: Int
+    let avatarUrl: String?
+    let onGoHome: @MainActor () -> Void
+    let onSearch: @MainActor () -> Void
+    let onBell: @MainActor () -> Void
+    let onMenu: @MainActor () -> Void
+    let onSelectTab: @MainActor (AppTab) -> Void
+
+    @State private var coverChrome = ChromeState()
+
+    var body: some View {
+        NavigationStack {
+            BookDetailView(idOrSlug: idOrSlug)
+                // Root of the cover's stack, so appDestinations doesn't wrap
+                // it — apply PushedScreenChrome directly: it reserves the bar
+                // insets (back chevron + banner land BELOW the logo bar, not
+                // behind it), provides the hit-layer twins, and gives the
+                // left-edge back swipe (dismisses the cover at root).
+                .modifier(PushedScreenChrome())
+                .toolbar(.hidden, for: .navigationBar)
+                .appDestinations()
+        }
+        .overlay(alignment: .topLeading) {
+            TopBarLogo(visible: coverChrome.atTop, onTap: {})
+                .allowsHitTesting(false)
+        }
+        .overlay(alignment: .topTrailing) {
+            TopBarActions(unreadCount: unreadCount)
+                .allowsHitTesting(false)
+        }
+        .overlay(alignment: .bottom) {
+            BottomNav(tab: coverChrome.tab, avatarUrl: avatarUrl)
+                .allowsHitTesting(false)
+        }
+        .environment(\.shellBarInsets, barInsets)
+        .environment(\.showsShellChrome, true)
+        .environment(coverChrome)
+        .onAppear {
+            coverChrome.goHome = onGoHome
+            coverChrome.openSearch = onSearch
+            coverChrome.openBell = onBell
+            coverChrome.openMenu = onMenu
+            coverChrome.selectTab = onSelectTab
+            coverChrome.reselectTab = onSelectTab
         }
     }
 }

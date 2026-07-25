@@ -71,10 +71,13 @@ final class SearchModel {
 struct SearchRootView: View {
     @Environment(\.dismiss) private var dismiss
     var initialQuery: String? = nil
+    /// Books open through the shell's chromed book cover (2026-07-25) —
+    /// pushing them inside this chrome-less cover left the logo/menu missing.
+    var onOpenBook: ((String) -> Void)? = nil
 
     var body: some View {
         NavigationStack {
-            SearchView(onClose: { dismiss() }, initialQuery: initialQuery)
+            SearchView(onClose: { dismiss() }, initialQuery: initialQuery, onOpenBook: onOpenBook)
                 .toolbar(.hidden, for: .navigationBar)
                 .appDestinations()
         }
@@ -85,12 +88,21 @@ struct SearchView: View {
     let onClose: () -> Void
     /// Pre-filled by the floating overlay's "See more results" hand-off.
     var initialQuery: String? = nil
+    /// Provided by the shell: opens a book in the chromed book cover.
+    /// Fallback (nil, e.g. previews): push inside this stack.
+    var onOpenBook: ((String) -> Void)? = nil
     @State private var model = SearchModel()
     @FocusState private var fieldFocused: Bool
-    /// Set when an external result finishes importing — pushes straight into
-    /// the (auto-enriching) book page instead of silently adding to the TBR
-    /// (user request 2026-07-25).
+    /// Fallback-path route for when no onOpenBook closure is provided.
     @State private var importedRoute: BookRoute?
+
+    private func openBook(_ idOrSlug: String) {
+        if let onOpenBook {
+            onOpenBook(idOrSlug)
+        } else {
+            importedRoute = BookRoute(idOrSlug: idOrSlug)
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -131,7 +143,7 @@ struct SearchView: View {
 
                         VStack(spacing: 14) {
                             ForEach(model.results) { result in
-                                SearchResultCard(result: result)
+                                SearchResultCard(result: result, onOpen: onOpenBook)
                             }
                         }
                     } else if model.query.trimmingCharacters(in: .whitespaces).count >= 2 && model.external.isEmpty {
@@ -154,7 +166,7 @@ struct SearchView: View {
                         VStack(spacing: 14) {
                             ForEach(model.external) { result in
                                 ExternalResultCard(result: result) { bookId in
-                                    importedRoute = BookRoute(idOrSlug: bookId)
+                                    openBook(bookId)
                                 }
                             }
                         }
@@ -189,10 +201,14 @@ struct SearchView: View {
 // One result card — cover, meta, compact state pill + Owned pill.
 private struct SearchResultCard: View {
     let result: SearchResult
+    /// When set, opens via the shell's chromed book cover instead of a
+    /// chrome-less push inside the search cover (2026-07-25).
+    var onOpen: ((String) -> Void)? = nil
     @State private var state: String?      // seeded from the server, updated optimistically
 
-    init(result: SearchResult) {
+    init(result: SearchResult, onOpen: ((String) -> Void)? = nil) {
         self.result = result
+        self.onOpen = onOpen
         _state = State(initialValue: result.state)
     }
     @State private var dropdownOpen = false
@@ -216,9 +232,18 @@ private struct SearchResultCard: View {
         }
     }
 
+    @ViewBuilder
+    private func rowLink<Label: View>(@ViewBuilder label: () -> Label) -> some View {
+        if let onOpen {
+            Button { onOpen(result.slug ?? result.id) } label: { label() }
+        } else {
+            NavigationLink(value: BookRoute(idOrSlug: result.slug ?? result.id)) { label() }
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            NavigationLink(value: BookRoute(idOrSlug: result.slug ?? result.id)) {
+            rowLink {
                 HStack(alignment: .top, spacing: 14) {
                     CoverThumb(url: result.coverImageUrl, width: 74, height: 111, radius: 8, title: result.title)
                     VStack(alignment: .leading, spacing: 4) {
