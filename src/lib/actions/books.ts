@@ -132,10 +132,19 @@ async function findExistingByTitleAndAuthor(
   return null;
 }
 
+// Hard cap on backlist books imported per author when a user adds a book.
+// This cascade previously had NO cap (it imported every OL work, up to 50)
+// and immediately full-enriched each one — a single user add could spawn
+// 300+ web-search calls and hundreds of derivative books (2026-07-25 audit:
+// ~1,000 machine-created books/day). Kept small on purpose; the curated
+// discovery lanes handle deep backlists on their own budget.
+const CASCADE_MAX_PER_AUTHOR = 5;
+
 async function importCascadeBooks(authorOlKeys: string[]) {
   for (const authorKey of authorOlKeys) {
     await delay(350);
     const works = await fetchAuthorWorks(authorKey);
+    let cascadeImported = 0;
 
     // Load existing books by this author for fuzzy dedup
     const author = await db.query.authors.findFirst({
@@ -155,6 +164,7 @@ async function importCascadeBooks(authorOlKeys: string[]) {
     }
 
     for (const work of works) {
+      if (cascadeImported >= CASCADE_MAX_PER_AUTHOR) break;
       // Skip if already imported by OL key
       const workKey = work.key; // e.g. "/works/OL12345W"
       const existing = await db.query.books.findFirst({
@@ -224,6 +234,7 @@ async function importCascadeBooks(authorOlKeys: string[]) {
 
       // Enrich the cascade-imported book (separate serverless invocation)
       triggerEnrichment(newBook.id);
+      cascadeImported++;
     }
   }
 }

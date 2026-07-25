@@ -85,6 +85,26 @@ export async function POST(request: Request) {
     });
   }
 
+  // Attempt-recency cooldown (2026-07-25): a book whose enrichment was
+  // attempted in the last 3 days doesn't get another try on every page
+  // visit — repeat visits to a book stuck behind a spent API budget were
+  // re-burning calls daily. force (recovery campaigns) bypasses this, and
+  // the nightly retry/backfill lanes use their own queues.
+  if (!force) {
+    const { sql } = await import("drizzle-orm");
+    const recent = await db.all<{ id: string }>(sql`
+      SELECT id FROM enrichment_log WHERE book_id = ${bookId}
+        AND created_at > datetime('now', '-3 days') LIMIT 1`);
+    if (recent.length > 0) {
+      return NextResponse.json({
+        success: true,
+        bookId,
+        skipped: true,
+        reason: "Attempted within the last 3 days",
+      });
+    }
+  }
+
   // Run enrichment — this is the long-running part.
   // skipBrave: false — this endpoint serves content-ratings backfill AND user
   // search-adds, the two paths where Brave web research most improves quality

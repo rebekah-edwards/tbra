@@ -13,7 +13,12 @@ import {
 import { isEnglishTitle } from "@/lib/queries/books";
 import { findDuplicateBook } from "./dedup";
 
-const MAX_BOOKS_PER_AUTHOR = 30;
+// Trimmed 30 → 10 (2026-07-25): enrichment-time author discovery was the
+// other half of the ~1,000 machine-created books/day. These imports are
+// deferred-enrichment (import_only) so they don't burn search budget
+// directly, but they inflate the catalog, mint title/author dupes, and
+// grow the crawlable sitemap. Deep backlists belong to the discovery lanes.
+const MAX_BOOKS_PER_AUTHOR = 10;
 const DELAY_MS = 400;
 
 function sleep(ms: number) {
