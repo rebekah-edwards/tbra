@@ -505,9 +505,15 @@ struct FloatingSearchOverlay: View {
                 .ignoresSafeArea()
                 .onTapGesture { close() }
 
-            VStack(spacing: 8) {
-                pill
-                if trimmed.count >= 2 { resultsPanel }
+            // GlassEffectContainer lets the pill + dropdown render as sibling
+            // Liquid Glass shapes that blend when close (iOS 26 design
+            // language — user request 2026-07-25 replacing the opaque
+            // web-styled surfaces).
+            GlassEffectContainer(spacing: 8) {
+                VStack(spacing: 8) {
+                    pill
+                    if trimmed.count >= 2 { resultsPanel }
+                }
             }
             .padding(.horizontal, 12)
             .padding(.top, 8)
@@ -544,9 +550,9 @@ struct FloatingSearchOverlay: View {
                 .foregroundStyle(Theme.muted)
         }
         .padding(.horizontal, 16).padding(.vertical, 13)
-        .background(Theme.surface, in: Capsule())
-        .overlay(Capsule().stroke(Theme.border, lineWidth: 1))
-        .shadow(color: .black.opacity(0.25), radius: 16, y: 6)
+        // Liquid Glass (was opaque Theme.surface + border): the material
+        // supplies its own edge highlight and depth — no stroke/shadow.
+        .glassEffect(.regular, in: Capsule())
     }
 
     private var resultsPanel: some View {
@@ -579,10 +585,9 @@ struct FloatingSearchOverlay: View {
             }
         }
         .frame(maxHeight: UIScreen.main.bounds.height * 0.55)
-        .background(Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
-        .shadow(color: .black.opacity(0.25), radius: 16, y: 6)
+        // Liquid Glass dropdown, matching the pill (was opaque surface).
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func bookRow(_ book: Res.Book) -> some View {
