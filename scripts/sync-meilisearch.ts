@@ -34,6 +34,25 @@ const syncBooks = args.length === 0 || args.includes("--books");
 const syncAuthors = args.length === 0 || args.includes("--authors");
 const syncSeries = args.length === 0 || args.includes("--series");
 
+/**
+ * Meilisearch Cloud occasionally closes an upload connection mid-request
+ * (UND_ERR_SOCKET). Retry a few times with backoff before giving up — a single
+ * dropped socket should not abort a 70k-document sync.
+ */
+async function postWithRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
+  const MAX_ATTEMPTS = 4;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt >= MAX_ATTEMPTS) throw err;
+      const waitMs = 2000 * attempt;
+      console.log(`  ! ${label} failed (attempt ${attempt}/${MAX_ATTEMPTS}), retrying in ${waitMs}ms`);
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+  }
+}
+
 async function syncBooksIndex() {
   console.log("Syncing books index...");
 
@@ -109,11 +128,14 @@ async function syncBooksIndex() {
     seriesName: seriesByBook.get(b.id) ?? "",
   }));
 
-  // Batch upload in chunks of 5000
-  const CHUNK_SIZE = 5000;
+  // Batch upload in chunks of 1000 (was 5000). Meilisearch Cloud intermittently
+  // drops a long-lived upload connection mid-run (UND_ERR_SOCKET "other side
+  // closed"), which used to abort the whole sync; smaller chunks plus the retry
+  // in postWithRetry keep a single dropped connection from failing the run.
+  const CHUNK_SIZE = 1000;
   for (let i = 0; i < documents.length; i += CHUNK_SIZE) {
     const chunk = documents.slice(i, i + CHUNK_SIZE);
-    await index.addDocuments(chunk);
+    await postWithRetry(() => index.addDocuments(chunk), `books ${i + 1}`);
     console.log(`  Uploaded books ${i + 1}-${Math.min(i + CHUNK_SIZE, documents.length)} of ${documents.length}`);
   }
 
@@ -149,7 +171,7 @@ async function syncAuthorsIndex() {
     bookCount: r.book_count,
   }));
 
-  await index.addDocuments(documents);
+  await postWithRetry(() => index.addDocuments(documents), "authors/series batch");
   console.log(`Authors: ${documents.length} documents synced`);
 }
 
@@ -182,7 +204,7 @@ async function syncSeriesIndex() {
     bookCount: r.book_count,
   }));
 
-  await index.addDocuments(documents);
+  await postWithRetry(() => index.addDocuments(documents), "authors/series batch");
   console.log(`Series: ${documents.length} documents synced`);
 }
 
