@@ -44,6 +44,59 @@ import { discoverAuthorBooks } from "./discover-author";
 import { normalizePubDate } from "@/lib/publication-date";
 import { findOrCreateAuthor } from "@/lib/actions/books";
 
+/**
+ * Guard for the two uniquely-indexed identity columns on `books`
+ * (`books_isbn13_unique`, `books_ol_key_unique`).
+ *
+ * An ISBN-13 or an OpenLibrary work key identifies one edition/work, so if
+ * another row already holds the value we resolved, that row IS this book — the
+ * catalog already contains it. Writing the value anyway violates the unique
+ * index, and because these identifiers are always written in the same
+ * `db.update()` as the metadata gathered alongside them, the constraint error
+ * rolls back the ENTIRE write: description, pages, publisher, cover, the lot.
+ *
+ * That is what made ~15 books fail forever at the head of the
+ * description-refresh queue — the rollback also reverted their `updated_at`
+ * bump and left `description_stale=1`, so the oldest-first batch re-selected
+ * the same books every run and they never recovered.
+ *
+ * Returns the value when it is free to claim, or null when another row owns it
+ * (in which case the caller simply omits the field and keeps the rest of the
+ * update). Comparison uses the same normalization applied on write so a
+ * hyphenated candidate still matches a stored bare value.
+ */
+function normalizeIsbnValue(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const cleaned = raw.replace(/[^0-9Xx]/g, "").toUpperCase();
+  return cleaned.length >= 10 ? cleaned : null;
+}
+
+async function claimUniqueIdentifier(
+  column: "isbn13" | "openLibraryKey",
+  rawCandidate: string | null | undefined,
+  bookId: string,
+  bookTitle: string
+): Promise<string | null> {
+  const candidate =
+    column === "isbn13" ? normalizeIsbnValue(rawCandidate) : rawCandidate || null;
+  if (!candidate) return null;
+
+  const [owner] = await db
+    .select({ id: books.id, title: books.title })
+    .from(books)
+    .where(eq(books[column], candidate))
+    .limit(1);
+
+  // Free, or already ours — safe to write.
+  if (!owner || owner.id === bookId) return candidate;
+
+  console.log(
+    `[enrichment] ${column} ${candidate} already belongs to ${owner.id} ("${owner.title}") — ` +
+      `not claiming it for ${bookId} ("${bookTitle}"); continuing with the rest of the update`
+  );
+  return null;
+}
+
 export interface EnrichOptions {
   /** Skip Google Books API calls (use during bulk re-enrichment to avoid rate limits) */
   skipGoogleBooks?: boolean;
@@ -207,11 +260,19 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
     (book.isbn10 && cleanIsbn10 !== book.isbn10)
   ) {
     const isbnFixes: Record<string, string | null> = {};
-    if (book.isbn13 && cleanIsbn13 !== book.isbn13) isbnFixes.isbn13 = cleanIsbn13;
+    if (book.isbn13 && cleanIsbn13 !== book.isbn13) {
+      // Normalizing can collide too: our hyphenated value may clean up to an
+      // ISBN another row already stores bare — which means that row is this
+      // same edition. Leave ours as-is rather than failing the whole write.
+      const claimed = await claimUniqueIdentifier("isbn13", cleanIsbn13, bookId, book.title);
+      if (claimed) isbnFixes.isbn13 = claimed;
+    }
     if (book.isbn10 && cleanIsbn10 !== book.isbn10) isbnFixes.isbn10 = cleanIsbn10;
-    await db.update(books).set({ ...isbnFixes, updatedAt: new Date().toISOString() }).where(eq(books.id, bookId));
-    Object.assign(book, isbnFixes);
-    console.log(`[enrichment] Normalized ISBNs for "${book.title}": ${JSON.stringify(isbnFixes)}`);
+    if (Object.keys(isbnFixes).length > 0) {
+      await db.update(books).set({ ...isbnFixes, updatedAt: new Date().toISOString() }).where(eq(books.id, bookId));
+      Object.assign(book, isbnFixes);
+      console.log(`[enrichment] Normalized ISBNs for "${book.title}": ${JSON.stringify(isbnFixes)}`);
+    }
   }
 
   // Skip non-English books — don't waste API calls
@@ -322,9 +383,15 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
           if (identity.pass) {
             const workKey = doc.key; // e.g. "/works/OL12345W"
             if (workKey) {
-              await db.update(books).set({ openLibraryKey: workKey, updatedAt: new Date().toISOString() }).where(eq(books.id, bookId));
-              Object.assign(book, { openLibraryKey: workKey });
-              console.log(`[enrichment] Found OL key via search: ${workKey} for "${book.title}"`);
+              // Another row may already own this work key (books_ol_key_unique).
+              // Skip only the key write in that case — the author/metadata
+              // harvesting below is still valid and must not be lost with it.
+              const claimedKey = await claimUniqueIdentifier("openLibraryKey", workKey, bookId, book.title);
+              if (claimedKey) {
+                await db.update(books).set({ openLibraryKey: claimedKey, updatedAt: new Date().toISOString() }).where(eq(books.id, bookId));
+                Object.assign(book, { openLibraryKey: claimedKey });
+                console.log(`[enrichment] Found OL key via search: ${claimedKey} for "${book.title}"`);
+              }
 
               // Also grab author from OL if we don't have one
               if (authorNames.length === 0 && doc.author_name?.length > 0) {
@@ -345,7 +412,8 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
               if (!book.pages && doc.number_of_pages_median) olUpdates.pages = doc.number_of_pages_median;
               if (!book.isbn13 && doc.isbn?.length > 0) {
                 const isbn13 = doc.isbn.find((i: string) => i.length === 13);
-                if (isbn13) olUpdates.isbn13 = isbn13;
+                const claimed = await claimUniqueIdentifier("isbn13", isbn13 ?? null, bookId, book.title);
+                if (claimed) olUpdates.isbn13 = claimed;
               }
               if (Object.keys(olUpdates).length > 0) {
                 olUpdates.updatedAt = new Date().toISOString();
@@ -369,7 +437,8 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
       const bbResult = await searchBookBrainz(book.title, authorNames[0] || "");
       if (bbResult) {
         const bbUpdates: Record<string, unknown> = {};
-        if (bbResult.isbn) bbUpdates.isbn13 = bbResult.isbn;
+        const bbIsbn13 = await claimUniqueIdentifier("isbn13", bbResult.isbn, bookId, book.title);
+        if (bbIsbn13) bbUpdates.isbn13 = bbIsbn13;
         if (bbResult.year && !book.publicationYear) bbUpdates.publicationYear = bbResult.year;
         if (Object.keys(bbUpdates).length > 0) {
           bbUpdates.updatedAt = new Date().toISOString();
@@ -408,7 +477,10 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
       if (norm.date) olUpdates.publicationDate = norm.date;
       if (!book.publicationYear && olUpdates.publicationYear == null && norm.year) olUpdates.publicationYear = norm.year;
     }
-    if (!book.isbn13 && olMeta.isbn13) olUpdates.isbn13 = olMeta.isbn13;
+    if (!book.isbn13 && olMeta.isbn13) {
+      const claimed = await claimUniqueIdentifier("isbn13", olMeta.isbn13, bookId, book.title);
+      if (claimed) olUpdates.isbn13 = claimed;
+    }
     if (!book.isbn10 && olMeta.isbn10) olUpdates.isbn10 = olMeta.isbn10;
     if (!book.publisher && olMeta.publisher) olUpdates.publisher = olMeta.publisher;
     if (!book.coverImageUrl && olMeta.coverUrl) {
@@ -505,7 +577,8 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
             isbnUpdates.publisher = isbndbResult.publisher;
           }
           if (!book.isbn13 && isbndbResult.isbn13) {
-            isbnUpdates.isbn13 = isbndbResult.isbn13;
+            const claimed = await claimUniqueIdentifier("isbn13", isbndbResult.isbn13, bookId, book.title);
+            if (claimed) isbnUpdates.isbn13 = claimed;
           }
           if (!book.isbn10 && isbndbResult.isbn10) {
             isbnUpdates.isbn10 = isbndbResult.isbn10;
