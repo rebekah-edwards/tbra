@@ -7,7 +7,7 @@
  * from local first (or both together) to make the deletion durable.
  *
  * Per pair:
- *   1. MOVE user-unique rows (INSERT OR IGNORE on canonical, DELETE on dupe)
+ *   1. MOVE user-unique rows (UPDATE book_id → canonical; collision-free by precheck)
  *   2. MOVE append-OK rows (plain UPDATE)
  *   3. DELETE join-table rows on dupe
  *   4. DELETE the dupe book row
@@ -51,17 +51,9 @@ const manifestPath = resolveManifest();
 const pairs: { dupe_id: string; canonical_id: string; dupe_title: string; canonical_title: string }[] =
   JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 
-const MOVE_UNIQUE = [
-  "user_book_state",
-  "user_book_ratings",
-  "user_book_reviews",
-  "user_favorite_books",
-  "user_hidden_books",
-  "user_owned_editions",
-  "up_next",
-  "tbr_notes",
-  "shelf_books",
-];
+// Imported from lib so the applier and the scanner can never disagree about which
+// tables can silently drop a row on INSERT OR IGNORE.
+import { MOVE_UNIQUE, findUserOverlap, localRunner, tursoRunner } from "./lib/dupe-overlap";
 const MOVE_APPEND = [
   "reading_notes",
   "reading_sessions",
@@ -81,6 +73,40 @@ const JOIN_TABLES = [
 ];
 
 function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
+
+/**
+ * Retry a Turso statement through transient slowness.
+ *
+ * Why: on 2026-07-30 Turso got slow mid-run and two statements blew the guard's 30s query
+ * timeout. Because processLocal() runs BEFORE processTurso(), the failure always lands as
+ * "dupe deleted locally, still alive on Turso" — the exact direction sync-pull resurrects,
+ * which then needs hand repair. One retry pass removes most of that class.
+ *
+ * Only retries timeout/network shapes. Constraint violations and verify failures are real
+ * errors and must surface immediately — never retry those.
+ */
+async function execRetry(
+  client: Client,
+  stmt: { sql: string; args: unknown[] },
+  attempts = 3,
+): Promise<{ rows: unknown[]; rowsAffected: number }> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const r = await client.execute({ sql: stmt.sql, args: stmt.args as never[] });
+      return { rows: r.rows as unknown[], rowsAffected: Number(r.rowsAffected) };
+    } catch (e: unknown) {
+      const msg = String((e as { message?: string })?.message ?? e);
+      const transient = /timeout|timed out|ECONNRESET|ETIMEDOUT|socket|stream|unavailable|503|429/i.test(msg);
+      if (!transient || i === attempts - 1) throw e;
+      lastErr = e;
+      const backoff = 1000 * Math.pow(2, i); // 1s, 2s
+      console.warn(`    retry ${i + 1}/${attempts - 1} after ${backoff}ms: ${msg.slice(0, 80)}`);
+      await sleep(backoff);
+    }
+  }
+  throw lastErr;
+}
 
 // ─── Column caches so we build the correct INSERT SELECT lists for uniqueness-constrained moves ───
 const tursoCols = new Map<string, string[] | null>();
@@ -123,14 +149,22 @@ function processLocal(
   for (const t of MOVE_UNIQUE) {
     const cols = getLocalCols(db, t);
     if (!cols || !cols.includes("book_id")) continue;
-    const selectList = cols.map((c) => (c === "book_id" ? `'${p.canonical_id}' AS book_id` : c)).join(", ");
     try {
-      const r1 = db
-        .prepare(`INSERT OR IGNORE INTO ${t} (${cols.join(", ")}) SELECT ${selectList} FROM ${t} WHERE book_id = ?`)
-        .run(p.dupe_id);
-      const r2 = db.prepare(`DELETE FROM ${t} WHERE book_id = ?`).run(p.dupe_id);
-      activityMoved += r1.changes;
-      rowsDeleted += r2.changes;
+      // Move with UPDATE, not INSERT OR IGNORE + DELETE.
+      //
+      // The old approach was silently destructive on any table with a surrogate `id`
+      // primary key (user_book_ratings, user_book_reviews, user_favorite_books, up_next,
+      // tbr_notes): the SELECT copied `id` verbatim and only rewrote book_id, so the
+      // INSERT collided with the SOURCE ROW on the PK, OR IGNORE swallowed it, and the
+      // following DELETE destroyed the original. Ratings and reviews were annihilated,
+      // not migrated. Only PK-less tables (user_book_state, shelf_books, …) ever moved.
+      //
+      // UPDATE re-points the row wholesale, preserving id and every column. It is safe
+      // here because callers pre-verify there is no same-user collision (dupe-overlap.ts);
+      // if one somehow exists, the uniqueness constraint THROWS, which surfaces as an
+      // error instead of silently eating user data.
+      const r = db.prepare(`UPDATE ${t} SET book_id = ? WHERE book_id = ?`).run(p.canonical_id, p.dupe_id);
+      activityMoved += r.changes;
     } catch (e: any) {
       if (!/no such table/i.test(String(e?.message))) throw e;
     }
@@ -169,22 +203,21 @@ async function processTurso(
   p: { dupe_id: string; canonical_id: string },
   pauseMs: number,
 ): Promise<{ activityMoved: number; rowsDeleted: number; exists: boolean }> {
-  const exists = await client.execute({ sql: `SELECT 1 FROM books WHERE id = ?`, args: [p.dupe_id] });
+  const exists = await execRetry(client, { sql: `SELECT 1 FROM books WHERE id = ?`, args: [p.dupe_id] });
   if (exists.rows.length === 0) return { activityMoved: 0, rowsDeleted: 0, exists: false };
   let activityMoved = 0, rowsDeleted = 0;
 
   for (const t of MOVE_UNIQUE) {
     const cols = await getTursoCols(client, t);
     if (!cols || !cols.includes("book_id")) continue;
-    const selectList = cols.map((c) => (c === "book_id" ? `'${p.canonical_id}' AS book_id` : c)).join(", ");
     try {
-      const r1 = await client.execute({
-        sql: `INSERT OR IGNORE INTO ${t} (${cols.join(", ")}) SELECT ${selectList} FROM ${t} WHERE book_id = ?`,
-        args: [p.dupe_id],
+      // UPDATE, not INSERT OR IGNORE + DELETE — see the matching comment in processLocal().
+      // The old form silently destroyed rows in every table with a surrogate `id` PK.
+      const r = await execRetry(client, {
+        sql: `UPDATE ${t} SET book_id = ? WHERE book_id = ?`,
+        args: [p.canonical_id, p.dupe_id],
       });
-      const r2 = await client.execute({ sql: `DELETE FROM ${t} WHERE book_id = ?`, args: [p.dupe_id] });
-      activityMoved += Number(r1.rowsAffected);
-      rowsDeleted += Number(r2.rowsAffected);
+      activityMoved += r.rowsAffected;
     } catch (e: any) {
       if (!/no such table/i.test(String(e?.message))) throw e;
     }
@@ -194,11 +227,11 @@ async function processTurso(
     const cols = await getTursoCols(client, t);
     if (!cols || !cols.includes("book_id")) continue;
     try {
-      const r = await client.execute({
+      const r = await execRetry(client, {
         sql: `UPDATE ${t} SET book_id = ? WHERE book_id = ?`,
         args: [p.canonical_id, p.dupe_id],
       });
-      activityMoved += Number(r.rowsAffected);
+      activityMoved += r.rowsAffected;
     } catch (e: any) {
       if (!/no such table/i.test(String(e?.message))) throw e;
     }
@@ -207,15 +240,15 @@ async function processTurso(
     const cols = await getTursoCols(client, t);
     if (!cols || !cols.includes("book_id")) continue;
     try {
-      const r = await client.execute({ sql: `DELETE FROM ${t} WHERE book_id = ?`, args: [p.dupe_id] });
-      rowsDeleted += Number(r.rowsAffected);
+      const r = await execRetry(client, { sql: `DELETE FROM ${t} WHERE book_id = ?`, args: [p.dupe_id] });
+      rowsDeleted += r.rowsAffected;
     } catch (e: any) {
       if (!/no such table/i.test(String(e?.message))) throw e;
     }
   }
-  const r = await client.execute({ sql: `DELETE FROM books WHERE id = ?`, args: [p.dupe_id] });
-  rowsDeleted += Number(r.rowsAffected);
-  const v = await client.execute({ sql: `SELECT 1 FROM books WHERE id = ?`, args: [p.dupe_id] });
+  const r = await execRetry(client, { sql: `DELETE FROM books WHERE id = ?`, args: [p.dupe_id] });
+  rowsDeleted += r.rowsAffected;
+  const v = await execRetry(client, { sql: `SELECT 1 FROM books WHERE id = ?`, args: [p.dupe_id] });
   if (v.rows.length !== 0) throw new Error(`TURSO verify failed: ${p.dupe_id} still present`);
   return { activityMoved, rowsDeleted, exists: true };
 }
@@ -240,14 +273,35 @@ async function main() {
   console.log();
 
   let ok = 0, skippedLocal = 0, skippedTurso = 0, errors = 0;
+  let skippedCollision = 0;
   let totalMoved = 0, totalDeleted = 0;
   let chunkDidWork = false; // real merges this chunk (skips are free)
   const started = Date.now();
   const errorList: { pair: any; err: string }[] = [];
+  const collisionList: { pair: any; hits: string[] }[] = [];
+
+  const runners = [tursoRunner(client), localRunner(db)];
 
   for (let i = 0; i < pairs.length; i++) {
     const p = pairs[i];
     try {
+      // TOCTOU guard. The manifest was built by an earlier scan; a beta tester can
+      // shelve or rate either book between then and now. If the same user ends up on
+      // both books, the INSERT OR IGNORE below would drop the dupe's row and the
+      // DELETE would destroy it. Re-check immediately before touching anything, on
+      // BOTH databases, and leave the pair for manual merge if it is no longer clean.
+      const hits: string[] = [];
+      for (const run of runners) {
+        const h = await findUserOverlap(run, p.canonical_id, p.dupe_id);
+        hits.push(...h.map((x) => `${run.label}/${x}`));
+      }
+      if (hits.length > 0) {
+        skippedCollision++;
+        collisionList.push({ pair: p, hits });
+        console.warn(`  [${i + 1}] SKIP (collision) ${p.dupe_title}: ${hits.join(", ")}`);
+        continue;
+      }
+
       // LOCAL first (fast, <5ms).
       const localR = APPLY ? processLocal(db, p) : { activityMoved: 0, rowsDeleted: 0, exists: true };
       if (!localR.exists) skippedLocal++;
@@ -306,10 +360,20 @@ async function main() {
   md += `- OK: ${ok}\n`;
   md += `- Skipped (dupe not on local): ${skippedLocal}\n`;
   md += `- Skipped (dupe not on Turso): ${skippedTurso}\n`;
+  md += `- Skipped (same-user collision): ${skippedCollision}\n`;
   md += `- Errors: ${errors}\n`;
   md += `- Activity rows moved: ${totalMoved}\n`;
   md += `- Rows deleted: ${totalDeleted}\n`;
   md += `- Elapsed: ${elapsed}s\n\n`;
+  if (collisionList.length > 0) {
+    md += `## Held for manual merge (same user on both books)\n\n`;
+    md += `These pairs were NOT merged. A user holds rows on both books, so the\n`;
+    md += `INSERT OR IGNORE move would have dropped the dupe's copy. Resolve by hand.\n\n`;
+    for (const c of collisionList) {
+      md += `- \`${c.pair.dupe_id}\` "${c.pair.dupe_title}" → \`${c.pair.canonical_id}\`: ${c.hits.join(", ")}\n`;
+    }
+    md += `\n`;
+  }
   if (errorList.length > 0) {
     md += `## Errors\n\n`;
     for (const e of errorList) md += `- \`${e.pair.dupe_id}\` "${e.pair.dupe_title}": ${e.err}\n`;
@@ -321,6 +385,7 @@ async function main() {
   console.log(`  processed:     ${ok}`);
   console.log(`  skip (local):  ${skippedLocal}`);
   console.log(`  skip (turso):  ${skippedTurso}`);
+  console.log(`  skip (collide):${skippedCollision}`);
   console.log(`  errors:        ${errors}`);
   console.log(`  moved:         ${totalMoved}`);
   console.log(`  deleted:       ${totalDeleted}`);

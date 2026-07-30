@@ -16,6 +16,7 @@ import Database from "better-sqlite3";
 import { createClient } from "@libsql/client";
 import fs from "fs";
 import path from "path";
+import { findUserOverlap, localRunner, tursoRunner, type OverlapRunner } from "./lib/dupe-overlap";
 
 const VERIFY_ON_TURSO = process.argv.includes("--verify-turso");
 
@@ -101,12 +102,19 @@ async function main() {
   }
   console.log(`\nDupe groups found: ${dupeGroups.length}`);
 
+  // Runners for the same-user overlap check during scoring (below). BOTH databases must
+  // be checked: replay-dedup-both merges local AND Turso, and the two can disagree — a
+  // user row can exist locally but not yet on Turso (or vice versa). Checking only Turso
+  // let 4 local-only collisions into the manifest on the 2026-07-30 run.
+  const overlapRuns: OverlapRunner[] = [];
+
   if (VERIFY_ON_TURSO && dupeGroups.length > 0) {
     console.log(`Verifying user_count on Turso for ${dupeGroups.length} groups...`);
     const client = createClient({
       url: process.env.TURSO_DATABASE_URL!,
       authToken: process.env.TURSO_AUTH_TOKEN!,
     });
+    overlapRuns.push(tursoRunner(client));
 
     // Batch: collect all dupe book IDs, query user_counts in chunks
     const allIds: string[] = [];
@@ -157,8 +165,17 @@ async function main() {
   type Scored = DupeGroup & {
     suggested_canonical_id: string;
     auto_mergeable: boolean;
+    /** "clean" = no user rows to move; "user-data-move" = rows move but nobody is on both sides. */
+    merge_kind: "clean" | "user-data-move" | null;
+    /** Populated when a real same-user collision blocks the merge. */
+    overlap: string[];
   };
-  const scored: Scored[] = dupeGroups.map((g) => {
+
+  // Local is always checked (and is the only source when --verify-turso is absent).
+  overlapRuns.push(localRunner(new Database(dbPath, { readonly: true })));
+
+  const scored: Scored[] = [];
+  for (const g of dupeGroups) {
     const rankKey = (r: any): number => {
       const uc = VERIFY_ON_TURSO ? (r.turso_user_count ?? 0) : r.local_user_count;
       const slugValid = r.slug && r.slug !== "null" && r.slug.length > 0;
@@ -195,14 +212,37 @@ async function main() {
     // (cover quality diff) so we don't auto-merge when the top two are near-ties.
     const clearWinner =
       ranked.length === 1 || rankKey(canonical) - rankKey(ranked[1]) >= 10;
-    const auto_mergeable =
-      canonicalSlugValid && clearWinner && others.every((o) => otherCount(o) === 0);
-    return {
+
+    // A group is safe to auto-merge when the canonical is unambiguous AND moving the
+    // losers' user rows onto it cannot silently drop anything. Historically the second
+    // condition was approximated as "the losers have zero users", which blocked every
+    // multi-user group. The real hazard is a SAME-USER collision: replay-dedup-both moves
+    // rows with INSERT OR IGNORE and then deletes the source, so a user holding rows on
+    // both books loses the dupe's copy (see scripts/lib/dupe-overlap.ts). Zero-user losers
+    // are trivially collision-free; anything else is checked for real.
+    // NOTE: zeroUserLosers is computed from ONE database's counts, so it is not by itself
+    // proof of safety — a loser with 0 users on Turso can still hold local rows. Check
+    // every candidate group on both DBs rather than trusting the count shortcut.
+    const zeroUserLosers = others.every((o) => otherCount(o) === 0);
+    const overlap: string[] = [];
+    if (canonicalSlugValid && clearWinner) {
+      for (const o of others) {
+        for (const run of overlapRuns) {
+          const hits = await findUserOverlap(run, canonical.id, o.id);
+          if (hits.length) overlap.push(...hits.map((h) => `${o.slug}→${run.label}/${h}`));
+        }
+      }
+    }
+    const auto_mergeable = canonicalSlugValid && clearWinner && overlap.length === 0;
+
+    scored.push({
       ...g,
       suggested_canonical_id: canonical.id,
       auto_mergeable,
-    };
-  });
+      merge_kind: !auto_mergeable ? null : zeroUserLosers ? "clean" : "user-data-move",
+      overlap,
+    });
+  }
 
   scored.sort((a, b) => {
     // slug-prefix pairs first, then auto-mergeable, then by group size
@@ -235,17 +275,38 @@ async function main() {
 
   const slugPrefixCount = scored.filter((g) => g.slug_prefix_pair).length;
   const autoMergeCount = scored.filter((g) => g.auto_mergeable).length;
+  const cleanCount = scored.filter((g) => g.merge_kind === "clean").length;
+  const userMoveCount = scored.filter((g) => g.merge_kind === "user-data-move").length;
+  const collisionGroups = scored.filter((g) => g.overlap.length > 0);
 
   console.log(`\n=== SUMMARY ===`);
   console.log(`Total dupe groups:                ${scored.length}`);
   console.log(`Slug-prefix (Parade) pattern:     ${slugPrefixCount}`);
-  console.log(`Auto-mergeable (0-user others):   ${autoMergeCount}`);
+  console.log(`Auto-mergeable (total):           ${autoMergeCount}`);
+  console.log(`  … clean (no user rows to move): ${cleanCount}`);
+  console.log(`  … user-data move (no overlap):  ${userMoveCount}`);
+  console.log(`Held — same-user collision:       ${collisionGroups.length}`);
+
+  if (collisionGroups.length > 0) {
+    console.log(`\n=== HELD FOR MANUAL MERGE (same user on both books) ===`);
+    for (const g of collisionGroups.slice(0, 20)) {
+      console.log(`  ${g.title} — ${g.author}: ${g.overlap.join(", ")}`);
+    }
+    if (collisionGroups.length > 20) console.log(`  … and ${collisionGroups.length - 20} more`);
+  }
   console.log(`Candidates report:   ${outPath}`);
   console.log(`Dedup manifest:      ${manifestPath}  (${manifest.length} pairs)`);
 
   console.log(`\n=== TOP 20 SLUG-PREFIX DUPES ===`);
   for (const g of scored.filter((x) => x.slug_prefix_pair).slice(0, 20)) {
-    console.log(`\n${g.title}  —  ${g.author}  ${g.auto_mergeable ? "[auto-merge]" : "[needs review]"}`);
+    const tag = g.auto_mergeable
+      ? g.merge_kind === "user-data-move"
+        ? "[auto-merge: moves user data]"
+        : "[auto-merge]"
+      : g.overlap.length
+        ? "[held: same-user collision]"
+        : "[needs review]";
+    console.log(`\n${g.title}  —  ${g.author}  ${tag}`);
     for (const r of g.rows) {
       const uc = VERIFY_ON_TURSO ? r.turso_user_count ?? 0 : r.local_user_count;
       const tag = r.id === g.suggested_canonical_id ? " ★" : "";
