@@ -6,6 +6,7 @@ import { books } from "@/db/schema";
 import { eq, or } from "drizzle-orm";
 import { isJunkTitle } from "@/lib/openlibrary";
 import { isBoxSetTitle, isEnglishTitle } from "@/lib/queries/books";
+import { classifyLanguageValue } from "@/lib/enrichment/enrichable";
 
 /**
  * Hard daily cap for search-driven ISBNdb calls.
@@ -71,6 +72,8 @@ interface ExternalSearchResult {
   /** Source marker so the client knows this needs ISBNdb-style import */
   _source: "isbndb";
   _isbn13?: string | null;
+  /** ISBNdb language value, threaded to the import so the junk gate sees it. */
+  _language?: string | null;
 }
 
 export async function GET(request: NextRequest) {
@@ -144,7 +147,20 @@ export async function GET(request: NextRequest) {
     // Same junk/box-set filters we use for OL results
     if (isJunkTitle(book.title)) continue;
     if (isBoxSetTitle(book.title)) continue;
-    if (!isEnglishTitle(book.title)) continue;
+
+    // Language gate. ISBNdb ships an authoritative `language` field on most
+    // rows — prefer it over guessing from the title:
+    //   explicitly non-English → drop (these are foreign editions of books we
+    //     either already carry in English or don't want in the public catalog;
+    //     before this, searching a Spanish title surfaced it here and adding it
+    //     created a PUBLIC book, because the import-time gate never saw a
+    //     language value and clean Latin-script titles slip past the heuristic)
+    //   explicitly English      → trust it and SKIP the title heuristic, which
+    //     has a history of false-positives on real English titles
+    //   missing                 → fall back to the title heuristic as before
+    const languageVerdict = classifyLanguageValue(book.language);
+    if (languageVerdict === false) continue;
+    if (languageVerdict === null && !isEnglishTitle(book.title)) continue;
 
     const year = book.date_published
       ? parseInt(book.date_published.slice(0, 4), 10)
@@ -160,6 +176,7 @@ export async function GET(request: NextRequest) {
       _externalCoverUrl: getISBNdbCoverUrl(book) ?? undefined,
       _source: "isbndb",
       _isbn13: isbn13,
+      _language: book.language ?? null,
     });
   }
 

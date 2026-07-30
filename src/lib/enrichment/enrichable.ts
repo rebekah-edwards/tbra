@@ -53,6 +53,33 @@ export interface Classification {
   reason: string;
 }
 
+/** Values an upstream `language` field can carry that mean "English". */
+const ENGLISH_LANGUAGE_VALUES = new Set(["en", "eng", "english"]);
+
+/**
+ * Verdict on an explicit `language` value from any source.
+ *
+ * Upstream sources are wildly inconsistent — a single ISBNdb query can return
+ * "en", "eng", "English", "es", "spa", and nothing at all across its results,
+ * and locale forms like "en_US" / "en-GB" also appear. So normalize, then also
+ * try the bare language subtag.
+ *
+ *   true  → explicitly English
+ *   false → explicitly some other language
+ *   null  → no usable value; the caller decides (callers should ALLOW, and fall
+ *           back to a title heuristic — a missing language is not evidence of
+ *           anything, and most English records omit it)
+ */
+export function classifyLanguageValue(language?: string | null): boolean | null {
+  if (language == null) return null;
+  const raw = language.trim().toLowerCase();
+  if (!raw) return null;
+  if (ENGLISH_LANGUAGE_VALUES.has(raw)) return true;
+  const subtag = raw.split(/[_-]/)[0];
+  if (ENGLISH_LANGUAGE_VALUES.has(subtag)) return true;
+  return false;
+}
+
 /**
  * Heuristic non-English detection from the title alone (we usually have no
  * reliable `language` field on discovery imports).
@@ -68,11 +95,7 @@ export interface Classification {
  * catch most of those anyway.
  */
 export function isLikelyNonEnglish(title: string, language?: string | null): boolean {
-  if (language) {
-    const lang = language.trim().toLowerCase();
-    const englishMarkers = ["en", "eng", "english"];
-    if (lang && !englishMarkers.includes(lang)) return true;
-  }
+  if (classifyLanguageValue(language) === false) return true;
 
   // Callers feed this raw upstream metadata (OpenLibrary works, ISBNdb rows)
   // where `title` can be missing despite the type. No title = nothing to judge,

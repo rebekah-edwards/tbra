@@ -72,6 +72,8 @@ export interface ExternalBookImportInput {
   coverUrl?: string | null;
   publicationYear?: number | null;
   pages?: number | null;
+  /** Upstream language value, so the import junk gate can act on it. */
+  language?: string | null;
 }
 
 export async function setBookStateWithImport(
@@ -111,6 +113,7 @@ export async function setBookStateWithImport(
       coverUrl: externalImport.coverUrl,
       publicationYear: externalImport.publicationYear,
       pages: externalImport.pages,
+      language: externalImport.language,
     });
   }
 
