@@ -177,7 +177,11 @@ export function sanitizeDescription(raw: string): string | null {
 
   // Reject if it's a user review
   if (/^In the (?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\d+(?:st|nd|rd|th)) (?:book|installment|entry|novel) (?:of|in)/i.test(text)) return null;
-  if (/^I (?:loved|hated|couldn'?t put|was (?:blown|hooked))/i.test(text)) return null;
+  if (/^I (?:loved|hated|couldn['’]?t put|was (?:blown|hooked))/i.test(text)) return null;
+  // Reviewer voice: opens in first person AND talks about the book-as-object
+  // ("I was never a big sci-fi fan but..."). Requires both signals so a
+  // legitimate first-person blurb ("I never asked for this life.") survives.
+  if (/^I\b[^.!?]{0,150}\b(?:this book|the book|this story|this series|this author|this one|sci-?fi fan|fantasy fan|fan of)\b/i.test(text)) return null;
 
   // Reject if it's a series listing dump
   if (/^Also (?:available |in )(?:the |from )?(?:series )?[A-Z]/i.test(text.slice(0, 200))) return null;
@@ -196,8 +200,13 @@ export function sanitizeDescription(raw: string): string | null {
   // These are signs the description was scraped from a Goodreads page rather
   // than written as actual book copy. Each pattern is narrow enough to avoid
   // false positives on real prose.
-  if (/Read reviews from the world'?s largest community for readers/i.test(text)) return null;
-  if (/Let us know what'?s wrong with this preview/i.test(text)) return null;
+  // The review count sits inside the sentence ("Read 22 reviews from the
+  // world's largest community for readers"), so the number must be optional —
+  // without it this rule only caught the count-less variant.
+  if (/Read\s+(?:\d[\d,]*\s+)?reviews?\s+from the world['’]?s largest community for readers/i.test(text)) return null;
+  // Goodreads AUTHOR-page scrape: "Michael Cheney has 15 books on Goodreads with 18666 ratings"
+  if (/\bbooks? on Goodreads\b/i.test(text)) return null;
+  if (/Let us know what['’]?s wrong with this preview/i.test(text)) return null;
   if (/(?:Want to Read|Currently Reading|Did Not Finish)\s*[·•]/i.test(text)) return null;
   if (/Return to Book Page/i.test(text)) return null;
   if (/^Reviews from the book:/i.test(text)) return null;
