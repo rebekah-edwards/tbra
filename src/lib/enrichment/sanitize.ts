@@ -177,7 +177,11 @@ export function sanitizeDescription(raw: string): string | null {
 
   // Reject if it's a user review
   if (/^In the (?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\d+(?:st|nd|rd|th)) (?:book|installment|entry|novel) (?:of|in)/i.test(text)) return null;
-  if (/^I (?:loved|hated|couldn'?t put|was (?:blown|hooked))/i.test(text)) return null;
+  if (/^I (?:loved|hated|couldn['’]?t put|was (?:blown|hooked))/i.test(text)) return null;
+  // Reviewer voice: opens in first person AND talks about the book-as-object
+  // ("I was never a big sci-fi fan but..."). Requires both signals so a
+  // legitimate first-person blurb ("I never asked for this life.") survives.
+  if (/^I\b[^.!?]{0,150}\b(?:this book|the book|this story|this series|this author|this one|sci-?fi fan|fantasy fan|fan of)\b/i.test(text)) return null;
 
   // Reject if it's a series listing dump
   if (/^Also (?:available |in )(?:the |from )?(?:series )?[A-Z]/i.test(text.slice(0, 200))) return null;
@@ -196,8 +200,13 @@ export function sanitizeDescription(raw: string): string | null {
   // These are signs the description was scraped from a Goodreads page rather
   // than written as actual book copy. Each pattern is narrow enough to avoid
   // false positives on real prose.
-  if (/Read reviews from the world'?s largest community for readers/i.test(text)) return null;
-  if (/Let us know what'?s wrong with this preview/i.test(text)) return null;
+  // The review count sits inside the sentence ("Read 22 reviews from the
+  // world's largest community for readers"), so the number must be optional —
+  // without it this rule only caught the count-less variant.
+  if (/Read\s+(?:\d[\d,]*\s+)?reviews?\s+from the world['’]?s largest community for readers/i.test(text)) return null;
+  // Goodreads AUTHOR-page scrape: "Michael Cheney has 15 books on Goodreads with 18666 ratings"
+  if (/\bbooks? on Goodreads\b/i.test(text)) return null;
+  if (/Let us know what['’]?s wrong with this preview/i.test(text)) return null;
   if (/(?:Want to Read|Currently Reading|Did Not Finish)\s*[·•]/i.test(text)) return null;
   if (/Return to Book Page/i.test(text)) return null;
   if (/^Reviews from the book:/i.test(text)) return null;
@@ -219,6 +228,27 @@ export function sanitizeDescription(raw: string): string | null {
   // (legitimate marketing copy) stays.
   const blurbAttribCount = (text.match(/"[^"]{15,}"\s*[―—–]\s*[A-Z][\w\s.,&]+/g) ?? []).length;
   if (blurbAttribCount >= 3) return null;
+
+  // ── Marketplace listing scrapes (added 2026-07-30) ──
+  // These are Amazon/retailer PAGE TITLES and storefront chrome, not book copy —
+  // e.g. "Amazon.com: The Never Heir (Otherworlds Book 1) eBook : Millecam,
+  // Courtney: Kindle Store" or "Scion [Islington, James] on Amazon.com. *FREE*
+  // shipping on qualifying offers." They slip past the length check because they
+  // run 80-110 chars, and past JUNK_DESC_PATTERNS because that regex only guards
+  // the Brave path — ISBNdb and OpenLibrary write descriptions without it.
+  // Checked here so every source is covered by one filter.
+  if (/^Amazon\.com\s*:/i.test(text)) return null;
+  if (/\bon Amazon\.com\b/i.test(text) && text.length < 400) return null;
+  if (/:\s*(?:Kindle Store|Books|Kindle eBooks)\s*$/i.test(text)) return null;
+  if (/\bFREE\W{0,3}shipping on qualifying offers/i.test(text)) return null;
+  if (/^\s*\S[^[\]]{0,120}\[[^\]]+\]\s+on\s+\w/i.test(text)) return null; // "Title [Last, First] on <retailer>"
+  if (/\b(?:Kindle Store|Kindle eBooks|Books)\s*›/i.test(text)) return null; // breadcrumb trail
+
+  // A bare title-and-byline with no sentence punctuation is a listing headline,
+  // not a blurb — e.g. "Fantastic Beasts and Where to Find Them: The Original
+  // Screenplay By J.K. Rowling". Requires no internal sentence break, so real
+  // prose (which always has one by this length) is unaffected.
+  if (/^[^.!?]{20,150}\s+[Bb]y\s+[A-Z][\w.'’\-\s]{2,40}$/.test(text)) return null;
 
   return text;
 }

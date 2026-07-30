@@ -495,14 +495,45 @@ struct LibraryView: View {
         }
         switch sort {
         case .recent: return books  // base filter already sorts by updatedAt
-        case .title: return books.sorted { $0.title.localizedCompare($1.title) == .orderedAscending }
-        case .author: return books.sorted { ($0.authors.first ?? "").localizedCompare($1.authors.first ?? "") == .orderedAscending }
+        case .title: return books.sorted { Self.titleSortKey($0.title).localizedCaseInsensitiveCompare(Self.titleSortKey($1.title)) == .orderedAscending }
+        case .author: return books.sorted { Self.authorSortKey($0.authors.first).localizedCaseInsensitiveCompare(Self.authorSortKey($1.authors.first)) == .orderedAscending }
         case .rating: return books.sorted { ($0.userRating ?? 0) > ($1.userRating ?? 0) }
         }
     }
 
     private func countFor(_ key: String) -> Int {
         Self.filter(model.books, group: group, subFilter: key).count
+    }
+
+    // Library convention: ignore a leading article when sorting by title, so
+    // "A Court of Thorns and Roses" files under C, not A.
+    private static func titleSortKey(_ title: String) -> String {
+        for article in ["a ", "an ", "the "] where title.lowercased().hasPrefix(article) {
+            return String(title.dropFirst(article.count)).trimmingCharacters(in: .whitespaces)
+        }
+        return title
+    }
+
+    // Sort people by surname ("A. Rae Dunlap" -> "Dunlap, A. Rae"), the way a
+    // library shelf does. Books with no author sort last rather than first.
+    private static let nameSuffixes: Set<String> = ["jr", "jr.", "sr", "sr.", "ii", "iii", "iv", "phd", "md"]
+    // Surname particles travel with the surname: "Ursula K. Le Guin" -> "Le Guin, Ursula K."
+    private static let nameParticles: Set<String> = ["le", "la", "de", "del", "della", "di", "da", "dos",
+                                                     "du", "van", "von", "der", "den", "ter", "ten",
+                                                     "bin", "al", "st", "st.", "mac", "mc"]
+    private static func authorSortKey(_ name: String?) -> String {
+        let n = (name ?? "").trimmingCharacters(in: .whitespaces)
+        if n.isEmpty { return "\u{FFFF}" }   // no author -> end of list
+        if n.contains(",") { return n }      // already "Last, First"
+        let parts = n.split(separator: " ").map(String.init)
+        guard parts.count > 1 else { return n }
+        var end = parts.count - 1
+        while end > 0 && nameSuffixes.contains(parts[end].lowercased()) { end -= 1 }
+        var start = end
+        while start > 0 && nameParticles.contains(parts[start - 1].lowercased()) { start -= 1 }
+        let surname = parts[start...end].joined(separator: " ")
+        let rest = (parts[0..<start] + parts[(end + 1)...]).joined(separator: " ")
+        return rest.isEmpty ? surname : "\(surname), \(rest)"
     }
 
     private static func filter(_ books: [LibraryBook], group: Group, subFilter: String) -> [LibraryBook] {
