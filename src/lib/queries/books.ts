@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { parseFormats } from "@/lib/reading-formats";
+import { isEnglishTitle } from "@/lib/text/english-title";
 import { unstable_cache } from "next/cache";
 import { db } from "@/db";
 import {
@@ -583,67 +584,9 @@ export function looksLikeMidSeriesTitle(title: string): boolean {
  * 2. For books with a position, keep one per position (prefer one with a cover)
  * 3. Keep all books with null position (but only if not a box set)
  */
-/**
- * Check if a title appears to be English.
- * Catches:
- * - Non-ASCII scripts (Cyrillic, CJK, Arabic, etc.)
- * - Common non-English Latin-alphabet markers (accented words, foreign articles/prepositions)
- */
-const NON_ENGLISH_PATTERNS = [
-  // Polish/Czech/Slavic diacritics — virtually never in English titles
-  /[łśźżćąęŁŚŹŻĆĄĘ]/,
-  // Nordic-specific characters — very rare in English titles
-  /[åæøÅÆØ]/,
-  // German-specific characters
-  /[äöüÄÖÜß]/,
-  // German words/markers
-  /\b(das|der|die|und|oder|für|über|ein|eine|vom|zur|zum|Tödliche|Lektion|Geschichte|Buch|erwacht|Geheimnis)\b/i,
-  // French articles/prepositions/words
-  /\b(avec|dans|pour|une|fille|froide|lune|autres|mortels|pasteur|monde|héritage|incroyable|affreuse|meurtrière|charmante?|garce|allumeuse|pétard|nouvelle|nouvelle|trop|chance|maison|coeur|amour|nuit|jour|mort|petit|petite|grand|grande|noir|blanc|rouge|bleu|vert|vrai|faux|nouveau|beau|belle|jeune|vieux|haut|bas|seul|tout|même|autre|cher|chère)\b/i,
-  /\b(le|la|les|du|des|au|aux|ce|cette|qui|est|sont|sur|par|en)\b(?=\s+[a-zà-ÿ])/i,
-  // Spanish/Portuguese
-  /\b(del|los|las|por|como|desde|hacia|seus|sua|seu|mejor|amiga|amigo|sangre|fuego|ceniza|linaje|gracia|junto|monstruo|viene|verme|secreto|cuentos|comienzo|luchador|cumpleaños|pequeño|favor|aquí|casa|sal|lágrimas|cartas|diablo|caza|poder|reglas|estuche)\b/i,
-  // Italian
-  /\b(nel|nella|della|degli|delle|dell|giardino|oscurità|sogni)\b/i,
-  // Dutch
-  /\b(het|een|van|zij|haar|hij|zijn|priester|ontsnapping|echtgenoten|mandolinespeler|verzamelde|werken|bijbel|nachtegaal|boomgaard|ellendigen|mevrouw)\b/i,
-  // Titles starting with non-English articles (followed by a word)
-  /^(El|Lo|Gli|Een|Het|Las|Los|Une)\s+\w/i,
-  // "Un " at start followed by clearly non-English word (not "Un-" prefix)
-  /^Un\s+[a-záéíóúñ]/i,
-  // Edition markers in other languages
-  /\bédition\b|\bTeil\b|\bBand\b|\bTome\b|\bTomo\b|\bLivre\b|\blivro\b|\bSérie\b/i,
-  // Common non-English suffixes (words ending in -zione, -ción, -ção, -heit, -keit, -ung)
-  /\b\w+(zione|ción|ção|heit|keit|ung|eux|euse|eux|isse)\b/i,
-  // Titles starting with "Estuche" (Spanish box set) or "Coffret" (French box set)
-  /^(Estuche|Coffret)\s/i,
-  // Words with accented characters (any word containing ö, ü, ä, è, ê, ë, ñ, etc.)
-  // Two+ accented words is almost certainly non-English
-  /\b\w*[à-ëí-ïñ-öù-ü]\w*\b.*\b\w*[à-ëí-ïñ-öù-ü]\w*\b/,
-  // Single accented word that's clearly not an English loanword (handles mixed/uppercase)
-  /\b\w*[ñÑ]\w*\b/,  // ñ is almost never in English words
-  /\b[A-ZÀ-ß][a-zà-ÿ]*[à-ëí-ïò-öù-ü][a-zà-ÿ]+\b/i,
-];
-
-// English words/names that contain diacritics — must not trigger false positives
-const ENGLISH_WHITELIST = /\b(Brontë|Horrorstör|Brené|café|Café|naïve|résumé|Doré|André|fiancé|fiancée|cliché|décor|début|Beyoncé|Pokémon)\b/i;
-
-export function isEnglishTitle(title: string): boolean {
-  // First: check for non-ASCII scripts (Cyrillic, CJK, Arabic, Hebrew, etc.)
-  const asciiChars = title.replace(/[^a-zA-Z]/g, "").length;
-  const totalChars = title.replace(/[^a-zA-Z\u00C0-\u024F\u0400-\u04FF\u4E00-\u9FFF\u0600-\u06FF\u0590-\u05FF\uAC00-\uD7AF\u3040-\u30FF]/g, "").length;
-  if (totalChars > 0 && asciiChars / totalChars <= 0.8) return false;
-
-  // Strip whitelisted English words before checking non-English patterns
-  const stripped = title.replace(ENGLISH_WHITELIST, "");
-
-  // Second: check for common non-English Latin-alphabet patterns
-  for (const pattern of NON_ENGLISH_PATTERNS) {
-    if (pattern.test(stripped)) return false;
-  }
-
-  return true;
-}
+// The heuristic itself lives in src/lib/text/english-title.ts — a pure module
+// with no db imports, so scripts and audits can exercise it directly.
+export { isEnglishTitle, whyNotEnglish } from "@/lib/text/english-title";
 
 function deduplicateSeriesBooks<T extends { title: string; position: number | null; coverImageUrl: string | null; isBoxSet: boolean }>(
   seriesBooks: T[]
