@@ -40,7 +40,94 @@
 require('dotenv').config({ path: '.env.vercel.local' });
 const Database = require('better-sqlite3');
 const path = require('path');
+const fsSync = require('fs');
 const { createGuardedTurso } = require('./lib/turso-guard');
+const { fileAdminAlert, resolveAdminAlert } = require('./lib/admin-alert');
+
+/**
+ * Consecutive-failure escalation (added 2026-07-30).
+ *
+ * This script used to run as a Claude scheduled task whose SKILL.md told the
+ * session: "file a deduped issue ONLY if the same error persists across 3+
+ * consecutive runs" — a one-off FOREIGN KEY error usually just means a
+ * locally-created book hasn't been pushed yet, and those self-heal. Running 34×
+ * a day, that judgment call was also 76% of the resident-Claude-session pileup
+ * that saturated the Mac (see memory project_mac_process_pileup), so the task
+ * moved to launchd and the rule moved here, where a counter file does it
+ * deterministically and for free.
+ */
+const ERROR_STATE_FILE = path.join(__dirname, '..', 'data', 'user-activity-sync-errors.json');
+const ESCALATE_AFTER_RUNS = 3;
+
+/** Bucket an error string to the table it came from: "up_next: foo" → "up_next". */
+function errorKey(message: string): string {
+  return String(message).split(/[:\s]/)[0] || 'unknown';
+}
+
+function readErrorState(): Record<string, number> {
+  try {
+    return JSON.parse(fsSync.readFileSync(ERROR_STATE_FILE, 'utf8')) || {};
+  } catch {
+    return {};
+  }
+}
+
+function writeErrorState(state: Record<string, number>) {
+  try {
+    fsSync.mkdirSync(path.dirname(ERROR_STATE_FILE), { recursive: true });
+    fsSync.writeFileSync(ERROR_STATE_FILE, JSON.stringify(state, null, 2));
+  } catch (e: any) {
+    console.log(`  (could not persist error state: ${e.message})`);
+  }
+}
+
+/**
+ * Bump the streak for every table that errored this run, clear the streak for
+ * every table that didn't, and file/resolve /admin/issues alerts at the
+ * threshold. Never throws — alerting must not fail the sync itself.
+ */
+async function escalatePersistentErrors(remote: any, errors: string[]) {
+  try {
+    const previous = readErrorState();
+    const failedNow = new Set(errors.map(errorKey));
+    const next: Record<string, number> = {};
+
+    for (const key of failedNow) {
+      next[key] = (previous[key] ?? 0) + 1;
+    }
+
+    for (const key of failedNow) {
+      if (next[key] < ESCALATE_AFTER_RUNS) continue;
+      const sample = errors.find((e) => errorKey(e) === key) ?? key;
+      const filed = await fileAdminAlert(remote, {
+        tag: 'user-activity-sync',
+        key,
+        description:
+          `"${key}" has failed ${next[key]} consecutive user-activity syncs. Latest: ${sample}. `
+          + `Runs every 30 min via launchd (com.tbra.user-activity-sync); log at data/user-activity-sync.log. `
+          + `A persistent failure here means reading activity is diverging between the iOS app (local DB) and the web app (Turso).`,
+      });
+      if (filed) console.log(`  ⚠ filed /admin/issues alert: ${key} failing ${next[key]} runs in a row`);
+    }
+
+    // Anything that failed before but succeeded now → streak broken, close the alert.
+    for (const key of Object.keys(previous)) {
+      if (failedNow.has(key)) continue;
+      if (previous[key] >= ESCALATE_AFTER_RUNS) {
+        const closed = await resolveAdminAlert(remote, {
+          tag: 'user-activity-sync',
+          key,
+          resolution: `Recovered: "${key}" synced cleanly on a later run.`,
+        });
+        if (closed > 0) console.log(`  ✓ auto-resolved ${closed} stale alert(s) for ${key}`);
+      }
+    }
+
+    writeErrorState(next);
+  } catch (e: any) {
+    console.log(`  (error escalation skipped: ${e.message})`);
+  }
+}
 
 type TableSpec = {
   name: string;
@@ -67,6 +154,34 @@ const APP_USERS = new Set([
 /** Rows older than this can't be app-created — the native app didn't exist. */
 const APP_ERA = '2026-06-20';
 
+/**
+ * ONE-OFF BACKFILL ESCAPE HATCH (added 2026-07-30).
+ *
+ * The guards above are correct for the recurring 30-min sync: they stop local ghosts from
+ * resurrecting on prod. But they also mean data imported LOCALLY on a tester's behalf
+ * (scripts/run-goodreads-import.ts writes to local sqlite) can NEVER reach production —
+ * which is how myerschar9 ended up with a 1,169-book library on local and an EMPTY library
+ * on thebasedreader.app.
+ *
+ * These env overrides let a human deliberately push a named user's stranded rows through
+ * the SAME tested code path (natural keys, childRefs, conflict handling) instead of a
+ * hand-rolled INSERT script that would strand review child rows.
+ *
+ *   PUSH_USERS=<uuid,uuid>   additional owner ids allowed to push
+ *   PUSH_ERA=<YYYY-MM-DD>    relax the era gate (imported rows carry historical timestamps)
+ *
+ * Never set these in the scheduled job. One-off, supervised use only.
+ */
+const PUSH_USERS_OVERRIDE = (process.env.PUSH_USERS ?? '')
+  .split(',').map((s) => s.trim()).filter(Boolean);
+for (const id of PUSH_USERS_OVERRIDE) APP_USERS.add(id);
+const APP_ERA_EFFECTIVE = process.env.PUSH_ERA?.trim() || APP_ERA;
+if (PUSH_USERS_OVERRIDE.length > 0) {
+  console.warn(
+    `⚠️  PUSH OVERRIDE ACTIVE: +${PUSH_USERS_OVERRIDE.length} user(s), era=${APP_ERA_EFFECTIVE}`,
+  );
+}
+
 /** shelf_books rows carry no user column — resolve the owner via the
     LOCAL shelves table (populated lazily). */
 let localShelfOwner: Map<string, string> | null = null;
@@ -80,7 +195,7 @@ function pushable(spec: TableSpec, row: any): boolean {
   if (!owner || !APP_USERS.has(String(owner))) return false;
   const stamps = [row.updated_at, row.created_at, row.added_at].filter(Boolean).map(String);
   if (stamps.length === 0) return true; // no timestamp columns — user filter only
-  return stamps.some((s) => s >= APP_ERA);
+  return stamps.some((s) => s >= APP_ERA_EFFECTIVE);
 }
 
 const TABLES: TableSpec[] = [
@@ -118,7 +233,10 @@ const TABLES: TableSpec[] = [
 (async () => {
   const { remote, shutdown } = await createGuardedTurso({
     name: 'sync-user-activity',
-    maxRuntimeMs: 15 * 60 * 1000,
+    // 15 min is right for the recurring 30-min job. A supervised one-off backfill
+    // (PUSH_USERS) moves thousands of rows and needs longer — raise it explicitly
+    // via SYNC_MAX_MINUTES rather than loosening the default for the cron path.
+    maxRuntimeMs: Number(process.env.SYNC_MAX_MINUTES ?? 15) * 60 * 1000,
     queryTimeoutMs: 30_000,
   });
   const local = new Database(path.join(process.cwd(), 'data', 'tbra.db'));
@@ -445,6 +563,7 @@ const TABLES: TableSpec[] = [
     console.log(`\n${errors.length} error(s):`);
     for (const e of errors.slice(0, 20)) console.log(`  - ${e}`);
   }
+  await escalatePersistentErrors(remote, errors);
   local.close();
   shutdown();
   process.exit(errors.length > 0 && totals.toLocal + totals.toLive + totals.mergedLocal + totals.mergedLive === 0 ? 1 : 0);
