@@ -100,11 +100,22 @@ const stallInterval = setInterval(() => {
 }, 30_000).unref();
 void stallInterval;
 
+/**
+ * Every drop is reported. `INSERT OR IGNORE` swallows UNIQUE/FK conflicts without
+ * raising, and the per-row fallback used to `catch {}` outright, so this function
+ * could discard any number of rows and still return to a caller that printed a
+ * cheerful "✓ Pushed N". On 2026-07-30 that was hiding 549 books dropped every
+ * single night — benign (they are duplicate rows whose identifier already belongs
+ * to a live book), but a REAL regression would have looked exactly the same.
+ * The counts are the only tell, so we surface them here rather than trusting
+ * every call site to compare two numbers by eye.
+ */
 async function batchInsert(table: string, cols: string[], rows: any[][]) {
   if (rows.length === 0) return 0;
   const placeholders = cols.map(() => '?').join(',');
   const sql = `INSERT OR IGNORE INTO ${table} (${cols.join(',')}) VALUES (${placeholders})`;
   let inserted = 0;
+  const reasons = new Map<string, number>();
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const chunk = rows.slice(i, i + BATCH_SIZE);
     try {
@@ -120,10 +131,30 @@ async function batchInsert(table: string, cols: string[], rows: any[][]) {
         try {
           const res = await remote.execute({ sql, args: row });
           inserted += Number(res.rowsAffected || 0);
-        } catch {
-          // Individual FK failure — skip silently
+        } catch (rowErr: any) {
+          // Tally instead of discarding. Strip the row-specific tail so N failures
+          // of the same kind collapse into one counted line.
+          const msg = String(rowErr?.message ?? rowErr)
+            .replace(/\s*\(.*$/, '')
+            .slice(0, 120);
+          reasons.set(msg, (reasons.get(msg) ?? 0) + 1);
         }
       }
+    }
+  }
+  const skipped = rows.length - inserted;
+  if (skipped > 0) {
+    console.warn(`     ⚠ ${table}: ${skipped} of ${rows.length} row(s) NOT inserted`);
+    if (reasons.size > 0) {
+      [...reasons.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .forEach(([msg, n]) => console.warn(`         ${n}× ${msg}`));
+    } else {
+      // No exception was ever raised, so every drop came from OR IGNORE itself:
+      // the row duplicates an existing PK, or collides on a UNIQUE index
+      // (books: isbn_13 / open_library_key), or its FK target isn't live yet.
+      console.warn(`         reason: INSERT OR IGNORE — row already on live, or a UNIQUE/FK constraint rejected it`);
     }
   }
   return inserted;
@@ -441,6 +472,12 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
     'summary', 'description', 'publication_year', 'pages', 'publisher',
     'cover_image_url', 'is_fiction', 'is_box_set', 'pacing',
     'audiobook_cover_url', 'cover_verified', 'cover_source',
+    // `language` was missing until 2026-07-30: enrichment has been writing it
+    // locally for months and it never reached Turso, so prod had ~2,600 blank
+    // language values whose answer was already sitting in the local DB. It is
+    // ordinary metadata like publisher — safe to push. (Demotion of non-English
+    // books stays a separate, manual step: scripts/hide-non-english.ts.)
+    'language',
     'description_stale', 'updated_at',
   ];
 
