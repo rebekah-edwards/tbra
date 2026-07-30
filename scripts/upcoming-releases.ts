@@ -37,7 +37,7 @@ import { db } from "../src/db";
 import { books, authors, bookAuthors, nytBestsellers, userFavoriteBooks, userBookState } from "../src/db/schema";
 import { eq, and, gte, lte, isNotNull, sql } from "drizzle-orm";
 import {
-  searchGoogleBooksByAuthorNewest,
+  searchGoogleBooksByAuthorNewestDetailed,
   getGoogleBooksIsbns,
   getGoogleBooksCoverUrl,
 } from "../src/lib/google-books";
@@ -55,6 +55,12 @@ const HORIZON_MONTHS = Number(process.env.HORIZON_MONTHS ?? 18);
 const GOOGLE_MAX = Number(process.env.GOOGLE_MAX ?? 800);
 const CURSOR_FILE = process.env.CURSOR_FILE || "data/upcoming-authors-cursor.json";
 const DRY_RUN = process.env.DRY_RUN === "1";
+// Ceiling on the re-check queue (see selectAuthors) so a long Google outage
+// can't grow it without bound.
+const DEFERRED_MAX = Number(process.env.DEFERRED_MAX ?? 3000);
+// Consecutive quota failures before we stop burning the remaining pacing delay
+// on calls that cannot succeed; everything unqueried is deferred to next run.
+const QUOTA_ABORT_STREAK = Number(process.env.QUOTA_ABORT_STREAK ?? 12);
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -98,31 +104,85 @@ async function buildAuthorPool(): Promise<string[]> {
   return [...names].sort((a, b) => a.localeCompare(b));
 }
 
-// Rotate through the pool: take MAX_AUTHORS starting at the persisted cursor,
-// wrapping around, then advance the cursor for next run.
-function selectAuthors(pool: string[]): string[] {
-  if (pool.length === 0) return [];
-  let index = 0;
-  if (existsSync(CURSOR_FILE)) {
-    try {
-      index = JSON.parse(readFileSync(CURSOR_FILE, "utf-8")).index ?? 0;
-    } catch {
-      index = 0;
-    }
-  }
-  index = ((index % pool.length) + pool.length) % pool.length;
+type Cursor = { index: number; updatedAt?: string; deferred?: string[] };
 
+function readCursor(): Cursor {
+  if (!existsSync(CURSOR_FILE)) return { index: 0, deferred: [] };
+  try {
+    const raw = JSON.parse(readFileSync(CURSOR_FILE, "utf-8"));
+    return {
+      index: typeof raw.index === "number" ? raw.index : 0,
+      deferred: Array.isArray(raw.deferred) ? raw.deferred.filter((a: unknown) => typeof a === "string") : [],
+    };
+  } catch {
+    return { index: 0, deferred: [] };
+  }
+}
+
+/**
+ * Rotate through the pool, but drain the DEFERRED queue first.
+ *
+ * Authors land in `deferred` when a previous run selected them and never got a
+ * real answer from Google — quota exhaustion, a network failure, or the run
+ * hitting MAX_BOOKS/GOOGLE_MAX before reaching them. Without this they were
+ * simply skipped: the cursor advanced by MAX_AUTHORS regardless of how many
+ * queries actually landed, so a quota-starved night silently cost those authors
+ * a full trip around the ~7.7k pool (weeks) before they'd be looked at again.
+ *
+ * Deferred authors take at most half the run so the pool keeps rotating even if
+ * the queue is persistently backed up.
+ */
+function selectAuthors(pool: string[]): {
+  selected: string[];
+  nextIndex: number;
+  retried: number;
+  /** Queue entries this run had no room for — must be written back or they're lost. */
+  carryOver: string[];
+} {
+  if (pool.length === 0) return { selected: [], nextIndex: 0, retried: 0, carryOver: [] };
+
+  const cursor = readCursor();
+  const index = ((cursor.index % pool.length) + pool.length) % pool.length;
   const take = Math.min(MAX_AUTHORS, pool.length);
-  const selected: string[] = [];
-  for (let i = 0; i < take; i++) {
-    selected.push(pool[(index + i) % pool.length]);
+
+  // Only retry authors still in the pool (a name can drop out if the shelving
+  // or favorite that put it there went away).
+  const inPool = new Set(pool);
+  const queue = (cursor.deferred ?? []).filter((a) => inPool.has(a));
+
+  const retryBudget = Math.min(queue.length, Math.floor(take / 2));
+  const selected = queue.slice(0, retryBudget);
+  const chosen = new Set(selected);
+
+  // Fill the rest from the rotation, advancing the cursor only by what we take.
+  let advanced = 0;
+  while (selected.length < take && advanced < pool.length) {
+    const name = pool[(index + advanced) % pool.length];
+    advanced++;
+    if (chosen.has(name)) continue; // already queued as a retry this run
+    selected.push(name);
+    chosen.add(name);
   }
 
-  if (!DRY_RUN) {
-    const next = (index + take) % pool.length;
-    writeFileSync(CURSOR_FILE, JSON.stringify({ index: next, updatedAt: new Date().toISOString() }));
-  }
-  return selected;
+  return {
+    selected,
+    nextIndex: (index + advanced) % pool.length,
+    retried: retryBudget,
+    carryOver: queue.slice(retryBudget),
+  };
+}
+
+/**
+ * Persist the cursor plus whatever this run failed to actually check.
+ * Capped so a long outage can't grow the queue without bound.
+ */
+function writeCursor(nextIndex: number, deferred: string[]) {
+  if (DRY_RUN) return;
+  const unique = [...new Set(deferred)].slice(0, DEFERRED_MAX);
+  writeFileSync(
+    CURSOR_FILE,
+    JSON.stringify({ index: nextIndex, updatedAt: new Date().toISOString(), deferred: unique }),
+  );
 }
 
 // ISO date strings for today and the horizon (local components, no UTC drift).
@@ -185,8 +245,11 @@ async function main() {
 
   const pool = await buildAuthorPool();
   console.log(`[upcoming] buzz-author pool: ${pool.length} unique authors`);
-  const selected = selectAuthors(pool);
-  console.log(`[upcoming] processing ${selected.length} authors this run`);
+  const { selected, nextIndex, retried, carryOver } = selectAuthors(pool);
+  console.log(
+    `[upcoming] processing ${selected.length} authors this run` +
+      (retried ? ` (${retried} re-checks from the deferred queue)` : ""),
+  );
 
   let googleCalls = 0;
   let inserted = 0;
@@ -194,14 +257,27 @@ async function main() {
   let candidatesSeen = 0;
   let skippedDupe = 0;
   let skippedJunk = 0;
+  let quotaStreak = 0;
 
-  for (const authorName of selected) {
+  // Authors this run selected but never got a real answer for. They are written
+  // back to the cursor so the next run re-checks them instead of leaving them
+  // unexamined until the pool rotates all the way around.
+  // Seeded with the queue overflow this run had no room for, so those authors
+  // survive the cursor write instead of being dropped.
+  const deferred: string[] = [...carryOver];
+  const deferRest = (fromIndex: number) => {
+    for (let i = fromIndex; i < selected.length; i++) deferred.push(selected[i]);
+  };
+
+  for (const [i, authorName] of selected.entries()) {
     if (inserted >= MAX_BOOKS) {
       console.log(`[upcoming] reached MAX_BOOKS=${MAX_BOOKS}, stopping.`);
+      deferRest(i);
       break;
     }
     if (googleCalls >= GOOGLE_MAX) {
       console.log(`[upcoming] reached GOOGLE_MAX=${GOOGLE_MAX}, stopping.`);
+      deferRest(i);
       break;
     }
 
@@ -209,9 +285,28 @@ async function main() {
     googleCalls++;
     let volumes;
     try {
-      volumes = await searchGoogleBooksByAuthorNewest(authorName, 12);
+      const res = await searchGoogleBooksByAuthorNewestDetailed(authorName, 12);
+      if (!res.ok) {
+        // The call never landed, so this author was NOT checked — re-queue.
+        deferred.push(authorName);
+        if (res.quotaExhausted) {
+          quotaStreak++;
+          if (quotaStreak >= QUOTA_ABORT_STREAK) {
+            console.warn(
+              `[upcoming] ${quotaStreak} consecutive Google quota failures (status ${res.status}) — ` +
+                `daily Queries-per-day limit is spent. Deferring the rest of this run's authors.`,
+            );
+            deferRest(i + 1);
+            break;
+          }
+        }
+        continue;
+      }
+      quotaStreak = 0;
+      volumes = res.volumes;
     } catch (err) {
       console.warn(`[upcoming] Google query failed for "${authorName}":`, err);
+      deferred.push(authorName);
       continue;
     }
 
@@ -318,11 +413,18 @@ async function main() {
       await assignBookSlug(book.id, finalTitle, primaryAuthor);
       await updateSearchIndex(book.id);
 
-      // Enrich to fill genres/ratings/cover gaps. skipAuthorDiscovery so we don't
-      // balloon the catalog with backlists; skipBrave to stay off that budget.
-      // enrichBook only fills EMPTY fields, so our good Google date survives.
+      // Enrich to fill metadata/genres/cover gaps from the FREE structured
+      // sources (OL / ISBNdb / LoC / Google Books). skipAuthorDiscovery so we
+      // don't balloon the catalog with backlists. skipContentSearch is what
+      // actually keeps this lane off the Brave budget: skipBrave alone does NOT
+      // (the content-analysis + audiobook searches ignore it), so without this
+      // every preorder would spend ~6 Brave calls and — on a night the shared
+      // daily cap is already spent by nightly-discovery — throw API_EXHAUSTED and
+      // land as a bare shell. Content ratings are deferred to the nightly
+      // content-ratings backfill, which picks these public books up on its own
+      // Brave budget. enrichBook only fills EMPTY fields, so our Google date survives.
       try {
-        await enrichBook(book.id, { skipAuthorDiscovery: true, skipBrave: true });
+        await enrichBook(book.id, { skipAuthorDiscovery: true, skipBrave: true, skipContentSearch: true });
       } catch (err) {
         console.warn(`  enrichment failed for "${finalTitle}":`, err);
       }
@@ -357,10 +459,15 @@ async function main() {
     }
   }
 
+  // Advance the cursor and persist the re-check queue in one place, so an
+  // author is only ever marked "checked" once Google actually answered for them.
+  writeCursor(nextIndex, deferred);
+
   console.log(
     `[upcoming] Done. ${DRY_RUN ? "would-add" : "added"}=${inserted} ` +
       `reprintDemoted=${reprintDemoted} candidates=${candidatesSeen} ` +
-      `skipped(dupe=${skippedDupe}, junk=${skippedJunk}) googleCalls=${googleCalls}`,
+      `skipped(dupe=${skippedDupe}, junk=${skippedJunk}) googleCalls=${googleCalls} ` +
+      `retried=${retried} deferred=${new Set(deferred).size}`,
   );
   process.exit(0);
 }

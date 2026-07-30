@@ -41,10 +41,37 @@ export async function searchGoogleBooks(
   maxResults = 5,
   orderBy: "relevance" | "newest" = "relevance"
 ): Promise<GoogleBooksVolume[]> {
+  return (await searchGoogleBooksDetailed(query, maxResults, orderBy)).volumes;
+}
+
+/**
+ * Result of a Google Books call that distinguishes "the API answered and there
+ * were no matches" from "the call never landed".
+ *
+ * `searchGoogleBooks` collapses both into `[]`, which is fine for enrichment
+ * (a miss and a failure are both "no data") but WRONG for any caller that
+ * advances a cursor on the assumption an author was actually checked — a
+ * quota-exhausted night would silently burn cursor slots. Callers that rotate
+ * through a work list should use this and re-queue anything with `ok:false`.
+ */
+export type GoogleBooksSearchResult = {
+  ok: boolean;
+  /** HTTP status, or null when the request threw / no key was configured. */
+  status: number | null;
+  /** True when the failure is a daily-quota exhaustion (429, or the 503 the API returns once the Queries-per-day limit is spent). */
+  quotaExhausted: boolean;
+  volumes: GoogleBooksVolume[];
+};
+
+export async function searchGoogleBooksDetailed(
+  query: string,
+  maxResults = 5,
+  orderBy: "relevance" | "newest" = "relevance"
+): Promise<GoogleBooksSearchResult> {
   const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
   if (!apiKey) {
     console.warn("[google-books] No GOOGLE_BOOKS_API_KEY set");
-    return [];
+    return { ok: false, status: null, quotaExhausted: false, volumes: [] };
   }
 
   const url = new URL(GOOGLE_BOOKS_API);
@@ -65,13 +92,26 @@ export async function searchGoogleBooks(
           await fs.appendFile("/tmp/tbra-google-books-errors.log", logLine);
         } catch { /* ignore fs errors */ }
       }
-      return [];
+      // The Queries-per-day limit surfaces as 429 on a direct probe but as 503
+      // through this endpoint once the project's daily quota is spent, so treat
+      // both as exhaustion rather than as a transient outage.
+      return {
+        ok: false,
+        status: res.status,
+        quotaExhausted: res.status === 429 || res.status === 503,
+        volumes: [],
+      };
     }
     const data = await res.json();
-    return (data.items ?? []) as GoogleBooksVolume[];
+    return {
+      ok: true,
+      status: res.status,
+      quotaExhausted: false,
+      volumes: (data.items ?? []) as GoogleBooksVolume[],
+    };
   } catch (err) {
     console.error("[google-books] Search failed:", err);
-    return [];
+    return { ok: false, status: null, quotaExhausted: false, volumes: [] };
   }
 }
 
@@ -96,6 +136,18 @@ export async function searchGoogleBooksByAuthorNewest(
   // inauthor: with quotes pins the match to the full author name rather than
   // matching either token loosely.
   return searchGoogleBooks(`inauthor:"${authorName}"`, maxResults, "newest");
+}
+
+/**
+ * Same query as `searchGoogleBooksByAuthorNewest`, but reports whether the call
+ * actually landed. The upcoming-releases lane uses this so an author whose
+ * query died on quota is re-queued instead of being marked as checked.
+ */
+export async function searchGoogleBooksByAuthorNewestDetailed(
+  authorName: string,
+  maxResults = 12
+): Promise<GoogleBooksSearchResult> {
+  return searchGoogleBooksDetailed(`inauthor:"${authorName}"`, maxResults, "newest");
 }
 
 /**
