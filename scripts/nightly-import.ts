@@ -20,6 +20,14 @@ config({ path: ".env.local" });
 
 import { existsSync, readFileSync, writeFileSync } from "fs";
 
+// This script does not use createGuardedTurso (it writes locally, then a
+// separate sync-push mirrors up), so nothing else claims a watchdog exemption
+// for it. A big TARGET_BOOKS run can exceed the 60-min launchd watchdog and be
+// SIGKILLed mid-import — silently, since the wrapper reports whatever it had.
+import { startWatchdogExemption } from "./lib/watchdog-exempt";
+
+startWatchdogExemption();
+
 import { db } from "../src/db";
 import { books, authors, bookAuthors, genres, bookGenres } from "../src/db/schema";
 import { eq, sql } from "drizzle-orm";
@@ -507,6 +515,10 @@ async function importCascadeBooks(authorOlKeys: string[]): Promise<number> {
       // Resolve English title for foreign-language works
       const englishTitle = await findEnglishEditionTitle(workKey);
       const resolvedTitle = englishTitle ?? work.title;
+      // Some OL works come back with no title at all. Without this guard the
+      // whole cascade for the seed author throws (isLikelyNonEnglish does
+      // title.replace) and their remaining backlist is silently skipped.
+      if (!resolvedTitle) continue;
       // Cascade books are inserted as bare stubs (no ISBN/description/year), so
       // they must NOT enter the public catalog — that was the source of the
       // ~5k un-enrichable skeleton flood (2026-06-17). Skip junk/non-English
@@ -620,9 +632,20 @@ async function importBook(query: string, seed?: ImportSeed): Promise<number> {
       await db.insert(bookGenres).values({ bookId: book.id, genreId: genre.id }).onConflictDoNothing();
     }
 
-    // Enrich
+    // Enrich — metadata-only (skipContentSearch). Both the discovery and breadth
+    // lanes bulk-add ~500 books/night; enrichBook's content-analysis + audiobook
+    // Brave searches ignore skipBrave, so leaving them on spent ~6 Brave calls ×
+    // ~500 books ≈ 3,000/night — enough to exhaust the shared ~3,300/day cap on
+    // its OWN and starve the priority lanes (upcoming-releases, thin-recovery,
+    // content-ratings) that run after it. skipContentSearch makes ingestion truly
+    // Brave-free: books land with metadata/genres/cover from the free structured
+    // sources, and their Grok content ratings are filled later by the (now
+    // expanded) nightly content-ratings backfill. Bonus: it also skips enrichBook's
+    // internal author-bibliography discovery — the redundant "double import" — so
+    // the intended cascade below (importCascadeBooks, capped, import_only) is the
+    // single source of backlist growth.
     try {
-      await enrichBook(book.id);
+      await enrichBook(book.id, { skipContentSearch: true });
     } catch (err) {
       console.warn(`  Enrichment failed for ${result.title}:`, err);
     }

@@ -74,6 +74,11 @@ export function isLikelyNonEnglish(title: string, language?: string | null): boo
     if (lang && !englishMarkers.includes(lang)) return true;
   }
 
+  // Callers feed this raw upstream metadata (OpenLibrary works, ISBNdb rows)
+  // where `title` can be missing despite the type. No title = nothing to judge,
+  // so default to English; emptiness is the junk-title check's job, not ours.
+  if (!title) return false;
+
   const letters = title.replace(/[^\p{L}]/gu, "");
   if (letters.length === 0) return false;
   const ascii = title.replace(/[^a-zA-Z]/g, "");
