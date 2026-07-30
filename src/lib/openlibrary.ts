@@ -191,7 +191,25 @@ const JUNK_TITLE_PATTERNS = [
   /\bselections?\s+from\b/i,    // "Selections from..."
   /\bbind[\s-]*up\b/i,           // "Tpb Bind up", "Bind-up"
   /^novels?\s*\(/i,             // "Novels (X / Y)" omnibus
-  /\bvolume\s+\d+\s*$/i,       // Standalone "Volume X" (comics)
+  // NOTE: a bare /\bvolume\s+\d+\s*$/i used to live here, meant for comic-issue
+  // noise. It was far too broad: on 2026-07-30 it matched 170 public books and
+  // the overwhelming majority were legitimate, individually-purchasable graphic
+  // novels and manga — Saga, Excel Saga, Sin City, TMNT, Black Science, Fear
+  // Agent, Deadly Class — many already shelved by readers. Because isJunkTitle
+  // runs at IMPORT time, every new volume of those series was being silently
+  // rejected at discovery. "Volume N" is how trade paperbacks are NAMED; it is
+  // not a junk signal on its own.
+  // Replaced by the markers below, which target what the rule was actually
+  // after: public-domain collected-works sets and periodical compilations.
+  // Deliberately lets a few stragglers through ("Best in Children's Books
+  // Volume 40") — admitting a handful of junk beats rejecting ~150 real books
+  // in a catalog we are trying to grow.
+  /;\s*volumes?\s+\d+\s*$/i,   // "Bacon's Essays; Volume 1" — catalog-style collected works
+  /\bcomplete\s+(works|poems|writings|plays|letters|essays|stories)\b/i,
+  /\bselected\s+(works|poems|writings|letters|essays)\b/i,
+  /^bulletin\b/i,               // periodical runs: "Bulletin, Volume 2"
+  /\b(proceedings|transactions)\s+of\s+the\b/i,
+  /\bmultipack\b/i,             // "Penny Dreadful Multipack Volume 7"
   /\billustrated\s+edition\b/i,
   /\bnº\s*\d+/i,               // Spanish/foreign comic issue numbers
   /\btomo\s+/i,                 // Spanish "Tomo" (volume)
