@@ -45,14 +45,44 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "author", label: "Author A-Z" },
 ];
 
+// Library convention: ignore a leading article when sorting by title, so
+// "A Court of Thorns and Roses" files under C, not A.
+const LEADING_ARTICLE = /^(?:a|an|the)\s+/i;
+function titleSortKey(title: string): string {
+  return title.replace(LEADING_ARTICLE, "").trim();
+}
+
+// Sort people by surname ("A. Rae Dunlap" -> "Dunlap, A. Rae"), the way a
+// library shelf does. Books with no author sort last rather than first.
+const NAME_SUFFIX = /^(jr|sr|ii|iii|iv|phd|md)\.?$/i;
+// Surname particles travel with the surname: "Ursula K. Le Guin" -> "Le Guin, Ursula K."
+const NAME_PARTICLE = /^(le|la|de|del|della|di|da|dos|du|van|von|der|den|ter|ten|bin|al|st|mac|mc)\.?$/i;
+function authorSortKey(name: string | undefined): string {
+  const n = (name ?? "").trim();
+  if (!n) return "￿"; // no author -> end of list
+  if (n.includes(",")) return n; // already "Last, First"
+  const parts = n.split(/\s+/).filter(Boolean);
+  let end = parts.length - 1;
+  while (end > 0 && NAME_SUFFIX.test(parts[end])) end--; // skip Jr./III when finding the surname
+  let start = end;
+  while (start > 0 && NAME_PARTICLE.test(parts[start - 1])) start--; // absorb "Le", "van", ...
+  const surname = parts.slice(start, end + 1).join(" ") || n;
+  const rest = [...parts.slice(0, start), ...parts.slice(end + 1)].join(" ");
+  return rest ? `${surname}, ${rest}` : surname;
+}
+
 function sortBooks(books: UserBookWithDetails[], sort: SortKey): UserBookWithDetails[] {
   const sorted = [...books];
   switch (sort) {
     case "title":
-      sorted.sort((a, b) => a.title.localeCompare(b.title));
+      sorted.sort((a, b) =>
+        titleSortKey(a.title).localeCompare(titleSortKey(b.title), undefined, { sensitivity: "base" })
+      );
       break;
     case "author":
-      sorted.sort((a, b) => (a.authors[0] ?? "").localeCompare(b.authors[0] ?? ""));
+      sorted.sort((a, b) =>
+        authorSortKey(a.authors[0]).localeCompare(authorSortKey(b.authors[0]), undefined, { sensitivity: "base" })
+      );
       break;
     case "rating":
       sorted.sort((a, b) => (b.userRating ?? 0) - (a.userRating ?? 0));

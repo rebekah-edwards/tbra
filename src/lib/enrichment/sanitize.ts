@@ -220,6 +220,27 @@ export function sanitizeDescription(raw: string): string | null {
   const blurbAttribCount = (text.match(/"[^"]{15,}"\s*[―—–]\s*[A-Z][\w\s.,&]+/g) ?? []).length;
   if (blurbAttribCount >= 3) return null;
 
+  // ── Marketplace listing scrapes (added 2026-07-30) ──
+  // These are Amazon/retailer PAGE TITLES and storefront chrome, not book copy —
+  // e.g. "Amazon.com: The Never Heir (Otherworlds Book 1) eBook : Millecam,
+  // Courtney: Kindle Store" or "Scion [Islington, James] on Amazon.com. *FREE*
+  // shipping on qualifying offers." They slip past the length check because they
+  // run 80-110 chars, and past JUNK_DESC_PATTERNS because that regex only guards
+  // the Brave path — ISBNdb and OpenLibrary write descriptions without it.
+  // Checked here so every source is covered by one filter.
+  if (/^Amazon\.com\s*:/i.test(text)) return null;
+  if (/\bon Amazon\.com\b/i.test(text) && text.length < 400) return null;
+  if (/:\s*(?:Kindle Store|Books|Kindle eBooks)\s*$/i.test(text)) return null;
+  if (/\bFREE\W{0,3}shipping on qualifying offers/i.test(text)) return null;
+  if (/^\s*\S[^[\]]{0,120}\[[^\]]+\]\s+on\s+\w/i.test(text)) return null; // "Title [Last, First] on <retailer>"
+  if (/\b(?:Kindle Store|Kindle eBooks|Books)\s*›/i.test(text)) return null; // breadcrumb trail
+
+  // A bare title-and-byline with no sentence punctuation is a listing headline,
+  // not a blurb — e.g. "Fantastic Beasts and Where to Find Them: The Original
+  // Screenplay By J.K. Rowling". Requires no internal sentence break, so real
+  // prose (which always has one by this length) is unaffected.
+  if (/^[^.!?]{20,150}\s+[Bb]y\s+[A-Z][\w.'’\-\s]{2,40}$/.test(text)) return null;
+
   return text;
 }
 
