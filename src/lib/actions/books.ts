@@ -933,8 +933,10 @@ export async function importFromISBNdbAndReturn(params: {
   coverUrl?: string | null;
   publicationYear?: number | null;
   pages?: number | null;
+  /** Upstream language value (ISBNdb). Feeds the junk gate below. */
+  language?: string | null;
 }): Promise<string | null> {
-  const { isbn, title, authors: authorNames, coverUrl, publicationYear, pages } = params;
+  const { isbn, title, authors: authorNames, coverUrl, publicationYear, pages, language } = params;
 
   // 1. Normalize the ISBN to digits-only (with optional trailing 'X' for
   // ISBN-10 checksum). ISBNdb and other sources return ISBNs in wildly
@@ -991,7 +993,7 @@ export async function importFromISBNdbAndReturn(params: {
     description: null,
     summary: null,
     publicationYear: publicationYear ?? null,
-    language: null,
+    language: language ?? null,
     isBoxSet: false,
   }).clearlyUnwanted;
 
@@ -1010,6 +1012,10 @@ export async function importFromISBNdbAndReturn(params: {
         publicationYear: publicationYear ?? null,
         pages: pages ?? null,
         coverImageUrl: coverUrl ?? null,
+        // Persist the upstream language so the catalog-wide non-English sweep
+        // (scripts/hide-non-english.ts) can see it later — a blank language
+        // column is the one case that sweep cannot act on.
+        language: language ?? null,
         visibility: isJunk ? "import_only" : "public",
         isBoxSet: isBox,
         // isFiction defaults to true; enrichment will refine

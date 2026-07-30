@@ -233,6 +233,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           coverUrl: externalCoverUrl ?? null,
           publicationYear: result.first_publish_year ?? null,
           pages: result.number_of_pages_median ?? null,
+          language: result._language ?? null,
         }
       : null;
 
