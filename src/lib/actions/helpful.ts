@@ -11,7 +11,7 @@ export async function toggleHelpfulVote(reviewId: string, bookId: string) {
   if (!user) {
     return { error: "Must be logged in to vote" };
   }
-  return toggleHelpfulVoteFor(userId, reviewId, bookId);
+  return toggleHelpfulVoteFor(user.userId, reviewId, bookId);
 }
 
 /** Core toggle, callable with an explicit user id (used by /api/v1). */
