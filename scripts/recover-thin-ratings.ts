@@ -34,21 +34,38 @@ import * as fs from "fs";
 config({ path: ".env.local" });        // ENRICHMENT_SECRET
 config({ path: ".env.vercel.local" }); // Turso creds
 import { createGuardedTurso } from "./lib/turso-guard";
+import { startWatchdogExemption } from "./lib/watchdog-exempt";
 
 const SECRET = process.env.ENRICHMENT_SECRET!;
 const URL = process.env.TRIGGER_URL || "https://thebasedreader.app/api/enrichment/trigger";
 const MAX = Number(process.env.MAX_BOOKS) || 40;
 const TIER = process.env.TIER || "1";
 const CHECKPOINT = `/tmp/tbra-thin-recovery-checkpoint.json`;
+// How long a checkpoint stays valid. Its ONLY job is to let a killed run resume
+// within the same night without redoing books, so this must be comfortably
+// longer than one run (~1h) and comfortably SHORTER than the gap between
+// nightly runs (24h) — otherwise the checkpoint survives into the next night
+// and permanently excludes books. See the window-start note below.
+const CHECKPOINT_WINDOW_MS = 12 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 120_000;
 
 const M = "lower(r.notes) LIKE '%no evidence found%'";
 
 (async () => {
+  // turso-guard's { longRunning: true } marks only THIS pid, but `npx tsx`
+  // runs us under a wrapper chain (npm exec → node .bin/tsx → us) plus esbuild
+  // children, all of which match the watchdog's filter — and reaping the
+  // wrapper kills the run. Exempt the whole tree. See memory
+  // reference_watchdog_exemption; same fix as description-refresh.ts /
+  // enrich-content-700.ts, both of which were SIGKILLed at ~60min mid-run.
+  const watchdog = startWatchdogExemption();
+
   const { remote, heartbeat } = await createGuardedTurso({
     name: "thin-recovery",
     maxRuntimeMs: 170 * 60 * 1000, // 170min ceiling — comfortably above ~130min worst case for 120 books
-    queryTimeoutMs: 240_000,       // the candidate GROUP BY/HAVING scan measures ~136s against prod Turso
+    // The candidate scan drifts up as book_category_ratings grows (38s → 136s → >240s by 2026-07-03).
+    // Generous default + env override; longRunning ceiling (170min) leaves plenty of room.
+    queryTimeoutMs: Number(process.env.QUERY_TIMEOUT_MS) || 480_000,
     longRunning: true,             // exempt from the 60-min watchdog
   });
 
@@ -56,15 +73,28 @@ const M = "lower(r.notes) LIKE '%no evidence found%'";
     Number((await remote.execute({ sql: `SELECT SUM(CASE WHEN ${M} THEN 1 ELSE 0 END) n FROM book_category_ratings r WHERE r.book_id=?`, args: [id] })).rows[0].n) || 0;
 
   // ── Decomposed selection — cheap queries + JS set math, no correlated subqueries ──
-  console.log("Selecting thin public books (decomposed)…");
-  const candidates = (await remote.execute(`
-    SELECT b.id AS id, b.title AS title FROM books b
-    JOIN book_category_ratings r ON r.book_id=b.id
-    WHERE b.visibility='public'
-    GROUP BY b.id
-    HAVING CAST(SUM(CASE WHEN ${M} THEN 1 ELSE 0 END) AS REAL)/COUNT(*) >= 0.5
-  `)).rows as any[];
-  heartbeat(`candidates: ${candidates.length}`);
+  // The aggregate is computed over book_category_ratings ALONE (no per-row join to the
+  // full books table for the visibility check — that join is what made the scan drift
+  // past the timeout as the ratings table grew). Public-visibility is filtered in JS
+  // against a cheap id set, and titles are fetched only for the ≤MAX final targets.
+  console.log("Selecting thin books by ratings (decomposed, no books-join)…");
+  const M2 = "lower(notes) LIKE '%no evidence found%'";
+  const thinByRatings = (await remote.execute(`
+    SELECT book_id AS id FROM book_category_ratings
+    GROUP BY book_id
+    HAVING CAST(SUM(CASE WHEN ${M2} THEN 1 ELSE 0 END) AS REAL)/COUNT(*) >= 0.5
+  `)).rows.map((r: any) => String(r.id));
+  heartbeat(`thin-by-ratings: ${thinByRatings.length}`);
+
+  const publicIds = new Set(
+    (await remote.execute(`SELECT id FROM books WHERE visibility='public'`)).rows.map((r: any) => String(r.id)),
+  );
+  heartbeat(`public books: ${publicIds.size}`);
+
+  const candidates = thinByRatings
+    .filter((id) => publicIds.has(id))
+    .map((id) => ({ id, title: "" as string }));
+  heartbeat(`candidates (thin+public): ${candidates.length}`);
 
   const recentSuccess = new Set(
     (await remote.execute(`SELECT DISTINCT book_id FROM enrichment_log WHERE status='success' AND created_at > datetime('now','-21 days')`)).rows.map((r: any) => String(r.book_id)),
@@ -76,15 +106,28 @@ const M = "lower(r.notes) LIKE '%no evidence found%'";
   for (const r of (await remote.execute(`SELECT DISTINCT book_id FROM user_favorite_books`)).rows) prio.add(String((r as any).book_id));
   heartbeat(`user-shelved/favorited: ${prio.size}`);
 
-  // Resume checkpoint (same-night re-run after a kill). Ignore if older than 24h.
+  // Resume checkpoint (same-night re-run after a kill).
+  //
+  // `ts` is the START of the resume window and must be carried forward
+  // unchanged on every rewrite. Stamping it with Date.now() on each save (as
+  // this did until 2026-08-08) made the expiry unreachable: every nightly run
+  // refreshed the timestamp, so the file never aged out and `done` accumulated
+  // across nights — 540 ids from 9 consecutive runs by the time it was caught,
+  // permanently excluding books from the candidate pool.
   let done: Set<string> = new Set();
+  let windowStart = Date.now();
   try {
     const cp = JSON.parse(fs.readFileSync(CHECKPOINT, "utf8"));
-    if (cp && Date.now() - cp.ts < 24 * 3600 * 1000 && Array.isArray(cp.done)) {
+    if (cp && Date.now() - cp.ts < CHECKPOINT_WINDOW_MS && Array.isArray(cp.done)) {
       done = new Set(cp.done.map(String));
-      console.log(`Resuming: ${done.size} books already processed in a prior chunk today.`);
+      windowStart = cp.ts;
+      const ageMin = Math.round((Date.now() - cp.ts) / 60_000);
+      console.log(`Resuming: ${done.size} books already processed in a prior chunk (window opened ${ageMin}min ago).`);
     }
   } catch { /* no checkpoint */ }
+  const saveCheckpoint = () => {
+    try { fs.writeFileSync(CHECKPOINT, JSON.stringify({ ts: windowStart, done: [...done] })); } catch { /* ignore */ }
+  };
 
   let eligible = candidates
     .filter((c) => !recentSuccess.has(String(c.id)) && !done.has(String(c.id)))
@@ -92,6 +135,17 @@ const M = "lower(r.notes) LIKE '%no evidence found%'";
   if (TIER === "1") eligible = eligible.filter((c) => c.prio === 1);
   eligible.sort((a, b) => b.prio - a.prio); // user-shelved first
   const targets = eligible.slice(0, MAX);
+
+  // Backfill titles for just the final targets (only used in log lines).
+  if (targets.length) {
+    const placeholders = targets.map(() => "?").join(",");
+    const titleRows = (await remote.execute({
+      sql: `SELECT id, title FROM books WHERE id IN (${placeholders})`,
+      args: targets.map((t) => t.id),
+    })).rows as any[];
+    const titleMap = new Map(titleRows.map((r) => [String(r.id), r.title]));
+    for (const t of targets) t.title = titleMap.get(String(t.id)) ?? "";
+  }
 
   console.log(
     `TIER ${TIER}: ${candidates.length} thin public, ${recentSuccess.size} excluded (21d), ` +
@@ -127,12 +181,15 @@ const M = "lower(r.notes) LIKE '%no evidence found%'";
       failed++; console.log(`  [${i + 1}] ERR ${t.title?.slice(0, 40)}: ${(e as Error).message}`);
     }
     done.add(String(t.id));
-    if (i % 5 === 0) { try { fs.writeFileSync(CHECKPOINT, JSON.stringify({ ts: Date.now(), done: [...done] })); } catch { /* ignore */ } heartbeat(`progress ${i + 1}/${targets.length}`); }
+    if (i % 5 === 0) { saveCheckpoint(); heartbeat(`progress ${i + 1}/${targets.length}`); }
   }
-  try { fs.writeFileSync(CHECKPOINT, JSON.stringify({ ts: Date.now(), done: [...done] })); } catch { /* ignore */ }
+  saveCheckpoint();
 
   const processed = improved + same;
   console.log(`\n=== TIER ${TIER}: ${processed} processed — improved ${improved}, same ${same}, failed ${failed}${stop ? " (stopped early on 503)" : ""} ===`);
   if (processed) console.log(`avg "no evidence" notes/book: ${(totalBefore / processed).toFixed(1)} → ${(totalAfter / processed).toFixed(1)}`);
+  // Explicit exit: after the last fetch(), undici's pooled sockets keep the
+  // process alive long past the loop (observed >12min elsewhere).
+  watchdog.cleanup();
   process.exit(0);
 })();
