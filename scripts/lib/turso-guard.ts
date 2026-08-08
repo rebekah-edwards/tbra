@@ -34,6 +34,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { createClient, Client, ResultSet } from "@libsql/client";
+import { startWatchdogExemption } from "./watchdog-exempt";
 
 export interface GuardOptions {
   /** Lockfile suffix + identifier printed in logs. Use the script's base name. */
@@ -80,14 +81,23 @@ export async function createGuardedTurso(opts: GuardOptions): Promise<GuardedTur
   }
 
   const lockPath = `/tmp/tbra-${name}.lock`;
-  // Exempt BOTH this process and its parent from the launchd watchdog: when
-  // launched via `npx tsx` / node_modules/.bin/tsx, the watchdog sees the
-  // parent shim process too, and killing the unexempted parent takes the
-  // exempted child down with it (killed the 2026-07-25 dedup run at 60min).
-  const exemptionPaths = [
-    `/tmp/tbra-longrun-${process.pid}`,
-    `/tmp/tbra-longrun-${process.ppid}`,
-  ];
+  // Watchdog exemption is delegated to startWatchdogExemption(), which covers
+  // the WHOLE process tree. This used to mark only pid + ppid, which is not
+  // enough: measured 2026-08-08 against the watchdog's own filter, a
+  // `npx tsx` run under a nightly task exposes FIVE matching pids —
+  //
+  //   zsh -c "cd …/tbra && … npx tsx …"   ← matches (path + "tsx" in cmdline)
+  //   npm exec tsx …                       ← does NOT match (no tbra path)
+  //   node …/node_modules/.bin/tsx …       ← matches   (was ppid)
+  //   node --require …/tsx/preflight.cjs   ← matches   (was process.pid)
+  //   2× esbuild --service=…               ← matches, and can RESPAWN mid-run
+  //
+  // pid + ppid left the invoking shell exposed — and in a nightly task that
+  // shell is running `cd tbra && <script> && sync-incremental.sh push`, so
+  // reaping it kills the chained push too — plus the esbuild children, which
+  // a one-shot marker cannot cover because they respawn. The helper walks
+  // ancestors and descendants and refreshes on a timer.
+  let watchdogExemption: { cleanup: () => void } | null = null;
 
   // ── PID lockfile ──────────────────────────────────────────────────────
   try {
@@ -111,11 +121,7 @@ export async function createGuardedTurso(opts: GuardOptions): Promise<GuardedTur
   fs.writeFileSync(lockPath, String(process.pid));
 
   if (longRunning) {
-    for (const p of exemptionPaths) {
-      try {
-        fs.writeFileSync(p, String(Date.now()));
-      } catch { /* ignore */ }
-    }
+    watchdogExemption = startWatchdogExemption();
   }
 
   // ── Wall-clock self-abort ─────────────────────────────────────────────
@@ -152,9 +158,7 @@ export async function createGuardedTurso(opts: GuardOptions): Promise<GuardedTur
     clearTimeout(deadline);
     try { inner.close(); } catch { /* libsql client may already be closed */ }
     try { fs.unlinkSync(lockPath); } catch { /* ignore */ }
-    for (const p of exemptionPaths) {
-      try { fs.unlinkSync(p); } catch { /* ignore */ }
-    }
+    try { watchdogExemption?.cleanup(); } catch { /* ignore */ }
   };
   // beforeExit fires when the event loop is empty (no pending tasks,
   // no other handles). At that point we know the script's work is done
