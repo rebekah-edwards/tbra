@@ -1,11 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { NoCover } from "@/components/no-cover";
 import { PremiumGate } from "@/components/premium-gate";
 import type { ShelfSummary } from "@/lib/queries/shelves";
+import { toggleFollowShelf } from "@/lib/actions/shelves";
+
+/** Compact follow toggle for a shelf listed on someone's public profile. */
+function ProfileShelfFollowButton({
+  shelfId,
+  initialFollowing,
+}: {
+  shelfId: string;
+  initialFollowing: boolean;
+}) {
+  const [following, setFollowing] = useState(initialFollowing);
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={() => {
+        const next = !following;
+        setFollowing(next); // optimistic
+        startTransition(async () => {
+          const result = await toggleFollowShelf(shelfId);
+          if (!result.success) setFollowing(!next);
+          else setFollowing(result.isFollowing);
+        });
+      }}
+      className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium transition-colors ${
+        following
+          ? "border border-border bg-surface-alt text-muted hover:text-foreground"
+          : "bg-accent text-black hover:opacity-90"
+      }`}
+    >
+      {following ? "Following" : "Follow"}
+    </button>
+  );
+}
 
 /** Shown before expanding. */
 const COLLAPSED_LIMIT = 3;
@@ -22,10 +58,27 @@ interface ProfileShelvesSectionProps {
   isPremium?: boolean;
   /** Whether this is the user's own profile */
   isOwner?: boolean;
+  /** Shelf ids the viewer already follows — enables the inline Follow button
+   *  on someone else's public profile. */
+  followedShelfIds?: string[];
+  /** Viewer is signed in (an anonymous visitor can't follow). */
+  canFollow?: boolean;
 }
 
 /** A single shelf rendered as a mini horizontal book row — like Top Shelf but shorter */
-function MiniShelfRow({ shelf, linkBase }: { shelf: ShelfSummary; linkBase: string }) {
+function MiniShelfRow({
+  shelf,
+  linkBase,
+  showFollow = false,
+  initialFollowing = false,
+}: {
+  shelf: ShelfSummary;
+  linkBase: string;
+  /** Someone else's public profile — offer to follow the shelf right here
+   *  instead of only on the shelf's own page (punch list #5.2). */
+  showFollow?: boolean;
+  initialFollowing?: boolean;
+}) {
   const accentColor = shelf.color || "#d97706";
 
   return (
@@ -44,9 +97,14 @@ function MiniShelfRow({ shelf, linkBase }: { shelf: ShelfSummary; linkBase: stri
           </Link>
           <span className="text-[10px] text-muted/50">{shelf.bookCount}</span>
         </div>
-        <Link href={`${linkBase}/${shelf.slug}`} className="text-[10px] font-medium read-more-link">
-          View →
-        </Link>
+        <div className="flex items-center gap-2.5">
+          {showFollow && (
+            <ProfileShelfFollowButton shelfId={shelf.id} initialFollowing={initialFollowing} />
+          )}
+          <Link href={`${linkBase}/${shelf.slug}`} className="text-[10px] font-medium read-more-link">
+            View →
+          </Link>
+        </div>
       </div>
 
       {shelf.coverUrls.length > 0 ? (
@@ -108,7 +166,10 @@ export function ProfileShelvesSection({
   viewAllHref,
   isPremium = true,
   isOwner = false,
+  followedShelfIds = [],
+  canFollow = false,
 }: ProfileShelvesSectionProps) {
+  const followed = new Set(followedShelfIds);
   const [expanded, setExpanded] = useState(false);
   const visible = shelves.slice(0, expanded ? EXPANDED_LIMIT : COLLAPSED_LIMIT);
 
@@ -153,7 +214,13 @@ export function ProfileShelvesSection({
       ) : (
         <div className="space-y-4">
           {visible.map((shelf) => (
-            <MiniShelfRow key={shelf.id} shelf={shelf} linkBase={linkBase} />
+            <MiniShelfRow
+              key={shelf.id}
+              shelf={shelf}
+              linkBase={linkBase}
+              showFollow={!isOwner && canFollow}
+              initialFollowing={followed.has(shelf.id)}
+            />
           ))}
 
           {/* Three shown, then one expansion to at most EXPANDED_LIMIT, then

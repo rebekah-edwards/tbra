@@ -241,6 +241,10 @@ export const users = sqliteTable("users", {
   // flips made by the live webhook propagate to the local/app DB via the
   // user-activity sync (users is otherwise pull-only with no timestamp).
   stripeCustomerId: text("stripe_customer_id"),
+  // IANA identifier (e.g. "America/Chicago"), reported by the client on
+  // sign-in. Reading streaks bucket days in THIS zone — bucketing in UTC
+  // credited evening activity to the next calendar day and broke streaks.
+  timezone: text("timezone"),
   updatedAt: text("updated_at"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [

@@ -34,7 +34,7 @@ final class AuthStore {
         for attempt in 0..<3 {
             do {
                 let user = try await APIClient.shared.me()
-                phase = .signedIn(user)
+                markSignedIn(user)
                 return
             } catch APIError.unauthorized {
                 Keychain.clear()
@@ -51,13 +51,22 @@ final class AuthStore {
         phase = .signedOut
     }
 
+
+    /// Single entry point for "we are signed in". Also reports the device
+    /// timezone so reading streaks bucket days in the reader's own calendar
+    /// (UTC bucketing credited late-evening activity to the next day).
+    private func markSignedIn(_ user: PublicUser) {
+        phase = .signedIn(user)
+        Task { await APIClient.shared.reportTimezone() }
+    }
+
     func register(email: String, password: String, referralCode: String?) async {
         loginError = nil
         do {
             let res = try await APIClient.shared.register(email: email, password: password, referralCode: referralCode)
             Keychain.accessToken = res.token
             Keychain.refreshToken = res.refreshToken
-            phase = .signedIn(res.user)
+            markSignedIn(res.user)
         } catch {
             loginError = (error as? APIError)?.errorDescription ?? "Sign-up failed."
         }
@@ -67,7 +76,7 @@ final class AuthStore {
         loginError = nil
         do {
             let res = try await APIClient.shared.login(email: email, password: password)
-            phase = .signedIn(res.user)
+            markSignedIn(res.user)
         } catch {
             loginError = (error as? APIError)?.errorDescription ?? "Sign-in failed."
         }
@@ -99,7 +108,7 @@ final class AuthStore {
             do {
                 let res = try await APIClient.shared.appleLogin(
                     identityToken: token, fullName: name.isEmpty ? nil : name)
-                phase = .signedIn(res.user)
+                markSignedIn(res.user)
             } catch {
                 loginError = (error as? APIError)?.errorDescription ?? "Apple sign-in failed."
             }
@@ -130,7 +139,7 @@ final class AuthStore {
             Keychain.accessToken = token
             Keychain.refreshToken = refresh
             let user = try await APIClient.shared.me()
-            phase = .signedIn(user)
+            markSignedIn(user)
         } catch let err as ASWebAuthenticationSessionError where err.code == .canceledLogin {
             // User closed the sheet — not an error.
         } catch {

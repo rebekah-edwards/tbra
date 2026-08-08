@@ -12,6 +12,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getPublicShelves } from "@/lib/queries/shelves";
 import { FavoritesShelf } from "@/components/profile/favorites-shelf";
 import { ProfileShelvesSection } from "@/components/shelves/profile-shelves-section";
+import { getFollowedShelfIds } from "@/lib/mutations/shelves";
 import { PublicReviewHistory } from "@/components/profile/public-review-history";
 import { SocialIcons } from "@/components/profile/social-icons";
 import { AccountBadge } from "@/components/profile/account-badge";
@@ -149,6 +150,13 @@ export default async function PublicProfilePage({
     session ? isFollowing(session.userId, user.id) : Promise.resolve(false),
     getPublicShelves(user.id),
   ]);
+
+  // Which of these shelves the viewer already follows, so the inline Follow
+  // buttons render in the right state (punch list #5.2).
+  const followedShelfIds =
+    session && publicShelves.length > 0
+      ? await getFollowedShelfIds(session.userId, publicShelves.map((s) => s.id))
+      : [];
 
   // Filter out anonymous reviews for public view
   const publicReviews = reviews.filter((r) => !r.isAnonymous);
@@ -294,6 +302,8 @@ export default async function PublicProfilePage({
         linkBase={`/u/${username}/shelves`}
         viewAllHref={`/u/${username}/shelves`}
         isOwner={false}
+        canFollow={!!session && session.userId !== user.id}
+        followedShelfIds={followedShelfIds}
       />
 
       {/* Reviews (no anonymous, no journal) */}

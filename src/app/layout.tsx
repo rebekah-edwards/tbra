@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 // ThemeToggle moved into hamburger menu
 import { getCurrentUser, isAdmin, isSuperAdmin } from "@/lib/auth";
+import { TimezoneReporter } from "@/components/timezone-reporter";
 import { SearchBar } from "@/components/nav/search-bar";
 import { BottomTabs } from "@/components/nav/bottom-tabs";
 import { BackButton } from "@/components/nav/back-button";
@@ -121,6 +122,8 @@ export default async function RootLayout({
       <body
         className={`${plusJakarta.variable} ${outfit.variable} ${spaceGrotesk.variable} antialiased bg-background text-foreground`}
       >
+        {/* Streaks bucket days in the reader's own zone; this reports it. */}
+        {session && <TimezoneReporter />}
         <script
           dangerouslySetInnerHTML={{
             __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js')})}`

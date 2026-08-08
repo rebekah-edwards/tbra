@@ -70,6 +70,20 @@ actor APIClient {
         return res.user
     }
 
+    /// Reports the device's IANA timezone so reading streaks bucket days in
+    /// the reader's own calendar. Bucketing in UTC credited late-evening
+    /// activity to the next day and silently broke streaks. Fire-and-forget:
+    /// the server no-ops when the value is unchanged, and a failure just means
+    /// the streak uses the fallback zone.
+    func reportTimezone() async {
+        let tz = TimeZone.current.identifier
+        guard !tz.isEmpty else { return }
+        struct Body: Codable, Sendable { let timezone: String }
+        struct Ok: Codable { let ok: Bool }
+        let _: Ok? = try? await request("/api/v1/profile/timezone", method: "POST",
+                                        json: Body(timezone: tz))
+    }
+
     func logout() async {
         if let refresh = Keychain.refreshToken {
             _ = try? await send("/api/v1/auth/logout", method: "POST",
