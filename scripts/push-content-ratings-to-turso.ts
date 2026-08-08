@@ -146,6 +146,34 @@ function checkScheduleGate(): void {
 
   console.log(`\nDone. Pushed ratings for ${booksUpdated} books (${ratingsPushed} rating rows). Errors: ${errors}`);
 
+  // Mirror this run's enrichment_log successes to Turso. nightly-thin-recovery
+  // (6:44 AM) reads PROD enrichment_log for its 21-day "already attempted"
+  // cooldown, but the only push that carries enrichment_log is the full
+  // sync-push — which doesn't run between this lane and thin-recovery. Without
+  // this, every thin book enriched here at 4:54 AM looks untouched two hours
+  // later and gets force-re-enriched, spending ~6 Brave/book for nothing.
+  // INSERT OR IGNORE by id: replaying a row is a no-op, and a book whose FK is
+  // missing on Turso fails alone rather than aborting the mirror.
+  const logRows = local.prepare(`
+    SELECT * FROM enrichment_log
+    WHERE status = 'success' AND created_at >= datetime('now','-4 hours')
+  `).all() as any[];
+  let logsPushed = 0;
+  let logErrors = 0;
+  for (const r of logRows) {
+    const cols = Object.keys(r);
+    try {
+      await remote.execute({
+        sql: `INSERT OR IGNORE INTO enrichment_log (${cols.join(',')}) VALUES (${cols.map(() => '?').join(',')})`,
+        args: cols.map((k) => r[k]),
+      });
+      logsPushed++;
+    } catch {
+      logErrors++;
+    }
+  }
+  console.log(`Mirrored ${logsPushed}/${logRows.length} enrichment_log successes to Turso (${logErrors} skipped).`);
+
   const remain = await remote.execute(
     `SELECT count(*) as n FROM books WHERE id NOT IN (SELECT DISTINCT book_id FROM book_category_ratings)`,
   );
