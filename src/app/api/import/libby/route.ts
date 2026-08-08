@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { parseLibbyCSV } from "@/lib/import/parse-libby";
 import { importLibbyRows, type LibbyDefaultState } from "@/lib/import/import-libby";
 import { parseImportOptions } from "@/lib/import/import-options";
+import { guardLocalImport } from "@/lib/import/local-import-guard";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes (Vercel hobby plan limit)
@@ -11,6 +12,10 @@ export async function POST(request: Request) {
   if (!user) {
     return new Response("Unauthorized", { status: 401 });
   }
+
+  // Refuse imports that would land in local sqlite and never reach production.
+  const localBlock = guardLocalImport(user.userId);
+  if (localBlock) return localBlock;
 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
