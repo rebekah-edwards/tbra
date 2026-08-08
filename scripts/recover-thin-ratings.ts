@@ -34,7 +34,7 @@ import * as fs from "fs";
 config({ path: ".env.local" });        // ENRICHMENT_SECRET
 config({ path: ".env.vercel.local" }); // Turso creds
 import { createGuardedTurso } from "./lib/turso-guard";
-import { startWatchdogExemption } from "./lib/watchdog-exempt";
+
 
 const SECRET = process.env.ENRICHMENT_SECRET!;
 const URL = process.env.TRIGGER_URL || "https://thebasedreader.app/api/enrichment/trigger";
@@ -52,14 +52,9 @@ const FETCH_TIMEOUT_MS = 120_000;
 const M = "lower(r.notes) LIKE '%no evidence found%'";
 
 (async () => {
-  // turso-guard's { longRunning: true } marks only THIS pid, but `npx tsx`
-  // runs us under a wrapper chain (npm exec → node .bin/tsx → us) plus esbuild
-  // children, all of which match the watchdog's filter — and reaping the
-  // wrapper kills the run. Exempt the whole tree. See memory
-  // reference_watchdog_exemption; same fix as description-refresh.ts /
-  // enrich-content-700.ts, both of which were SIGKILLed at ~60min mid-run.
-  const watchdog = startWatchdogExemption();
-
+  // Whole-process-tree watchdog exemption comes from { longRunning: true }
+  // below — turso-guard delegates to startWatchdogExemption() and tears it
+  // down in its own cleanup.
   const { remote, heartbeat } = await createGuardedTurso({
     name: "thin-recovery",
     maxRuntimeMs: 170 * 60 * 1000, // 170min ceiling — comfortably above ~130min worst case for 120 books
@@ -190,6 +185,6 @@ const M = "lower(r.notes) LIKE '%no evidence found%'";
   if (processed) console.log(`avg "no evidence" notes/book: ${(totalBefore / processed).toFixed(1)} → ${(totalAfter / processed).toFixed(1)}`);
   // Explicit exit: after the last fetch(), undici's pooled sockets keep the
   // process alive long past the loop (observed >12min elsewhere).
-  watchdog.cleanup();
+
   process.exit(0);
 })();

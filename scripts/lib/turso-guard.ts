@@ -34,6 +34,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { createClient, Client, ResultSet } from "@libsql/client";
+import { startWatchdogExemption } from "./watchdog-exempt";
 
 export interface GuardOptions {
   /** Lockfile suffix + identifier printed in logs. Use the script's base name. */
@@ -80,7 +81,23 @@ export async function createGuardedTurso(opts: GuardOptions): Promise<GuardedTur
   }
 
   const lockPath = `/tmp/tbra-${name}.lock`;
-  const exemptionPath = `/tmp/tbra-longrun-${process.pid}`;
+  // Watchdog exemption is delegated to startWatchdogExemption(), which covers
+  // the WHOLE process tree. This used to mark only pid + ppid, which is not
+  // enough: measured 2026-08-08 against the watchdog's own filter, a
+  // `npx tsx` run under a nightly task exposes FIVE matching pids —
+  //
+  //   zsh -c "cd …/tbra && … npx tsx …"   ← matches (path + "tsx" in cmdline)
+  //   npm exec tsx …                       ← does NOT match (no tbra path)
+  //   node …/node_modules/.bin/tsx …       ← matches   (was ppid)
+  //   node --require …/tsx/preflight.cjs   ← matches   (was process.pid)
+  //   2× esbuild --service=…               ← matches, and can RESPAWN mid-run
+  //
+  // pid + ppid left the invoking shell exposed — and in a nightly task that
+  // shell is running `cd tbra && <script> && sync-incremental.sh push`, so
+  // reaping it kills the chained push too — plus the esbuild children, which
+  // a one-shot marker cannot cover because they respawn. The helper walks
+  // ancestors and descendants and refreshes on a timer.
+  let watchdogExemption: { cleanup: () => void } | null = null;
 
   // ── PID lockfile ──────────────────────────────────────────────────────
   try {
@@ -104,9 +121,7 @@ export async function createGuardedTurso(opts: GuardOptions): Promise<GuardedTur
   fs.writeFileSync(lockPath, String(process.pid));
 
   if (longRunning) {
-    try {
-      fs.writeFileSync(exemptionPath, String(Date.now()));
-    } catch { /* ignore */ }
+    watchdogExemption = startWatchdogExemption();
   }
 
   // ── Wall-clock self-abort ─────────────────────────────────────────────
@@ -143,7 +158,7 @@ export async function createGuardedTurso(opts: GuardOptions): Promise<GuardedTur
     clearTimeout(deadline);
     try { inner.close(); } catch { /* libsql client may already be closed */ }
     try { fs.unlinkSync(lockPath); } catch { /* ignore */ }
-    try { fs.unlinkSync(exemptionPath); } catch { /* ignore */ }
+    try { watchdogExemption?.cleanup(); } catch { /* ignore */ }
   };
   // beforeExit fires when the event loop is empty (no pending tasks,
   // no other handles). At that point we know the script's work is done
