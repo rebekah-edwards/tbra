@@ -15,23 +15,23 @@ const pending = localDb.prepare(`
   ORDER BY b.title LIMIT 752
 `).all() as any[];
 
-console.log(\`Found \${pending.length} books to enrich\`);
+console.log(`Found ${pending.length} books to enrich`);
 localDb.close();
 
 async function run() {
   let success = 0, fail = 0;
   for (let i = 0; i < pending.length; i++) {
     const { book_id, title } = pending[i];
-    if (i % 25 === 0) console.log(\`Progress: \${i}/\${pending.length} (\${success} ok, \${fail} fail)\`);
+    if (i % 25 === 0) console.log(`Progress: ${i}/${pending.length} (${success} ok, ${fail} fail)`);
     try {
       await enrichBook(book_id);
       success++;
     } catch (err: any) {
       fail++;
-      if (fail <= 10) console.log(\`  ✗ \${title}: \${err.message?.slice(0, 80)}\`);
+      if (fail <= 10) console.log(`  ✗ ${title}: ${err.message?.slice(0, 80)}`);
     }
   }
-  console.log(\`\nDone! Enriched: \${success}, Failed: \${fail}\`);
+  console.log(`\nDone! Enriched: ${success}, Failed: ${fail}`);
 }
 
 run().catch(console.error);

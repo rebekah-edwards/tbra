@@ -44,6 +44,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ username: strin
       bio: user.bio ?? null,
       accountType: user.accountType,
       createdAt: user.createdAt,
+      // Public social handles — same set the web /u page passes to
+      // <SocialIcons> (stored without @, rendered as links).
+      instagram: user.instagram ?? null,
+      tiktok: user.tiktok ?? null,
+      threads: user.threads ?? null,
+      twitter: user.twitter ?? null,
     },
     isOwner,
     isFollowing: currentlyFollowing,

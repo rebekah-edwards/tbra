@@ -25,7 +25,7 @@ export async function setBookStateWithCompletion(
   // Shared user-scoped implementation (also used by /api/v1) — see
   // src/lib/mutations/reading-state.ts. Behavior is the exact former body
   // of this action.
-  await setBookStateWithCompletionFor(userId, bookId, state, completionDate, completionPrecision);
+  await setBookStateWithCompletionFor(user.userId, bookId, state, completionDate, completionPrecision);
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");
@@ -57,7 +57,7 @@ export async function updateReadingSession(
 ) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  return updateReadingSessionFor(userId, sessionId, data);
+  return updateReadingSessionFor(user.userId, sessionId, data);
 }
 
 /** Core update, callable with an explicit user id (used by /api/v1). */
@@ -125,7 +125,7 @@ export async function addRereadSession(
 ) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  return addRereadSessionFor(userId, bookId, data);
+  return addRereadSessionFor(user.userId, bookId, data);
 }
 
 /** Core re-read insert, callable with an explicit user id (used by /api/v1). */
@@ -159,7 +159,7 @@ export async function addRereadSessionFor(
 export async function deleteReadingSession(sessionId: string) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  return deleteReadingSessionFor(userId, sessionId);
+  return deleteReadingSessionFor(user.userId, sessionId);
 }
 
 /** Core delete, callable with an explicit user id (used by /api/v1). */

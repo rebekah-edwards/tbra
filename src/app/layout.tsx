@@ -175,7 +175,9 @@ export default async function RootLayout({
         />
         {/* PWA cold-start splash — renders instantly before React hydrates, then auto-hides.
             Spinner-only (no logo) to avoid system-font vs Space Grotesk mismatch on the asterisk. */}
-        <div id="pwa-splash" style={{
+        {/* suppressHydrationWarning: the inline script below mutates this div's
+            style (pointerEvents/opacity) before React hydrates — intentional. */}
+        <div id="pwa-splash" suppressHydrationWarning style={{
           position: "fixed", inset: 0, zIndex: 9999,
           display: "flex", alignItems: "center", justifyContent: "center",
           transition: "opacity 0.3s ease-out",

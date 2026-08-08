@@ -52,7 +52,7 @@ interface ReviewPayload {
 export async function saveReview(payload: ReviewPayload) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  return saveReviewFor(userId, payload);
+  return saveReviewFor(user.userId, payload);
 }
 
 /** Core save logic, callable with an explicit user id (used by /api/v1). */
@@ -335,7 +335,7 @@ export async function saveReviewFor(userId: string, payload: ReviewPayload) {
 export async function deleteReview(bookId: string) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  return deleteReviewFor(userId, bookId);
+  return deleteReviewFor(user.userId, bookId);
 }
 
 /** Core delete logic, callable with an explicit user id (used by /api/v1). */

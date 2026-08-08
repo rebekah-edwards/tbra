@@ -52,6 +52,9 @@ scripts/*.log
 scripts/*.out
 scripts/enrichment-log-*.txt
 scripts/_*
+# scripts/tmp-* are the same thing under a different prefix: one-off probes and
+# diagnostics written to answer a single question, not tooling anyone re-runs.
+scripts/tmp-*
 /reports/
 
 # Claude Code harness session command log (local artifact)
@@ -63,4 +66,6 @@ native-ios/Info.plist
 native-ios/screenshot-*.png
 native-ios/*.xcworkspace/
 native-ios/DerivedData/
+# The simulator build dir is the same regenerable Xcode output (~490MB).
+native-ios/DerivedData-sim/
 native-ios/build/

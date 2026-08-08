@@ -95,7 +95,7 @@ const STACK_OFFSET_Y = 5;
 /** Extra space above the stack for the badge */
 const BADGE_INSET = 8;
 
-function SeriesStack({ books }: { books: FavoriteBook[] }) {
+function SeriesStack({ books, userAvatarUrl }: { books: FavoriteBook[]; userAvatarUrl?: string | null }) {
   // Sort by series position so the lowest-numbered book is on top
   const sorted = [...books].sort(
     (a, b) => (a.seriesPosition ?? 999) - (b.seriesPosition ?? 999)
@@ -199,6 +199,7 @@ export function FavoritesShelf({ favorites, userAvatarUrl }: FavoritesShelfProps
                   <SeriesStack
                     key={`stack-${item.seriesId}`}
                     books={item.books}
+                    userAvatarUrl={userAvatarUrl}
                   />
                 );
               })}
