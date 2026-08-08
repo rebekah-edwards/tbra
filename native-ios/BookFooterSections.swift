@@ -11,11 +11,20 @@ struct FriendsWhoReadSection: View {
     var bookIdOrSlug: String = ""
     var bookTitle: String = ""
 
+    /// The list ran to full length, so a popular book buried everything below
+    /// it under dozens of rows (punch list #2, 2026-08-08).
+    @State private var expanded = false
+    private static let collapsedCount = 3
+
+    private var visible: [FriendWhoRead] {
+        expanded ? friends : Array(friends.prefix(Self.collapsedCount))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeading("Friends Who Read It")
             VStack(spacing: 10) {
-                ForEach(friends) { friend in
+                ForEach(visible) { friend in
                     // Reviewed → jump to their review (web: reviews#review-id);
                     // otherwise → their profile.
                     Group {
@@ -33,6 +42,24 @@ struct FriendsWhoReadSection: View {
                             .disabled(friend.username == nil)
                         }
                     }
+                }
+            }
+            if friends.count > Self.collapsedCount {
+                Button {
+                    withAnimation(.easeOut(duration: 0.18)) { expanded.toggle() }
+                } label: {
+                    HStack(spacing: 5) {
+                        Text(expanded
+                             ? "Show fewer"
+                             : "Show all \(friends.count) readers")
+                            .font(Theme.body(13, .medium))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10, weight: .semibold))
+                            .rotationEffect(.degrees(expanded ? 180 : 0))
+                    }
+                    .foregroundStyle(Theme.neonBlue)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
                 }
             }
         }

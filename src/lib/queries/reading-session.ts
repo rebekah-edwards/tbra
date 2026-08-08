@@ -13,6 +13,11 @@ export interface ReadingSession {
   completionPrecision: string | null;
   activeFormats: string[];
   pausedAt: string | null;
+  /** Days this read spent paused, accumulated across every pause period.
+   *  Stats already subtract it from elapsed days; it was dropped here, so no
+   *  client could ever SHOW it and a paused read looked like it hadn't been
+   *  recorded at all (punch list #1, 2026-08-08). */
+  totalPausedDays: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -28,6 +33,7 @@ function parseSession(row: typeof readingSessions.$inferSelect): ReadingSession 
     completionPrecision: row.completionPrecision,
     activeFormats: parseFormats(row.activeFormats),
     pausedAt: row.pausedAt ?? null,
+    totalPausedDays: row.totalPausedDays ?? 0,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

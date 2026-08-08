@@ -264,6 +264,12 @@ struct AppDestinations: ViewModifier {
                 ShelfEditorView(shelfId: route.shelfId)
                     .modifier(PushedScreenChrome())
             }
+            // Public-profile shelves are reachable from any stack now that
+            // they have "View shelf" buttons (punch list #5.2).
+            .navigationDestination(for: ShelfRoute.self) { route in
+                ShelfDetailView(route: route)
+                    .modifier(PushedScreenChrome())
+            }
     }
 }
 extension View {

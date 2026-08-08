@@ -28,10 +28,6 @@ struct ProfileRootView: View {
                 .pushedScreenChrome()
                 .toolbar(.hidden, for: .navigationBar)
                 .appDestinations()
-                .navigationDestination(for: ShelfRoute.self) { route in
-                    ShelfDetailView(route: route)
-                        .pushedScreenChrome()
-                }
         }
     }
 }
@@ -43,6 +39,7 @@ struct ProfileView: View {
     @State private var model = ProfileModel()
     @State private var editProfileOpen = false
     @State private var copiedReferral = false
+    @State private var referralsOpen = false
     @State private var showAllReviews = false
     @State private var showAllJournal = false
 
@@ -79,6 +76,11 @@ struct ProfileView: View {
                 EditProfileSheet(user: user, onSaved: { await model.load() })
                     .presentationBackground(Theme.bg)
             }
+        }
+        .sheet(isPresented: $referralsOpen) {
+            ReferralsSheet()
+                .presentationDetents([.medium, .large])
+                .presentationBackground(Theme.bg)
         }
         .alert("Error", isPresented: .constant(model.error != nil)) {
             Button("OK") { model.error = nil }
@@ -267,10 +269,20 @@ struct ProfileView: View {
                         .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12))
                 }
             }
-            if data.referralCount > 0 {
-                Text("\(data.referralCount) reader\(data.referralCount == 1 ? "" : "s") joined through you 🎉")
-                    .font(Theme.body(12, .medium))
-                    .foregroundStyle(Theme.neonBlue)
+            // Always shown, and tappable — it used to appear only once
+            // someone had joined, so the "has anyone signed up yet?" state
+            // showed nothing at all (punch list #4).
+            Button { referralsOpen = true } label: {
+                HStack(spacing: 4) {
+                    Text(data.referralCount == 0
+                         ? "No one has joined yet — see details"
+                         : "\(data.referralCount) reader\(data.referralCount == 1 ? "" : "s") joined through you 🎉")
+                        .font(Theme.body(12, .medium))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .semibold))
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(Theme.neonBlue)
             }
         }
         .padding(16)
@@ -1077,5 +1089,101 @@ struct AllJournalView: View {
         .background(Theme.surface.opacity(0.6))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+    }
+}
+
+// ── Referrals list — the web's /profile/referrals page (punch list #4) ──
+struct ReferralsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    struct Referral: Codable, Identifiable, Hashable {
+        let id: String
+        let username: String?
+        let displayName: String?
+        let avatarUrl: String?
+        let joinedAt: String?
+    }
+    private struct Res: Codable { let ok: Bool; let referrals: [Referral] }
+
+    @State private var referrals: [Referral] = []
+    @State private var loading = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Your referrals")
+                    .font(Theme.heading(18, .bold))
+                    .foregroundStyle(Theme.foreground)
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+            Text(referrals.isEmpty
+                 ? "No one has joined through your link yet."
+                 : "\(referrals.count) \(referrals.count == 1 ? "person has" : "people have") joined through your link.")
+                .font(Theme.body(13))
+                .foregroundStyle(Theme.muted)
+
+            if loading {
+                ProgressView().tint(Theme.accent)
+                    .frame(maxWidth: .infinity).padding(.vertical, 30)
+            } else {
+                ScrollView {
+                    VStack(spacing: 10) {
+                        ForEach(referrals) { r in
+                            HStack(spacing: 12) {
+                                avatar(r)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(r.displayName ?? r.username ?? "Reader")
+                                        .font(Theme.body(15, .semibold))
+                                        .foregroundStyle(Theme.foreground)
+                                    if let joined = r.joinedAt.flatMap(DateFmt.parse) {
+                                        Text("Joined \(joined.formatted(.dateTime.month(.abbreviated).day().year()))")
+                                            .font(Theme.body(12))
+                                            .foregroundStyle(Theme.muted)
+                                    }
+                                }
+                                Spacer()
+                            }
+                            .padding(12)
+                            .background(Theme.surface.opacity(0.6))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                        }
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(20)
+        .task {
+            let res: Res? = try? await APIClient.shared.get("/api/v1/profile/referrals")
+            referrals = res?.referrals ?? []
+            loading = false
+        }
+    }
+
+    private func avatar(_ r: Referral) -> some View {
+        Group {
+            if let raw = r.avatarUrl,
+               let url = raw.hasPrefix("/")
+                   ? URL(string: raw, relativeTo: APIClient.baseURL)
+                   : URL(string: raw) {
+                AsyncImage(url: url) { $0.resizable().aspectRatio(contentMode: .fill) }
+                    placeholder: { Theme.surfaceAlt }
+            } else {
+                ZStack {
+                    Theme.accent
+                    Text(String((r.displayName ?? r.username ?? "?").prefix(1)).uppercased())
+                        .font(Theme.body(14, .bold))
+                        .foregroundStyle(.black)
+                }
+            }
+        }
+        .frame(width: 36, height: 36)
+        .clipShape(Circle())
     }
 }

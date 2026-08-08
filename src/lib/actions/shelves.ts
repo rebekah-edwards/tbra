@@ -11,6 +11,8 @@ import {
   deleteShelfFor,
   reorderShelvesFor,
   addBookToShelfFor,
+  followShelfFor,
+  unfollowShelfFor,
   removeBookFromShelfFor,
   reorderShelfBooksFor,
 } from "@/lib/mutations/shelves";
@@ -233,52 +235,18 @@ export async function followShelf(shelfId: string): Promise<{ success: boolean; 
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
 
-  // Verify shelf exists and is public
-  const shelf = await db.select().from(shelves).where(eq(shelves.id, shelfId)).get();
-  if (!shelf) return { success: false, error: "Shelf not found" };
-  if (!shelf.isPublic) return { success: false, error: "Shelf is private" };
-  if (shelf.userId === user.userId) return { success: false, error: "Cannot follow your own shelf" };
-
-  // Check if already following
-  const existing = await db.all(sql`
-    SELECT user_id FROM shelf_follows WHERE user_id = ${user.userId} AND shelf_id = ${shelfId}
-  `);
-  if (existing.length > 0) return { success: true };
-
-  await db.run(sql`
-    INSERT INTO shelf_follows (user_id, shelf_id) VALUES (${user.userId}, ${shelfId})
-  `);
-
-  // Notify shelf owner
-  try {
-    const follower = await db.select({ displayName: users.displayName, username: users.username })
-      .from(users).where(eq(users.id, user.userId)).get();
-    const followerName = follower?.displayName || follower?.username || "Someone";
-    await db.insert(userNotifications).values({
-      userId: shelf.userId,
-      type: "shelf_followed",
-      title: "New shelf follower",
-      message: `${followerName} started following your shelf "${shelf.name}"`,
-      linkUrl: `/library/shelves/${shelf.slug}`,
-    });
-  } catch {
-    // Don't break the follow if notification fails
-  }
-
-  revalidatePath("/library/shelves");
-  return { success: true };
+  const result = await followShelfFor(user.userId, shelfId);
+  if (result.success) revalidatePath("/library/shelves");
+  return result;
 }
 
 export async function unfollowShelf(shelfId: string): Promise<{ success: boolean }> {
   const user = await getCurrentUser();
   if (!user) return { success: false };
 
-  await db.run(sql`
-    DELETE FROM shelf_follows WHERE user_id = ${user.userId} AND shelf_id = ${shelfId}
-  `);
-
+  const result = await unfollowShelfFor(user.userId, shelfId);
   revalidatePath("/library/shelves");
-  return { success: true };
+  return result;
 }
 
 export async function toggleFollowShelf(shelfId: string): Promise<{ success: boolean; isFollowing: boolean; error?: string }> {

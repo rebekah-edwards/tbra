@@ -465,6 +465,9 @@ struct ReadingSessionRow: Codable, Hashable, Identifiable {
     let completionPrecision: String?
     let activeFormats: [String]?
     let pausedAt: String?
+    /// Days accumulated across every pause period on this read. Optional so
+    /// older payloads still decode.
+    let totalPausedDays: Int?
 }
 
 struct BookNote: Codable, Hashable, Identifiable {

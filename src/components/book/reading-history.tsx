@@ -257,6 +257,19 @@ function SessionRow({
               {formatDate(session.completionDate, session.completionPrecision) || "No finish date"}
             </button>
           )}
+
+          {/* Accumulated pause time. Stats already subtract this from elapsed
+              days; showing it makes that visible instead of looking like the
+              gap was never recorded. */}
+          {session.totalPausedDays > 0 && (
+            <span
+              className="ml-1.5 rounded-full border border-border/60 bg-surface-alt px-2 py-0.5 text-[11px] text-muted"
+              title="Paused time is excluded from your reading-pace stats"
+            >
+              paused {session.totalPausedDays}{" "}
+              {session.totalPausedDays === 1 ? "day" : "days"}
+            </span>
+          )}
         </div>
 
         {/* Format chips — click to retro-tag a session as audio/print/etc.

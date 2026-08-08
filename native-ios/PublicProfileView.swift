@@ -79,6 +79,8 @@ struct PublicProfileView: View {
     @State private var reviewSearch = ""
     @State private var reviewFilter = "all"   // all | dnf | written
     @State private var showAllReviews = false
+    @State private var shelvesExpanded = false
+    @State private var allShelvesOpen = false
 
     init(username: String) {
         _model = State(initialValue: PublicProfileModel(username: username))
@@ -334,23 +336,87 @@ struct PublicProfileView: View {
         }
     }
 
+    /// 3 → expand to 8 → a full screen beyond that (punch list #5.1). The rail
+    /// used to run to the full shelf count, burying everything under it.
+    private static let shelvesCollapsed = 3
+    private static let shelvesExpanded = 8
+
     private var shelvesSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        let all = model.publicShelves
+        let visible = Array(all.prefix(shelvesExpanded ? Self.shelvesExpanded : Self.shelvesCollapsed))
+
+        return VStack(alignment: .leading, spacing: 14) {
             SectionHeading("Shelves")
-            ForEach(model.publicShelves) { shelf in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        Circle().fill(shelf.tint).frame(width: 10, height: 10)
-                        Text(shelf.name)
-                            .font(Theme.body(15, .semibold))
-                            .foregroundStyle(Theme.foreground)
-                        Text("\(shelf.bookCount)")
-                            .font(Theme.body(13))
-                            .foregroundStyle(Theme.muted)
-                        Spacer()
-                    }
-                    ShelfRailCase(coverUrls: shelf.coverUrls, coverSlugs: shelf.coverSlugs, tint: shelf.tint)
+            ForEach(visible) { shelf in
+                shelfRail(shelf)
+            }
+
+            if !shelvesExpanded && all.count > Self.shelvesCollapsed {
+                Button {
+                    withAnimation(.easeOut(duration: 0.18)) { shelvesExpanded = true }
+                } label: {
+                    Text("View \(min(all.count, Self.shelvesExpanded) - Self.shelvesCollapsed) more \(min(all.count, Self.shelvesExpanded) - Self.shelvesCollapsed == 1 ? "shelf" : "shelves")")
+                        .font(Theme.body(13, .medium))
+                        .foregroundStyle(Theme.neonBlue)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
                 }
+            } else if shelvesExpanded {
+                HStack(spacing: 18) {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.18)) { shelvesExpanded = false }
+                    } label: {
+                        Text("Show fewer").font(Theme.body(13, .medium)).foregroundStyle(Theme.muted)
+                    }
+                    if all.count > Self.shelvesExpanded {
+                        Button { allShelvesOpen = true } label: {
+                            Text("View all \(all.count) shelves →")
+                                .font(Theme.body(13, .medium))
+                                .foregroundStyle(Theme.neonBlue)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+            }
+        }
+        .sheet(isPresented: $allShelvesOpen) {
+            AllShelvesSheet(shelves: all, ownerLabel: ownerLabel)
+                .presentationDetents([.large])
+                .presentationBackground(Theme.bg)
+        }
+    }
+
+    private var ownerLabel: String {
+        model.user?.displayName ?? model.user?.username ?? model.username
+    }
+
+    @ViewBuilder
+    private func shelfRail(_ shelf: ShelfSummary) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Circle().fill(shelf.tint).frame(width: 10, height: 10)
+                Text(shelf.name)
+                    .font(Theme.body(15, .semibold))
+                    .foregroundStyle(Theme.foreground)
+                Text("\(shelf.bookCount)")
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.muted)
+                Spacer()
+            }
+            ShelfRailCase(coverUrls: shelf.coverUrls, coverSlugs: shelf.coverSlugs, tint: shelf.tint)
+            // A shared shelf was previously a dead end here: no way to open it
+            // and no way to follow it (punch list #5.2).
+            HStack(spacing: 10) {
+                NavigationLink(value: ShelfRoute(shelfId: shelf.id, ownerName: ownerLabel)) {
+                    Text("View shelf")
+                        .font(Theme.body(12, .semibold))
+                        .foregroundStyle(Theme.neonBlue)
+                        .padding(.horizontal, 14).padding(.vertical, 7)
+                        .overlay(Capsule().stroke(Theme.neonBlue.opacity(0.5), lineWidth: 1))
+                }
+                ShelfFollowButton(shelfId: shelf.id)
+                Spacer()
             }
         }
     }
@@ -493,6 +559,105 @@ struct PublicReviewRow: View {
             .background(Theme.surface.opacity(0.55))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+        }
+    }
+}
+
+// ── Follow / unfollow a shelf from a public profile (punch list #5.2) ──
+// Backed by the new /api/v1/shelves/<id>/follow endpoint; before this, the
+// follow logic existed only as a web server action so native couldn't reach it.
+struct ShelfFollowButton: View {
+    let shelfId: String
+
+    @State private var following = false
+    @State private var busy = false
+    @State private var loaded = false
+
+    private struct Res: Codable { let ok: Bool; let following: Bool }
+
+    var body: some View {
+        Button {
+            guard !busy else { return }
+            busy = true
+            let next = !following
+            Task {
+                defer { busy = false }
+                let res: Res? = try? await APIClient.shared.request(
+                    "/api/v1/shelves/\(shelfId)/follow",
+                    method: next ? "POST" : "DELETE"
+                )
+                if let res { following = res.following }
+            }
+        } label: {
+            Text(following ? "Following" : "Follow")
+                .font(Theme.body(12, .semibold))
+                .foregroundStyle(following ? Theme.muted : Theme.onAccent)
+                .padding(.horizontal, 14).padding(.vertical, 7)
+                .background(following ? AnyShapeStyle(Theme.surfaceAlt) : AnyShapeStyle(Theme.accent),
+                            in: Capsule())
+                .overlay(Capsule().stroke(following ? Theme.border : .clear, lineWidth: 1))
+        }
+        .opacity(busy || !loaded ? 0.6 : 1)
+        .disabled(busy)
+        .task {
+            let res: Res? = try? await APIClient.shared.get("/api/v1/shelves/\(shelfId)/follow")
+            following = res?.following ?? false
+            loaded = true
+        }
+    }
+}
+
+// ── Every shelf, when a profile has more than the inline list holds ──
+struct AllShelvesSheet: View {
+    let shelves: [ShelfSummary]
+    let ownerLabel: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    ForEach(shelves) { shelf in
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                Circle().fill(shelf.tint).frame(width: 10, height: 10)
+                                Text(shelf.name)
+                                    .font(Theme.body(15, .semibold))
+                                    .foregroundStyle(Theme.foreground)
+                                Text("\(shelf.bookCount)")
+                                    .font(Theme.body(13))
+                                    .foregroundStyle(Theme.muted)
+                                Spacer()
+                            }
+                            ShelfRailCase(coverUrls: shelf.coverUrls,
+                                          coverSlugs: shelf.coverSlugs,
+                                          tint: shelf.tint)
+                            HStack(spacing: 10) {
+                                NavigationLink(value: ShelfRoute(shelfId: shelf.id, ownerName: ownerLabel)) {
+                                    Text("View shelf")
+                                        .font(Theme.body(12, .semibold))
+                                        .foregroundStyle(Theme.neonBlue)
+                                        .padding(.horizontal, 14).padding(.vertical, 7)
+                                        .overlay(Capsule().stroke(Theme.neonBlue.opacity(0.5), lineWidth: 1))
+                                }
+                                ShelfFollowButton(shelfId: shelf.id)
+                                Spacer()
+                            }
+                        }
+                    }
+                }
+                .padding(20)
+            }
+            .background(AmbientBackground())
+            .navigationTitle("\(ownerLabel)'s shelves")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .foregroundStyle(Theme.neonBlue)
+                }
+            }
+            .appDestinations()
         }
     }
 }

@@ -20,89 +20,120 @@ export interface ReadingStreak {
  *
  * Consecutive calendar days form a streak.
  */
+/**
+ * Calendar days are bucketed in ONE fixed zone, not UTC and not the server's
+ * local time (which is UTC on Vercel anyway).
+ *
+ * Timestamps are stored as UTC, so a reader acting at 11pm Eastern was being
+ * credited to the NEXT calendar day. That silently punched holes in streaks:
+ * on 2026-08-08 Rebekah's real Eastern run was 5 days (Aug 4-8) but UTC
+ * bucketing scored it 2, because her Aug 5 evening activity landed on Aug 6
+ * UTC and her Aug 6 had none of its own.
+ *
+ * TODO: this is a single-zone approximation for a US-centric beta. The real
+ * fix is a per-user timezone captured at signup; swap this constant for that
+ * column when it exists.
+ */
+const STREAK_TIMEZONE = "America/New_York";
+
+const dayFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: STREAK_TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** UTC timestamp (ISO or "YYYY-MM-DD HH:MM:SS") → YYYY-MM-DD in STREAK_TIMEZONE. */
+function toStreakDay(raw: string): string | null {
+  let s = String(raw).trim().replace(" ", "T");
+  // Naive timestamps are stored as UTC; mark them so Date doesn't read them
+  // as server-local.
+  if (!/[Zz]|[+-]\d{2}:?\d{2}$/.test(s)) s += "Z";
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return null;
+  return dayFormatter.format(d);
+}
+
 export async function getReadingStreak(userId: string, year?: number): Promise<ReadingStreak> {
   return unstable_cache(
     () => getReadingStreakInner(userId, year),
     [`reading-streak-${userId}-${year ?? "all"}`],
-    { revalidate: 3600 }
+    // Was 3600. An hour-long cache meant today's activity took up to an hour
+    // to show, and Home and Stats — separate cache entries — could hold
+    // different values at the same moment, which is how the same account read
+    // 3 days on Home and 0 on Stats.
+    { revalidate: 60 }
   )();
 }
 
 async function getReadingStreakInner(userId: string, year?: number): Promise<ReadingStreak> {
-  // Collect all interaction dates from multiple tables using UNION
-  // Each subquery extracts the date portion (YYYY-MM-DD) of timestamps
-  // Optionally filter to a specific year
-  const yearFilter = year ? sql`AND strftime('%Y', created_at) = ${String(year)}` : sql``;
-  const yearFilterUpdated = year ? sql`AND strftime('%Y', updated_at) = ${String(year)}` : sql``;
+  // Hour precision keeps the row count sane for big libraries (a Goodreads
+  // import stamps thousands of rows within the same hour) while staying fine
+  // enough to bucket into a local calendar day.
+  const hourOf = (col: string) => sql.raw(`substr(replace(${col}, ' ', 'T'), 1, 13)`);
 
-  const result = await db.all<{ d: string }>(sql`
-    SELECT DISTINCT date(created_at) AS d FROM reading_notes WHERE user_id = ${userId} ${yearFilter}
+  const result = (await db.all(sql`
+    SELECT DISTINCT ${hourOf("created_at")} AS t FROM reading_notes WHERE user_id = ${userId}
     UNION
-    SELECT DISTINCT date(updated_at) AS d FROM user_book_state WHERE user_id = ${userId} ${yearFilterUpdated}
+    SELECT DISTINCT ${hourOf("updated_at")} AS t FROM user_book_state WHERE user_id = ${userId}
     UNION
-    SELECT DISTINCT date(updated_at) AS d FROM reading_sessions WHERE user_id = ${userId} ${yearFilterUpdated}
+    SELECT DISTINCT ${hourOf("updated_at")} AS t FROM reading_sessions WHERE user_id = ${userId}
     UNION
-    SELECT DISTINCT date(created_at) AS d FROM reading_sessions WHERE user_id = ${userId} ${yearFilter}
+    SELECT DISTINCT ${hourOf("created_at")} AS t FROM reading_sessions WHERE user_id = ${userId}
     UNION
-    SELECT DISTINCT date(created_at) AS d FROM user_book_reviews WHERE user_id = ${userId} ${yearFilter}
+    SELECT DISTINCT ${hourOf("created_at")} AS t FROM user_book_reviews WHERE user_id = ${userId}
     UNION
-    SELECT DISTINCT date(updated_at) AS d FROM user_book_reviews WHERE user_id = ${userId} ${yearFilterUpdated}
+    SELECT DISTINCT ${hourOf("updated_at")} AS t FROM user_book_reviews WHERE user_id = ${userId}
     UNION
-    SELECT DISTINCT date(updated_at) AS d FROM user_book_ratings WHERE user_id = ${userId} ${yearFilterUpdated}
-    ORDER BY d
-  `);
+    SELECT DISTINCT ${hourOf("updated_at")} AS t FROM user_book_ratings WHERE user_id = ${userId}
+  `)) as { t: string | null }[];
 
-  const days = result.map((r) => r.d).filter(Boolean);
+  const allDays: string[] = [
+    ...new Set(
+      result
+        .map((r) => (r.t ? toStreakDay(`${r.t}:00:00`) : null))
+        .filter((d): d is string => Boolean(d))
+    ),
+  ].sort();
 
-  if (days.length === 0) {
+  if (allDays.length === 0) {
     return { currentStreak: 0, longestStreak: 0, unit: "days" };
   }
 
-  // Calculate streaks by checking consecutive dates
-  let longestStreak = 1;
-  let currentRun = 1;
+  // longestStreak honours the Stats year picker; currentStreak NEVER does — a
+  // "current streak" is by definition anchored to today, and year-filtering it
+  // was the other half of the Home/Stats disagreement (Home passed no year,
+  // Stats passed one, so the two pages computed different things).
+  const scopedDays = year
+    ? allDays.filter((d) => d.startsWith(`${year}-`))
+    : allDays;
 
-  for (let i = 1; i < days.length; i++) {
-    if (areConsecutiveDays(days[i - 1], days[i])) {
+  let longestStreak = scopedDays.length > 0 ? 1 : 0;
+  let currentRun = 1;
+  for (let i = 1; i < scopedDays.length; i++) {
+    if (areConsecutiveDays(scopedDays[i - 1], scopedDays[i])) {
       currentRun++;
       longestStreak = Math.max(longestStreak, currentRun);
-    } else if (days[i] !== days[i - 1]) {
-      // Not consecutive and not same day — reset
+    } else {
       currentRun = 1;
     }
   }
 
-  // Check if current streak is still active (today or yesterday)
   const now = new Date();
-  const todayStr = formatDateLocal(now);
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = formatDateLocal(yesterday);
-
-  const lastActiveDay = days[days.length - 1];
+  const todayStr = dayFormatter.format(now);
+  const yesterdayStr = dayFormatter.format(new Date(now.getTime() - 86_400_000));
+  const lastActiveDay = allDays[allDays.length - 1];
 
   let currentStreak = 0;
   if (lastActiveDay === todayStr || lastActiveDay === yesterdayStr) {
-    // Walk backwards from end to count current streak
     currentStreak = 1;
-    for (let i = days.length - 2; i >= 0; i--) {
-      if (areConsecutiveDays(days[i], days[i + 1])) {
-        currentStreak++;
-      } else if (days[i] !== days[i + 1]) {
-        break;
-      }
+    for (let i = allDays.length - 2; i >= 0; i--) {
+      if (areConsecutiveDays(allDays[i], allDays[i + 1])) currentStreak++;
+      else break;
     }
   }
 
   return { currentStreak, longestStreak, unit: "days" };
-}
-
-/** Format a Date as YYYY-MM-DD in local time */
-function formatDateLocal(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
 }
 
 /** Check if two YYYY-MM-DD date strings are consecutive calendar days */

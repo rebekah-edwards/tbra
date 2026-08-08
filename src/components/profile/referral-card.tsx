@@ -32,14 +32,6 @@ export function ReferralCard({ code, count }: ReferralCardProps) {
           </svg>
           Invite Friends
         </h2>
-        {count > 0 && (
-          <Link
-            href="/profile/referrals"
-            className="text-xs font-medium text-neon-blue bg-neon-blue/10 px-2 py-0.5 rounded-full hover:bg-neon-blue/20 transition-colors"
-          >
-            {count} {count === 1 ? "referral" : "referrals"} &rarr;
-          </Link>
-        )}
       </div>
       <p className="text-xs text-muted mb-3">
         Share your link and we&apos;ll track who joins through you.
@@ -55,6 +47,20 @@ export function ReferralCard({ code, count }: ReferralCardProps) {
           {copied ? "Copied!" : "Copy"}
         </button>
       </div>
+
+      {/* Always rendered, directly under the link. It used to be a pill up in
+          the header that only appeared once count > 0 — so the one state where
+          you most want to check ("has anyone joined yet?") showed nothing at
+          all, and there was no way in to the list. */}
+      <Link
+        href="/profile/referrals"
+        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-neon-blue hover:underline"
+      >
+        {count === 0
+          ? "No one has joined yet — see details"
+          : `${count} ${count === 1 ? "person has" : "people have"} joined through your link`}
+        <span aria-hidden>&rarr;</span>
+      </Link>
     </div>
   );
 }

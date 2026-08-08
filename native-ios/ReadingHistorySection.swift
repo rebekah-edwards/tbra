@@ -111,6 +111,16 @@ private struct SessionRow: View {
                             .padding(.horizontal, 8).padding(.vertical, 3)
                             .background(Theme.accent, in: Capsule())
                     }
+                    // Accumulated pause time. Stats subtract it from elapsed
+                    // days; without showing it, a long pause looked like it
+                    // was never recorded (punch list #1).
+                    if let paused = session.totalPausedDays, paused > 0 {
+                        Text("paused \(paused)d")
+                            .font(Theme.body(11, .medium))
+                            .foregroundStyle(Theme.muted)
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .overlay(Capsule().stroke(Theme.border, lineWidth: 1))
+                    }
                     Spacer()
                     Image(systemName: "chevron.down")
                         .font(.system(size: 11, weight: .semibold))

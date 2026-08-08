@@ -29,10 +29,8 @@ struct LibraryRootView: View {
                     LibraryShelvesView()
                         .pushedScreenChrome()
                 }
-                .navigationDestination(for: ShelfRoute.self) { route in
-                    ShelfDetailView(route: route)
-                        .pushedScreenChrome()
-                }
+                // ShelfRoute now lives in appDestinations() so every stack can
+                // push a shelf (public profiles gained "View shelf" buttons).
                 .appDestinations()
         }
     }

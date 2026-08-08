@@ -368,6 +368,15 @@ struct SectionHeading: View {
     }
 }
 
+/// Carries the Reading split-button's frame up to the card so the state menu
+/// can be positioned off the button rather than off the card's bottom edge.
+private struct StateButtonAnchorKey: PreferenceKey {
+    static let defaultValue: Anchor<CGRect>? = nil
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+        value = nextValue() ?? value
+    }
+}
+
 // ── Reading Now card — currently-reading-section.tsx ──
 private struct ReadingNowCard: View {
     let book: ReadingNowBook
@@ -393,7 +402,15 @@ private struct ReadingNowCard: View {
             }
             .background(cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(alignment: .bottomTrailing) { dropdown }
+            // Applied AFTER clipShape so the menu isn't clipped by the card.
+            .overlayPreferenceValue(StateButtonAnchorKey.self) { anchor in
+                GeometryReader { proxy in
+                    if showStateDropdown, let anchor {
+                        let button = proxy[anchor]
+                        dropdown.offset(x: button.minX, y: button.maxY + 6)
+                    }
+                }
+            }
 
             if let confirm = confirmState {
                 confirmPrompt(confirm)
@@ -501,6 +518,12 @@ private struct ReadingNowCard: View {
                     .background(Theme.accent)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+                // Hands the button's real frame to the card's overlay so the
+                // menu can hang directly off it. The old version guessed with
+                // a fixed .offset(y: 88) from the CARD's bottom edge, which
+                // landed the menu ~45pt clear of the button and read as a bug
+                // (punch list #11).
+                .anchorPreference(key: StateButtonAnchorKey.self, value: .bounds) { $0 }
             }
             .frame(width: 104)
         }
@@ -547,13 +570,6 @@ private struct ReadingNowCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
             .shadow(color: .black.opacity(0.4), radius: 10, y: 4)
-            .padding(.trailing, 16)
-            // Hang the menu just below the Reading BUTTON (not the whole
-            // card) — user follow-up 2026-07-11. bottomTrailing puts the
-            // menu's bottom at the card's bottom; +88 lands its top ~10pt
-            // above the card edge, right under the button (button bottom sits
-            // 16pt above the card edge), overlapping only the card padding.
-            .offset(y: 88)
             .zIndex(10)
         }
     }
@@ -661,7 +677,9 @@ private struct TrackProgressSheet: View {
                 if saved {
                     Text("✓ Note saved")
                         .font(Theme.body(14, .medium))
-                        .foregroundStyle(Theme.accentDark)
+                        // accentDark is lime-500 in BOTH modes — illegible on
+                        // the light surface (punch list #10).
+                        .foregroundStyle(Theme.accentText)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(Theme.accent.opacity(0.05))

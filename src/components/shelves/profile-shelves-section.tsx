@@ -1,8 +1,16 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { NoCover } from "@/components/no-cover";
 import { PremiumGate } from "@/components/premium-gate";
 import type { ShelfSummary } from "@/lib/queries/shelves";
+
+/** Shown before expanding. */
+const COLLAPSED_LIMIT = 3;
+/** Ceiling after one expansion — beyond this, send them to the full page. */
+const EXPANDED_LIMIT = 8;
 
 interface ProfileShelvesSectionProps {
   shelves: ShelfSummary[];
@@ -101,6 +109,9 @@ export function ProfileShelvesSection({
   isPremium = true,
   isOwner = false,
 }: ProfileShelvesSectionProps) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = shelves.slice(0, expanded ? EXPANDED_LIMIT : COLLAPSED_LIMIT);
+
   // On own profile, show premium gate if not premium
   if (isOwner && !isPremium) {
     return (
@@ -120,7 +131,9 @@ export function ProfileShelvesSection({
     <section>
       <div className="flex items-center justify-between mb-3">
         <h2 className="section-heading text-sm">Shelves</h2>
-        {shelves.length > 0 && (
+        {/* Owners keep a permanent way through to shelf management; visitors
+            only get the header link once the inline list can't hold them all. */}
+        {shelves.length > 0 && (isOwner || shelves.length > EXPANDED_LIMIT) && (
           <Link href={viewAllHref} className="text-xs font-medium read-more-link">
             View all →
           </Link>
@@ -139,16 +152,38 @@ export function ProfileShelvesSection({
         </div>
       ) : (
         <div className="space-y-4">
-          {shelves.slice(0, 3).map((shelf) => (
+          {visible.map((shelf) => (
             <MiniShelfRow key={shelf.id} shelf={shelf} linkBase={linkBase} />
           ))}
-          {shelves.length > 3 && (
-            <Link
-              href={viewAllHref}
-              className="block text-center text-xs font-medium text-muted hover:text-foreground transition-colors py-2"
+
+          {/* Three shown, then one expansion to at most EXPANDED_LIMIT, then
+              (and only then) a link out to the full page. */}
+          {!expanded && shelves.length > COLLAPSED_LIMIT && (
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="block w-full text-center text-xs font-medium text-muted hover:text-foreground transition-colors py-2"
             >
-              +{shelves.length - 3} more {shelves.length - 3 === 1 ? "shelf" : "shelves"}
-            </Link>
+              View {Math.min(shelves.length, EXPANDED_LIMIT) - COLLAPSED_LIMIT} more{" "}
+              {Math.min(shelves.length, EXPANDED_LIMIT) - COLLAPSED_LIMIT === 1 ? "shelf" : "shelves"}
+            </button>
+          )}
+
+          {expanded && (
+            <div className="flex items-center justify-center gap-4 py-2">
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                className="text-xs font-medium text-muted hover:text-foreground transition-colors"
+              >
+                Show fewer
+              </button>
+              {shelves.length > EXPANDED_LIMIT && (
+                <Link href={viewAllHref} className="text-xs font-medium read-more-link">
+                  View all {shelves.length} shelves →
+                </Link>
+              )}
+            </div>
           )}
         </div>
       )}

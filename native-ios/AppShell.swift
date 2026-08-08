@@ -309,9 +309,6 @@ struct AppShell: View {
             NavigationStack {
                 LibraryShelvesView()
                     .toolbar(.hidden, for: .navigationBar)
-                    .navigationDestination(for: ShelfRoute.self) { route in
-                        ShelfDetailView(route: route)
-                    }
                     .appDestinations()
             }
             .environment(\.shellBarInsets, (top: 0, bottom: 0))

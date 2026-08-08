@@ -202,6 +202,10 @@ struct BookDetailView: View {
                     if let summary = data.book.summary, !summary.isEmpty {
                         SummaryQuoteCard(summary: summary)
                     }
+                    // Pre-release notice — same position as the web's banner
+                    // (after the mobile summary block).
+                    PreReleaseBanner(publicationDate: data.book.publicationDate,
+                                     publicationYear: data.book.publicationYear)
                     // About / Details directly under the summary, like the
                     // web (user request 2026-07-15).
                     BookAboutDetailsSection(book: data.book)
@@ -1084,7 +1088,9 @@ private struct BookActionCluster: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
-            .foregroundStyle(data.upNextPosition != nil ? Theme.accent : Theme.muted)
+            // accentText, not accent: lime label on the light background was
+            // unreadable once the button was selected (punch list #9).
+            .foregroundStyle(data.upNextPosition != nil ? Theme.accentText : Theme.muted)
             .frame(width: 52, height: 52)
             .background(RoundedRectangle(cornerRadius: 14).stroke(
                 data.upNextPosition != nil ? Theme.accent.opacity(0.6) : Theme.border, lineWidth: 2))
@@ -1211,6 +1217,11 @@ private struct BookActionCluster: View {
             showDatePicker = true
             return
         }
+        // Starting a read always asks HOW you're reading it. The server
+        // guesses from owned formats, which is a fine default but wrong for
+        // anyone reading two formats at once or a format they don't own
+        // (punch list #8).
+        let startingRead = state == "currently_reading" && currentState != state
         busy = true; defer { busy = false }
         if currentState == state {
             try? await APIClient.shared.setReadingState(bookId: book.id, state: "none")
@@ -1218,6 +1229,8 @@ private struct BookActionCluster: View {
             try? await APIClient.shared.setReadingState(bookId: book.id, state: state)
         }
         await model.load()
+        // After the reload, so the sheet opens pre-filled with the guess.
+        if startingRead { showFormatSheet = true }
     }
 
     private func setState(_ state: String, completionDate: String?, precision: String? = nil) async {
@@ -2681,6 +2694,65 @@ struct BookAboutDetailsSection: View {
         }
         if let year = book.publicationYear { return String(year) }
         return nil
+    }
+}
+
+// ── Pre-release banner — the web's "📅 Releases <date>" strip on the book
+// page (page.tsx). iOS had no equivalent, so an unreleased book looked
+// identical to a shipped one (punch list #6, 2026-08-08; also reported from
+// TestFlight on 2026-08-01 for Scion).
+struct PreReleaseBanner: View {
+    let publicationDate: String?
+    let publicationYear: Int?
+
+    private static let months = ["January", "February", "March", "April", "May", "June",
+                                 "July", "August", "September", "October", "November", "December"]
+
+    /// Mirrors the web's day/month/year precision cascade: a full date is only
+    /// pre-release if the DAY is still ahead; a YYYY-MM only counts if the
+    /// whole month is; a bare year only if the year is.
+    private var releaseLabel: String? {
+        let now = Date()
+        let cal = Calendar.current
+        if let raw = publicationDate, !raw.isEmpty {
+            let parts = raw.split(separator: "-").map(String.init)
+            if parts.count >= 3, let y = Int(parts[0]), let m = Int(parts[1]),
+               let d = Int(parts[2]), (1...12).contains(m) {
+                guard let date = cal.date(from: DateComponents(year: y, month: m, day: d)),
+                      date > now else { return nil }
+                return "\(Self.months[m - 1]) \(d), \(y)"
+            }
+            if parts.count == 2, let y = Int(parts[0]), let m = Int(parts[1]), (1...12).contains(m) {
+                // End of that month — a book dated 2026-09 is still upcoming
+                // through September 30th.
+                guard let start = cal.date(from: DateComponents(year: y, month: m, day: 1)),
+                      let end = cal.date(byAdding: DateComponents(month: 1, day: -1), to: start),
+                      end > now else { return nil }
+                return "\(Self.months[m - 1]) \(y)"
+            }
+            return nil
+        }
+        if let year = publicationYear, year > cal.component(.year, from: now) {
+            return String(year)
+        }
+        return nil
+    }
+
+    var body: some View {
+        if let label = releaseLabel {
+            HStack(spacing: 8) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Theme.accentText)
+                (Text("Releases ") + Text(label).fontWeight(.bold))
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.foreground)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 11)
+            .background(Theme.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.accent.opacity(0.30), lineWidth: 1))
+        }
     }
 }
 

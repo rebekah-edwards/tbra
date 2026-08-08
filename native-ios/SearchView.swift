@@ -435,6 +435,7 @@ private struct ExternalResultCard: View {
     let onImported: (String) -> Void
     @State private var importedBookId: String?
     @State private var busy = false
+    @State private var importError: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -475,13 +476,21 @@ private struct ExternalResultCard: View {
                             let coverUrl: String?; let publicationYear: Int?; let pages: Int?
                         }
                         struct Ok: Codable { let ok: Bool; let bookId: String }
-                        guard let res: Ok = try? await APIClient.shared.request(
-                            "/api/v1/search/import", method: "POST",
-                            json: Body(isbn: result.isbn, title: result.title, authors: result.authors,
-                                       coverUrl: result.coverUrl, publicationYear: result.publicationYear,
-                                       pages: result.pages)) else { return }
-                        importedBookId = res.bookId
-                        onImported(res.bookId)
+                        do {
+                            let res: Ok = try await APIClient.shared.request(
+                                "/api/v1/search/import", method: "POST",
+                                json: Body(isbn: result.isbn, title: result.title, authors: result.authors,
+                                           coverUrl: result.coverUrl, publicationYear: result.publicationYear,
+                                           pages: result.pages))
+                            importedBookId = res.bookId
+                            onImported(res.bookId)
+                        } catch {
+                            // Was `try?` + a bare return: a failed import left
+                            // the button looking tapped-but-dead with no
+                            // explanation (punch list #7).
+                            importError = (error as? APIError)?.errorDescription
+                                ?? "Couldn't add that book. Please try again."
+                        }
                     }
                 } label: {
                     HStack(spacing: 5) {
@@ -504,6 +513,14 @@ private struct ExternalResultCard: View {
             }
             .padding(.horizontal, 14)
             .padding(.bottom, 14)
+
+            if let importError {
+                Text(importError)
+                    .font(Theme.body(12, .medium))
+                    .foregroundStyle(Theme.destructive)
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 12)
+            }
         }
         .background(Theme.surface.opacity(0.65))
         .clipShape(RoundedRectangle(cornerRadius: 16))

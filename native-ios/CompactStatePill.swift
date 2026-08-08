@@ -16,6 +16,7 @@ struct CompactStatePill: View {
     @State private var showDatePicker = false
     @State private var pendingCompleteState = "completed"
     @State private var busy = false
+    @State private var activeFormatSheetOpen = false
 
     private let states: [(String, String)] = [
         ("tbr", "To Read"), ("currently_reading", "Reading Now"),
@@ -75,6 +76,11 @@ struct CompactStatePill: View {
             .presentationDetents([.medium])
             .presentationBackground(Theme.surface)
         }
+        .sheet(isPresented: $activeFormatSheetOpen) {
+            ActiveFormatSheet(bookId: bookId)
+                .presentationDetents([.height(340)])
+                .presentationBackground(Theme.surface)
+        }
     }
 
     @ViewBuilder private var dropdown: some View {
@@ -126,6 +132,9 @@ struct CompactStatePill: View {
             showDatePicker = true
             return
         }
+        // Same rule as the book page: starting a read always asks for the
+        // format rather than silently inheriting the owned guess (#8).
+        let startingRead = value == "currently_reading" && state != value
         busy = true; defer { busy = false }
         if state == value {
             try? await APIClient.shared.setReadingState(bookId: bookId, state: "none")
@@ -135,6 +144,7 @@ struct CompactStatePill: View {
             state = value
         }
         onChanged?(state)
+        if startingRead { activeFormatSheetOpen = true }
     }
 
     private func setState(_ value: String, date: String?, precision: String?) async {
@@ -282,5 +292,62 @@ struct CompactOwnedButton: View {
             try await APIClient.shared.setFormats(bookId: bookId, owned: Array(next))
             formats = next
         } catch { /* keep prior state on failure */ }
+    }
+}
+
+/// Format picker shown right after a book is moved to Reading Now from a
+/// compact row (punch list #8). Self-contained because the compact pill
+/// doesn't carry the book payload: it pre-fills with whatever the server
+/// guessed from owned formats, which the reader can then correct.
+struct ActiveFormatSheet: View {
+    let bookId: String
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var selected: [String] = []
+    @State private var loaded = false
+
+    private let formats = [("hardcover", "Hardcover"), ("paperback", "Paperback"),
+                           ("ebook", "eBook"), ("audiobook", "Audiobook")]
+
+    private struct Res: Codable {
+        struct UserState: Codable { let activeFormats: [String]? }
+        let ok: Bool
+        let userState: UserState?
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("How are you reading it?")
+                .font(Theme.heading(18, .bold))
+                .foregroundStyle(Theme.foreground)
+            ForEach(formats, id: \.0) { value, label in
+                Button {
+                    if selected.contains(value) { selected.removeAll { $0 == value } }
+                    else { selected.append(value) }
+                } label: {
+                    HStack {
+                        Image(systemName: selected.contains(value) ? "checkmark.square.fill" : "square")
+                            .foregroundStyle(selected.contains(value) ? Theme.accent : Theme.muted)
+                        Text(label)
+                            .font(Theme.body(15))
+                            .foregroundStyle(Theme.foreground)
+                        Spacer()
+                    }
+                    .padding(.vertical, 6)
+                }
+            }
+            Button("Save") {
+                Task { try? await APIClient.shared.setFormats(bookId: bookId, active: selected) }
+                dismiss()
+            }
+            .buttonStyle(AccentButtonStyle())
+            .disabled(!loaded)
+        }
+        .padding(20)
+        .task {
+            let res: Res? = try? await APIClient.shared.get("/api/v1/books/\(bookId)")
+            selected = res?.userState?.activeFormats ?? []
+            loaded = true
+        }
     }
 }
