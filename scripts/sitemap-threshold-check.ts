@@ -12,6 +12,7 @@ import { config } from "dotenv";
 config({ path: ".env.vercel.local" });
 
 import { createGuardedTurso } from "./lib/turso-guard";
+import { fileAdminAlert } from "./lib/admin-alert";
 import fs from "fs";
 import path from "path";
 
@@ -36,7 +37,6 @@ async function main() {
     `SELECT count(*) as n FROM books WHERE visibility = 'public'`,
   );
   const current = Number((rows[0] as any).n);
-  shutdown();
 
   let previous = 0;
   if (fs.existsSync(STATE_FILE)) {
@@ -76,9 +76,27 @@ Submitting keeps Google's crawl budget aligned with the catalog size.
 `;
     fs.writeFileSync(reportFile, msg);
     console.log(`[sitemap-threshold] ALERT: crossed ${currThreshold.toLocaleString()} — wrote ${reportFile}`);
+
+    // Runs under launchd (com.tbra.sitemap-threshold) as of 2026-07-30, so
+    // nobody reads this stdout. A crossing needs a manual GSC submission, so it
+    // has to reach /admin/issues to be seen at all.
+    const filed = await fileAdminAlert(client, {
+      tag: "sitemap-threshold",
+      key: String(currThreshold),
+      description:
+        `Public book count crossed ${currThreshold.toLocaleString()} (${previous.toLocaleString()} → ${current.toLocaleString()}). `
+        + `Submit the updated sitemap index to Google Search Console. Details: reports/sitemap-threshold-${date}.md`,
+    });
+    console.log(
+      filed
+        ? `[sitemap-threshold] filed /admin/issues alert for the ${currThreshold.toLocaleString()} bucket`
+        : `[sitemap-threshold] an open alert for this bucket already exists — not duplicating`,
+    );
   } else {
     console.log(`[sitemap-threshold] No threshold crossing this run.`);
   }
+
+  shutdown();
 
   fs.writeFileSync(
     STATE_FILE,

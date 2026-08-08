@@ -150,6 +150,15 @@ const TABLES: Array<[string, string[], boolean]> = [
 // trips the index means "same logical row, different id" and must be merged,
 // not skipped (see the collision handler below).
 const NATURAL_KEYS: Record<string, { key: string[]; childRefs?: Array<[string, string]> }> = {
+  // Catalog-side twin (added 2026-08-08): a book rated on BOTH sides holds one
+  // row per (book_id, category_id) on each, under different ids. Before this
+  // entry the live row simply could not insert. It surfaced when 546 local
+  // duplicate book rows were merged onto their live twins — the moved local
+  // ratings then collided with live's own rows for the same book+category.
+  // Newest-wins matches how these rows are produced: the content-ratings lane
+  // rewrites a book's whole rating set, so the fresher side is the better one.
+  book_category_ratings: { key: ['book_id', 'category_id'],
+    childRefs: [['rating_citations', 'rating_id']] },
   reading_sessions:  { key: ['user_id', 'book_id', 'read_number'] },
   user_book_reviews: { key: ['user_id', 'book_id'],
     childRefs: [['user_book_dimension_ratings', 'review_id'], ['review_descriptor_tags', 'review_id'], ['review_helpful_votes', 'review_id']] },
@@ -219,7 +228,16 @@ const DELTA_TABLES: Record<string, string> = {
   let totalUpdated = 0;
   const errors: string[] = [];
 
+  // PULL_TRACE=1 → timestamped step markers on stderr. stdout is block-buffered
+  // when redirected and process.exit(3) drops whatever is still pending, so a
+  // stall looks like it happened one table EARLIER than it did (2026-07-27:
+  // three nights read as "stalled in book_category_ratings" because that was
+  // merely the last line that made it out). stderr is unbuffered — it survives.
+  const trace = (msg: string) =>
+    process.env.PULL_TRACE && process.stderr.write(`[trace ${new Date().toISOString()}] ${msg}\n`);
+
   for (const [table, pkCols, hasUpdatedAt] of TABLES) {
+    trace(`table ${table} — start`);
     const cols = localCols(table);
     if (cols.length === 0) {
       console.log(`  ·  ${table.padEnd(35)} skipped (not in local DB)`);
@@ -267,6 +285,11 @@ const DELTA_TABLES: Record<string, string> = {
 
     let inserted = 0;
     let updated = 0;
+    // Live rows that could NOT land locally because a DIFFERENT local row
+    // already owns a UNIQUE value (see the handler below). Counted and
+    // reported — never silent.
+    let blocked = 0;
+    const blockedSamples: string[] = [];
 
     // Run inside a transaction for speed
     const trx = local.transaction((rows: any[]) => {
@@ -303,6 +326,23 @@ const DELTA_TABLES: Record<string, string> = {
                 } catch (e2: any) {
                   errors.push(`${table} natural-merge: ${e2.message.slice(0, 100)}`);
                 }
+              } else {
+                // No NATURAL_KEYS entry for this table, so there is no rule for
+                // reconciling the twin — but swallowing it silently made the
+                // pull LIE. `books` sat here for months: 579 live books could
+                // never insert because a local-only duplicate row (same book,
+                // different UUID) already held their isbn_13/open_library_key,
+                // and every run still printed "books in sync". The live twin's
+                // junction rows pulled down as orphans and sync-push deleted
+                // them again — ~4,030 rows of churn a night, invisible from
+                // both logs. Count it and surface it; the operator can then
+                // run scripts/merge-local-dupe-books.ts.
+                blocked++;
+                if (blockedSamples.length < 3) {
+                  blockedSamples.push(
+                    `${pkCols.map((c) => `${c}=${row[c]}`).join(',')} → ${e.message.slice(0, 60)}`,
+                  );
+                }
               }
             } else {
               errors.push(`${table} insert: ${e.message.slice(0, 100)}`);
@@ -334,12 +374,30 @@ const DELTA_TABLES: Record<string, string> = {
     const parts: string[] = [];
     if (inserted) parts.push(`+${inserted} new`);
     if (updated) parts.push(`~${updated} updated`);
+    if (blocked) parts.push(`⚠ ${blocked} BLOCKED by a local row holding the same UNIQUE value`);
     if (parts.length === 0) parts.push('in sync');
-    const icon = inserted || updated ? '✓' : '·';
+    const icon = blocked ? '⚠' : inserted || updated ? '✓' : '·';
     console.log(`  ${icon}  ${table.padEnd(35)} ${parts.join(', ')}`);
+    if (blocked) {
+      for (const s of blockedSamples) console.log(`         ${s}`);
+      errors.push(`${table}: ${blocked} live row(s) blocked by a local UNIQUE collision`);
+    }
 
     totalInserted += inserted;
     totalUpdated += updated;
+
+    // Finishing a table IS progress (2026-07-27). markProgress() otherwise
+    // fires only when a REMOTE query resolves, but the expensive part of a big
+    // table is LOCAL and synchronous: pkSetLocal() loads every existing row
+    // into a Set (~941k for book_category_ratings) and the insert transaction
+    // runs on top of that — ~16 min with the event loop blocked the whole
+    // time. The stall timer can't even tick during that, so it fired the
+    // instant the loop freed up, reporting a ~960s "stall" and exit(3) at the
+    // START of the next table (`links`) — which made three nights of pulls
+    // look like a hang in links/book_category_ratings when nothing was hung
+    // at all. Every pull since 07-24 died here, taking the `&&` chain with it.
+    // Genuine remote hangs are still caught by QUERY_TIMEOUT_MS per query.
+    markProgress();
   }
 
   // ─── Up Next queue mirror (newest side wins) ───
@@ -350,6 +408,7 @@ const DELTA_TABLES: Record<string, string> = {
   // handles local-newer. A user with rows ONLY locally is left alone (an
   // emptied live queue is indistinguishable from unpushed local adds — we
   // never destroy data over that ambiguity).
+  trace('step: up_next mirror');
   console.log('\n→ Syncing up_next queues (whole-queue mirror, newest side wins)');
   try {
     const liveUpNext = (await remote.execute(
@@ -405,6 +464,7 @@ const DELTA_TABLES: Record<string, string> = {
   // assignment + cover style are admin actions that land on PROD (native
   // admin talks to prod), and series has no updated_at for the timestamp
   // path — mirror the two fields unconditionally. Tiny table, one pass.
+  trace('step: series curation');
   console.log('\n→ Syncing series curation (parent_series_id, cover_style)');
   try {
     const liveSeries = await fetchLiveRows('series', ['id', 'parent_series_id', 'cover_style']);
@@ -429,26 +489,37 @@ const DELTA_TABLES: Record<string, string> = {
   // Pull cover_image_url, cover_source, and cover_verified together — otherwise
   // a `manual` flag set on live via /admin/covers gets stripped on the next
   // push (step 5b pushes local cover_source back on top of the live value).
+  trace('step: covers');
   console.log('\n→ Syncing covers (live → local; live covers authoritative)');
   try {
     // PAGED on purpose (2026-07-15): the single-shot query grew to ~72k rows
     // / 100+ seconds and silently died on the 30s per-query timeout EVERY
     // NIGHT — cover fixes stopped reaching local (the app showed stale junk
     // covers for weeks). Each 10k page returns in a few seconds.
+    // KEYSET on rowid (2026-07-27): the LIMIT/OFFSET version above was the
+    // same re-scan-from-row-0 trap the table loop shed on 2026-07-22 — Turso
+    // walked and discarded every skipped row on each page, so deep pages went
+    // superlinear as `books` grew past ~77k covered rows. The pull then hung
+    // here past the 5-min stall detector and exit(3)'d, truncating stdout so
+    // the "→ Syncing covers" line never even printed (looked like a stall in
+    // book_category_ratings, the last table that DID flush). Two nights of
+    // pulls died this way. Keyset keeps every page O(page).
     const liveCoverRows: any[] = [];
     {
-      let offset = 0;
+      let cursor = -1;
       const page = 10000;
       while (true) {
-        const r = await remote.execute(
-          `SELECT id, cover_image_url, cover_source, cover_verified
-             FROM books
-            WHERE cover_image_url IS NOT NULL AND cover_image_url != ''
-            ORDER BY id LIMIT ${page} OFFSET ${offset}`
-        );
+        const r = await remote.execute({
+          sql: `SELECT id, cover_image_url, cover_source, cover_verified, rowid AS __rid
+                  FROM books
+                 WHERE rowid > ?
+                   AND cover_image_url IS NOT NULL AND cover_image_url != ''
+                 ORDER BY rowid LIMIT ${page}`,
+          args: [cursor],
+        });
         for (const row of r.rows as any[]) liveCoverRows.push(row);
         if (r.rows.length < page) break;
-        offset += page;
+        cursor = Number((r.rows[r.rows.length - 1] as any).__rid);
       }
     }
     const liveCovers = { rows: liveCoverRows };
@@ -489,6 +560,7 @@ const DELTA_TABLES: Record<string, string> = {
   // (placeholder-clear, admin remove) stayed on local FOREVER — the app kept
   // showing junk covers the admin had already killed. Mirror the clear when
   // live's cover_source proves it was an intentional clear, not missing data.
+  trace('step: cleared covers');
   console.log('\n→ Clearing covers that live cleared (placeholder/admin clears)');
   try {
     const liveCleared = await remote.execute(
@@ -521,6 +593,7 @@ const DELTA_TABLES: Record<string, string> = {
   // setAudiobookCover didn't bump books.updated_at, so the timestamp path
   // above never carried these; this pass mirrors them unconditionally
   // (found 2026-07-11: Remarkably Bright Creatures).
+  trace('step: audiobook covers');
   console.log('\n→ Syncing audiobook covers (live → local; live authoritative)');
   try {
     const liveAudio = await remote.execute(

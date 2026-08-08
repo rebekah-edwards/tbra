@@ -200,6 +200,17 @@ function isMergeRequest(desc: string): boolean {
   return /(?:two\s+versions|both\s+of\s+which|please\s+merge|\bmerge\b|same\s+book\b|duplicate\s+(?:entry|of\s+this))/i.test(desc);
 }
 
+// "Not a book entry. Remove." — the phrasing Rebekah uses when a merchandise /
+// collectible / non-book product got imported as a book (Harry Potter chess sets,
+// mugs, puzzles). Deliberately narrow: it requires the "not a book" claim, or a
+// bare removal instruction that is the WHOLE report. A generic "remove" keyword
+// would delete a book over a report like "remove the second author".
+function isNotABookRequest(desc: string): boolean {
+  if (/\bnot\s+a\s+book\b/i.test(desc)) return true;
+  const bare = desc.trim().replace(/[.!\s]+$/, "").toLowerCase();
+  return /^(?:please\s+)?(?:remove|delete)(?:\s+this(?:\s+entry)?)?$/.test(bare);
+}
+
 function normalizeTitle(t: string): string {
   return t
     .toLowerCase()
@@ -433,11 +444,12 @@ async function main() {
       // === AUTO-FIXABLE: Junk entries with 0 users ===
       if (userCount === 0 && bookId && (
         desc.includes("junk") || desc.includes("delete") || desc.includes("non-english") || desc.includes("non english") ||
-        desc.includes("duplicate") || desc.includes("what is this")
+        desc.includes("duplicate") || desc.includes("what is this") ||
+        isNotABookRequest(rawDesc)
       )) {
         console.log(`  -> DELETING junk book (0 users)`);
         await deleteBook(bookId);
-        await resolveReport(id, "Deleted junk/duplicate/non-English book entry (0 users)");
+        await resolveReport(id, "Deleted junk/duplicate/non-book/non-English book entry (0 users)");
         return { kind: "fixed" };
       }
 
@@ -452,7 +464,7 @@ async function main() {
       // === AUTO-FIXABLE: Box set flag (title has " / ", or explicit keywords) ===
       if (bookId && (
         /probable\s+box\s?set/i.test(rawDesc) ||
-        /\bbox\s?set\b/i.test(rawDesc) ||
+        /\bbox(?:ed)?\s?set\b/i.test(rawDesc) ||
         /\bset\s+of\s+\d+\s+books?\b/i.test(rawDesc) ||
         /\b\d+[- ]book\s+(?:combo|set|bundle)\b/i.test(rawDesc) ||
         (bookTitle && / \/ /.test(bookTitle))
