@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.tbra.local-only-user-activity</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/clankeredwards/claude/tbra/scripts/lib/cron-run.sh</string>
+		<string>local-only-user-activity</string>
+		<string>/opt/homebrew/bin/npx</string>
+		<string>tsx</string>
+		<string>scripts/check-local-only-user-activity.ts</string>
+		<string>--quiet</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/Users/clankeredwards/claude/tbra</string>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>7</integer>
+		<key>Minute</key>
+		<integer>18</integer>
+	</dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+	</dict>
+</dict>
+</plist>
