@@ -24,8 +24,24 @@
  *   MAX_BOOKS       net new books to insert, then stop (default 60)
  *   HORIZON_MONTHS  how far ahead counts as "upcoming" (default 18)
  *   GOOGLE_MAX      hard cap on Google Books calls     (default 800)
+ *   GOOGLE_PACE_MS  delay between author queries       (default 1100)
+ *   GOOGLE_RETRIES  retries per author on a 429/503    (default 2)
  *   CURSOR_FILE     rotation cursor path               (default data/upcoming-authors-cursor.json)
  *   DRY_RUN=1       fetch + filter + log, write nothing
+ *
+ * PACING (2026-08-08): the 429/503 storm this lane suffered was Google's
+ * PER-MINUTE rate limit, not the daily Queries-per-day quota — a probe issued
+ * immediately after a run that had "exhausted" its quota returned HTTP 200. At
+ * the old 150ms pacing the run issued ~400 queries/min against a limit far
+ * below that, so a third of every night's authors bounced and landed in the
+ * deferred queue (52/150 failed on 2026-08-08). GOOGLE_PACE_MS now defaults to
+ * 1100 (~55 queries/min) and each author gets GOOGLE_RETRIES extra attempts
+ * behind exponential backoff before being deferred. A 150-author run therefore
+ * spends ~3min in Google calls instead of ~25s; it runs at 3:09 AM, so nobody
+ * is waiting on it. NOTE: a 503 here is genuinely ambiguous — it is returned
+ * for BOTH per-minute throttling and daily exhaustion — so the retry ladder is
+ * what distinguishes them: throttling clears within a few seconds, real
+ * exhaustion keeps failing and trips QUOTA_ABORT_STREAK.
  */
 
 import { config } from "dotenv";
@@ -61,6 +77,11 @@ const DEFERRED_MAX = Number(process.env.DEFERRED_MAX ?? 3000);
 // Consecutive quota failures before we stop burning the remaining pacing delay
 // on calls that cannot succeed; everything unqueried is deferred to next run.
 const QUOTA_ABORT_STREAK = Number(process.env.QUOTA_ABORT_STREAK ?? 12);
+// Gap between author queries. ~1100ms ≈ 55/min, under Google's per-minute
+// ceiling; see the PACING note in the header before lowering this.
+const GOOGLE_PACE_MS = Number(process.env.GOOGLE_PACE_MS ?? 1100);
+// Extra attempts for one author after a 429/503, behind exponential backoff.
+const GOOGLE_RETRIES = Number(process.env.GOOGLE_RETRIES ?? 2);
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -281,20 +302,42 @@ async function main() {
       break;
     }
 
-    await delay(150); // gentle pacing against Google Books
-    googleCalls++;
+    await delay(GOOGLE_PACE_MS); // pacing against Google's per-minute limit
     let volumes;
     try {
-      const res = await searchGoogleBooksByAuthorNewestDetailed(authorName, 12);
-      if (!res.ok) {
+      // Retry ladder: a 429/503 is ambiguous between per-minute throttling
+      // (clears in seconds) and daily exhaustion (never clears this run). Back
+      // off and re-ask; if it still fails the author is deferred and the
+      // quotaStreak counter escalates toward the whole-run abort.
+      let res = null;
+      for (let attempt = 0; attempt <= GOOGLE_RETRIES; attempt++) {
+        if (attempt > 0) {
+          const backoffMs = GOOGLE_PACE_MS * 2 ** attempt; // 2.2s, 4.4s
+          console.log(
+            `[upcoming] retry ${attempt}/${GOOGLE_RETRIES} for "${authorName}" after ${backoffMs}ms`,
+          );
+          await delay(backoffMs);
+        }
+        if (googleCalls >= GOOGLE_MAX) break;
+        googleCalls++;
+        const r = await searchGoogleBooksByAuthorNewestDetailed(authorName, 12);
+        if (r.ok || !r.quotaExhausted) {
+          res = r;
+          break;
+        }
+        res = r; // keep the last failure for the diagnostics below
+      }
+
+      if (!res || !res.ok) {
         // The call never landed, so this author was NOT checked — re-queue.
         deferred.push(authorName);
-        if (res.quotaExhausted) {
+        if (res?.quotaExhausted) {
           quotaStreak++;
           if (quotaStreak >= QUOTA_ABORT_STREAK) {
             console.warn(
-              `[upcoming] ${quotaStreak} consecutive Google quota failures (status ${res.status}) — ` +
-                `daily Queries-per-day limit is spent. Deferring the rest of this run's authors.`,
+              `[upcoming] ${quotaStreak} consecutive Google quota failures (status ${res.status}) ` +
+                `that survived ${GOOGLE_RETRIES} backoff retries each — this is the DAILY ` +
+                `Queries-per-day limit, not per-minute throttling. Deferring the rest of this run.`,
             );
             deferRest(i + 1);
             break;
