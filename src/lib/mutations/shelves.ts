@@ -402,3 +402,17 @@ export async function isFollowingShelf(userId: string, shelfId: string): Promise
   `);
   return rows.length > 0;
 }
+
+/** Of the given shelf ids, which the user follows. One query, not N. */
+export async function getFollowedShelfIds(
+  userId: string,
+  shelfIds: string[],
+): Promise<string[]> {
+  if (shelfIds.length === 0) return [];
+  const rows = await db.all(sql`
+    SELECT shelf_id FROM shelf_follows
+    WHERE user_id = ${userId}
+      AND shelf_id IN (${sql.join(shelfIds.map((id) => sql`${id}`), sql`, `)})
+  `) as { shelf_id: string }[];
+  return rows.map((r) => r.shelf_id);
+}

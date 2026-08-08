@@ -21,8 +21,8 @@ export interface ReadingStreak {
  * Consecutive calendar days form a streak.
  */
 /**
- * Calendar days are bucketed in ONE fixed zone, not UTC and not the server's
- * local time (which is UTC on Vercel anyway).
+ * Calendar days are bucketed in the READER'S OWN timezone, not UTC and not the
+ * server's local time (which is UTC on Vercel anyway).
  *
  * Timestamps are stored as UTC, so a reader acting at 11pm Eastern was being
  * credited to the NEXT calendar day. That silently punched holes in streaks:
@@ -30,28 +30,43 @@ export interface ReadingStreak {
  * bucketing scored it 2, because her Aug 5 evening activity landed on Aug 6
  * UTC and her Aug 6 had none of its own.
  *
- * TODO: this is a single-zone approximation for a US-centric beta. The real
- * fix is a per-user timezone captured at signup; swap this constant for that
- * column when it exists.
+ * users.timezone is reported by the client on sign-in. Readers who haven't
+ * checked in since the column shipped fall back to this default rather than
+ * to UTC, which would reintroduce the bug for them.
  */
-const STREAK_TIMEZONE = "America/New_York";
+const FALLBACK_TIMEZONE = "America/New_York";
 
-const dayFormatter = new Intl.DateTimeFormat("en-CA", {
-  timeZone: STREAK_TIMEZONE,
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
+/** Intl formatters are expensive to build; one per zone is plenty. */
+const formatterCache = new Map<string, Intl.DateTimeFormat>();
 
-/** UTC timestamp (ISO or "YYYY-MM-DD HH:MM:SS") → YYYY-MM-DD in STREAK_TIMEZONE. */
-function toStreakDay(raw: string): string | null {
+function dayFormatterFor(timeZone: string): Intl.DateTimeFormat {
+  const cached = formatterCache.get(timeZone);
+  if (cached) return cached;
+  let fmt: Intl.DateTimeFormat;
+  try {
+    fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  } catch {
+    // Unknown/garbage identifier — never let it throw the whole page.
+    fmt = dayFormatterFor(FALLBACK_TIMEZONE);
+  }
+  formatterCache.set(timeZone, fmt);
+  return fmt;
+}
+
+/** UTC timestamp (ISO or "YYYY-MM-DD HH:MM:SS") → YYYY-MM-DD in `timeZone`. */
+function toStreakDay(raw: string, fmt: Intl.DateTimeFormat): string | null {
   let s = String(raw).trim().replace(" ", "T");
   // Naive timestamps are stored as UTC; mark them so Date doesn't read them
   // as server-local.
   if (!/[Zz]|[+-]\d{2}:?\d{2}$/.test(s)) s += "Z";
   const d = new Date(s);
   if (Number.isNaN(d.getTime())) return null;
-  return dayFormatter.format(d);
+  return fmt.format(d);
 }
 
 export async function getReadingStreak(userId: string, year?: number): Promise<ReadingStreak> {
@@ -67,6 +82,11 @@ export async function getReadingStreak(userId: string, year?: number): Promise<R
 }
 
 async function getReadingStreakInner(userId: string, year?: number): Promise<ReadingStreak> {
+  const tzRow = (await db.all(sql`
+    SELECT timezone FROM users WHERE id = ${userId}
+  `)) as { timezone: string | null }[];
+  const fmt = dayFormatterFor(tzRow[0]?.timezone || FALLBACK_TIMEZONE);
+
   // Hour precision keeps the row count sane for big libraries (a Goodreads
   // import stamps thousands of rows within the same hour) while staying fine
   // enough to bucket into a local calendar day.
@@ -91,7 +111,7 @@ async function getReadingStreakInner(userId: string, year?: number): Promise<Rea
   const allDays: string[] = [
     ...new Set(
       result
-        .map((r) => (r.t ? toStreakDay(`${r.t}:00:00`) : null))
+        .map((r) => (r.t ? toStreakDay(`${r.t}:00:00`, fmt) : null))
         .filter((d): d is string => Boolean(d))
     ),
   ].sort();
@@ -120,8 +140,8 @@ async function getReadingStreakInner(userId: string, year?: number): Promise<Rea
   }
 
   const now = new Date();
-  const todayStr = dayFormatter.format(now);
-  const yesterdayStr = dayFormatter.format(new Date(now.getTime() - 86_400_000));
+  const todayStr = fmt.format(now);
+  const yesterdayStr = fmt.format(new Date(now.getTime() - 86_400_000));
   const lastActiveDay = allDays[allDays.length - 1];
 
   let currentStreak = 0;
