@@ -15,12 +15,19 @@
  *     model did, which is exactly what that flag is supposed to mean. The DISPLAYED
  *     INTENSITY NEVER CHANGES.
  *
- * NOTES POLICY (deliberate deviation from /api/admin/corrections/[id]/apply):
- * the API always prefers the reviewer's note. Here the reviewer's note wins only if
- * it is non-empty and at least as long as the existing one. Reviewers often submit
- * a terse "One kissing scene." that would replace a fuller sourced note, and the
- * house rule for content notes is 70-190 chars (memory: feedback_content_notes_concise).
- * Never silently shorten what readers see.
+ * NOTES POLICY — THIS SCRIPT NEVER WRITES NOTES (corrected 2026-08-08).
+ * The API's apply route takes the reviewer's note verbatim. An earlier version of
+ * this script took it whenever it was longer. BOTH are wrong: a reader's note and a
+ * sourced note each carry detail the other lacks, so picking one always destroys
+ * information — verbatim copy-paste also drops raw review prose ("Minor stuff
+ * like...") into reader-facing copy that is supposed to be 70-190 tidy chars
+ * (memory: feedback_content_notes_concise).
+ *
+ * Merging two prose notes is a writing task, not a rule a script can apply. So this
+ * script now leaves `notes` ALONE and lists every correction whose reader note adds
+ * something, under `needsNoteMerge` in the manifest. Synthesise those by hand (see
+ * scripts/merge-reader-notes-2026-08-08.ts for the pattern) — combine both sources,
+ * let the reader win on disputed fact, keep it in range.
  *
  * WHAT IT REFUSES TO TOUCH:
  *   - Any correction whose proposed intensity differs from the current one. Those
@@ -85,21 +92,21 @@ type Row = {
   for (const x of confirming) {
     const upgrade = x.ev !== 'human_verified';
     const revNote = (x.note ?? '').trim();
-    const curNote = (x.curnotes ?? '').trim();
-    const takeNote = revNote.length > 0 && revNote.length >= curNote.length;
     manifest.push({
       correctionId: x.id, title: x.title, category: x.category, intensity: x.cur,
       before: { evidence_level: x.ev, notes: x.curnotes },
-      after: { evidence_level: 'human_verified', notes: takeNote ? revNote : x.curnotes },
-      ratingWrite: upgrade || takeNote,
+      after: { evidence_level: 'human_verified', notes: x.curnotes }, // notes untouched
+      ratingWrite: upgrade,
+      // Reader detail worth folding into the note by hand — never auto-written.
+      needsNoteMerge: revNote.length > 0 ? { existing: x.curnotes, reader: revNote } : null,
     });
 
     if (!APPLY) continue;
 
-    if (upgrade || takeNote) {
-      const args = [takeNote ? revNote : x.curnotes, ADMIN_USER_ID, now, x.book_id, x.category_id];
+    if (upgrade) {
+      const args = [ADMIN_USER_ID, now, x.book_id, x.category_id];
       const sql = `UPDATE book_category_ratings
-                      SET evidence_level='human_verified', notes=?, updated_by_user_id=?, updated_at=?
+                      SET evidence_level='human_verified', updated_by_user_id=?, updated_at=?
                     WHERE book_id=? AND category_id=?`;
       await remote.execute({ sql, args });
       local.prepare(sql).run(...args);
@@ -111,8 +118,13 @@ type Row = {
   const path = `reports/confirming-corrections-${now.slice(0, 10)}.json`;
   writeFileSync(path, JSON.stringify({ appliedAt: APPLY ? now : null, rows: manifest }, null, 1));
   const ratingWrites = manifest.filter((m) => m.ratingWrite).length;
+  const merges = manifest.filter((m) => m.needsNoteMerge).length;
   console.log(`${APPLY ? 'APPLIED' : 'DRY RUN'}: ${manifest.length} correction(s) resolved, ` +
               `${ratingWrites} rating row(s) upgraded to human_verified. Manifest: ${path}`);
+  if (merges > 0) {
+    console.log(`${merges} reader note(s) add detail to an existing note — merge those by hand ` +
+                `(see needsNoteMerge in the manifest). Notes were NOT modified by this run.`);
+  }
   if (!APPLY) console.log('Pass --apply to write.');
   process.exit(0);
 })();
