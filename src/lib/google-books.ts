@@ -4,7 +4,23 @@
  * Used when Open Library doesn't have cover art for a book.
  */
 
+import { consumeApiQuotaShared } from "@/lib/api-quota";
+
 const GOOGLE_BOOKS_API = "https://www.googleapis.com/books/v1/volumes";
+
+/**
+ * Google Books allows 1,000 queries/day on the free tier (resets midnight
+ * Pacific), and that allowance is spent by THREE consumers at once:
+ * `upcoming-releases`, the enrichment cover cascade, and the description tier.
+ * Left ungoverned they race to exhaustion — the error log showed daily 429s on
+ * 7 of 8 days in Aug 2026 — and every lane reads the resulting 503 as an
+ * upstream outage rather than "someone else spent your budget".
+ *
+ * So every call goes through ONE shared counter. Default 950 leaves ~50 for
+ * ad-hoc/manual runs. Raise `GOOGLE_BOOKS_DAILY_MAX` the moment the project's
+ * Cloud Console quota is raised — that env var is the only change needed.
+ */
+const GOOGLE_BOOKS_DAILY_MAX = Number(process.env.GOOGLE_BOOKS_DAILY_MAX) || 950;
 
 export interface GoogleBooksVolume {
   id: string;
@@ -74,6 +90,19 @@ export async function searchGoogleBooksDetailed(
     return { ok: false, status: null, quotaExhausted: false, volumes: [] };
   }
 
+  // Budget check BEFORE the request. Reported as `quotaExhausted` because that
+  // is exactly what it means to the caller — the daily allowance is gone — and
+  // every existing caller already handles that state correctly (defer + retry
+  // tomorrow) rather than treating it as a hard failure.
+  // "pacific" because Google's Queries-per-day resets at midnight Pacific, not UTC.
+  const budget = await consumeApiQuotaShared("google_books", GOOGLE_BOOKS_DAILY_MAX, "pacific");
+  if (!budget.ok) {
+    console.warn(
+      `[google-books] daily budget reached (${budget.dailyCount}/${GOOGLE_BOOKS_DAILY_MAX}) — skipping "${query}"`,
+    );
+    return { ok: false, status: null, quotaExhausted: true, volumes: [] };
+  }
+
   const url = new URL(GOOGLE_BOOKS_API);
   url.searchParams.set("q", query);
   url.searchParams.set("maxResults", String(maxResults));
@@ -120,6 +149,80 @@ export async function searchGoogleBooksDetailed(
  */
 export async function searchGoogleBooksByIsbn(isbn: string): Promise<GoogleBooksVolume[]> {
   return searchGoogleBooks(`isbn:${isbn}`, 3);
+}
+
+/**
+ * Best-effort publisher description for a book, from Google Books.
+ *
+ * This is the tier the pipeline was missing: OL and ISBNdb both go quiet on the
+ * long tail, and before this the only remaining source was the Brave+Grok pass
+ * at ~36s and ~5 Brave calls per book. Measured against the 40 oldest
+ * stale-flagged books (the hardest cases in the catalog, all of which had
+ * already failed OL and ISBNdb repeatedly), this returned a usable description
+ * for 25% of them at ~0.5s each.
+ *
+ * ISBN-13 → ISBN-10 → title+author, stopping at the first hit, so a book with
+ * an ISBN costs exactly one call. The title+author fallback is deliberately
+ * last and strict about the author matching: `q=` free text will happily return
+ * a different book by the same name, and a confidently-wrong description is
+ * worse than none — that is the failure mode Rebekah is already seeing in the
+ * catalog.
+ *
+ * Returns raw text; the CALLER must run it through `sanitizeDescription`.
+ */
+export async function fetchGoogleBooksDescription(opts: {
+  isbn13?: string | null;
+  isbn10?: string | null;
+  title: string;
+  author?: string | null;
+}): Promise<{ description: string | null; quotaExhausted: boolean }> {
+  const attempts: string[] = [];
+  if (opts.isbn13) attempts.push(`isbn:${opts.isbn13}`);
+  if (opts.isbn10) attempts.push(`isbn:${opts.isbn10}`);
+
+  for (const q of attempts) {
+    const res = await searchGoogleBooksDetailed(q, 3);
+    if (res.quotaExhausted) return { description: null, quotaExhausted: true };
+    const hit = res.volumes.find((v) => (v.volumeInfo.description ?? "").length >= 80);
+    if (hit) return { description: hit.volumeInfo.description!, quotaExhausted: false };
+  }
+
+  // No ISBN, or the ISBN lookups came back empty. Fall back to title+author,
+  // but only accept a volume whose title AND author both corroborate — an
+  // unverified match here is how wrong-book descriptions get written.
+  if (!opts.author) return { description: null, quotaExhausted: false };
+
+  const res = await searchGoogleBooksDetailed(
+    `intitle:"${opts.title}" inauthor:"${opts.author}"`,
+    5,
+  );
+  if (res.quotaExhausted) return { description: null, quotaExhausted: true };
+
+  const wantTitle = normalizeForMatch(opts.title);
+  const wantAuthor = normalizeForMatch(opts.author);
+  for (const v of res.volumes) {
+    const desc = v.volumeInfo.description ?? "";
+    if (desc.length < 80) continue;
+    const gotTitle = normalizeForMatch(v.volumeInfo.title ?? "");
+    const authorsOk = (v.volumeInfo.authors ?? []).some((a) => {
+      const got = normalizeForMatch(a);
+      return got === wantAuthor || got.includes(wantAuthor) || wantAuthor.includes(got);
+    });
+    const titleOk = gotTitle === wantTitle || gotTitle.startsWith(wantTitle) || wantTitle.startsWith(gotTitle);
+    if (authorsOk && titleOk) return { description: desc, quotaExhausted: false };
+  }
+  return { description: null, quotaExhausted: false };
+}
+
+/** Lowercase, strip punctuation/subtitles/articles so title+author compare sanely. */
+function normalizeForMatch(s: string): string {
+  return s
+    .toLowerCase()
+    .split(":")[0]
+    .replace(/\(.*?\)/g, "")
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /**

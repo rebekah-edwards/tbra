@@ -68,7 +68,13 @@ import { enrichBook } from "../src/lib/enrichment/enrich-book";
 const MAX_AUTHORS = Number(process.env.MAX_AUTHORS ?? 150);
 const MAX_BOOKS = Number(process.env.MAX_BOOKS ?? 60);
 const HORIZON_MONTHS = Number(process.env.HORIZON_MONTHS ?? 18);
-const GOOGLE_MAX = Number(process.env.GOOGLE_MAX ?? 800);
+// Halved from 800 on 2026-08-08. Google Books allows 1,000 queries/day and the
+// limit is NOT raisable — the Cloud Console offers no increase beyond 1K, so
+// the only way to fund the description tier is to split the fixed allowance.
+// Rebekah's call: 500/500. This lane runs at 3:09 AM ET, before
+// nightly-description-refresh, so stopping at 500 leaves the rest for it under
+// the shared `google_books` counter rather than racing it to exhaustion.
+const GOOGLE_MAX = Number(process.env.GOOGLE_MAX ?? 500);
 const CURSOR_FILE = process.env.CURSOR_FILE || "data/upcoming-authors-cursor.json";
 const DRY_RUN = process.env.DRY_RUN === "1";
 // Ceiling on the re-check queue (see selectAuthors) so a long Google outage

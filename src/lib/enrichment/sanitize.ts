@@ -248,7 +248,15 @@ export function sanitizeDescription(raw: string): string | null {
   // not a blurb — e.g. "Fantastic Beasts and Where to Find Them: The Original
   // Screenplay By J.K. Rowling". Requires no internal sentence break, so real
   // prose (which always has one by this length) is unaffected.
-  if (/^[^.!?]{20,150}\s+[Bb]y\s+[A-Z][\w.'’\-\s]{2,40}$/.test(text)) return null;
+  // Requires no trailing sentence punctuation: a listing headline runs
+  // "Title ... By Author" with nothing after it, while real prose that happens
+  // to end in "by <Capitalized word>" closes with a period. Without this the
+  // rule rejected legitimate one-line descriptions — "A retelling of the story
+  // about a miser whose life is changed by Christmas." and "The novel based on
+  // the The Four Loves radio talks by C. S. Lewis." both matched, so books were
+  // left blank when a perfectly good description was available (found
+  // 2026-08-08 while auditing junk descriptions).
+  if (/^[^.!?]{20,150}\s+[Bb]y\s+[A-Z][\w.'’\-\s]{2,40}$/.test(text) && !/[.!?]$/.test(text)) return null;
 
   return text;
 }

@@ -43,15 +43,42 @@ import { startWatchdogExemption } from "./lib/watchdog-exempt";
 const DB_PATH = path.join(process.cwd(), "data", "tbra.db");
 const db = new Database(DB_PATH);
 
-const BATCH_SIZE = Number(process.env.BATCH_SIZE) || 500;
+const BATCH_SIZE = Number(process.env.BATCH_SIZE) || 2000;
 const MAX_RUNTIME_MIN = Number(process.env.MAX_RUNTIME_MIN) || 45;
 const MAX_RUNTIME_MS = MAX_RUNTIME_MIN * 60 * 1000;
 const DELAY_MS = 300;
+
+// Books in flight at once. Capped at 5 by ISBNdb's 3 req/sec rate limit, not by
+// CPU — at ~4s/book that lands around 1.25 books/sec, so ~2.5 ISBNdb calls/sec
+// worst case. Raise only alongside the ISBNdb ceiling.
+const CONCURRENCY = Number(process.env.CONCURRENCY) || 5;
+
+// Brave + Grok are OFF by default here as of 2026-08-08.
+//
+// Measured on one fixed set of 10 aged stale books: the Brave+Grok pass fixed
+// 2/10 at 35.8s each (~5 Brave calls per book), while the free tiers plus the
+// new Google Books description tier fixed 3/12 at 3.9s each and spend no Brave
+// at all. The expensive path was both slower AND lower-yield, and it was
+// competing with nightly-content-ratings-backfill for the same shared Brave
+// budget. Set USE_BRAVE=1 to run the expensive tail deliberately against the
+// residue that the free tiers can't crack.
+const USE_BRAVE = process.env.USE_BRAVE === "1";
+
+// Skip books already attempted within this window.
+//
+// Every enrichBook run writes an enrichment_log row even when it finds nothing,
+// so this is an ATTEMPT cooldown, not a success cooldown — which is the point.
+// Google Books is hard-capped at 1,000 queries/day and cannot be raised (checked
+// 2026-08-08: the Cloud Console offers no increase beyond 1K), so without this
+// the nightly run re-asks the same dead books forever and the entire daily
+// allowance is spent re-confirming known failures instead of reaching the ~14k
+// books nobody has tried yet. Same 21-day convention recover-thin-ratings uses.
+const COOLDOWN_DAYS = Number(process.env.COOLDOWN_DAYS) || 21;
 // After this many consecutive no-op enrichments, confirm whether a global
 // auto-pause is the cause (cheap to be wrong; we only stop if truly paused).
 const UNCHANGED_BACKOFF_CHECK = 20;
 
-type Row = { id: string; title: string };
+type Row = { id: string; title: string; shelved: number };
 
 // ── Watchdog exemption ────────────────────────────────────────────────────
 // The launchd watchdog kills any tbra tsx process older than 60 min UNLESS
@@ -96,25 +123,57 @@ const deadline = setTimeout(() => {
 }, MAX_RUNTIME_MS);
 deadline.unref();
 
+// Books needing a description = flagged stale OR simply blank.
+//
+// Until 2026-08-08 this selected `description_stale = 1` only, which turned out
+// to be a small minority of the actual problem: 11,659 public books had NO
+// description at all and only 4,377 of them carried the flag. The other 7,281
+// were invisible to this job forever — nothing else selects them either, so
+// they would have stayed blank no matter how many nights this ran.
+//
+// Ordered user-facing first: a book somebody has shelved is a book somebody
+// will actually open. Within each tier, oldest-touched first, so a run that
+// stops at the ceiling resumes where it left off instead of re-treading.
 function selectBatch(): Row[] {
   return db
     .prepare(
-      `SELECT id, title
-       FROM books
-       WHERE description_stale = 1
-         AND visibility = 'public'
-       ORDER BY updated_at ASC
+      `SELECT b.id, b.title,
+              (SELECT COUNT(*) FROM user_book_state s WHERE s.book_id = b.id) AS shelved
+       FROM books b
+       WHERE b.visibility = 'public'
+         AND (b.description_stale = 1
+              OR b.description IS NULL
+              OR TRIM(b.description) = '')
+         AND NOT EXISTS (
+           SELECT 1 FROM enrichment_log e
+           WHERE e.book_id = b.id
+             AND e.created_at > datetime('now', ?)
+         )
+       ORDER BY shelved DESC, b.updated_at ASC
        LIMIT ?`,
     )
-    .all(BATCH_SIZE) as Row[];
+    .all(`-${COOLDOWN_DAYS} days`, BATCH_SIZE) as Row[];
 }
 
-const isStaleStmt = db.prepare(
-  `SELECT description_stale AS stale FROM books WHERE id = ?`,
+const descStateStmt = db.prepare(
+  `SELECT description_stale AS stale,
+          LENGTH(TRIM(COALESCE(description, ''))) AS len
+   FROM books WHERE id = ?`,
 );
-function isStillStale(id: string): boolean {
-  const row = isStaleStmt.get(id) as { stale: number } | undefined;
-  return (row?.stale ?? 0) === 1;
+
+/**
+ * Did this book end the pass with a real description?
+ *
+ * NOT the same as "the stale flag cleared". Now that blank-but-unflagged books
+ * are in the batch, `stale` is 0 for them both before and after a failed pass —
+ * reading the flag alone would score every unfixed blank book as a success.
+ * A book counts as resolved only if it has actual description text AND isn't
+ * flagged for replacement.
+ */
+function hasGoodDescription(id: string): boolean {
+  const row = descStateStmt.get(id) as { stale: number; len: number } | undefined;
+  if (!row) return false;
+  return row.len > 0 && (row.stale ?? 0) === 0;
 }
 
 // Mirrors the auto-pause check inside enrichBook(): any api_exhausted log in
@@ -142,7 +201,8 @@ function isExhausted(e: unknown): boolean {
 
 async function main() {
   console.log(
-    `[description-refresh] Starting — batch ${BATCH_SIZE}, ceiling ${MAX_RUNTIME_MIN}min`,
+    `[description-refresh] Starting — batch ${BATCH_SIZE}, ceiling ${MAX_RUNTIME_MIN}min, ` +
+      `concurrency ${CONCURRENCY}, mode ${USE_BRAVE ? "FULL (Brave+Grok)" : "free tiers + Google Books"}`,
   );
 
   // Don't even start if enrichment is globally paused — every call would no-op.
@@ -154,74 +214,88 @@ async function main() {
   }
 
   const rows = selectBatch();
-  console.log(`[description-refresh] ${rows.length} books flagged stale`);
+  const shelvedCount = rows.filter((r) => r.shelved > 0).length;
+  console.log(
+    `[description-refresh] ${rows.length} books need a description (${shelvedCount} on a user's shelf — done first)`,
+  );
 
   if (rows.length === 0) {
     console.log("[description-refresh] Nothing to do. Exiting.");
     return;
   }
 
-  let enriched = 0; // stale flag cleared — a real refresh
+  let enriched = 0; // ends the pass with a real description — a genuine fix
   let unchanged = 0; // ran, but no clean description found (will retry later)
   let failed = 0; // threw a non-exhaustion error
   let processed = 0;
   let consecutiveUnchanged = 0;
   let stopReason: string | null = null;
   const started = Date.now();
+  let cursor = 0;
 
-  for (let i = 0; i < rows.length; i++) {
-    // Graceful wall-clock ceiling: stop cleanly and let the run push what we
-    // have. The remainder rolls to the next night (oldest-first ⇒ no rework).
-    if (Date.now() - started >= MAX_RUNTIME_MS) {
-      stopReason = `time ceiling (${MAX_RUNTIME_MIN}min)`;
-      break;
-    }
+  // One worker per concurrency slot, each pulling from a shared cursor. The old
+  // loop was strictly serial: measured on the same 10 books, the Brave+Grok
+  // path cost 35.8s each, so a 140-minute night finished ~175 of a 500-book
+  // batch and lost the rest to the ceiling. The work is essentially all network
+  // wait, so slots convert almost linearly into throughput.
+  async function worker() {
+    for (;;) {
+      if (stopReason) return;
+      if (Date.now() - started >= MAX_RUNTIME_MS) {
+        stopReason = `time ceiling (${MAX_RUNTIME_MIN}min)`;
+        return;
+      }
+      const i = cursor++;
+      if (i >= rows.length) return;
+      const r = rows[i];
 
-    const r = rows[i];
-    if (i % 25 === 0) {
-      console.log(
-        `  [${i}/${rows.length}] enriched=${enriched} unchanged=${unchanged} failed=${failed}`,
-      );
-    }
+      if (i % 50 === 0) {
+        console.log(
+          `  [${i}/${rows.length}] enriched=${enriched} unchanged=${unchanged} failed=${failed}`,
+        );
+      }
 
-    try {
-      await enrichBook(r.id, { skipBrave: true });
-      processed++;
-      if (isStillStale(r.id)) {
-        unchanged++;
-        consecutiveUnchanged++;
-      } else {
-        enriched++;
+      try {
+        await enrichBook(r.id, { skipBrave: true, skipContentSearch: USE_BRAVE ? false : true, skipAuthorDiscovery: true });
+        processed++;
+        if (hasGoodDescription(r.id)) {
+          enriched++;
+          consecutiveUnchanged = 0;
+        } else {
+          unchanged++;
+          consecutiveUnchanged++;
+        }
+      } catch (e: unknown) {
+        if (isExhausted(e)) {
+          stopReason = "API exhausted (circuit breaker)";
+          return;
+        }
+        console.error(
+          `  FAIL ${r.id} "${r.title}": ${
+            e instanceof Error ? e.message : String(e)
+          }`,
+        );
+        failed++;
         consecutiveUnchanged = 0;
       }
-    } catch (e: unknown) {
-      if (isExhausted(e)) {
-        stopReason = "API exhausted (circuit breaker)";
-        break;
-      }
-      console.error(
-        `  FAIL ${r.id} "${r.title}": ${
-          e instanceof Error ? e.message : String(e)
-        }`,
-      );
-      failed++;
-      consecutiveUnchanged = 0;
-    }
 
-    // A long no-op streak can mean a global auto-pause crept in mid-run (e.g. a
-    // concurrent task tripped it) — enrichBook skips silently in that case, so
-    // the stale flag never clears. Confirm before stopping: genuine
-    // "no description found" streaks (common) must NOT abort the run.
-    if (consecutiveUnchanged >= UNCHANGED_BACKOFF_CHECK) {
-      if (isAutoPaused()) {
-        stopReason = "API auto-paused mid-run (circuit breaker)";
-        break;
+      // A long no-op streak can mean a global auto-pause crept in mid-run (e.g. a
+      // concurrent task tripped it) — enrichBook skips silently in that case, so
+      // the description never lands. Confirm before stopping: genuine
+      // "no description found" streaks (common) must NOT abort the run.
+      if (consecutiveUnchanged >= UNCHANGED_BACKOFF_CHECK) {
+        if (isAutoPaused()) {
+          stopReason = "API auto-paused mid-run (circuit breaker)";
+          return;
+        }
+        consecutiveUnchanged = 0; // just hard-to-enrich books; keep going
       }
-      consecutiveUnchanged = 0; // just hard-to-enrich books; keep going
-    }
 
-    await delay(DELAY_MS);
+      await delay(DELAY_MS);
+    }
   }
+
+  await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
 
   const elapsed = ((Date.now() - started) / 1000).toFixed(1);
   const remaining = rows.length - processed - failed;
