@@ -88,7 +88,7 @@ function TrackSheet({
   if (success) {
     return (
       <div className="rounded-xl border border-accent/20 bg-accent/5 p-3 text-center">
-        <p className="text-sm text-accent-dark font-medium">✓ Note saved</p>
+        <p className="text-sm text-foreground font-medium">✓ Note saved</p>
       </div>
     );
   }

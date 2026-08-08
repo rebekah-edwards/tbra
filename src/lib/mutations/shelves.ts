@@ -232,8 +232,17 @@ async function notifyShelfFollowers(shelfId: string, shelfName: string, bookId: 
   // Get book title and shelf slug for the notification
   const bookRow = await db.all(sql`SELECT title FROM books WHERE id = ${bookId}`) as { title: string }[];
   const bookTitle = bookRow[0]?.title || "a book";
-  const shelfRow = await db.all(sql`SELECT slug FROM shelves WHERE id = ${shelfId}`) as { slug: string }[];
+  // The owner's username matters: /library/shelves/<slug> resolves against the
+  // VIEWER's own shelves, so every follower notification pointed at a shelf
+  // they don't have. Followers need the public path (punch list #5.3).
+  const shelfRow = await db.all(sql`
+    SELECT s.slug AS slug, u.username AS username
+    FROM shelves s JOIN users u ON u.id = s.user_id
+    WHERE s.id = ${shelfId}
+  `) as { slug: string; username: string | null }[];
   const shelfSlug = shelfRow[0]?.slug;
+  const ownerUsername = shelfRow[0]?.username;
+  if (!shelfSlug || !ownerUsername) return;
 
   // Get all followers of this shelf
   const followers = await db.all(sql`
@@ -246,7 +255,7 @@ async function notifyShelfFollowers(shelfId: string, shelfName: string, bookId: 
       type: "shelf_update",
       title: `New book on "${shelfName}"`,
       message: `"${bookTitle}" was added to a shelf you follow.`,
-      linkUrl: `/library/shelves/${shelfSlug}`,
+      linkUrl: `/u/${ownerUsername}/shelves/${shelfSlug}`,
     });
   }
 }
@@ -326,4 +335,70 @@ export async function updateShelfBookNoteFor(
     WHERE shelf_id = ${shelfId} AND book_id = ${bookId}
   `);
   return { success: true };
+}
+
+// ─── Follow / unfollow a public shelf ───
+// Extracted from the web server actions so native can reach it too: iOS had
+// no way to follow a shelf at all, because the logic only existed as a server
+// action (punch list #5.2, 2026-08-08).
+
+export async function followShelfFor(
+  userId: string,
+  shelfId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const shelf = await db.select().from(shelves).where(eq(shelves.id, shelfId)).get();
+  if (!shelf) return { success: false, error: "Shelf not found" };
+  if (!shelf.isPublic) return { success: false, error: "Shelf is private" };
+  if (shelf.userId === userId) return { success: false, error: "Cannot follow your own shelf" };
+
+  const existing = await db.all(sql`
+    SELECT user_id FROM shelf_follows WHERE user_id = ${userId} AND shelf_id = ${shelfId}
+  `);
+  if (existing.length > 0) return { success: true };
+
+  await db.run(sql`
+    INSERT INTO shelf_follows (user_id, shelf_id) VALUES (${userId}, ${shelfId})
+  `);
+
+  // Notify the owner. Never let a notification failure break the follow.
+  try {
+    const rows = await db.all(sql`
+      SELECT
+        (SELECT COALESCE(display_name, username) FROM users WHERE id = ${userId}) AS follower,
+        (SELECT username FROM users WHERE id = ${shelf.userId}) AS owner
+    `) as { follower: string | null; owner: string | null }[];
+    const followerName = rows[0]?.follower || "Someone";
+    const ownerUsername = rows[0]?.owner;
+    await db.insert(userNotifications).values({
+      userId: shelf.userId,
+      type: "shelf_followed",
+      title: "New shelf follower",
+      message: `${followerName} started following your shelf "${shelf.name}"`,
+      // The owner DOES own this shelf, so the library path resolves for them.
+      linkUrl: ownerUsername
+        ? `/library/shelves/${shelf.slug}`
+        : `/library/shelves`,
+    });
+  } catch {
+    // ignore
+  }
+
+  return { success: true };
+}
+
+export async function unfollowShelfFor(
+  userId: string,
+  shelfId: string,
+): Promise<{ success: boolean }> {
+  await db.run(sql`
+    DELETE FROM shelf_follows WHERE user_id = ${userId} AND shelf_id = ${shelfId}
+  `);
+  return { success: true };
+}
+
+export async function isFollowingShelf(userId: string, shelfId: string): Promise<boolean> {
+  const rows = await db.all(sql`
+    SELECT user_id FROM shelf_follows WHERE user_id = ${userId} AND shelf_id = ${shelfId}
+  `);
+  return rows.length > 0;
 }
