@@ -228,14 +228,17 @@ private struct FriendsActivityCard: View {
     let item: ActivityItem
     var onOpen: () -> Void = {}
 
-    private var actionLabel: (String, Color) {
+    /// (label, pill tint, label colour). The lime pills need `Theme.accentText`
+    /// on the label — lime-on-lime-15% is unreadable in light mode, and the web
+    /// gets the same treatment for free via the `text-accent` override.
+    private var actionLabel: (String, Color, Color) {
         switch item.type {
-        case "completed": return ("FINISHED", Theme.neonBlue)
-        case "review": return ("REVIEWED", Theme.neonPurple)
-        case "rating": return ("RATED", Theme.accent)
-        case "currently_reading": return ("READING", Theme.accent)
-        case "tbr": return ("TBR'D", Theme.neonBlue)
-        default: return ("READING NOTE", .orange)
+        case "completed": return ("FINISHED", Theme.neonBlue, Theme.neonBlue)
+        case "review": return ("REVIEWED", Theme.neonPurple, Theme.neonPurple)
+        case "rating": return ("RATED", Theme.accent, Theme.accentText)
+        case "currently_reading": return ("READING", Theme.accent, Theme.accentText)
+        case "tbr": return ("TBR'D", Theme.neonBlue, Theme.neonBlue)
+        default: return ("READING NOTE", .orange, .orange)
         }
     }
 
@@ -340,12 +343,12 @@ private struct FriendsActivityCard: View {
 
     private var cardBody: some View {
         VStack(alignment: .leading, spacing: 6) {
-            let (label, color) = actionLabel
+            let (label, color, labelColor) = actionLabel
             HStack(spacing: 6) {
                 Text(label)
                     .font(Theme.body(9, .semibold))
                     .tracking(0.5)
-                    .foregroundStyle(color)
+                    .foregroundStyle(labelColor)
                     .padding(.horizontal, 6).padding(.vertical, 2)
                     .background(color.opacity(0.15), in: Capsule())
                     .overlay(Capsule().stroke(color.opacity(0.2), lineWidth: 1))

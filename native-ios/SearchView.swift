@@ -38,32 +38,41 @@ final class SearchModel {
     var results: [SearchResult] = []
     var external: [ExternalResult] = []
     var searching = false
+    /// The ISBNdb supplement runs AFTER the local pass resolves. It needs its
+    /// own flag: reusing `searching` would hide the local hits while it ran,
+    /// but leaving both false made the screen claim "No matches in the library
+    /// yet" for the whole external round-trip — which is what a book that is
+    /// only in the wider catalog looked like (punch list #5/#6, 2026-08-08).
+    var loadingExternal = false
     private var task: Task<Void, Never>?
 
     func queryChanged() {
         task?.cancel()
         let q = query.trimmingCharacters(in: .whitespaces)
-        guard q.count >= 2 else { results = []; external = []; searching = false; return }
+        guard q.count >= 2 else {
+            results = []; external = []; searching = false; loadingExternal = false
+            return
+        }
         searching = true
         task = Task {
             // Debounce as-you-type like the web client
             try? await Task.sleep(for: .milliseconds(300))
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled else { searching = false; return }
             let found = (try? await APIClient.shared.search(q)) ?? []
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled else { searching = false; return }
             results = found
             searching = false
             // Local-first, ISBNdb fallback: supplement when local < 5
             // (same trigger as the web search page).
-            if found.count < 5 {
-                struct Res: Codable { let ok: Bool; let results: [ExternalResult] }
-                let res: Res? = try? await APIClient.shared.get(
-                    "/api/v1/search/external", query: [URLQueryItem(name: "q", value: q)])
-                guard !Task.isCancelled else { return }
-                external = res?.results ?? []
-            } else {
-                external = []
-            }
+            guard found.count < 5 else { external = []; return }
+            external = []
+            loadingExternal = true
+            defer { loadingExternal = false }
+            struct Res: Codable { let ok: Bool; let results: [ExternalResult] }
+            let res: Res? = try? await APIClient.shared.get(
+                "/api/v1/search/external", query: [URLQueryItem(name: "q", value: q)])
+            guard !Task.isCancelled else { return }
+            external = res?.results ?? []
         }
     }
 }
@@ -146,12 +155,24 @@ struct SearchView: View {
                                 SearchResultCard(result: result, onOpen: onOpenBook)
                             }
                         }
-                    } else if model.query.trimmingCharacters(in: .whitespaces).count >= 2 && model.external.isEmpty {
+                    } else if model.query.trimmingCharacters(in: .whitespaces).count >= 2
+                                && model.external.isEmpty && !model.loadingExternal {
                         Text("No matches in the library yet.")
                             .font(Theme.body(15))
                             .foregroundStyle(Theme.muted)
                             .frame(maxWidth: .infinity)
                             .padding(.top, 30)
+                    }
+
+                    if model.loadingExternal {
+                        HStack(spacing: 8) {
+                            ProgressView().tint(Theme.accent).scaleEffect(0.8)
+                            Text("Searching the wider catalog...")
+                                .font(Theme.body(15))
+                                .foregroundStyle(Theme.muted)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 30)
                     }
 
                     if !model.external.isEmpty && !model.searching {
@@ -519,6 +540,13 @@ struct FloatingSearchOverlay: View {
     @State private var query = ""
     @State private var res: Res?
     @State private var searching = false
+    /// The dropdown used to query ONLY the local index, so it could never
+    /// surface a book tbr*a didn't already have — "the dropdown feels useless"
+    /// (punch list #6, 2026-08-08). It now supplements thin local results with
+    /// the same ISBNdb pass the full search page uses; tapping one hands off
+    /// to full search, which owns the import flow.
+    @State private var external: [ExternalResult] = []
+    @State private var loadingExternal = false
     @State private var debounce: Task<Void, Never>?
     @FocusState private var focused: Bool
 
@@ -564,6 +592,7 @@ struct FloatingSearchOverlay: View {
             } else if !query.isEmpty {
                 Button {
                     query = ""; res = nil
+                    external = []; loadingExternal = false
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 15))
@@ -592,13 +621,38 @@ struct FloatingSearchOverlay: View {
                         default: EmptyView()
                         }
                     }
-                    if res.books.isEmpty && res.series.isEmpty && res.authors.isEmpty && !searching {
+                    if res.books.isEmpty && res.series.isEmpty && res.authors.isEmpty
+                        && !searching && !loadingExternal && external.isEmpty {
                         Text("No books found")
                             .font(Theme.body(14))
                             .foregroundStyle(Theme.muted)
                             .padding(.vertical, 20)
                     }
                 }
+
+                if loadingExternal {
+                    HStack(spacing: 8) {
+                        ProgressView().tint(Theme.accent).scaleEffect(0.7)
+                        Text("Searching the wider catalog...")
+                            .font(Theme.body(13))
+                            .foregroundStyle(Theme.muted)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                }
+
+                if !external.isEmpty {
+                    Text("NOT IN TBR*A YET — TAP TO ADD")
+                        .font(Theme.body(10, .semibold))
+                        .tracking(1.0)
+                        .foregroundStyle(Theme.muted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                        .padding(.bottom, 6)
+                    ForEach(external) { externalRow($0) }
+                }
+
                 Button { handOff() } label: {
                     Text("See more results or add a book")
                         .font(Theme.body(12))
@@ -613,6 +667,37 @@ struct FloatingSearchOverlay: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
         // Liquid Glass dropdown, matching the pill (was opaque surface).
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// A wider-catalog hit. Tapping hands off to the full search page with the
+    /// query intact — that screen owns the tested "Add to tbr*a" import flow,
+    /// so the dropdown doesn't need a second copy of it.
+    private func externalRow(_ result: ExternalResult) -> some View {
+        Button { handOff() } label: {
+            HStack(spacing: 12) {
+                CoverThumb(url: result.coverUrl, width: 40, height: 60, radius: 5, title: result.title)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(result.title)
+                        .font(Theme.body(14, .medium))
+                        .foregroundStyle(Theme.foreground)
+                        .lineLimit(1)
+                    Text([result.authors.prefix(2).joined(separator: ", "),
+                          result.publicationYear.map(String.init) ?? ""]
+                        .filter { !$0.isEmpty }.joined(separator: " · "))
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
+                        .lineLimit(1)
+                }
+                Spacer()
+                Text("Add")
+                    .font(Theme.body(10, .semibold))
+                    .foregroundStyle(Theme.onAccent)
+                    .padding(.horizontal, 9).padding(.vertical, 4)
+                    .background(Theme.accent, in: Capsule())
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10)
+        }
+        .overlay(alignment: .bottom) { Divider().background(Theme.border.opacity(0.35)) }
     }
 
     private func bookRow(_ book: Res.Book) -> some View {
@@ -693,19 +778,35 @@ struct FloatingSearchOverlay: View {
     private func runSearch() {
         debounce?.cancel()
         let q = trimmed
-        guard q.count >= 2 else { res = nil; return }
+        guard q.count >= 2 else { res = nil; external = []; loadingExternal = false; return }
         debounce = Task {
             try? await Task.sleep(for: .milliseconds(250))
             guard !Task.isCancelled else { return }
             searching = true
-            defer { searching = false }
+            var local: Res?
             do {
-                let r: Res = try await APIClient.shared.get(
+                local = try await APIClient.shared.get(
                     "/api/v1/search/unified", query: [URLQueryItem(name: "q", value: q)])
-                if !Task.isCancelled { res = r }
+                if !Task.isCancelled, let local { res = local }
             } catch {
                 NSLog("TBRA-DEBUG overlay search failed: %@", String(describing: error))
             }
+            searching = false
+            guard !Task.isCancelled else { return }
+
+            // Supplement only when the local index came back thin. The ISBNdb
+            // search budget is shared (2,000/day across web + native), so this
+            // deliberately does NOT fire on every keystroke-length query.
+            let localBooks = local?.books.count ?? 0
+            guard q.count >= 4, localBooks < 3 else { external = []; return }
+            external = []
+            loadingExternal = true
+            defer { loadingExternal = false }
+            struct ExtRes: Codable { let ok: Bool; let results: [ExternalResult] }
+            let ext: ExtRes? = try? await APIClient.shared.get(
+                "/api/v1/search/external", query: [URLQueryItem(name: "q", value: q)])
+            guard !Task.isCancelled else { return }
+            external = Array((ext?.results ?? []).prefix(4))
         }
     }
 
@@ -718,5 +819,6 @@ struct FloatingSearchOverlay: View {
     private func close() {
         open = false
         query = ""; res = nil
+        external = []; loadingExternal = false
     }
 }

@@ -217,7 +217,11 @@ struct HomeView: View {
                                 ReadingNowCard(
                                     book: book,
                                     openDropdownBookId: $openStateDropdownBookId,
-                                    onOpen: { path.append(BookRoute(idOrSlug: book.slug ?? book.id)) }
+                                    onOpen: { path.append(BookRoute(idOrSlug: book.slug ?? book.id)) },
+                                    onCompleted: {
+                                        path.append(BookRoute(idOrSlug: book.slug ?? book.id,
+                                                              justCompleted: true))
+                                    }
                                 ) {
                                     await homeModel.load()
                                     await model.load()
@@ -369,6 +373,10 @@ private struct ReadingNowCard: View {
     let book: ReadingNowBook
     @Binding var openDropdownBookId: String?
     let onOpen: () -> Void
+    /// Marking the book Finished/DNF here hands off to the book page so the
+    /// review wizard + "What to Read Next" run, like the web's compact
+    /// ReadingStateButton pushing /book/<slug>?review=true.
+    var onCompleted: () -> Void = {}
     let onChanged: () async -> Void
 
     private var showStateDropdown: Bool { openDropdownBookId == book.id }
@@ -600,6 +608,7 @@ private struct ReadingNowCard: View {
                 completionPrecision: precision
             )
             await onChanged()
+            if state == "completed" || state == "dnf" { onCompleted() }
         } catch {
             // The card stays; a reload reconciles with the server.
             await onChanged()
@@ -912,6 +921,16 @@ private struct UpNextCard: View {
     let item: UpNextItem
     let number: Int
 
+    /// Matches formatAudioCompact() in src/components/home/up-next-shelf.tsx —
+    /// under an hour reads in minutes, otherwise one decimal of hours.
+    static func audioCompact(_ minutes: Int) -> String {
+        guard minutes >= 60 else { return "\(minutes)m" }
+        let hours = (Double(minutes) / 60 * 10).rounded() / 10
+        return hours == hours.rounded()
+            ? "\(Int(hours))h"
+            : String(format: "%.1fh", hours)
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             CoverThumb(url: item.coverImageUrl, width: 52, height: 78, radius: 8, title: item.title)
@@ -945,10 +964,24 @@ private struct UpNextCard: View {
                     .foregroundStyle(Theme.foreground)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
-                if let pages = item.pages {
-                    Text("\(pages)p")
-                        .font(Theme.body(12))
-                        .foregroundStyle(Theme.muted)
+                // Meta row: pages · audiobook length (mirrors the web Up Next card)
+                if item.pages != nil || item.audioLengthMinutes != nil {
+                    HStack(spacing: 3) {
+                        if let pages = item.pages {
+                            Text("\(pages)p")
+                        }
+                        if item.pages != nil && item.audioLengthMinutes != nil {
+                            Text("·")
+                        }
+                        if let mins = item.audioLengthMinutes {
+                            Image(systemName: "headphones")
+                                .font(.system(size: 10))
+                            Text(UpNextCard.audioCompact(mins))
+                        }
+                    }
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.muted)
+                    .lineLimit(1)
                 }
             }
         }

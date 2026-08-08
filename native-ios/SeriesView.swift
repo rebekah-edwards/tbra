@@ -227,7 +227,7 @@ struct AppDestinations: ViewModifier {
     func body(content: Content) -> some View {
         content
             .navigationDestination(for: BookRoute.self) { route in
-                BookDetailView(idOrSlug: route.idOrSlug)
+                BookDetailView(idOrSlug: route.idOrSlug, justCompleted: route.justCompleted)
                     .modifier(PushedScreenChrome())
                     .onAppear { TapDebug.log("NAV BookRoute → \(route.idOrSlug)") }
             }

@@ -125,3 +125,142 @@ struct CompletionDateSheet: View {
         .background(Theme.surface)
     }
 }
+
+// ── "What to Read Next" — post-completion-suggestions.tsx ──
+// The web pops this bottom sheet ~500ms after a book is marked Finished, on
+// top of the review wizard. iOS had neither (punch list #7, 2026-08-08).
+
+struct PostCompletionSuggestion: Codable, Identifiable, Hashable {
+    let id: String
+    let slug: String?
+    let title: String
+    let coverImageUrl: String?
+    let authors: [String]
+    let reason: String?
+}
+
+struct PostCompletionSheet: View {
+    let bookId: String
+    /// Opens a suggested book in the shell's chromed book cover.
+    var onOpenBook: (String) -> Void = { _ in }
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var seriesNext: PostCompletionSuggestion?
+    @State private var similar: [PostCompletionSuggestion] = []
+    @State private var loading = true
+    @State private var started = false
+    @State private var added: Set<String> = []
+
+    private struct Res: Codable {
+        let ok: Bool
+        let seriesNext: PostCompletionSuggestion?
+        let similarBooks: [PostCompletionSuggestion]
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("What to Read Next")
+                    .font(Theme.heading(18, .bold))
+                    .foregroundStyle(Theme.foreground)
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+
+            if loading {
+                ProgressView().tint(Theme.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 30)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        if let seriesNext {
+                            section("CONTINUE THE SERIES", [seriesNext])
+                        }
+                        if !similar.isEmpty {
+                            section("SIMILAR BOOKS", similar)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(20)
+        .background(Theme.surface)
+        // .onAppear + a free-standing Task, NOT .task: the book page reloads
+        // behind this sheet as it appears, and .task's view-lifetime
+        // cancellation killed the request with NSURLError -999 every time.
+        .onAppear {
+            guard !started else { return }
+            started = true
+            Task {
+                let res: Res? = try? await APIClient.shared
+                    .get("/api/v1/books/\(bookId)/post-completion")
+                seriesNext = res?.seriesNext
+                similar = res?.similarBooks ?? []
+                loading = false
+                // Dismiss only when the server genuinely had nothing to
+                // suggest — never on a failed request, which would flash the
+                // sheet shut before it rendered.
+                if res != nil && seriesNext == nil && similar.isEmpty { dismiss() }
+            }
+        }
+    }
+
+    private func section(_ label: String, _ books: [PostCompletionSuggestion]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(Theme.body(11, .semibold))
+                .tracking(1.0)
+                .foregroundStyle(Theme.muted)
+            ForEach(books) { row($0) }
+        }
+    }
+
+    private func row(_ book: PostCompletionSuggestion) -> some View {
+        HStack(spacing: 12) {
+            Button {
+                dismiss()
+                onOpenBook(book.slug ?? book.id)
+            } label: {
+                HStack(spacing: 12) {
+                    CoverThumb(url: book.coverImageUrl, width: 40, height: 60, radius: 5, title: book.title)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(book.title)
+                            .font(Theme.body(14, .semibold))
+                            .foregroundStyle(Theme.foreground)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                        Text(book.reason ?? book.authors.prefix(2).joined(separator: ", "))
+                            .font(Theme.body(12))
+                            .foregroundStyle(Theme.muted)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 4)
+                }
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                added.insert(book.id)
+                Task {
+                    try? await APIClient.shared.setReadingState(bookId: book.id, state: "tbr")
+                }
+            } label: {
+                Text(added.contains(book.id) ? "Added" : "+ TBR")
+                    .font(Theme.body(11, .semibold))
+                    .foregroundStyle(added.contains(book.id) ? Theme.muted : Theme.onAccent)
+                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .background(added.contains(book.id) ? Theme.surfaceAlt : Theme.accent, in: Capsule())
+            }
+            .disabled(added.contains(book.id))
+        }
+        .padding(10)
+        .background(Theme.surfaceAlt.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+    }
+}

@@ -10,8 +10,18 @@ import SwiftUI
 // reading history, notes, similar books, admin pencil, hide/report.
 
 /// Navigation value used app-wide: any tapped cover routes here.
+/// Identity for the post-completion sheet (see `suggestionsFor`).
+struct SuggestionsTarget: Identifiable, Hashable {
+    let id: String
+}
+
 struct BookRoute: Hashable {
     let idOrSlug: String
+    /// Set when the user just marked the book Finished/DNF somewhere else
+    /// (the home Reading Now card, a search result). Mirrors the web's
+    /// `?review=true` hand-off: the book page opens the review wizard, then
+    /// the "What to Read Next" sheet.
+    var justCompleted: Bool = false
 }
 
 /// Blocking overlay while a freshly imported book runs enrichment — mirrors
@@ -64,6 +74,10 @@ final class BookDetailModel {
     var data: BookDetailData?
     var error: String?
     var loading = false
+    /// Bumped when a state change on THIS page finishes the book, so the page
+    /// can run the post-completion flow (review wizard → what to read next)
+    /// the way the web does.
+    var completionTick = 0
 
     init(idOrSlug: String) { self.idOrSlug = idOrSlug }
 
@@ -81,9 +95,51 @@ struct BookDetailView: View {
     /// Reload attempts while waiting for enrichment (web parity: overlay +
     /// reload loop with a bounded budget, then fall back to the calm notice).
     @State private var enrichPolls = 0
+    /// Post-completion flow (web parity — book-page-client.tsx): finishing a
+    /// book auto-opens the review wizard, then the "What to Read Next" sheet.
+    private let justCompleted: Bool
+    @State private var autoOpenReview = false
+    /// .sheet(item:) not (isPresented:) — with `if let data = model.data`
+    /// inside the builder, a background reload swapped the sheet's content for
+    /// a fresh PostCompletionSheet whose .task re-ran and, on the losing race,
+    /// dismissed the sheet before the winning response landed.
+    @State private var suggestionsFor: SuggestionsTarget?
+    @State private var ranCompletionFlow = false
+    /// Suggestions wait for the wizard to close: SwiftUI silently drops a
+    /// .sheet raised while a .fullScreenCover is up, and never retries it.
+    @State private var suggestionsPending = false
 
-    init(idOrSlug: String) {
+    init(idOrSlug: String, justCompleted: Bool = false) {
         _model = State(initialValue: BookDetailModel(idOrSlug: idOrSlug))
+        self.justCompleted = justCompleted
+    }
+
+    /// Web gating: open the wizard only on a FIRST completion with no existing
+    /// review — re-reads and already-reviewed books just get the suggestions.
+    private func runCompletionFlow() {
+        guard let data = model.data else { return }
+        if data.userRating == nil {
+            autoOpenReview = true
+            suggestionsPending = true      // raised when the wizard closes
+            return
+        }
+        showSuggestionsSoon(data.book.id)
+    }
+
+    /// The review wizard closed (saved or cancelled) — now the sheet can show.
+    private func reviewWizardClosed() {
+        guard suggestionsPending, let id = model.data?.book.id else { return }
+        suggestionsPending = false
+        showSuggestionsSoon(id)
+    }
+
+    /// A beat of air after the cover dismisses — SwiftUI drops a sheet raised
+    /// in the same runloop as a fullScreenCover teardown.
+    private func showSuggestionsSoon(_ bookId: String) {
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            suggestionsFor = SuggestionsTarget(id: bookId)
+        }
     }
 
     /// Blocking "being added, wait 10–20s" overlay: enrichment is actively
@@ -125,7 +181,10 @@ struct BookDetailView: View {
                     }
                     BookHero(data: data, onCoverChanged: { await model.load() })
                     BookActionCluster(model: model, data: data)
-                    BookStarsRow(data: data, onReviewSaved: { Task { await model.load() } })
+                    BookStarsRow(data: data,
+                                 onReviewSaved: { Task { await model.load() } },
+                                 autoOpen: $autoOpenReview,
+                                 onWizardClosed: reviewWizardClosed)
                     // Comfort-zone flags — web places the banner between the
                     // action area and the summary on mobile.
                     ContentFlagsBanner(
@@ -255,6 +314,20 @@ struct BookDetailView: View {
             }
         }
         .refreshable { await model.load() }
+        // Post-completion flow. Two entry points, same handler: finishing the
+        // book right here (completionTick), or arriving from a Finished tap
+        // elsewhere (justCompleted, the web's ?review=true hand-off).
+        .onChange(of: model.completionTick) { _, _ in runCompletionFlow() }
+        .onChange(of: model.data?.book.id) { _, id in
+            guard justCompleted, id != nil, !ranCompletionFlow else { return }
+            ranCompletionFlow = true
+            runCompletionFlow()
+        }
+        .sheet(item: $suggestionsFor) { target in
+            PostCompletionSheet(bookId: target.id)
+                .presentationDetents([.medium, .large])
+                .presentationBackground(Theme.surface)
+        }
         .alert("Error", isPresented: .constant(model.error != nil)) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
@@ -1155,6 +1228,7 @@ private struct BookActionCluster: View {
             completionPrecision: precision
         )
         await model.load()
+        if state == "completed" || state == "dnf" { model.completionTick += 1 }
     }
 }
 
@@ -1327,6 +1401,11 @@ private struct ShelvesPickerSheet: View {
 private struct BookStarsRow: View {
     let data: BookDetailData
     var onReviewSaved: () -> Void = {}
+    /// Raised by the page when the book was just finished — the wizard lives
+    /// here, so the post-completion flow drives it through this binding.
+    var autoOpen: Binding<Bool>? = nil
+    /// Fired when the wizard closes, saved or cancelled.
+    var onWizardClosed: () -> Void = {}
     @State private var wizardOpen = false
 
     var body: some View {
@@ -1384,6 +1463,15 @@ private struct BookStarsRow: View {
             }
         }
         #endif
+        .onChange(of: autoOpen?.wrappedValue ?? false) { _, wants in
+            if wants {
+                wizardOpen = true
+                autoOpen?.wrappedValue = false
+            }
+        }
+        .onChange(of: wizardOpen) { was, now in
+            if was && !now { onWizardClosed() }
+        }
         .fullScreenCover(isPresented: $wizardOpen) {
             ReviewWizardView(
                 bookId: data.book.id,

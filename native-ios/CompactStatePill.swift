@@ -176,6 +176,10 @@ struct CompactOwnedButton: View {
 
     @State private var open = false
     @State private var busy = false
+    /// Web parity (owned-button.tsx): a checked format offers "Specify
+    /// edition", opening the OpenLibrary picker. The book page's own Owned
+    /// sheet had this; the compact pill didn't (punch list #8, 2026-08-08).
+    @State private var editionFormat: String?
 
     init(bookId: String, formats: [String], onDropdownChange: ((Bool) -> Void)? = nil) {
         self.bookId = bookId
@@ -211,6 +215,16 @@ struct CompactOwnedButton: View {
         .opacity(busy ? 0.6 : 1)
         .overlay(alignment: .topLeading) { dropdown }
         .zIndex(open ? 40 : 0)
+        .sheet(isPresented: Binding(
+            get: { editionFormat != nil },
+            set: { if !$0 { editionFormat = nil } }
+        )) {
+            if let format = editionFormat {
+                EditionPickerSheet(bookId: bookId, format: format, onChanged: {})
+                    .presentationDetents([.large])
+                    .presentationBackground(Theme.bg)
+            }
+        }
     }
 
     @ViewBuilder private var dropdown: some View {
@@ -231,6 +245,22 @@ struct CompactOwnedButton: View {
                             Spacer()
                         }
                         .padding(.horizontal, 12).padding(.vertical, 9)
+                    }
+                    if formats.contains(key) {
+                        Button {
+                            editionFormat = key
+                        } label: {
+                            HStack(spacing: 3) {
+                                Text("Specify edition")
+                                    .font(Theme.body(11, .medium))
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 8, weight: .semibold))
+                                Spacer()
+                            }
+                            .foregroundStyle(Theme.neonPurple)
+                            .padding(.leading, 34).padding(.trailing, 12)
+                            .padding(.bottom, 8)
+                        }
                     }
                     if key != "audiobook" { Divider().background(Theme.border.opacity(0.5)) }
                 }

@@ -169,6 +169,11 @@ private final class GoogleAuthSession: NSObject, ASWebAuthenticationPresentation
     }
 }
 
+/// Shared height for the third-party sign-in buttons. Apple's button sizes
+/// its own label off the frame height, so pinning both to one number is the
+/// only way they read as the same control.
+let ssoButtonHeight: CGFloat = 45
+
 /// White "Continue with Google" button (web GoogleButton parity: official G
 /// mark, white field, black label — identical in both themes).
 struct GoogleSignInButton: View {
@@ -185,8 +190,7 @@ struct GoogleSignInButton: View {
                     .font(Theme.body(15, .semibold))
                     .foregroundStyle(.black)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 13)
+            .frame(maxWidth: .infinity, minHeight: ssoButtonHeight)
             .background(.white, in: RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.black.opacity(0.12), lineWidth: 1))
         }
@@ -343,7 +347,7 @@ struct LoginView: View {
                     Task { busy = true; await auth.signInWithApple(result); busy = false }
                 }
                 .signInWithAppleButtonStyle(.white)
-                .frame(height: 47)
+                .frame(height: ssoButtonHeight)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .disabled(busy)
 
@@ -452,7 +456,7 @@ struct SignupSheet: View {
                     }
                 }
                 .signInWithAppleButtonStyle(.white)
-                .frame(height: 47)
+                .frame(height: ssoButtonHeight)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .disabled(busy)
 
