@@ -21,11 +21,10 @@ import Database from "better-sqlite3";
 import { createClient } from "@libsql/client";
 import path from "path";
 
-/** Owners whose local rows are expected and legitimately pushable. */
-const APP_USERS = new Set([
-  "c2f3eb27-139f-4605-9566-8ded8d9e1336", // rebekah_creates
-  "012605dd-177d-48c6-9717-490e7ef05b30", // clanker_test
-]);
+/** Owners whose local rows are expected and legitimately pushable.
+    Single source of truth, shared with sync-user-activity.ts and the /import
+    route guard — see src/lib/sync/app-users.ts. */
+import { SYNCABLE_USER_IDS as APP_USERS } from "../src/lib/sync/app-users";
 
 const THRESHOLD = Number(process.argv.find((a) => a.startsWith("--threshold="))?.split("=")[1] ?? 25);
 const QUIET = process.argv.includes("--quiet");

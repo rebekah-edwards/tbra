@@ -43,6 +43,7 @@ const path = require('path');
 const fsSync = require('fs');
 const { createGuardedTurso } = require('./lib/turso-guard');
 const { fileAdminAlert, resolveAdminAlert } = require('./lib/admin-alert');
+const { SYNCABLE_USER_IDS } = require('../src/lib/sync/app-users');
 
 /**
  * Consecutive-failure escalation (added 2026-07-30).
@@ -146,11 +147,11 @@ type TableSpec = {
   ownerViaShelf?: boolean;
 };
 
-/** Accounts that write through the local v1 API (the native app). */
-const APP_USERS = new Set([
-  'c2f3eb27-139f-4605-9566-8ded8d9e1336', // rebekah_creates
-  '012605dd-177d-48c6-9717-490e7ef05b30', // clanker_test
-]);
+/** Accounts that write through the local v1 API (the native app).
+    Shared with the /import route guard via src/lib/sync/app-users.ts so the two
+    can never disagree about who is pushable — that drift is what let real
+    testers' libraries strand here unnoticed. */
+const APP_USERS = new Set(SYNCABLE_USER_IDS);
 /** Rows older than this can't be app-created — the native app didn't exist. */
 const APP_ERA = '2026-06-20';
 
