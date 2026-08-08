@@ -76,6 +76,9 @@ final class PublicProfileModel {
 struct PublicProfileView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: PublicProfileModel
+    @State private var reviewSearch = ""
+    @State private var reviewFilter = "all"   // all | dnf | written
+    @State private var showAllReviews = false
 
     init(username: String) {
         _model = State(initialValue: PublicProfileModel(username: username))
@@ -88,6 +91,7 @@ struct PublicProfileView: View {
                     privateGate
                 } else if let user = model.user {
                     header(user)
+                    socialRow(user)
                     if let stats = model.stats { statPills(stats) }
                     if !model.favorites.isEmpty { topShelf }
                     if !model.publicShelves.isEmpty { shelvesSection }
@@ -221,6 +225,59 @@ struct PublicProfileView: View {
         }
     }
 
+    // ── Social links — web <SocialIcons> parity (2026-07-28) ──
+    // Same four platforms, same URL prefixes, same centered row the web /u
+    // page shows on mobile. Handles are stored without "@" (a stray leading
+    // one is trimmed so the link still resolves). The monochrome glyphs are
+    // template images, so they tint with the theme instead of needing the
+    // web's separate -black/-white asset pairs; Instagram keeps its gradient.
+    private struct SocialLink: Identifiable {
+        let id: String        // asset name
+        let label: String
+        let handle: String
+        let url: URL
+        let template: Bool
+    }
+
+    private static func socialLinks(_ user: ProfileUser) -> [SocialLink] {
+        let specs: [(String, String, String, String?, Bool)] = [
+            ("SocialInstagram", "Instagram", "https://instagram.com/", user.instagram, false),
+            ("SocialTikTok", "TikTok", "https://tiktok.com/@", user.tiktok, true),
+            ("SocialThreads", "Threads", "https://threads.net/@", user.threads, true),
+            ("SocialX", "X", "https://x.com/", user.twitter, true),
+        ]
+        return specs.compactMap { asset, label, prefix, raw, template in
+            var handle = (raw ?? "").trimmingCharacters(in: .whitespaces)
+            if handle.hasPrefix("@") { handle.removeFirst() }
+            guard !handle.isEmpty,
+                  let encoded = handle.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+                  let url = URL(string: prefix + encoded)
+            else { return nil }
+            return SocialLink(id: asset, label: label, handle: handle, url: url, template: template)
+        }
+    }
+
+    @ViewBuilder
+    private func socialRow(_ user: ProfileUser) -> some View {
+        let links = Self.socialLinks(user)
+        if !links.isEmpty {
+            HStack(spacing: 16) {
+                ForEach(links) { link in
+                    Link(destination: link.url) {
+                        Image(link.id)
+                            .renderingMode(link.template ? .template : .original)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 28, height: 28)
+                            .foregroundStyle(Theme.foreground)
+                    }
+                    .accessibilityLabel("@\(link.handle) on \(link.label)")
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
     /// Web AccountBadge parity: purple for admin/premium tiers, accent for
     /// reader/beta. Sits below the display name (user request 2026-07-18 —
     /// keeps the shifted-right header narrow).
@@ -298,20 +355,62 @@ struct PublicProfileView: View {
         }
     }
 
-    // Truncated to 5 with a "View all" push (user request 2026-07-23) —
-    // the full list gets the web's search + DNF/Written filters.
+    // Web PublicReviewHistory parity (2026-07-28): the search field and
+    // All/Written/DNF chips live on the profile itself (shown once there are
+    // more than 3 reviews), not behind a "View all" push. The list previews 5
+    // and expands in place via "Show all N reviews", exactly like the web.
     private var reviewsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SectionHeading("Recent Reviews")
-            ForEach(model.reviews.prefix(5)) { review in
-                PublicReviewRow(review: review)
+        let filtered = filteredReviews
+        let visible = showAllReviews ? filtered : Array(filtered.prefix(5))
+        let hasWritten = model.reviews.contains { !($0.reviewText ?? "").isEmpty }
+        let hasDnf = model.reviews.contains { $0.didNotFinish }
+
+        return VStack(alignment: .leading, spacing: 10) {
+            SectionHeading("Reviews (\(model.reviews.count))")
+
+            if model.reviews.count > 3 {
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Theme.muted)
+                    TextField("Search reviews...", text: $reviewSearch)
+                        .font(Theme.body(15))
+                        .foregroundStyle(Theme.foreground)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .onChange(of: reviewSearch) { showAllReviews = true }
+                }
+                .padding(.horizontal, 12).padding(.vertical, 9)
+                .background(Theme.surface.opacity(0.7), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+
+                HStack(spacing: 8) {
+                    reviewChip("all", "All")
+                    if hasWritten { reviewChip("written", "Written reviews") }
+                    if hasDnf { reviewChip("dnf", "DNF") }
+                    Spacer()
+                }
             }
-            if model.reviews.count > 5 {
-                NavigationLink {
-                    AllPublicReviewsView(reviews: model.reviews,
-                                         displayName: model.user?.displayName ?? "@\(model.username)")
+
+            if visible.isEmpty {
+                Text(reviewSearch.trimmingCharacters(in: .whitespaces).isEmpty
+                     ? "No reviews in this category."
+                     : "No reviews match \"\(reviewSearch)\"")
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.muted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 24)
+            } else {
+                ForEach(visible) { review in
+                    PublicReviewRow(review: review)
+                }
+            }
+
+            if !showAllReviews && filtered.count > 5 {
+                Button {
+                    showAllReviews = true
                 } label: {
-                    Text("View all \(model.reviews.count) reviews")
+                    Text("Show all \(filtered.count) reviews")
                         .font(Theme.body(14, .semibold))
                         .foregroundStyle(Theme.neonBlue)
                         .frame(maxWidth: .infinity)
@@ -320,6 +419,36 @@ struct PublicProfileView: View {
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
                 }
             }
+        }
+    }
+
+    /// Same match rules as the web: tag filter first, then a case-insensitive
+    /// search over title, authors, and review body.
+    private var filteredReviews: [UserReviewRow] {
+        var result = model.reviews
+        if reviewFilter == "dnf" { result = result.filter { $0.didNotFinish } }
+        if reviewFilter == "written" { result = result.filter { !($0.reviewText ?? "").isEmpty } }
+        let q = reviewSearch.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return result }
+        return result.filter {
+            $0.title.lowercased().contains(q)
+            || $0.authors.contains { $0.lowercased().contains(q) }
+            || ($0.reviewText ?? "").lowercased().contains(q)
+        }
+    }
+
+    private func reviewChip(_ key: String, _ label: String) -> some View {
+        Button {
+            // Web behavior: re-tapping an active tag clears it back to All.
+            reviewFilter = (reviewFilter == key) ? "all" : key
+            showAllReviews = reviewFilter != "all"
+        } label: {
+            Text(label)
+                .font(Theme.body(13, .medium))
+                .foregroundStyle(reviewFilter == key ? Theme.accentText : Theme.muted)
+                .padding(.horizontal, 13).padding(.vertical, 6)
+                .background(reviewFilter == key ? Theme.accent.opacity(0.15) : Theme.surfaceAlt.opacity(0.5), in: Capsule())
+                .overlay(Capsule().stroke(reviewFilter == key ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1))
         }
     }
 }
@@ -364,95 +493,6 @@ struct PublicReviewRow: View {
             .background(Theme.surface.opacity(0.55))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
-        }
-    }
-}
-
-// ── View-all reviews — web PublicReviewHistory parity: text search over
-// title/author/review body + All/DNF/Written chips. ──
-struct AllPublicReviewsView: View {
-    let reviews: [UserReviewRow]
-    let displayName: String
-    @State private var search = ""
-    @State private var filter = "all"   // all | dnf | written
-
-    private var filtered: [UserReviewRow] {
-        var result = reviews
-        if filter == "dnf" { result = result.filter { $0.didNotFinish } }
-        if filter == "written" { result = result.filter { !($0.reviewText ?? "").isEmpty } }
-        let q = search.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !q.isEmpty else { return result }
-        return result.filter {
-            $0.title.lowercased().contains(q)
-            || $0.authors.contains { $0.lowercased().contains(q) }
-            || ($0.reviewText ?? "").lowercased().contains(q)
-        }
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
-                    Color.clear.frame(width: 40, height: 40)
-                    Text("\(displayName)'s Reviews")
-                        .font(Theme.heading(22, .bold))
-                        .foregroundStyle(Theme.foreground)
-                    Spacer()
-                }
-                .padding(.top, 14)
-
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Theme.muted)
-                    TextField("Search reviews...", text: $search)
-                        .font(Theme.body(15))
-                        .foregroundStyle(Theme.foreground)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                }
-                .padding(.horizontal, 12).padding(.vertical, 9)
-                .background(Theme.surface.opacity(0.7), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
-
-                if reviews.count > 3 {
-                    HStack(spacing: 8) {
-                        filterChip("all", "All")
-                        filterChip("dnf", "DNF")
-                        filterChip("written", "Written")
-                        Spacer()
-                    }
-                }
-
-                if filtered.isEmpty {
-                    Text("No reviews match.")
-                        .font(Theme.body(14))
-                        .foregroundStyle(Theme.muted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 40)
-                } else {
-                    ForEach(filtered) { review in
-                        PublicReviewRow(review: review)
-                    }
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 40)
-        }
-        .background(AmbientBackground())
-        .floatingBack()
-        .toolbar(.hidden, for: .navigationBar)
-        .tracksScrollAtTop()
-    }
-
-    private func filterChip(_ key: String, _ label: String) -> some View {
-        Button { filter = key } label: {
-            Text(label)
-                .font(Theme.body(13, .medium))
-                .foregroundStyle(filter == key ? Theme.accentText : Theme.muted)
-                .padding(.horizontal, 13).padding(.vertical, 6)
-                .background(filter == key ? Theme.accent.opacity(0.15) : Theme.surfaceAlt.opacity(0.5), in: Capsule())
-                .overlay(Capsule().stroke(filter == key ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1))
         }
     }
 }

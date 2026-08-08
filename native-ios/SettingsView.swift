@@ -252,6 +252,11 @@ struct SettingsView: View {
     @State private var passwordMessage: (text: String, isError: Bool)?
     // Danger zone
     @State private var dangerAction: DangerAction?
+    // Edit Profile — the sheet lives on the Profile tab too; Settings is
+    // where users look for social links, so it opens from here as well.
+    @State private var editProfileUser: ProfileUser?
+    @State private var editProfileOpen = false
+    @State private var editProfileLoading = false
 
     private var isPremium: Bool {
         if case .signedIn(let user) = auth.phase {
@@ -278,6 +283,7 @@ struct SettingsView: View {
                 .padding(.top, 14)
 
                 if model.loaded {
+                    profileSection
                     // 1pt scroll marker for the tour (see BookDetailView note:
                     // tall sections scroll unpredictably with proportional
                     // anchors; a tiny target lands exactly where asked).
@@ -316,6 +322,18 @@ struct SettingsView: View {
         .sheet(isPresented: Binding(get: { exportURL != nil }, set: { if !$0 { exportURL = nil } })) {
             if let exportURL {
                 ShareSheet(items: [exportURL])
+            }
+        }
+        .sheet(isPresented: $editProfileOpen) {
+            if let user = editProfileUser {
+                EditProfileSheet(user: user, onSaved: {
+                    // Re-read so a reopened sheet shows what was just saved.
+                    struct Res: Codable { let user: ProfileUser }
+                    if let res: Res = try? await APIClient.shared.get("/api/v1/profile") {
+                        editProfileUser = res.user
+                    }
+                })
+                .presentationBackground(Theme.bg)
             }
         }
         .sheet(item: $dangerAction) { action in
@@ -750,6 +768,44 @@ struct SettingsView: View {
     }
 
     // ── 3. Location ──
+    // ── Profile (incl. social links) ──
+    // Opens the same EditProfileSheet the Profile tab uses — one form, one
+    // save path (PATCH /api/v1/profile/update sends the whole field set, so
+    // it must be prefilled from the live profile rather than reconstructed).
+    private var profileSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SectionHeading("Profile")
+            Text("Photo, display name, username, bio, social links, and profile privacy.")
+                .font(Theme.body(13))
+                .foregroundStyle(Theme.muted)
+            Button {
+                Task { await openEditProfile() }
+            } label: {
+                HStack(spacing: 8) {
+                    if editProfileLoading {
+                        ProgressView().tint(.black).scaleEffect(0.7)
+                    }
+                    Text(editProfileLoading ? "Opening…" : "Edit Profile & Social Links")
+                        .font(Theme.body(14, .semibold))
+                        .foregroundStyle(.black)
+                }
+                .padding(.horizontal, 18).padding(.vertical, 10)
+                .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12))
+            }
+            .disabled(editProfileLoading)
+        }
+    }
+
+    /// Fetch the current profile so the sheet opens prefilled.
+    private func openEditProfile() async {
+        editProfileLoading = true
+        defer { editProfileLoading = false }
+        struct Res: Codable { let user: ProfileUser }
+        guard let res: Res = try? await APIClient.shared.get("/api/v1/profile") else { return }
+        editProfileUser = res.user
+        editProfileOpen = true
+    }
+
     private var locationSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeading("Location")
