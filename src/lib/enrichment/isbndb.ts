@@ -24,17 +24,31 @@ export interface ISBNdbBook {
 }
 
 let lastCallTime = 0;
+// Serializes the spacing check so overlapping callers queue instead of bursting.
+// The old read-await-write form was not concurrency-safe: N callers arriving
+// together all read the same lastCallTime, all slept the same interval, and all
+// fired at once — 4 calls inside one 350ms window, past ISBNdb's 3/sec limit.
+// Matters now that the content-ratings backfill runs books concurrently.
+let gate: Promise<void> = Promise.resolve();
+
+function reserveSlot(): Promise<void> {
+  const wait = gate.then(async () => {
+    const elapsed = Date.now() - lastCallTime;
+    if (elapsed < DELAY_MS) {
+      await new Promise((r) => setTimeout(r, DELAY_MS - elapsed));
+    }
+    lastCallTime = Date.now();
+  });
+  // Keep the chain alive even if a link rejects, so one failure can't wedge the gate.
+  gate = wait.catch(() => {});
+  return wait;
+}
 
 async function rateLimitedFetch(url: string, timeoutMs = 3000): Promise<Response | null> {
   const apiKey = process.env.ISBNDB_API_KEY;
   if (!apiKey) return null;
 
-  const now = Date.now();
-  const elapsed = now - lastCallTime;
-  if (elapsed < DELAY_MS) {
-    await new Promise((r) => setTimeout(r, DELAY_MS - elapsed));
-  }
-  lastCallTime = Date.now();
+  await reserveSlot();
 
   // Hard timeout — ISBNdb has had multi-second hangs. Without this the
   // nav dropdown will wait forever.
