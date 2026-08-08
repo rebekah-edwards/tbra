@@ -11,20 +11,41 @@
 # startup and `rm` it at exit. The turso-guard helper does this automatically
 # when constructed with { longRunning: true }.
 #
-# Leaves a log at /tmp/tbra-watchdog.log. Caps at 1MB (keeps last 500KB).
+# Leaves a log at <tbra>/data/watchdog.log. Caps at 1MB (keeps last 500KB).
+#
+# The log lives under data/ (gitignored), NOT /tmp: this file is the ONLY
+# evidence the watchdog works, and it is written ONLY on a kill or a parse
+# failure — so "no log" and "no kills" are indistinguishable. macOS purges
+# /tmp, which silently destroyed the record of the 2026-07-26 and 2026-07-29
+# kills (both known from session notes, neither recoverable from disk).
+# data/ is where cron-run.sh already puts its job logs.
 
 set -u
 
 MAX_AGE_MIN="${TBRA_WATCHDOG_MAX_AGE_MIN:-60}"
-LOG="${TBRA_WATCHDOG_LOG:-/tmp/tbra-watchdog.log}"
 TBRA_PATH="/Users/clankeredwards/claude/tbra"
+LOG="${TBRA_WATCHDOG_LOG:-$TBRA_PATH/data/watchdog.log}"
 EXEMPT_PREFIX="/tmp/tbra-longrun-"
+
+mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
+
+# One-time migration: carry over any surviving /tmp log so history isn't lost.
+if [ ! -f "$LOG" ] && [ -f /tmp/tbra-watchdog.log ]; then
+  cp /tmp/tbra-watchdog.log "$LOG" 2>/dev/null || true
+fi
 
 if [ -f "$LOG" ] && [ "$(stat -f%z "$LOG" 2>/dev/null || echo 0)" -gt 1048576 ]; then
   tail -c 500000 "$LOG" > "$LOG.tmp" && mv "$LOG.tmp" "$LOG"
 fi
 
 now_ts=$(date +%s)
+
+# Liveness stamp. The log is written ONLY on a kill, so an empty log cannot
+# distinguish "nothing needed killing" from "the agent stopped running". This
+# one-line file is rewritten every invocation — if it is stale by more than a
+# few minutes, the launchd agent is not firing. Kept out of $LOG so a healthy
+# watchdog does not bury real kill lines under ~288 heartbeats/day.
+date '+%Y-%m-%dT%H:%M:%S%z' > "$(dirname "$LOG")/watchdog-last-run" 2>/dev/null || true
 
 # ps -Ao lstart prints 5 fields: "Tue Apr 22 14:05:12 2026"
 ps -Ao pid,lstart,command | awk -v tbra="$TBRA_PATH" '
