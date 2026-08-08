@@ -35,11 +35,10 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
-import fs from "fs";
-import { execFileSync } from "child_process";
 import Database from "better-sqlite3";
 import path from "path";
 import { enrichBook } from "../src/lib/enrichment/enrich-book";
+import { startWatchdogExemption } from "./lib/watchdog-exempt";
 
 const DB_PATH = path.join(process.cwd(), "data", "tbra.db");
 const db = new Database(DB_PATH);
@@ -57,78 +56,17 @@ type Row = { id: string; title: string };
 // ── Watchdog exemption ────────────────────────────────────────────────────
 // The launchd watchdog kills any tbra tsx process older than 60 min UNLESS
 // /tmp/tbra-longrun-<pid> exists (see scripts/lib/watchdog.sh). We opt out and
-// self-govern via MAX_RUNTIME_MS below.
-// The marker is PER-PID and `npx tsx` runs us under a wrapper chain
-// (npm exec tsx → .bin/tsx → this node) plus esbuild service children, all of
-// which match the watchdog's `/tsx/ && tbra-path` filter. Exempting only our
-// own pid let the watchdog reap the *wrapper* at 60 min, which took this
-// process down with it (2026-07-26: killed at 64 min mid-run). So we exempt
-// the whole tree — ancestors and descendants — and refresh it periodically
-// because esbuild children can be respawned after startup.
-const exemptPaths = new Set<string>();
-
-function markExempt(pid: number) {
-  const p = `/tmp/tbra-longrun-${pid}`;
-  if (exemptPaths.has(p)) return;
-  try {
-    fs.writeFileSync(p, String(Date.now()));
-    exemptPaths.add(p);
-  } catch {
-    /* non-fatal */
-  }
-}
-
-function refreshExemptions() {
-  markExempt(process.pid);
-  let table: string;
-  try {
-    table = execFileSync("ps", ["-Ao", "pid=,ppid="], {
-      encoding: "utf8",
-    });
-  } catch {
-    return;
-  }
-  const parent = new Map<number, number>();
-  const children = new Map<number, number[]>();
-  for (const line of table.split("\n")) {
-    const [pid, ppid] = line.trim().split(/\s+/).map(Number);
-    if (!pid || !Number.isFinite(ppid)) continue;
-    parent.set(pid, ppid);
-    if (!children.has(ppid)) children.set(ppid, []);
-    children.get(ppid)!.push(pid);
-  }
-  // Ancestors: walk up while the parent is still a real process (stop at
-  // launchd/init and at the shell's session leader — a handful of hops).
-  let cur = parent.get(process.pid);
-  for (let i = 0; i < 5 && cur && cur > 1; i++) {
-    markExempt(cur);
-    cur = parent.get(cur);
-  }
-  // Descendants: breadth-first from us (esbuild service, any spawned helper).
-  const queue = [...(children.get(process.pid) ?? [])];
-  while (queue.length) {
-    const pid = queue.shift()!;
-    markExempt(pid);
-    queue.push(...(children.get(pid) ?? []));
-  }
-}
-
-refreshExemptions();
-const exemptionTimer = setInterval(refreshExemptions, 60_000);
-exemptionTimer.unref();
+// self-govern via MAX_RUNTIME_MS below. The helper marks the WHOLE npx tsx
+// tree, not just our pid — see scripts/lib/watchdog-exempt.ts for why that
+// matters (2026-07-26: this script was killed at 64 min because the watchdog
+// reaped its unmarked wrapper). Migrated from an inline copy 2026-08-08.
+const watchdog = startWatchdogExemption();
 
 let cleanedUp = false;
 function cleanup() {
   if (cleanedUp) return;
   cleanedUp = true;
-  clearInterval(exemptionTimer);
-  for (const p of exemptPaths) {
-    try {
-      fs.unlinkSync(p);
-    } catch {
-      /* ignore */
-    }
-  }
+  watchdog.cleanup();
   try {
     db.close();
   } catch {

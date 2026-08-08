@@ -815,7 +815,11 @@ async function bookCount(): Promise<number> {
 
 async function main() {
   const startTime = Date.now();
-  const MAX_RUNTIME_MS = 5 * 60 * 60 * 1000; // 5 hours safety cap
+  // Graceful wall-clock ceiling, checked at the loop top. Default 300min (the
+  // long-standing hardcoded 5h); env-overridable to match description-refresh
+  // and enrich-content-700, whose lanes tune this per slot.
+  const MAX_RUNTIME_MIN = Number(process.env.MAX_RUNTIME_MIN) || 300;
+  const MAX_RUNTIME_MS = MAX_RUNTIME_MIN * 60 * 1000;
 
   // Volume cap (NET books added, seed + cascade) — override via env TARGET_BOOKS
   const TARGET_BOOKS = Number(process.env.TARGET_BOOKS) || 500;
@@ -833,6 +837,33 @@ async function main() {
 
   const overBudget = () =>
     imported >= TARGET_BOOKS || Date.now() - startTime > MAX_RUNTIME_MS;
+
+  // Hard backstop. The ceiling above is only consulted BETWEEN books, so a
+  // single enrichBook() wedged on a stuck socket would stall the run forever
+  // and the chained `&& sync-incremental.sh push` would never fire — the run's
+  // completed work would sit unpushed until someone noticed. This unref'd timer
+  // guarantees an exit. Exit 0, NOT an error, so the push still runs and
+  // persists whatever landed. Same shape as description-refresh.ts.
+  const deadline = setTimeout(async () => {
+    console.error(
+      `\n[nightly] HARD CEILING hit (${MAX_RUNTIME_MIN}min) mid-book — exiting 0 so push can run.`,
+    );
+    // Belt and braces: the summary below awaits a query, so a wedged DB would
+    // keep us alive past the ceiling we just declared. Guarantee the exit.
+    setTimeout(() => process.exit(0), 10_000).unref();
+    // Re-read the catalog rather than trusting `imported`: the wedged book may
+    // have committed rows (and its cascade) after the last loop-top refresh.
+    try {
+      const finalCount = await bookCount();
+      console.error(
+        `[nightly] Partial run: catalog ${startCount} → ${finalCount} (+${finalCount - startCount}), Skipped: ${skipped}, Failed: ${failed}`,
+      );
+    } catch {
+      console.error(`[nightly] Partial run: ~${imported} added (count unavailable)`);
+    }
+    process.exit(0);
+  }, MAX_RUNTIME_MS);
+  deadline.unref();
 
   // ---- FRESHNESS SOURCE: NYT bestsellers (runs first when a key is set) ----
   // For each current list we (1) cache every entry into nyt_bestsellers so
