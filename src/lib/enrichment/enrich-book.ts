@@ -33,7 +33,7 @@ import {
   type OLSearchResult,
 } from "@/lib/openlibrary";
 import { isEnglishTitle } from "@/lib/queries/books";
-import { findGoogleBooksCover } from "@/lib/google-books";
+import { findGoogleBooksCover, fetchGoogleBooksDescription } from "@/lib/google-books";
 import { findAmazonCover } from "@/lib/amazon-covers";
 import { isKnownPlaceholderCover } from "@/lib/cover-placeholders";
 import { sanitizeDescription, normalizeTitle as normalizeTitleSanitize, titleCaseGenre, truncateSummary } from "./sanitize";
@@ -593,6 +593,48 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
         }
       } catch (err) {
         console.warn(`[enrichment] ISBNdb error for "${book.title}":`, err);
+      }
+    }
+  }
+
+  // ── Phase 1.6: Google Books description (free tier, budget-governed) ──
+  // Sits deliberately BELOW OL/ISBNdb (they're uncapped, so spend them first)
+  // and ABOVE the skipContentSearch hatch, so the Brave-free lanes — discovery,
+  // breadth-import, upcoming-releases — get descriptions too instead of landing
+  // books blank and waiting on a backfill that may never reach them.
+  //
+  // Costs one Google call per book, against the shared 1,000/day budget in
+  // google-books.ts. On exhaustion it no-ops silently and leaves the stale flag
+  // set, so the book is simply retried on a later run.
+  if (focus === "full" && !opts.skipGoogleBooks) {
+    const needsDescription = !book.description || book.descriptionStale;
+    if (needsDescription) {
+      try {
+        const gb = await fetchGoogleBooksDescription({
+          isbn13: book.isbn13,
+          isbn10: book.isbn10,
+          title: book.title,
+          author: authorNames[0] ?? null,
+        });
+        if (gb.description) {
+          const cleanGB = sanitizeDescription(gb.description);
+          if (cleanGB) {
+            await db
+              .update(books)
+              .set({
+                description: cleanGB,
+                descriptionStale: false,
+                updatedAt: new Date().toISOString(),
+              })
+              .where(eq(books.id, bookId));
+            Object.assign(book, { description: cleanGB, descriptionStale: false });
+            console.log(`[enrichment] Google Books description (${cleanGB.length} chars) for "${book.title}"`);
+          } else {
+            console.log(`[enrichment] Rejected junk Google Books description for "${book.title}"`);
+          }
+        }
+      } catch (err) {
+        console.warn(`[enrichment] Google Books description error for "${book.title}":`, err);
       }
     }
   }
