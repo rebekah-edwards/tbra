@@ -203,19 +203,12 @@ struct ReviewsListView: View {
                 ReviewHTMLText(html: text)
             }
 
-            // Descriptor tag chips (flattened, like review-card)
-            let allTags = review.dimensionTags.values.flatMap { $0 }.filter { !$0.hasPrefix("pacing:") && !$0.hasPrefix("custom:") }
-            if !allTags.isEmpty {
-                FlowLayout(spacing: 6) {
-                    ForEach(allTags.prefix(10), id: \.self) { tag in
-                        Text(tag)
-                            .font(Theme.body(11, .medium))
-                            .foregroundStyle(Theme.muted)
-                            .padding(.horizontal, 9).padding(.vertical, 4)
-                            .background(Theme.surfaceAlt.opacity(0.6), in: Capsule())
-                    }
-                }
-            }
+            // Per-dimension breakdown — web review-card.tsx groups tags under
+            // the dimension they describe, with that dimension's stars. The
+            // old native card flattened every tag into one unlabelled row, so
+            // "Simple" gave no clue whether it meant the prose or the plot,
+            // and the per-dimension stars + pacing never rendered at all.
+            reviewDimensionDetails(review)
 
             // Helpful pill
             Button {
@@ -237,6 +230,71 @@ struct ReviewsListView: View {
         .background(Theme.surface.opacity(0.55))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+    }
+
+    /// Per-dimension stars + the tags that belong to that dimension, plus the
+    /// plot's pacing chip. Mirrors the web card's "See all details" block.
+    /// Fiction and nonfiction dimensions are both walked and empty ones
+    /// dropped, so the row doesn't need to know which kind of book this is.
+    @ViewBuilder
+    private func reviewDimensionDetails(_ review: BookReviewEntry) -> some View {
+        let ordered = FICTION_DIMENSIONS + NONFICTION_DIMENSIONS
+        let rows: [(key: String, label: String, rating: Double?, tags: [String])] =
+            ordered.compactMap { dim in
+                let raw = review.dimensionTags[dim.key] ?? []
+                let tags = raw.filter { !$0.hasPrefix("pacing:") && !$0.hasPrefix("custom:") }
+                let rating = review.dimensionRatings[dim.key] ?? nil
+                guard rating != nil || !tags.isEmpty else { return nil }
+                return (dim.key, dim.label, rating, tags)
+            }
+
+        // "pacing:medium" rides along in the plot tags rather than its own field.
+        let pacing = (review.dimensionTags["plot"] ?? [])
+            .first(where: { $0.hasPrefix("pacing:") })
+            .map { String($0.dropFirst("pacing:".count)) }
+
+        if !rows.isEmpty || pacing != nil {
+            VStack(alignment: .leading, spacing: 9) {
+                Divider().opacity(0.5)
+
+                ForEach(rows, id: \.key) { row in
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack(spacing: 7) {
+                            Text(row.label)
+                                .font(Theme.body(11, .semibold))
+                                .foregroundStyle(Theme.muted)
+                            if let rating = row.rating {
+                                StarRow(rating: rating, size: 11)
+                            }
+                        }
+                        if !row.tags.isEmpty {
+                            FlowLayout(spacing: 6) {
+                                ForEach(row.tags, id: \.self) { tag in
+                                    Text(tag)
+                                        .font(Theme.body(11, .medium))
+                                        .foregroundStyle(Theme.foreground.opacity(0.85))
+                                        .padding(.horizontal, 9).padding(.vertical, 4)
+                                        .background(Theme.surfaceAlt.opacity(0.7), in: Capsule())
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if let pacing {
+                    HStack(spacing: 7) {
+                        Text("Pacing")
+                            .font(Theme.body(11, .semibold))
+                            .foregroundStyle(Theme.muted)
+                        Text(pacing.capitalized)
+                            .font(Theme.body(11, .medium))
+                            .foregroundStyle(Theme.foreground.opacity(0.85))
+                            .padding(.horizontal, 9).padding(.vertical, 4)
+                            .background(Theme.surfaceAlt.opacity(0.7), in: Capsule())
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -35,23 +35,32 @@ let NONFICTION_DIMENSIONS: [(key: String, label: String)] = [
 
 let DIMENSION_TAGS: [String: [String]] = [
     "characters": ["Relatable", "Lovable", "Morally grey", "Predictable", "Inconsistent", "Well-developed",
-                   "Compelling", "Complex", "Simple", "Realistic", "Flawed", "Annoying", "Memorable"],
-    "plot": ["Nonlinear", "Epic", "Intimate", "Cozy", "Predictable", "Satisfying", "Unrealistic", "Frustrating",
-             "Confusing", "Poorly structured", "Shocking", "Slow-burn", "Gripping", "Twisty", "Emotional",
-             "Immersive", "Layered", "Suspenseful"],
-    "setting": ["Contemporary/modern", "Historical", "Fantastical", "Urban", "Rural", "Futuristic", "Utopian",
-                "Dystopian", "Familiar", "Sparse", "Generic", "Under-developed", "Confined", "Expansive",
-                "Vivid", "Haunting", "Magical", "Extraterrestrial", "Alternate Earth", "Gritty", "Inconsistent"],
-    "prose": ["Complex", "Simple", "Lyrical / Poetic", "Dense", "Clunky", "Whimsical", "Humorous", "Flowery",
-              "Poorly written", "Elegant", "Witty", "Flat"],
-    "substance": ["Illuminating", "Surface-level", "Paradigm-shifting", "Repetitive", "Actionable", "Dense",
-                  "Hand-wavy", "Thought-provoking", "Quotable", "Forgettable", "Life-changing"],
+                   "Compelling", "Complex", "Simple", "Realistic", "Flawed", "Annoying", "Memorable",
+                   "Forgettable", "Flat", "Unlikable", "Under-developed", "Diverse", "Swoon-worthy"],
+    "plot": ["Nonlinear", "Epic", "Intimate", "Cozy", "Predictable", "Satisfying", "Unrealistic",
+             "Frustrating", "Confusing", "Poorly structured", "Shocking", "Slow-burn", "Gripping",
+             "Twisty", "Emotional", "Immersive", "Layered", "Suspenseful", "Boring", "Rushed",
+             "Repetitive", "Formulaic", "Original", "Dark", "Tropey"],
+    "setting": ["Contemporary/modern", "Historical", "Fantastical", "Urban", "Rural", "Futuristic",
+                "Utopian", "Dystopian", "Familiar", "Sparse", "Generic", "Under-developed", "Confined",
+                "Expansive", "Vivid", "Haunting", "Magical", "Extraterrestrial", "Alternate Earth",
+                "Gritty", "Inconsistent", "Atmospheric", "Immersive", "Richly detailed", "Small-town",
+                "Cozy", "Bleak"],
+    "prose": ["Complex", "Simple", "Lyrical / Poetic", "Dense", "Clunky", "Whimsical", "Humorous",
+              "Flowery", "Poorly written", "Elegant", "Witty", "Flat", "Boring", "Dry", "Accessible",
+              "Beautiful", "Choppy", "Over-written", "Punchy", "Repetitive"],
+    "substance": ["Illuminating", "Surface-level", "Paradigm-shifting", "Repetitive", "Actionable",
+                  "Dense", "Hand-wavy", "Thought-provoking", "Quotable", "Forgettable", "Life-changing",
+                  "Boring", "Practical", "Inspiring", "Overhyped", "Well-argued", "Rambling"],
     "evidence": ["Well-sourced", "Cherry-picked", "Peer-reviewed", "Lived-experience", "Opinion-heavy",
-                 "Balanced", "Inflammatory", "Data-driven", "Under-researched", "Primary sources", "Credible"],
+                 "Balanced", "Inflammatory", "Data-driven", "Under-researched", "Primary sources",
+                 "Credible", "Anecdotal", "Outdated", "Rigorous", "Transparent", "One-sided"],
     "clarity": ["Jargon-heavy", "Beginner-friendly", "Over-simplified", "Technical", "Plain-spoken",
-                "Meandering", "Well-organized", "Circuitous", "Crystal clear", "Dense"],
+                "Meandering", "Well-organized", "Circuitous", "Crystal clear", "Dense", "Confusing",
+                "Repetitive", "Concise", "Bloated", "Easy to follow"],
     "voice": ["Academic", "Warm", "Urgent", "Dry", "Memoir-like", "Sermonizing", "Witty", "Self-indulgent",
-              "Humble", "Confrontational", "Conversational", "Detached"],
+              "Humble", "Confrontational", "Conversational", "Detached", "Boring", "Authoritative",
+              "Compassionate", "Snarky", "Inspiring", "Preachy"],
 ]
 
 // ─── Model ───
@@ -89,7 +98,11 @@ final class ReviewWizardModel {
     var isAnonymous = false
     var contentComments = ""
     var userAddedWarnings = ""
-    var proposedCorrections: [String: Int] = [:]   // categoryKey → proposed intensity
+    /// categoryKey → the proposed intensity plus the reviewer's rationale.
+    /// The note reaches admins as report_corrections.proposed_notes — without
+    /// it a triager sees a bare number and no reason to trust it.
+    struct ProposedCorrection: Equatable { var intensity: Int; var note: String = "" }
+    var proposedCorrections: [String: ProposedCorrection] = [:]
     var isExisting = false
     var saving = false
     var loaded = false
@@ -125,7 +138,7 @@ final class ReviewWizardModel {
         dimensionTags = r.dimensionTags.mapValues(Set.init)
     }
 
-    struct Correction: Codable, Sendable { let categoryKey: String; let intensity: Int }
+    struct Correction: Codable, Sendable { let categoryKey: String; let intensity: Int; let note: String? }
     struct SavePayload: Codable, Sendable {
         let overallRating: Double?
         let didNotFinish: Bool
@@ -157,7 +170,12 @@ final class ReviewWizardModel {
             contentComments: contentComments.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : contentComments,
             isAnonymous: isAnonymous,
             userAddedWarnings: warnings,
-            proposedCorrections: proposedCorrections.map { Correction(categoryKey: $0.key, intensity: $0.value) }
+            proposedCorrections: proposedCorrections.map {
+                Correction(categoryKey: $0.key,
+                           intensity: $0.value.intensity,
+                           note: $0.value.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                 ? nil : $0.value.note)
+            }
         )
         struct Ok: Codable { let ok: Bool; let saved: Bool }
         do {
@@ -234,6 +252,10 @@ struct ReviewWizardView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: ReviewWizardModel
     @State private var showDeleteConfirm = false
+    /// Live handle on the review text view, published by the editor so the
+    /// toolbar can drive formatting commands.
+    @State private var editorCommands: RichTextCommands?
+    @State private var reviewCharCount = 0
     let onSaved: () -> Void
 
     init(bookId: String, isFiction: Bool?, ratings: [ContentRating], seedDnf: Bool = false, onSaved: @escaping () -> Void) {
@@ -504,39 +526,201 @@ struct ReviewWizardView: View {
     }
 
     // ── Step 4: review text ──
+    // Mirrors the web step-review-text.tsx: same heading + framing copy, the
+    // same formatting toolbar, spoiler tagging, and a 10,000-char ceiling.
     private var stepText: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Say more (optional)")
-                    .font(Theme.heading(22, .bold))
-                    .foregroundStyle(Theme.foreground)
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 8) {
+                    Text(model.didNotFinish ? "Why did you stop reading?" : "Share your thoughts")
+                        .font(Theme.heading(22, .bold))
+                        .foregroundStyle(Theme.foreground)
+                        .multilineTextAlignment(.center)
+                    Text("OPTIONAL")
+                        .font(Theme.body(10, .medium))
+                        .tracking(0.6)
+                        .foregroundStyle(Theme.muted)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .overlay(Capsule().stroke(Theme.border, lineWidth: 1))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 20)
+
+                Text(model.didNotFinish
+                     ? "Help other readers understand what didn\u{2019}t work for you. Pacing? Content? Just not your thing? Your reasoning helps others decide."
+                     : "Let other readers know how you felt about this book. What did you enjoy? What didn\u{2019}t you love? How did you feel when reading?")
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.muted)
+                    .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
-                    .padding(.top, 24)
 
-                TextEditor(text: Bindable(model).reviewText)
-                    .scrollContentBackground(.hidden)
-                    .font(Theme.body(16))
-                    .foregroundStyle(Theme.foreground)
-                    .frame(minHeight: 180)
-                    .padding(12)
-                    .background(Theme.surface.opacity(0.6))
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+                HStack(spacing: 5) {
+                    Image(systemName: "eye.slash")
+                        .font(.system(size: 11))
+                    Text("Select text, then tap the eye to hide a spoiler.")
+                        .font(Theme.body(11))
+                }
+                .foregroundStyle(Theme.muted)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 7)
+                .background(Theme.surfaceAlt.opacity(0.6))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
 
-                Button {
-                    model.isAnonymous.toggle()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: model.isAnonymous ? "checkmark.square.fill" : "square")
-                            .foregroundStyle(model.isAnonymous ? Theme.accent : Theme.muted)
-                        Text("Post anonymously")
-                            .font(Theme.body(15, .medium))
-                            .foregroundStyle(Theme.foreground)
+                VStack(spacing: 0) {
+                    reviewToolbar
+                    RichReviewTextView(
+                        html: Bindable(model).reviewText,
+                        placeholder: model.didNotFinish
+                            ? "What made you put it down?"
+                            : "Tap here and start typing.",
+                        charCount: $reviewCharCount,
+                        commandSink: { editorCommands = $0 }
+                    )
+                    .frame(minHeight: 220)
+                }
+                .background(Theme.surface.opacity(0.6))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+
+                HStack {
+                    Button {
+                        model.isAnonymous.toggle()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: model.isAnonymous ? "checkmark.square.fill" : "square")
+                                .foregroundStyle(model.isAnonymous ? Theme.accent : Theme.muted)
+                            Text("Post anonymously")
+                                .font(Theme.body(15, .medium))
+                                .foregroundStyle(Theme.foreground)
+                        }
                     }
+                    Spacer()
+                    Text("\(reviewCharCount) / \(reviewCharLimit)")
+                        .font(Theme.body(12))
+                        .foregroundStyle(reviewCharCount > Int(Double(reviewCharLimit) * 0.9)
+                                         ? Theme.destructive : Theme.muted)
                 }
             }
             .padding(.horizontal, 20)
         }
+    }
+
+
+    /// One What's Inside category: current intensity, the 5 proposal chips,
+    /// and (once a different level is picked) the rationale that ships to the
+    /// admin queue. Extracted from stepContent because the inlined version
+    /// blew the Swift type-checker's time budget.
+    @ViewBuilder
+    private func contentRatingCard(_ rating: ContentRating) -> some View {
+        let proposed = model.proposedCorrections[rating.categoryKey]?.intensity
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text(rating.categoryName)
+                                .font(Theme.body(15, .semibold))
+                                .foregroundStyle(Theme.foreground)
+                            Spacer()
+                            Text(intensityLabel(rating.intensity))
+                                .font(Theme.body(12, .medium))
+                                .foregroundStyle(intensityColor(rating.intensity))
+                        }
+                        HStack(spacing: 6) {
+                            ForEach(0..<5, id: \.self) { level in
+                                let isCurrent = level == rating.intensity && proposed == nil
+                                let isProposed = proposed == level
+                                Button {
+                                    if isProposed {
+                                        model.proposedCorrections.removeValue(forKey: rating.categoryKey)
+                                    } else if level != rating.intensity {
+                                        // Keep any note already typed for this category.
+                                        let existing = model.proposedCorrections[rating.categoryKey]?.note ?? ""
+                                        model.proposedCorrections[rating.categoryKey] =
+                                            .init(intensity: level, note: existing)
+                                    }
+                                } label: {
+                                    Text(intensityLabel(level))
+                                        .font(Theme.body(11, .medium))
+                                        .foregroundStyle(isProposed ? .black : (isCurrent ? Theme.foreground : Theme.muted))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 7)
+                                        .background(isProposed ? Theme.accent : (isCurrent ? Theme.surfaceAlt : Theme.surfaceAlt.opacity(0.35)), in: Capsule())
+                                }
+                            }
+                        }
+
+                        // Rationale travels with the proposal to the admin
+                        // queue (report_corrections.proposed_notes) — web has
+                        // had this field; native was posting a bare number.
+                        if proposed != nil {
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("WHY? (OPTIONAL)")
+                                    .font(Theme.body(10, .semibold))
+                                    .tracking(0.6)
+                                    .foregroundStyle(Theme.muted)
+                                TextField(
+                                    "e.g. \u{201C}Multiple graphic battle scenes\u{201D}",
+                                    text: Binding(
+                                        get: { model.proposedCorrections[rating.categoryKey]?.note ?? "" },
+                                        set: { newValue in
+                                            guard var entry = model.proposedCorrections[rating.categoryKey] else { return }
+                                            entry.note = newValue
+                                            model.proposedCorrections[rating.categoryKey] = entry
+                                        }
+                                    ),
+                                    axis: .vertical
+                                )
+                                .lineLimit(2...4)
+                                .font(Theme.body(14))
+                                .foregroundStyle(Theme.foreground)
+                                .padding(10)
+                                .background(Theme.bg.opacity(0.5))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+
+                                Button("Cancel proposal") {
+                                    model.proposedCorrections.removeValue(forKey: rating.categoryKey)
+                                }
+                                .font(Theme.body(12))
+                                .foregroundStyle(Theme.muted)
+                            }
+                            .padding(.top, 4)
+                        }
+                    }
+                    .padding(12)
+                    .background(Theme.surface.opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(
+                        proposed != nil ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1))
+    }
+
+    private var reviewCharLimit: Int { 10_000 }
+
+    private var reviewToolbar: some View {
+        HStack(spacing: 2) {
+            toolbarButton("bold", label: "Bold") { editorCommands?.toggleTrait(.traitBold) }
+            toolbarButton("italic", label: "Italic") { editorCommands?.toggleTrait(.traitItalic) }
+            toolbarButton("underline", label: "Underline") { editorCommands?.toggleUnderline() }
+            Divider().frame(height: 18).padding(.horizontal, 4)
+            toolbarButton("list.bullet", label: "Bullet list") { editorCommands?.toggleBulletList() }
+            Divider().frame(height: 18).padding(.horizontal, 4)
+            toolbarButton("eye.slash", label: "Spoiler") { editorCommands?.toggleSpoiler() }
+            Spacer()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(Theme.surfaceAlt.opacity(0.5))
+        .overlay(alignment: .bottom) { Divider() }
+    }
+
+    private func toolbarButton(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Theme.foreground)
+                .frame(width: 32, height: 28)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel(label)
     }
 
     // ── Step 5: content details ──
@@ -553,40 +737,7 @@ struct ReviewWizardView: View {
                     .foregroundStyle(Theme.muted)
 
                 ForEach(model.ratings) { rating in
-                    let proposed = model.proposedCorrections[rating.categoryKey]
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text(rating.categoryName)
-                                .font(Theme.body(15, .semibold))
-                                .foregroundStyle(Theme.foreground)
-                            Spacer()
-                            Text(intensityLabel(rating.intensity))
-                                .font(Theme.body(12, .medium))
-                                .foregroundStyle(intensityColor(rating.intensity))
-                        }
-                        HStack(spacing: 6) {
-                            ForEach(0..<5, id: \.self) { level in
-                                let isCurrent = level == rating.intensity && proposed == nil
-                                let isProposed = proposed == level
-                                Button {
-                                    if isProposed { model.proposedCorrections.removeValue(forKey: rating.categoryKey) }
-                                    else if level != rating.intensity { model.proposedCorrections[rating.categoryKey] = level }
-                                } label: {
-                                    Text(intensityLabel(level))
-                                        .font(Theme.body(11, .medium))
-                                        .foregroundStyle(isProposed ? .black : (isCurrent ? Theme.foreground : Theme.muted))
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 7)
-                                        .background(isProposed ? Theme.accent : (isCurrent ? Theme.surfaceAlt : Theme.surfaceAlt.opacity(0.35)), in: Capsule())
-                                }
-                            }
-                        }
-                    }
-                    .padding(12)
-                    .background(Theme.surface.opacity(0.5))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(
-                        proposed != nil ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1))
+                    contentRatingCard(rating)
                 }
 
                 Text("Add a trigger warning others should know about (one per line)")

@@ -2494,7 +2494,13 @@ async function getPostCompletionSuggestionsInternal(
       .groupBy(bookGenres.bookId)
       .having(sql`COUNT(*) >= ${minOverlap}`)
       .orderBy(sql`COUNT(*) DESC`)
-      .limit(limit * 6) // Larger pool to survive hard-filtering
+      // The exclusion + quality filters below run in JS, AFTER this limit, so
+      // the pool has to be big enough to survive them. At limit*6 (48 rows) a
+      // reader with a large library got nothing at all: the highest-overlap
+      // books in a genre are exactly the ones already on their shelves, so
+      // every candidate was excluded and the "What to Read Next" sheet came
+      // back empty (repro: Between Two Fires, an 800-book account).
+      .limit(Math.max(limit * 40, 300))
       .all();
 
     const candidateIds = similarRows
@@ -2521,7 +2527,7 @@ async function getPostCompletionSuggestionsInternal(
           isBoxSet: books.isBoxSet,
         })
         .from(books)
-        .where(sql`${books.id} IN (${sql.join(candidateIds.slice(0, limit * 4).map((id) => sql`${id}`), sql`, `)})`)
+        .where(sql`${books.id} IN (${sql.join(candidateIds.slice(0, limit * 12).map((id) => sql`${id}`), sql`, `)})`)
         .all();
 
       const candidateBookIds = bookRows.map((b) => b.id);
@@ -2606,6 +2612,21 @@ async function getPostCompletionSuggestionsInternal(
           score: 0,
         });
       }
+    }
+  }
+
+  // Genre-overlap can legitimately come back empty: every near neighbour of
+  // the finished book may sit in a genre the reader has marked "dislike"
+  // (repro — Between Two Fires is Historical Horror, and this reader dislikes
+  // Historical Fiction, so all 82 surviving candidates were filtered). Rather
+  // than hand the client an empty payload, fall back to their general
+  // recommendations, which already honour the same preferences.
+  if (similarBooks.length === 0) {
+    const fallback = await getSmartDiscoveryBooks(userId, limit);
+    for (const book of fallback) {
+      if (book.id === completedBookId || excludedIds.has(book.id)) continue;
+      if (book.id === seriesNext?.id) continue;
+      similarBooks.push(book);
     }
   }
 

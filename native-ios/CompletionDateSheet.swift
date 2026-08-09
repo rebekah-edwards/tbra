@@ -184,6 +184,16 @@ struct PostCompletionSheet: View {
                         if !similar.isEmpty {
                             section("SIMILAR BOOKS", similar)
                         }
+                        if seriesNext == nil && similar.isEmpty {
+                            // Reached only if the server truly has nothing.
+                            // Showing this beats the old auto-dismiss, which
+                            // flashed the sheet open and shut and read as a bug.
+                            Text("No suggestions for this one yet — check Discover for more.")
+                                .font(Theme.body(14))
+                                .foregroundStyle(Theme.muted)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 8)
+                        }
                     }
                 }
             }
@@ -202,10 +212,10 @@ struct PostCompletionSheet: View {
                 seriesNext = res?.seriesNext
                 similar = res?.similarBooks ?? []
                 loading = false
-                // Dismiss only when the server genuinely had nothing to
-                // suggest — never on a failed request, which would flash the
-                // sheet shut before it rendered.
-                if res != nil && seriesNext == nil && similar.isEmpty { dismiss() }
+                // No auto-dismiss. It used to close the sheet whenever the
+                // payload came back empty, which looked exactly like the sheet
+                // "popped up and immediately disappeared" — the empty state
+                // above says so plainly instead.
             }
         }
     }
