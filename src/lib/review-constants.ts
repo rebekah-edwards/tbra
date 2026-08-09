@@ -80,6 +80,12 @@ export const DIMENSION_TAGS: Record<ReviewDimension, string[]> = {
     "Flawed",
     "Annoying",
     "Memorable",
+    "Forgettable",
+    "Flat",
+    "Unlikable",
+    "Under-developed",
+    "Diverse",
+    "Swoon-worthy",
   ],
   plot: [
     "Nonlinear",
@@ -100,6 +106,13 @@ export const DIMENSION_TAGS: Record<ReviewDimension, string[]> = {
     "Immersive",
     "Layered",
     "Suspenseful",
+    "Boring",
+    "Rushed",
+    "Repetitive",
+    "Formulaic",
+    "Original",
+    "Dark",
+    "Tropey",
   ],
   setting: [
     "Contemporary/modern",
@@ -123,6 +136,12 @@ export const DIMENSION_TAGS: Record<ReviewDimension, string[]> = {
     "Alternate Earth",
     "Gritty",
     "Inconsistent",
+    "Atmospheric",
+    "Immersive",
+    "Richly detailed",
+    "Small-town",
+    "Cozy",
+    "Bleak",
   ],
   prose: [
     "Complex",
@@ -137,6 +156,14 @@ export const DIMENSION_TAGS: Record<ReviewDimension, string[]> = {
     "Elegant",
     "Witty",
     "Flat",
+    "Boring",
+    "Dry",
+    "Accessible",
+    "Beautiful",
+    "Choppy",
+    "Over-written",
+    "Punchy",
+    "Repetitive",
   ],
 
   // Nonfiction — Substance: how much the reader came away with.
@@ -152,6 +179,12 @@ export const DIMENSION_TAGS: Record<ReviewDimension, string[]> = {
     "Quotable",
     "Forgettable",
     "Life-changing",
+    "Boring",
+    "Practical",
+    "Inspiring",
+    "Overhyped",
+    "Well-argued",
+    "Rambling",
   ],
   // Nonfiction — Evidence: how claims are supported.
   evidence: [
@@ -166,6 +199,11 @@ export const DIMENSION_TAGS: Record<ReviewDimension, string[]> = {
     "Under-researched",
     "Primary sources",
     "Credible",
+    "Anecdotal",
+    "Outdated",
+    "Rigorous",
+    "Transparent",
+    "One-sided",
   ],
   // Nonfiction — Clarity: how accessible for the target reader.
   clarity: [
@@ -179,6 +217,11 @@ export const DIMENSION_TAGS: Record<ReviewDimension, string[]> = {
     "Circuitous",
     "Crystal clear",
     "Dense",
+    "Confusing",
+    "Repetitive",
+    "Concise",
+    "Bloated",
+    "Easy to follow",
   ],
   // Nonfiction — Voice: the author's presence on the page.
   voice: [
@@ -194,6 +237,12 @@ export const DIMENSION_TAGS: Record<ReviewDimension, string[]> = {
     "Confrontational",
     "Conversational",
     "Detached",
+    "Boring",
+    "Authoritative",
+    "Compassionate",
+    "Snarky",
+    "Inspiring",
+    "Preachy",
   ],
 };
 

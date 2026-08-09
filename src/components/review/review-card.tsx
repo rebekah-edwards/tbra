@@ -178,7 +178,7 @@ export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { 
         <button
           type="button"
           onClick={() => setTextExpanded(!textExpanded)}
-          className="text-xs text-primary font-medium"
+          className="text-xs read-more-link font-medium"
         >
           {textExpanded ? "Show less" : "Show more"}
         </button>
@@ -205,7 +205,7 @@ export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { 
                         {tags.map((tag) => (
                           <span
                             key={tag}
-                            className="text-xs px-2.5 py-1 rounded-full bg-primary/15 text-primary font-medium"
+                            className="text-xs px-2.5 py-1 rounded-full bg-accent/15 text-accent font-medium"
                           >
                             {tag}
                           </span>
@@ -220,7 +220,7 @@ export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { 
           <button
             type="button"
             onClick={() => setDetailsOpen(!detailsOpen)}
-            className="w-full text-center text-xs text-primary hover:text-primary/80 font-medium pt-1"
+            className="w-full text-center text-xs read-more-link font-medium pt-1"
           >
             {detailsOpen ? "Hide details" : "See all details"}
           </button>
@@ -232,7 +232,7 @@ export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { 
         {isOwnReview ? (
           <Link
             href={bookPath}
-            className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full text-primary hover:bg-primary/10 transition-colors"
+            className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full read-more-link hover:bg-accent/10 transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20h9" />
