@@ -98,11 +98,28 @@ final class ReviewWizardModel {
     var isAnonymous = false
     var contentComments = ""
     var userAddedWarnings = ""
-    /// categoryKey → the proposed intensity plus the reviewer's rationale.
-    /// The note reaches admins as report_corrections.proposed_notes — without
-    /// it a triager sees a bare number and no reason to trust it.
+    /// categoryKey → the proposed intensity plus the proposed content note.
+    /// The note is the PUBLIC copy for that category, seeded from what the
+    /// book says now: the admin apply route writes proposed_notes straight
+    /// into book_category_ratings.notes, so editing beats writing fresh.
     struct ProposedCorrection: Equatable { var intensity: Int; var note: String = "" }
     var proposedCorrections: [String: ProposedCorrection] = [:]
+
+    /// Records a proposal for a category, or clears it when nothing differs
+    /// from what the book already says. Either half can be the change — a
+    /// different intensity, edited copy, or both. Mirrors buildProposal() in
+    /// step-content-details.tsx.
+    func setProposal(for rating: ContentRating, intensity: Int?, note: String) {
+        let intensityChanged = intensity != nil && intensity != rating.intensity
+        let noteChanged = note.trimmingCharacters(in: .whitespacesAndNewlines)
+            != (rating.notes ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard intensityChanged || noteChanged else {
+            proposedCorrections.removeValue(forKey: rating.categoryKey)
+            return
+        }
+        proposedCorrections[rating.categoryKey] =
+            .init(intensity: intensity ?? rating.intensity, note: note)
+    }
     var isExisting = false
     var saving = false
     var loaded = false
@@ -629,14 +646,9 @@ struct ReviewWizardView: View {
                                 let isCurrent = level == rating.intensity && proposed == nil
                                 let isProposed = proposed == level
                                 Button {
-                                    if isProposed {
-                                        model.proposedCorrections.removeValue(forKey: rating.categoryKey)
-                                    } else if level != rating.intensity {
-                                        // Keep any note already typed for this category.
-                                        let existing = model.proposedCorrections[rating.categoryKey]?.note ?? ""
-                                        model.proposedCorrections[rating.categoryKey] =
-                                            .init(intensity: level, note: existing)
-                                    }
+                                    let note = model.proposedCorrections[rating.categoryKey]?.note
+                                        ?? rating.notes ?? ""
+                                    model.setProposal(for: rating, intensity: isProposed ? nil : level, note: note)
                                 } label: {
                                     Text(intensityLabel(level))
                                         .font(Theme.body(11, .medium))
@@ -648,43 +660,51 @@ struct ReviewWizardView: View {
                             }
                         }
 
-                        // Rationale travels with the proposal to the admin
-                        // queue (report_corrections.proposed_notes) — web has
-                        // had this field; native was posting a bare number.
-                        if proposed != nil {
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("WHY? (OPTIONAL)")
-                                    .font(Theme.body(10, .semibold))
-                                    .tracking(0.6)
-                                    .foregroundStyle(Theme.muted)
-                                TextField(
-                                    "e.g. \u{201C}Multiple graphic battle scenes\u{201D}",
-                                    text: Binding(
-                                        get: { model.proposedCorrections[rating.categoryKey]?.note ?? "" },
-                                        set: { newValue in
-                                            guard var entry = model.proposedCorrections[rating.categoryKey] else { return }
-                                            entry.note = newValue
-                                            model.proposedCorrections[rating.categoryKey] = entry
-                                        }
-                                    ),
-                                    axis: .vertical
-                                )
-                                .lineLimit(2...4)
-                                .font(Theme.body(14))
-                                .foregroundStyle(Theme.foreground)
-                                .padding(10)
-                                .background(Theme.bg.opacity(0.5))
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+                        // The editable copy for this category, seeded with
+                        // what the book says now — tweaking existing wording
+                        // beats writing from scratch. On accept the admin
+                        // apply route writes this into
+                        // book_category_ratings.notes, so it IS the public
+                        // note, not a private rationale.
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("CONTENT NOTE")
+                                .font(Theme.body(10, .semibold))
+                                .tracking(0.6)
+                                .foregroundStyle(Theme.muted)
+                            TextField(
+                                "Describe what\u{2019}s in the book for this category.",
+                                text: Binding(
+                                    get: {
+                                        model.proposedCorrections[rating.categoryKey]?.note
+                                            ?? rating.notes ?? ""
+                                    },
+                                    set: { newValue in
+                                        model.setProposal(
+                                            for: rating,
+                                            intensity: model.proposedCorrections[rating.categoryKey]?.intensity,
+                                            note: newValue
+                                        )
+                                    }
+                                ),
+                                axis: .vertical
+                            )
+                            .lineLimit(3...6)
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.foreground)
+                            .padding(10)
+                            .background(Theme.bg.opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
 
-                                Button("Cancel proposal") {
+                            if model.proposedCorrections[rating.categoryKey] != nil {
+                                Button("Discard my changes") {
                                     model.proposedCorrections.removeValue(forKey: rating.categoryKey)
                                 }
                                 .font(Theme.body(12))
                                 .foregroundStyle(Theme.muted)
                             }
-                            .padding(.top, 4)
                         }
+                        .padding(.top, 4)
                     }
                     .padding(12)
                     .background(Theme.surface.opacity(0.5))
@@ -732,7 +752,7 @@ struct ReviewWizardView: View {
                     .foregroundStyle(Theme.foreground)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 24)
-                Text("Propose a different intensity for any category. Suggestions go to the admin review queue — they don't change the book immediately.")
+                Text("Propose a different intensity or edit the note for any category. Suggestions go to the admin review queue — they don't change the book immediately.")
                     .font(Theme.body(13))
                     .foregroundStyle(Theme.muted)
 

@@ -180,6 +180,15 @@ struct PublicProfileView: View {
                         .font(Theme.body(14))
                         .foregroundStyle(Theme.muted)
                 }
+                // Web shows the bio on public profiles; iOS dropped it, so a
+                // shared profile read as blank next to its web counterpart.
+                if let bio = user.bio?.trimmingCharacters(in: .whitespacesAndNewlines), !bio.isEmpty {
+                    Text(bio)
+                        .font(Theme.body(14))
+                        .foregroundStyle(Theme.foreground.opacity(0.9))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.center)
+                }
                 HStack(spacing: 6) {
                     NavigationLink(value: FollowListRoute(username: model.username, type: "followers")) {
                         (Text("\(model.followerCount) ").fontWeight(.bold) + Text("followers"))

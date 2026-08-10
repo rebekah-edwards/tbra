@@ -109,6 +109,15 @@ struct ProfileView: View {
                         .font(Theme.body(14))
                         .foregroundStyle(Theme.muted)
                 }
+                // Bio was editable but rendered nowhere on iOS — readers who
+                // wrote one on the web couldn't see it in the app at all.
+                if let bio = data.user.bio?.trimmingCharacters(in: .whitespacesAndNewlines), !bio.isEmpty {
+                    Text(bio)
+                        .font(Theme.body(14))
+                        .foregroundStyle(Theme.foreground.opacity(0.9))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.center)
+                }
                 Text("Member since \(memberSince(data.user.createdAt))")
                     .font(Theme.body(14))
                     .foregroundStyle(Theme.muted)

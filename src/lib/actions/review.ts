@@ -265,7 +265,12 @@ export async function saveReviewFor(userId: string, payload: ReviewPayload) {
         categoryId,
         proposedIntensity: p.intensity,
         proposedNotes: p.note || null,
-        message: `Reviewer proposed intensity ${p.intensity} for ${p.categoryKey}${p.note ? `: ${p.note}` : ""}`,
+        // proposedNotes is the REPLACEMENT public copy (the apply route
+        // writes it into book_category_ratings.notes), not a private
+        // rationale — say so, so a triager reads it as proposed wording.
+        message: `Reviewer proposed intensity ${p.intensity} for ${p.categoryKey}${
+          p.note ? `; proposed note: ${p.note}` : ""
+        }`,
         status: "new",
       });
     }
