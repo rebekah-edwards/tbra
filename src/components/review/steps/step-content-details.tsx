@@ -22,6 +22,23 @@ interface StepContentDetailsProps {
 const INTENSITY_LABELS = ["None", "Mild", "Moderate", "Significant", "Extreme"] as const;
 const MAX_USER_ADDED_LENGTH = 300;
 
+/**
+ * Build the proposal for a category, or null when nothing actually differs
+ * from what the book already says. Either half can be the change: a different
+ * intensity, edited copy, or both. A copy-only edit still carries the current
+ * intensity so the payload always has one.
+ */
+function buildProposal(
+  current: { intensity: number | null; notes: string | null },
+  nextIntensity: number | null,
+  nextNote: string
+): ProposedCorrection | null {
+  const intensityChanged = nextIntensity !== null && nextIntensity !== current.intensity;
+  const noteChanged = nextNote.trim() !== (current.notes ?? "").trim();
+  if (!intensityChanged && !noteChanged) return null;
+  return { intensity: nextIntensity ?? current.intensity, note: nextNote };
+}
+
 function containsBlocked(text: string): boolean {
   const lower = text.toLowerCase();
   return BLOCKED_CW_KEYWORDS.some((kw) => lower.includes(kw));
@@ -77,8 +94,8 @@ export function StepContentDetails({
         What&apos;s in this book?
       </h2>
       <p className="text-xs text-muted text-center pb-4 px-4">
-        Tap any category to suggest a different intensity. Your proposal
-        goes to a reviewer before it changes the book page.
+        Tap any category to suggest a different intensity or edit its note.
+        Your proposal goes to a reviewer before it changes the book page.
       </p>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
@@ -150,10 +167,10 @@ export function StepContentDetails({
                                 key={label}
                                 type="button"
                                 onClick={() =>
-                                  onProposalChange(r.categoryKey, {
-                                    intensity: i,
-                                    note: proposal?.note ?? "",
-                                  })
+                                  onProposalChange(
+                                    r.categoryKey,
+                                    buildProposal(r, i, proposal?.note ?? r.notes ?? "")
+                                  )
                                 }
                                 className={`rounded-lg px-1 py-1.5 text-[11px] font-medium transition-all ${
                                   selected
@@ -170,20 +187,29 @@ export function StepContentDetails({
 
                       <div>
                         <p className="text-[11px] uppercase tracking-wider text-muted font-semibold mb-1">
-                          Why? (optional)
+                          Content note
                         </p>
+                        {/* Seeded with the note currently shown on the book so
+                            a reader can tweak the existing wording instead of
+                            writing from scratch. On accept, the admin apply
+                            route writes this straight into
+                            book_category_ratings.notes — it IS the public copy,
+                            not a private rationale. */}
                         <textarea
-                          rows={2}
-                          value={proposal?.note ?? ""}
+                          rows={3}
+                          value={proposal?.note ?? r.notes ?? ""}
                           onChange={(e) =>
-                            onProposalChange(r.categoryKey, {
-                              intensity: proposedIntensity,
-                              note: e.target.value,
-                            })
+                            onProposalChange(
+                              r.categoryKey,
+                              buildProposal(r, proposedIntensity, e.target.value)
+                            )
                           }
-                          placeholder="e.g. 'Multiple graphic battle scenes'"
+                          placeholder="Describe what's in the book for this category."
                           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60 focus:border-purple-400 focus:outline-none resize-none"
                         />
+                        <p className="mt-1 text-[10px] text-muted/70">
+                          Edits go to the admin review queue — they don&apos;t change the book right away.
+                        </p>
                       </div>
 
                       {proposal && (
