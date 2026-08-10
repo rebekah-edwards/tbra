@@ -186,8 +186,12 @@ struct PublicProfileView: View {
                     Text(bio)
                         .font(Theme.body(14))
                         .foregroundStyle(Theme.foreground.opacity(0.9))
+                        // Leading, matching the rest of this column — a
+                        // centred bio floated oddly against the left-aligned
+                        // username and member-since rows.
                         .fixedSize(horizontal: false, vertical: true)
-                        .multilineTextAlignment(.center)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 HStack(spacing: 6) {
                     NavigationLink(value: FollowListRoute(username: model.username, type: "followers")) {

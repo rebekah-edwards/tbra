@@ -152,7 +152,7 @@ struct EditionPickerSheet: View {
                     ProgressView().tint(Theme.accent)
                 } else if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(Theme.accentText)
                 }
             }
             .padding(12)

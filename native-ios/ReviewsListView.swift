@@ -220,7 +220,9 @@ struct ReviewsListView: View {
                     Text(review.helpfulCount > 0 ? "Helpful · \(review.helpfulCount)" : "Helpful")
                         .font(Theme.body(12, .medium))
                 }
-                .foregroundStyle(review.currentUserVoted ? Theme.accent : Theme.muted)
+                // accentText, not accent: lime-on-translucent-lime is
+                // unreadable in light mode (it stays lime in dark).
+                .foregroundStyle(review.currentUserVoted ? Theme.accentText : Theme.muted)
                 .padding(.horizontal, 11).padding(.vertical, 6)
                 .background(review.currentUserVoted ? Theme.accent.opacity(0.1) : Theme.surfaceAlt.opacity(0.5), in: Capsule())
                 .overlay(Capsule().stroke(review.currentUserVoted ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1))

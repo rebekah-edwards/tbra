@@ -505,7 +505,7 @@ struct ReviewWizardView: View {
                                 } label: {
                                     Text(tag)
                                         .font(Theme.body(12, .medium))
-                                        .foregroundStyle(selected ? Theme.accent : Theme.muted)
+                                        .foregroundStyle(selected ? Theme.accentText : Theme.muted)
                                         .padding(.horizontal, 12).padding(.vertical, 6)
                                         .background(selected ? Theme.accent.opacity(0.12) : Theme.surfaceAlt.opacity(0.5), in: Capsule())
                                         .overlay(Capsule().stroke(selected ? Theme.accent.opacity(0.5) : Theme.border.opacity(0.6), lineWidth: 1))

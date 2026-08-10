@@ -1005,7 +1005,7 @@ private struct BookActionCluster: View {
                                 .foregroundStyle(Theme.foreground)
                             Spacer()
                             if currentState == value {
-                                Text("✓").foregroundStyle(Theme.accent)
+                                Text("✓").foregroundStyle(Theme.accentText)
                             }
                         }
                         .padding(.horizontal, 18).padding(.vertical, 11)

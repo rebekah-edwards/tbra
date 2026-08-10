@@ -105,7 +105,7 @@ private struct BookNoteCard: View {
                         Text(isPrivate ? "Private" : "Shared")
                             .font(Theme.body(10, .medium))
                     }
-                    .foregroundStyle(isPrivate ? Theme.muted : Theme.accent)
+                    .foregroundStyle(isPrivate ? Theme.muted : Theme.accentText)
                     .padding(.horizontal, 8).padding(.vertical, 4)
                     .background(isPrivate ? Theme.surfaceAlt.opacity(0.7) : Theme.accent.opacity(0.1), in: Capsule())
                 }

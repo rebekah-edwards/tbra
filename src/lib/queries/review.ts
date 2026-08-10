@@ -272,7 +272,7 @@ export async function getBookReviews(bookId: string, currentUserId?: string | nu
     dims[row.dimension].push(row.tag);
   }
 
-  return rows.map((row) => ({
+  const shaped = rows.map((row) => ({
     id: row.id,
     userId: row.userId,
     displayName: row.isAnonymous ? null : row.displayName,
@@ -293,4 +293,15 @@ export async function getBookReviews(bookId: string, currentUserId?: string | nu
     currentUserVoted: userVotedSet.has(row.id),
     arcStatus: row.arcStatus ?? null,
   }));
+
+  // Most-helpful first, newest as the tiebreak. Sorted here rather than in the
+  // SQL because helpful counts are batch-fetched after the rows; doing it at
+  // the source means every consumer — the book page, the standalone reviews
+  // page, and the native list via /api/v1 — gets the same order for free.
+  type Sortable = { helpfulCount: number; createdAt: string };
+  return shaped.sort(
+    (a: Sortable, b: Sortable) =>
+      b.helpfulCount - a.helpfulCount ||
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 }

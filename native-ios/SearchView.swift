@@ -369,7 +369,7 @@ private struct SearchResultCard: View {
                                 .font(Theme.body(13, .medium))
                                 .foregroundStyle(Theme.foreground)
                             Spacer()
-                            if state == value { Text("✓").foregroundStyle(Theme.accent) }
+                            if state == value { Text("✓").foregroundStyle(Theme.accentText) }
                         }
                         .padding(.horizontal, 14).padding(.vertical, 9)
                         .background(state == value ? Theme.accent.opacity(0.15) : .clear)
