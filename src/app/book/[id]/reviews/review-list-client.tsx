@@ -15,7 +15,9 @@ interface ReviewListClientProps {
 export function ReviewListClient({ reviews, bookId, bookSlug, currentUserId }: ReviewListClientProps) {
   const [hideNoText, setHideNoText] = useState(false);
   const [dnfOnly, setDnfOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<"latest" | "helpful">("latest");
+  // Server returns most-helpful-first; default the toggle to match so the
+  // displayed order and the highlighted chip agree.
+  const [sortBy, setSortBy] = useState<"latest" | "helpful">("helpful");
 
   // Scroll to a specific review if hash is present
   useEffect(() => {
@@ -44,7 +46,17 @@ export function ReviewListClient({ reviews, bookId, bookSlug, currentUserId }: R
       result = result.filter((r) => r.didNotFinish);
     }
     if (sortBy === "helpful") {
-      result = [...result].sort((a, b) => b.helpfulCount - a.helpfulCount);
+      result = [...result].sort(
+        (a, b) =>
+          b.helpfulCount - a.helpfulCount ||
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } else {
+      // The server hands back helpful-first, so "Latest" has to re-sort
+      // rather than rely on the incoming order.
+      result = [...result].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
     }
     return result;
   }, [reviews, hideNoText, dnfOnly, sortBy]);
