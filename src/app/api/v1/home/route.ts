@@ -107,6 +107,7 @@ export async function GET(req: Request) {
     usesAudiobookCover: b.usesAudiobookCover,
     authors: b.authors,
     pages: b.pages ?? null,
+    audioLengthMinutes: b.audioLengthMinutes ?? null,
     activeFormats: b.activeFormats ?? [],
     progress: progressMap.get(b.id) ?? null,
     buddyReadId: buddyReadMap.get(b.id) ?? null,

@@ -58,6 +58,11 @@ export interface UserBookWithDetails {
   ownedFormats: string[];
   activeFormats: string[];
   isFiction: boolean | null;
+  /** Print length. Selected all along but never returned until 2026-08-13 —
+   *  every caller reading `.pages` off this type silently got undefined. */
+  pages: number | null;
+  /** Audiobook runtime, for readers whose active format is audiobook. */
+  audioLengthMinutes: number | null;
   userRating: number | null;
   updatedAt: string | null;
   genres: string[];
@@ -83,6 +88,7 @@ export async function getUserBooks(
       audiobookCoverUrl: books.audiobookCoverUrl,
       isFiction: books.isFiction,
       pages: books.pages,
+      audioLengthMinutes: books.audioLengthMinutes,
     })
     .from(userBookState)
     .innerJoin(books, eq(userBookState.bookId, books.id))
@@ -159,6 +165,8 @@ export async function getUserBooks(
       ownedFormats: parsedOwned,
       activeFormats,
       isFiction: row.isFiction ?? null,
+      pages: row.pages ?? null,
+      audioLengthMinutes: row.audioLengthMinutes ?? null,
       userRating: ratingsMap.get(row.bookId) ?? null,
       updatedAt: row.updatedAt ?? null,
       genres: genresMap.get(row.bookId) ?? [],
