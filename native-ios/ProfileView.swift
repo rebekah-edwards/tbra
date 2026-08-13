@@ -418,6 +418,7 @@ struct ProfileView: View {
             // chrome state and slides up out of reach (user bug 2026-07-12).
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
+            .globalReportOverlay()
         }
     }
 
@@ -824,6 +825,7 @@ extension ProfileView {
             }
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
+            .globalReportOverlay()
         }
     }
 

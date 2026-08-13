@@ -169,6 +169,7 @@ struct AppShell: View {
             })
                 .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
+                .globalReportOverlay()
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedSeriesId != nil },
@@ -181,6 +182,7 @@ struct AppShell: View {
             }
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
+            .globalReportOverlay()
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedAuthorId != nil },
@@ -193,6 +195,7 @@ struct AppShell: View {
             }
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
+            .globalReportOverlay()
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedBookSlug != nil },
@@ -226,6 +229,7 @@ struct AppShell: View {
             }
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
+            .globalReportOverlay()
         }
         // Universal links (https://thebasedreader.app/…) land here in the
         // SwiftUI lifecycle. AASA on the site covers /book/* and /u/*; any
@@ -251,6 +255,7 @@ struct AppShell: View {
                 SettingsView()
                     .appDestinations()
             }
+            .globalReportOverlay()
         }
         #if DEBUG && targetEnvironment(simulator)
         .fullScreenCover(isPresented: Binding(
@@ -264,6 +269,7 @@ struct AppShell: View {
             }
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
+                .globalReportOverlay()
         }
         .fullScreenCover(isPresented: Binding(
             get: { debugSeriesSlug != nil },
@@ -276,6 +282,7 @@ struct AppShell: View {
             }
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
+                .globalReportOverlay()
         }
         .sheet(isPresented: $menuDebugOpen) {
             HamburgerMenuSheet(onProfile: { chrome.tab = .profile })
@@ -286,16 +293,19 @@ struct AppShell: View {
             NavigationStack { SettingsView().appDestinations() }
                 .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
+                .globalReportOverlay()
         }
         .fullScreenCover(isPresented: $adminUsersDebugOpen) {
             AdminUsersSheet()
                 .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
+                .globalReportOverlay()
         }
         .fullScreenCover(isPresented: $basedReaderDebugOpen) {
             NavigationStack { BasedReaderScreen().appDestinations() }
                 .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
+                .globalReportOverlay()
         }
         .fullScreenCover(isPresented: Binding(
             get: { debugCoverSlug != nil },
@@ -313,6 +323,7 @@ struct AppShell: View {
             }
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
+            .globalReportOverlay()
         }
         .fullScreenCover(isPresented: Binding(
             get: { debugShelfId != nil },
@@ -325,6 +336,7 @@ struct AppShell: View {
             }
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
+            .globalReportOverlay()
         }
         .fullScreenCover(isPresented: Binding(
             get: { debugShelfEditorId != nil },
@@ -337,6 +349,7 @@ struct AppShell: View {
             }
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
+            .globalReportOverlay()
         }
         .sheet(isPresented: Binding(
             get: { debugCoverPickerId != nil },

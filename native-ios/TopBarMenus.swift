@@ -322,6 +322,7 @@ struct HamburgerMenuSheet: View {
             AdminUsersSheet()
                 .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
+                .globalReportOverlay()
         }
         .fullScreenCover(isPresented: $basedReaderOpen) {
             NavigationStack {
@@ -330,6 +331,7 @@ struct HamburgerMenuSheet: View {
             }
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
+            .globalReportOverlay()
         }
     }
 

@@ -12,10 +12,11 @@ struct GlobalReportButton: View {
     @Environment(ChromeState.self) private var chrome: ChromeState?
     @State private var open = false
 
+    /// Any signed-in reader can report. This was limited to super admins and
+    /// beta testers, which left the 68 plain `reader` accounts with no way to
+    /// flag anything at all — the people most likely to hit a bad record.
     private var canReport: Bool {
-        if case .signedIn(let u) = auth.phase {
-            return ["super_admin", "beta_tester"].contains(u.accountType)
-        }
+        if case .signedIn = auth.phase { return true }
         return false
     }
 
@@ -144,5 +145,24 @@ private struct ReportsPageModifier: ViewModifier {
     @Environment(ChromeState.self) private var chrome: ChromeState?
     func body(content: Content) -> some View {
         content.onAppear { chrome?.currentPage = path }
+    }
+}
+
+
+extension View {
+    /// Floats the report flag above this screen.
+    ///
+    /// Applied by PushedScreenChrome (tab roots + every pushed route) AND
+    /// directly by the full-screen covers. The covers deliberately zero
+    /// `showsShellChrome` so the fake chrome hit-layers don't render on top of
+    /// them — the flag used to live inside that same gate and vanished with
+    /// them, which is why Settings, Search, Import and the rest of the menu
+    /// had no way to file a report.
+    func globalReportOverlay() -> some View {
+        overlay(alignment: .bottomTrailing) {
+            GlobalReportButton()
+                .padding(.trailing, 16)
+                .padding(.bottom, 8)
+        }
     }
 }

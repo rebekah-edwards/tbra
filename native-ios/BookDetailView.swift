@@ -909,6 +909,7 @@ private struct BookActionCluster: View {
             // AllReviews bug; user hit it again here 2026-07-14).
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
+            .globalReportOverlay()
         }
         .sheet(isPresented: $showTbrNoteEditor) {
             TbrNoteEditorSheet(bookId: book.id, existing: data.tbrNote) {

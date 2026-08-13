@@ -107,17 +107,13 @@ struct PushedScreenChrome: ViewModifier {
                         .padding(.bottom, -bars.bottom)
                 }
             }
-            // Global report button — web GlobalReportButton parity
-            // (2026-07-22): floating flag above the bottom bar on EVERY
-            // screen, super-admin + beta testers only. Lives inside the
-            // screen (not the shell) so it reliably wins hit-testing.
-            .overlay(alignment: .bottomTrailing) {
-                if showsChrome {
-                    GlobalReportButton()
-                        .padding(.trailing, 16)
-                        .padding(.bottom, 8)
-                }
-            }
+            // Global report button — floating flag above the bottom bar on
+            // EVERY screen. Lives inside the screen (not the shell) so it
+            // reliably wins hit-testing. NOT gated on showsChrome: that flag
+            // is about the fake chrome hit-layers, and bundling the report
+            // button with it silently removed reporting from every
+            // full-screen cover (Settings, Search, Import…).
+            .globalReportOverlay()
             .safeAreaInset(edge: .top, spacing: 0) {
                 Color.clear.frame(height: bars.top)
             }
