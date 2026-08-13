@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { parseDbDate } from "@/lib/date-utils";
 import { ReviewCard } from "@/components/review/review-card";
 import type { BookReviewEntry } from "@/lib/queries/review";
 
@@ -49,13 +50,13 @@ export function ReviewListClient({ reviews, bookId, bookSlug, currentUserId }: R
       result = [...result].sort(
         (a, b) =>
           b.helpfulCount - a.helpfulCount ||
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          parseDbDate(b.createdAt).getTime() - parseDbDate(a.createdAt).getTime()
       );
     } else {
       // The server hands back helpful-first, so "Latest" has to re-sort
       // rather than rely on the incoming order.
       result = [...result].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        (a, b) => parseDbDate(b.createdAt).getTime() - parseDbDate(a.createdAt).getTime()
       );
     }
     return result;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { parseDbDate } from "@/lib/date-utils";
 import Link from "next/link";
 import { deleteReadingNote } from "@/lib/actions/reading-notes";
 import type { ReadingNote } from "@/lib/queries/reading-notes";
@@ -94,7 +95,7 @@ export function NoteCard({
             </button>
           )}
           <span className="text-[10px]">
-            {new Date(note.createdAt).toLocaleDateString("en-US", {
+            {parseDbDate(note.createdAt).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
               year: "numeric",

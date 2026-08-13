@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { parseDbDate } from "@/lib/date-utils";
 import Image from "next/image";
 import type { ReadingNoteWithBook } from "@/lib/queries/reading-notes";
 import { NoCover } from "@/components/no-cover";
@@ -143,7 +144,7 @@ function NotePreview({ note }: { note: ReadingNoteWithBook }) {
         )}
         {mood && <span>{mood}</span>}
         <span className="ml-auto">
-          {new Date(note.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          {parseDbDate(note.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
         </span>
       </div>
       <p className="text-xs text-foreground/90 leading-relaxed line-clamp-2">{note.noteText}</p>

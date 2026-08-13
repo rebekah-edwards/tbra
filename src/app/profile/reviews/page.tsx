@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { parseDbDate } from "@/lib/date-utils";
 import Link from "next/link";
 import Image from "next/image";
 import { getCurrentUser } from "@/lib/auth";
@@ -64,7 +65,7 @@ export default async function AllReviewsPage() {
                     </span>
                   )}
                   <span className="text-[10px] text-muted">
-                    {new Date(review.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    {parseDbDate(review.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 </div>
                 {previewText && (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { parseDbDate } from "@/lib/date-utils";
 import Link from "next/link";
 import Image from "next/image";
 import { deleteReadingNote } from "@/lib/actions/reading-notes";
@@ -84,7 +85,7 @@ export function JournalNoteCard({ note, showYear = true }: JournalNoteCardProps)
           )}
           <span className="ml-auto flex items-center gap-2">
             <span className="text-[10px] text-muted">
-              {new Date(note.createdAt).toLocaleDateString("en-US", {
+              {parseDbDate(note.createdAt).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
                 ...(showYear ? { year: "numeric" } : {}),

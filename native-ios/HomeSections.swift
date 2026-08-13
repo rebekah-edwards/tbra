@@ -377,10 +377,9 @@ private struct FriendsActivityCard: View {
     }
 
     private func timeAgo(_ timestamp: String) -> String {
-        let fmt = ISO8601DateFormatter()
-        let then = fmt.date(from: timestamp)
-            ?? ISO8601DateFormatter.withFractional.date(from: timestamp)
-            ?? dateOnly(timestamp)
+        // Shared parser — this used to skip the naive-UTC form entirely and
+        // fall through to a date-only parse in device-local time.
+        let then = DateFmt.parse(timestamp)
         guard let then else { return "" }
         let diff = Date().timeIntervalSince(then)
         let minutes = Int(diff / 60), hours = Int(diff / 3600), days = Int(diff / 86400)

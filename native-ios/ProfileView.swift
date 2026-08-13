@@ -196,13 +196,9 @@ struct ProfileView: View {
     }
 
     private func memberSince(_ createdAt: String) -> String {
-        var date = ISO8601DateFormatter().date(from: createdAt)
-            ?? ISO8601DateFormatter.withFractional.date(from: createdAt)
-        if date == nil {
-            // SQLite "YYYY-MM-DD HH:MM:SS" format
-            let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd HH:mm:ss"
-            date = f.date(from: createdAt)
-        }
+        // Shared parser — the local copy read the naive SQLite form in device
+        // time rather than UTC.
+        let date = DateFmt.parse(createdAt)
         guard let date else { return String(createdAt.prefix(7)) }
         let out = DateFormatter(); out.dateFormat = "MMMM yyyy"
         return out.string(from: date)

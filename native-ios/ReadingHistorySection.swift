@@ -322,8 +322,17 @@ enum DateFmt {
     static func parse(_ s: String) -> Date? {
         if let d = ISO8601DateFormatter().date(from: s) { return d }
         if let d = ISO8601DateFormatter.withFractional.date(from: s) { return d }
-        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        // "2026-08-12 03:48:00" — the SQL datetime('now') default. It is UTC,
+        // but without an explicit timeZone DateFormatter reads it as DEVICE
+        // local, so a note written at 11:48pm Eastern displayed as the NEXT
+        // day. That made the journal disagree with the reading streak (which
+        // has always normalised to UTC) and looked like a lost streak day.
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        f.timeZone = TimeZone(identifier: "UTC")
         if let d = f.date(from: s) { return d }
+        // Date-only values (completion_date) are calendar dates, not instants
+        // — leave those in the device's zone.
         let day = DateFormatter(); day.dateFormat = "yyyy-MM-dd"
         return day.date(from: String(s.prefix(10)))
     }

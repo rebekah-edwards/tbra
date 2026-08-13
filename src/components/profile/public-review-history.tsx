@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { parseDbDate } from "@/lib/date-utils";
 import Link from "next/link";
 import Image from "next/image";
 import { stripHtml } from "@/lib/text-utils";
@@ -190,7 +191,7 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
                 <div className="flex items-center gap-2 mt-1">
                   {review.rating && <StarRating rating={review.rating} />}
                   <span className="text-[10px] text-muted">
-                    {new Date(review.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    {parseDbDate(review.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 </div>
                 {review.reviewText && (
