@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { parseDbDate } from "@/lib/date-utils";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -128,7 +129,7 @@ function CorrectionCard({
             {" · "}
             {correction.userEmail ?? "anonymous"}
             {" · "}
-            {new Date(correction.createdAt).toLocaleDateString("en-US", {
+            {parseDbDate(correction.createdAt).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
               year: "numeric",

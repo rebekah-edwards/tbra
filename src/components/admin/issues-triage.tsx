@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { parseDbDate } from "@/lib/date-utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { resolveIssue, deleteIssue } from "@/lib/actions/issues";
@@ -117,7 +118,7 @@ function IssueCard({
             )}
             {issue.userEmail ?? "anonymous"}
             {" · "}
-            {new Date(issue.createdAt).toLocaleDateString("en-US", {
+            {parseDbDate(issue.createdAt).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
               year: "numeric",

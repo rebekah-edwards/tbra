@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { readingNotes, userBookState, readingSessions, userBookReviews, userBookRatings } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
+import { parseDbDate } from "@/lib/date-utils";
 
 export interface ReadingStreak {
   currentStreak: number;
@@ -60,11 +61,9 @@ function dayFormatterFor(timeZone: string): Intl.DateTimeFormat {
 
 /** UTC timestamp (ISO or "YYYY-MM-DD HH:MM:SS") → YYYY-MM-DD in `timeZone`. */
 function toStreakDay(raw: string, fmt: Intl.DateTimeFormat): string | null {
-  let s = String(raw).trim().replace(" ", "T");
-  // Naive timestamps are stored as UTC; mark them so Date doesn't read them
-  // as server-local.
-  if (!/[Zz]|[+-]\d{2}:?\d{2}$/.test(s)) s += "Z";
-  const d = new Date(s);
+  // parseDbDate holds the naive-vs-ISO rule for the whole app; the display
+  // surfaces had their own (wrong) copy of it until 2026-08-13.
+  const d = parseDbDate(raw);
   if (Number.isNaN(d.getTime())) return null;
   return fmt.format(d);
 }
