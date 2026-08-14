@@ -18,6 +18,7 @@ interface ReadingStateSelectorProps {
   activeFormats: string[];
   isLoggedIn: boolean;
   openLibraryKey?: string | null;
+  hasLocalEditions?: boolean;
   existingEditionSelections?: EditionSelection[];
   upNextPosition?: number | null;
   upNextCount?: number;
@@ -42,6 +43,7 @@ export function ReadingStateSelector({
   activeFormats,
   isLoggedIn,
   openLibraryKey,
+  hasLocalEditions,
   existingEditionSelections = [],
   upNextPosition = null,
   upNextCount = 0,
@@ -134,6 +136,7 @@ export function ReadingStateSelector({
           currentFormats={ownedFormats}
           isLoggedIn={isLoggedIn}
           openLibraryKey={openLibraryKey}
+          hasLocalEditions={hasLocalEditions}
           existingEditionSelections={existingEditionSelections}
           onEditionSelectionsChange={onEditionSelectionsChange}
         />

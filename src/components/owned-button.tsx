@@ -23,6 +23,12 @@ interface OwnedButtonProps {
   isLoggedIn: boolean;
   isBoxSet?: boolean;
   openLibraryKey?: string | null;
+  /**
+   * Printings folded onto this book at ingestion that OpenLibrary doesn't
+   * list. Without this the picker is gated on openLibraryKey alone, so a book
+   * with a deluxe edition recorded but no OL work key shows no picker at all.
+   */
+  hasLocalEditions?: boolean;
   existingEditionSelections?: EditionSelection[];
   onEditionSelectionsChange?: (selections: EditionSelection[]) => void;
 }
@@ -33,6 +39,7 @@ export function OwnedButton({
   isLoggedIn,
   isBoxSet = false,
   openLibraryKey,
+  hasLocalEditions = false,
   existingEditionSelections = [],
   onEditionSelectionsChange,
 }: OwnedButtonProps) {
@@ -157,7 +164,7 @@ export function OwnedButton({
                     {f.label}
                   </span>
                 </label>
-                {checked && openLibraryKey && (
+                {checked && (openLibraryKey || hasLocalEditions) && (
                   <button
                     onClick={() => handleSpecifyEditions(f.value)}
                     className="flex items-center gap-1 px-3 py-1 mb-1 text-[11px] font-medium text-neon-purple hover:text-neon-purple/80 transition-colors"
@@ -174,14 +181,14 @@ export function OwnedButton({
         </div>
       )}
 
-      {openLibraryKey && sheetFormat && (
+      {(openLibraryKey || hasLocalEditions) && sheetFormat && (
         <BottomSheet
           open={!!sheetFormat}
           onClose={() => setSheetFormat(null)}
           title={`${FORMAT_LABEL[sheetFormat] ?? sheetFormat} editions`}
         >
           <EditionPicker
-            workKey={openLibraryKey}
+            workKey={openLibraryKey ?? null}
             bookId={bookId}
             format={sheetFormat}
             existingSelections={existingEditionSelections}

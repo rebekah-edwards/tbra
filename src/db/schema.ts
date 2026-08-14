@@ -317,6 +317,12 @@ export const userBookRatings = sqliteTable("user_book_ratings", {
 
 export const editions = sqliteTable("editions", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  // Stays NOT NULL UNIQUE. Editions that did NOT come from OpenLibrary carry a
+  // synthetic `local:<uuid>` key instead — dropping the constraint would mean
+  // rebuilding this table on production Turso (SQLite can't ALTER a column),
+  // and a synthetic key buys the same capability with an additive migration.
+  // ALWAYS gate OL fetches on `source === 'openlibrary'`, never on this being
+  // non-null. See isOpenLibraryEdition() below.
   openLibraryKey: text("open_library_key").notNull().unique(),
   bookId: text("book_id").notNull().references(() => books.id),
   title: text("title"),
@@ -325,11 +331,27 @@ export const editions = sqliteTable("editions", {
   isbn13: text("isbn_13"),
   isbn10: text("isbn_10"),
   pages: integer("pages"),
-  coverId: integer("cover_id"),
+  coverId: integer("cover_id"), // OpenLibrary cover id — null for local editions
+  // ─── Local (non-OL) edition support, added 2026-08-14 ───
+  // 'openlibrary' | 'isbndb' | 'google_books' | 'merge' | 'manual'
+  source: text("source").notNull().default("openlibrary"),
+  /** Absolute cover URL. Local editions have no OL coverId to build one from. */
+  coverUrl: text("cover_url"),
+  /** hardcover | paperback | ebook | audiobook — known up front for merged rows. */
+  format: text("format"),
+  /** Display decoration, e.g. "Deluxe Limited Edition". */
+  editionLabel: text("edition_label"),
+  /** Provenance: the books.id this edition was folded in from, if any. */
+  mergedFromBookId: text("merged_from_book_id"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   index("editions_book_idx").on(table.bookId),
 ]);
+
+/** An edition row whose open_library_key is a real OL key, not a synthetic one. */
+export function isOpenLibraryEdition(e: { source?: string | null; openLibraryKey?: string | null }) {
+  return (e.source ?? "openlibrary") === "openlibrary" && !e.openLibraryKey?.startsWith("local:");
+}
 
 export const userOwnedEditions = sqliteTable("user_owned_editions", {
   userId: text("user_id").notNull().references(() => users.id),

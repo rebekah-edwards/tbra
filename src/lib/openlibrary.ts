@@ -610,6 +610,18 @@ export interface OLEdition {
   number_of_pages?: number;
   physical_format?: string;
   languages?: { key: string }[];
+  // ─── Local (non-OpenLibrary) editions ───
+  // Printings folded onto the canon book at ingestion — the ISBNdb deluxe
+  // hardcover, the anniversary edition — reuse this shape so the picker can
+  // render OL and local entries from one list. `key` is `local:<uuid>` for
+  // these, which is also their stored open_library_key, so importEdition()
+  // finds the existing row rather than inserting a second one.
+  /** Absolute cover URL. Local editions have no OL cover id to build one from. */
+  cover_url?: string | null;
+  /** Display decoration, e.g. "Deluxe Limited Edition". */
+  edition_label?: string | null;
+  /** True for locally-recorded printings. */
+  is_local?: boolean;
 }
 
 interface OLEditionsResponse {

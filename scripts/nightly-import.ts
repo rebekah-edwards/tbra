@@ -33,6 +33,7 @@ import {
   isJunkTitle,
 } from "../src/lib/openlibrary";
 import { isLikelyNonEnglish } from "../src/lib/enrichment/enrichable";
+import { findCanonicalForEdition } from "../src/lib/enrichment/canonical-edition";
 import { enrichBook } from "../src/lib/enrichment/enrich-book";
 import { NYT_LISTS, NYT_DELAY_MS, fetchNytList, upsertNytEntries } from "../src/lib/enrichment/nyt";
 
@@ -512,6 +513,14 @@ async function importCascadeBooks(authorOlKeys: string[]): Promise<number> {
       // ~5k un-enrichable skeleton flood (2026-06-17). Skip junk/non-English
       // outright, and land the rest as import_only pending real enrichment.
       if (isJunkTitle(resolvedTitle) || isLikelyNonEnglish(resolvedTitle)) continue;
+      // Backlist cascades are a steady source of edition variants — an author's
+      // OL works list carries the deluxe and anniversary printings alongside
+      // the canon work, each with its own key.
+      const authorRow = await db.query.authors.findFirst({
+        where: eq(authors.openLibraryKey, authorKey),
+        columns: { name: true },
+      });
+      if (await findCanonicalForEdition(resolvedTitle, authorRow?.name ?? null)) continue;
       const coverUrl = buildCoverUrl(work.covers?.[0], "L");
       await delay(350);
       const [newBook] = await db.insert(books).values({
@@ -563,6 +572,17 @@ async function importBook(query: string, seed?: ImportSeed): Promise<number> {
     });
     if (existing) {
       console.log(`  Already imported: ${result.title}`);
+      return 0;
+    }
+
+    // Edition-variant guard. The OL-key check above is this lane's ONLY dedup,
+    // and OpenLibrary gives a deluxe/anniversary printing its own work key —
+    // so "<Title> Deluxe Limited Edition" sailed straight past it and landed
+    // as a second books row every night. A special edition is an edition of
+    // the canon book, never its own entry.
+    const canon = await findCanonicalForEdition(result.title, result.author_name?.[0] ?? null);
+    if (canon) {
+      console.log(`  Edition variant of "${canon.bookTitle}" — skipped: ${result.title}`);
       return 0;
     }
 

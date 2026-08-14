@@ -5,6 +5,7 @@
 import { db } from "@/db";
 import { books, bookAuthors, authors } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { findCanonicalForEdition } from "./canonical-edition";
 
 const EDITION_MARKERS = /\s*[\(\[:]?\s*(?:Annotated|Illustrated|Unabridged|Abridged|Revised|Updated|Expanded|Deluxe|Special|Collector'?s?|Limited|Mass Market|Trade|Paperback|Hardcover|Large Print|Large Type|Book Club|Library|Movie Tie-[Ii]n|Media Tie-[Ii]n|Film Tie-[Ii]n|TV Tie-[Ii]n|Tie-[Ii]n|Reprint|New Edition|\d+(?:st|nd|rd|th)\s+(?:Anniversary\s+)?Edition|Classic|Original|International|Student|Teacher|Norton Critical|Penguin Classics|Modern Library|Dover Thrift|Signet Classic|Vintage|Bantam|Wordsworth|Enriched Classic|Signed|B&N Exclusive)s?\s*(?:Edition|Version|Ed\.?)?\s*[\)\]]?\s*$/i;
 
@@ -28,7 +29,7 @@ function normalizeAuthor(name: string): string {
 export interface DuplicateResult {
   existingId: string;
   existingTitle: string;
-  matchType: 'ol_key' | 'isbn' | 'title_author';
+  matchType: 'ol_key' | 'isbn' | 'title_author' | 'edition_variant';
 }
 
 /**
@@ -92,6 +93,20 @@ export async function findDuplicateBook(opts: {
     if (normalizeTitle(c.title) === normTitle) {
       return { existingId: c.id, existingTitle: c.title, matchType: 'title_author' };
     }
+  }
+
+  // 4. Edition-variant match. EDITION_MARKERS above only fires when the
+  // decoration is the WHOLE trailing segment, so a stacked title like
+  // "Unravel Me Paperback Deluxe Limited Edition" strips "Paperback" and
+  // "Edition" but keeps "Deluxe Limited" and never matches its canon.
+  // stripEditionSuffix chips qualifiers off the end repeatedly instead.
+  const editionMatch = await findCanonicalForEdition(opts.title, opts.authors[0] ?? null);
+  if (editionMatch) {
+    return {
+      existingId: editionMatch.bookId,
+      existingTitle: editionMatch.bookTitle,
+      matchType: 'edition_variant',
+    };
   }
 
   return null;

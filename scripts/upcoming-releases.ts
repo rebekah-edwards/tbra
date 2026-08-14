@@ -82,6 +82,7 @@ import { classifyBook } from "../src/lib/enrichment/enrichable";
 import { validateBookTitle } from "../src/lib/book-validation";
 import { isBoxSetTitle } from "../src/lib/queries/books";
 import { assignBookSlug, findBookBySlugCollision } from "../src/lib/utils/slugify";
+import { findCanonicalForEdition } from "../src/lib/enrichment/canonical-edition";
 import { updateSearchIndex } from "../src/lib/search/search-index";
 import { enrichBook } from "../src/lib/enrichment/enrich-book";
 import { findReleaseDateViaBrave } from "../src/lib/enrichment/release-date";
@@ -274,7 +275,14 @@ async function alreadyHave(
   // Title+author equivalence via the would-be slug (catches reprints/format
   // variants that arrive with a different ISBN).
   const collision = await findBookBySlugCollision(title, author);
-  return collision != null;
+  if (collision != null) return true;
+
+  // Edition-variant equivalence. The slug check above is computed from the RAW
+  // title, so "<Title> Deluxe Limited Edition" generates its own slug, collides
+  // with nothing, and lands as a second books row. Google Books lists deluxe
+  // and anniversary printings as distinct volumes, so this lane hits it often.
+  const canon = await findCanonicalForEdition(title, author);
+  return canon != null;
 }
 
 async function findOrCreateAuthor(name: string): Promise<string> {

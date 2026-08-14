@@ -6,7 +6,8 @@ import { importEdition, setOwnedEdition, removeOwnedEdition } from "@/lib/action
 import type { EditionSelection } from "@/app/book/[id]/book-page-client";
 
 interface EditionPickerProps {
-  workKey: string;
+  /** OL work key. Null when the book has none — local editions still render. */
+  workKey: string | null;
   bookId: string;
   format: string;
   existingSelections: EditionSelection[];
@@ -43,7 +44,13 @@ export function EditionPicker({
   });
   const [pending, setPending] = useState<Set<string>>(new Set());
 
+  // Printings we folded onto this book at ingestion that OpenLibrary doesn't
+  // list. Held separately from `allEditions` so load-more's offset arithmetic
+  // stays a pure function of how many OL entries we've fetched.
+  const [localEditions, setLocalEditions] = useState<OLEdition[]>([]);
+
   const fetchEditions = useCallback(async (offset = 0) => {
+    if (!workKey) return { entries: [] as OLEdition[], size: 0 };
     try {
       const res = await fetch(
         `/api/openlibrary/editions?workKey=${encodeURIComponent(workKey)}&limit=50&offset=${offset}`
@@ -60,13 +67,20 @@ export function EditionPicker({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchEditions(0)
-      .then((data) => {
-        if (!cancelled) {
-          setAllEditions(data.entries);
-          setTotalSize(data.size);
-          setLoading(false);
-        }
+
+    const localPromise = fetch(`/api/books/${encodeURIComponent(bookId)}/local-editions`)
+      .then((r) => (r.ok ? r.json() : { entries: [] }))
+      .then((d) => (d.entries ?? []) as OLEdition[])
+      // A local-editions failure must never blank the OL list.
+      .catch(() => [] as OLEdition[]);
+
+    Promise.all([fetchEditions(0), localPromise])
+      .then(([data, local]) => {
+        if (cancelled) return;
+        setAllEditions(data.entries);
+        setTotalSize(data.size);
+        setLocalEditions(local);
+        setLoading(false);
       })
       .catch((err) => {
         if (!cancelled) {
@@ -75,19 +89,24 @@ export function EditionPicker({
         }
       });
     return () => { cancelled = true; };
-  }, [fetchEditions]);
+  }, [fetchEditions, bookId]);
 
   // Filter editions to those matching the requested format (or unclassified) and English language
   const filteredEditions = useMemo(() => {
-    return allEditions.filter((edition) => {
+    // Local printings first — they're the specific ones a reader went looking
+    // for ("the deluxe hardcover"), and OL's list is long and generic.
+    const local = localEditions.filter(
+      (e) => !e.physical_format || classifyEditionFormat(e.physical_format) === format,
+    );
+    return [...local, ...allEditions.filter((edition) => {
       const classified = classifyEditionFormat(edition.physical_format);
       if (classified !== format && classified !== null) return false;
       // Keep English editions and editions with no language specified
       const langs = edition.languages;
       if (!langs || langs.length === 0) return true;
       return langs.some((l) => l.key === "/languages/eng");
-    });
-  }, [allEditions, format]);
+    })];
+  }, [allEditions, localEditions, format]);
 
   async function handleLoadMore() {
     setLoadingMore(true);
@@ -186,9 +205,12 @@ export function EditionPicker({
   return (
     <div className="divide-y divide-border overflow-hidden">
       {filteredEditions.map((edition) => {
-        const coverUrl = edition.covers?.[0]
-          ? buildCoverUrl(edition.covers[0], "S")
-          : null;
+        // Local editions carry an absolute cover_url; OL ones a numeric id.
+        const coverUrl = edition.cover_url
+          ? edition.cover_url
+          : edition.covers?.[0]
+            ? buildCoverUrl(edition.covers[0], "S")
+            : null;
         const publisher = edition.publishers?.[0];
         const year = edition.publish_date;
         const isbn = edition.isbn_13?.[0] ?? edition.isbn_10?.[0];
@@ -222,6 +244,11 @@ export function EditionPicker({
               <p className="text-sm font-medium text-foreground truncate">
                 {edition.title || "Untitled"}
               </p>
+              {edition.edition_label && (
+                <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-accent/15 text-accent">
+                  {edition.edition_label}
+                </span>
+              )}
               <p className="text-xs text-muted mt-0.5 truncate">
                 {[publisher, year, edition.number_of_pages ? `${edition.number_of_pages}p` : null]
                   .filter(Boolean)

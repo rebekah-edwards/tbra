@@ -18,6 +18,8 @@ import { isBoxSetTitle } from "@/lib/queries/books";
 import crypto from "crypto";
 import type { GoodreadsRow } from "./parse-goodreads";
 import { mergeOwnedFormats, isStateProgression, formatImportError, type ImportOptions, DEFAULT_IMPORT_OPTIONS } from "./import-options";
+import { editionMatchKey, isDecoratedTitle, normalizeAuthor } from "@/lib/text/edition-title";
+import { findCanonicalForEdition } from "@/lib/enrichment/canonical-edition";
 
 export interface ImportProgress {
   type: "progress";
@@ -117,6 +119,12 @@ export async function findExistingBook(
       }
     }
   }
+
+  // 4. Edition-variant match. normalizeImportTitle strips only parentheticals,
+  // so "<Title> Paperback Deluxe Limited Edition" reaches here unmatched and
+  // would import as a separate entry.
+  const editionMatch = await findCanonicalForEdition(title, authorName);
+  if (editionMatch) return editionMatch.bookId;
 
   return null;
 }
@@ -548,6 +556,12 @@ export async function buildLookupCache(userId: string) {
   // Load all title+author combos → book ID (exact and normalized)
   const titleAuthorMap = new Map<string, string>();
   const normalizedTitleAuthorMap = new Map<string, string>();
+  // Edition-decoration-stripped key → book ID. "<Title> Deluxe Limited
+  // Edition" is an EDITION of the canon book, never its own entry, and
+  // normalizeImportTitle above strips only parentheticals so it cannot see
+  // that. Undecorated rows claim the key and decorated ones never displace
+  // them, so a deluxe row can't become the target for future imports.
+  const editionKeyMap = new Map<string, string>();
   const allBooks = await db.all(sql`
     SELECT b.id, LOWER(b.title) as title_lower, LOWER(a.name) as author_lower
     FROM books b
@@ -568,6 +582,16 @@ export async function buildLookupCache(userId: string) {
       // Prefer entries without parenthetical titles (cleaner canonical)
       if (!normalizedTitleAuthorMap.has(normKey) || !row.title_lower.includes("(")) {
         normalizedTitleAuthorMap.set(normKey, row.id);
+      }
+    }
+
+    if (row.author_lower) {
+      const edKey = `${editionMatchKey(row.title_lower)}|||${normalizeAuthor(row.author_lower)}`;
+      // An undecorated title always wins the key — the decoration is exactly
+      // what makes a row the non-canon one, so a deluxe entry must never
+      // become the destination that later imports shelve onto.
+      if (!editionKeyMap.has(edKey) || !isDecoratedTitle(row.title_lower)) {
+        editionKeyMap.set(edKey, row.id);
       }
     }
   }
@@ -620,6 +644,11 @@ export async function buildLookupCache(userId: string) {
           const normKey = `${normTitle}|||${normAuthor}`;
           if (normalizedTitleAuthorMap.has(normKey)) return normalizedTitleAuthorMap.get(normKey)!;
         }
+        // Edition-variant match: "<Title> Deluxe Limited Edition" folds onto
+        // the canon book rather than importing as a separate entry.
+        const edKey = `${editionMatchKey(title)}|||${normalizeAuthor(author)}`;
+        const edMatch = editionKeyMap.get(edKey);
+        if (edMatch) return edMatch;
       }
       return titleAuthorMap.get(titleLower) ?? null;
     },
@@ -641,6 +670,10 @@ export async function buildLookupCache(userId: string) {
         const normAuthor = author.toLowerCase().replace(/[^a-z]/g, "");
         if (normTitle && normAuthor) {
           normalizedTitleAuthorMap.set(`${normTitle}|||${normAuthor}`, bookId);
+        }
+        const edKey = `${editionMatchKey(title)}|||${normalizeAuthor(author)}`;
+        if (!editionKeyMap.has(edKey) || !isDecoratedTitle(title)) {
+          editionKeyMap.set(edKey, bookId);
         }
       }
       titleAuthorMap.set(titleLower, bookId);
