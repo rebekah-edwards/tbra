@@ -128,3 +128,43 @@ Accent is always `#a3e635`; black text on solid green; links use `text-neon-blue
 ## Closing the reports
 
 All nine are `status='new'` in `reported_issues`. The TestFlight-sourced ones carry a `[TestFlight tf:…]` prefix and have local screenshot backups under `data/testflight-feedback/`. Note that `reported_issues` is bidirectional but `report_corrections` syncs in **neither** script — see `project_tester_libraries_stuck_local`.
+
+---
+
+# Status update — 2026-08-14 (end of triage session)
+
+Six of the nine items in this doc are now closed. What follows is the state of the rest.
+
+## Closed
+
+| Item | Outcome |
+|---|---|
+| #1 Author A-Z sort | Verified fixed by `3cc82a6`; closed. |
+| #2 "A …" title sort | Verified fixed by the same commit; closed as fixed rather than building the opt-out toggle. |
+| #3 Scion pre-release notice | Verified fixed 2026-08-08 (`PreReleaseBanner`); closed. |
+| #6/#7 Author count | **Not a code bug and not duplicate authors.** The production query returns Neal Shusterman = 3, matching her count; top-8 contains no 1-book author displacing a 2-book one. Reads as mid-sync state when filed. Closed with the evidence and an invitation to reopen with a screenshot. |
+| #9 Owned / Not Owned | **Fixed — and it was neither a filter bug nor bad data.** Her row is correct and the two filters are exact complements on both surfaces, so a book in both is always staleness. SwiftUI's `.task` runs once per view lifetime and `LibraryView.onAppear` only consumed deep-links, so changing owned formats on the detail screen and navigating back left the list on pre-change data. `LibraryView` now refreshes on appear, guarded by a `hasLoaded` flag. Built and installed to device. |
+
+## Still open
+
+### #8 Profile page won't load in-app — highest severity remaining
+Untouched. Needs reproduction against a large library; the escalation pattern (works on web, degrades, then fails in-app) still points at something size- or cache-dependent rather than a rendering bug. Do not reproduce against a small test account.
+
+### #4 Covers not loading in the library list · #5 Search dropdown clipped
+Both still need on-device reproduction. Note that #4 shares a report row with #2, so that row cannot close until #4 is resolved.
+
+### The spoiler sparkle (`ba64c7cf`) — deliberately not attempted, and why
+The web effect is `src/components/review/spoiler-particles.tsx`: a canvas overlay that reads `getClientRects()` of every unrevealed `.spoiler-tag` and animates ~0.025 particles/px², drifting at 0.35 px/frame, flickering on a per-particle sine phase, white in dark mode and black in light.
+
+iOS has no equivalent. `ReviewsListView.swift:437` renders an unrevealed spoiler as **transparent text over a solid `Theme.surfaceAlt` background**, inside a single `AttributedString`.
+
+The reason this is not a quick job: the whole review is one `AttributedString` rendered by one `Text`, and there is no iOS equivalent of `getClientRects()` for a run inside it. You cannot position particles without run geometry.
+
+The correct implementation is a **custom `TextRenderer`** (iOS 18+, and the app targets 27):
+
+1. Define a `TextAttribute` marking spoiler runs.
+2. Convert `ReviewHTML.attributed(...)` from building one `AttributedString` to concatenating per-segment `Text` values, applying `.customAttribute(...)` to spoiler segments. Reveal is currently driven by `part.link = URL("tbra-spoiler://\(idx)")` plus an `OpenURLAction`, so that tap path has to survive the conversion — this is the part most likely to regress.
+3. In `draw(layout:in:)`, walk runs, and for each spoiler run draw the glyphs as today, then draw the particle field within its `typographicBounds`.
+4. Drive animation with a `TimelineView` feeding a time value into the renderer.
+
+Match the web's constants so the two surfaces look like one product. Budget this as real work on a core surface, not a polish pass — a botched conversion breaks review rendering and spoiler reveal for every user.
