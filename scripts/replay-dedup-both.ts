@@ -56,7 +56,11 @@ const pairs: { dupe_id: string; canonical_id: string; dupe_title: string; canoni
 import { MOVE_UNIQUE, findUserOverlap, localRunner, tursoRunner } from "./lib/dupe-overlap";
 const MOVE_APPEND = [
   "reading_notes",
-  "reading_sessions",
+  // reading_sessions moved to MOVE_UNIQUE (scripts/lib/dupe-overlap.ts) on
+  // 2026-08-14 — it has a UNIQUE(user_id, book_id, read_number) index, so it
+  // was never safe here. Both lists move rows the same way (UPDATE book_id);
+  // the only difference is that MOVE_UNIQUE members get an overlap precheck,
+  // which is exactly what was missing.
   "buddy_reads",
   "reported_issues",
   "report_corrections",

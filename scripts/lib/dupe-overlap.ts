@@ -41,6 +41,18 @@ export const MOVE_UNIQUE = [
   "up_next",
   "tbr_notes",
   "shelf_books",
+  // Added 2026-08-14. This was classified MOVE_APPEND ("no per-book uniqueness,
+  // cannot collide") — but it carries
+  //   CREATE UNIQUE INDEX reading_sessions_user_book_read
+  //     ON reading_sessions(user_id, book_id, read_number)
+  // so a user holding a session on BOTH books collides on the UPDATE book_id.
+  // findUserOverlap only inspects MOVE_UNIQUE, so it could not see this class at
+  // all and the applier died mid-pair with a raw UNIQUE constraint error
+  // (2 of 4 pairs in the edition-variant backfill). Listing it here is
+  // deliberately over-cautious — it flags any user with sessions on both books,
+  // even when the read_numbers would not actually have collided — because the
+  // failure mode on the other side is a half-applied merge.
+  "reading_sessions",
 ];
 
 /** Uniform read interface over better-sqlite3 (sync) and libsql (async). */
