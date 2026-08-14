@@ -125,11 +125,40 @@ Collisions found in step 2 are hand-merged: decide which state/rating/review win
 
 ## Making special editions genuinely selectable
 
-To close the gap in case 2 above, the OpenLibrary dependency has to be broken. Roughly, in increasing order of cost:
+**Built 2026-08-14.** The section below described four steps to break the OpenLibrary
+dependency; steps 2–4 are now done, in a cheaper form than proposed.
 
-1. **Backfill `open_library_key` on canon books that lack one.** Cheapest and highest-yield — it restores the entire picker for those books, not one printing.
-2. **Relax `editions.open_library_key` to nullable** and let an edition be created from a non-OL source (ISBNdb has the deluxe ISBNs; that is the documented fix path in `project_edition_picker_ol_only`). Requires a Turso migration landing *before* any code that writes such rows, per the schema rule in `CLAUDE.md`.
-3. **Convert a dupe row into an edition row as part of the merge** — carry the deluxe's ISBN, cover and page count onto an `editions` record pointing at the canon `book_id` instead of discarding them. This is what the user reports are literally asking for, and it depends on (2).
-4. **Read the picker from the `editions` table**, with OL as one source that populates it rather than the live authority.
+`editions.open_library_key` was **not** relaxed to nullable. Doing that would mean rebuilding
+the table on production Turso — SQLite cannot `ALTER` a column — and the same capability is
+available from a purely additive migration: a non-OL printing carries a synthetic
+`local:<uuid>` key, and a new `source` column (`openlibrary` | `isbndb` | `google_books` |
+`merge` | `manual`) is what distinguishes it. **Never test the key for nullness to decide
+whether an OL fetch is meaningful — test `source`.** Also added: `cover_url` (local editions
+have no OL cover id to build a URL from), `format`, `edition_label`, `merged_from_book_id`.
 
-None of this is built. Until it is, "merge the deluxe edition" means *consolidate onto the canon entry* — and whether the specific printing remains pickable is decided by OpenLibrary's catalogue, not by us.
+The picker now renders local printings *above* OpenLibrary's live list
+(`src/lib/queries/local-editions.ts` → `/api/books/[id]/local-editions` →
+`edition-picker.tsx`), each with its decoration as a badge. They are held in a separate
+array from the OL entries so load-more's offset arithmetic stays a pure function of how many
+OL entries have been fetched. `"Specify edition"` is no longer gated on the book having an OL
+work key — a book with local editions and no OL identity now shows a picker where it
+previously showed nothing.
+
+Ingestion mints these rows automatically: `resolveEditionVariant()` folds a decorated title
+onto the canon book, fills **blank-only** fields there, and records the printing's ISBN,
+cover and page count as an edition. So case 2 in the table above — "merge is correct but the
+printing is not selectable" — now only applies to rows that predate this change.
+
+Still open, and still the highest-yield fix for books with no picker at all:
+
+1. **Backfill `open_library_key` on canon books that lack one.** Restores the entire OL
+   picker for those books rather than one printing.
+
+Two things to know before touching this area:
+
+- `editions` is in `sync-pull` and, since this change, in `sync-push` (step 5g). Before that
+  it was pull-only — editions were only ever created on live by the picker. Every nightly
+  lane writes LOCAL, so without the push step each recorded printing would be stranded.
+- For the rows that landed before the ingestion fix, see
+  [`edition-variant-backfill-plan.md`](edition-variant-backfill-plan.md). Phase 2 of that plan
+  (capture the printing before deleting the row) is the one piece still needing code.

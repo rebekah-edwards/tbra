@@ -6,6 +6,7 @@ import { findOrCreateAuthor } from "@/lib/actions/books";
 import crypto from "crypto";
 import type { StoryGraphRow } from "./parse-storygraph";
 import { mergeOwnedFormats, isStateProgression, formatImportError, type ImportOptions, DEFAULT_IMPORT_OPTIONS } from "./import-options";
+import { findCanonicalForEdition } from "@/lib/enrichment/canonical-edition";
 
 export interface ImportProgress {
   type: "progress";
@@ -57,7 +58,13 @@ async function findExistingBook(
     LIMIT 1
   `) as { id: string; title: string }[];
 
-  return matches[0]?.id ?? null;
+  if (matches[0]) return matches[0].id;
+
+  // 3. Edition-variant match. The title comparison above is EXACT, so
+  // "<Title> Deluxe Limited Edition" never matched its canon and imported as
+  // a separate entry.
+  const editionMatch = await findCanonicalForEdition(title, authorName);
+  return editionMatch?.bookId ?? null;
 }
 
 /**

@@ -65,6 +65,8 @@ interface BookPageClientProps {
   isLoggedIn: boolean;
   isAdmin?: boolean;
   editionSelections: EditionSelection[];
+  /** Book has printings recorded locally that OpenLibrary doesn't list. */
+  hasLocalEditions?: boolean;
   userReview: UserReview | null;
   aggregate: { average: number; count: number } | null;
   hasCompletedSession: boolean;
@@ -104,6 +106,7 @@ export function BookPageClient({
   userState,
   isLoggedIn,
   editionSelections: initialEditionSelections,
+  hasLocalEditions = false,
   userReview,
   aggregate,
   hasCompletedSession: initialHasCompleted,
@@ -437,6 +440,7 @@ export function BookPageClient({
               activeFormats={activeFormats}
               isLoggedIn={isLoggedIn}
               openLibraryKey={book.openLibraryKey}
+              hasLocalEditions={hasLocalEditions}
               existingEditionSelections={editionSelections}
               upNextPosition={upNextPosition}
               upNextCount={upNextCount}
@@ -496,6 +500,7 @@ export function BookPageClient({
           activeFormats={activeFormats}
           isLoggedIn={isLoggedIn}
           openLibraryKey={book.openLibraryKey}
+          hasLocalEditions={hasLocalEditions}
           existingEditionSelections={editionSelections}
           upNextPosition={upNextPosition}
           upNextCount={upNextCount}

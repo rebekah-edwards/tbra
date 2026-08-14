@@ -626,6 +626,51 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
     console.log(`     ⚠ reported_issues: ${e.message.slice(0, 120)}`);
   }
 
+  // ─── 5g. NEW editions (local-recorded printings → live) ─────
+  // `editions` was in sync-PULL but NOT sync-push — editions were only ever
+  // created on live by the picker, so nothing local needed pushing. That
+  // stopped being true when ingestion started folding decorated titles onto
+  // the canon book and recording the printing as an edition row: the nightly
+  // lanes (discovery, breadth-import, upcoming-releases) all write LOCAL, so
+  // without this step every locally-recorded deluxe/anniversary printing would
+  // be stranded and never appear in a reader's picker on prod.
+  //
+  // Append-only and id-diffed, same contract as 5e: a live row is never
+  // overwritten. book_id is pre-filtered against liveBooksAfter so an edition
+  // on a not-yet-synced book can't FK-fail the batch.
+  console.log('\n5g   New editions (local-recorded printings)...');
+  try {
+    const cols = getCols('editions');
+    if (cols.length === 0) {
+      console.log('     · editions: not in local DB');
+    } else {
+      const liveEditionIds = await fetchIdSet('editions');
+      const localEditions = local
+        .prepare(`SELECT ${cols.join(',')} FROM editions`)
+        .all() as any[];
+      let orphanedCount = 0;
+      const toPush: any[][] = [];
+      for (const r of localEditions) {
+        if (liveEditionIds.has(String(r.id))) continue;
+        if (r.book_id != null && !liveBooksAfter.has(String(r.book_id))) {
+          orphanedCount++;
+          continue;
+        }
+        toPush.push(cols.map((c) => r[c]));
+      }
+      if (toPush.length === 0) {
+        const note = orphanedCount > 0 ? ` (${orphanedCount} referenced a book not on live — skipped)` : '';
+        console.log(`     · editions: in sync (live has ${liveEditionIds.size.toLocaleString()} rows)${note}`);
+      } else {
+        const n = await batchInsert('editions', cols, toPush);
+        const note = orphanedCount > 0 ? ` [${orphanedCount} orphaned book_id skipped]` : '';
+        console.log(`     ✓ editions: pushed ${n} / ${toPush.length} new local rows${note}`);
+      }
+    }
+  } catch (e: any) {
+    console.log(`     ⚠ editions: ${e.message.slice(0, 120)}`);
+  }
+
   // ─── 5f. up_next queues where LOCAL is newer (app edits → live) ─────
   // Mirror of sync-pull's whole-queue step: the queue syncs as ONE UNIT per
   // user (deletes/reorders leave no per-row trace), newest side wins by

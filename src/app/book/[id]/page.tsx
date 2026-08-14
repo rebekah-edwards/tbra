@@ -35,6 +35,7 @@ import { HideBookButton } from "@/components/book/hide-book-button";
 import { ReportIssueButton } from "@/components/book/report-issue-button";
 import { ReadingHistory } from "@/components/book/reading-history";
 import { getFollowedUsersWhoRead } from "@/lib/queries/follows";
+import { getLocalEditions } from "@/lib/queries/local-editions";
 import { scanTextForCanonicals } from "@/lib/content-warnings/vocabulary";
 
 function buildBookJsonLd(
@@ -236,6 +237,12 @@ export default async function BookPage({
   }));
   const isFavorited = isFavoritedResult !== null;
 
+  // Printings folded onto this book at ingestion that OpenLibrary doesn't
+  // list. Without this the "Specify edition" affordance is gated on the book
+  // having an OL work key, so a deluxe printing recorded on a book with no OL
+  // identity would exist in the DB but be unreachable in the UI.
+  const hasLocalEditions = (await getLocalEditions(bookId)).length > 0;
+
   // Compute content conflicts between book ratings and user preferences
   const contentConflicts: { categoryName: string; bookIntensity: number; userMax: number }[] = [];
   if (userSensitivities && book.ratings.length > 0) {
@@ -371,6 +378,7 @@ export default async function BookPage({
         isAdmin={isAdmin(user)}
         canReport={!!user && ["beta_tester", "admin", "super_admin"].includes(user.accountType)}
         editionSelections={editionSelections}
+        hasLocalEditions={hasLocalEditions}
         userReview={userReview}
         aggregate={aggregate}
         hasCompletedSession={hasCompleted}

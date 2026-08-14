@@ -27,6 +27,7 @@ import {
   titleCaseGenre,
 } from "@/lib/enrichment/sanitize";
 import { assignBookSlug, findBookBySlugCollision } from "@/lib/utils/slugify";
+import { resolveEditionVariant } from "@/lib/enrichment/canonical-edition";
 
 const NONFICTION_GENRES = new Set([
   "Nonfiction", "Biography", "Memoir", "Self-Help", "True Crime", "Philosophy",
@@ -278,6 +279,19 @@ export async function importFromOpenLibrary(result: OLSearchResult) {
     redirect(`/book/${slugCollision.slug || slugCollision.id}`);
   }
 
+  // Edition-variant guard: "<Title> Deluxe Limited Edition" is an EDITION of
+  // the canon book, never its own entry. The three checks above all compare
+  // undecorated forms and so cannot see it. Folds onto the canon and records
+  // the printing as a selectable edition.
+  const editionVariant = await resolveEditionVariant({
+    title: result.title,
+    authorName: result.author_name?.[0] ?? null,
+    source: "manual",
+  });
+  if (editionVariant) {
+    redirect(`/book/${editionVariant.bookId}`);
+  }
+
   // Fetch work details for description + cover + subjects
   const work = await fetchOpenLibraryWork(result.key);
 
@@ -415,6 +429,14 @@ export async function importFromOpenLibraryAndReturn(result: OLSearchResult): Pr
   if (slugCollision) {
     return slugCollision.id;
   }
+
+  // Edition-variant guard — see importFromOpenLibrary above.
+  const editionVariant = await resolveEditionVariant({
+    title: result.title,
+    authorName: result.author_name?.[0] ?? null,
+    source: "manual",
+  });
+  if (editionVariant) return editionVariant.bookId;
 
   const work = await fetchOpenLibraryWork(result.key);
 
@@ -590,6 +612,23 @@ export async function createBookManually(formData: FormData) {
         redirect(`/book/${existing.slug || existing.id}`);
       }
     }
+  }
+
+  // Edition-variant guard — a hand-typed "Deluxe Limited Edition" belongs on
+  // the canon book as a selectable printing, not as a second entry.
+  const editionVariant = await resolveEditionVariant({
+    title: title.trim(),
+    authorName: authorName?.trim() || null,
+    isbn13,
+    isbn10,
+    pages: pagesStr ? parseInt(pagesStr, 10) : null,
+    publicationYear: yearStr ? parseInt(yearStr, 10) : null,
+    description,
+    coverUrl: coverImageUrl,
+    source: "manual",
+  });
+  if (editionVariant) {
+    redirect(`/book/${editionVariant.bookId}`);
   }
 
   const [book] = await db
@@ -969,6 +1008,24 @@ export async function importFromISBNdbAndReturn(params: {
   // would-be-generated slug already exists. See findBookBySlugCollision.
   const slugCollision = await findBookBySlugCollision(titleForFuzzy, authorNames[0] ?? null);
   if (slugCollision) return slugCollision.id;
+
+  // 2.75. Edition-variant guard. ISBNdb is the source that most often hands us
+  // "<Title> Paperback Deluxe Limited Edition" as a distinct product with its
+  // own ISBN and cover — the tester searches, taps the deluxe result, and a
+  // second books row appears. Fold onto the canon instead, filling only blank
+  // canon fields, and keep the ISBN + cover as a selectable edition so the
+  // reader can still say "I own the deluxe hardcover".
+  const editionVariant = await resolveEditionVariant({
+    title: titleForFuzzy,
+    authorName: authorNames[0] ?? null,
+    isbn13,
+    isbn10,
+    pages: pages ?? null,
+    publicationYear: publicationYear ?? null,
+    coverUrl: coverUrl ?? null,
+    source: "isbndb",
+  });
+  if (editionVariant) return editionVariant.bookId;
 
   // 3. Validate title — reject junk
   const validation = validateBookTitle(title);
