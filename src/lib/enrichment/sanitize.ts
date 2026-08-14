@@ -244,6 +244,42 @@ export function sanitizeDescription(raw: string): string | null {
   if (/^\s*\S[^[\]]{0,120}\[[^\]]+\]\s+on\s+\w/i.test(text)) return null; // "Title [Last, First] on <retailer>"
   if (/\b(?:Kindle Store|Kindle eBooks|Books)\s*›/i.test(text)) return null; // breadcrumb trail
 
+  // ── Non-US Amazon storefront boilerplate (added 2026-08-14) ──
+  // The regional storefronts' meta description is generic marketing chrome with
+  // no book content at all — Amazon.de's is "Entdecken, shoppen und einkaufen
+  // bei Amazon.de: Günstige Preise für Elektronik & Foto, Filme, Musik, …".
+  // The rules above only match amazon.COM, so this sailed straight through and
+  // was written onto "This Quest Is Bullshit", which had no description before —
+  // strictly worse than blank, because a non-empty description makes the book
+  // invisible to the description-refresh lane's selector.
+  if (/\bamazon\.(?:de|co\.uk|fr|it|es|nl|se|pl|ca|com\.au|com\.br|com\.mx|co\.jp|in)\b/i.test(text)) return null;
+  if (/\b(?:entdecken|shoppen|einkaufen|günstige preise)\b/i.test(text)) return null;
+
+  // ── Used-bookseller condition reports (added 2026-08-14) ──
+  // Marketplace sellers describe the PHYSICAL COPY, not the work: "Tight and
+  // clean. Hard cover with dust jacket. There is a little damage to bottom of
+  // spine. From non-smoking private collection. Ships out promptly." That text
+  // was live on Howling Dark, and clearing it did nothing because the free
+  // cascade simply re-fetched the same string from the upstream source.
+  //
+  // Scored rather than single-pattern: any ONE of these phrases can appear in
+  // legitimate copy (a novel may mention a dust jacket), but two or more in the
+  // same blurb only happens in a condition report. Keeps false positives off
+  // real prose while catching the stacked-signal case.
+  const conditionSignals = [
+    /\bships?\s+(?:out\s+)?(?:promptly|same day|within)\b/i,
+    /\bnon-?\s?smoking\b/i,
+    /\bdust\s?jacket\b/i,
+    /\bex-?library\b|\bformer library book\b/i,
+    /\b(?:tight and clean|clean and tight)\b/i,
+    /\b(?:no|minimal|light|some)\s+(?:markings?|highlighting|underlining|wear)\b/i,
+    /\b(?:binding|spine|corners?|edges?|pages?)\s+(?:is|are|show|has|have)?\s*\w{0,10}\s*(?:tight|intact|clean|damage|wear|foxing|bumped|creas)/i,
+    /\bprivate collection\b/i,
+    /\bsatisfaction guaranteed\b/i,
+    /\b(?:good|very good|acceptable|like new)\s+condition\b/i,
+  ].reduce((n, re) => n + (re.test(text) ? 1 : 0), 0);
+  if (conditionSignals >= 2) return null;
+
   // A bare title-and-byline with no sentence punctuation is a listing headline,
   // not a blurb — e.g. "Fantastic Beasts and Where to Find Them: The Original
   // Screenplay By J.K. Rowling". Requires no internal sentence break, so real
