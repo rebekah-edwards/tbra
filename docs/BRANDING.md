@@ -207,3 +207,45 @@ The hero uses the cover as a blurred background. Light mode needs specific filte
 - Pull-to-refresh with a 200ms-eased indicator
 - Status bar style `black-translucent`; theme-color `#0a0a0a` dark / `#ffffff` light
 - Spoiler text: hidden (transparent text on `surface-alt` chip) until tapped; particle sparkle overlay on reveal
+
+## Book shelves
+
+The Top Shelf treatment (`src/components/profile/favorites-shelf.tsx`) — books
+resting on a ledge — is a brand motif, not a one-off. It also appears on the
+iOS home-screen widgets (`native-ios/Widgets/WidgetViews.swift`,
+`ShelfBackdrop`). Anywhere it is reused, these hold:
+
+1. **The ledge line is a band ACROSS the plate, never the plate's bottom
+   edge.** On the web shelf the darker lip runs across and a strip of plate
+   continues *below* it before the rounded bottom. That skirt is what makes it
+   read as a ledge a book could rest on. Building the lip as the plate's last
+   row — flush with the bottom border — produces a thick bottom border
+   instead, and thickening it makes it worse, not better. In the widgets the
+   skirt is `ShelfMetrics.underLip`.
+2. **It spans the book area.** The plate fills the width it is given, so the
+   books sit *on* a shelf rather than inside a badge. It must not wrap
+   unrelated chrome — on the widgets the goal/streak column stays off it — but
+   within the book area it should own the space rather than float in the
+   middle of it. The exception is a lone cover sitting beside its title, where
+   filling would drag the plate under the text.
+3. **Colour follows the surface it sits on, and stays subtle.** The web shelf
+   is amber because it sits on a flat page. The widgets sit on the neon-mesh
+   glow, where a warm brown plate goes muddy — they use brand blue
+   (`#38bdf8` dark / `#0ea5e9` light) at very low opacity, which also keeps
+   the shelf from competing with the lime the goal ring, progress bars and
+   streak already use. The covers are the content; the shelf is
+   furniture, so the **border** carries the definition, not the fill: a plate
+   faint enough to disappear still reads as a shelf if its edge is drawn.
+   Match the surface; don't copy the amber blindly.
+4. **Padding stays tight.** The books are the content and the shelf is trim.
+   Generous padding shrinks the covers and turns the shelf into a picture
+   frame.
+5. **The drop shadow goes BELOW the shelf, never behind it.** On the web it's
+   a sibling element under the plate (`h-2 … from-black/10 to-transparent`).
+   Drawing it as a backdrop layer behind a low-opacity plate makes the black
+   show straight through the fill, and the shelf turns grey and muddy instead
+   of letting the background glow through. Keep it faint and blurred — a
+   hard-edged band under the plate reads as a drawn line, not a shadow.
+6. **Not every layout suits a shelf.** The small widget fans its covers into
+   an overlapping, receding stack; a flat ledge contradicts that perspective,
+   so it has no shelf. A shelf needs books standing in a row.
