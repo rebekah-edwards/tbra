@@ -211,7 +211,7 @@ function isNotABookRequest(desc: string): boolean {
   return /^(?:please\s+)?(?:remove|delete)(?:\s+this(?:\s+entry)?)?$/.test(bare);
 }
 
-function normalizeTitle(t: string): string {
+export function normalizeTitle(t: string): string {
   return t
     .toLowerCase()
     .normalize("NFD")
@@ -219,6 +219,64 @@ function normalizeTitle(t: string): string {
     .replace(/[^a-z0-9 ]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+// Publishers ship the same work as "<Title> Paperback Deluxe Limited Edition",
+// "<Title> Collector's Edition", "<Title> 10th Anniversary Edition" \u2026 and each
+// lands as its own books row. Rebekah's standing instruction is that these are
+// editions of the canon book, not separate entries.
+//
+// Before 2026-08-14 the sibling finder compared raw normalized titles, so a
+// deluxe row never matched its canon and the reports came out as "no sibling
+// found" \u2014 the WORST outcome, because they weren't even flagged as
+// merge-ambiguous for a human. Seven such reports (the Tahereh Mafi Shatter Me
+// set) sat open for a week and had to be merged by hand.
+//
+// Only edition/printing decorations are stripped. Anything that changes WHICH
+// work it is \u2014 "Collection", "Box Set", "Omnibus", volume numbers \u2014 is
+// deliberately NOT stripped: those really are different products and merging
+// them would destroy real distinctions.
+const EDITION_SUFFIX = new RegExp(
+  String.raw`\s+(?:` +
+    [
+      // qualifiers that may stack in any order before the word "edition"
+      String.raw`(?:the\s+)?(?:\d+(?:st|nd|rd|th)\s+)?anniversary`,
+      String.raw`paperback`,
+      String.raw`hardcover|hardback`,
+      String.raw`deluxe`,
+      String.raw`limited`,
+      String.raw`collectors?`,
+      String.raw`collector s`, // normalizeTitle turns "Collector's" into "collector s"
+      String.raw`special`,
+      String.raw`exclusive`,
+      String.raw`signed`,
+      String.raw`illustrated`,
+      String.raw`revised`,
+      String.raw`expanded`,
+      String.raw`international|intl`,
+      String.raw`reissue`,
+      String.raw`edition`,
+    ].join("|") +
+    String.raw`)`,
+  "g",
+);
+
+/**
+ * Strip trailing edition decoration for sibling matching.
+ * "unravel me paperback deluxe limited edition" -> "unravel me"
+ * Returns the input unchanged if stripping would leave nothing (a book actually
+ * titled "Deluxe Edition" keeps its title rather than collapsing to "").
+ */
+export function stripEditionSuffix(normalized: string): string {
+  let prev = normalized;
+  // Chip qualifiers off the END only, repeatedly, so word order doesn't matter
+  // and a leading "Deluxe Dungeons" style title is never touched.
+  for (;;) {
+    const next = prev.replace(new RegExp(`(?:${EDITION_SUFFIX.source})$`), "").trim();
+    if (next === prev) break;
+    prev = next;
+  }
+  return prev.length > 0 ? prev : normalized;
 }
 
 // Try to find a sibling book (same normalized title + first author) so we can merge.
@@ -242,7 +300,13 @@ async function findMergePair(reportedBookId: string): Promise<
 
   // Fetch candidates with matching title prefix to reduce scan. LIKE is not case-sensitive for ASCII.
   // We filter precisely in JS using normalizeTitle.
-  const likeTitle = title.slice(0, 20).replace(/[%_]/g, "");
+  //
+  // The prefix MUST come from the edition-stripped title. Slicing the raw title
+  // gave 'Unravel Me Paperbac%', which cannot match the canonical "Unravel Me" —
+  // the canon was excluded by the candidate query before matching ever ran, so
+  // every edition-variant report died here as "no sibling found" (2026-08-14).
+  const baseTitle = stripEditionSuffix(normalizeTitle(title));
+  const likeTitle = baseTitle.slice(0, 20).replace(/[%_]/g, "");
   const candidates = await query(
     `SELECT b.id, b.title, b.slug, b.cover_image_url, b.cover_source, b.publication_year,
             (SELECT a.name FROM authors a JOIN book_authors ba ON ba.author_id = a.id WHERE ba.book_id = b.id ORDER BY a.name LIMIT 1) AS author_name,
@@ -252,18 +316,29 @@ async function findMergePair(reportedBookId: string): Promise<
     [`${likeTitle}%`],
   );
 
-  const normT = normalizeTitle(title);
+  // Match on the edition-stripped title so "<Title> Deluxe Limited Edition"
+  // groups with "<Title>". The author must still match exactly.
+  const normT = baseTitle;
   const normA = normalizeTitle(author);
   const group = (candidates.rows as any[]).filter(
     (c) =>
-      normalizeTitle(c.title ?? "") === normT &&
+      stripEditionSuffix(normalizeTitle(c.title ?? "")) === normT &&
       normalizeTitle(c.author_name ?? "") === normA,
   );
   if (group.length < 2) return null;
 
   // Score each: prefer user activity, then cover, then author-in-slug, then publication_year.
+  //
+  // UNDECORATED TITLE OUTRANKS EVERYTHING (added 2026-08-14 with edition
+  // stripping). Without this, a deluxe row that happens to carry more shelf
+  // activity than the canon would be chosen as canonical and the real book
+  // deleted — the edition decoration is exactly what makes a row the NON-canon
+  // one, so it must dominate the user-count term rather than compete with it.
   const authorSlugFragment = normA.replace(/ /g, "-");
+  const isUndecorated = (c: any) =>
+    normalizeTitle(c.title ?? "") === stripEditionSuffix(normalizeTitle(c.title ?? ""));
   const score = (c: any) =>
+    (isUndecorated(c) ? 1_000_000 : 0) +
     Number(c.user_count) * 1000 +
     (c.cover_image_url ? 20 : 0) +
     (c.cover_source && !String(c.cover_source).includes("placeholder") && c.cover_source !== "none-found" ? 10 : 0) +
@@ -277,6 +352,18 @@ async function findMergePair(reportedBookId: string): Promise<
 
   // Safe auto-merge ONLY if every non-canonical has 0 users and there's exactly one sibling
   // (more than one dupe is still handled, but we want to be cautious)
+  //
+  // DELIBERATELY still the blunt zero-user rule, NOT the finer
+  // findUserOverlap() check that find-title-author-dupes.ts uses. That check is
+  // safe only when the applier MOVES user rows with `UPDATE book_id` first —
+  // and mergeDupeIntoCanonical() below does not move rows at all, it deletes on
+  // the strength of this contract. Loosening the gate here without adding the
+  // move would silently destroy ratings and reviews, which is precisely the
+  // 2026-07-30 incident (project_dedup_move_destroyed_ratings).
+  //
+  // Dupes that DO carry user rows fall through to "merge-ambiguous" and are
+  // merged by the supervised path: replay-dedup-both.ts, which moves rows,
+  // re-checks overlap on both DBs, and writes a run report.
   const allOthersClean = others.every((o) => Number(o.user_count) === 0);
   const canonicalHasSlug = canonical.slug && canonical.slug !== "null";
 
@@ -360,7 +447,8 @@ async function main() {
 
   // Fetch open reports
   const result = await query(`
-    SELECT ri.id, ri.description, ri.page_url, ri.book_id,
+    SELECT ri.id, ri.description, ri.page_url, ri.book_id, ri.created_at,
+           CAST(julianday('now') - julianday(ri.created_at) AS INTEGER) AS age_days,
            b.title as book_title, b.slug as book_slug, b.description as book_desc,
            s.name as series_name, ri.series_id,
            (SELECT count(*) FROM user_book_state ubs WHERE ubs.book_id = ri.book_id) as user_count
@@ -375,6 +463,12 @@ async function main() {
 
   const needsInput: { id: string; desc: string; book: string }[] = [];
   let fixed = 0;
+
+  // Report id -> days open. Used only when writing the summary, so the many
+  // needsInput construction sites don't each have to thread an age through.
+  const ageById = new Map<string, number>(
+    (result.rows as any[]).map((r) => [r.id as string, Number(r.age_days ?? 0)]),
+  );
 
   for (const r of result.rows) {
     const id = r.id as string;
@@ -709,11 +803,43 @@ async function main() {
     fixedLog.forEach((f, i) => out.push(`${i + 1}. ${f}`));
     out.push(``);
   }
+  // AGING (added 2026-08-14). Before this, every skipped report printed
+  // identically whether it landed last night or in May, so a queue that was
+  // quietly rotting looked exactly like a queue that was being worked. Two
+  // reports sat open for 3+ months that way. The nightly summary now leads with
+  // the stale ones and states the oldest age explicitly, so "36 need your
+  // decision" can never again hide "…and 2 of them are from May".
+  const STALE_DAYS = 14;
+  const ageOf = (n: { id: string }) => ageById.get(n.id) ?? 0;
+  const stale = needsInput.filter((n) => ageOf(n) >= STALE_DAYS).sort((a, b) => ageOf(b) - ageOf(a));
+  const fresh = needsInput.filter((n) => ageOf(n) < STALE_DAYS);
+  const oldest = needsInput.reduce((m, n) => Math.max(m, ageOf(n)), 0);
+
   if (needsInput.length > 0) {
+    out.push(
+      `- Oldest still open: **${oldest} days**` +
+        (stale.length > 0 ? ` — ${stale.length} report(s) past the ${STALE_DAYS}-day mark` : ``),
+      ``,
+    );
+  }
+
+  if (stale.length > 0) {
+    out.push(`## ⚠️ Stale — open ${STALE_DAYS}+ days`, ``);
+    out.push(
+      `These have been waiting long enough that nobody is coming for them on their own. ` +
+        `They are not harder than the rest of the queue, just older. Work these first.`,
+      ``,
+    );
+    stale.forEach((n, i) => {
+      out.push(`${i + 1}. **${n.book}** — _open ${ageOf(n)} days_`, `   ${n.desc}`, ``);
+    });
+  }
+
+  if (fresh.length > 0) {
     out.push(`## Needs your decision`, ``);
     out.push(`These are outside the auto-fixer's safe scope (series restructuring, author disambiguation, merges, external/PDF data, ambiguous requests). Review them in /admin/issues.`, ``);
-    needsInput.forEach((n, i) => {
-      out.push(`${i + 1}. **${n.book}**`, `   ${n.desc}`, ``);
+    fresh.forEach((n, i) => {
+      out.push(`${i + 1}. **${n.book}** — _open ${ageOf(n)} days_`, `   ${n.desc}`, ``);
     });
   }
   try {
@@ -727,4 +853,11 @@ async function main() {
   try { localDb?.close(); } catch { /* best effort */ }
 }
 
-main().catch(console.error);
+// Only run the pipeline when invoked directly (`npx tsx scripts/process-reports.ts`).
+// Guarding this lets the pure helpers above be imported by tests without the
+// import kicking off a live 4-hour Turso run. Verified after the change that a
+// direct invocation still executes normally — if this guard is ever wrong, the
+// nightly task silently does nothing, so re-verify it if you touch it.
+if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(console.error);
+}
