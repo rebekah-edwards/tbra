@@ -6,7 +6,7 @@
 # (observed 2026-07-06). This wrapper guarantees a server is running before enriching and tears
 # down ONLY a server it started itself (leaves a pre-existing dev server alone).
 #
-# Steps: pull from Turso -> ensure server -> enrich -> push delta -> teardown.
+# Steps: pull from Turso -> ensure server -> enrich -> wait for PT push window -> push delta -> teardown.
 # Exit code is the PUSH step's exit code so the schedule gate (exit 3) still surfaces to the caller.
 #
 # Usage: ./scripts/nightly-content-ratings.sh
@@ -68,7 +68,36 @@ fi
 log "=== ENRICH ==="
 npx tsx scripts/enrich-content-700.ts
 
-# 4. Push delta to Turso (schedule-gated; its exit code is our exit code).
+# 4. Wait for the push window if enrichment finished early.
+#
+# WHY: push-content-ratings-to-turso.ts gates on 3:00-6:00 AM *Pacific*, but this Mac
+# runs on Eastern and the cron slot is ET, so a fast night can finish before the window
+# opens — the push exits 3 and the night's ratings sit stranded locally until the next
+# run (observed 2026-08-14, when a 56-min enrichment off the old 4:53 AM ET slot landed
+# at 2:50 AM PT, 10 minutes short). The slot was moved to 5:30 AM ET so a typical ~1h
+# night needs no wait at all; this loop only covers the short-night case.
+#
+# Deliberately does NOT set TBRA_FORCE — waiting for the real window preserves the gate's
+# purpose (keep Turso load off the live site) instead of bypassing it.
+pt_hour() { echo $((10#$(TZ=America/Los_Angeles date +%H))); }
+
+WAITED=0
+while [ "$(pt_hour)" -lt 3 ]; do
+  if [ "$WAITED" -eq 0 ]; then
+    log "Finished at $(pt_hour):xx PT, before the 3:00 AM PT push window — waiting for it to open..."
+  fi
+  if [ "$WAITED" -ge 180 ]; then
+    log "WARNING: waited ${WAITED}min and the window never opened — running the push anyway so its gate reports the real reason."
+    break
+  fi
+  sleep 60
+  WAITED=$((WAITED + 1))
+done
+if [ "$WAITED" -gt 0 ]; then
+  log "Waited ${WAITED}min; PT hour is now $(pt_hour)."
+fi
+
+# 5. Push delta to Turso (schedule-gated; its exit code is our exit code).
 log "=== PUSH ==="
 npx tsx scripts/push-content-ratings-to-turso.ts
 PUSH_EXIT=$?
