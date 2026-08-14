@@ -143,6 +143,44 @@ export type EnrichOutcome =
   | { status: "skipped"; reason: "paused" | "auto_paused" }
   | { status: "failed"; reason: string };
 
+/**
+ * A description this short is a library catalogue one-liner, not book copy —
+ * "A therapist suspects a Greek tragedy professor at Cambridge University of
+ * committing murder." (92 chars) or `"The animorphs have never met Visser Two.
+ * Until now"--Cover.` (60 chars). Real publisher blurbs run several hundred.
+ *
+ * WHY THIS EXISTS (2026-08-14): OpenLibrary sets descriptionStale=false the
+ * moment it accepts anything, and the ISBNdb and Google Books phases both gate
+ * on `!description || descriptionStale`. So a 60-char OL stub permanently
+ * CLOSED the cascade — no richer source ever got a turn, for the whole catalog.
+ * That is the actual mechanism behind user reports of "description missing" on
+ * books that do have text: the text is a stub, and nothing could ever replace
+ * it. Two such reports (The Maidens, The Deception) survived a full clear-and-
+ * re-enrich untouched before this was found.
+ */
+const THIN_DESCRIPTION_CHARS = 180;
+
+function isThinDescription(description: string | null | undefined): boolean {
+  return (description?.trim().length ?? 0) < THIN_DESCRIPTION_CHARS;
+}
+
+/**
+ * Guard for downstream phases now allowed to overwrite a thin description.
+ * A replacement must be materially better, not merely different — otherwise
+ * sources would churn the field on every run, bumping updated_at and dragging
+ * the book back through sync-push for no gain.
+ *
+ * Anything replacing a blank is better by definition; otherwise require a
+ * meaningful jump in length. Never downgrade a description that is already
+ * substantial.
+ */
+function isBetterDescription(candidate: string, current: string | null | undefined): boolean {
+  const existing = current?.trim() ?? "";
+  if (!existing) return true;
+  if (!isThinDescription(existing)) return false; // already good — leave it alone
+  return candidate.trim().length >= existing.length * 1.5;
+}
+
 export async function enrichBook(bookId: string, options?: EnrichOptions): Promise<EnrichOutcome> {
   // Default skipBrave to true — Brave has limited monthly credits.
   // Only pass skipBrave: false when explicitly approved by the user.
@@ -548,14 +586,14 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
               console.log(`[enrichment] Rejected ISBNdb placeholder cover for "${book.title}"`);
             }
           }
-          if (!book.description || book.descriptionStale) {
+          if (!book.description || book.descriptionStale || isThinDescription(book.description)) {
             const desc = getISBNdbDescription(isbndbResult);
             if (desc) {
               // Run sanitizeDescription on the already-cleaned ISBNdb output to
               // catch review walls / Goodreads-shaped junk that getISBNdbDescription's
               // ad/HTML stripper passes through. Junk → rejected → no write.
               const cleanIsbn = sanitizeDescription(desc);
-              if (cleanIsbn) {
+              if (cleanIsbn && isBetterDescription(cleanIsbn, book.description)) {
                 isbnUpdates.description = cleanIsbn;
                 isbnUpdates.descriptionStale = false;
               }
@@ -607,7 +645,8 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
   // google-books.ts. On exhaustion it no-ops silently and leaves the stale flag
   // set, so the book is simply retried on a later run.
   if (focus === "full" && !opts.skipGoogleBooks) {
-    const needsDescription = !book.description || book.descriptionStale;
+    const needsDescription =
+      !book.description || book.descriptionStale || isThinDescription(book.description);
     if (needsDescription) {
       try {
         const gb = await fetchGoogleBooksDescription({
@@ -618,7 +657,7 @@ async function _enrichBookInner(bookId: string, options?: EnrichOptions): Promis
         });
         if (gb.description) {
           const cleanGB = sanitizeDescription(gb.description);
-          if (cleanGB) {
+          if (cleanGB && isBetterDescription(cleanGB, book.description)) {
             await db
               .update(books)
               .set({
