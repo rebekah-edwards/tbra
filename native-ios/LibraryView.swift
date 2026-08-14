@@ -42,10 +42,14 @@ final class LibraryModel {
     var books: [LibraryBook] = []
     var error: String?
     var loading = false
+    /// Set after the first successful load so the view can tell "never loaded"
+    /// (let .task do it) from "returning to a view that already has data"
+    /// (needs a refresh — see the .onAppear in LibraryView).
+    private(set) var hasLoaded = false
 
     func load() async {
         loading = true; defer { loading = false }
-        do { books = try await APIClient.shared.library() }
+        do { books = try await APIClient.shared.library(); hasLoaded = true }
         catch {
             // Pushing a screen over this one cancels the in-flight .task —
             // that's not an error the user should see on the way back.
@@ -156,6 +160,19 @@ struct LibraryView: View {
         .refreshable { await model.load() }
         .task { await model.load() }
         .onAppear {
+            // Refresh when returning to a view that already has data. SwiftUI's
+            // .task runs ONCE per view lifetime, and it does not re-run when you
+            // navigate back to an existing view — so opening a book, changing its
+            // owned formats, and coming back left this list rendering pre-change
+            // data. The book kept appearing under "Not Owned" while its own detail
+            // page said "you own 1 copy" (reported 2026-07-27 for Every Exquisite
+            // Thing). The owned/not-owned filters are exact complements, so a book
+            // in both places is always a staleness bug, never a filter bug.
+            //
+            // Guarded on hasLoaded so this does not double-fetch on first appear,
+            // where .task is already loading.
+            if model.hasLoaded { Task { await model.load() } }
+
             // Consume a one-shot deep-link from the profile stat pills
             // (Read → Activity/Finished, Reading → Activity/Current, TBR).
             if let sel = chrome?.pendingLibrarySelection {
