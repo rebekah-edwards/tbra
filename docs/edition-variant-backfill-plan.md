@@ -1,5 +1,10 @@
 # Backfill plan: folding existing edition variants into selectable editions
 
+> **EXECUTED 2026-08-14.** All 185 pairs merged (176 auto + 9 supervised), verified on both
+> databases: 0 dupe rows alive, 0 orphaned user rows, 185/185 canons carrying their captured
+> edition. Meilisearch purged (101 of 185 were indexed). The 9 no-canon groups remain open —
+> they need a rename, not a merge. Two findings from the run are recorded at the bottom.
+
 Reviewing the whole catalog for "<Title> Deluxe Limited Edition" rows that should be an
 edition of the canon book, and folding them in without losing user data.
 
@@ -181,3 +186,49 @@ it before inserting:
 `local:<uuid>` key, so no production table had to be rebuilt. `source` is what distinguishes
 them; never test the key for nullness. `editions` was also added to `sync-push.ts` (step 5g),
 without which every locally-recorded printing would have been stranded off prod.
+
+---
+
+## Findings from the 2026-08-14 run
+
+### 1. `reading_sessions` was misclassified as collision-proof (real bug, fixed)
+
+`scripts/lib/dupe-overlap.ts` split user tables into `MOVE_UNIQUE` (checked for same-user
+collisions before merging) and `MOVE_APPEND` ("no per-book uniqueness, so cannot collide").
+`reading_sessions` sat in `MOVE_APPEND` — but it carries
+
+```
+CREATE UNIQUE INDEX reading_sessions_user_book_read
+  ON reading_sessions(user_id, book_id, read_number)
+```
+
+so a user holding a session on BOTH books collides on `UPDATE book_id`. Because
+`findUserOverlap()` only inspects `MOVE_UNIQUE`, this class of collision was **invisible to
+every scanner and applier**, and the merge died mid-pair with a raw UNIQUE constraint error
+on 2 of the 4 collision pairs.
+
+`reading_sessions` is now in `MOVE_UNIQUE`. Both lists move rows identically (`UPDATE
+book_id`); the only difference is the overlap precheck, which is precisely what was missing.
+This was not specific to edition variants — **it affects every `find-title-author-dupes` run
+too**, and would have surfaced there eventually as the same crash.
+
+### 2. The dupe row can hold the BETTER user data
+
+On *Shatter Me*, the deluxe row's reading session carried
+`completion_date = 2026-07-29 (exact)` while the canon's was **null**, and the deluxe's
+`user_book_state` was `completed` while the canon's `state` was `null`. Any merge rule of the
+form "keep the canonical row's version" would have silently erased that user's finish date
+and completed status.
+
+`scripts/resolve-edition-variant-collisions.ts` therefore merges rather than picks: most
+advanced state wins, owned formats union, earliest start date, and a completion date is taken
+from whichever side actually has one. It can only ever upgrade what the user sees. It refuses
+outright if a pair collides on anything beyond shelf state and reading sessions — ratings and
+reviews are a content decision no script should make.
+
+### 3. Operational note
+
+`apply-edition-variant-merges.ts` names its output manifest by date, so running it twice in
+one day **overwrites the first manifest**. The second run (the 4 collision pairs) clobbered
+the 181-pair file. Harmless here — the full id list was rebuilt from the scan — but give the
+manifest a distinct `--out` if you run it more than once in a day.
