@@ -24,8 +24,44 @@
  *   MAX_BOOKS       net new books to insert, then stop (default 60)
  *   HORIZON_MONTHS  how far ahead counts as "upcoming" (default 18)
  *   GOOGLE_MAX      hard cap on Google Books calls     (default 800)
+ *   GOOGLE_PACE_MS  delay between author queries       (default 1100)
+ *   GOOGLE_RETRIES  retries per author on a 429/503    (default 2)
+ *   UPCOMING_DATE_LOOKUP_MAX  books/run given one Brave call to recover an
+ *                   exact release date Google gave only to year/month
+ *                   precision; 0 disables it entirely (default 10)
  *   CURSOR_FILE     rotation cursor path               (default data/upcoming-authors-cursor.json)
  *   DRY_RUN=1       fetch + filter + log, write nothing
+ *
+ * PACING (2026-08-08): the 429/503 storm this lane suffered was Google's
+ * PER-MINUTE rate limit, not the daily Queries-per-day quota — a probe issued
+ * immediately after a run that had "exhausted" its quota returned HTTP 200. At
+ * the old 150ms pacing the run issued ~400 queries/min against a limit far
+ * below that, so a third of every night's authors bounced and landed in the
+ * deferred queue (52/150 failed on 2026-08-08). GOOGLE_PACE_MS now defaults to
+ * 1100 (~55 queries/min) and each author gets GOOGLE_RETRIES extra attempts
+ * behind exponential backoff before being deferred. A 150-author run therefore
+ * spends ~3min in Google calls instead of ~25s; it runs at 3:09 AM, so nobody
+ * is waiting on it. NOTE: a 503 here is genuinely ambiguous — it is returned
+ * for BOTH per-minute throttling and daily exhaustion — so the retry ladder is
+ * what distinguishes them: throttling clears within a few seconds, real
+ * exhaustion keeps failing and trips QUOTA_ABORT_STREAK.
+ *
+ * DATE PRECISION (2026-08-14): Google often returns only a YEAR for a volume
+ * that has not shipped yet ("publishedDate": "2027"). normalizePubDate refuses
+ * to fabricate a day for that, so such books used to land with
+ * `publication_date = NULL` while still being counted as `added` — invisible in
+ * the run report. That is survivable for a future year (isBookPrePublication
+ * falls back to `publicationYear > currentYear`) but NOT for a title releasing
+ * later in the CURRENT year, which then reads as already published. So a
+ * year/month-precision volume now gets ONE corroborated Brave search
+ * (findReleaseDateViaBrave) to recover the exact date, capped at
+ * UPCOMING_DATE_LOOKUP_MAX per run and switched off for the remainder of the
+ * run the moment Brave reports the shared budget is gone. This makes the lane
+ * *nearly* Brave-free rather than strictly Brave-free — worst case 10 calls of
+ * the shared 8,000/day. Anything still dateless after the lookup and enrichment
+ * is flagged needs_review ("missing: exact release date") instead of being
+ * given a fabricated January 1st. Set UPCOMING_DATE_LOOKUP_MAX=0 to restore the
+ * strictly-zero-Brave behaviour.
  */
 
 import { config } from "dotenv";
@@ -37,7 +73,7 @@ import { db } from "../src/db";
 import { books, authors, bookAuthors, nytBestsellers, userFavoriteBooks, userBookState } from "../src/db/schema";
 import { eq, and, gte, lte, isNotNull, sql } from "drizzle-orm";
 import {
-  searchGoogleBooksByAuthorNewest,
+  searchGoogleBooksByAuthorNewestDetailed,
   getGoogleBooksIsbns,
   getGoogleBooksCoverUrl,
 } from "../src/lib/google-books";
@@ -48,13 +84,36 @@ import { isBoxSetTitle } from "../src/lib/queries/books";
 import { assignBookSlug, findBookBySlugCollision } from "../src/lib/utils/slugify";
 import { updateSearchIndex } from "../src/lib/search/search-index";
 import { enrichBook } from "../src/lib/enrichment/enrich-book";
+import { findReleaseDateViaBrave } from "../src/lib/enrichment/release-date";
 
 const MAX_AUTHORS = Number(process.env.MAX_AUTHORS ?? 150);
 const MAX_BOOKS = Number(process.env.MAX_BOOKS ?? 60);
 const HORIZON_MONTHS = Number(process.env.HORIZON_MONTHS ?? 18);
-const GOOGLE_MAX = Number(process.env.GOOGLE_MAX ?? 800);
+// Halved from 800 on 2026-08-08. Google Books allows 1,000 queries/day and the
+// limit is NOT raisable — the Cloud Console offers no increase beyond 1K, so
+// the only way to fund the description tier is to split the fixed allowance.
+// Rebekah's call: 500/500. This lane runs at 3:09 AM ET, before
+// nightly-description-refresh, so stopping at 500 leaves the rest for it under
+// the shared `google_books` counter rather than racing it to exhaustion.
+const GOOGLE_MAX = Number(process.env.GOOGLE_MAX ?? 500);
 const CURSOR_FILE = process.env.CURSOR_FILE || "data/upcoming-authors-cursor.json";
 const DRY_RUN = process.env.DRY_RUN === "1";
+// Ceiling on the re-check queue (see selectAuthors) so a long Google outage
+// can't grow it without bound.
+const DEFERRED_MAX = Number(process.env.DEFERRED_MAX ?? 3000);
+// Consecutive quota failures before we stop burning the remaining pacing delay
+// on calls that cannot succeed; everything unqueried is deferred to next run.
+const QUOTA_ABORT_STREAK = Number(process.env.QUOTA_ABORT_STREAK ?? 12);
+// Gap between author queries. ~1100ms ≈ 55/min, under Google's per-minute
+// ceiling; see the PACING note in the header before lowering this.
+const GOOGLE_PACE_MS = Number(process.env.GOOGLE_PACE_MS ?? 1100);
+// Extra attempts for one author after a 429/503, behind exponential backoff.
+const GOOGLE_RETRIES = Number(process.env.GOOGLE_RETRIES ?? 2);
+// Books per run allowed ONE Brave call to recover an exact release date that
+// Google only gave to year/month precision (see the DATE PRECISION note in the
+// header). 0 disables the lookup entirely and restores the strictly-zero-Brave
+// behaviour. 10/night is ~0.1% of the shared 8,000/day cap.
+const DATE_LOOKUP_MAX = Number(process.env.UPCOMING_DATE_LOOKUP_MAX ?? 10);
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -98,31 +157,85 @@ async function buildAuthorPool(): Promise<string[]> {
   return [...names].sort((a, b) => a.localeCompare(b));
 }
 
-// Rotate through the pool: take MAX_AUTHORS starting at the persisted cursor,
-// wrapping around, then advance the cursor for next run.
-function selectAuthors(pool: string[]): string[] {
-  if (pool.length === 0) return [];
-  let index = 0;
-  if (existsSync(CURSOR_FILE)) {
-    try {
-      index = JSON.parse(readFileSync(CURSOR_FILE, "utf-8")).index ?? 0;
-    } catch {
-      index = 0;
-    }
-  }
-  index = ((index % pool.length) + pool.length) % pool.length;
+type Cursor = { index: number; updatedAt?: string; deferred?: string[] };
 
+function readCursor(): Cursor {
+  if (!existsSync(CURSOR_FILE)) return { index: 0, deferred: [] };
+  try {
+    const raw = JSON.parse(readFileSync(CURSOR_FILE, "utf-8"));
+    return {
+      index: typeof raw.index === "number" ? raw.index : 0,
+      deferred: Array.isArray(raw.deferred) ? raw.deferred.filter((a: unknown) => typeof a === "string") : [],
+    };
+  } catch {
+    return { index: 0, deferred: [] };
+  }
+}
+
+/**
+ * Rotate through the pool, but drain the DEFERRED queue first.
+ *
+ * Authors land in `deferred` when a previous run selected them and never got a
+ * real answer from Google — quota exhaustion, a network failure, or the run
+ * hitting MAX_BOOKS/GOOGLE_MAX before reaching them. Without this they were
+ * simply skipped: the cursor advanced by MAX_AUTHORS regardless of how many
+ * queries actually landed, so a quota-starved night silently cost those authors
+ * a full trip around the ~7.7k pool (weeks) before they'd be looked at again.
+ *
+ * Deferred authors take at most half the run so the pool keeps rotating even if
+ * the queue is persistently backed up.
+ */
+function selectAuthors(pool: string[]): {
+  selected: string[];
+  nextIndex: number;
+  retried: number;
+  /** Queue entries this run had no room for — must be written back or they're lost. */
+  carryOver: string[];
+} {
+  if (pool.length === 0) return { selected: [], nextIndex: 0, retried: 0, carryOver: [] };
+
+  const cursor = readCursor();
+  const index = ((cursor.index % pool.length) + pool.length) % pool.length;
   const take = Math.min(MAX_AUTHORS, pool.length);
-  const selected: string[] = [];
-  for (let i = 0; i < take; i++) {
-    selected.push(pool[(index + i) % pool.length]);
+
+  // Only retry authors still in the pool (a name can drop out if the shelving
+  // or favorite that put it there went away).
+  const inPool = new Set(pool);
+  const queue = (cursor.deferred ?? []).filter((a) => inPool.has(a));
+
+  const retryBudget = Math.min(queue.length, Math.floor(take / 2));
+  const selected = queue.slice(0, retryBudget);
+  const chosen = new Set(selected);
+
+  // Fill the rest from the rotation, advancing the cursor only by what we take.
+  let advanced = 0;
+  while (selected.length < take && advanced < pool.length) {
+    const name = pool[(index + advanced) % pool.length];
+    advanced++;
+    if (chosen.has(name)) continue; // already queued as a retry this run
+    selected.push(name);
+    chosen.add(name);
   }
 
-  if (!DRY_RUN) {
-    const next = (index + take) % pool.length;
-    writeFileSync(CURSOR_FILE, JSON.stringify({ index: next, updatedAt: new Date().toISOString() }));
-  }
-  return selected;
+  return {
+    selected,
+    nextIndex: (index + advanced) % pool.length,
+    retried: retryBudget,
+    carryOver: queue.slice(retryBudget),
+  };
+}
+
+/**
+ * Persist the cursor plus whatever this run failed to actually check.
+ * Capped so a long outage can't grow the queue without bound.
+ */
+function writeCursor(nextIndex: number, deferred: string[]) {
+  if (DRY_RUN) return;
+  const unique = [...new Set(deferred)].slice(0, DEFERRED_MAX);
+  writeFileSync(
+    CURSOR_FILE,
+    JSON.stringify({ index: nextIndex, updatedAt: new Date().toISOString(), deferred: unique }),
+  );
 }
 
 // ISO date strings for today and the horizon (local components, no UTC drift).
@@ -185,8 +298,11 @@ async function main() {
 
   const pool = await buildAuthorPool();
   console.log(`[upcoming] buzz-author pool: ${pool.length} unique authors`);
-  const selected = selectAuthors(pool);
-  console.log(`[upcoming] processing ${selected.length} authors this run`);
+  const { selected, nextIndex, retried, carryOver } = selectAuthors(pool);
+  console.log(
+    `[upcoming] processing ${selected.length} authors this run` +
+      (retried ? ` (${retried} re-checks from the deferred queue)` : ""),
+  );
 
   let googleCalls = 0;
   let inserted = 0;
@@ -194,24 +310,84 @@ async function main() {
   let candidatesSeen = 0;
   let skippedDupe = 0;
   let skippedJunk = 0;
+  let quotaStreak = 0;
+  let dateRecovered = 0;
+  let dateUnresolved = 0;
+  let dateLookups = 0;
+  // Flipped once Brave reports the shared budget is gone (or the key is bad):
+  // the remaining books skip the lookup instead of re-throwing per book.
+  let dateLookupOff = DATE_LOOKUP_MAX <= 0;
 
-  for (const authorName of selected) {
+  // Authors this run selected but never got a real answer for. They are written
+  // back to the cursor so the next run re-checks them instead of leaving them
+  // unexamined until the pool rotates all the way around.
+  // Seeded with the queue overflow this run had no room for, so those authors
+  // survive the cursor write instead of being dropped.
+  const deferred: string[] = [...carryOver];
+  const deferRest = (fromIndex: number) => {
+    for (let i = fromIndex; i < selected.length; i++) deferred.push(selected[i]);
+  };
+
+  for (const [i, authorName] of selected.entries()) {
     if (inserted >= MAX_BOOKS) {
       console.log(`[upcoming] reached MAX_BOOKS=${MAX_BOOKS}, stopping.`);
+      deferRest(i);
       break;
     }
     if (googleCalls >= GOOGLE_MAX) {
       console.log(`[upcoming] reached GOOGLE_MAX=${GOOGLE_MAX}, stopping.`);
+      deferRest(i);
       break;
     }
 
-    await delay(150); // gentle pacing against Google Books
-    googleCalls++;
+    await delay(GOOGLE_PACE_MS); // pacing against Google's per-minute limit
     let volumes;
     try {
-      volumes = await searchGoogleBooksByAuthorNewest(authorName, 12);
+      // Retry ladder: a 429/503 is ambiguous between per-minute throttling
+      // (clears in seconds) and daily exhaustion (never clears this run). Back
+      // off and re-ask; if it still fails the author is deferred and the
+      // quotaStreak counter escalates toward the whole-run abort.
+      let res = null;
+      for (let attempt = 0; attempt <= GOOGLE_RETRIES; attempt++) {
+        if (attempt > 0) {
+          const backoffMs = GOOGLE_PACE_MS * 2 ** attempt; // 2.2s, 4.4s
+          console.log(
+            `[upcoming] retry ${attempt}/${GOOGLE_RETRIES} for "${authorName}" after ${backoffMs}ms`,
+          );
+          await delay(backoffMs);
+        }
+        if (googleCalls >= GOOGLE_MAX) break;
+        googleCalls++;
+        const r = await searchGoogleBooksByAuthorNewestDetailed(authorName, 12);
+        if (r.ok || !r.quotaExhausted) {
+          res = r;
+          break;
+        }
+        res = r; // keep the last failure for the diagnostics below
+      }
+
+      if (!res || !res.ok) {
+        // The call never landed, so this author was NOT checked — re-queue.
+        deferred.push(authorName);
+        if (res?.quotaExhausted) {
+          quotaStreak++;
+          if (quotaStreak >= QUOTA_ABORT_STREAK) {
+            console.warn(
+              `[upcoming] ${quotaStreak} consecutive Google quota failures (status ${res.status}) ` +
+                `that survived ${GOOGLE_RETRIES} backoff retries each — this is the DAILY ` +
+                `Queries-per-day limit, not per-minute throttling. Deferring the rest of this run.`,
+            );
+            deferRest(i + 1);
+            break;
+          }
+        }
+        continue;
+      }
+      quotaStreak = 0;
+      volumes = res.volumes;
     } catch (err) {
       console.warn(`[upcoming] Google query failed for "${authorName}":`, err);
+      deferred.push(authorName);
       continue;
     }
 
@@ -265,12 +441,51 @@ async function main() {
       }
 
       const coverUrl = getGoogleBooksCoverUrl(vol);
-      const displayDate = norm.date ?? cmp;
+
+      // DATE PRECISION RECOVERY. Google routinely gives a forthcoming volume
+      // only a year ("2027"), and normalizePubDate rightly refuses to invent a
+      // day for it — so `norm.date` is null and the book would land with no
+      // publication_date at all. One corroborated web search usually recovers
+      // the exact date from a retailer/publisher listing. Bounded by
+      // DATE_LOOKUP_MAX per run and disabled for the rest of the run the moment
+      // Brave reports the shared budget is gone, so this can never become the
+      // thing that starves the priority lanes.
+      // Runs in DRY_RUN too (bounded by the same cap) so a dry run previews the
+      // date the real run would store, and so this path is testable at all.
+      let exactDate: string | null = norm.precision === "day" ? norm.date : null;
+      if (!exactDate && !dateLookupOff) {
+        if (dateLookups >= DATE_LOOKUP_MAX) {
+          dateLookupOff = true;
+        } else {
+          dateLookups++;
+          const expectYear = norm.year ?? Number(cmp.slice(0, 4));
+          try {
+            exactDate = await findReleaseDateViaBrave(
+              finalTitle, primaryAuthor, isbn13, isbn10, expectYear,
+            );
+            if (exactDate) {
+              dateRecovered++;
+              console.log(`  [date-recovered] "${finalTitle}" — ${norm.precision}-only → ${exactDate}`);
+            }
+          } catch (err) {
+            // API_EXHAUSTED / API_KEY_INVALID — stop asking for this run rather
+            // than failing the book; the year-only fallback below still applies.
+            const code = (err as Error & { code?: string }).code ?? "";
+            console.warn(`  [date-lookup] disabled for this run (${code || (err as Error).message})`);
+            dateLookupOff = true;
+          }
+        }
+      }
+      // Month precision ("2026-09") is still better than nothing, so keep it
+      // when no exact date was recovered.
+      const storedDate = exactDate ?? norm.date;
+      if (!storedDate) dateUnresolved++;
+      const displayDate = storedDate ?? cmp;
 
       if (DRY_RUN) {
         console.log(
           `  [would-add] "${finalTitle}" — ${primaryAuthor} — ${displayDate} ` +
-            `(isbn13=${isbn13 ?? "—"})`,
+            `(isbn13=${isbn13 ?? "—"}, precision=${norm.precision})`,
         );
         inserted++;
         continue;
@@ -284,7 +499,7 @@ async function main() {
           .values({
             title: finalTitle,
             description: info.description ?? null,
-            publicationDate: norm.date, // ISO day/month precision, or null
+            publicationDate: storedDate, // recovered exact date, else month precision, else null
             // Leave year NULL so enrichment fills the ORIGINAL publication year
             // from OL/ISBNdb. The reprint guard below compares that against the
             // release date to catch backlist reprints masquerading as preorders.
@@ -344,7 +559,7 @@ async function main() {
       const futureYear = Number(displayDate.slice(0, 4));
       const fresh = await db.query.books.findFirst({
         where: eq(books.id, book.id),
-        columns: { publicationYear: true },
+        columns: { publicationYear: true, publicationDate: true, reviewReason: true },
       });
       const py = fresh?.publicationYear ?? null;
       if (py != null && py < futureYear) {
@@ -359,15 +574,38 @@ async function main() {
       if (py == null) {
         await db.update(books).set({ publicationYear: futureYear }).where(eq(books.id, book.id));
       }
+
+      // Still no date after both the lookup and enrichment (which may have
+      // filled it from ISBNdb). The book is only visibly "coming soon" while
+      // its year is still in the future — a year-only title releasing later
+      // THIS year reads as already published — so flag it for /admin rather
+      // than fabricating a January 1st date nobody can distinguish from a real one.
+      if (!fresh?.publicationDate) {
+        const reason = fresh?.reviewReason?.trim();
+        await db
+          .update(books)
+          .set({
+            needsReview: true,
+            reviewReason: reason ? `${reason}; missing: exact release date` : "missing: exact release date",
+          })
+          .where(eq(books.id, book.id));
+      }
+
       inserted++;
       console.log(`  [added] "${finalTitle}" — ${primaryAuthor} — ${displayDate}`);
     }
   }
 
+  // Advance the cursor and persist the re-check queue in one place, so an
+  // author is only ever marked "checked" once Google actually answered for them.
+  writeCursor(nextIndex, deferred);
+
   console.log(
     `[upcoming] Done. ${DRY_RUN ? "would-add" : "added"}=${inserted} ` +
       `reprintDemoted=${reprintDemoted} candidates=${candidatesSeen} ` +
-      `skipped(dupe=${skippedDupe}, junk=${skippedJunk}) googleCalls=${googleCalls}`,
+      `skipped(dupe=${skippedDupe}, junk=${skippedJunk}) googleCalls=${googleCalls} ` +
+      `dateLookups=${dateLookups} dateRecovered=${dateRecovered} dateUnresolved=${dateUnresolved} ` +
+      `retried=${retried} deferred=${new Set(deferred).size}`,
   );
   process.exit(0);
 }
