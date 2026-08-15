@@ -18,6 +18,7 @@ import {
   userOwnedEditions,
   editions,
   userBookState,
+  bookSlugHistory,
 } from "@/db/schema";
 import { eq, and, asc, sql } from "drizzle-orm";
 import { getEffectiveCoverUrl } from "@/lib/covers";
@@ -37,7 +38,21 @@ export async function resolveBook(idOrSlug: string) {
   }
   // Slug lookup
   const book = await db.query.books.findFirst({ where: eq(books.slug, idOrSlug) });
-  return book ? { book, isIdLookup: false } : null;
+  if (book) return { book, isIdLookup: false };
+
+  // Retired slug? A book that was merged away or renamed keeps its old URL
+  // working via book_slug_history. Only consulted after the live-slug miss, so
+  // it costs nothing on the normal path.
+  const historical = await db.query.bookSlugHistory.findFirst({
+    where: eq(bookSlugHistory.oldSlug, idOrSlug),
+  });
+  if (!historical) return null;
+
+  const target = await db.query.books.findFirst({ where: eq(books.id, historical.bookId) });
+  // A history row pointing at a book that no longer exists is a dead end —
+  // treat it as a miss rather than 301-ing into a 404.
+  if (!target) return null;
+  return { book: target, isIdLookup: true };
 }
 
 /**

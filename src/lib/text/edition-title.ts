@@ -106,6 +106,46 @@ export function isDecoratedTitle(title: string): boolean {
 }
 
 /**
+ * The raw title with its edition decoration removed, preserving original
+ * casing and punctuation: "Y The Last Man - Deluxe Edition" -> "Y The Last Man".
+ * Returns the input unchanged when there is no decoration to strip.
+ *
+ * Counterpart to stripEditionSuffix(), which only works on normalized
+ * (lowercased, punctuation-stripped) titles and so cannot produce a title fit
+ * to display. Used when renaming a book that has no undecorated sibling to
+ * merge into.
+ */
+export function stripEditionSuffixRaw(title: string): string {
+  const label = extractEditionLabel(title);
+  if (!label) return title;
+
+  const rawWords = title.trim().split(/\s+/);
+  const labelWordCount = label.trim().split(/\s+/).length;
+
+  // extractEditionLabel already trimmed bracketing punctuation off the label,
+  // so match on word count from the end rather than string length.
+  for (let k = labelWordCount; k <= rawWords.length - 1; k++) {
+    const kept = rawWords.slice(0, rawWords.length - k).join(" ");
+    if (normalizeTitle(kept) === stripEditionSuffix(normalizeTitle(title))) {
+      // Drop the separator the decoration hung off: "Night Land (" -> "Night Land",
+      // "Prayer -" -> "Prayer", "I Am Malala:" -> "I Am Malala".
+      let cleaned = kept.replace(/[\s:,\-–—([]+$/, "").trim();
+      // The decoration may have sat INSIDE a trailing parenthetical whose opening
+      // bracket is still in `kept` ("… World (Young Readers" from "… World (Young
+      // Readers Edition)"). An unclosed "(" means we sliced into it, so drop the
+      // whole parenthetical rather than leaving a dangling fragment.
+      const opens = (cleaned.match(/\(/g) ?? []).length;
+      const closes = (cleaned.match(/\)/g) ?? []).length;
+      if (opens > closes) {
+        cleaned = cleaned.slice(0, cleaned.lastIndexOf("(")).replace(/[\s:,\-–—]+$/, "").trim();
+      }
+      return cleaned || title;
+    }
+  }
+  return title;
+}
+
+/**
  * Recover the human-readable decoration from a raw title, for labelling the
  * edition row a merge creates: "Unravel Me Paperback Deluxe Limited Edition"
  * -> "Paperback Deluxe Limited Edition". Returns null for undecorated titles.
