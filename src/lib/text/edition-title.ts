@@ -66,6 +66,17 @@ const EDITION_SUFFIX = new RegExp(
       String.raw`international|intl`,
       String.raw`(?:movie|media|tv|film)\s+tie\s*in`,
       String.raw`reissue`,
+      // ONLY the first ordinal, never 2nd and above. "1st" marks a PRINTING —
+      // a collector's distinction over the same text ("Signed 1st", "World's
+      // Fair 1ST Edition"). Higher ordinals mark REVISED CONTENT, and annual
+      // reference works prove it: audited against the full catalog on
+      // 2026-08-15, a general `\d+(?:st|nd|rd|th)` created 6 new merge groups,
+      // of which two were wrong and destructive — it folded the 10th and 14th
+      // Overstreet Arrowheads guides together, and collapsed FIVE distinct
+      // Overstreet Comic Book Price Guides (27th/32nd/33rd/34th/36th) into one
+      // entry. Restricted to `1st` the same audit yields 3 groups, all correct.
+      // Re-run scripts/audit-edition-suffix-widening.ts before widening again.
+      String.raw`1st`,
       String.raw`edition`,
     ].join("|") +
     String.raw`)`,

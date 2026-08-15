@@ -28,6 +28,11 @@ const SHOULD_MATCH: [string, string][] = [
   ["Hunting Adeline International Edition", "Hunting Adeline"],
   ["Ben-Hur Illustrated", "Ben-Hur"],
   ["Gambler (Annotated)", "Gambler"],
+  // "1st" is a printing marker over the same text — see the ordinal note in
+  // EDITION_SUFFIX for why only the FIRST ordinal is stripped.
+  ["Worlds Fair 1ST Edition", "World's Fair"],
+  ["E IS FOR EVIDENCE Signed 1st", "\"E\" is for Evidence"],
+  ["H Is for Homicide 1ST Edition", "H Is for Homicide"],
 ];
 
 /**
@@ -44,6 +49,17 @@ const MUST_NOT_MATCH: [string, string][] = [
   ["Throne of Glass Book 2", "Throne of Glass"],
   ["Special Topics in Calamity Physics", "Calamity Physics"],
   ["The Illustrated Man", "Man"],
+  // Ordinals ABOVE 1st mark revised content, not a printing. Annual reference
+  // works are the reason: a general ordinal rule collapsed five distinct
+  // Overstreet price guides into one entry (audited 2026-08-15). If someone
+  // widens EDITION_SUFFIX to all ordinals, these fail loudly.
+  ["The Official Overstreet Comic Book Price Guide, 27th Edition", "The Official Overstreet Comic Book Price Guide, 32nd Edition"],
+  ["The Official Overstreet Identification and Price Guide to Indian Arrowheads 10th Edition", "The Official Overstreet Identification and Price Guide to Indian Arrowheads, 14th Edition"],
+  ["Normal Life 2nd Edition", "Normal Life"],
+  // A Young Readers Edition is a REWRITTEN, abridged text for a younger
+  // audience — materially different content, which for a content-ratings app
+  // is precisely the thing that must not be merged away.
+  ["The Disappearing Spoon, Young Readers Edition", "The Disappearing Spoon"],
 ];
 
 const UNDECORATED = [
