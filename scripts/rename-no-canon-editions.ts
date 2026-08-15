@@ -42,15 +42,16 @@ const APPLY = process.argv.includes("--apply");
 const PLAN_FILE = "reports/no-canon-rename-plan.json";
 
 /**
- * Clean titles the automatic stripper cannot produce on its own, keyed by the
- * raw title. The normalized stripper deliberately does NOT strip bare ordinals
- * ("1ST Edition") — adding that to EDITION_SUFFIX would change how EVERY book
- * in the catalog is matched at ingestion, which is far too broad a change to
- * make for one title. Overriding it here keeps the blast radius at one book.
+ * Escape hatch for clean titles the automatic stripper cannot produce.
+ *
+ * Empty as of 2026-08-15: this held "H Is for Homicide 1ST Edition" while bare
+ * ordinals were unhandled, but EDITION_SUFFIX now strips a leading-`1st`
+ * printing marker (audited — see the note there), so the stripper produces it
+ * directly. Prefer fixing the regex when an audit shows the change is safe;
+ * use this only when a title's cleanup would otherwise force a catalog-wide
+ * matching change.
  */
-const TITLE_OVERRIDES: Record<string, string> = {
-  "H Is for Homicide 1ST Edition": "H Is for Homicide",
-};
+const TITLE_OVERRIDES: Record<string, string> = {};
 
 function cleanTitleFor(raw: string): string {
   return TITLE_OVERRIDES[raw] ?? stripEditionSuffixRaw(raw);
