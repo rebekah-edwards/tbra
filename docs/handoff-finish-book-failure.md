@@ -1,3 +1,8 @@
+> **SUPERSEDED 2026-08-15 → [`handoff-ios-ship-2026-08-15.md`](handoff-ios-ship-2026-08-15.md).**
+> Send an agent *that* doc. This one is the investigation trail, and it contains leads that are now
+> known-wrong (the `try?` call sites are fixed; the "reproduce with a large library" advice for the
+> profile bug is backwards). Read it for history, not for instructions.
+
 # Handoff: "can't mark a book Finished"
 
 **Status:** open. 4 user reports, all still `status='new'` in `reported_issues`.
@@ -123,3 +128,55 @@ There is currently no logging on this path. Before or alongside the fix, add err
 | `src/app/error.tsx:44` | where the "Reference:" digest is rendered |
 
 Related memory: `project_finished_flow_userid_crash`, `project_ios_status`, `feedback_triage_verification`.
+
+---
+
+# Status update — 2026-08-15 (nightly-report-triage)
+
+## Reports 1, 2, 3 are CLOSED — verified fixed, not assumed
+
+This doc predicted that reports 1–3 were `ec28222` and that the right move was "verify the web flow
+once end-to-end and resolve them as already-fixed." That verification has now been done.
+
+**What was run (2026-08-15, local dev server on the launchd port-3000 service, test account
+`clankerinfrastructure@gmail.com`):** opened `/book/project-hail-mary-andy-weir`, used the state
+dropdown → **Finished**, completed the "When did you finish?" sheet (Month/Year → August 2026).
+
+**Result:** the flow succeeded. No "Something went wrong" screen, no error digest. The UI showed the
+`✓ Marked as Finished` confirmation and the celebration + "What to Read Next" sheet. The state also
+survived a full page reload (button rendered `Finished`), so this was a real persisted write and not
+optimistic UI.
+
+**DB verification** (per `feedback_triage_verification` — the claim is checked, not assumed):
+
+```
+user_book_state: state='completed', updated_at=2026-08-15T06:38:32.613Z
+reading_sessions: read_number=1, state='completed',
+                  completion_date='2026-08-01', completion_precision='month'
+```
+
+Both the state row and the session row were written correctly, with the date and precision from the
+sheet. Test artifacts were then reverted: state back to `tbr` via the UI, and the session row deleted
+from **both** local and Turso so the test account carries no phantom finished read.
+
+Reports closed `status='resolved'` on **both** local and Turso (dual-write, then re-read on both to
+confirm):
+
+| Report | Filed | Status |
+|---|---|---|
+| `0640ae08-d562-40bf-9acf-87b9b52c3daf` | 2026-07-24 | resolved |
+| `43a6c4f6-fd70-4951-b417-fce257f08723` | 2026-07-31 (Mouseheart Vol. 1) | resolved |
+| `c7af5247-87db-46d6-b77c-46cd49af432c` | 2026-07-31 | resolved |
+
+All three predate `ec28222` (2026-08-01 02:49 -0400). The resolution text on each records the
+verification evidence and points back at this doc.
+
+## Report 4 stays OPEN — it is a different bug
+
+`5a7145cd-4b85-4953-a2c7-b3919a8a6ae1` / `tf:AEH_mBUJuGDYsjDIqpStAuQ`, filed 2026-08-04, **iOS only,
+post-fix.** Symptom is a silent no-op that reverts to the old status, not a crash screen. Nothing in
+tonight's web verification speaks to it either way — a working web flow is exactly what this doc
+already predicted, and it is not evidence about the iOS client.
+
+**Section 3 above remains the live lead:** all 16 `setReadingState` call sites discard the error with
+`try?`, so on iOS a failing write is indistinguishable from a succeeding one. Start there.

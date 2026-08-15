@@ -109,6 +109,9 @@ struct ReadingNowBook: Codable, Identifiable, Hashable {
     let usesAudiobookCover: Bool?
     let authors: [String]
     let pages: Int?
+    /// Audiobook runtime in minutes, when the catalog has one. Shown instead
+    /// of the page count for readers whose active format is audiobook.
+    let audioLengthMinutes: Int?
     let activeFormats: [String]
     let progress: Int?          // 0-100, derived from the latest reading note
     let buddyReadId: String?

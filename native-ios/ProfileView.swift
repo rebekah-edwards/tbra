@@ -60,6 +60,34 @@ struct ProfileView: View {
                     ProgressView().tint(Theme.accent)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 100)
+                } else {
+                    // Load failed. Without this branch the view rendered an
+                    // EMPTY scroll view forever: the alert fires once, the
+                    // reader taps OK (which clears model.error), and then
+                    // data==nil / loading==false / error==nil matches nothing
+                    // — no content, no message, no way back. `.task` only runs
+                    // on first appearance, so returning to the tab doesn't
+                    // retry either. Reported 2026-07-31: "the profile page
+                    // won't load in the app ... then stopped allowing me to
+                    // access the profile in app at all."
+                    VStack(spacing: 12) {
+                        Image(systemName: "person.crop.circle.badge.exclamationmark")
+                            .font(.system(size: 34))
+                            .foregroundStyle(Theme.muted)
+                        Text("Couldn't load your profile")
+                            .font(Theme.heading(18))
+                            .foregroundStyle(Theme.foreground)
+                        Text("Check your connection and try again.")
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                            .multilineTextAlignment(.center)
+                        Button("Try again") { Task { await model.load() } }
+                            .buttonStyle(AccentButtonStyle())
+                            .padding(.horizontal, 40)
+                            .padding(.top, 4)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 80)
                 }
             }
             .padding(.horizontal, 20)

@@ -120,6 +120,27 @@ final class ReviewWizardModel {
         proposedCorrections[rating.categoryKey] =
             .init(intensity: intensity ?? rating.intensity, note: note)
     }
+    /// Fills the wizard from a parsed screenshot import. ADDITIVE and
+    /// non-destructive: anything the reader has already typed wins, because
+    /// this can be run mid-wizard. Nothing here saves — the reader still walks
+    /// the steps and confirms.
+    func apply(_ imported: ImportedReview) {
+        if overallRating == nil { overallRating = imported.overallRating }
+        if mood == nil { mood = imported.mood }
+        if plotPacing == nil { plotPacing = imported.plotPacing }
+        if reviewText.isEmpty { reviewText = imported.reviewText ?? "" }
+        for (key, value) in imported.dimensionRatings where dimensionRatings[key] == nil {
+            dimensionRatings[key] = value
+        }
+        for (key, tags) in imported.dimensionTags {
+            dimensionTags[key, default: []].formUnion(tags)
+        }
+        importedSource = imported.sourceLabel
+    }
+    /// Set once an import lands, so the steps can show where the values came
+    /// from. The reader should never wonder why a chip is already selected.
+    var importedSource: String?
+
     var isExisting = false
     var saving = false
     var loaded = false
@@ -248,9 +269,13 @@ struct QuarterStarControl: View {
         let value = rating ?? 0
         let fill = max(0, min(1, value - Double(index)))
         return ZStack {
+            // The empty star was Theme.surfaceAlt — #f0eff4 on the #f5f4f8
+            // light background, i.e. all but invisible, so the control didn't
+            // read as something you fill. A solid grey carries that on its
+            // own; an outline on top just made the shape look doubled.
             Image(systemName: "star.fill")
                 .resizable().scaledToFit()
-                .foregroundStyle(Theme.surfaceAlt)
+                .foregroundStyle(Color(dark: "3d3d52", light: "cfced8"))
             Image(systemName: "star.fill")
                 .resizable().scaledToFit()
                 .foregroundStyle(Color(hex: "facc15"))  // yellow-400, like the web
@@ -269,14 +294,23 @@ struct ReviewWizardView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: ReviewWizardModel
     @State private var showDeleteConfirm = false
+    @State private var showImport = false
     /// Live handle on the review text view, published by the editor so the
     /// toolbar can drive formatting commands.
     @State private var editorCommands: RichTextCommands?
     @State private var reviewCharCount = 0
     let onSaved: () -> Void
+    /// Only used by the screenshot import, to strip the book's own name out of
+    /// the "couldn't match these" list.
+    private let bookTitle: String
+    private let bookAuthors: [String]
 
-    init(bookId: String, isFiction: Bool?, ratings: [ContentRating], seedDnf: Bool = false, onSaved: @escaping () -> Void) {
+    init(bookId: String, isFiction: Bool?, ratings: [ContentRating], seedDnf: Bool = false,
+         bookTitle: String = "", bookAuthors: [String] = [],
+         onSaved: @escaping () -> Void) {
         _model = State(initialValue: ReviewWizardModel(bookId: bookId, isFiction: isFiction, ratings: ratings, seedDnf: seedDnf))
+        self.bookTitle = bookTitle
+        self.bookAuthors = bookAuthors
         self.onSaved = onSaved
     }
 
@@ -314,6 +348,17 @@ struct ReviewWizardView: View {
         .alert("Error", isPresented: .constant(model.error != nil)) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
+        .sheet(isPresented: $showImport) {
+            ReviewImportSheet(
+                model: ReviewImportModel(
+                    bookId: model.bookId,
+                    bookTitle: bookTitle,
+                    authors: bookAuthors,
+                    isFiction: model.isFiction ?? true
+                ),
+                onUse: { model.apply($0) }
+            )
+        }
         .confirmationDialog("Delete this review?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
             Button("Delete review", role: .destructive) {
                 Task { if await model.delete() { onSaved(); dismiss() } }
@@ -416,6 +461,30 @@ struct ReviewWizardView: View {
                     }
                 }
                 .padding(.top, 6)
+
+                if let source = model.importedSource {
+                    Text("Filled in from your \(source) review — check it over.")
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.accentText)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                } else if !model.isExisting {
+                    // Only offered on a NEW review: re-importing over a review
+                    // the reader already wrote would be a foot-gun.
+                    Button { showImport = true } label: {
+                        HStack(alignment: .top, spacing: 7) {
+                            Image(systemName: "photo.on.rectangle.angled")
+                                .font(Theme.body(14))
+                            Text("Already reviewed this on another app? Tap here to import your review with a screenshot.")
+                                .font(Theme.body(14, .medium))
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .foregroundStyle(Theme.neonBlue)
+                        .padding(.horizontal, 26)
+                    }
+                    .padding(.top, 4)
+                }
 
                 if model.didNotFinish {
                     VStack(spacing: 8) {

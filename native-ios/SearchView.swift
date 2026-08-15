@@ -389,10 +389,14 @@ private struct SearchResultCard: View {
     private func mainTap() async {
         busy = true; defer { busy = false }
         if isActive {
-            try? await APIClient.shared.setReadingState(bookId: result.id, state: "none")
+            await ReadingStateAlert.shared.perform {
+                try await APIClient.shared.setReadingState(bookId: result.id, state: "none")
+            }
             state = nil
         } else {
-            try? await APIClient.shared.setReadingState(bookId: result.id, state: "tbr")
+            await ReadingStateAlert.shared.perform {
+                try await APIClient.shared.setReadingState(bookId: result.id, state: "tbr")
+            }
             state = "tbr"
         }
     }
@@ -405,20 +409,26 @@ private struct SearchResultCard: View {
         }
         busy = true; defer { busy = false }
         if state == value {
-            try? await APIClient.shared.setReadingState(bookId: result.id, state: "none")
+            await ReadingStateAlert.shared.perform {
+                try await APIClient.shared.setReadingState(bookId: result.id, state: "none")
+            }
             state = nil
         } else {
-            try? await APIClient.shared.setReadingState(bookId: result.id, state: value)
+            await ReadingStateAlert.shared.perform {
+                try await APIClient.shared.setReadingState(bookId: result.id, state: value)
+            }
             state = value
         }
     }
 
     private func setState(_ value: String, date: String?, precision: String?) async {
         busy = true; defer { busy = false }
-        try? await APIClient.shared.setReadingState(
+        await ReadingStateAlert.shared.perform {
+            try await APIClient.shared.setReadingState(
             bookId: result.id, state: value,
             completionDate: date, completionPrecision: precision
-        )
+            )
+        }
         state = value
     }
 }

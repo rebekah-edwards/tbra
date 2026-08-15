@@ -170,6 +170,7 @@ struct AppShell: View {
                 .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
                 .globalReportOverlay()
+                .readingStateErrorAlert()
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedSeriesId != nil },
@@ -183,6 +184,7 @@ struct AppShell: View {
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
             .globalReportOverlay()
+                .readingStateErrorAlert()
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedAuthorId != nil },
@@ -196,6 +198,7 @@ struct AppShell: View {
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
             .globalReportOverlay()
+                .readingStateErrorAlert()
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedBookSlug != nil },
@@ -230,11 +233,28 @@ struct AppShell: View {
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
             .globalReportOverlay()
+                .readingStateErrorAlert()
         }
         // Universal links (https://thebasedreader.app/…) land here in the
         // SwiftUI lifecycle. AASA on the site covers /book/* and /u/*; any
         // other path stays in Safari and never reaches the app.
         .onOpenURL { url in
+            // Widget taps use a private scheme rather than universal links:
+            // AASA only covers /book/* and /u/*, and the widget also needs
+            // Stats, the goal editor and plain Home — paths the website would
+            // otherwise just open in Safari.
+            if url.scheme == "tbra" {
+                switch url.host() {
+                case "book":
+                    if let slug = url.pathComponents.first(where: { $0 != "/" }) {
+                        presentedBookSlug = slug
+                    }
+                case "stats":  chrome.tab = .stats
+                case "goal":   chrome.tab = .home; chrome.pendingOpenGoalEditor = true
+                default:       chrome.tab = .home
+                }
+                return
+            }
             guard url.host()?.hasSuffix("thebasedreader.app") == true else { return }
             let parts = url.pathComponents.filter { $0 != "/" }
             guard parts.count >= 2 else { return }
@@ -256,6 +276,7 @@ struct AppShell: View {
                     .appDestinations()
             }
             .globalReportOverlay()
+                .readingStateErrorAlert()
         }
         #if DEBUG && targetEnvironment(simulator)
         .fullScreenCover(isPresented: Binding(
@@ -270,6 +291,7 @@ struct AppShell: View {
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
                 .globalReportOverlay()
+                .readingStateErrorAlert()
         }
         .fullScreenCover(isPresented: Binding(
             get: { debugSeriesSlug != nil },
@@ -283,6 +305,7 @@ struct AppShell: View {
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
                 .globalReportOverlay()
+                .readingStateErrorAlert()
         }
         .sheet(isPresented: $menuDebugOpen) {
             HamburgerMenuSheet(onProfile: { chrome.tab = .profile })
@@ -294,18 +317,21 @@ struct AppShell: View {
                 .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
                 .globalReportOverlay()
+                .readingStateErrorAlert()
         }
         .fullScreenCover(isPresented: $adminUsersDebugOpen) {
             AdminUsersSheet()
                 .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
                 .globalReportOverlay()
+                .readingStateErrorAlert()
         }
         .fullScreenCover(isPresented: $basedReaderDebugOpen) {
             NavigationStack { BasedReaderScreen().appDestinations() }
                 .environment(\.shellBarInsets, (top: 0, bottom: 0))
                 .environment(\.showsShellChrome, false)
                 .globalReportOverlay()
+                .readingStateErrorAlert()
         }
         .fullScreenCover(isPresented: Binding(
             get: { debugCoverSlug != nil },
@@ -324,6 +350,7 @@ struct AppShell: View {
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
             .globalReportOverlay()
+                .readingStateErrorAlert()
         }
         .fullScreenCover(isPresented: Binding(
             get: { debugShelfId != nil },
@@ -337,6 +364,7 @@ struct AppShell: View {
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
             .globalReportOverlay()
+                .readingStateErrorAlert()
         }
         .fullScreenCover(isPresented: Binding(
             get: { debugShelfEditorId != nil },
@@ -350,6 +378,7 @@ struct AppShell: View {
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
             .globalReportOverlay()
+                .readingStateErrorAlert()
         }
         .sheet(isPresented: Binding(
             get: { debugCoverPickerId != nil },
@@ -425,6 +454,10 @@ final class ChromeState {
     /// the Library tab; LibraryView consumes it in onAppear ("tbr"/"activity"/
     /// "owned" + sub-filter key) and clears it.
     var pendingLibrarySelection: (group: String, filter: String)?
+    /// One-shot: the home-screen widget's goal ring was tapped
+    /// (tbra://goal). HomeView's goal card consumes this in onAppear, opens
+    /// the edit sheet, and clears it.
+    var pendingOpenGoalEditor = false
     // Wired by AppShell:
     var goHome: @MainActor () -> Void = {}
     var openSearch: @MainActor () -> Void = {}

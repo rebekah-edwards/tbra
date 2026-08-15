@@ -84,6 +84,9 @@ final class AuthStore {
 
     func logout() async {
         await APIClient.shared.logout()
+        // The home-screen widget outlives the session — clear its snapshot so
+        // the previous reader's shelf doesn't stay on the lock screen.
+        WidgetPublisher.clear()
         phase = .signedOut
     }
 

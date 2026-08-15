@@ -117,10 +117,14 @@ struct CompactStatePill: View {
     private func mainTap() async {
         busy = true; defer { busy = false }
         if isActive {
-            try? await APIClient.shared.setReadingState(bookId: bookId, state: "none")
+            await ReadingStateAlert.shared.perform {
+                try await APIClient.shared.setReadingState(bookId: bookId, state: "none")
+            }
             state = nil
         } else {
-            try? await APIClient.shared.setReadingState(bookId: bookId, state: "tbr")
+            await ReadingStateAlert.shared.perform {
+                try await APIClient.shared.setReadingState(bookId: bookId, state: "tbr")
+            }
             state = "tbr"
         }
         onChanged?(state)
@@ -137,10 +141,14 @@ struct CompactStatePill: View {
         let startingRead = value == "currently_reading" && state != value
         busy = true; defer { busy = false }
         if state == value {
-            try? await APIClient.shared.setReadingState(bookId: bookId, state: "none")
+            await ReadingStateAlert.shared.perform {
+                try await APIClient.shared.setReadingState(bookId: bookId, state: "none")
+            }
             state = nil
         } else {
-            try? await APIClient.shared.setReadingState(bookId: bookId, state: value)
+            await ReadingStateAlert.shared.perform {
+                try await APIClient.shared.setReadingState(bookId: bookId, state: value)
+            }
             state = value
         }
         onChanged?(state)
@@ -149,10 +157,12 @@ struct CompactStatePill: View {
 
     private func setState(_ value: String, date: String?, precision: String?) async {
         busy = true; defer { busy = false }
-        try? await APIClient.shared.setReadingState(
+        await ReadingStateAlert.shared.perform {
+            try await APIClient.shared.setReadingState(
             bookId: bookId, state: value,
             completionDate: date, completionPrecision: precision
-        )
+            )
+        }
         state = value
         onChanged?(state)
     }

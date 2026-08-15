@@ -18,8 +18,14 @@ struct TbraApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
-                .tint(Theme.accent)
+            // Debug-only: render every widget size instead of the app, for
+            // headless layout review (see WidgetPreviewHarness).
+            if ProcessInfo.processInfo.environment["TBRA_DEBUG_WIDGET_PREVIEW"] != nil {
+                WidgetPreviewHarness()
+            } else {
+                RootView()
+                    .tint(Theme.accent)
+            }
             // No .preferredColorScheme here: @AppStorage in an App struct
             // doesn't re-evaluate the Scene, so this level pinned the LAUNCH
             // theme and overrode live toggles (dark→light needed an app

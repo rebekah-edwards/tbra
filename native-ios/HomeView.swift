@@ -42,7 +42,13 @@ final class HomeModel {
 
     func load() async {
         loading = true; defer { loading = false }
-        do { home = try await APIClient.shared.home() }
+        do {
+            home = try await APIClient.shared.home()
+            // Republish the home-screen widgets. Detached so the extra request
+            // never delays the view — the widget keeps its previous snapshot
+            // until this finishes.
+            Task.detached { await WidgetPublisher.refresh() }
+        }
         catch { self.error = (error as? APIError)?.errorDescription ?? "Couldn't load home." }
     }
 
@@ -54,6 +60,8 @@ final class HomeModel {
 
 struct HomeView: View {
     @Binding var path: NavigationPath
+    /// Optional: the shell installs it, but previews/harnesses may not.
+    @Environment(ChromeState.self) private var chrome: ChromeState?
     @State private var model = UpNextModel()
     @State private var homeModel = HomeModel()
     @State private var dragging: UpNextItem?
@@ -237,7 +245,9 @@ struct HomeView: View {
                 // ── Goal + streak (mobile order: between Reading Now and Up Next) ──
                 if let home = homeModel.home {
                     HStack(alignment: .top, spacing: 12) {
-                        ReadingGoalCardView(goal: home.goal, year: home.year) {
+                        ReadingGoalCardView(goal: home.goal, year: home.year,
+                                            autoEdit: chrome?.pendingOpenGoalEditor == true,
+                                            onAutoEditConsumed: { chrome?.pendingOpenGoalEditor = false }) {
                             await homeModel.load()
                         }
                         ReadingStreakCardView(streak: home.streak)
@@ -832,6 +842,10 @@ private struct TrackProgressSheet: View {
 private struct ReadingGoalCardView: View {
     let goal: ReadingGoal?
     let year: Int
+    /// True when the widget's goal ring was tapped (tbra://goal) — opens the
+    /// edit sheet on arrival instead of leaving the reader to find it.
+    var autoEdit = false
+    var onAutoEditConsumed: () -> Void = {}
     let onChanged: () async -> Void
     @State private var editing = false
 
@@ -891,6 +905,11 @@ private struct ReadingGoalCardView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.accent.opacity(0.20), lineWidth: 1))
+        .onAppear {
+            guard autoEdit else { return }
+            onAutoEditConsumed()
+            editing = true
+        }
         .sheet(isPresented: $editing) {
             GoalEditSheet(year: year, current: goal?.targetBooks) { await onChanged() }
                 .presentationDetents([.height(260)])

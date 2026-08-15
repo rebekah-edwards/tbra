@@ -18,12 +18,20 @@ APP="$DIR/DerivedData/Build/Products/Debug-iphoneos/Tbra.app"
 cd "$DIR"
 
 echo "── Building for device…"
+# PIPESTATUS, not the grep's status: a failed build still leaves the PREVIOUS
+# .app on disk, so the old "does the directory exist" check happily installed
+# a stale binary and printed "✓ Installed" (bit us 2026-08-13 on the widget
+# extension's provisioning failure). Trust xcodebuild's exit code only.
+set +e
 xcodebuild -project Tbra.xcodeproj -scheme Tbra \
   -destination "id=$DEVICE_UDID" \
   -derivedDataPath DerivedData \
   -allowProvisioningUpdates -allowProvisioningDeviceRegistration \
-  build 2>&1 | grep -E "error:|BUILD" || true
+  build 2>&1 | grep -E "error:|BUILD"
+BUILD_STATUS=${PIPESTATUS[0]}
+set -e
 
+[ "$BUILD_STATUS" -eq 0 ] || { echo "✗ Build FAILED — refusing to install a stale build."; exit 1; }
 [ -d "$APP" ] || { echo "✗ Build product missing"; exit 1; }
 
 echo "── Installing on Rebekah's iPhone…"

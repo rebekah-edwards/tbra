@@ -1204,9 +1204,13 @@ private struct BookActionCluster: View {
     private func mainTap() async {
         busy = true; defer { busy = false }
         if isActive {
-            try? await APIClient.shared.setReadingState(bookId: book.id, state: "none")
+            await ReadingStateAlert.shared.perform {
+                try await APIClient.shared.setReadingState(bookId: book.id, state: "none")
+            }
         } else {
-            try? await APIClient.shared.setReadingState(bookId: book.id, state: "tbr")
+            await ReadingStateAlert.shared.perform {
+                try await APIClient.shared.setReadingState(bookId: book.id, state: "tbr")
+            }
         }
         await model.load()
     }
@@ -1225,9 +1229,13 @@ private struct BookActionCluster: View {
         let startingRead = state == "currently_reading" && currentState != state
         busy = true; defer { busy = false }
         if currentState == state {
-            try? await APIClient.shared.setReadingState(bookId: book.id, state: "none")
+            await ReadingStateAlert.shared.perform {
+                try await APIClient.shared.setReadingState(bookId: book.id, state: "none")
+            }
         } else {
-            try? await APIClient.shared.setReadingState(bookId: book.id, state: state)
+            await ReadingStateAlert.shared.perform {
+                try await APIClient.shared.setReadingState(bookId: book.id, state: state)
+            }
         }
         await model.load()
         // After the reload, so the sheet opens pre-filled with the guess.
@@ -1236,11 +1244,13 @@ private struct BookActionCluster: View {
 
     private func setState(_ state: String, completionDate: String?, precision: String? = nil) async {
         busy = true; defer { busy = false }
-        try? await APIClient.shared.setReadingState(
+        await ReadingStateAlert.shared.perform {
+            try await APIClient.shared.setReadingState(
             bookId: book.id, state: state,
             completionDate: completionDate,
             completionPrecision: precision
-        )
+            )
+        }
         await model.load()
         if state == "completed" || state == "dnf" { model.completionTick += 1 }
     }
@@ -1491,6 +1501,8 @@ private struct BookStarsRow: View {
                 bookId: data.book.id,
                 isFiction: data.book.isFiction,
                 ratings: data.book.ratings,
+                bookTitle: data.book.title,
+                bookAuthors: data.book.authors.map(\.name),
                 onSaved: onReviewSaved
             )
         }

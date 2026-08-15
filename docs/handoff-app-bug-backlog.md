@@ -1,3 +1,8 @@
+> **SUPERSEDED 2026-08-15 → [`handoff-ios-ship-2026-08-15.md`](handoff-ios-ship-2026-08-15.md).**
+> Send an agent *that* doc. This one is the investigation trail, and it contains leads that are now
+> known-wrong (the `try?` call sites are fixed; the "reproduce with a large library" advice for the
+> profile bug is backwards). Read it for history, not for instructions.
+
 # Handoff: app-bug backlog from /admin/issues
 
 **Written:** 2026-08-14, from the nightly-report-triage run.
@@ -168,3 +173,130 @@ The correct implementation is a **custom `TextRenderer`** (iOS 18+, and the app 
 4. Drive animation with a `TimelineView` feeding a time value into the renderer.
 
 Match the web's constants so the two surfaces look like one product. Budget this as real work on a core surface, not a polish pass — a botched conversion breaks review rendering and spoiler reveal for every user.
+
+---
+
+# Status update — 2026-08-15 (nightly-report-triage)
+
+## #8 Profile won't load — the leading hypothesis is DISPROVEN. Do not follow this doc's original advice.
+
+The 2026-08-14 write-up above says the escalation pattern "suggests something accumulating per-user
+rather than a static rendering bug: a payload that grows with library size until it times out, an
+unbounded query, or a cached bad response," and instructs the next investigator to **"reproduce with
+a large library first — if it's size-dependent, a small test account will show nothing."**
+
+**That is wrong, and following it would waste the effort.** Measured tonight:
+
+**1. We know who filed it.** `reported_issues.user_id` on `cb73411e-5a59-44ea-87c7-87e8301bcb4f` is
+`b3a035fa-5c7c-46f5-b809-bdeea88a9cce` = `holmes.kayleigh.m@gmail.com` ("Kay :)", `@holmeskay`). The
+doc treated this report as anonymous. It is not — reproduce against her account, not a synthetic one.
+
+**2. Her library is small, not large.** 61 books, 2 favorites, 9 reviews, 0 reading notes. The five
+heaviest accounts in the DB carry 1,169–2,021 books. She is nowhere near the top; the size hypothesis
+has the direction backwards.
+
+**3. The whole `/api/v1/profile` payload runs in 21ms for her.** Every one of the ten queries the
+route fans out in its `Promise.all`, timed individually against local sqlite:
+
+```
+getUser 1ms · getUserStats 1ms · getUserFavorites 5ms · getUserReviewsWithBooks 9ms
+getRecentNotes 0ms · getFollowerCount 0ms · getFollowingCount 1ms · getUserShelves 3ms
+ensureReferralCode 1ms · getReferralCount 0ms          → 21ms serial, largest payload 2.7KB
+```
+
+**4. It is not unbounded even for the heaviest users.** The same five queries against all five
+1,100–2,000-book accounts stay under 50ms each with payloads under 6KB. `getUserReviewsWithBooks` and
+`getRecentNotes` take explicit limits (6 and 20) at the call site; `ensureReferralCode` short-circuits
+when a code already exists and its generator is capped at 5 attempts with a deterministic fallback.
+There is no unbounded scan and no size-dependent payload in this route.
+
+So: **not a slow query, not payload size, not library size.** Whatever breaks her profile in the app
+is not in the `/api/v1/profile` query set.
+
+### Where to look instead
+
+The measurements above only clear the server's *data* path. They do not clear:
+
+- **Auth / token refresh on iOS.** "Works on web, degrades, then fails in-app entirely and stays
+  failed" fits an expired or bad cached credential far better than it fits a slow query — the web
+  session and the app token are separate, which is exactly why one surface kept working while the
+  other died permanently.
+- **Client-side caching in the iOS app.** A cached bad response that is never invalidated reproduces
+  the "stopped allowing me to access the profile in app at all" permanence. Note the `LibraryView`
+  staleness bug closed on 2026-08-14 was the same family of defect (`.task` running once per view
+  lifetime), so this app has form here.
+- **Response serialization**, not response size — a single unexpected null in her row breaking iOS
+  decoding would fail identically every time regardless of how fast the query is.
+
+Cheapest next step: hit `/api/v1/profile` on **prod** with her account's token and inspect the actual
+response, rather than reading query code. If prod returns 200 with sane JSON, the bug is entirely
+client-side and belongs in the iOS app, not the API.
+
+## #4 covers · #5 search dropdown — still open, unchanged
+
+Both need on-device iOS reproduction and neither can be done from this automated task (no simulator
+work, no device, no UI to inspect). They remain accurately described above. Report row
+`2b67d3ea-ae5a-44a8-91c7-04855c9f62ad` still cannot close until #4 is resolved, since #2 (fixed)
+shares that row.
+
+## Not touched tonight
+
+The spoiler-sparkle item (`ba64c7cf`) stands as written — it is a custom `TextRenderer` job on a core
+surface, correctly scoped as real work rather than a polish pass.
+
+---
+
+# Correction + status — 2026-08-15 (later in the same run)
+
+## The profile bug was already diagnosed and fixed. It just never shipped.
+
+My redirection above (auth/token refresh, client caching, decoding) pointed at the client, which was
+the right half of the map — but the actual root cause had **already been found and fixed** in the
+working tree by an earlier session, and I missed it by reading the API before reading the diff.
+
+`native-ios/ProfileView.swift` (uncommitted) adds the missing `else` branch:
+
+> Load failed. Without this branch the view rendered an EMPTY scroll view forever: the alert fires
+> once, the reader taps OK (which clears `model.error`), and then `data==nil` / `loading==false` /
+> `error==nil` matches nothing — no content, no message, no way back. `.task` only runs on first
+> appearance, so returning to the tab doesn't retry either.
+
+That explains the reporter's escalation exactly — "helped at first but then stopped allowing me to
+access the profile in app at all" is the alert being dismissed once and the view then having no state
+to render. It also explains why the server measurements came back clean: the API was never the
+problem. The fix adds an error state with a **Try again** button that calls `model.load()`.
+
+## The real problem: a batch of finished iOS fixes was sitting unshipped
+
+`git status` shows 13 modified Swift files plus an untracked `native-ios/ReadingStateAlert.swift`,
+none of it committed. Between them they cover **four of the five open reports**:
+
+| Report | Fix present in working tree |
+|---|---|
+| Profile won't load (`cb73411e`) | `ProfileView.swift` error branch + retry |
+| iOS finish stuck pending (`5a7145cd`) | `ReadingStateAlert` — all 16 `try?` call sites now surface the error |
+| Spoiler sparkle (`ba64c7cf`) | `ReviewsListView.swift` particle renderer, with a deliberate light-mode divergence |
+| — | `AppShell.swift` wires `.readingStateErrorAlert()` into every full-screen cover |
+
+**Section 3 of `handoff-finish-book-failure.md` is now stale** — it lists the 16 `try?` sites as the
+live lead. `grep` confirms zero remain; they all route through `ReadingStateAlert.shared.perform`.
+
+Verified tonight: `xcodegen generate` + `xcodebuild` → **BUILD SUCCEEDED**, warnings only (all
+pre-existing iOS 26 deprecations). Installed to Rebekah's iPhone via `push-to-phone.sh` per standing
+order.
+
+## Why the reports are still open
+
+**These fixes have not reached the people who filed the reports.** A debug build on Rebekah's phone is
+not a TestFlight build. Closing the reports now would be the exact failure this task exists to
+prevent — marking work delivered that no tester has received.
+
+To actually close `cb73411e`, `5a7145cd` and `ba64c7cf`: commit the native work, cut a TestFlight
+build (`docs/ios-release-checklist.md` + `./native-ios/preflight-archive.sh`, stable Xcode only, bump
+the build number), and confirm with the testers. That is a release decision, not an automated one.
+
+## #4 covers · #5 dropdown — genuinely untouched
+
+No fix for either in the working tree. Both still need on-device reproduction, and the simulator
+tooling is unavailable in scheduled-task sessions (attended sessions only), so this task cannot do
+it. Report `2b67d3ea` still cannot close until the covers half is resolved.

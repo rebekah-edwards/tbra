@@ -13,34 +13,8 @@ import UIKit
 // - Page titles are plain bold foreground (no gradient) in Outfit.
 // - Links / tappable text use neon blue, muted text uses --muted.
 
-extension Color {
-    /// Hex like "a3e635".
-    init(hex: String) {
-        var v: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&v)
-        self.init(
-            red: Double((v >> 16) & 0xff) / 255,
-            green: Double((v >> 8) & 0xff) / 255,
-            blue: Double(v & 0xff) / 255
-        )
-    }
-
-    /// A color that follows the system light/dark appearance,
-    /// mirroring the web app's [data-theme] switch.
-    init(dark: String, light: String) {
-        self.init(uiColor: UIColor { trait in
-            let hex = trait.userInterfaceStyle == .dark ? dark : light
-            var v: UInt64 = 0
-            Scanner(string: hex).scanHexInt64(&v)
-            return UIColor(
-                red: CGFloat((v >> 16) & 0xff) / 255,
-                green: CGFloat((v >> 8) & 0xff) / 255,
-                blue: CGFloat(v & 0xff) / 255,
-                alpha: 1
-            )
-        })
-    }
-}
+// Color(hex:) / Color(dark:light:) moved to ColorHex.swift — the widget
+// extension needs them too and compiles its own source list.
 
 enum Theme {
     // ── Core surface tokens (globals.css :root / [data-theme="light"]) ──

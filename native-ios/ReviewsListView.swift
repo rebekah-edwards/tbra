@@ -417,7 +417,14 @@ enum ReviewHTML {
         return segments
     }
 
-    static func attributed(_ segments: [Segment], revealed: Set<Int>, baseSize: CGFloat = 15) -> AttributedString {
+    /// `dark` controls the hidden-spoiler chip. On DARK the chip is the
+    /// web's surface-alt block behind the sparkle. On LIGHT the chip is
+    /// dropped entirely — the particles there are black (web
+    /// getParticleColor), and black sparkles over a light-grey block read as
+    /// muddy rather than as a shimmer. This is a deliberate divergence from
+    /// the web, which uses the chip in both modes.
+    static func attributed(_ segments: [Segment], revealed: Set<Int>, baseSize: CGFloat = 15,
+                           dark: Bool = true) -> AttributedString {
         var out = AttributedString()
         for seg in segments {
             var part = AttributedString(seg.text)
@@ -434,10 +441,10 @@ enum ReviewHTML {
                     part.foregroundColor = Theme.foreground.opacity(0.9)
                     part.backgroundColor = .clear
                 } else {
-                    // Web .spoiler-tag: transparent text over a solid
-                    // surface-alt block.
+                    // Web .spoiler-tag: transparent text. The surface-alt
+                    // block is dark-mode only — see the note on `dark` above.
                     part.foregroundColor = .clear
-                    part.backgroundColor = Theme.surfaceAlt
+                    part.backgroundColor = dark ? Theme.surfaceAlt : .clear
                 }
             } else {
                 part.foregroundColor = Theme.foreground.opacity(0.9)
@@ -457,18 +464,55 @@ struct ReviewHTMLText: View {
 
     private var segments: [ReviewHTML.Segment] { ReviewHTML.parse(html) }
 
+    @Environment(\.colorScheme) private var scheme
+
+    /// True while any spoiler is still hidden. The sparkle is a per-frame
+    /// redraw (as on the web, which runs a requestAnimationFrame loop), so it
+    /// must stop once everything is revealed rather than burn the display
+    /// link on a static view.
+    private var hasHiddenSpoiler: Bool {
+        segments.contains { $0.spoilerIndex.map { !revealed.contains($0) } ?? false }
+    }
+
     var body: some View {
-        Text(ReviewHTML.attributed(segments, revealed: revealed, baseSize: baseSize))
-            .lineSpacing(2)
-            .environment(\.openURL, OpenURLAction { url in
-                if url.scheme == "tbra-spoiler", let idx = Int(url.host() ?? "") {
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        if revealed.contains(idx) { revealed.remove(idx) }
-                        else { revealed.insert(idx) }
-                    }
-                    return .handled
+        Group {
+            if hasHiddenSpoiler {
+                TimelineView(.animation) { tl in
+                    styledText.textRenderer(
+                        SpoilerParticleRenderer(
+                            time: tl.date.timeIntervalSinceReferenceDate,
+                            dark: scheme == .dark
+                        )
+                    )
                 }
-                return .systemAction
-            })
+            } else {
+                styledText
+            }
+        }
+        .environment(\.openURL, OpenURLAction { url in
+            if url.scheme == "tbra-spoiler", let idx = Int(url.host() ?? "") {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    if revealed.contains(idx) { revealed.remove(idx) }
+                    else { revealed.insert(idx) }
+                }
+                return .handled
+            }
+            return .systemAction
+        })
+    }
+
+    /// Built by CONCATENATION rather than one AttributedString: a custom
+    /// TextAttribute can only be attached per-Text, and the renderer needs it
+    /// to know which runs to sparkle. Each piece keeps its own attributes,
+    /// including the tbra-spoiler:// link that drives tap-to-reveal.
+    private var styledText: Text {
+        var out = Text("")
+        for seg in segments {
+            let hidden = seg.spoilerIndex.map { !revealed.contains($0) } ?? false
+            var piece = Text(ReviewHTML.attributed([seg], revealed: revealed, baseSize: baseSize, dark: scheme == .dark))
+            if hidden { piece = piece.customAttribute(SpoilerAttribute()) }
+            out = out + piece
+        }
+        return out.foregroundColor(Theme.foreground.opacity(0.9))
     }
 }

@@ -257,7 +257,9 @@ struct PostCompletionSheet: View {
             Button {
                 added.insert(book.id)
                 Task {
-                    try? await APIClient.shared.setReadingState(bookId: book.id, state: "tbr")
+                    await ReadingStateAlert.shared.perform {
+                        try await APIClient.shared.setReadingState(bookId: book.id, state: "tbr")
+                    }
                 }
             } label: {
                 Text(added.contains(book.id) ? "Added" : "+ TBR")

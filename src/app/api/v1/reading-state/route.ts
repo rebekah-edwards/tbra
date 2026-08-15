@@ -27,7 +27,11 @@ export async function POST(req: Request) {
   // "none" clears the reading state (web: tapping the active state / current
   // dropdown item) — keeps the row when owned formats exist.
   if (state === "none") {
-    await removeBookStateFor(user.userId, bookId);
+    try {
+      await removeBookStateFor(user.userId, bookId);
+    } catch (err) {
+      return logAndFail(err, { userId: user.userId, bookId, state });
+    }
     return jsonOk({ state: null });
   }
 
@@ -40,13 +44,17 @@ export async function POST(req: Request) {
         : completionDate
           ? "exact"
           : null;
-    await setBookStateWithCompletionFor(
-      user.userId,
-      bookId,
-      state as (typeof COMPLETION_STATES)[number],
-      completionDate,
-      completionPrecision
-    );
+    try {
+      await setBookStateWithCompletionFor(
+        user.userId,
+        bookId,
+        state as (typeof COMPLETION_STATES)[number],
+        completionDate,
+        completionPrecision
+      );
+    } catch (err) {
+      return logAndFail(err, { userId: user.userId, bookId, state, completionDate, completionPrecision });
+    }
     return jsonOk({ state });
   }
 
@@ -54,6 +62,26 @@ export async function POST(req: Request) {
     return jsonError(`Invalid state. Use one of: ${[...SIMPLE_STATES, ...COMPLETION_STATES].join(", ")}.`, 400);
   }
 
-  await setBookStateFor(user.userId, bookId, state);
+  try {
+    await setBookStateFor(user.userId, bookId, state);
+  } catch (err) {
+    return logAndFail(err, { userId: user.userId, bookId, state });
+  }
   return jsonOk({ state });
+}
+
+/**
+ * The completion path has already been the site of two production bugs (an
+ * activeFormats serialization crash and an unbound userId), and four user
+ * reports about "can't mark a book Finished" arrived with nothing on the
+ * server to correlate them against. Log enough to identify WHICH user and
+ * book failed, then return a real error instead of a 500 the client drops.
+ */
+function logAndFail(err: unknown, ctx: Record<string, unknown>) {
+  console.error("[reading-state] mutation failed", {
+    ...ctx,
+    error: err instanceof Error ? err.message : String(err),
+    stack: err instanceof Error ? err.stack?.split("\n").slice(0, 4).join(" | ") : undefined,
+  });
+  return jsonError("Couldn't update this book. Please try again.", 500);
 }
