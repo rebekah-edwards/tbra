@@ -348,6 +348,28 @@ export const editions = sqliteTable("editions", {
   index("editions_book_idx").on(table.bookId),
 ]);
 
+/**
+ * Old public slugs that must keep working.
+ *
+ * Public book URLs are slugs, so anything that changes or removes a slug breaks
+ * every existing link, bookmark and indexed search result pointing at it.
+ * Two operations do that: merging a duplicate away (its slug 404s) and
+ * renaming a book (its old slug 404s).
+ *
+ * Maps old slug → CURRENT book id rather than → new slug, so a book that is
+ * renamed twice, or renamed and later merged, still resolves in one hop
+ * without needing the chain rewritten.
+ */
+export const bookSlugHistory = sqliteTable("book_slug_history", {
+  oldSlug: text("old_slug").primaryKey(),
+  bookId: text("book_id").notNull().references(() => books.id),
+  /** 'merge' | 'rename' — why the slug stopped being current. */
+  reason: text("reason"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  index("book_slug_history_book").on(table.bookId),
+]);
+
 /** An edition row whose open_library_key is a real OL key, not a synthetic one. */
 export function isOpenLibraryEdition(e: { source?: string | null; openLibraryKey?: string | null }) {
   return (e.source ?? "openlibrary") === "openlibrary" && !e.openLibraryKey?.startsWith("local:");
