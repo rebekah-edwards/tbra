@@ -275,6 +275,13 @@ actor APIClient {
         try await send(path, method: "GET")
     }
 
+    /// GET without a bearer token. Only for endpoints that must answer a
+    /// signed-OUT app — currently just the update gate, which has to reach a
+    /// tester who cannot get past a broken login screen.
+    func get<T: Decodable>(_ path: String, authed: Bool) async throws -> T {
+        try await send(path, method: "GET", authed: authed)
+    }
+
     /// Generic GET with query items (NEVER bake "?k=v" into the path —
     /// appending(path:) percent-encodes the "?" and the server 404s).
     func get<T: Decodable>(_ path: String, query: [URLQueryItem]) async throws -> T {

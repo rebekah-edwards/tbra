@@ -7,6 +7,14 @@ struct TbraApp: App {
     @AppStorage("themeOverride") private var themeOverride = "dark"
 
     init() {
+        // Book covers are the app's heaviest repeated payload. The default
+        // shared URLCache is small enough that scrolling a large library
+        // evicts covers faster than they're re-shown, which — combined with
+        // AsyncImage's lack of retry — produced permanently blank rows
+        // (tester report 2b67d3ea). CoverImageCache holds decoded images;
+        // this keeps the encoded bytes off the network on relaunch too.
+        URLCache.shared = URLCache(memoryCapacity: 32 * 1024 * 1024,
+                                   diskCapacity: 256 * 1024 * 1024)
         Theme.configureNavigationBarAppearance()
         #if DEBUG && targetEnvironment(simulator)
         // Headless light-mode verification: SIMCTL_CHILD_TBRA_DEBUG_THEME=light
@@ -23,8 +31,12 @@ struct TbraApp: App {
             if ProcessInfo.processInfo.environment["TBRA_DEBUG_WIDGET_PREVIEW"] != nil {
                 WidgetPreviewHarness()
             } else {
-                RootView()
-                    .tint(Theme.accent)
+                // Blocks the app when this build is below the server's
+                // minimum. Fails OPEN on any uncertainty — see UpdateGate.
+                UpdateGate {
+                    RootView()
+                }
+                .tint(Theme.accent)
             }
             // No .preferredColorScheme here: @AppStorage in an App struct
             // doesn't re-evaluate the Scene, so this level pinned the LAUNCH
