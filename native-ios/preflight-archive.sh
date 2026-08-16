@@ -89,6 +89,23 @@ if [ -d "$ICONSET" ]; then
   done
 fi
 
+# 1c. Deployment target must NOT exceed the SDK it was built against.
+#     `minos 27.0 / sdk 26.5` is unprocessable: App Store Connect leaves the
+#     build in "Processing" forever, with no rejection and no email. This
+#     stalled builds 8-13 (2026-08-14/15) and looked like a missing-icon
+#     problem, because ASC shows a placeholder icon for anything that hasn't
+#     finished processing.
+MINOS=$(xcrun vtool -show-build-version "$APP/Tbra" 2>/dev/null | awk '/minos/{print $2}')
+SDKV=$(xcrun vtool -show-build-version "$APP/Tbra" 2>/dev/null | awk '/sdk/{print $2}')
+if [ -n "$MINOS" ] && [ -n "$SDKV" ]; then
+  LOWEST=$(printf '%s\n%s\n' "$MINOS" "$SDKV" | sort -V | head -1)
+  if [ "$LOWEST" = "$SDKV" ] && [ "$MINOS" != "$SDKV" ]; then
+    bad "deployment target ($MINOS) is ABOVE the SDK ($SDKV) — ASC will never finish processing this"
+  else
+    ok "deployment target $MINOS <= SDK $SDKV"
+  fi
+fi
+
 # 2. ATS must NOT be in a shipping build.
 if pb "NSAppTransportSecurity" "$PLIST" >/dev/null 2>&1; then
   bad "NSAppTransportSecurity present — Release must NOT allow arbitrary loads"

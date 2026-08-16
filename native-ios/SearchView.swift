@@ -308,8 +308,17 @@ private struct SearchResultCard: View {
             .padding(.bottom, 14)
             .overlay(alignment: .topLeading) { dropdown }
         }
-        .background(Theme.surface.opacity(0.65))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        // Deliberately NOT .clipShape. The state dropdown is an overlay inside
+        // this card, and clipping the parent cuts off everything past the
+        // card's bounds — i.e. most of the menu. That is tester report
+        // 97ba7e21: "opening the dropdown cuts off the menu; I had to open
+        // each book individually to reach the other options." The zIndex below
+        // was an earlier attempt at the same symptom and cannot work —
+        // z-ordering does not let a child escape an ancestor's clip.
+        // Filling a RoundedRectangle as the BACKGROUND draws the identical
+        // rounded card without clipping its children. Safe here because every
+        // element inside carries its own padding; nothing bled to the edge.
+        .background(RoundedRectangle(cornerRadius: 16).fill(Theme.surface.opacity(0.65)))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
         .zIndex(dropdownOpen ? 40 : 0)
         .opacity(busy ? 0.6 : 1)

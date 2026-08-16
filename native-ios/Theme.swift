@@ -247,9 +247,12 @@ struct CoverThumb: View {
             if !hasUrl, let title {
                 NoCoverView(title: title)
             } else {
-                AsyncImage(url: url.flatMap(URL.init(string:))) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
-                } placeholder: {
+                // CachedCoverImage, NOT AsyncImage: AsyncImage never retries
+                // a failed load and loses its work when a scrolling cell
+                // cancels it, which is why library rows showed blank covers
+                // for books whose detail page rendered them fine (tester
+                // report 2b67d3ea). See CoverImageCache.swift.
+                CachedCoverImage(url: url.flatMap(URL.init(string:))) {
                     if let title, !hasUrl {
                         NoCoverView(title: title)
                     } else {
