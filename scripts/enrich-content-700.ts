@@ -102,11 +102,22 @@ const THIN_PREDICATE = `
   CAST(SUM(CASE WHEN lower(notes) LIKE '%no evidence found%' THEN 1 ELSE 0 END) AS REAL)
     / COUNT(*) >= 0.5`;
 
+// The trigger route applies a 3-day attempt-recency cooldown to non-force books
+// (any enrichment_log row, whatever wrote it). The Brave-free ingestion lanes
+// stamp `success` on the very books they deliberately leave unrated, so without
+// this filter the selector kept picking books the route was guaranteed to skip:
+// on 2026-08-17 all 450 came back "skipped" in under 10s and the night was a
+// no-op (701 of 732 user-shelved unrated books were inside the cooldown).
+// Mirrors the enrichment_log exclusion the thin pool already carries.
 const unrated = db.prepare(`
   SELECT b.id, b.title, b.created_at AS createdAt
   FROM books b
   WHERE b.visibility = 'public'
     AND b.id NOT IN (SELECT DISTINCT book_id FROM book_category_ratings)
+    AND b.id NOT IN (
+      SELECT DISTINCT book_id FROM enrichment_log
+      WHERE created_at > datetime('now', '-3 days')
+    )
 `).all() as { id: string; title: string; createdAt: string }[];
 
 const thin = db.prepare(`
