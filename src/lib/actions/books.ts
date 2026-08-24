@@ -28,6 +28,7 @@ import {
 } from "@/lib/enrichment/sanitize";
 import { assignBookSlug, findBookBySlugCollision } from "@/lib/utils/slugify";
 import { resolveEditionVariant } from "@/lib/enrichment/canonical-edition";
+import { stripSubtitle, suffixesConflict } from "@/lib/text/title-separators";
 
 const NONFICTION_GENRES = new Set([
   "Nonfiction", "Biography", "Memoir", "Self-Help", "True Crime", "Philosophy",
@@ -74,7 +75,7 @@ export async function findOrCreateAuthor(
 function normalizeTitleForDedup(title: string): string {
   let t = title;
   // Remove everything after common separators that introduce edition/subtitle junk
-  t = t.replace(/\s*[:\-–—([\/{]\s*.*$/, "");
+  t = stripSubtitle(t);
   // Remove "by Author Name" suffix
   t = t.replace(/\s+by\s+.+$/i, "");
   // Remove known edition markers anywhere
@@ -99,7 +100,7 @@ async function findExistingByTitleAndAuthor(
 
   // Get all candidate books — we'll filter by normalized title match
   // Using SQL LIKE with a generous pattern, then filter precisely in JS
-  const shortTitle = title.replace(/\s*[:\-–—([\/{]\s*.*$/, "").trim();
+  const shortTitle = stripSubtitle(title).trim();
   if (shortTitle.length < 3) return null;
 
   const candidates = await db
@@ -111,6 +112,11 @@ async function findExistingByTitleAndAuthor(
 
   for (const candidate of candidates) {
     if (normalizeTitleForDedup(candidate.title) === normalized) {
+      // Same stem is not enough: two volumes of one collection normalize
+      // identically ("…Epic Collection: E Is for Extinction" vs "…: New
+      // Worlds"). If each side carries its own distinct subtitle they are
+      // different books, and matching them shelves the user with the wrong one.
+      if (suffixesConflict(title, candidate.title)) continue;
       // If we have an author name, verify it matches too
       if (authorName) {
         const candidateAuthors = await db
