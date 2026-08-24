@@ -8,6 +8,7 @@ import {
   userFavoriteBooks, readingGoals, reportCorrections,
 } from "@/db/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
+import { recordAccountDeletion } from "@/lib/account/deletion-audit";
 
 // Bearer twin of the web Danger Zone actions (src/lib/actions/account.ts) —
 // SAME type-to-confirm phrases, re-checked server-side (case-insensitive),
@@ -61,6 +62,20 @@ export async function POST(req: Request) {
       await deleteAllUserData(user.userId);
       return jsonOk({});
     case "delete-account": {
+      // Audit BEFORE the cascade — the row has to outlive the user record.
+      const record = await db
+        .select({ email: users.email, username: users.username, createdAt: users.createdAt })
+        .from(users)
+        .where(eq(users.id, user.userId))
+        .get();
+      await recordAccountDeletion({
+        userId: user.userId,
+        email: record?.email ?? null,
+        username: record?.username ?? null,
+        source: "ios",
+        accountCreatedAt: record?.createdAt ?? null,
+      });
+
       await deleteAllUserData(user.userId);
       // Every REMAINING table with a users FK (authoritative list from
       // pragma_foreign_key_list, 2026-07-16) — without these the users
@@ -83,6 +98,9 @@ export async function POST(req: Request) {
       await db.run(sql`DELETE FROM user_notification_preferences WHERE user_id = ${uid}`);
       await db.run(sql`DELETE FROM user_notifications WHERE user_id = ${uid}`);
       await db.run(sql`DELETE FROM user_previous_usernames WHERE user_id = ${uid}`);
+      // discover_usage has no FK to users, so omitting it never threw — it just
+      // silently left an orphan row keyed to a deleted user's id (2026-08-24).
+      await db.run(sql`DELETE FROM discover_usage WHERE user_id = ${uid}`);
       await db.run(sql`DELETE FROM reported_issues WHERE user_id = ${uid}`);
       await db.run(sql`DELETE FROM auth_refresh_tokens WHERE user_id = ${uid}`);
       await db.run(sql`DELETE FROM password_reset_tokens WHERE user_id = ${uid}`);

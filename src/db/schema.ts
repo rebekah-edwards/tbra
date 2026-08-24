@@ -827,3 +827,21 @@ export const authRefreshTokens = sqliteTable("auth_refresh_tokens", {
   uniqueIndex("auth_refresh_tokens_hash_unique").on(table.tokenHash),
   index("auth_refresh_tokens_user_idx").on(table.userId),
 ]);
+
+/**
+ * Account-deletion audit trail (2026-08-24). NO foreign key to users on
+ * purpose — the row is written just before the user record is deleted and
+ * must outlive it. Raw email is deliberately not stored; see
+ * src/lib/account/deletion-audit.ts for the reasoning.
+ */
+export const deletedAccounts = sqliteTable("deleted_accounts", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  emailSha256: text("email_sha256").notNull(),
+  emailDomain: text("email_domain"),
+  username: text("username"),
+  source: text("source").notNull(), // 'web' | 'ios'
+  accountCreatedAt: text("account_created_at"),
+  deletedAt: text("deleted_at").notNull(),
+  rowsDeleted: integer("rows_deleted"),
+});

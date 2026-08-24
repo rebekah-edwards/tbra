@@ -1,3 +1,5 @@
+import { SUBTITLE_SEPARATOR } from "@/lib/text/title-separators";
+
 const BASE_URL = "https://openlibrary.org";
 const COVERS_URL = "https://covers.openlibrary.org";
 const USER_AGENT = "tbra/0.1.0 (https://github.com/rebekah-edwards/tbra)";
@@ -377,7 +379,7 @@ export async function searchOpenLibrary(
   const seenNormalized = new Map<string, number>(); // normalized key → index in results
   results = results.filter((r, idx) => {
     const normTitle = r.title.toLowerCase()
-      .replace(/\s*[:\-–—([\/{]\s*.*$/, "") // strip subtitles
+      .replace(SUBTITLE_SEPARATOR, "") // strip subtitles
       .replace(/^(the|a|an)\s+/i, "") // strip articles
       .replace(/[^a-z0-9]/g, ""); // alphanumeric only
     const firstAuthor = (r.author_name?.[0] ?? "").toLowerCase().replace(/[^a-z]/g, "");
