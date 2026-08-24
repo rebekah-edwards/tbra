@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.thebasedreader.tbra",
+      "sha256_cert_fingerprints": [
+        "59:73:85:A8:D1:BD:05:3A:EF:11:08:A6:3E:70:7D:EE:B5:1E:34:49:59:7B:76:6D:8C:13:77:F2:C8:79:34:BF"
+      ]
+    }
+  }
+]
