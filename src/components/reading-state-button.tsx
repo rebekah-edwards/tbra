@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { setBookState, removeBookState, setBookStateWithImport, removeFromLibrary, type ExternalBookImportInput } from "@/lib/actions/reading-state";
-import { setBookStateWithCompletion } from "@/lib/actions/reading-session";
+import { setBookStateWithCompletion, needsStartDate } from "@/lib/actions/reading-session";
 import { CompletionDatePicker } from "@/components/book/completion-date-picker";
 import { TbrNoteEditor } from "@/components/book/tbr-note-editor";
 import type { OLSearchResult } from "@/lib/openlibrary";
@@ -94,6 +94,9 @@ export function ReadingStateButton({
   const [open, setOpen] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  // Whether to offer a start-date field in the finish flow — true only when
+  // the book has no start date recorded yet.
+  const [askStartDate, setAskStartDate] = useState(false);
   const [pendingState, setPendingState] = useState<"completed" | "dnf" | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -122,6 +125,7 @@ export function ReadingStateButton({
     if (autoComplete && !autoCompleteTriggered.current && bookId && currentState === "currently_reading") {
       autoCompleteTriggered.current = true;
       setPendingState("completed");
+      needsStartDate(bookId).then(setAskStartDate);
       setDatePickerOpen(true);
     }
   }, [autoComplete, bookId, currentState]);
@@ -166,6 +170,9 @@ export function ReadingStateButton({
     // Intercept completed/dnf to show date picker first
     if ((state === "completed" || state === "dnf") && currentState !== state && bookId) {
       setPendingState(state);
+      // Only "Finished" gets the start-date field; a DNF start date is noise.
+      setAskStartDate(false);
+      if (state === "completed") needsStartDate(bookId).then(setAskStartDate);
       setDatePickerOpen(true);
       return;
     }
@@ -199,14 +206,15 @@ export function ReadingStateButton({
 
   function handleDateConfirm(
     date: string | null,
-    precision: "exact" | "month" | "year" | null
+    precision: "exact" | "month" | "year" | null,
+    startedAt?: string | null
   ) {
     setDatePickerOpen(false);
     if (!pendingState || !bookId) return;
     const finalState = pendingState;
     setPendingState(null);
     startTransition(async () => {
-      await setBookStateWithCompletion(bookId, finalState, date, precision);
+      await setBookStateWithCompletion(bookId, finalState, date, precision, startedAt);
       // In compact mode (search results), navigate to the book page so the
       // user can leave a review. The book page picks up ?review=true and
       // auto-opens the review wizard.
@@ -337,6 +345,7 @@ export function ReadingStateButton({
           onClose={handleDateCancel}
           onConfirm={handleDateConfirm}
           label={pendingState === "dnf" ? "When did you stop reading?" : "When did you finish?"}
+          askStartDate={askStartDate && pendingState === "completed"}
         />
 
         {/* Remove from library confirmation (compact) */}
@@ -474,6 +483,7 @@ export function ReadingStateButton({
         onClose={handleDateCancel}
         onConfirm={handleDateConfirm}
         label={pendingState === "dnf" ? "When did you stop reading?" : "When did you finish?"}
+        askStartDate={askStartDate && pendingState === "completed"}
       />
 
       {/* Remove from library confirmation dialog */}

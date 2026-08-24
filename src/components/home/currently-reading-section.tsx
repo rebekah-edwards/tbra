@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { setBookState, removeBookState } from "@/lib/actions/reading-state";
-import { setBookStateWithCompletion } from "@/lib/actions/reading-session";
+import { setBookStateWithCompletion, needsStartDate } from "@/lib/actions/reading-session";
 import { addReadingNote } from "@/lib/actions/reading-notes";
 import { NoCover } from "@/components/no-cover";
 import { CompletionDatePicker } from "@/components/book/completion-date-picker";
@@ -214,6 +214,8 @@ function ReadingBookCard({ book, onReviewOpen }: {
   const [confirmAction, setConfirmAction] = useState<{ bookId: string; state: string; label: string } | null>(null);
   const [isPending, startTransition] = useTransition();
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  // Offer a start date only when this book has none recorded yet.
+  const [askStartDate, setAskStartDate] = useState(false);
   const [pendingCompleteState, setPendingCompleteState] = useState<"completed" | "dnf" | null>(null);
   const [openStateDropdown, setOpenStateDropdown] = useState<string | null>(null);
   const stateDropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -239,6 +241,8 @@ function ReadingBookCard({ book, onReviewOpen }: {
     // Completed/DNF → show date picker inline (no navigation)
     if (newState === "completed" || newState === "dnf") {
       setPendingCompleteState(newState as "completed" | "dnf");
+      setAskStartDate(false);
+      if (newState === "completed") needsStartDate(bookId).then(setAskStartDate);
       setDatePickerOpen(true);
       return;
     }
@@ -254,13 +258,17 @@ function ReadingBookCard({ book, onReviewOpen }: {
     executeStateChange(bookId, newState);
   }
 
-  function handleDateConfirm(date: string | null, precision: "exact" | "month" | "year" | null) {
+  function handleDateConfirm(
+    date: string | null,
+    precision: "exact" | "month" | "year" | null,
+    startedAt?: string | null
+  ) {
     setDatePickerOpen(false);
     if (!pendingCompleteState) return;
     const finalState = pendingCompleteState;
     setPendingCompleteState(null);
     startTransition(async () => {
-      await setBookStateWithCompletion(book.id, finalState, date, precision);
+      await setBookStateWithCompletion(book.id, finalState, date, precision, startedAt);
     });
     // Open review wizard via parent (survives this card's unmount)
     if (finalState === "completed") {
@@ -430,6 +438,7 @@ function ReadingBookCard({ book, onReviewOpen }: {
         onClose={handleDateCancel}
         onConfirm={handleDateConfirm}
         label={pendingCompleteState === "dnf" ? "When did you stop reading?" : "When did you finish?"}
+        askStartDate={askStartDate && pendingCompleteState === "completed"}
       />
     </div>
   );

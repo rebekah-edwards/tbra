@@ -325,6 +325,15 @@ export function GoodreadsImport() {
               <li><strong>Favorite shelves</strong> &mdash; added to your Top Shelf Reads</li>
               <li><strong>Re-reads</strong> &mdash; tracked as separate reading sessions</li>
             </ul>
+            {/* Goodreads' export has no start-date column at all — only "Date
+                Read" (the finish date) and "Date Added". Testers read blank
+                start dates as a broken importer, so say it up front. */}
+            <p className="pt-1.5 text-xs text-muted border-t border-border/40 mt-1.5">
+              <strong>Not included: start dates.</strong>{" "}
+              Goodreads only exports
+              the date you finished a book, so start dates come over blank. You
+              can add one anytime under Reading History on a book&rsquo;s page.
+            </p>
           </div>
         </>
       )}

@@ -10,9 +10,13 @@ interface CompletionDatePickerProps {
   onClose: () => void;
   onConfirm: (
     date: string | null,
-    precision: "exact" | "month" | "year" | null
+    precision: "exact" | "month" | "year" | null,
+    startedAt?: string | null
   ) => void;
   label?: string;
+  /** Show an optional "started" field. Only passed when the book has no start
+   *  date recorded yet — books that already have one aren't asked again. */
+  askStartDate?: boolean;
 }
 
 const MONTHS = [
@@ -165,9 +169,11 @@ export function CompletionDatePicker({
   onClose,
   onConfirm,
   label = "When did you finish?",
+  askStartDate = false,
 }: CompletionDatePickerProps) {
   const now = new Date();
   const [precision, setPrecision] = useState<Precision>("month");
+  const [startedAt, setStartedAt] = useState("");
   const [month, setMonth] = useState(now.getMonth()); // 0-indexed
   const [day, setDay] = useState(now.getDate() - 1); // 0-indexed for array
   const [yearIndex, setYearIndex] = useState(0); // 0 = current year
@@ -188,6 +194,18 @@ export function CompletionDatePicker({
 
   const isFuture = isFutureDate(month, day, selectedYear, precision);
 
+  // Last day covered by the current selection. With month/year precision the
+  // stored finish date is the 1st, so comparing a start date against that
+  // would wrongly reject "started Aug 15, finished sometime in August".
+  const mm = String(month + 1).padStart(2, "0");
+  const periodEnd =
+    precision === "exact"
+      ? `${selectedYear}-${mm}-${String((day < maxDays ? day : maxDays - 1) + 1).padStart(2, "0")}`
+      : precision === "month"
+        ? `${selectedYear}-${mm}-${String(maxDays).padStart(2, "0")}`
+        : `${selectedYear}-12-31`;
+  const startAfterFinish = Boolean(startedAt && startedAt > periodEnd);
+
   function handleConfirm() {
     if (isFuture) return; // Block future dates
     const y = years[yearIndex];
@@ -202,11 +220,13 @@ export function CompletionDatePicker({
     } else {
       dateStr = `${y}-01-01`;
     }
-    onConfirm(dateStr, precision);
+    onConfirm(dateStr, precision, startedAt || null);
   }
 
   function handleSkip() {
-    onConfirm(null, null);
+    // "I don't remember" applies to the finish date; a start date they did
+    // fill in is still worth keeping.
+    onConfirm(null, null, startedAt || null);
   }
 
   if (typeof document === "undefined") return null;
@@ -288,18 +308,46 @@ export function CompletionDatePicker({
           </div>
         </div>
 
+        {/* Optional start date — only for books with none recorded yet */}
+        {askStartDate && (
+          <div className="px-5 pb-4">
+            <label className="flex items-center justify-between gap-3 text-sm text-foreground">
+              <span>
+                When did you start?
+                <span className="block text-xs text-muted">Optional</span>
+              </span>
+              <input
+                type="date"
+                value={startedAt}
+                max={periodEnd}
+                onChange={(e) => setStartedAt(e.target.value)}
+                className="rounded-lg border border-border bg-surface-alt px-2.5 py-1.5 text-sm text-foreground"
+              />
+            </label>
+            {startAfterFinish && (
+              <p className="mt-1.5 text-xs text-destructive">
+                Start date can&rsquo;t be after the finish date.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Buttons */}
         <div className="px-5 pb-5 space-y-2.5">
           <button
             onClick={handleConfirm}
-            disabled={isFuture}
+            disabled={isFuture || startAfterFinish}
             className={`w-full rounded-xl py-3 text-sm font-semibold transition-colors ${
-              isFuture
+              isFuture || startAfterFinish
                 ? "bg-foreground/30 text-background/50 cursor-not-allowed"
                 : "bg-foreground text-background hover:bg-foreground/90"
             }`}
           >
-            {isFuture ? "Date can't be in the future" : "Continue"}
+            {isFuture
+              ? "Date can't be in the future"
+              : startAfterFinish
+                ? "Check your start date"
+                : "Continue"}
           </button>
           <button
             onClick={handleSkip}

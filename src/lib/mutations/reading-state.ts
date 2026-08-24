@@ -248,12 +248,31 @@ export async function setActiveFormatsFor(userId: string, bookId: string, format
   }
 }
 
+/** Last day covered by a finish date at the given precision. A month-precision
+ *  finish stores the 1st, so a start date later that month is still valid. */
+function finishPeriodEnd(
+  completionDate: string,
+  precision: "exact" | "month" | "year" | null
+): string {
+  const [y, m] = completionDate.split("-");
+  if (precision === "year") return `${y}-12-31`;
+  if (precision === "month") {
+    const last = new Date(Number(y), Number(m), 0).getDate();
+    return `${y}-${m}-${String(last).padStart(2, "0")}`;
+  }
+  return completionDate;
+}
+
 export async function setBookStateWithCompletionFor(
   userId: string,
   bookId: string,
   state: "completed" | "dnf",
   completionDate: string | null,
-  completionPrecision: "exact" | "month" | "year" | null
+  completionPrecision: "exact" | "month" | "year" | null,
+  /** Optional start date, only offered when the book has none recorded yet
+   *  (see needsStartDate in actions/reading-session.ts). Ignored if it falls
+   *  after the finish date — the picker blocks that, this is belt-and-braces. */
+  startedAt?: string | null
 ) {
   // 1. Update user_book_state (the cache table)
   const existing = await db
@@ -318,13 +337,22 @@ export async function setBookStateWithCompletionFor(
     // If the user picked a completion date that's before the recorded start
     // date, the recorded start can't be right — drop it so the UI shows
     // "No start date" instead of an impossible timeline (e.g. "Apr 27, 2026 → 2024").
-    let startedAtUpdate: { startedAtExplicit?: boolean } = {};
+    let startedAtUpdate: { startedAt?: string; startedAtExplicit?: boolean } = {};
     if (
       completionDate &&
       activeSession.startedAt &&
       activeSession.startedAt.split("T")[0] > completionDate
     ) {
       startedAtUpdate = { startedAtExplicit: false };
+    }
+
+    // A start date the user typed into the finish flow wins over the
+    // auto-recorded one, and counts as explicit.
+    const effectiveEnd = completionDate
+      ? finishPeriodEnd(completionDate, completionPrecision)
+      : today;
+    if (startedAt && startedAt <= effectiveEnd) {
+      startedAtUpdate = { startedAt, startedAtExplicit: true };
     }
 
     // If the active session was paused, accumulate the time it spent in the
@@ -355,13 +383,20 @@ export async function setBookStateWithCompletionFor(
     // Preserve any cached format selection (user_book_state.activeFormats) so
     // stats know how the book was read.
     const readNumber = await getNextReadNumber(userId, bookId);
+    const suppliedStart =
+      startedAt &&
+      (!completionDate ||
+        startedAt <= finishPeriodEnd(completionDate, completionPrecision))
+        ? startedAt
+        : null;
+
     await db.insert(readingSessions).values({
       userId,
       bookId,
       readNumber,
       state,
-      startedAt: new Date().toISOString(),
-      startedAtExplicit: false,
+      startedAt: suppliedStart ?? new Date().toISOString(),
+      startedAtExplicit: Boolean(suppliedStart),
       completionDate,
       completionPrecision,
       activeFormats: cachedFormats,

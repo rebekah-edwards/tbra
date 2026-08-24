@@ -17,7 +17,8 @@ export async function setBookStateWithCompletion(
   bookId: string,
   state: "completed" | "dnf",
   completionDate: string | null,
-  completionPrecision: "exact" | "month" | "year" | null
+  completionPrecision: "exact" | "month" | "year" | null,
+  startedAt?: string | null
 ) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -25,11 +26,38 @@ export async function setBookStateWithCompletion(
   // Shared user-scoped implementation (also used by /api/v1) — see
   // src/lib/mutations/reading-state.ts. Behavior is the exact former body
   // of this action.
-  await setBookStateWithCompletionFor(user.userId, bookId, state, completionDate, completionPrecision);
+  await setBookStateWithCompletionFor(
+    user.userId,
+    bookId,
+    state,
+    completionDate,
+    completionPrecision,
+    startedAt
+  );
 
   revalidatePath(`/book/${bookId}`);
   revalidatePath("/library");
   revalidatePath("/profile");
+}
+
+/**
+ * Whether the finish flow should offer a start-date field for this book.
+ *
+ * True only when no start date has actually been ENTERED yet — a session
+ * auto-creates `started_at` (today, or the Goodreads finish date on import)
+ * with `started_at_explicit` false, and that doesn't count. Books where the
+ * user already recorded a start date don't get asked again.
+ */
+export async function needsStartDate(bookId: string): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user) return false;
+
+  const active = await getActiveSession(user.userId, bookId);
+  if (active) return !active.startedAtExplicit;
+
+  // No active session — marking Finished straight from the shelf creates a
+  // fresh one, so there's nothing recorded to preserve.
+  return true;
 }
 
 // ensureReadingSession / pauseActiveSession / resumeActiveSession moved to
