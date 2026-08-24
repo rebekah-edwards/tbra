@@ -435,3 +435,32 @@ live path is missing `slug`, `coverImageUrl`, `publicationYear` and `isbn13`, so
 imported during the day is searchable but has no slug or cover in the nav dropdown until the
 8:45am rebuild overwrites it**. Same-day-add books look broken in search for up to 24h. Low
 severity, small fix (align the field set), untouched — flagging it so it is not rediscovered.
+
+---
+
+# §6 CLOSED — 2026-08-24
+
+Shipped as `8c60852`. The dry-run verdict recorded earlier was right that the hyphen fix was safe,
+but **wrong that it fixed the report** — I checked the actual normalization output before shipping
+and both New X-Men volumes still collapsed, because they truncate at the COLON, not the hyphen.
+The colon case is the one §6 called "separate and also unsolved". It is now solved too.
+
+**What shipped, both in `src/lib/text/title-separators.ts`:**
+
+1. **Hyphen** — separates only when spaced (` - `). 391 false-merge groups eliminated.
+2. **Suffix comparison** — when two titles share a normalized stem, what follows the separator is
+   compared as well; two distinct subtitles mean two different books. Restricted to **colon/dash**:
+   including parentheses split three bindings of one ESV study Bible into separate books, because
+   parenthetical suffixes carry edition/series annotation (`(TruTone, Blush Rose)`,
+   `(Grovehill Giants Book 3)`). Colon/dash splits 409 groups, all sampled genuinely distinct.
+   Either side lacking a suffix still matches, so `Jane Eyre` ←→ `Jane Eyre : (Classics Collection)`
+   and the Deluxe-Edition rule in CLAUDE.md are unaffected.
+
+**The regex was in THREE places, not two** — `books.ts` ×2 plus `openlibrary.ts:380` (OL search-result
+dedup), all with the identical bug. All three now import one definition, so they cannot drift again.
+
+Dry-runs kept: `scripts/dryrun-dedup-hyphen-regex.ts`, `scripts/dryrun-dedup-suffix-rule.ts`.
+
+**Still unsolved and deliberately not attempted:** a volume number as the *only* difference with no
+subtitle (`Spider-Man/Deadpool` vs `Spider-Man/deadpool Vol. 6`) — `/` is still a plain separator and
+`vol` is stripped as noise. Rarer than the subtitle case and needs its own measurement.
