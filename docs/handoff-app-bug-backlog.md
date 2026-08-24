@@ -300,3 +300,138 @@ the build number), and confirm with the testers. That is a release decision, not
 No fix for either in the working tree. Both still need on-device reproduction, and the simulator
 tooling is unavailable in scheduled-task sessions (attended sessions only), so this task cannot do
 it. Report `2b67d3ea` still cannot close until the covers half is resolved.
+
+---
+
+## #6 Volume 2 of a series redirects to volume 1 — DIAGNOSED 2026-08-23
+
+**Report:** "New X-Men Modern Era Epic Collection: E Is for Extinction" (1 user, book
+`4f4c5339-4949-47d0-bb2c-3998bd6189e9`) — _"Trying to add the second volume & it keeps taking me to
+the first volume."_ Only volume 1 exists in `books`; volume 2 never got a row.
+
+**Root cause — `normalizeTitleForDedup()`, `src/lib/actions/books.ts:76`:**
+
+```js
+t = t.replace(/\s*[:\-–—([\/{]\s*.*$/, "");
+```
+
+The character class contains a bare `-`, so the title is truncated at the FIRST hyphen, not just at
+subtitle separators. Measured:
+
+| Title | Normalizes to |
+|---|---|
+| `New X-Men Modern Era Epic Collection: E Is for Extinction` | `newx` |
+| `New X-Men Modern Era Epic Collection: Riot at Xavier's` | `newx` |
+| `New X-Men Modern Era Epic Collection Vol. 2` | `newx` |
+
+`findExistingByTitleAndAuthor()` therefore matches volume 2 to volume 1 (same author, Grant
+Morrison), returns the existing id, and the add silently resolves to volume 1. That is exactly the
+reported symptom.
+
+**Blast radius is wider than this one report.** Any hyphenated title collapses to its pre-hyphen
+prefix, so any two same-author books sharing that prefix are treated as one book. `Spider-Man`,
+`X-Men`, `Ender's Game: Mazer-…`, and every `Part-One`/`Part-Two` split are candidates. The SQL
+pre-filter (`LIKE %new x%`) plus the author check are the only things keeping this from being far
+noisier.
+
+**Suggested fix (NOT applied — needs review + a dedup regression pass):** drop the bare `-` from the
+class, or require it to be a spaced separator (` - `), so intra-word hyphens survive:
+
+```js
+t = t.replace(/\s*(?:[:–—([\/{]|\s-\s)\s*.*$/, "");
+```
+
+Note the volume-number question is separate and also unsolved: even with hyphens fixed, the `:`
+truncation still collapses `Collection: E Is for Extinction` and `Collection: Riot at Xavier's` to
+the same key. Numbered/subtitled volumes of one collection are genuinely different products — the
+same principle already documented for `Collection`/`Box Set`/`Omnibus` in the edition-variant rule
+in CLAUDE.md. A correct fix probably has to keep the subtitle when the pre-colon stem alone is
+ambiguous across the same author.
+
+**Why this task did not fix it:** it is a code change to the shared import/add dedup path, with a
+real chance of causing either duplicate books or missed merges across the whole catalog. It needs a
+dry-run over existing titles to size the impact before shipping. Report left OPEN in /admin/issues.
+
+---
+
+# Status update — 2026-08-24 (nightly-report-triage)
+
+## §6 Volume 2 → volume 1: the dry-run this doc asked for is DONE. The fix is safe to ship.
+
+§6 (2026-08-23) left the regex fix unshipped with one stated blocker: *"it needs a dry-run over
+existing titles to size the impact before shipping."* That dry-run now exists and is committed:
+
+- script: `scripts/dryrun-dedup-hyphen-regex.ts` (read-only, keyset-paginated, runs against Turso)
+- full output: `reports/dedup-hyphen-regex-dryrun-2026-08-24.txt`
+
+**Measured over all 125,306 books in the live catalog**, comparing today's separator class against
+the proposed one (`/\s*(?:[:–—([\/{]|\s-\s)\s*.*$/` — bare `-` only counts when spaced):
+
+| | count |
+|---|---|
+| Books whose normalized key changes | 4,387 (3.50%) |
+| Same-author collision groups today | 6,783 |
+| Same-author collision groups after the fix | 6,536 |
+| **B. groups the fix splits apart** (false merges the bug is causing now) | **391** |
+| C. groups preserved (existing merge behaviour unchanged) | 6,392 |
+| D. groups the fix newly creates | 144 |
+
+**B is the confirmed damage, and it is worse than §6 estimated.** The single worst group is 14
+separate books collapsing to one key — `Ultimate Spider-Man` plus Vols. 1, 3, 4, 8, 9, 11–18, all
+Brian Michael Bendis, all currently indistinguishable to `findExistingByTitleAndAuthor()`. Also in
+B: 7 × `Cul-de-Sac Kids` collections (Beverly Lewis), 4 × `Firework-Maker's Daughter` (Pullman),
+3 × `X-23`/`X-Termination` (Marjorie M. Liu), and a long tail of `Spider-Man …` pairs. Any user
+trying to add one of these gets silently shelved with a different volume — the exact reported
+symptom, across hundreds of titles rather than one.
+
+**D was the number to be scared of, and it turns out to be mostly a bonus, not a regression.**
+Reading the 144: the large majority are *genuine* duplicate pairs that the current regex fails to
+merge because it truncates them into different keys — `The Tell-Tale Heart` / `The tell-tale heart`,
+`Client-centered therapy` / `Client-Centered Therapy`, `Manic-Depressive Illness` ×2,
+`Small-Town Billionaire` ×3, `Chronicles of the Nephilim Books 1-4 Bundle` in Paperback / Large
+Print / Hardcover. The fix improves true-duplicate detection on those.
+
+The genuinely wrong ones in D — `Spider-Man/Deadpool` vs `Spider-Man/deadpool Vol. 6`,
+`Spider-Man by Todd Mcfarlane` vs `Spider-Man - Masques` — are all the **volume-number problem
+that §6 already identified as a separate, unsolved issue**. That class is not new: it is the same
+failure already occurring in the 6,392 group-C collisions today. The fix does not introduce it and
+does not widen it materially; it trades 391 bad groups away for 144, most of which are correct.
+
+**Verdict: ship it.** Net effect is ~391 false-merge groups eliminated, no new failure class, and a
+side benefit of catching real duplicates. The change is one character class in
+`normalizeTitleForDedup()`, `src/lib/actions/books.ts:76` — note the *identical* pattern is repeated
+12 lines below at the `shortTitle` SQL pre-filter in `findExistingByTitleAndAuthor()` and **both
+copies must change together**, or the pre-filter will stop returning the candidates the comparison
+then wants to match.
+
+**Why this task still did not ship it:** this nightly task's scope is data triage, and per its own
+rules web/iOS code changes are handed off rather than deployed from an unattended run — this one
+touches the shared add/import path for the whole catalog and deserves Rebekah in the loop and a
+`/admin/issues` spot-check after deploy. The blocker, though, is gone: the sizing exists.
+
+## What WAS fixed tonight (data half of the same report)
+
+The report also had a real data gap underneath the code bug: only volume 1 of *New X-Men Modern Era
+Epic Collection* existed. Volume 2 has been added —
+
+- `New X-Men Modern Era Epic Collection: New Worlds`, Grant Morrison, Marvel, 2025-06-03, 360pp,
+  ISBN 9781302961268, id `9c1f0a72-4f0b-4b6e-9d31-2c7a1e58b402`, series position 2
+- identity verified against Penguin Random House + Marvel listings before writing; deliberately
+  distinct from the existing 2002 `New Worlds` trade (9780785109761, Ethan Van Sciver)
+- present and verified on **both** local and Turso, linked to author + series, indexed into local
+  FTS and Meilisearch, enrichment run (cover landed from ISBNdb), prod book page returns 200
+- `scripts/add-new-xmen-mee-vol2.ts` (idempotent, dry-run by default, `--apply` to write)
+
+Report `06e45eb8-9faa-4b54-9e16-62d704f3b1bf` is therefore left **OPEN**, not resolved: searching
+for volume 2 now works, but the *add* path that produced the complaint is still governed by the
+buggy regex above.
+
+## Incidental find: `updateSearchIndex()` writes thin Meilisearch docs
+
+Not from a report — hit while indexing the book above. `src/lib/search/search-index.ts:60` upserts
+`{id, title, authorNames, seriesName, visibility, isBoxSet}`, but `scripts/sync-meilisearch.ts:121`
+writes `{id, title, slug, coverImageUrl, publicationYear, isbn13, authorNames, seriesName}`. The
+live path is missing `slug`, `coverImageUrl`, `publicationYear` and `isbn13`, so **any book added or
+imported during the day is searchable but has no slug or cover in the nav dropdown until the
+8:45am rebuild overwrites it**. Same-day-add books look broken in search for up to 24h. Low
+severity, small fix (align the field set), untouched — flagging it so it is not rediscovered.
