@@ -19,6 +19,7 @@ import {
 } from "@/db/schema";
 import { eq, and, inArray, sql } from "drizzle-orm";
 import { getCurrentUser, clearSessionCookie } from "@/lib/auth";
+import { recordAccountDeletion } from "@/lib/account/deletion-audit";
 import { revalidatePath } from "next/cache";
 import { unlink } from "fs/promises";
 import path from "path";
@@ -91,12 +92,26 @@ export async function deleteAccount(confirmPhrase: string): Promise<ActionResult
   if (!user) return { success: false, error: "Not authenticated" };
 
   try {
-    // Look up avatar before deletion
+    // Look up avatar + audit fields before deletion
     const userRecord = await db
-      .select({ avatarUrl: users.avatarUrl })
+      .select({
+        avatarUrl: users.avatarUrl,
+        email: users.email,
+        username: users.username,
+        createdAt: users.createdAt,
+      })
       .from(users)
       .where(eq(users.id, user.userId))
       .get();
+
+    // Audit BEFORE the cascade — the row has to outlive the user record.
+    await recordAccountDeletion({
+      userId: user.userId,
+      email: userRecord?.email ?? null,
+      username: userRecord?.username ?? null,
+      source: "web",
+      accountCreatedAt: userRecord?.createdAt ?? null,
+    });
 
     await deleteAllUserData(user.userId);
     // Every REMAINING table with a users FK (2026-07-16) — without these the
@@ -120,6 +135,9 @@ export async function deleteAccount(confirmPhrase: string): Promise<ActionResult
     await db.run(sql`DELETE FROM user_notification_preferences WHERE user_id = ${uid}`);
     await db.run(sql`DELETE FROM user_notifications WHERE user_id = ${uid}`);
     await db.run(sql`DELETE FROM user_previous_usernames WHERE user_id = ${uid}`);
+    // discover_usage has no FK to users, so omitting it never threw — it just
+    // silently left an orphan row keyed to a deleted user's id (2026-08-24).
+    await db.run(sql`DELETE FROM discover_usage WHERE user_id = ${uid}`);
     await db.run(sql`DELETE FROM reported_issues WHERE user_id = ${uid}`);
     await db.run(sql`DELETE FROM auth_refresh_tokens WHERE user_id = ${uid}`);
     await db.run(sql`DELETE FROM password_reset_tokens WHERE user_id = ${uid}`);
