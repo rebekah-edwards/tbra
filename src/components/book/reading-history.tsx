@@ -70,6 +70,17 @@ function SessionRow({
 }) {
   // Optimistic local state so UI updates instantly
   const [session, setSession] = useState(initialSession);
+
+  // ...but re-sync when the server sends fresh data (revalidatePath after a
+  // mutation re-renders this row with new props). Without this the row keeps
+  // its first-render snapshot forever, so a saved edit only appears after a
+  // hard reload. Keyed on the serialized session, not the object identity, so
+  // an unrelated re-render can't clobber an optimistic edit mid-flight.
+  const serverSnapshot = JSON.stringify(initialSession);
+  useEffect(() => {
+    setSession(initialSession);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverSnapshot]);
   const [editingStart, setEditingStart] = useState(false);
   const [editingPaused, setEditingPaused] = useState(false);
   const [editingEnd, setEditingEnd] = useState(false);
@@ -113,8 +124,15 @@ function SessionRow({
     field: "startedAt" | "completionDate" | "pausedAt",
     value: string
   ) {
-    // Optimistically update local state immediately
-    setSession((prev) => ({ ...prev, [field]: value || null }));
+    // Optimistically update local state immediately. A start date the user
+    // typed is explicit by definition — the server sets started_at_explicit
+    // too, but the row reads startedAtExplicit to decide between the date and
+    // "No start date", so it has to move in lockstep here.
+    setSession((prev) => ({
+      ...prev,
+      [field]: value || null,
+      ...(field === "startedAt" ? { startedAtExplicit: Boolean(value) } : {}),
+    }));
     if (field === "startedAt") setEditingStart(false);
     if (field === "pausedAt") setEditingPaused(false);
     if (field === "completionDate") setEditingEnd(false);
@@ -165,10 +183,19 @@ function SessionRow({
           {editingStart ? (
             <input
               type="date"
-              defaultValue={toInputDate(session.startedAt)}
+              defaultValue={
+                session.startedAtExplicit ? toInputDate(session.startedAt) : ""
+              }
               onBlur={(e) => {
                 const val = e.target.value;
-                if (val && val !== toInputDate(session.startedAt)) {
+                // Compare against what the row actually shows. An implicit
+                // start date (import, or auto-created on "Finished") displays
+                // as "No start date" and is usually the finish date, so
+                // picking that same day has to still count as a real edit.
+                const shown = session.startedAtExplicit
+                  ? toInputDate(session.startedAt)
+                  : "";
+                if (val && val !== shown) {
                   handleDateChange("startedAt", val);
                 } else {
                   setEditingStart(false);
