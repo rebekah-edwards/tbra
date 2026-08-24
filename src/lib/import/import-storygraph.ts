@@ -229,18 +229,36 @@ async function processRow(
       }
 
       // Create a reading session for completed, dnf, or paused books
-      if ((row.readStatus === "completed" || row.readStatus === "dnf") && row.lastDateRead) {
+      // "Dates Read" is the only place StoryGraph exports a start date, and its
+      // first entry is the most recent read (the one Last Date Read refers to).
+      // It also carries the real precision — a "2025/02" read is month-only,
+      // not February 1st.
+      const latestRead = row.reads[0] ?? null;
+      // An open-ended range ("2025/02-") is a book they started and never
+      // finished, so there's no Last Date Read to key off — but the start date
+      // is exactly what we're here to preserve, so still record the session.
+      const hasSessionDates = Boolean(row.lastDateRead || latestRead?.startedAt);
+
+      if ((row.readStatus === "completed" || row.readStatus === "dnf") && hasSessionDates) {
         const dateStr = row.lastDateRead;
         // Same-date guard: a session for this read may already exist from a
         // Goodreads import of the same library (users migrating often import
         // both). MAX(read_number)+1 would happily append a duplicate, double-
-        // counting the read in stats.
-        const dupe = await db.all(sql`
-          SELECT 1 FROM reading_sessions
-          WHERE user_id = ${userId} AND book_id = ${bookId}
-            AND completion_date = ${dateStr}
-          LIMIT 1
-        `) as unknown[];
+        // counting the read in stats. With no finish date, key the guard on the
+        // start date instead.
+        const dupe = (dateStr
+          ? await db.all(sql`
+              SELECT 1 FROM reading_sessions
+              WHERE user_id = ${userId} AND book_id = ${bookId}
+                AND completion_date = ${dateStr}
+              LIMIT 1
+            `)
+          : await db.all(sql`
+              SELECT 1 FROM reading_sessions
+              WHERE user_id = ${userId} AND book_id = ${bookId}
+                AND started_at = ${latestRead?.startedAt}
+              LIMIT 1
+            `)) as unknown[];
         if (dupe.length === 0) {
           const lastSession = await db.all(sql`
             SELECT MAX(read_number) as max_num FROM reading_sessions
@@ -253,9 +271,14 @@ async function processRow(
             userId,
             bookId,
             readNumber,
-            startedAt: dateStr,
+            // Fall back to the finish date when the user never logged a start,
+            // but only flag it explicit when it's a real start date.
+            startedAt: latestRead?.startedAt ?? dateStr!,
+            startedAtExplicit: Boolean(latestRead?.startedAt),
             completionDate: dateStr,
-            completionPrecision: "exact",
+            completionPrecision: dateStr
+              ? latestRead?.finishedPrecision ?? "exact"
+              : null,
             state: row.readStatus,
           }).onConflictDoNothing();
         }

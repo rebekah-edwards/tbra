@@ -5,6 +5,15 @@
  * dynamically, so it works regardless of column ordering changes in StoryGraph.
  */
 
+/** One read from the "Dates Read" column. StoryGraph records a start–end
+ *  range per read, at whatever precision the user logged. */
+export interface StoryGraphRead {
+  /** ISO "YYYY-MM-DD" — year/month precision is widened to the 1st. */
+  startedAt: string | null;
+  finishedAt: string | null;
+  finishedPrecision: "exact" | "month" | "year" | null;
+}
+
 export interface StoryGraphRow {
   title: string;
   authors: string[];
@@ -14,6 +23,10 @@ export interface StoryGraphRow {
   rating: number | null;
   readStatus: "completed" | "currently_reading" | "tbr" | "dnf" | "paused" | null;
   lastDateRead: string | null; // ISO date string "YYYY-MM-DD"
+  /** Parsed "Dates Read", most recent read FIRST (StoryGraph's own order —
+   *  verified against Last Date Read, which always matches reads[0]). This is
+   *  the ONLY place a StoryGraph export carries start dates. */
+  reads: StoryGraphRead[];
   owned: boolean;
   review: string | null; // HTML review text from StoryGraph
   contentWarnings: string | null; // Content warning text
@@ -54,6 +67,7 @@ const HEADER_MAP: Record<string, string> = {
   rating: "rating",
   "read status": "readStatus",
   "last date read": "lastDateRead",
+  "dates read": "datesRead",
   "owned?": "owned",
   owned: "owned",
   review: "review",
@@ -150,6 +164,62 @@ function snapRating(raw: number): number {
 /**
  * Parse a StoryGraph date string. Formats vary: "2024/01/15", "2024-01-15", "January 2024", etc.
  */
+/**
+ * Parse one "Dates Read" token: 2025, 2025/02, or 2025/02/14.
+ * Partial dates widen to the 1st of the period and report their precision, so
+ * a month-only read doesn't get displayed as a specific day.
+ */
+function parseDatesReadToken(
+  token: string
+): { date: string; precision: "exact" | "month" | "year" } | null {
+  const t = token.trim();
+  if (!t) return null;
+  const m = t.match(/^(\d{4})(?:\/(\d{1,2}))?(?:\/(\d{1,2}))?$/);
+  if (!m) return null;
+  const [, y, mo, d] = m;
+  if (mo && d) {
+    return { date: `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`, precision: "exact" };
+  }
+  if (mo) return { date: `${y}-${mo.padStart(2, "0")}-01`, precision: "month" };
+  return { date: `${y}-01-01`, precision: "year" };
+}
+
+/**
+ * Parse the whole "Dates Read" cell.
+ *
+ * Shapes seen in real exports:
+ *   "2025/06/05-2025/06/30"              start + finish
+ *   "2025/02"                            finish only (no start recorded)
+ *   "2025/02-"                           started, never finished
+ *   "2025-2025/01"                       mixed precision across the range
+ *   "2025/10/20-2025/11/10, 2025/01"     two reads, most recent first
+ */
+export function parseDatesRead(raw: string): StoryGraphRead[] {
+  if (!raw || !raw.trim()) return [];
+  const reads: StoryGraphRead[] = [];
+
+  for (const segment of raw.split(",")) {
+    const seg = segment.trim();
+    if (!seg) continue;
+
+    // Tokens are slash-separated, so a hyphen is always the range separator.
+    const hasRange = seg.includes("-");
+    const [rawStart, rawEnd] = hasRange ? seg.split("-", 2) : ["", seg];
+
+    const start = parseDatesReadToken(rawStart);
+    const end = parseDatesReadToken(rawEnd);
+    if (!start && !end) continue;
+
+    reads.push({
+      startedAt: start?.date ?? null,
+      finishedAt: end?.date ?? null,
+      finishedPrecision: end?.precision ?? null,
+    });
+  }
+
+  return reads;
+}
+
 function parseDate(dateStr: string): string | null {
   if (!dateStr) return null;
 
@@ -223,6 +293,9 @@ export function parseStoryGraphCSV(csvText: string): StoryGraphRow[] {
       // Last Date Read
       const lastDateRead = parseDate(getCell(cells, columnMap, "lastDateRead"));
 
+      // Dates Read — the only source of start dates in a StoryGraph export
+      const reads = parseDatesRead(getCell(cells, columnMap, "datesRead"));
+
       // Owned
       const ownedRaw = getCell(cells, columnMap, "owned").toLowerCase();
       const owned = ownedRaw === "yes" || ownedRaw === "true" || ownedRaw === "1";
@@ -241,7 +314,7 @@ export function parseStoryGraphCSV(csvText: string): StoryGraphRow[] {
         ? moodsRaw.split(",").map((m) => m.trim()).filter(Boolean)
         : [];
 
-      return { title, authors, isbn, asin, format, rating, readStatus, lastDateRead, owned, review, contentWarnings, moods };
+      return { title, authors, isbn, asin, format, rating, readStatus, lastDateRead, reads, owned, review, contentWarnings, moods };
     })
     .filter((row): row is StoryGraphRow => row !== null);
 }
