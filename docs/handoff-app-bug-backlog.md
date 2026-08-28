@@ -464,3 +464,39 @@ Dry-runs kept: `scripts/dryrun-dedup-hyphen-regex.ts`, `scripts/dryrun-dedup-suf
 **Still unsolved and deliberately not attempted:** a volume number as the *only* difference with no
 subtitle (`Spider-Man/Deadpool` vs `Spider-Man/deadpool Vol. 6`) — `/` is still a plain separator and
 `vol` is stripped as noise. Rarer than the subtitle case and needs its own measurement.
+
+---
+
+# New item — 2026-08-27 (nightly-report-triage)
+
+## #10 iOS has no manual-add path — "I believe there used to be a way of adding it manually"
+
+**Report:** `b43b727b-fed3-416d-bdfb-853d936a4917`, filed 2026-08-27, `page_url` = `/`, no book_id.
+Verbatim: "The book I'm searching for doesn't show up when I search for it and I believe there used
+to be a way of adding it manually but I don't see it anymore."
+
+**Diagnosed, not fixed** (app/code change, out of scope for the triage task).
+
+The reporter is not misremembering, and nothing was removed. The affordance exists on **web only**:
+`src/app/search/search-client.tsx` renders "Can't find your book? Manually add it to your shelf."
+→ `/search/add` in BOTH search branches — the zero-results case (line ~345) and the has-results case
+(line ~526). The page and form are live: `src/app/search/add/page.tsx`, `add-book-form.tsx`.
+
+The **native iOS app has no manual-add entry point anywhere.** A grep across every file in
+`native-ios/` for `/search/add`, "Manually add", and "Can't find" returns exactly one hit, and it is
+an unrelated comment about `cover_source='manual'` in `BookDetailView.swift:1824`. So a tester who
+used the web app first and then moved to TestFlight sees the option genuinely disappear. That is the
+whole report.
+
+**Where to look:** `native-ios/SearchView.swift` — mirror the web's two placements (empty-results and
+below-results). The web form posts through the existing add-book flow, so the likely-cheapest fix is
+a link out to `/search/add` in the in-app web view (`AdminWebView.swift` already does a wrapped-web
+pattern) rather than a native re-implementation of the form.
+
+**The other half of the report — "doesn't show up when I search for it" — is not actionable as
+filed:** the reporter never named the book, and `page_url` is `/`. Without a title there is nothing
+to index or verify. If Rebekah can get the title from the tester, it becomes a normal
+search/indexing check. Worth noting the §"Incidental find" entry above (thin Meilisearch docs from
+`updateSearchIndex()`) is a plausible cause if the book was added the same day.
+
+**Left OPEN deliberately** — it is an app change plus an unanswerable data question, not a data fix.
