@@ -500,3 +500,14 @@ search/indexing check. Worth noting the §"Incidental find" entry above (thin Me
 `updateSearchIndex()`) is a plausible cause if the book was added the same day.
 
 **Left OPEN deliberately** — it is an app change plus an unanswerable data question, not a data fix.
+
+**Update 2026-08-29 (nightly-report-triage):** a secondary, web-side contributor was found and
+fixed. The has-results placement of the link used `text-link`, which resolves to `#16a34a` in light
+mode (`globals.css:47`) — dark green on a light background, and a violation of the standing "links
+are `text-neon-blue`, never `text-link`/`text-primary`" rule. So on web the link was present but
+easy to miss for anyone whose search returned results. Now `text-neon-blue`, matching the
+zero-results placement. Shipped in `505249e`.
+
+This does NOT close the report. The primary finding above stands: the native iOS app still has no
+manual-add entry point, and the "doesn't show up when I search" half still needs the book title from
+the tester. Report `b43b727b` stays OPEN.
