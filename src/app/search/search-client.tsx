@@ -524,7 +524,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         <div className="pt-2 text-center">
           <Link
             href="/search/add"
-            className="text-sm text-link hover:text-link/80"
+            className="text-sm text-neon-blue hover:text-neon-blue/80"
           >
             Can&apos;t find your book? Manually add it to your shelf.
           </Link>
