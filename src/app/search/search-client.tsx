@@ -520,7 +520,10 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         return null;
       })}
 
-      {!loading && searched && results.length > 0 && (
+      {/* The "no results at all" block above already offers this link. Show it for
+          every other searched state — including book-less searches that only matched
+          a series or an author, which previously offered no manual-add path. */}
+      {!loading && searched && (results.length > 0 || seriesMatches.length > 0 || authorMatches.length > 0) && (
         <div className="pt-2 text-center">
           <Link
             href="/search/add"
