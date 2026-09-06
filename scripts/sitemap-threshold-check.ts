@@ -33,8 +33,17 @@ async function main() {
     queryTimeoutMs: 180_000,
   });
 
+  // This filter MUST match src/app/sitemap-index.xml/route.ts exactly. It used to
+  // be a bare `visibility = 'public'` count, which is a much larger number than the
+  // set actually indexed (80,184 public vs 71,378 indexable on 2026-09-06) — so the
+  // alert fired on 5K boundaries that did NOT correspond to a new /sitemap-books/N
+  // page, sending Rebekah to GSC to submit a sitemap that did not exist. Counting
+  // the indexable set means a crossing always equals exactly one new page.
   const { rows } = await client.execute(
-    `SELECT count(*) as n FROM books WHERE visibility = 'public'`,
+    `SELECT count(*) as n FROM books b
+      WHERE b.visibility = 'public'
+        AND b.slug IS NOT NULL
+        AND EXISTS (SELECT 1 FROM book_category_ratings r WHERE r.book_id = b.id)`,
   );
   const current = Number((rows[0] as any).n);
 
@@ -58,19 +67,23 @@ async function main() {
   if (currThreshold > prevThreshold) {
     const date = new Date().toISOString().slice(0, 10);
     const reportFile = path.join(REPORTS_DIR, `sitemap-threshold-${date}.md`);
+    const newPage = currThreshold / THRESHOLD_STEP + 1;
+    const newPageUrl = `https://thebasedreader.app/sitemap-books/${newPage}`;
     const msg = `# Sitemap threshold crossed — ${date}
 
-Book count on Turso (\`visibility = 'public'\`) crossed a 5K threshold:
+Indexable book count on Turso (public + has slug + has content ratings — the same
+filter \`/sitemap-index.xml\` uses) crossed a 5K threshold:
 
 - Previous run: **${previous.toLocaleString()}**
 - Current:     **${current.toLocaleString()}**
 - New bucket:  **${currThreshold.toLocaleString()}+**
 
+This means exactly one new book sitemap now exists: **/sitemap-books/${newPage}**
+
 ## Next steps
-1. Check sitemap-books index pages at https://thebasedreader.app/sitemap-books/
-2. If a new sub-sitemap is needed, confirm it's being generated.
-3. Submit the updated sitemap index to Google Search Console:
-   https://search.google.com/search-console
+1. Confirm it is generating: ${newPageUrl} (should return <loc> entries, not an empty urlset)
+2. Submit that URL in Google Search Console: https://search.google.com/search-console
+3. The index at https://thebasedreader.app/sitemap-index.xml picks it up automatically.
 
 Submitting keeps Google's crawl budget aligned with the catalog size.
 `;
@@ -84,8 +97,9 @@ Submitting keeps Google's crawl budget aligned with the catalog size.
       tag: "sitemap-threshold",
       key: String(currThreshold),
       description:
-        `Public book count crossed ${currThreshold.toLocaleString()} (${previous.toLocaleString()} → ${current.toLocaleString()}). `
-        + `Submit the updated sitemap index to Google Search Console. Details: reports/sitemap-threshold-${date}.md`,
+        `Indexable book count crossed ${currThreshold.toLocaleString()} (${previous.toLocaleString()} → ${current.toLocaleString()}). `
+        + `New sitemap ${newPageUrl} now exists — submit that URL in Google Search Console. `
+        + `Details: reports/sitemap-threshold-${date}.md`,
     });
     console.log(
       filed
