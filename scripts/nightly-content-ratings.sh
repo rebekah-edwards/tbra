@@ -24,7 +24,12 @@ NPM_PID=""
 
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 
-server_up() { curl -s -o /dev/null -w '' "${BASE}/" 2>/dev/null; }
+# NOTE: the timeouts are load-bearing. A wedged Next.js dev server still ACCEPTS the
+# connection and then never answers, so an unbounded curl blocks forever — the readiness
+# loop below never reaches iteration 2 and the 180s abort never fires. Observed 2026-09-09:
+# the run sat silently on this call for ~2h and the night was lost. Bound it so a wedged
+# server reads as "down" and the wrapper aborts (or starts its own) as designed.
+server_up() { curl -s -o /dev/null -w '' --connect-timeout 5 --max-time 10 "${BASE}/" 2>/dev/null; }
 
 teardown() {
   if [ "$STARTED_SERVER" = "1" ]; then
