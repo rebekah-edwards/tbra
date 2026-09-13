@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtVerify } from "jose";
+import { jwtVerify, SignJWT } from "jose";
 
 const COOKIE_NAME = "tbra-session";
+// Keep in sync with SESSION_DURATION in src/lib/auth.ts (can't import it here —
+// that module pulls in db/Drizzle, which the Edge runtime can't load).
+const SESSION_DURATION = 60 * 24 * 60 * 60; // 60 days in seconds
+// Re-issue the cookie when the token is older than this, so any visit from an
+// active user rolls their session forward instead of dying at a fixed expiry.
+const REFRESH_AFTER_SECONDS = 24 * 60 * 60; // 1 day
 
 /**
  * Lightweight middleware to redirect unverified users to the verify-email page.
@@ -69,6 +75,31 @@ export async function middleware(request: NextRequest) {
     // so existing users aren't locked out)
     if (verified === false) {
       return NextResponse.redirect(new URL("/verify-email", request.url));
+    }
+
+    // Rolling session: once the token is a day old, mint a fresh one on the
+    // way through so active users never hit the fixed expiry.
+    const issuedAt = typeof payload.iat === "number" ? payload.iat : 0;
+    const ageSeconds = Math.floor(Date.now() / 1000) - issuedAt;
+    if (ageSeconds > REFRESH_AFTER_SECONDS && payload.userId) {
+      const freshToken = await new SignJWT({
+        userId: payload.userId,
+        email: payload.email,
+        verified: verified ?? true,
+      })
+        .setProtectedHeader({ alg: "HS256" })
+        .setIssuedAt()
+        .setExpirationTime(`${SESSION_DURATION}s`)
+        .sign(secret);
+      const response = NextResponse.next();
+      response.cookies.set(COOKIE_NAME, freshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: SESSION_DURATION,
+        path: "/",
+      });
+      return response;
     }
   } catch {
     // Invalid/expired token — let the page handle it

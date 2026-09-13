@@ -136,16 +136,16 @@ export default async function ProfilePage() {
 
         {/* Right: stats pills (desktop only — mobile shows below) */}
         <div className="hidden lg:block lg:flex-shrink-0 lg:w-[200px]">
-          <Link href="/library?filter=completed" className="block rounded-xl border border-neon-purple/20 bg-neon-purple/8 p-4 text-center mb-2 hover:border-neon-purple/40 transition-colors">
+          <Link href="/library?tab=activity&filter=completed" className="block rounded-xl border border-neon-purple/20 bg-neon-purple/8 p-4 text-center mb-2 hover:border-neon-purple/40 transition-colors">
             <p className="text-3xl font-bold text-foreground">{stats.completed}</p>
             <p className="text-xs text-muted">Read</p>
           </Link>
           <div className="grid grid-cols-2 gap-2">
-            <Link href="/library?filter=currently_reading" className="rounded-xl border border-neon-blue/20 bg-neon-blue/8 p-2.5 text-center hover:border-neon-blue/40 transition-colors">
+            <Link href="/library?tab=activity&filter=currently_reading" className="rounded-xl border border-neon-blue/20 bg-neon-blue/8 p-2.5 text-center hover:border-neon-blue/40 transition-colors">
               <p className="text-xl font-bold text-foreground">{stats.currentlyReading}</p>
               <p className="text-[10px] text-muted">Reading</p>
             </Link>
-            <Link href="/library?filter=tbr" className="rounded-xl border border-accent/30 bg-accent/15 p-2.5 text-center hover:border-accent/50 transition-colors">
+            <Link href="/library?tab=tbr" className="rounded-xl border border-accent/30 bg-accent/15 p-2.5 text-center hover:border-accent/50 transition-colors">
               <p className="text-xl font-bold text-foreground">{stats.tbr}</p>
               <p className="text-[10px] text-muted">TBR</p>
             </Link>
@@ -155,15 +155,15 @@ export default async function ProfilePage() {
 
       {/* Stats row — mobile only */}
       <div className="grid grid-cols-3 gap-3 lg:hidden">
-        <Link href="/library?filter=completed" className="rounded-xl border border-neon-purple/20 bg-neon-purple/8 p-3 text-center hover:border-neon-purple/40 transition-colors">
+        <Link href="/library?tab=activity&filter=completed" className="rounded-xl border border-neon-purple/20 bg-neon-purple/8 p-3 text-center hover:border-neon-purple/40 transition-colors">
           <p className="text-2xl font-bold text-foreground">{stats.completed}</p>
           <p className="text-xs text-muted">Read</p>
         </Link>
-        <Link href="/library?filter=currently_reading" className="rounded-xl border border-neon-blue/20 bg-neon-blue/8 p-3 text-center hover:border-neon-blue/40 transition-colors">
+        <Link href="/library?tab=activity&filter=currently_reading" className="rounded-xl border border-neon-blue/20 bg-neon-blue/8 p-3 text-center hover:border-neon-blue/40 transition-colors">
           <p className="text-2xl font-bold text-foreground">{stats.currentlyReading}</p>
           <p className="text-xs text-muted">Reading</p>
         </Link>
-        <Link href="/library?filter=tbr" className="rounded-xl border border-accent/30 bg-accent/15 p-3 text-center hover:border-accent/50 transition-colors">
+        <Link href="/library?tab=tbr" className="rounded-xl border border-accent/30 bg-accent/15 p-3 text-center hover:border-accent/50 transition-colors">
           <p className="text-2xl font-bold text-foreground">{stats.tbr}</p>
           <p className="text-xs text-muted">TBR</p>
         </Link>

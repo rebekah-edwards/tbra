@@ -6,7 +6,12 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export const COOKIE_NAME = "tbra-session";
-export const SESSION_DURATION = 7 * 24 * 60 * 60; // 7 days in seconds (web cookie)
+// 60 days, and the middleware re-issues the cookie on any visit once the
+// token is a day old — so active users stay signed in indefinitely and only
+// a device that stays away 60+ days sees the login wall. The old 7-day flat
+// expiry (no renewal) was logging out Android TWA testers on almost every
+// reopen.
+export const SESSION_DURATION = 60 * 24 * 60 * 60; // 60 days in seconds (web cookie)
 // Native access token is short-lived; the app silently swaps its long-lived
 // refresh token for a new access token when this expires (see
 // src/lib/auth-refresh.ts + docs/native-api-plan.md). Short lifetime keeps the
