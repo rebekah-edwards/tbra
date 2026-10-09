@@ -511,3 +511,46 @@ zero-results placement. Shipped in `505249e`.
 This does NOT close the report. The primary finding above stands: the native iOS app still has no
 manual-add entry point, and the "doesn't show up when I search" half still needs the book title from
 the tester. Report `b43b727b` stays OPEN.
+
+---
+
+## Profile photo upload shows the green fallback circle instead of the picture
+
+**Report:** `e418b146-abe6-421c-a7ab-a79d39ea1c76`, filed 2026-09-27, `page_url` = `/profile`, no book_id.
+Verbatim: "I tried to change my profile picture but it will not show the pic. It's just showing a
+green circle now"
+
+**Diagnosed only — not fixed** (app/code change, out of scope for the triage task). Filed here by
+`nightly-report-triage` on 2026-10-09 so it stops sitting silently in the queue.
+
+The "green circle" is the no-avatar fallback: every avatar slot renders
+`style={{ backgroundColor: f.avatarUrl ? undefined : "#a3e635" }}` (e.g.
+`src/app/u/[username]/followers/page.tsx:81`). So the symptom means `users.avatarUrl` is either
+unset or pointing at something that does not load — the upload did not stick.
+
+Three concrete candidates, cheapest to check first:
+
+1. **HEIC is not an accepted type on the web path.** `src/app/api/profile/avatar/route.ts`
+   `ALLOWED_TYPES = ["image/jpeg","image/png","image/gif","image/webp"]` — `image/heic` and
+   `image/heif` are absent, and HEIC is the iPhone camera default. A HEIC pick is rejected 400
+   "Invalid file type." The native app is NOT affected: `native-ios/EditProfileView.swift:218`
+   re-encodes with `image.jpegData(compressionQuality: 0.85)` before upload. This is the single
+   most likely cause for a web/Safari upload and the cheapest fix (accept HEIC and convert, or at
+   minimum say so in the error).
+2. **The local-disk branch can still produce an unreachable URL.** The route picks its storage by
+   `isProduction = !!process.env.BLOB_READ_WRITE_TOKEN`. Without that token it writes to
+   `public/uploads/avatars/` and stores a relative `/uploads/...` path — the exact shape of the
+   2026-07-16 bug the `isProduction` guard was added to prevent. Worth confirming
+   `BLOB_READ_WRITE_TOKEN` is present in BOTH Vercel prod and the Mac's `.env.local`, because
+   `users` is a bidirectionally-synced table, so a relative URL written locally propagates to live
+   where the file does not exist.
+3. **The reporter may never have seen the error.** The upload UI is on `/profile/edit`
+   (`handleAvatarUpload` → `setUploadError`), but the report's `page_url` is `/profile`, which has
+   no avatar control and no error surface at all. If she was looking at `/profile` she would see the
+   green circle and no explanation whatsoever.
+
+**What is still needed from the tester:** which device and browser (native TestFlight app vs
+Safari/Chrome on web), and whether any red error text appeared under the avatar on the edit screen.
+Candidate 1 vs 2 is decided by that one answer.
+
+**Report `e418b146` stays OPEN** — it is a code fix plus one question for the tester, not a data fix.
