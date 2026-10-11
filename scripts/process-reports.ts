@@ -279,6 +279,29 @@ export function stripEditionSuffix(normalized: string): string {
   return prev.length > 0 ? prev : normalized;
 }
 
+/**
+ * Drop a leading article for sibling matching: "the maidens" -> "maidens".
+ *
+ * Added 2026-10-11. A reader reported "Maidens" (a Spanish-edition row for Alex
+ * Michaelides' "The Maidens") as a duplicate and the matcher returned "no
+ * sibling found" — the one outcome the 2026-08-14 edition-stripping work exists
+ * to prevent, because the report isn't even flagged merge-ambiguous for a human.
+ * Foreign-edition and bare-metadata rows routinely lose the article.
+ *
+ * Returns the input unchanged if stripping would empty it, so a book actually
+ * titled "The" keeps its title. The author must still match exactly, which is
+ * what keeps "The Road"/"Road" style collapsing from reaching across works.
+ */
+export function stripLeadingArticle(normalized: string): string {
+  const next = normalized.replace(/^(?:the|a|an)\s+/, "").trim();
+  return next.length > 0 ? next : normalized;
+}
+
+/** The key two rows must agree on to be considered the same work. */
+export function siblingMatchKey(rawTitle: string): string {
+  return stripLeadingArticle(stripEditionSuffix(normalizeTitle(rawTitle)));
+}
+
 // Try to find a sibling book (same normalized title + first author) so we can merge.
 // Returns the dupe to delete + the canonical to keep, or null if ambiguous.
 async function findMergePair(reportedBookId: string): Promise<
@@ -287,8 +310,9 @@ async function findMergePair(reportedBookId: string): Promise<
   | null
 > {
   const reported = await query(
-    `SELECT b.id, b.title, b.slug, b.cover_image_url, b.cover_source, b.publication_year,
-            (SELECT a.name FROM authors a JOIN book_authors ba ON ba.author_id = a.id WHERE ba.book_id = b.id ORDER BY a.name LIMIT 1) AS author_name
+    `SELECT b.id, b.title, b.slug, b.cover_image_url, b.cover_source, b.publication_year, b.visibility,
+            (SELECT a.name FROM authors a JOIN book_authors ba ON ba.author_id = a.id WHERE ba.book_id = b.id ORDER BY a.name LIMIT 1) AS author_name,
+            (SELECT COUNT(*) FROM user_book_state WHERE book_id = b.id) AS user_count
      FROM books b WHERE b.id = ?`,
     [reportedBookId],
   );
@@ -305,24 +329,38 @@ async function findMergePair(reportedBookId: string): Promise<
   // gave 'Unravel Me Paperbac%', which cannot match the canonical "Unravel Me" —
   // the canon was excluded by the candidate query before matching ever ran, so
   // every edition-variant report died here as "no sibling found" (2026-08-14).
-  const baseTitle = stripEditionSuffix(normalizeTitle(title));
+  const baseTitle = siblingMatchKey(title);
+  // The article-stripped key no longer prefixes the raw titles that carry an
+  // article, so probe for those forms too — otherwise "maidens%" can never
+  // reach the row actually titled "The Maidens" (2026-10-11).
   const likeTitle = baseTitle.slice(0, 20).replace(/[%_]/g, "");
+  const likePatterns = [likeTitle, `the ${likeTitle}`, `a ${likeTitle}`, `an ${likeTitle}`].map(
+    (p) => `${p}%`,
+  );
   const candidates = await query(
-    `SELECT b.id, b.title, b.slug, b.cover_image_url, b.cover_source, b.publication_year,
+    `SELECT b.id, b.title, b.slug, b.cover_image_url, b.cover_source, b.publication_year, b.visibility,
             (SELECT a.name FROM authors a JOIN book_authors ba ON ba.author_id = a.id WHERE ba.book_id = b.id ORDER BY a.name LIMIT 1) AS author_name,
             (SELECT COUNT(*) FROM user_book_state WHERE book_id = b.id) AS user_count
      FROM books b
-     WHERE b.visibility = 'public' AND b.title LIKE ?`,
-    [`${likeTitle}%`],
+     WHERE b.visibility = 'public'
+       AND (b.title LIKE ? OR b.title LIKE ? OR b.title LIKE ? OR b.title LIKE ?)`,
+    likePatterns,
   );
 
-  // Match on the edition-stripped title so "<Title> Deluxe Limited Edition"
-  // groups with "<Title>". The author must still match exactly.
+  // Match on the edition-stripped, article-stripped title so both
+  // "<Title> Deluxe Limited Edition" and "The <Title>" group with "<Title>".
+  // The author must still match exactly.
   const normT = baseTitle;
   const normA = normalizeTitle(author);
-  const group = (candidates.rows as any[]).filter(
+  // The reported row itself must be in the group. The candidate query is
+  // restricted to visibility='public' (the catalog a reader can see), but a
+  // reported dupe is frequently import_only or hidden — a bare search-add or a
+  // foreign-edition row — so it was excluded from its own sibling group and the
+  // report died as "no sibling found" (2026-10-11, "Maidens"/"The Maidens").
+  const pool = [r, ...(candidates.rows as any[]).filter((c) => c.id !== r.id)];
+  const group = pool.filter(
     (c) =>
-      stripEditionSuffix(normalizeTitle(c.title ?? "")) === normT &&
+      siblingMatchKey(c.title ?? "") === normT &&
       normalizeTitle(c.author_name ?? "") === normA,
   );
   if (group.length < 2) return null;
@@ -337,7 +375,13 @@ async function findMergePair(reportedBookId: string): Promise<
   const authorSlugFragment = normA.replace(/ /g, "-");
   const isUndecorated = (c: any) =>
     normalizeTitle(c.title ?? "") === stripEditionSuffix(normalizeTitle(c.title ?? ""));
+  // A PUBLIC ROW OUTRANKS EVERYTHING (added 2026-10-11, when the reported row
+  // began entering the group regardless of visibility). A public row is the
+  // catalog-visible, slug-bearing canon; an import_only/hidden row is the
+  // artifact. Without this term a non-public dupe carrying more shelf activity
+  // than the canon would be scored canonical and the real book deleted.
   const score = (c: any) =>
+    (c.visibility === "public" ? 10_000_000 : 0) +
     (isUndecorated(c) ? 1_000_000 : 0) +
     Number(c.user_count) * 1000 +
     (c.cover_image_url ? 20 : 0) +
