@@ -549,8 +549,24 @@ Three concrete candidates, cheapest to check first:
    no avatar control and no error surface at all. If she was looking at `/profile` she would see the
    green circle and no explanation whatsoever.
 
-**What is still needed from the tester:** which device and browser (native TestFlight app vs
-Safari/Chrome on web), and whether any red error text appeared under the avatar on the edit screen.
-Candidate 1 vs 2 is decided by that one answer.
+**UPDATE 2026-10-12 (nightly-report-triage) — user-facing symptom is GONE; report `e418b146`
+resolved. Candidate 2 ruled out. Candidate 1 (HEIC) remains as a real but no-longer-urgent code gap.**
 
-**Report `e418b146` stays OPEN** — it is a code fix plus one question for the tester, not a data fix.
+Verified tonight:
+- `users.avatar_url` for `readingwithrach` (`5f7d3b1a`) is
+  `https://1ilpfl6zvuc5zdl4.public.blob.vercel-storage.com/avatars/5f7d3b1a-…-1790426321065.jpg`
+  — a Vercel Blob JPEG stamped 2026-09-26, the same day she filed the report. So an upload *did*
+  stick; she evidently retried with a non-HEIC file.
+- `HEAD` on that blob returns `200 image/jpeg`, and the live `/u/readingwithrach` HTML references
+  that exact URL — it renders in production.
+- **Candidate 2 is ruled out:** zero prod `users` rows carry a relative (non-`http`) `avatar_url`,
+  and `BLOB_READ_WRITE_TOKEN` is present in BOTH `.env.local` and the Vercel prod env. The
+  local-disk branch is not firing.
+- No tester answer is needed any more to decide 1 vs 2.
+
+**Still to fix in a code session (candidate 1 only):** `/api/profile/avatar` `ALLOWED_TYPES` omits
+`image/heic`/`image/heif`, so an iPhone-default HEIC pick 400s with "Invalid file type" while
+`/profile` shows only the green fallback and no explanation. Note the fix is *not* simply adding the
+two MIME types — a stored HEIC does not render in Chrome, so this needs server-side HEIC→JPEG
+conversion (as `native-ios/EditProfileView.swift:218` already does client-side), plus surfacing the
+error on the page the user actually lands on.
