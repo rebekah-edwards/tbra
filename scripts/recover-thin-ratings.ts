@@ -167,7 +167,19 @@ const M = "lower(r.notes) LIKE '%no evidence found%'";
       const before = await NOEV(t.id);
       const res = await fetchTrigger(t.id);
       if (res.status === 503) { console.log(`\n⛔ Budget/paused (503) — stopping at ${i}/${targets.length} to stay within the Brave cap.`); stop = true; break; }
-      if (!res.ok) { failed++; console.log(`  [${i + 1}] HTTP ${res.status} ${t.title?.slice(0, 40)}`); continue; }
+      // A non-OK response must still be checkpointed. A book that makes the
+      // prod trigger 500 is usually one that trips xAI's content moderation
+      // (`Grok API exhausted (403)` in enrichment_log), and that 403 arms the
+      // 1-hour GLOBAL auto-pause in enrich-book.ts — so the very next book
+      // 503s and the run halts. Without recording it here, the same book is
+      // re-selected first on the same-night retry and burns the night again.
+      if (!res.ok) {
+        failed++;
+        console.log(`  [${i + 1}] HTTP ${res.status} ${t.title?.slice(0, 40)}`);
+        done.add(String(t.id));
+        saveCheckpoint();
+        continue;
+      }
       const after = await NOEV(t.id);
       totalBefore += before; totalAfter += after;
       if (after < before) { improved++; console.log(`  [${i + 1}] ✓ improved  no-evid ${before}→${after}  ${t.title?.slice(0, 40)}`); }
