@@ -31,6 +31,7 @@ import {
   titleCaseGenre,
   looksNonEnglish,
   truncateSummary,
+  repairTruncatedSummary,
 } from "./sanitize";
 import {
   findEnglishCover,
@@ -270,7 +271,13 @@ async function healSummary(book: BookRow, result: HealResult): Promise<void> {
   const trimmed = book.summary.trimEnd();
   const endsWithPunctuation = /[.!?…"']$/.test(trimmed);
   const endsMidSentence = /\b(?:the|a|an|their|his|her|its|my|your|our|and|but|or|with|in|on|at|to|for|of|from|by|as|that|this|which|who|while)\.\s*$/.test(trimmed);
-  const endsCleanly = endsWithPunctuation && !endsMidSentence;
+  // A trailing ellipsis means the text was cut off, not finished. Both forms
+  // slipped past the checks above: "..." satisfies endsWithPunctuation via its
+  // final ".", and "…" was listed as valid punctuation because truncateSummary
+  // appends it as a last resort. Readers report these as "summary is cut off",
+  // so treat them as needing a rewrite rather than as a clean ending.
+  const endsTruncated = /(?:\.\.\.|…)$/.test(trimmed);
+  const endsCleanly = endsWithPunctuation && !endsMidSentence && !endsTruncated;
   if (book.summary.length > 190 || !endsCleanly) {
     // Use AI to rewrite the summary to ≤190 chars (not just truncate)
     const rewritten = await rewriteSummary(book.title, book.summary);
@@ -281,8 +288,13 @@ async function healSummary(book: BookRow, result: HealResult): Promise<void> {
         .where(eq(books.id, book.id));
       result.fixes.push(`Summary: rewritten ${book.summary.length} → ${rewritten.length} chars`);
     } else if (!rewritten) {
-      // AI rewrite failed — use mechanical truncation as last resort
-      const truncated = truncateSummary(book.summary, 190);
+      // AI rewrite failed — repair mechanically as a last resort. An
+      // ellipsis-truncated summary needs repairTruncatedSummary, because
+      // truncateSummary returns the text untouched when it already fits in 190
+      // chars, which every one of these does (they cut off at 175-189).
+      const truncated = endsTruncated
+        ? repairTruncatedSummary(book.summary)
+        : truncateSummary(book.summary, 190);
       if (truncated !== book.summary) {
         await db
           .update(books)

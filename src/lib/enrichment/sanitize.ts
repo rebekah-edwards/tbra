@@ -294,6 +294,20 @@ export function sanitizeDescription(raw: string): string | null {
   // 2026-08-08 while auditing junk descriptions).
   if (/^[^.!?]{20,150}\s+[Bb]y\s+[A-Z][\w.'’\-\s]{2,40}$/.test(text) && !/[.!?]$/.test(text)) return null;
 
+  // ── Goodreads review-page scrapes (added 2026-10-16) ──
+  // The Goodreads book page's meta description is its signup prompt followed by
+  // whichever user review happens to be on top: "Create a free account to
+  // discover what your friends think of this book! ... <reviewer> delivered a
+  // spectacular and hugely emotionally satisfying conclusion …". It is a
+  // reader's opinion, not a description, and it leaks spoilers — a beta tester
+  // reported one on Night Shift Dragons on 2026-10-16, and 24 more books were
+  // carrying the same text. None of the rules above match it: there is no
+  // retailer name, the blurb-attribution counter needs three quoted-and-
+  // attributed snippets, and a single first-person review trips no condition
+  // signal.
+  if (/\bcreate a free account to discover what your friends think\b/i.test(text)) return null;
+  if (/\bwhat (?:do|did) your friends think of this book\b/i.test(text)) return null;
+
   return text;
 }
 
@@ -476,6 +490,53 @@ export function looksNonEnglish(text: string): boolean {
 }
 
 // ── Summary Validation ──
+
+/**
+ * Repair a summary that was cut off with a trailing ellipsis, without an AI call.
+ *
+ * `truncateSummary` cannot do this: it returns the input untouched whenever the
+ * text already fits in maxChars, and these summaries are cut off at 175-189
+ * chars — inside the limit. So when heal's Grok rewrite is unavailable (the xAI
+ * 403s are recurring), there was no fallback at all and the dangling fragment
+ * stayed live, which is what readers report.
+ *
+ * Prefers the last complete sentence; if there is none (most of these are a
+ * single long sentence), drops the trailing ellipsis plus any dangling
+ * conjunction or preposition and closes with a period. Returns the input
+ * unchanged if nothing usable is left, so a bad repair can never replace a bad
+ * summary with a worse one.
+ */
+export function repairTruncatedSummary(summary: string): string {
+  const trimmed = summary.trimEnd();
+  if (!/(?:\.\.\.|…)$/.test(trimmed)) return summary;
+
+  const body = trimmed.replace(/(?:\.\.\.|…)+$/, "").trimEnd();
+
+  // A complete earlier sentence is the cleanest cut, but only if it keeps
+  // enough of the summary to still be informative.
+  const lastSentenceEnd = Math.max(
+    body.lastIndexOf(". "),
+    body.lastIndexOf("! "),
+    body.lastIndexOf("? ")
+  );
+  if (lastSentenceEnd >= 80) {
+    return body.slice(0, lastSentenceEnd + 1).trimEnd();
+  }
+
+  // Otherwise walk back over the words the cut left dangling.
+  const DANGLING =
+    /\s+(?:and|but|or|with|within|in|into|on|onto|at|to|for|of|from|by|as|that|this|these|those|which|who|whom|while|where|when|after|before|through|a|an|the|their|his|her|its|my|your|our|about|against|between|among|including|featuring|exploring|blending)$/i;
+  let out = body.replace(/[,;:\-–—]+$/, "").trimEnd();
+  let guard = 0;
+  while (DANGLING.test(out) && guard++ < 12) {
+    out = out.replace(DANGLING, "").replace(/[,;:\-–—]+$/, "").trimEnd();
+  }
+
+  // Too little left to be worth publishing — leave the original for the next
+  // run's AI rewrite rather than shipping a stub.
+  if (out.length < 60) return summary;
+  return /[.!?]$/.test(out) ? out : out + ".";
+}
 
 /** Truncate a summary to fit within maxChars at a clean sentence boundary. */
 export function truncateSummary(summary: string, maxChars = 190): string {
