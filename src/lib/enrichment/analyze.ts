@@ -166,7 +166,19 @@ export async function analyzeBookContent(
       (error as Error & { code: string }).code = "API_KEY_INVALID";
       throw error;
     }
-    if (status === 429 || status === 402 || status === 403) {
+    // 403 from xAI is a MODERATION REFUSAL (`permission-denied`, "I'm sorry, I
+    // can't help with that request"), not a quota stop — reproduced 2026-10-16:
+    // the same prompt returns 200 without the Brave snippets and 403 with them.
+    // Mapping it to API_EXHAUSTED armed the 1-hour GLOBAL auto-pause in
+    // enrich-book.ts, so one refused book 503'd every lane for an hour; that
+    // zeroed nightly-thin-recovery for six straight nights while Brave sat at
+    // ~18% of its daily cap. Let it fall through to a plain per-book "failed".
+    if (status === 403) {
+      throw new Error(
+        `Grok refused the request (403) — likely content moderation on the research snippets`
+      );
+    }
+    if (status === 429 || status === 402) {
       const error = new Error(`Grok API exhausted (${status})`);
       (error as Error & { code: string }).code = "API_EXHAUSTED";
       throw error;
