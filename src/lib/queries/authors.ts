@@ -58,6 +58,13 @@ export async function getAuthorBySlug(slug: string) {
 /**
  * Get all books by an author, excluding box sets, sorted by publication year.
  * Includes series info for grouping.
+ *
+ * Filters to visibility='public' like every other browse surface (browse.ts).
+ * Without it the page listed `import_only` rows too — on /author/lisa-jewell that
+ * was 12 foreign-language translations of books already listed in English
+ * (Dentro de casa, Dins de casa, On se reverra ×2, Gwiazda jednego przeboju,
+ * Ruya Sokagi 31, Wo deine Träume wohnen …), which read as duplicates to users
+ * and were reported as such on 2026-10-16.
  */
 export async function getAuthorBooks(authorId: string) {
   const authorBookRows = await db
@@ -72,7 +79,13 @@ export async function getAuthorBooks(authorId: string) {
     })
     .from(bookAuthors)
     .innerJoin(books, eq(bookAuthors.bookId, books.id))
-    .where(and(eq(bookAuthors.authorId, authorId), ne(books.isBoxSet, true)))
+    .where(
+      and(
+        eq(bookAuthors.authorId, authorId),
+        ne(books.isBoxSet, true),
+        eq(books.visibility, "public"),
+      ),
+    )
     .orderBy(asc(books.publicationYear));
 
   // Enrich with series info
