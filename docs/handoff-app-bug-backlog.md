@@ -570,3 +570,70 @@ Verified tonight:
 two MIME types — a stored HEIC does not render in Chrome, so this needs server-side HEIC→JPEG
 conversion (as `native-ios/EditProfileView.swift:218` already does client-side), plus surfacing the
 error on the page the user actually lands on.
+
+---
+
+## 2026-11-02 — two UX/feature reports filed overnight, captured here by nightly-report-triage
+
+Neither is a data error, so `process-reports.ts` correctly declined both and neither can be fixed
+by the triage lane. Recorded here so they are not silent; both are still `status='new'` in
+`/admin/issues`.
+
+### 1. Search within your own TBR — report `eac332b0-5abc-4d00-8fb7-7296328f98f6` (filed 2026-11-01 22:33, `/profile`)
+> "Adding a search feature in our tbr would be great!"
+
+A **feature request, not a bug**, and a reasonable one: the nav `SearchBar` (`/api/search`) searches
+the whole catalog (books/series/authors/users), and the full search page hits
+`/api/openlibrary/search` — neither is scoped to the signed-in user's own shelves. A reader with a
+four-figure TBR currently has no way to find a book she has already shelved except by scrolling.
+Scope note for whoever picks this up: the filter wants to be client-side over the already-loaded
+shelf, or a `user_id`-scoped query — do NOT route it through `/api/search/external`, which is
+ISBNdb-backed and hard-capped at 2,000 queries/day.
+
+### 2. Long content-warning descriptions are unreadable / truncated — report `914c1be1-85ba-46c0-9253-a6c3ccecb67d` (filed 2026-11-02 03:14, `/`)
+> "If the description for the warnings is too long, I can't read it all and I'm afraid I'll miss
+> important information"
+
+This is a **real UI defect, not a data problem** — measured tonight rather than left as a guess.
+
+**The data cause is ruled out.** Across all 1,070,425 non-empty `book_category_ratings.notes` rows:
+mean length **44 chars**, **max 319**, only **591 rows (0.1%) over 190 chars**, 7 over 300, and
+**zero over 500**. The generator is respecting `feedback_content_notes_concise`; there is no
+runaway note anywhere in the catalog. So nothing can be fixed by tightening the data, and the
+complaint has to be the container clipping a short note.
+
+**The clipping surface is `ExpandableNote`** in
+[content-profile.tsx:60](src/components/book/content-profile.tsx:60), the only clamp on this text
+(`content-warning-banner.tsx` wraps its notes in a full expand/collapse and does not clamp). It
+renders the note at `text-xs` with `line-clamp-3` and decides whether to show the "Read more"
+button from a **single mount-time measurement**:
+
+```
+useEffect(() => { if (el) setClamped(el.scrollHeight > el.clientHeight); }, [text]);
+```
+
+The check itself is correct, but it runs **once** and never re-runs on a layout change. Two things
+can therefore leave a note clipped with no "Read more" button at all — which is exactly the
+reported symptom:
+1. **Webfont swap.** The effect measures with whatever font is active at mount; Plus Jakarta Sans
+   loads via `next/font` afterwards. A note measured as fitting in 3 lines in the fallback face can
+   overflow once the real face swaps in, and `clamped` is never recomputed.
+2. **Any resize/reflow.** The notes sit in a `grid-cols-2 lg:grid-cols-3` grid, so column width —
+   and thus line count — changes with viewport. There is no `ResizeObserver` and no re-measure on
+   breakpoint change, so rotating a phone or crossing `lg` can strand the button off.
+
+The fix is to re-measure rather than to shorten anything: re-run the check under a
+`ResizeObserver` on the paragraph plus `document.fonts.ready`, or sidestep measurement entirely
+and always render the toggle when the text is long enough to possibly clamp. Note the element is
+*blurred*, not hidden, before "Reveal Content Details" (`blur-md select-none pointer-events-none`),
+so it does have layout at mount — the `reference_chrome_background_throttling` zero-size trap is
+**not** what is happening here.
+
+Also worth fixing in passing: the comment on
+[content-profile.tsx:68](src/components/book/content-profile.tsx:68) says "Check if text overflows
+5 lines" while the class is `line-clamp-3` — stale by two lines and misleading to the next reader.
+
+One caveat on reproduction: the reporter's `page_url` is `/`, but `ContentProfile` only renders on
+`/book/[id]` ([page.tsx:559](src/app/book/[id]/page.tsx:559)). Either she navigated from the
+homepage and the stored URL is the entry page, or there is a second surface to find. Reproduce on a
+book page first — a book with a 250–319-char note, at 390x844.
