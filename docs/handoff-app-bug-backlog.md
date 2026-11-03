@@ -637,3 +637,84 @@ One caveat on reproduction: the reporter's `page_url` is `/`, but `ContentProfil
 `/book/[id]` ([page.tsx:559](src/app/book/[id]/page.tsx:559)). Either she navigated from the
 homepage and the stored URL is the entry page, or there is a second surface to find. Reproduce on a
 book page first — a book with a 250–319-char note, at 390x844.
+
+---
+
+## 2026-11-03 — two app/code reports filed overnight, both diagnosed to a root cause
+
+Filed by `nightly-report-triage`. Neither is a book-data error, so the triage lane could not
+resolve them — but both were traced to specific lines, and the first one is a **production
+defect with a known-good fix already in this repo**.
+
+### 1. Manual cover upload fails on production — `uploadBookCover` writes to a read-only filesystem
+
+Report `f0123594-53df-4166-858d-19270edec191`, from **rebekah_creates** (super_admin) on
+`/book/the-right-thing-to-do-lovesbitca8`: *"This wouldn't let me upload a photo manually as the
+cover."* This is the admin panel's cover upload, not a missing user feature — there is no
+user-facing cover upload at all, only the admin paths.
+
+**Root cause.** [books.ts:829](src/lib/actions/books.ts:829) — `uploadBookCover` does
+`mkdir` + `writeFile` into `process.cwd()/public/uploads/covers/` and stores a
+`/uploads/covers/<name>` URL. On Vercel the filesystem is read-only outside `/tmp`, so the write
+throws; and because Functions are ephemeral, even a successful write would vanish and the URL
+would 404. This is precisely the "treat Vercel Functions as stateless + ephemeral (no durable FS)"
+rule in CLAUDE.md.
+
+**The fix already exists ~250 lines above it.** The manual-add path at
+[books.ts:575](src/lib/actions/books.ts:575) branches correctly:
+
+```
+if (process.env.BLOB_READ_WRITE_TOKEN) { put(`covers/cover-${Date.now()}.${ext}`, file, { access: "public" }) }
+else { /* local dev: writeFile under public/uploads/covers */ }
+```
+
+`uploadBookCover` has no such branch. Give it the same one and the bug is gone.
+
+**The same bug is in the iOS/v1 route too** —
+[route.ts:74](src/app/api/v1/admin/books/[id]/cover/route.ts:74) is filesystem-only as well, so
+admin cover upload from the native app is broken on production for the same reason. Fix both, or
+better, factor the branch into one helper so a third copy cannot drift in.
+
+**Why it looked like "nothing happened" rather than an error.**
+[admin-edit-panel.tsx:190](src/components/admin/admin-edit-panel.tsx:190) — `handleCoverUpload`
+awaits `uploadBookCover`, then only acts `if (result.success)` and **discards `result.error`
+entirely**. The sibling handler `selectOLCover` does `alert(result.error)`. So the server action
+returned an error and the panel silently swallowed it. Surface the error even after the server fix,
+or the next failure is just as invisible.
+
+**One more, smaller.** [books.ts:839](src/lib/actions/books.ts:839) revalidates
+`/book/${bookId}` — the UUID path — while public book URLs are slugs
+(`feedback_slug_urls_only`). A successful upload may therefore not refresh the page the user is
+actually looking at. Revalidate the slug path too.
+
+### 2. "Edit" on your own review navigates to the book page instead of opening the editor
+
+Report `bf220592-b6fb-422b-a09e-d2dbe828bad1`, from **haylahb** (beta_tester) on
+`/book/the-mystery-of-the-hidden-room-marion-harvey`: *"I keep trying to edit my review but
+whenever I click 'edit' it just keeps bringing me to the screen that tells me about the book."*
+
+Her description is exactly, literally what the code does.
+
+**Root cause.** [review-card.tsx:234](src/components/review/review-card.tsx:234) — for
+`isOwnReview`, the "Edit" affordance is a plain `<Link href={bookPath}>`. It navigates to the book
+page and opens nothing. The real editor lives behind
+[review-trigger.tsx:105](src/components/review/review-trigger.tsx:105) ("Edit your review"), whose
+`handleOpen` opens the wizard. Clicking Edit on `/book/[id]/reviews` therefore just lands you on
+the book detail page — "the screen that tells me about the book".
+
+**The machinery to fix it is already there.** `ReviewTrigger` accepts an `autoOpen` prop and
+[reacts to it flipping false→true after mount](src/components/review/review-trigger.tsx:50), which
+is how the finish-book flow already auto-opens the wizard
+([book-page-client.tsx:537](src/app/book/[id]/book-page-client.tsx:537), fed by local state at
+[:134](src/app/book/[id]/book-page-client.tsx:134)). Nothing currently reads a search param. So the
+change is two small pieces:
+1. point the Edit link at `${bookPath}?review=edit`;
+2. in `book-page-client.tsx`, seed `autoOpenReview` from that param (`useSearchParams`).
+
+**Her data is fine — verified, so nobody re-checks it.** On BOTH local and Turso she has exactly
+one review on this book (`2e84ac75`, 326 chars, created 2026-11-02 14:39:22, identical row id on
+both sides) and a `completed` shelf state. Nothing is lost or unsynced; this is purely the
+navigation affordance.
+
+Worth checking alongside `docs/handoff-finish-book-failure.md` — both are "an authenticated action
+bounces the user back to the book page" and may share a route guard.
