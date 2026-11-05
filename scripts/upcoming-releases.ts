@@ -123,51 +123,104 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // or shelve. All as plain name strings (the Google query is by author NAME).
 // ---------------------------------------------------------------------------
 async function buildAuthorPool(): Promise<string[]> {
-  const names = new Set<string>();
+  // Buzz SCORE per author, not a flat Set (changed 2026-11-05). The pool is
+  // ~9.5k names and the cursor only walks ~150/night, so the ordering decides
+  // which authors get looked at this month and which wait most of a year. The
+  // old ordering was `localeCompare` — pure alphabetical, i.e. arbitrary — so
+  // the nightly slice was ~130 consecutive surnames, overwhelmingly dead,
+  // classic, or one-shelf-row authors who will never announce anything. All
+  // three source queries already know how strong each author's signal is and
+  // were throwing it away into a Set.
+  //
+  // Weights: an NYT list appearance is the strongest forthcoming-title
+  // predictor (an author with a current bestseller has a publisher and a
+  // contract), a favorite is a deliberate reader act, a shelf row is the
+  // weakest and by far the most common.
+  const NYT_WEIGHT = 3;
+  const FAVORITE_WEIGHT = 2;
+  const SHELF_WEIGHT = 1;
+  // An author still on the lists in the last two years is live; one who charted
+  // in 2013 is usually not. Recency is a bonus, never a filter — the pool must
+  // stay complete so the rotation still reaches everyone eventually.
+  const NYT_RECENT_BONUS = 6;
+  const recentCutoff = new Date();
+  recentCutoff.setFullYear(recentCutoff.getFullYear() - 2);
+  const recentCutoffIso = recentCutoff.toISOString().slice(0, 10);
 
-  // 1. NYT bestseller authors (curated buzz signal).
+  const scores = new Map<string, number>();
+  const bump = (raw: string | null | undefined, by: number) => {
+    const name = raw?.trim();
+    if (!name) return;
+    scores.set(name, (scores.get(name) ?? 0) + by);
+  };
+
+  // 1. NYT bestseller authors (curated buzz signal). One row per cached list
+  //    entry, so a repeat charter accumulates — which is the point.
   const nyt = await db
-    .select({ author: nytBestsellers.author })
+    .select({
+      author: nytBestsellers.author,
+      firstPublishedDate: nytBestsellers.firstPublishedDate,
+    })
     .from(nytBestsellers)
     .where(isNotNull(nytBestsellers.author));
   for (const row of nyt) {
-    if (row.author?.trim()) names.add(row.author.trim());
+    bump(row.author, NYT_WEIGHT);
+    const charted = row.firstPublishedDate?.slice(0, 10);
+    if (charted && charted >= recentCutoffIso) bump(row.author, NYT_RECENT_BONUS);
   }
 
-  // 2. Authors of books our users have FAVORITED.
+  // 2. Authors of books our users have FAVORITED. Not DISTINCT any more — the
+  //    repeat count IS the signal.
   const faved = await db
-    .selectDistinct({ name: authors.name })
+    .select({ name: authors.name })
     .from(userFavoriteBooks)
     .innerJoin(bookAuthors, eq(bookAuthors.bookId, userFavoriteBooks.bookId))
     .innerJoin(authors, eq(authors.id, bookAuthors.authorId));
-  for (const row of faved) {
-    if (row.name?.trim()) names.add(row.name.trim());
-  }
+  for (const row of faved) bump(row.name, FAVORITE_WEIGHT);
 
   // 3. Authors of books our users have SHELVED (any reading state).
   const shelved = await db
-    .selectDistinct({ name: authors.name })
+    .select({ name: authors.name })
     .from(userBookState)
     .innerJoin(bookAuthors, eq(bookAuthors.bookId, userBookState.bookId))
     .innerJoin(authors, eq(authors.id, bookAuthors.authorId));
-  for (const row of shelved) {
-    if (row.name?.trim()) names.add(row.name.trim());
-  }
+  for (const row of shelved) bump(row.name, SHELF_WEIGHT);
 
-  // Stable sort so the rotation cursor stays meaningful across runs.
-  return [...names].sort((a, b) => a.localeCompare(b));
+  // Score DESC, then name ASC to break ties. Deterministic, so the rotation
+  // cursor still means the same thing from one run to the next — but the
+  // ordering itself changed, so the persisted index is stale and gets reset
+  // once (see CURSOR_ORDERING_VERSION).
+  return [...scores.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([name]) => name);
 }
 
-type Cursor = { index: number; updatedAt?: string; deferred?: string[] };
+type Cursor = { index: number; updatedAt?: string; deferred?: string[]; ordering?: number };
+
+// Bump this whenever buildAuthorPool's ORDERING changes. A persisted index is
+// only meaningful against the ordering it was recorded in: after a re-sort,
+// index 3569 is not "where we got to", it is a random spot in a differently
+// shuffled list, and every author before it would be skipped for most of a
+// year. On a version change the index resets to 0 so the sweep restarts from
+// the highest-buzz authors. The deferred queue is by NAME, not index, so it
+// survives the reset untouched.
+const CURSOR_ORDERING_VERSION = 2;
 
 function readCursor(): Cursor {
   if (!existsSync(CURSOR_FILE)) return { index: 0, deferred: [] };
   try {
     const raw = JSON.parse(readFileSync(CURSOR_FILE, "utf-8"));
-    return {
-      index: typeof raw.index === "number" ? raw.index : 0,
-      deferred: Array.isArray(raw.deferred) ? raw.deferred.filter((a: unknown) => typeof a === "string") : [],
-    };
+    const deferred = Array.isArray(raw.deferred)
+      ? raw.deferred.filter((a: unknown) => typeof a === "string")
+      : [];
+    if (raw.ordering !== CURSOR_ORDERING_VERSION) {
+      console.log(
+        `[upcoming] pool ordering changed (cursor v${raw.ordering ?? 1} → v${CURSOR_ORDERING_VERSION}) — ` +
+          `resetting index ${raw.index ?? 0} → 0; ${deferred.length} deferred author(s) kept`,
+      );
+      return { index: 0, deferred };
+    }
+    return { index: typeof raw.index === "number" ? raw.index : 0, deferred };
   } catch {
     return { index: 0, deferred: [] };
   }
@@ -235,7 +288,12 @@ function writeCursor(nextIndex: number, deferred: string[]) {
   const unique = [...new Set(deferred)].slice(0, DEFERRED_MAX);
   writeFileSync(
     CURSOR_FILE,
-    JSON.stringify({ index: nextIndex, updatedAt: new Date().toISOString(), deferred: unique }),
+    JSON.stringify({
+      index: nextIndex,
+      updatedAt: new Date().toISOString(),
+      deferred: unique,
+      ordering: CURSOR_ORDERING_VERSION,
+    }),
   );
 }
 
@@ -366,7 +424,7 @@ async function main() {
         }
         if (googleCalls >= GOOGLE_MAX) break;
         googleCalls++;
-        const r = await searchGoogleBooksByAuthorNewestDetailed(authorName, 12);
+        const r = await searchGoogleBooksByAuthorNewestDetailed(authorName, 40);
         if (r.ok || !r.quotaExhausted) {
           res = r;
           break;

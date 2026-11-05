@@ -228,17 +228,34 @@ function normalizeForMatch(s: string): string {
 /**
  * Fetch an author's most-recent / forthcoming volumes, newest first.
  *
- * Used by the upcoming-releases lane: query by exact author, ordered newest,
- * so the caller can keep only the volumes whose published date is in the
- * future. Returns the raw volumes (the caller does date parsing + dedup).
+ * Used by the upcoming-releases lane: query by exact author so the caller can
+ * keep only the volumes whose published date is in the future. Returns the raw
+ * volumes (the caller does date parsing + dedup).
+ *
+ * DELIBERATELY NOT orderBy=newest, despite the name (measured 2026-11-05).
+ * `inauthor:"<name>"` + orderBy=newest is broken on Google's side: it returns a
+ * tiny junk result set that is mostly not even by the author. Probed against
+ * six of the best-selling living authors, newest gave 0-5 volumes (Brandon
+ * Sanderson → a Writers' Yearbook and an 1886 Christian Advocate; Sarah J. Maas
+ * → nursing textbooks; Rebecca Yarros → nothing), while the SAME query under
+ * relevance gave 20 volumes, 18-20 of them genuinely the author's, including
+ * real forthcoming titles (A Court of Thorns and Roses 6, two 2027 Hazelwoods).
+ * That is why the lane reported candidates≈0 for nine straight nights — the
+ * date window, parser and author pool were never the binding constraint.
+ *
+ * maxResults is 40 (Google's per-request ceiling) because relevance ordering
+ * mixes the backlist in, so the forthcoming titles need a wide enough page to
+ * land in. It is still ONE call per author, so the daily quota cost is
+ * unchanged; the caller's window filter, dedup, junk gate and reprint guard
+ * already discard the backlist this brings along.
  */
 export async function searchGoogleBooksByAuthorNewest(
   authorName: string,
-  maxResults = 12
+  maxResults = 40
 ): Promise<GoogleBooksVolume[]> {
   // inauthor: with quotes pins the match to the full author name rather than
   // matching either token loosely.
-  return searchGoogleBooks(`inauthor:"${authorName}"`, maxResults, "newest");
+  return searchGoogleBooks(`inauthor:"${authorName}"`, maxResults, "relevance");
 }
 
 /**
@@ -248,9 +265,9 @@ export async function searchGoogleBooksByAuthorNewest(
  */
 export async function searchGoogleBooksByAuthorNewestDetailed(
   authorName: string,
-  maxResults = 12
+  maxResults = 40
 ): Promise<GoogleBooksSearchResult> {
-  return searchGoogleBooksDetailed(`inauthor:"${authorName}"`, maxResults, "newest");
+  return searchGoogleBooksDetailed(`inauthor:"${authorName}"`, maxResults, "relevance");
 }
 
 /**
