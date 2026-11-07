@@ -718,3 +718,40 @@ navigation affordance.
 
 Worth checking alongside `docs/handoff-finish-book-failure.md` — both are "an authenticated action
 bounces the user back to the book page" and may share a route guard.
+
+---
+
+## 2026-11-07 — iOS own-profile reviews showed raw HTML tags (FIXED same night)
+
+**Report** (`fe6291b7-864e-4792-a812-212bb9e68fae`, page_url `/profile`): "when I'm in this screen
+and try to read the reviews, they look like they have code in them… in the middle of a sentence it
+will randomly add `<p>`".
+
+**Not a data defect — ruled out by measurement, so nobody re-opens that line of enquiry.** Review
+text is deliberately stored as sanitized HTML (the editor emits `<div>`/`<br>`/`<p>` and
+`<span class="spoiler-tag">`). All 1,648 production reviews carrying text were run through
+[stripHtml()](src/lib/text-utils.ts:5) and **zero** leave a tag in the output; prod holds 0 rows
+with escaped `&lt;`/`&gt;` entities. Nothing in the database needed cleaning.
+
+**Cause:** the report's `/profile` comes from [ProfileView.swift:99](native-ios/ProfileView.swift:99)
+(`.reportsPage("/profile")`), and the review card in that same file rendered the stored HTML through
+a plain SwiftUI `Text()`. The sibling surfaces were already correct — `ReviewsListView` and
+`PublicProfileView` both use `ReviewHTMLText`, introduced on 2026-07-14 for this exact complaint.
+That fix missed this one card, which is the reader's *own* profile.
+
+**Fix:** `ProfileView` now renders `ReviewHTMLText(html: text, baseSize: 13)`, matching
+`PublicProfileView` (same baseSize and `lineLimit(3)`), so spoiler tap-to-reveal works here too
+instead of leaking the raw span. Builds clean; commit `ea9129e` on
+`claude/native-ios-api-shelves-upnext`.
+
+**Still outstanding:** the build is not on a device. `push-to-phone.sh` could not install —
+`devicectl` reported Rebekah's iPhone `unavailable` at 02:45 (asleep/away; installs need proximity,
+Tailscale carries app data only). Re-run `./native-ios/push-to-phone.sh` when the phone is back on
+the home network, or let it ride to the next TestFlight build. The report is deliberately left
+`status='new'` until the fix is actually visible on a device.
+
+**Audit note for whoever touches review rendering next:** `ReviewHTMLText` is the only correct way
+to show `review_text` natively. Grep for `Text(` applied to a `reviewText` before adding a new
+review surface — as of tonight the remaining plain-text use is `ReviewImportSheet.swift:259`, which
+is correct because CSV-imported review text is stripped to plain at import
+([import-goodreads.ts:427](src/lib/import/import-goodreads.ts:427)).
