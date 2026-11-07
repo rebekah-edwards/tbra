@@ -992,8 +992,12 @@ struct AllReviewsView: View {
                                         }
                                     }
                                     if let text = review.reviewText, !text.isEmpty {
-                                        Text(text)
-                                            .font(Theme.body(13))
+                                        // Reviews are stored as sanitized HTML, so a plain
+                                        // Text() here showed raw <p>/<div>/<br> tags mid
+                                        // sentence (user report 2026-11-07). The 2026-07-14
+                                        // fix covered ReviewsListView + PublicProfileView but
+                                        // missed this card, which is the reader's OWN profile.
+                                        ReviewHTMLText(html: text, baseSize: 13)
                                             .foregroundStyle(Theme.muted)
                                             .lineLimit(3)
                                             .multilineTextAlignment(.leading)
