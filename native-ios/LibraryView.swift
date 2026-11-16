@@ -435,9 +435,16 @@ struct LibraryView: View {
                         .submitLabel(.search)
                         .autocorrectionDisabled()
                     if !searchText.isEmpty {
+                        // 36pt target around a 17pt glyph: a simulator tap on
+                        // the bare glyph missed, and a thumb would too.
                         Button { searchText = "" } label: {
-                            Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.muted)
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(Theme.muted)
+                                .frame(width: 36, height: 36)
+                                .contentShape(Rectangle())
                         }
+                        .padding(.trailing, -10)
+                        .accessibilityLabel("Clear search")
                     }
                 }
                 .padding(.horizontal, 14)
