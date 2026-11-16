@@ -64,16 +64,22 @@ export default async function SeriesPage({
 
   const seriesId = resolved.series.id;
 
-  // Check if this is a franchise (has child series)
-  const childSeries = await getChildSeries(seriesId);
+  // A series can have child series (franchise) AND its own books. Fetch both:
+  // a parent's own books must never disappear just because a sub-series was
+  // attached to it (2026-11-16 — attaching Megamorphs to Animorphs replaced
+  // the 52-book list with a one-card franchise grid).
+  const [childSeries, seriesData] = await Promise.all([
+    getChildSeries(seriesId),
+    resolved.isIdLookup
+      ? getSeriesBooks(seriesId, user?.userId ?? null)
+      : getSeriesBooksBySlug(slug, user?.userId ?? null),
+  ]);
+  const hasOwnBooks = (seriesData?.books.length ?? 0) > 0;
 
-  if (childSeries.length > 0) {
-    // Franchise page — grid of sub-series
-    let seriesName = "name" in resolved.series ? resolved.series.name : "";
-    if (!seriesName) {
-      const data = await getSeriesBooks(seriesId, null);
-      seriesName = data?.name ?? "Series";
-    }
+  if (childSeries.length > 0 && !hasOwnBooks) {
+    // Pure franchise container — grid of sub-series only
+    const seriesName =
+      ("name" in resolved.series ? resolved.series.name : "") || seriesData?.name || "Series";
 
     return (
       <div>
@@ -87,11 +93,7 @@ export default async function SeriesPage({
     );
   }
 
-  // Regular series page — book list
-  const seriesData = resolved.isIdLookup
-    ? await getSeriesBooks(seriesId, user?.userId ?? null)
-    : await getSeriesBooksBySlug(slug, user?.userId ?? null);
-
+  // Series page — book list (with the sub-series grid on top when it has any)
   if (!seriesData) {
     notFound();
   }
@@ -106,6 +108,17 @@ export default async function SeriesPage({
         isAdmin={isAdmin(user)}
         canReport={!!user && ["beta_tester", "admin", "super_admin"].includes(user.accountType)}
         coverStyle={seriesData.coverStyle}
+        subSeries={
+          childSeries.length > 0 ? (
+            <FranchiseSeriesGrid
+              franchiseName={seriesData.name}
+              franchiseId={seriesId}
+              childSeries={childSeries}
+              isAdmin={isAdmin(user)}
+              embedded
+            />
+          ) : undefined
+        }
       />
     </div>
   );

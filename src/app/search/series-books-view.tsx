@@ -35,6 +35,12 @@ interface SeriesBooksViewProps {
   isAdmin?: boolean;
   canReport?: boolean;
   coverStyle?: string;
+  /**
+   * Sub-series grid for a series that is ALSO a franchise parent (Animorphs →
+   * Megamorphs). Rendered between the title and the book list so attaching a
+   * child series never hides this series' own books.
+   */
+  subSeries?: React.ReactNode;
 }
 
 type FilterTab = "core" | "all" | "sets";
@@ -45,7 +51,7 @@ const TABS: { key: FilterTab; label: string }[] = [
   { key: "sets", label: "Sets" },
 ];
 
-export function SeriesBooksView({ seriesName, seriesId, books, isLoggedIn, isAdmin = false, canReport = false, coverStyle: initialCoverStyle = "default" }: SeriesBooksViewProps) {
+export function SeriesBooksView({ seriesName, seriesId, books, isLoggedIn, isAdmin = false, canReport = false, coverStyle: initialCoverStyle = "default", subSeries }: SeriesBooksViewProps) {
   const [activeTab, setActiveTab] = useState<FilterTab>("core");
   const [coverStyle, setCoverStyle] = useState(initialCoverStyle);
   const [isTogglingCover, setIsTogglingCover] = useState(false);
@@ -116,8 +122,15 @@ export function SeriesBooksView({ seriesName, seriesId, books, isLoggedIn, isAdm
         )}
       </div>
 
+      {subSeries && (
+        <>
+          <div className="mt-5">{subSeries}</div>
+          <h2 className="mt-8 text-foreground text-base font-semibold">Books in {seriesName}</h2>
+        </>
+      )}
+
       {/* Segmented control */}
-      <div className="mt-4 flex gap-1 rounded-xl bg-surface-alt p-1">
+      <div className={`${subSeries ? "mt-3" : "mt-4"} flex gap-1 rounded-xl bg-surface-alt p-1`}>
         {TABS.map((tab) => (
           <button
             key={tab.key}
