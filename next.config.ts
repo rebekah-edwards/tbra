@@ -62,6 +62,13 @@ const nextConfig: NextConfig = {
     ];
   },
   experimental: {
+    // Server Actions reject request bodies over 1 MB by default — BEFORE the
+    // action runs, so its own size check never gets to answer. The admin
+    // cover upload (uploadBookCover) advertises and validates 2 MB; without
+    // this, any cover between 1 and 2 MB failed with an opaque 413.
+    serverActions: {
+      bodySizeLimit: "3mb",
+    },
     viewTransition: true,
     staleTimes: {
       dynamic: 0,
