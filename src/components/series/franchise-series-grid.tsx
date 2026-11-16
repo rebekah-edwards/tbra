@@ -17,6 +17,12 @@ interface FranchiseSeriesGridProps {
   franchiseId: string;
   childSeries: ChildSeries[];
   isAdmin: boolean;
+  /**
+   * Rendered INSIDE a series page that also has its own books (a real series
+   * with spin-offs, e.g. Animorphs → Megamorphs). Drops the page h1 — the
+   * book list owns it — and uses smaller cards when there are only a few.
+   */
+  embedded?: boolean;
 }
 
 export function FranchiseSeriesGrid({
@@ -24,20 +30,32 @@ export function FranchiseSeriesGrid({
   franchiseId,
   childSeries,
   isAdmin,
+  embedded = false,
 }: FranchiseSeriesGridProps) {
+  const compact = embedded && childSeries.length <= 3;
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className={`flex items-center justify-between ${embedded ? "mb-3" : "mb-6"}`}>
         <div>
-          <h1 className="neon-heading text-2xl font-bold">{franchiseName}</h1>
-          <p className="text-sm text-muted mt-1">
-            {childSeries.length} {childSeries.length === 1 ? "series" : "series"} ·{" "}
+          {embedded ? (
+            <h2 className="text-foreground text-base font-semibold">Series in this franchise</h2>
+          ) : (
+            <h1 className="neon-heading text-2xl font-bold">{franchiseName}</h1>
+          )}
+          <p className={`text-muted mt-1 ${embedded ? "text-xs" : "text-sm"}`}>
+            {childSeries.length} series ·{" "}
             {childSeries.reduce((sum, s) => sum + s.bookCount, 0)} books
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div
+        className={
+          compact
+            ? "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3"
+            : "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
+        }
+      >
         {childSeries.map((child) => (
           <Link
             key={child.id}

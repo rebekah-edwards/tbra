@@ -389,14 +389,33 @@ struct SeriesView: View {
                 }
                 .padding(.top, 14)
 
-                if !model.childSeries.isEmpty {
-                    // Franchise page — grid of sub-series, mirroring the web's
-                    // FranchiseSeriesGrid branch.
+                // A series can have sub-series AND its own books (Animorphs →
+                // Megamorphs). Show both — attaching a child series must never
+                // hide the parent's own book list (web series/[slug] parity).
+                let hasSubSeries = !model.childSeries.isEmpty
+                let hasOwnBooks = !model.books.isEmpty
+
+                if hasSubSeries {
+                    if hasOwnBooks {
+                        Text("Series in this franchise")
+                            .font(Theme.body(17, .semibold))
+                            .foregroundStyle(Theme.foreground)
+                    }
                     Text("\(model.childSeries.count) series · \(model.childSeries.reduce(0) { $0 + $1.bookCount }) books")
-                        .font(Theme.body(15))
+                        .font(Theme.body(hasOwnBooks ? 13 : 15))
                         .foregroundStyle(Theme.muted)
+                        .padding(.top, hasOwnBooks ? -10 : 0)
                     franchiseGrid
-                } else {
+                }
+
+                if !hasSubSeries || hasOwnBooks {
+                    if hasSubSeries {
+                        Text("Books in \(model.name)")
+                            .font(Theme.body(17, .semibold))
+                            .foregroundStyle(Theme.foreground)
+                            .padding(.top, 10)
+                    }
+
                     segmented
 
                     if tab == .core {
@@ -432,7 +451,9 @@ struct SeriesView: View {
     }
 
     private var franchiseGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)],
+        // Smaller cards when a few spin-offs sit above the series' own books.
+        let compact = !model.books.isEmpty && model.childSeries.count <= 3
+        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 14), count: compact ? 3 : 2),
                   alignment: .leading, spacing: 18) {
             ForEach(model.childSeries) { child in
                 NavigationLink(value: SeriesRoute(slug: child.slug ?? child.id)) {
@@ -443,7 +464,7 @@ struct SeriesView: View {
                         }
                         .aspectRatio(2 / 3, contentMode: .fit)
                         Text(child.name)
-                            .font(Theme.body(15, .semibold))
+                            .font(Theme.body(compact ? 13 : 15, .semibold))
                             .foregroundStyle(Theme.foreground)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
