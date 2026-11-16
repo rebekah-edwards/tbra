@@ -134,29 +134,52 @@ export async function analyzeBookContent(
     apiKey,
   });
 
+  // A 429 from xAI is usually a brief rate-limit blip, not a spent budget — on
+  // 2026-10-21 and 10-24 a single 429 was mapped straight to API_EXHAUSTED,
+  // which arms the 1-hour GLOBAL auto-pause in enrich-book.ts and cut those
+  // nights to 8 and 82 of 450 books, while a test call minutes later succeeded.
+  // Back off and re-ask a few times first; only a 429 that survives every
+  // retry is reported as exhaustion. 402 (out of credit) is never retried.
+  // Waits total ~26s: the prod trigger route has maxDuration=120s, so the
+  // ladder has to leave room for the search phase and the final Grok call.
+  const RATE_LIMIT_BACKOFF_MS = [3_000, 8_000, 15_000];
   let response;
   try {
-    // 90-second timeout to prevent hanging on stuck API calls
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90_000);
-    response = await client.chat.completions.create(
-      {
-        // Env-overridable (2026-07-23): grok-3 no longer appears in the
-        // account's /v1/models list — it still answers as a legacy alias,
-        // but the migration path to grok-4.5 should be a config change,
-        // not a deploy.
-        model: process.env.XAI_ANALYZE_MODEL || "grok-3",
-        messages: [
+    for (let attempt = 0; ; attempt++) {
+      // 90-second timeout to prevent hanging on stuck API calls
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 90_000);
+      try {
+        response = await client.chat.completions.create(
           {
-            role: "user",
-            content: buildPrompt(context),
+            // Env-overridable (2026-07-23): grok-3 no longer appears in the
+            // account's /v1/models list — it still answers as a legacy alias,
+            // but the migration path to grok-4.5 should be a config change,
+            // not a deploy.
+            model: process.env.XAI_ANALYZE_MODEL || "grok-3",
+            messages: [
+              {
+                role: "user",
+                content: buildPrompt(context),
+              },
+            ],
+            temperature: 0.3,
           },
-        ],
-        temperature: 0.3,
-      },
-      { signal: controller.signal }
-    );
-    clearTimeout(timeout);
+          { signal: controller.signal }
+        );
+        break;
+      } catch (err: unknown) {
+        const retryable = (err as { status?: number }).status === 429;
+        if (!retryable || attempt >= RATE_LIMIT_BACKOFF_MS.length) throw err;
+        const waitMs = RATE_LIMIT_BACKOFF_MS[attempt] + Math.floor(Math.random() * 2_000);
+        console.warn(
+          `[enrichment] Grok 429 (rate limited) — retry ${attempt + 1}/${RATE_LIMIT_BACKOFF_MS.length} in ${Math.round(waitMs / 1000)}s`
+        );
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
   } catch (err: unknown) {
     const status = (err as { status?: number }).status;
     // 401 = bad/expired key — distinct code so a dead key is never confused with

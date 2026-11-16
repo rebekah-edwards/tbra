@@ -40,6 +40,8 @@ const SECRET = process.env.ENRICHMENT_SECRET!;
 const URL = process.env.TRIGGER_URL || "https://thebasedreader.app/api/enrichment/trigger";
 const MAX = Number(process.env.MAX_BOOKS) || 40;
 const TIER = process.env.TIER || "1";
+// Minimum "no evidence found" notes (of 12 categories) for a non-shelved book to be worth a re-enrich.
+const MIN_NO_EVID = Number(process.env.MIN_NO_EVID ?? 9);
 const CHECKPOINT = `/tmp/tbra-thin-recovery-checkpoint.json`;
 // How long a checkpoint stays valid. Its ONLY job is to let a killed run resume
 // within the same night without redoing books, so this must be comfortably
@@ -74,11 +76,15 @@ const M = "lower(r.notes) LIKE '%no evidence found%'";
   // against a cheap id set, and titles are fetched only for the ≤MAX final targets.
   console.log("Selecting thin books by ratings (decomposed, no books-join)…");
   const M2 = "lower(notes) LIKE '%no evidence found%'";
-  const thinByRatings = (await remote.execute(`
-    SELECT book_id AS id FROM book_category_ratings
+  // The no-evidence COUNT rides along (it is already computed for the HAVING)
+  // so candidates can be ordered thinnest-first — see the sort below.
+  const thinRows = (await remote.execute(`
+    SELECT book_id AS id, SUM(CASE WHEN ${M2} THEN 1 ELSE 0 END) AS ne FROM book_category_ratings
     GROUP BY book_id
     HAVING CAST(SUM(CASE WHEN ${M2} THEN 1 ELSE 0 END) AS REAL)/COUNT(*) >= 0.5
-  `)).rows.map((r: any) => String(r.id));
+  `)).rows as any[];
+  const noEvid = new Map<string, number>(thinRows.map((r) => [String(r.id), Number(r.ne) || 0]));
+  const thinByRatings = thinRows.map((r) => String(r.id));
   heartbeat(`thin-by-ratings: ${thinByRatings.length}`);
 
   const publicIds = new Set(
@@ -126,9 +132,21 @@ const M = "lower(r.notes) LIKE '%no evidence found%'";
 
   let eligible = candidates
     .filter((c) => !recentSuccess.has(String(c.id)) && !done.has(String(c.id)))
-    .map((c) => ({ ...c, prio: prio.has(String(c.id)) ? 1 : 0 }));
+    .map((c) => ({ ...c, prio: prio.has(String(c.id)) ? 1 : 0, ne: noEvid.get(String(c.id)) ?? 0 }));
   if (TIER === "1") eligible = eligible.filter((c) => c.prio === 1);
-  eligible.sort((a, b) => b.prio - a.prio); // user-shelved first
+  // Thinnest-first within each tier (added 2026-11-16). Until now the draw
+  // inside a tier was arbitrary (SQLite group order), and five nights at the
+  // same ~9/12 starting headroom yielded anywhere from 48% to 87% improved —
+  // the draw, not the headroom, was moving the result. Ordering by no-evidence
+  // count spends the nightly Brave budget on the books with the most to gain.
+  // MIN_NO_EVID floors the non-shelved pool so the lane does not grind through
+  // 6/12 books that rarely move; user-shelved books are exempt (readers see them).
+  const beforeFloor = eligible.length;
+  eligible = eligible.filter((c) => c.prio === 1 || c.ne >= MIN_NO_EVID);
+  eligible.sort((a, b) => b.prio - a.prio || b.ne - a.ne || (a.id < b.id ? -1 : 1));
+  if (beforeFloor !== eligible.length) {
+    console.log(`Floor MIN_NO_EVID=${MIN_NO_EVID}: ${beforeFloor - eligible.length} non-shelved books below the floor set aside.`);
+  }
   const targets = eligible.slice(0, MAX);
 
   // Backfill titles for just the final targets (only used in log lines).
@@ -146,6 +164,15 @@ const M = "lower(r.notes) LIKE '%no evidence found%'";
     `TIER ${TIER}: ${candidates.length} thin public, ${recentSuccess.size} excluded (21d), ` +
       `${eligible.length} eligible (${eligible.filter((e) => e.prio === 1).length} user-shelved) — processing ${targets.length} (cap ${MAX})\n`,
   );
+
+  // SELECT_ONLY=1 prints the plan and exits without spending any Brave/Grok budget.
+  if (process.env.SELECT_ONLY) {
+    const hist = new Map<number, number>();
+    for (const e of eligible) hist.set(e.ne, (hist.get(e.ne) ?? 0) + 1);
+    console.log("eligible by no-evidence count:", [...hist.entries()].sort((a, b) => b[0] - a[0]).map(([k, v]) => `${k}:${v}`).join("  "));
+    for (const t of targets.slice(0, 15)) console.log(`  prio=${t.prio} no-evid=${t.ne}  ${t.title?.slice(0, 60)}`);
+    process.exit(0);
+  }
 
   const fetchTrigger = async (bookId: string) => {
     const ac = new AbortController();
@@ -167,7 +194,19 @@ const M = "lower(r.notes) LIKE '%no evidence found%'";
       const before = await NOEV(t.id);
       const res = await fetchTrigger(t.id);
       if (res.status === 503) { console.log(`\n⛔ Budget/paused (503) — stopping at ${i}/${targets.length} to stay within the Brave cap.`); stop = true; break; }
-      if (!res.ok) { failed++; console.log(`  [${i + 1}] HTTP ${res.status} ${t.title?.slice(0, 40)}`); continue; }
+      // A non-OK response must still be checkpointed. A book that makes the
+      // prod trigger 500 is usually one that trips xAI's content moderation
+      // (`Grok API exhausted (403)` in enrichment_log), and that 403 arms the
+      // 1-hour GLOBAL auto-pause in enrich-book.ts — so the very next book
+      // 503s and the run halts. Without recording it here, the same book is
+      // re-selected first on the same-night retry and burns the night again.
+      if (!res.ok) {
+        failed++;
+        console.log(`  [${i + 1}] HTTP ${res.status} ${t.title?.slice(0, 40)}`);
+        done.add(String(t.id));
+        saveCheckpoint();
+        continue;
+      }
       const after = await NOEV(t.id);
       totalBefore += before; totalAfter += after;
       if (after < before) { improved++; console.log(`  [${i + 1}] ✓ improved  no-evid ${before}→${after}  ${t.title?.slice(0, 40)}`); }

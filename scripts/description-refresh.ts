@@ -38,6 +38,7 @@ config({ path: ".env.local" });
 import Database from "better-sqlite3";
 import path from "path";
 import { enrichBook } from "../src/lib/enrichment/enrich-book";
+import { googleBooksBudgetSpent } from "../src/lib/google-books";
 import { startWatchdogExemption } from "./lib/watchdog-exempt";
 
 const DB_PATH = path.join(process.cwd(), "data", "tbra.db");
@@ -63,6 +64,17 @@ const CONCURRENCY = Number(process.env.CONCURRENCY) || 5;
 // budget. Set USE_BRAVE=1 to run the expensive tail deliberately against the
 // residue that the free tiers can't crack.
 const USE_BRAVE = process.env.USE_BRAVE === "1";
+
+// Skip books already attempted within this window.
+//
+// Every enrichBook run writes an enrichment_log row even when it finds nothing,
+// so this is an ATTEMPT cooldown, not a success cooldown — which is the point.
+// Google Books is hard-capped at 1,000 queries/day and cannot be raised (checked
+// 2026-08-08: the Cloud Console offers no increase beyond 1K), so without this
+// the nightly run re-asks the same dead books forever and the entire daily
+// allowance is spent re-confirming known failures instead of reaching the ~14k
+// books nobody has tried yet. Same 21-day convention recover-thin-ratings uses.
+const COOLDOWN_DAYS = Number(process.env.COOLDOWN_DAYS) || 21;
 // After this many consecutive no-op enrichments, confirm whether a global
 // auto-pause is the cause (cheap to be wrong; we only stop if truly paused).
 const UNCHANGED_BACKOFF_CHECK = 20;
@@ -133,10 +145,15 @@ function selectBatch(): Row[] {
          AND (b.description_stale = 1
               OR b.description IS NULL
               OR TRIM(b.description) = '')
+         AND NOT EXISTS (
+           SELECT 1 FROM enrichment_log e
+           WHERE e.book_id = b.id
+             AND e.created_at > datetime('now', ?)
+         )
        ORDER BY shelved DESC, b.updated_at ASC
        LIMIT ?`,
     )
-    .all(BATCH_SIZE) as Row[];
+    .all(`-${COOLDOWN_DAYS} days`, BATCH_SIZE) as Row[];
 }
 
 const descStateStmt = db.prepare(
@@ -227,6 +244,16 @@ async function main() {
       if (stopReason) return;
       if (Date.now() - started >= MAX_RUNTIME_MS) {
         stopReason = `time ceiling (${MAX_RUNTIME_MIN}min)`;
+        return;
+      }
+      // Google Books is the only tier that cracks this population (measured
+      // 2026-11-05: 19.7% yield with it, 0.06% without). Once the shared daily
+      // budget refuses a call, every further book would be processed without
+      // it and still pay the 21-day attempt cooldown — so stop here and leave
+      // the rest eligible for the next run. (USE_BRAVE runs keep going: that
+      // path has its own source.)
+      if (!USE_BRAVE && googleBooksBudgetSpent()) {
+        stopReason = "Google Books daily budget reached";
         return;
       }
       const i = cursor++;

@@ -74,10 +74,21 @@ export type GoogleBooksSearchResult = {
   ok: boolean;
   /** HTTP status, or null when the request threw / no key was configured. */
   status: number | null;
-  /** True when the failure is a daily-quota exhaustion (429, or the 503 the API returns once the Queries-per-day limit is spent). */
+  /** True when the failure is a daily-quota exhaustion (429, or a 503 whose body names a quota/limit reason). A bare `backendFailed` 503 is transient and reports false. */
   quotaExhausted: boolean;
   volumes: GoogleBooksVolume[];
 };
+
+// Set the first time this process is refused by the shared daily budget. Batch
+// lanes poll it to STOP instead of grinding on with their only productive tier
+// switched off (description-refresh burned a 21-day cooldown on ~1,750 books a
+// night that way — see googleBooksBudgetSpent()).
+let budgetSpentThisProcess = false;
+
+/** True once the shared Google Books daily budget has refused a call in this process. */
+export function googleBooksBudgetSpent(): boolean {
+  return budgetSpentThisProcess;
+}
 
 export async function searchGoogleBooksDetailed(
   query: string,
@@ -97,6 +108,7 @@ export async function searchGoogleBooksDetailed(
   // "pacific" because Google's Queries-per-day resets at midnight Pacific, not UTC.
   const budget = await consumeApiQuotaShared("google_books", GOOGLE_BOOKS_DAILY_MAX, "pacific");
   if (!budget.ok) {
+    budgetSpentThisProcess = true;
     console.warn(
       `[google-books] daily budget reached (${budget.dailyCount}/${GOOGLE_BOOKS_DAILY_MAX}) — skipping "${query}"`,
     );
@@ -121,13 +133,28 @@ export async function searchGoogleBooksDetailed(
           await fs.appendFile("/tmp/tbra-google-books-errors.log", logLine);
         } catch { /* ignore fs errors */ }
       }
-      // The Queries-per-day limit surfaces as 429 on a direct probe but as 503
-      // through this endpoint once the project's daily quota is spent, so treat
-      // both as exhaustion rather than as a transient outage.
+      // 429 is always quota. 503 is AMBIGUOUS and must be read from the body:
+      // Google answers 503 both when the project's Queries-per-day is spent
+      // (reason dailyLimitExceeded / rateLimitExceeded / RESOURCE_EXHAUSTED)
+      // and for plain upstream flakiness (reason backendError / backendFailed).
+      // Treating every 503 as exhaustion (pre-2026-11-16) made a 17-night
+      // `backendFailed` outage read as "quota gone": it tripped the callers'
+      // quota-abort streaks and truncated runs while the real counter sat at
+      // ~245/950. Only a 503 whose body names a limit counts as exhaustion; any
+      // other 503 is a transient failure the caller may retry or defer.
+      let quotaExhausted = res.status === 429;
+      if (res.status === 503) {
+        try {
+          const body = await res.text();
+          quotaExhausted = /dailyLimitExceeded|rateLimitExceeded|quotaExceeded|RESOURCE_EXHAUSTED|Queries per day/i.test(body);
+          const reason = body.match(/"reason"\s*:\s*"([^"]+)"/)?.[1] ?? "unknown";
+          console.error(`[google-books] 503 reason=${reason} → ${quotaExhausted ? "quota exhausted" : "transient upstream failure"}`);
+        } catch { /* unreadable body: leave as transient */ }
+      }
       return {
         ok: false,
         status: res.status,
-        quotaExhausted: res.status === 429 || res.status === 503,
+        quotaExhausted,
         volumes: [],
       };
     }

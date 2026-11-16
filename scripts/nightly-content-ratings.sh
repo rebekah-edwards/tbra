@@ -1,0 +1,120 @@
+#!/bin/bash
+# nightly-content-ratings.sh — self-contained wrapper for the content-ratings backfill.
+#
+# WHY: enrich-content-700.ts calls the local Next.js API at http://localhost:3000/api/enrichment/trigger.
+# If no dev server is up, EVERY book fails "fetch failed" and the whole night silently no-ops
+# (observed 2026-07-06). This wrapper guarantees the launchd-managed dev server is answering before
+# enriching; it never starts or tears down a server of its own (see step 2).
+#
+# Steps: pull from Turso -> ensure server -> enrich -> wait for PT push window -> push delta -> teardown.
+# Exit code is the PUSH step's exit code so the schedule gate (exit 3) still surfaces to the caller.
+#
+# Usage: ./scripts/nightly-content-ratings.sh
+
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_DIR"
+
+PORT=3000
+BASE="http://localhost:${PORT}"
+STARTED_SERVER=0
+NPM_PID=""
+
+log() { echo "[$(date '+%H:%M:%S')] $*"; }
+
+# NOTE: the timeouts are load-bearing. A wedged Next.js dev server still ACCEPTS the
+# connection and then never answers, so an unbounded curl blocks forever — the readiness
+# loop below never reaches iteration 2 and the 180s abort never fires. Observed 2026-09-09:
+# the run sat silently on this call for ~2h and the night was lost. Bound it so a wedged
+# server reads as "down" and the wrapper restarts the launchd service or aborts.
+server_up() { curl -s -o /dev/null -w '' --connect-timeout 5 --max-time 10 "${BASE}/" 2>/dev/null; }
+
+teardown() {
+  if [ "$STARTED_SERVER" = "1" ]; then
+    log "Tearing down dev server we started (npm pid=${NPM_PID})..."
+    # Kill the port listener (next-server child) and the npm parent.
+    lsof -ti tcp:${PORT} 2>/dev/null | xargs kill 2>/dev/null || true
+    [ -n "$NPM_PID" ] && pkill -P "$NPM_PID" 2>/dev/null || true
+    [ -n "$NPM_PID" ] && kill "$NPM_PID" 2>/dev/null || true
+    log "Teardown complete."
+  else
+    log "Left pre-existing dev server running (we did not start it)."
+  fi
+}
+trap teardown EXIT
+
+# 1. Pull latest from Turso.
+log "=== PULL ==="
+./scripts/sync-incremental.sh pull
+
+# 2. Ensure a dev server on :3000.
+if server_up; then
+  log "Dev server already up on :${PORT} — reusing it."
+else
+  # :3000 is a permanent launchd service (com.tbra.devserver) since 2026-08.
+  # This wrapper used to start its OWN `npm run dev` here, which fought the
+  # launchd-managed server for the port (observed 2026-09-09) — and its teardown
+  # then killed whatever was listening. Never start a competing server: confirm
+  # the service is really down, ask launchd to restart it once, and abort if it
+  # still does not answer. (Changed 2026-11-16.)
+  DOWN=1
+  for i in 1 2 3; do   # a busy server can miss one 10s probe; require three misses
+    sleep 10
+    if server_up; then DOWN=0; log "Dev server answered on re-probe ${i} — reusing it."; break; fi
+  done
+  if [ "$DOWN" = "1" ]; then
+    log "Dev server on :${PORT} is not answering — asking launchd to restart com.tbra.devserver..."
+    launchctl kickstart -k "gui/$(id -u)/com.tbra.devserver" 2>&1 | sed 's/^/  launchctl: /' || true
+    READY=0
+    for i in $(seq 1 60); do   # up to ~180s for a cold Next.js compile
+      if server_up; then READY=1; log "Dev server ready after ~$((i*3))s."; break; fi
+      sleep 3
+    done
+    if [ "$READY" != "1" ]; then
+      log "ERROR: dev server never became ready after a launchd restart — aborting before enrich to avoid a silent all-fail run."
+      exit 1
+    fi
+  fi
+fi
+
+# 3. Enrich.
+log "=== ENRICH ==="
+npx tsx scripts/enrich-content-700.ts
+
+# 4. Wait for the push window if enrichment finished early.
+#
+# WHY: push-content-ratings-to-turso.ts gates on 3:00-6:00 AM *Pacific*, but this Mac
+# runs on Eastern and the cron slot is ET, so a fast night can finish before the window
+# opens — the push exits 3 and the night's ratings sit stranded locally until the next
+# run (observed 2026-08-14, when a 56-min enrichment off the old 4:53 AM ET slot landed
+# at 2:50 AM PT, 10 minutes short). The slot was moved to 5:30 AM ET so a typical ~1h
+# night needs no wait at all; this loop only covers the short-night case.
+#
+# Deliberately does NOT set TBRA_FORCE — waiting for the real window preserves the gate's
+# purpose (keep Turso load off the live site) instead of bypassing it.
+pt_hour() { echo $((10#$(TZ=America/Los_Angeles date +%H))); }
+
+WAITED=0
+while [ "$(pt_hour)" -lt 3 ]; do
+  if [ "$WAITED" -eq 0 ]; then
+    log "Finished at $(pt_hour):xx PT, before the 3:00 AM PT push window — waiting for it to open..."
+  fi
+  if [ "$WAITED" -ge 180 ]; then
+    log "WARNING: waited ${WAITED}min and the window never opened — running the push anyway so its gate reports the real reason."
+    break
+  fi
+  sleep 60
+  WAITED=$((WAITED + 1))
+done
+if [ "$WAITED" -gt 0 ]; then
+  log "Waited ${WAITED}min; PT hour is now $(pt_hour)."
+fi
+
+# 5. Push delta to Turso (schedule-gated; its exit code is our exit code).
+log "=== PUSH ==="
+npx tsx scripts/push-content-ratings-to-turso.ts
+PUSH_EXIT=$?
+log "Push exited ${PUSH_EXIT}."
+exit $PUSH_EXIT

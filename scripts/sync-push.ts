@@ -9,6 +9,8 @@
  * What it pushes (INSERT OR IGNORE — never deletes, never overwrites):
  *   - new books (and their book_authors, book_genres, book_series, book_category_ratings, enrichment_log)
  *   - new authors / series / genres referenced by those books
+ *   - new reported_issues rows created locally (e.g. nightly-junk-sweep flags) —
+ *     INSERT OR IGNORE by id only, so live admin resolutions are never overwritten
  *   - landing_page_books and landing_page_copy (full replace — admin-managed)
  *
  * Does NOT push user-data tables (those are bidirectional; admin edits happen on live).
@@ -98,11 +100,22 @@ const stallInterval = setInterval(() => {
 }, 30_000).unref();
 void stallInterval;
 
+/**
+ * Every drop is reported. `INSERT OR IGNORE` swallows UNIQUE/FK conflicts without
+ * raising, and the per-row fallback used to `catch {}` outright, so this function
+ * could discard any number of rows and still return to a caller that printed a
+ * cheerful "✓ Pushed N". On 2026-07-30 that was hiding 549 books dropped every
+ * single night — benign (they are duplicate rows whose identifier already belongs
+ * to a live book), but a REAL regression would have looked exactly the same.
+ * The counts are the only tell, so we surface them here rather than trusting
+ * every call site to compare two numbers by eye.
+ */
 async function batchInsert(table: string, cols: string[], rows: any[][]) {
   if (rows.length === 0) return 0;
   const placeholders = cols.map(() => '?').join(',');
   const sql = `INSERT OR IGNORE INTO ${table} (${cols.join(',')}) VALUES (${placeholders})`;
   let inserted = 0;
+  const reasons = new Map<string, number>();
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const chunk = rows.slice(i, i + BATCH_SIZE);
     try {
@@ -118,10 +131,30 @@ async function batchInsert(table: string, cols: string[], rows: any[][]) {
         try {
           const res = await remote.execute({ sql, args: row });
           inserted += Number(res.rowsAffected || 0);
-        } catch {
-          // Individual FK failure — skip silently
+        } catch (rowErr: any) {
+          // Tally instead of discarding. Strip the row-specific tail so N failures
+          // of the same kind collapse into one counted line.
+          const msg = String(rowErr?.message ?? rowErr)
+            .replace(/\s*\(.*$/, '')
+            .slice(0, 120);
+          reasons.set(msg, (reasons.get(msg) ?? 0) + 1);
         }
       }
+    }
+  }
+  const skipped = rows.length - inserted;
+  if (skipped > 0) {
+    console.warn(`     ⚠ ${table}: ${skipped} of ${rows.length} row(s) NOT inserted`);
+    if (reasons.size > 0) {
+      [...reasons.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .forEach(([msg, n]) => console.warn(`         ${n}× ${msg}`));
+    } else {
+      // No exception was ever raised, so every drop came from OR IGNORE itself:
+      // the row duplicates an existing PK, or collides on a UNIQUE index
+      // (books: isbn_13 / open_library_key), or its FK target isn't live yet.
+      console.warn(`         reason: INSERT OR IGNORE — row already on live, or a UNIQUE/FK constraint rejected it`);
     }
   }
   return inserted;
@@ -129,17 +162,21 @@ async function batchInsert(table: string, cols: string[], rows: any[][]) {
 
 async function fetchIdSet(table: string, col = 'id'): Promise<Set<string>> {
   const set = new Set<string>();
-  // Page deterministically — LIMIT/OFFSET without ORDER BY can skip/repeat rows under load
-  let offset = 0;
+  // Keyset pagination (2026-07-22): the old LIMIT/OFFSET walk made Turso
+  // re-scan from row 0 for every page — O(n²) on 70k+ row tables. Walking the
+  // unique column directly keeps every page O(page) and stays deterministic.
+  let cursor: string | null = null;
   const page = 10000;
   while (true) {
     const r = await remote.execute(
-      `SELECT ${col} FROM ${table} ORDER BY ${col} LIMIT ${page} OFFSET ${offset}`
+      cursor === null
+        ? { sql: `SELECT ${col} FROM ${table} ORDER BY ${col} LIMIT ${page}`, args: [] as any[] }
+        : { sql: `SELECT ${col} FROM ${table} WHERE ${col} > ? ORDER BY ${col} LIMIT ${page}`, args: [cursor] }
     );
     if (r.rows.length === 0) break;
     for (const row of r.rows as any[]) set.add(String(row[col]));
+    cursor = String((r.rows[r.rows.length - 1] as any)[col]);
     if (r.rows.length < page) break;
-    offset += page;
   }
   return set;
 }
@@ -316,12 +353,14 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
   const liveGenresAfter = await fetchIdSet('genres');
 
   // table, pk cols, [(col name, live set to check)]
+  // book_category_ratings + enrichment_log are handled by the delta pass
+  // BELOW this loop (2026-07-22) — at ~500k/~300k live rows, building their
+  // full live PK sets here was the CPU hang that got whole pushes watchdog-
+  // reaped at step 5c on 2026-07-19/20 (so 5e never ran either).
   const JUNCTION_TABLES: Array<[string, string[], Array<[string, Set<string>]>]> = [
     ['book_authors',          ['book_id', 'author_id'],   [['book_id', liveBooksAfter], ['author_id', liveAuthorsAfter]]],
     ['book_genres',           ['book_id', 'genre_id'],    [['book_id', liveBooksAfter], ['genre_id',  liveGenresAfter]]],
     ['book_series',           ['book_id', 'series_id'],   [['book_id', liveBooksAfter], ['series_id', liveSeriesAfter]]],
-    ['book_category_ratings', ['id'],                     [['book_id', liveBooksAfter]]],
-    ['enrichment_log',        ['id'],                     [['book_id', liveBooksAfter]]],
   ];
 
   for (const [tbl, pk, fkChecks] of JUNCTION_TABLES) {
@@ -329,18 +368,22 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
       const cols = getCols(tbl);
       if (cols.length === 0) continue;
 
-      // Build live PK set
+      // Build live PK set — rowid keyset walk (2026-07-22); the old
+      // LIMIT/OFFSET pagination re-scanned from row 0 every page.
       const liveSet = new Set<string>();
-      let offset = 0;
-      const page = 20000;
-      while (true) {
-        const r = await remote.execute(
-          `SELECT ${pk.join(',')} FROM ${tbl} ORDER BY ${pk[0]} LIMIT ${page} OFFSET ${offset}`
-        );
-        if (r.rows.length === 0) break;
-        for (const row of r.rows as any[]) liveSet.add(pk.map((c) => String(row[c])).join('\x1f'));
-        if (r.rows.length < page) break;
-        offset += page;
+      {
+        let cursor = -1;
+        const page = 20000;
+        while (true) {
+          const r = await remote.execute({
+            sql: `SELECT ${pk.join(',')}, rowid AS __rid FROM ${tbl} WHERE rowid > ? ORDER BY rowid LIMIT ${page}`,
+            args: [cursor],
+          });
+          if (r.rows.length === 0) break;
+          for (const row of r.rows as any[]) liveSet.add(pk.map((c) => String(row[c])).join('\x1f'));
+          cursor = Number((r.rows[r.rows.length - 1] as any).__rid);
+          if (r.rows.length < page) break;
+        }
       }
 
       // Pre-filter: drop rows whose FKs aren't present on Turso
@@ -371,6 +414,56 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
     }
   }
 
+  // ─── 5c-delta: big junction tables via timestamp window ───────
+  // (2026-07-22) book_category_ratings (~500k) and enrichment_log (~300k)
+  // can't be full-diffed like the tables above — building their live PK sets
+  // was a 20+ minute CPU hang that got whole pushes watchdog-reaped. Every
+  // local write to these tables stamps a fresh timestamp, so only recent
+  // local rows can be unpushed: take a generous 21-day window, FK-filter,
+  // ask live which of exactly those ids it already has (chunked IN), and
+  // insert the missing ones. INSERT OR IGNORE semantics unchanged.
+  const DELTA_JUNCTION: Array<[string, string]> = [
+    ['book_category_ratings', 'updated_at'],
+    ['enrichment_log',        'created_at'],
+  ];
+  for (const [tbl, dcol] of DELTA_JUNCTION) {
+    try {
+      const cols = getCols(tbl);
+      if (cols.length === 0) continue;
+      const candidates = local.prepare(
+        `SELECT ${cols.join(',')} FROM ${tbl} WHERE ${dcol} > datetime('now', '-21 days')`
+      ).all() as any[];
+      let orphaned = 0;
+      const eligible = candidates.filter((r: any) => {
+        if (r.book_id != null && !liveBooksAfter.has(String(r.book_id))) { orphaned++; return false; }
+        return true;
+      });
+
+      const liveHas = new Set<string>();
+      for (let i = 0; i < eligible.length; i += 400) {
+        const chunk = eligible.slice(i, i + 400);
+        const r = await remote.execute({
+          sql: `SELECT id FROM ${tbl} WHERE id IN (${chunk.map(() => '?').join(',')})`,
+          args: chunk.map((c: any) => c.id),
+        });
+        for (const row of r.rows as any[]) liveHas.add(String(row.id));
+      }
+
+      const toPush = eligible
+        .filter((r: any) => !liveHas.has(String(r.id)))
+        .map((r: any) => cols.map((c) => r[c]));
+      const orphanNote = orphaned > 0 ? ` [${orphaned} orphaned rows skipped]` : '';
+      if (toPush.length === 0) {
+        console.log(`     · ${tbl}: in sync (checked ${eligible.length.toLocaleString()} recent rows)${orphanNote}`);
+        continue;
+      }
+      const n = await batchInsert(tbl, cols, toPush);
+      console.log(`     ✓ ${tbl}: pushed ${n} / ${toPush.length} missing recent rows${orphanNote}`);
+    } catch (e: any) {
+      console.log(`     ⚠ ${tbl}: ${e.message.slice(0, 120)}`);
+    }
+  }
+
   // ─── 5b. UPDATE existing books where local is newer ──────────
   console.log('\n5b/7  Pushing metadata updates for existing books...');
   // Fields that can be improved by enrichment — safe to push on updated_at > remote.
@@ -379,6 +472,12 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
     'summary', 'description', 'publication_year', 'pages', 'publisher',
     'cover_image_url', 'is_fiction', 'is_box_set', 'pacing',
     'audiobook_cover_url', 'cover_verified', 'cover_source',
+    // `language` was missing until 2026-07-30: enrichment has been writing it
+    // locally for months and it never reached Turso, so prod had ~2,600 blank
+    // language values whose answer was already sitting in the local DB. It is
+    // ordinary metadata like publisher — safe to push. (Demotion of non-English
+    // books stays a separate, manual step: scripts/hide-non-english.ts.)
+    'language',
     'description_stale', 'updated_at',
   ];
 
@@ -415,7 +514,29 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
   console.log(`     ${toUpdate.length.toLocaleString()} existing books have newer local metadata`);
 
   if (toUpdate.length > 0) {
-    const setClause = UPDATE_FIELDS.map((c) => `${c} = ?`).join(', ');
+    // Never clobber a description that production wrote while we were away.
+    // /admin/descriptions (2026-11-16) lets a person type a description
+    // straight into Turso; prod-side enrichment of user-added books writes
+    // there too. If a local lane then touches the same book, its updated_at is
+    // newer and this step used to push local's (often NULL) description over
+    // the live text. So: when the live row holds a real, non-stale description
+    // that was written in the last 6 hours, keep live's description +
+    // description_stale and stamp live's updated_at to NOW instead of local's —
+    // that makes live the newer side, so the next sync-pull carries the kept
+    // text down and the two databases converge on it. Older live descriptions
+    // are untouched by this guard, so junk-description clears still propagate.
+    const KEEP_LIVE_DESC =
+      `(description IS NOT NULL AND TRIM(description) <> '' AND COALESCE(description_stale, 0) = 0` +
+      ` AND datetime(updated_at) >= datetime('now', '-6 hours'))`;
+    const setClause = UPDATE_FIELDS.map((c) => {
+      if (c === 'description' || c === 'description_stale') {
+        return `${c} = CASE WHEN ${KEEP_LIVE_DESC} THEN ${c} ELSE ? END`;
+      }
+      if (c === 'updated_at') {
+        return `${c} = CASE WHEN ${KEEP_LIVE_DESC} THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now') ELSE ? END`;
+      }
+      return `${c} = ?`;
+    }).join(', ');
     const sql = `UPDATE books SET ${setClause} WHERE id = ?`;
     let updated = 0;
     let errors = 0;
@@ -482,6 +603,143 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
     }
   } catch (e: any) {
     console.log(`     ⚠ nyt_bestsellers: ${e.message.slice(0, 120)}`);
+  }
+
+  // ─── 5e. NEW reported_issues (local-created flags → live) ─────
+  // reported_issues is BIDIRECTIONAL: users file reports on live, admins resolve
+  // them on live, and nightly-junk-sweep / key-health create rows locally. We must
+  // push local-created rows (e.g. [AUTO-FLAG: junk-sweep] box-set flags) WITHOUT ever
+  // overwriting a live row — an admin may have already resolved it on Turso. So:
+  // diff by id, INSERT OR IGNORE only the local ids not present on live. Pre-filter
+  // book_id against liveBooksAfter so a flag on a not-yet-synced book doesn't roll
+  // back the batch (batchInsert's per-row fallback also skips residual FK failures).
+  // Fixes the long-standing gap where junk-sweep flags never reached /admin/issues on
+  // live and had to be pushed by hand each night.
+  console.log('\n5e   New reported_issues (local-created flags)...');
+  try {
+    const cols = getCols('reported_issues');
+    if (cols.length === 0) {
+      console.log('     · reported_issues: not in local DB');
+    } else {
+      const liveIssueIds = await fetchIdSet('reported_issues');
+      const localIssues = local
+        .prepare(`SELECT ${cols.join(',')} FROM reported_issues`)
+        .all() as any[];
+      let orphanedCount = 0;
+      const toPush: any[][] = [];
+      for (const r of localIssues) {
+        if (liveIssueIds.has(String(r.id))) continue; // already on live — never overwrite
+        if (r.book_id != null && !liveBooksAfter.has(String(r.book_id))) {
+          orphanedCount++;
+          continue; // flag references a book not yet on live — skip (would FK-fail)
+        }
+        toPush.push(cols.map((c) => r[c]));
+      }
+      if (toPush.length === 0) {
+        const note = orphanedCount > 0 ? ` (${orphanedCount} referenced a book not on live — skipped)` : '';
+        console.log(`     · reported_issues: in sync (live has ${liveIssueIds.size.toLocaleString()} rows)${note}`);
+      } else {
+        const n = await batchInsert('reported_issues', cols, toPush);
+        const note = orphanedCount > 0 ? ` [${orphanedCount} orphaned book_id skipped]` : '';
+        console.log(`     ✓ reported_issues: pushed ${n} / ${toPush.length} new local rows${note}`);
+      }
+    }
+  } catch (e: any) {
+    console.log(`     ⚠ reported_issues: ${e.message.slice(0, 120)}`);
+  }
+
+  // ─── 5g. NEW editions (local-recorded printings → live) ─────
+  // `editions` was in sync-PULL but NOT sync-push — editions were only ever
+  // created on live by the picker, so nothing local needed pushing. That
+  // stopped being true when ingestion started folding decorated titles onto
+  // the canon book and recording the printing as an edition row: the nightly
+  // lanes (discovery, breadth-import, upcoming-releases) all write LOCAL, so
+  // without this step every locally-recorded deluxe/anniversary printing would
+  // be stranded and never appear in a reader's picker on prod.
+  //
+  // Append-only and id-diffed, same contract as 5e: a live row is never
+  // overwritten. book_id is pre-filtered against liveBooksAfter so an edition
+  // on a not-yet-synced book can't FK-fail the batch.
+  console.log('\n5g   New editions (local-recorded printings)...');
+  try {
+    const cols = getCols('editions');
+    if (cols.length === 0) {
+      console.log('     · editions: not in local DB');
+    } else {
+      const liveEditionIds = await fetchIdSet('editions');
+      const localEditions = local
+        .prepare(`SELECT ${cols.join(',')} FROM editions`)
+        .all() as any[];
+      let orphanedCount = 0;
+      const toPush: any[][] = [];
+      for (const r of localEditions) {
+        if (liveEditionIds.has(String(r.id))) continue;
+        if (r.book_id != null && !liveBooksAfter.has(String(r.book_id))) {
+          orphanedCount++;
+          continue;
+        }
+        toPush.push(cols.map((c) => r[c]));
+      }
+      if (toPush.length === 0) {
+        const note = orphanedCount > 0 ? ` (${orphanedCount} referenced a book not on live — skipped)` : '';
+        console.log(`     · editions: in sync (live has ${liveEditionIds.size.toLocaleString()} rows)${note}`);
+      } else {
+        const n = await batchInsert('editions', cols, toPush);
+        const note = orphanedCount > 0 ? ` [${orphanedCount} orphaned book_id skipped]` : '';
+        console.log(`     ✓ editions: pushed ${n} / ${toPush.length} new local rows${note}`);
+      }
+    }
+  } catch (e: any) {
+    console.log(`     ⚠ editions: ${e.message.slice(0, 120)}`);
+  }
+
+  // ─── 5f. up_next queues where LOCAL is newer (app edits → live) ─────
+  // Mirror of sync-pull's whole-queue step: the queue syncs as ONE UNIT per
+  // user (deletes/reorders leave no per-row trace), newest side wins by
+  // MAX(COALESCE(updated_at, added_at)). Pull handles live-newer; this step
+  // pushes queues the native app touched more recently. A user with rows
+  // ONLY on live is left alone (ambiguous — never destroy data).
+  console.log('\n5f   up_next queues (local-newer → live)...');
+  try {
+    const liveQueueRows = (await remote.execute(
+      'SELECT user_id, MAX(COALESCE(updated_at, added_at)) AS m FROM up_next GROUP BY user_id'
+    )).rows as any[];
+    const liveMax = new Map(liveQueueRows.map((r: any) => [String(r.user_id), String(r.m ?? '')]));
+    const localQueues = local.prepare(
+      'SELECT id, user_id, book_id, position, added_at, updated_at FROM up_next ORDER BY user_id, position'
+    ).all() as any[];
+    const byUser = new Map<string, any[]>();
+    for (const r of localQueues) {
+      const key = String(r.user_id);
+      const list = byUser.get(key) ?? [];
+      list.push(r);
+      byUser.set(key, list);
+    }
+    let pushed = 0;
+    let skippedFk = 0;
+    for (const [userId, rows] of byUser) {
+      const localMax = rows.reduce((m, r) => {
+        const v = String(r.updated_at ?? r.added_at ?? '');
+        return v > m ? v : m;
+      }, '');
+      if ((liveMax.get(userId) ?? '') >= localMax) continue; // live same-or-newer
+      const insertable = rows.filter((r) => liveBooksAfter.has(String(r.book_id)));
+      skippedFk += rows.length - insertable.length;
+      await remote.batch([
+        { sql: 'DELETE FROM up_next WHERE user_id = ?', args: [userId] },
+        ...insertable.map((r) => ({
+          sql: 'INSERT INTO up_next (id, user_id, book_id, position, added_at, updated_at) VALUES (?,?,?,?,?,?)',
+          args: [r.id, r.user_id, r.book_id, r.position, r.added_at, r.updated_at ?? null],
+        })),
+      ], 'write');
+      pushed++;
+    }
+    markProgress();
+    const note = skippedFk ? ` [${skippedFk} row(s) skipped — book not on live]` : '';
+    if (pushed === 0) console.log('     · up_next: all queues in sync (or live newer)');
+    else console.log(`     ✓ up_next: mirrored ${pushed} local-newer queue(s) → live${note}`);
+  } catch (e: any) {
+    console.log(`     ⚠ up_next: ${e.message.slice(0, 120)}`);
   }
 
   // ─── 6. LANDING PAGE TABLES (full replace) ────────────────────

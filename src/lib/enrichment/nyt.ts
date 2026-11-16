@@ -21,12 +21,18 @@ export const NYT_LISTS = [
   "hardcover-fiction",
   "hardcover-nonfiction",
   "trade-fiction-paperback",
-  "paperback-nonfiction",
+  // Was "paperback-nonfiction" — NYT moved that list to a monthly cadence under
+  // a new slug; the old one 404'd nightly from ~2026-10 until fixed 2026-11-16.
+  "paperback-nonfiction-monthly",
   "young-adult-hardcover",
   "childrens-middle-grade-hardcover",
-  "religion-spirituality-and-faith",
+  // "religion-spirituality-and-faith" was removed 2026-11-16: NYT retired the
+  // list and publishes no faith/religion list at all any more.
   "advice-how-to-and-miscellaneous",
 ];
+// To re-check which lists exist, ask the API itself — one call returns every
+// current slug (`list_name_encoded`): GET /svc/books/v3/lists/overview.json.
+// (`/lists/names.json` 404s on this key; don't guess slugs, the limit is 5/min.)
 
 /** NYT free tier is 5 req/min → sleep ~12s between calls. */
 export const NYT_DELAY_MS = 12_500;

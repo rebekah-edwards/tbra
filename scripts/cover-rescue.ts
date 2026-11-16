@@ -310,6 +310,15 @@ async function main() {
   const elapsed = ((Date.now() - started) / 1000).toFixed(1);
   console.log(`[cover-rescue] All sources done in ${elapsed}s — total: cleared ${totalCleared}/${totalChecked}`);
   console.log(`[cover-rescue] Follow-up: sync-incremental.sh push to propagate to Turso`);
+  // Fold the WAL into the main database file before the chained push reads it.
+  // The clears above live only in tbra.db-wal until a checkpoint; a push that
+  // opened the file while a concurrent pull held a read snapshot has missed
+  // same-night clears (2026-09-07). One instant PRAGMA closes that window.
+  try {
+    db.pragma("wal_checkpoint(TRUNCATE)");
+  } catch (e) {
+    console.warn("[cover-rescue] WAL checkpoint failed (non-fatal):", e);
+  }
   db.close();
 }
 
