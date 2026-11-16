@@ -505,12 +505,15 @@ private struct ReadingNowCard: View {
                         Text("Reading")
                         Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
                     }
-                    .font(Theme.body(12, .semibold))
-                    .foregroundStyle(Theme.foreground)
+                    // Blue, the app's "tap for more" colour — the state menu
+                    // must not read as disabled (Rebekah, 2026-11-16: "I
+                    // don't like it grey"). Solid, so it holds its own
+                    // against the blurred cover art behind the card.
+                    .font(Theme.body(12, .bold))
+                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
-                    .background(.ultraThinMaterial, in: Capsule())
-                    .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
+                    .background(Color(hex: "0ea5e9"), in: Capsule())
                 }
                 .anchorPreference(key: StateButtonAnchorKey.self, value: .bounds) { $0 }
             }
@@ -942,7 +945,6 @@ private struct ReadingGoalCardView: View {
     var onAutoEditConsumed: () -> Void = {}
     let onChanged: () async -> Void
     @State private var editing = false
-    @State private var ringShown = false
 
     var body: some View {
         Group {
@@ -958,26 +960,6 @@ private struct ReadingGoalCardView: View {
                 .presentationDetents([.height(260)])
                 .presentationBackground(Theme.surface)
         }
-    }
-
-    /// Books ahead of (+) or behind (−) an even pace through the year.
-    private func paceDelta(_ goal: ReadingGoal) -> Int {
-        let cal = Calendar.current
-        let now = Date()
-        guard cal.component(.year, from: now) == year,
-              let day = cal.ordinality(of: .day, in: .year, for: now),
-              let days = cal.range(of: .day, in: .year, for: now)?.count else { return 0 }
-        let expected = Double(goal.targetBooks) * Double(day) / Double(days)
-        return goal.completedBooks - Int(expected.rounded(.down))
-    }
-
-    private func paceLine(_ goal: ReadingGoal) -> (text: String, good: Bool) {
-        let left = goal.targetBooks - goal.completedBooks
-        if left <= 0 { return ("Goal smashed", true) }
-        let delta = paceDelta(goal)
-        if delta > 0 { return ("\(delta) ahead of pace", true) }
-        if delta == 0 { return ("Right on pace", true) }
-        return ("\(left) to go", false)
     }
 
     // Refreshed tile (2026-11): the ring is the hero, drawn in a lime→blue
@@ -998,20 +980,7 @@ private struct ReadingGoalCardView: View {
             }
             if let goal {
                 HStack(spacing: 12) {
-                    ZStack {
-                        Circle().stroke(Theme.foreground.opacity(0.10), lineWidth: 8)
-                        Circle()
-                            .trim(from: 0, to: ringShown ? max(0.02, min(1, CGFloat(goal.percentComplete) / 100)) : 0)
-                            .stroke(
-                                AngularGradient(colors: [Theme.accent, Theme.neonBlue, Theme.accent],
-                                                center: .center),
-                                style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                            .shadow(color: Theme.accent.opacity(0.45), radius: 6)
-                        Text("\(goal.percentComplete)%")
-                            .font(Theme.heading(15, .bold))
-                            .foregroundStyle(Theme.foreground)
-                    }
+                    GoalSweepRing(percent: goal.percentComplete)
                     .frame(width: 66, height: 66)
 
                     VStack(alignment: .leading, spacing: 0) {
@@ -1025,12 +994,7 @@ private struct ReadingGoalCardView: View {
                     }
                 }
                 Spacer(minLength: 0)
-                let pace = paceLine(goal)
-                Label(pace.text, systemImage: pace.good ? "bolt.fill" : "flag.checkered")
-                    .font(Theme.body(12, .semibold))
-                    .foregroundStyle(pace.good ? Theme.accentText : Theme.foreground.opacity(0.75))
-                    .padding(.horizontal, 10).padding(.vertical, 5)
-                    .background((pace.good ? Theme.accent : Theme.foreground).opacity(0.14), in: Capsule())
+                GoalPacePill(pace: goal.paceLine(year: year))
             } else {
                 Button { editing = true } label: {
                     VStack(alignment: .leading, spacing: 6) {
@@ -1052,9 +1016,6 @@ private struct ReadingGoalCardView: View {
         .padding(14)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(HomeTileBackground(glow: Theme.accent))
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.9).delay(0.15)) { ringShown = true }
-        }
     }
 
     private var bodyV1: some View {

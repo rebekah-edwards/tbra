@@ -188,7 +188,33 @@ struct StatsView: View {
         .background(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
     }
 
-    private func goalCard(_ data: StatsData) -> some View {
+    @ViewBuilder private func goalCard(_ data: StatsData) -> some View {
+        if DesignPreview.on, let goal = data.goal {
+            // Refreshed (2026-11): the same ring, big number and pace pill
+            // as the Home goal tile, given this card's extra width.
+            statCard("Reading Goal") {
+                HStack(spacing: 20) {
+                    GoalSweepRing(percent: goal.percentComplete, lineWidth: 10, labelSize: 19)
+                        .frame(width: 96, height: 96)
+                    VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("\(goal.completedBooks)")
+                                .font(Theme.heading(40, .heavy))
+                                .foregroundStyle(Theme.foreground)
+                            Text("of \(goal.targetBooks) books")
+                                .font(Theme.body(14))
+                                .foregroundStyle(Theme.muted)
+                        }
+                        GoalPacePill(pace: goal.paceLine(year: Int(model.year)))
+                    }
+                }
+            }
+        } else {
+            goalCardV1(data)
+        }
+    }
+
+    private func goalCardV1(_ data: StatsData) -> some View {
         statCard("Reading Goal") {
             if let goal = data.goal {
                 HStack(spacing: 22) {

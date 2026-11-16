@@ -486,3 +486,42 @@ struct GoalEditSheet: View {
         }
     }
 }
+
+// ── Refreshed goal ring + pace pill (2026-11), shared by Home and Stats ──
+/// The lime→blue goal ring from the refreshed Home tile, reused on Stats.
+struct GoalSweepRing: View {
+    let percent: Int
+    var lineWidth: CGFloat = 8
+    var labelSize: CGFloat = 15
+    @State private var shown = false
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(Theme.foreground.opacity(0.10), lineWidth: lineWidth)
+            Circle()
+                .trim(from: 0, to: shown ? max(0.02, min(1, CGFloat(percent) / 100)) : 0)
+                .stroke(AngularGradient(colors: [Theme.accent, Theme.neonBlue, Theme.accent], center: .center),
+                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .shadow(color: Theme.accent.opacity(0.45), radius: 6)
+            Text("\(percent)%")
+                .font(Theme.heading(labelSize, .bold))
+                .foregroundStyle(Theme.foreground)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.9).delay(0.15)) { shown = true }
+        }
+    }
+}
+
+/// The status pill that sits with the ring ("3 ahead of pace", "18 to go").
+struct GoalPacePill: View {
+    let pace: (text: String, good: Bool)
+    var body: some View {
+        Label(pace.text, systemImage: pace.good ? "bolt.fill" : "flag.checkered")
+            .font(Theme.body(12, .semibold))
+            .foregroundStyle(pace.good ? Theme.accentText : Theme.foreground.opacity(0.75))
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .background((pace.good ? Theme.accent : Theme.foreground).opacity(0.14), in: Capsule())
+    }
+}

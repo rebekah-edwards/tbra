@@ -123,6 +123,28 @@ struct ReadingGoal: Codable, Hashable {
     let percentComplete: Int
 }
 
+extension ReadingGoal {
+    /// The one-line status under the goal ring, shared by Home and Stats.
+    /// `year` nil means the current year. For a year that is over there is
+    /// no pace to be on, so it reports the shortfall instead.
+    func paceLine(year: Int?) -> (text: String, good: Bool) {
+        let left = targetBooks - completedBooks
+        if left <= 0 { return ("Goal smashed", true) }
+        let cal = Calendar.current
+        let now = Date()
+        let thisYear = cal.component(.year, from: now)
+        guard (year ?? thisYear) == thisYear,
+              let day = cal.ordinality(of: .day, in: .year, for: now),
+              let days = cal.range(of: .day, in: .year, for: now)?.count
+        else { return ("\(left) short of the goal", false) }
+        let expected = Int((Double(targetBooks) * Double(day) / Double(days)).rounded(.down))
+        let delta = completedBooks - expected
+        if delta > 0 { return ("\(delta) ahead of pace", true) }
+        if delta == 0 { return ("Right on pace", true) }
+        return ("\(left) to go", false)
+    }
+}
+
 struct ReadingStreak: Codable, Hashable {
     let currentStreak: Int
     let longestStreak: Int
