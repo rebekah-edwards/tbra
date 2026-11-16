@@ -1107,6 +1107,16 @@ private struct HomeTileBackground: View {
     }
 }
 
+/// Icon and title 4pt apart — the default Label gap wastes room in a pill.
+private struct TightLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 4) {
+            configuration.icon
+            configuration.title
+        }
+    }
+}
+
 private struct ReadingStreakCardView: View {
     let streak: ReadingStreak
 
@@ -1116,10 +1126,16 @@ private struct ReadingStreakCardView: View {
 
     private static let flame = Color(hex: "fb923c")   // orange-400
     private static let ember = Color(hex: "f43f5e")   // rose-500
+    private static let pending = Color(dark: "fbbf24", light: "b45309")   // amber
+
+    /// A live streak that has not been extended today: safe until midnight,
+    /// but only if the reader logs something.
+    private var pendingToday: Bool { streak.currentStreak > 0 && streak.activeToday == false }
 
     private var footer: String {
         let cur = streak.currentStreak, best = streak.longestStreak
         if cur == 0 { return "Log anything today to light it" }
+        if pendingToday { return "Log anything today to keep it" }
         if cur >= best { return "Your best streak yet" }
         let gap = best - cur
         return "\(gap) \(gap == 1 ? "day" : "days") to beat your best"
@@ -1137,7 +1153,25 @@ private struct ReadingStreakCardView: View {
                     .font(Theme.body(11, .bold)).tracking(0.8)
                     .foregroundStyle(Theme.muted)
                 Spacer()
-                if alive && streak.longestStreak > 0 {
+                if let doneToday = streak.activeToday {
+                    // Today's status, stated outright (Rebekah 2026-11-16):
+                    // a filled lime check once today counts, an amber outline
+                    // while the streak is still waiting on today.
+                    Label(doneToday ? "Today" : "Not yet",
+                          systemImage: doneToday ? "checkmark.circle.fill" : "circle.dashed")
+                        .font(Theme.body(11, .bold))
+                        .labelStyle(TightLabelStyle())
+                        .lineLimit(1)
+                        .fixedSize()   // never truncate: "Not…" says nothing
+                        .foregroundStyle(doneToday ? Theme.accentText : Self.pending)
+                        .padding(.horizontal, 8)
+                        .frame(height: 22)
+                        .background((doneToday ? Theme.accent : Self.pending).opacity(doneToday ? 0.22 : 0.12),
+                                    in: Capsule())
+                        .overlay(Capsule().stroke(doneToday ? Color.clear : Self.pending.opacity(0.55),
+                                                  lineWidth: 1))
+                        .accessibilityLabel(doneToday ? "Streak logged today" : "Streak not logged yet today")
+                } else if alive && streak.longestStreak > 0 {
                     Text("Best \(streak.longestStreak)")
                         .font(Theme.body(11, .semibold))
                         .foregroundStyle(Theme.muted)
@@ -1145,15 +1179,16 @@ private struct ReadingStreakCardView: View {
                 }
             }
             HStack(spacing: 10) {
-                Image(systemName: "flame.fill")
+                // Outline while today is still open, filled once it counts.
+                Image(systemName: pendingToday ? "flame" : "flame.fill")
                     .font(.system(size: 46, weight: .bold))
                     .foregroundStyle(
                         alive
                         ? AnyShapeStyle(LinearGradient(colors: [Self.flame, Self.ember],
                                                        startPoint: .top, endPoint: .bottom))
                         : AnyShapeStyle(Theme.foreground.opacity(0.18)))
-                    .shadow(color: alive ? Self.flame.opacity(0.55) : .clear, radius: 10)
-                    .symbolEffect(.breathe, isActive: alive)
+                    .shadow(color: alive && !pendingToday ? Self.flame.opacity(0.55) : .clear, radius: 10)
+                    .symbolEffect(.breathe, isActive: alive && !pendingToday)
                     .frame(width: 66, height: 66)
 
                 VStack(alignment: .leading, spacing: 0) {

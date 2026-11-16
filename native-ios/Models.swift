@@ -148,6 +148,10 @@ extension ReadingGoal {
 struct ReadingStreak: Codable, Hashable {
     let currentStreak: Int
     let longestStreak: Int
+    /// True once anything streak-counting was logged today (reader's own
+    /// timezone, decided by the server). Optional: nil from a server that
+    /// predates the field, in which case the tile shows no today status.
+    let activeToday: Bool?
 }
 
 struct TbrSuggestion: Codable, Hashable {
