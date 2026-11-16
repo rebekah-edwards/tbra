@@ -82,6 +82,12 @@ struct LibraryView: View {
         return "all"
     }()
 
+    // A stat-pill deep-link's sub-filter. Setting `group` and `subFilter`
+    // together in onAppear doesn't work: .onChange(of: group) fires after and
+    // stomps subFilter back to the group default, which sent "Read" taps to
+    // "Current Read" instead of "Finished". onChange consumes this instead.
+    @State private var pendingSubFilter: String?
+
     // Advanced filters (web: the collapsible Filters panel, TBR + Activity)
     @State private var filtersOpen = false
     @State private var sort: SortKey = .recent
@@ -176,12 +182,21 @@ struct LibraryView: View {
             // Consume a one-shot deep-link from the profile stat pills
             // (Read → Activity/Finished, Reading → Activity/Current, TBR).
             if let sel = chrome?.pendingLibrarySelection {
+                let newGroup: Group
                 switch sel.group {
-                case "activity": group = .activity
-                case "owned": group = .owned
-                default: group = .tbr
+                case "activity": newGroup = .activity
+                case "owned": newGroup = .owned
+                default: newGroup = .tbr
                 }
-                subFilter = sel.filter
+                if newGroup == group {
+                    // No group change → onChange won't fire; apply directly.
+                    subFilter = sel.filter
+                } else {
+                    // Group change → let .onChange(of: group) apply the filter,
+                    // otherwise it overwrites it with the group default.
+                    pendingSubFilter = sel.filter
+                    group = newGroup
+                }
                 chrome?.pendingLibrarySelection = nil
             }
         }
@@ -189,7 +204,12 @@ struct LibraryView: View {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
         .onChange(of: group) {
-            subFilter = group == .activity ? "currently_reading" : "all"
+            if let pending = pendingSubFilter {
+                subFilter = pending
+                pendingSubFilter = nil
+            } else {
+                subFilter = group == .activity ? "currently_reading" : "all"
+            }
             clearAdvancedFilters()
             filtersOpen = false
         }
