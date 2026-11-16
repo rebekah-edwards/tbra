@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { books, bookCategoryRatings } from "@/db/schema";
-import { isNotNull, eq, and, exists } from "drizzle-orm";
+import { listIndexableBooks, renderUrlset, SITEMAP_HEADERS } from "@/lib/seo/indexability";
 
 const BASE_URL = "https://thebasedreader.app";
 const PER_PAGE = 5000;
@@ -16,42 +14,11 @@ export async function GET(
     return new NextResponse("Invalid page", { status: 400 });
   }
 
-  const offset = (pageNum - 1) * PER_PAGE;
-  // Only fully generated pages (2026-07-25): a book enters the sitemap once
-  // its content ratings exist — enrichment writes those last, so their
-  // presence means the page is complete. Advertising unrated books invited
-  // crawlers onto pages that then burned on-visit enrichment. Keep this
-  // filter in lockstep with sitemap-index.xml's count query.
-  const bookRows = await db
-    .select({ slug: books.slug })
-    .from(books)
-    .where(and(
-      isNotNull(books.slug),
-      eq(books.visibility, "public"),
-      exists(
-        db.select({ id: bookCategoryRatings.id })
-          .from(bookCategoryRatings)
-          .where(eq(bookCategoryRatings.bookId, books.id))
-      ),
-    ))
-    .orderBy(books.slug)
-    .limit(PER_PAGE)
-    .offset(offset);
+  // Only the SEO core set (2026-11-16): books a reader has shelved or reviewed
+  // whose page is complete. Everything else renders `noindex, follow` and is
+  // deliberately absent here — see src/lib/seo/core-set.ts. The page count in
+  // sitemap-index.xml comes from countIndexableBooks(), the same set.
+  const entries = await listIndexableBooks(PER_PAGE, (pageNum - 1) * PER_PAGE);
 
-  const urls = bookRows
-    .filter((b) => b.slug)
-    .map((b) => `  <url><loc>${BASE_URL}/book/${b.slug}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`)
-    .join("\n");
-
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls}
-</urlset>`;
-
-  return new NextResponse(xml, {
-    headers: {
-      "Content-Type": "application/xml",
-      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
-    },
-  });
+  return new NextResponse(renderUrlset(BASE_URL, "/book/", entries), { headers: SITEMAP_HEADERS });
 }

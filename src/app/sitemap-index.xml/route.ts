@@ -1,52 +1,29 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { books, bookCategoryRatings } from "@/db/schema";
-import { isNotNull, eq, and, sql, exists } from "drizzle-orm";
+import { countIndexableBooks, SITEMAP_HEADERS } from "@/lib/seo/indexability";
 
 const BASE_URL = "https://thebasedreader.app";
 const PER_PAGE = 5000;
 
 export async function GET() {
-  // Ratings-exist filter must match sitemap-books/[page] exactly, or the
-  // page count drifts from the actual pages.
-  const countRow = await db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(books)
-    .where(and(
-      isNotNull(books.slug),
-      eq(books.visibility, "public"),
-      exists(
-        db.select({ id: bookCategoryRatings.id })
-          .from(bookCategoryRatings)
-          .where(eq(bookCategoryRatings.bookId, books.id))
-      ),
-    ));
+  // Same set sitemap-books/[page] pages through, so the page count cannot
+  // drift from the pages that exist.
+  const bookCount = await countIndexableBooks();
+  const bookPages = Math.max(1, Math.ceil(bookCount / PER_PAGE));
 
-  const bookCount = countRow[0]?.count ?? 0;
-  const bookPages = Math.ceil(bookCount / PER_PAGE);
-
-  const now = new Date().toISOString();
-
-  const sitemaps = [
-    `  <sitemap><loc>${BASE_URL}/sitemap.xml</loc><lastmod>${now}</lastmod></sitemap>`,
-    `  <sitemap><loc>${BASE_URL}/sitemap-authors</loc><lastmod>${now}</lastmod></sitemap>`,
-    `  <sitemap><loc>${BASE_URL}/sitemap-series</loc><lastmod>${now}</lastmod></sitemap>`,
-    `  <sitemap><loc>${BASE_URL}/sitemap-users</loc><lastmod>${now}</lastmod></sitemap>`,
+  // No <lastmod> on the children: the old value was the request time, which
+  // teaches Google to distrust every lastmod on the site. The per-URL lastmod
+  // inside each child is the real content date.
+  const locs = [
+    `${BASE_URL}/sitemap.xml`,
+    `${BASE_URL}/sitemap-authors`,
+    `${BASE_URL}/sitemap-series`,
   ];
-
-  for (let i = 1; i <= bookPages; i++) {
-    sitemaps.push(`  <sitemap><loc>${BASE_URL}/sitemap-books/${i}</loc><lastmod>${now}</lastmod></sitemap>`);
-  }
+  for (let i = 1; i <= bookPages; i++) locs.push(`${BASE_URL}/sitemap-books/${i}`);
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemaps.join("\n")}
+${locs.map((l) => `  <sitemap><loc>${l}</loc></sitemap>`).join("\n")}
 </sitemapindex>`;
 
-  return new NextResponse(xml, {
-    headers: {
-      "Content-Type": "application/xml",
-      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
-    },
-  });
+  return new NextResponse(xml, { headers: SITEMAP_HEADERS });
 }

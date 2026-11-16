@@ -1,24 +1,9 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { isNotNull } from "drizzle-orm";
+import { renderUrlset, SITEMAP_HEADERS } from "@/lib/seo/indexability";
 
-const BASE_URL = "https://thebasedreader.app";
-
+// Public profiles are thin pages, so none are submitted (2026-11-16). The
+// route stays, returning a valid empty sitemap, because this URL was submitted
+// to Search Console on its own and a 404 there shows up as a sitemap error.
 export async function GET() {
-  const userRows = await db.select({ username: users.username }).from(users).where(isNotNull(users.username));
-
-  const urls = userRows
-    .filter((u) => u.username)
-    .map((u) => `  <url><loc>${BASE_URL}/u/${u.username}</loc><changefreq>weekly</changefreq><priority>0.4</priority></url>`)
-    .join("\n");
-
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls}
-</urlset>`;
-
-  return new NextResponse(xml, {
-    headers: { "Content-Type": "application/xml", "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" },
-  });
+  return new NextResponse(renderUrlset("https://thebasedreader.app", "/u/", []), { headers: SITEMAP_HEADERS });
 }

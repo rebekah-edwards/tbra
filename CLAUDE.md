@@ -83,6 +83,16 @@ Auto-refill is **off** for existing books. Enrichment's Phase 4 cover cascade on
 - **xAI (Grok):** used for AI-generated summaries. Monitor spend.
 - **ENRICHMENT_PAUSED** in `.env.local`: set to `"true"` to halt all enrichment when quotas are exhausted. Currently `false`.
 
+## SEO indexing: the core set (added 2026-11-16)
+Google dropped the site to ONE indexed page (the homepage) after ~104K templated URLs were submitted on a domain with almost no authority. Since then only a small **core set** is offered for indexing; it is meant to GROW as Google accepts it.
+- **`seo_index_books`** (Turso table, `book_id` PK) holds the core set: books a reader has shelved or reviewed AND whose page is complete (cover, description ≥ 200 chars, ≥ 6 content ratings that are not "No evidence found"/"No information found", public, English, valid slug). Thresholds are `CORE_GATE` in `src/lib/seo/core-set.ts` — loosen them there to grow the set.
+- **Rebuilt daily** by the Vercel cron `/api/cron/seo-index` (10:30 UTC, needs `CRON_SECRET`); by hand: `npx tsx scripts/seo-index-recompute.ts [--dry-run|--force]`. It writes only changed rows and refuses a >30% shrink without `--force`. The table is derived data and is NOT part of sync-pull/push.
+- **Pages** (`src/lib/seo/indexability.ts`): a book outside the set renders `<meta name="robots" content="noindex, follow">`; series and author pages need ≥ 2 core books. Everything FAILS OPEN — if the table is missing or has < 500 rows, no page gets a noindex tag.
+- **Sitemaps** list only what renders without noindex: `/sitemap-books/N`, `/sitemap-series`, `/sitemap-authors` (plus the static `/sitemap.xml`). `lastmod` is the real `books.updated_at` date; no `changefreq`/`priority`; `/sitemap-users` is intentionally empty. `scripts/sitemap-threshold-check.ts` counts the same set — change both together.
+- **Status codes come from `src/middleware.ts`**, not the pages: every page streams (root `loading.tsx`), so `notFound()`/`redirect()` inside a page answer HTTP 200. Middleware asks Turso over HTTP whether a `/book|series|author/<slug>` exists and answers a real 404, or a 301 for UUID URLs and retired slugs (`book_slug_history`). It fails open on any error/timeout.
+- **`htmlLimitedBots` in `next.config.ts`** adds Googlebot so title/canonical/robots are in `<head>` (Next streams them into `<body>` for JS-capable bots). It REPLACES Next's default list — keep the defaults in the regex when editing.
+- **Do not fetch crawlable content from `/api/`** — robots.txt disallows it, so Google can never load it. Similar Books and the first page of `/browse` are server-rendered for this reason.
+
 ## Search Architecture (as of 2026-04-07)
 - **Local-first, ISBNdb fallback.** The full search page queries only the local DB via `/api/openlibrary/search` (~20-80ms). If fewer than 5 results, the client fetches `/api/search/external` (ISBNdb-backed) to supplement.
 - **Never call OpenLibrary search from user-facing endpoints.** `searchOpenLibrary()` is still used internally by the enrichment pipeline (`enrich-book.ts`, `discover-author.ts`, `backfill`, `import enrich-batch`) but NOT for UI search — it cascades up to 11 sequential HTTP calls and was causing 5-30s search latency.

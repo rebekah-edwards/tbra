@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { NoCover } from "@/components/no-cover";
 import { BackButton } from "@/components/ui/back-button";
 import { AuthorFollowButton } from "@/components/author/author-follow-button";
+import { isAuthorIndexable, NOINDEX_FOLLOW } from "@/lib/seo/indexability";
 
 export async function generateMetadata({
   params,
@@ -24,10 +25,13 @@ export async function generateMetadata({
     ? `https://thebasedreader.app/author/${slug}`
     : `https://thebasedreader.app/author/${resolved.author.id}`;
 
+  const indexable = await isAuthorIndexable(resolved.author.id);
+
   return {
     title: `All Books by ${resolved.author.name} | tbr*a`,
     description: `Explore all books by ${resolved.author.name} on tbr*a. Browse their complete catalog with content details, reviews, and series information.`,
     alternates: { canonical: canonicalUrl },
+    ...(indexable ? {} : { robots: NOINDEX_FOLLOW }),
     openGraph: {
       title: `All Books by ${resolved.author.name} | tbr*a`,
       description: `Explore all books by ${resolved.author.name} on tbr*a. Browse their complete catalog with content details, reviews, and series information.`,

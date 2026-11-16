@@ -5,6 +5,7 @@ import { getCurrentUser, isAdmin } from "@/lib/auth";
 import { getSeriesBooksBySlug, resolveSeries, getSeriesBooks, getChildSeries } from "@/lib/queries/books";
 import { SeriesBooksView } from "@/app/search/series-books-view";
 import { FranchiseSeriesGrid } from "@/components/series/franchise-series-grid";
+import { isSeriesIndexable, NOINDEX_FOLLOW } from "@/lib/seo/indexability";
 
 export async function generateMetadata({
   params,
@@ -31,10 +32,15 @@ export async function generateMetadata({
     ? `Explore all ${childSeries.length} series in the ${seriesName} franchise on tbr*a.`
     : `View every book in ${seriesName}, filter by Core or All books, and add them to your tbr*a shelf.`;
 
+  // Indexable only once the series lists enough core books — thin series
+  // pages were being filed by Google as soft 404s.
+  const indexable = await isSeriesIndexable(resolved.series.id);
+
   return {
     title: `${seriesName} | The Based Reader App`,
     description,
     alternates: { canonical: canonicalUrl },
+    ...(indexable ? {} : { robots: NOINDEX_FOLLOW }),
     openGraph: {
       title: `${seriesName} | The Based Reader App`,
       description,

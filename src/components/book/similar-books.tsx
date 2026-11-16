@@ -1,60 +1,42 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { NoCover } from "@/components/no-cover";
+import { getSimilarBooks } from "@/lib/queries/recommendations";
 
-interface SimilarBook {
-  id: string;
-  slug: string | null;
-  title: string;
-  coverImageUrl: string | null;
-  authors: string[];
-  reason?: string;
-  contentWarnings?: { categoryName: string; bookIntensity: number; userMax: number }[];
+/**
+ * Similar Books row on the book page.
+ *
+ * A SERVER component on purpose (2026-11-16). It used to fetch
+ * /api/books/similar from the browser, and robots.txt disallows /api/, so
+ * crawlers could never load it: book pages linked to zero other books. Render
+ * it inside <Suspense fallback={<SimilarBooksSkeleton />}> — it streams into
+ * the same HTML response without holding up the rest of the page.
+ */
+export function SimilarBooksSkeleton() {
+  return (
+    <section className="mt-8">
+      <h2 className="section-heading text-xl">
+        Similar Books
+      </h2>
+      <div className="mt-4 flex gap-3 overflow-hidden">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="w-[120px] flex-shrink-0 animate-pulse">
+            <div className="aspect-[2/3] rounded bg-surface-alt" />
+            <div className="mt-2 h-3 w-3/4 rounded bg-surface-alt" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }
 
-export function SimilarBooks({ bookId }: { bookId: string }) {
-  const [books, setBooks] = useState<SimilarBook[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const res = await fetch(`/api/books/similar?bookId=${bookId}`);
-        if (!res.ok) throw new Error("fetch failed");
-        const data: SimilarBook[] = await res.json();
-        if (!cancelled) setBooks(data);
-      } catch {
-        if (!cancelled) setBooks([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => { cancelled = true; };
-  }, [bookId]);
-
-  if (loading) {
-    return (
-      <section className="mt-8">
-        <h2 className="section-heading text-xl">
-          Similar Books
-        </h2>
-        <div className="mt-4 flex gap-3 overflow-hidden">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="w-[120px] flex-shrink-0 animate-pulse">
-              <div className="aspect-[2/3] rounded bg-surface-alt" />
-              <div className="mt-2 h-3 w-3/4 rounded bg-surface-alt" />
-            </div>
-          ))}
-        </div>
-      </section>
-    );
+export async function SimilarBooks({ bookId, userId }: { bookId: string; userId: string | null }) {
+  let books: Awaited<ReturnType<typeof getSimilarBooks>> = [];
+  try {
+    books = await getSimilarBooks(bookId, userId);
+  } catch {
+    // Same as the old client behaviour on a failed fetch: no section.
+    return null;
   }
 
   if (books.length === 0) return null;

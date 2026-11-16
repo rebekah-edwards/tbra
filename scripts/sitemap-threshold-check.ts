@@ -32,8 +32,13 @@ async function main() {
     queryTimeoutMs: 180_000,
   });
 
+  // Must count exactly what /sitemap-index.xml pages on: countIndexableBooks()
+  // in src/lib/seo/indexability.ts (the SEO core set, 2026-11-16). Counting
+  // bare `visibility = 'public'` here once sent an alert for a sitemap page
+  // that did not exist.
   const { rows } = await client.execute(
-    `SELECT count(*) as n FROM books WHERE visibility = 'public'`,
+    `SELECT count(*) as n FROM seo_index_books x JOIN books b ON b.id = x.book_id
+     WHERE b.visibility = 'public' AND b.slug IS NOT NULL`,
   );
   const current = Number((rows[0] as any).n);
   shutdown();
@@ -60,7 +65,7 @@ async function main() {
     const reportFile = path.join(REPORTS_DIR, `sitemap-threshold-${date}.md`);
     const msg = `# Sitemap threshold crossed — ${date}
 
-Book count on Turso (\`visibility = 'public'\`) crossed a 5K threshold:
+Indexable book count on Turso (the SEO core set in \`seo_index_books\`) crossed a 5K threshold:
 
 - Previous run: **${previous.toLocaleString()}**
 - Current:     **${current.toLocaleString()}**

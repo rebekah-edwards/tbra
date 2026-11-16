@@ -842,3 +842,13 @@ export const deletedAccounts = sqliteTable("deleted_accounts", {
   deletedAt: text("deleted_at").notNull(),
   rowsDeleted: integer("rows_deleted"),
 });
+
+// ─── SEO core set ───
+// Books whose pages we ask Google to index. Materialised nightly by
+// recomputeCoreSet() (src/lib/seo/core-set.ts); pages and sitemaps only read
+// it. Not synced: sync-pull/push do not know this table, by design — it is
+// derived data and lives on Turso (a local copy only matters for dev).
+export const seoIndexBooks = sqliteTable("seo_index_books", {
+  bookId: text("book_id").primaryKey(),
+  addedAt: text("added_at").notNull().default(sql`(datetime('now'))`),
+});

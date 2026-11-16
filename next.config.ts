@@ -1,6 +1,16 @@
 import type { NextConfig } from "next";
 
+// Crawlers that get metadata (title, canonical, robots) in the real <head>
+// instead of streamed into <body>. Setting htmlLimitedBots REPLACES Next's
+// built-in list, so this is that list (next/dist/shared/lib/router/utils/
+// html-bots.js, 16.2.1) plus Googlebot — which Next leaves out because it
+// renders JS. Found 2026-11-16: every book/series/author page served Googlebot
+// its canonical ~40KB into the body, after </head>.
+const HTML_LIMITED_BOTS =
+  /Googlebot|[\w-]+-Google|Google-[\w-]+|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti|googleweblight/i;
+
 const nextConfig: NextConfig = {
+  htmlLimitedBots: HTML_LIMITED_BOTS,
   // Dev-only: the native app's webviews (cover picker, admin) reach this dev
   // server via the Mac's Tailscale IP. Without this, Next blocks the /_next
   // assets cross-origin — pages render (SSR) but NEVER hydrate, so nothing

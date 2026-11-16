@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 export const revalidate = 60;
 import { notFound, redirect } from "next/navigation";
 import { resolveBook, getBookWithDetails } from "@/lib/queries/books";
@@ -26,7 +27,8 @@ import { ContentProfile } from "@/components/book/content-profile";
 import { ContentWarningBanner } from "@/components/book/content-warning-banner";
 import { ReviewSummary } from "@/components/review/review-summary";
 import { BookReadingNotes } from "@/components/book/book-reading-notes";
-import { SimilarBooks } from "@/components/book/similar-books";
+import { SimilarBooks, SimilarBooksSkeleton } from "@/components/book/similar-books";
+import { isBookIndexable, NOINDEX_FOLLOW } from "@/lib/seo/indexability";
 import { BookPageClient } from "./book-page-client";
 import { AdminEditPanel } from "@/components/admin/admin-edit-panel";
 import { FriendsWhoRead } from "@/components/book/friends-who-read";
@@ -136,10 +138,15 @@ export async function generateMetadata({
       : `https://thebasedreader.app${book.coverImageUrl}`
     : undefined;
 
+  // Only the SEO core set is offered to Google; every other book page is
+  // `noindex, follow` until it qualifies (src/lib/seo/core-set.ts).
+  const indexable = await isBookIndexable(resolved.book.id);
+
   return {
     title: titleStr,
     description,
     alternates: { canonical: canonicalUrl },
+    ...(indexable ? {} : { robots: NOINDEX_FOLLOW }),
     openGraph: {
       title: titleStr,
       description,
@@ -570,8 +577,12 @@ export default async function BookPage({
       )}
       <div className="book-page-divider">{""}</div>
 
-      {/* Section 4: Similar Books — full width */}
-      <SimilarBooks bookId={bookId} />
+      {/* Section 4: Similar Books — full width. Server-rendered (streamed) so
+          the links are in the HTML: the old client fetch went through /api/,
+          which robots.txt blocks, so crawlers saw no book-to-book links. */}
+      <Suspense fallback={<SimilarBooksSkeleton />}>
+        <SimilarBooks bookId={bookId} userId={user?.userId ?? null} />
+      </Suspense>
     </div>
   );
 }

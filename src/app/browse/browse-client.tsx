@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { NoCover } from "@/components/no-cover";
-import type { BrowseBook } from "@/lib/queries/browse";
+import type { BrowseBook, BrowseResult } from "@/lib/queries/browse";
 
 const SORT_OPTIONS = [
   { key: "popular", label: "Most Popular" },
@@ -41,9 +41,12 @@ const PAGE_SIZE = 24;
 interface BrowseClientProps {
   isLoggedIn: boolean;
   hasFollows: boolean;
+  /** First page for the URL's filters, rendered on the server so the list is
+   *  in the HTML (crawlers cannot call /api/browse). Null = fetch on mount. */
+  initial?: BrowseResult | null;
 }
 
-export function BrowseClient({ isLoggedIn, hasFollows }: BrowseClientProps) {
+export function BrowseClient({ isLoggedIn, hasFollows, initial = null }: BrowseClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -59,10 +62,13 @@ export function BrowseClient({ isLoggedIn, hasFollows }: BrowseClientProps) {
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const [books, setBooks] = useState<BrowseBook[]>([]);
-  const [total, setTotal] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [books, setBooks] = useState<BrowseBook[]>(initial?.books ?? []);
+  const [total, setTotal] = useState(initial?.total ?? 0);
+  const [hasMore, setHasMore] = useState(initial?.hasMore ?? false);
+  const [loading, setLoading] = useState(!initial);
+  // The server already rendered page one for the URL's filters; skip the
+  // mount-time fetch that would only re-request the same rows.
+  const skipFirstFetch = useRef(!!initial);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
   const offsetRef = useRef(0);
@@ -119,6 +125,11 @@ export function BrowseClient({ isLoggedIn, hasFollows }: BrowseClientProps) {
 
   // Initial load + reload on filter change
   useEffect(() => {
+    if (skipFirstFetch.current) {
+      skipFirstFetch.current = false;
+      offsetRef.current = PAGE_SIZE;
+      return;
+    }
     offsetRef.current = 0;
     fetchBooks(0, false);
   }, [fetchBooks]);
