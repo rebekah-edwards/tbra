@@ -121,12 +121,27 @@ struct StatsView: View {
         return String(format: "%.1f", total / Double(count))
     }
 
+    private static let heroSymbols: [String: (symbol: String, tint: Color)] = [
+        "📚": ("books.vertical", Theme.neonPurple),
+        "🔥": ("flame", Color(hex: "fb923c")),
+        "⭐": ("star", Color(hex: "eab308")),
+    ]
+
     private func heroCard(emoji: String, bg: Color, value: String, label: String) -> some View {
         VStack(spacing: 8) {
-            Text(emoji)
-                .font(.system(size: 22))
-                .frame(width: 52, height: 52)
-                .background(bg, in: Circle())
+            if DesignPreview.on, let icon = Self.heroSymbols[emoji] {
+                // Refreshed (2026-11): line icon in its own hue.
+                Image(systemName: icon.symbol)
+                    .font(.system(size: 21, weight: .semibold))
+                    .foregroundStyle(icon.tint)
+                    .frame(width: 52, height: 52)
+                    .background(icon.tint.opacity(0.16), in: Circle())
+            } else {
+                Text(emoji)
+                    .font(.system(size: 22))
+                    .frame(width: 52, height: 52)
+                    .background(bg, in: Circle())
+            }
             Text(value)
                 .font(Theme.heading(26, .bold))
                 .foregroundStyle(Theme.foreground)

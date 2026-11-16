@@ -235,6 +235,10 @@ struct SettingsView: View {
     @State private var model = SettingsModel()
     @AppStorage("themeOverride") private var themeOverride = "dark"
     @AppStorage("textSize") private var textSizeLocal = "medium"
+    /// Staff-only switch between the shipped look ("v1") and the 2026-11
+    /// refresh ("v2"). Read by DesignPreview.on; see Theme.swift.
+    @AppStorage("designPreview") private var designPreview = "v2"
+    @State private var designOnAppear: String?
     /// Snapshot on appear — if the size differs when Settings closes, the
     /// shell is told to re-render every screen at the new Theme.textScale.
     @State private var textSizeOnAppear: String?
@@ -313,9 +317,18 @@ struct SettingsView: View {
         .floatingBack()
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }
-        .onAppear { if textSizeOnAppear == nil { textSizeOnAppear = textSizeLocal } }
+        .onAppear {
+            if textSizeOnAppear == nil { textSizeOnAppear = textSizeLocal }
+            if designOnAppear == nil { designOnAppear = designPreview }
+        }
         .onDisappear {
-            if let was = textSizeOnAppear, was != textSizeLocal {
+            // Either change needs every screen rebuilt; the shell re-ids its
+            // tab tree on this notification.
+            let sizeChanged = textSizeOnAppear.map { $0 != textSizeLocal } ?? false
+            let designChanged = designOnAppear.map { $0 != designPreview } ?? false
+            if sizeChanged || designChanged {
+                textSizeOnAppear = textSizeLocal
+                designOnAppear = designPreview
                 NotificationCenter.default.post(name: Theme.textSizeChanged, object: nil)
             }
         }
@@ -764,7 +777,26 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
             }
+            if isStaff {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Design preview").font(Theme.body(14, .semibold)).foregroundStyle(Theme.foreground)
+                    Text("Staff only. Switch between today's look and the refresh, then close Settings.")
+                        .font(Theme.body(12)).foregroundStyle(Theme.muted)
+                    Picker("", selection: $designPreview) {
+                        Text("Current").tag("v1")
+                        Text("Refresh").tag("v2")
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
         }
+    }
+
+    private var isStaff: Bool {
+        if case .signedIn(let user) = auth.phase {
+            return ["admin", "super_admin"].contains(user.accountType)
+        }
+        return false
     }
 
     // ── 3. Location ──

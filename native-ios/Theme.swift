@@ -16,6 +16,24 @@ import UIKit
 // Color(hex:) / Color(dark:light:) moved to ColorHex.swift — the widget
 // extension needs them too and compiles its own source list.
 
+/// The pre-1.0 design refresh (2026-11). Every refreshed surface branches on
+/// `DesignPreview.on` and keeps its original implementation beside it, so any
+/// single item can be reverted by deleting its branch — and the whole refresh
+/// can be flipped off without a rebuild:
+///   • simulator:  SIMCTL_CHILD_TBRA_DEBUG_DESIGN=v1 (or v2)
+///   • device:     UserDefaults "designPreview" = "v1" / "v2"
+/// Default is the refreshed look.
+enum DesignPreview {
+    static var on: Bool {
+        #if DEBUG
+        if let env = ProcessInfo.processInfo.environment["TBRA_DEBUG_DESIGN"] {
+            return env != "v1"
+        }
+        #endif
+        return UserDefaults.standard.string(forKey: "designPreview") != "v1"
+    }
+}
+
 enum Theme {
     // ── Core surface tokens (globals.css :root / [data-theme="light"]) ──
     static let bg         = Color(dark: "0a0a0f", light: "f5f4f8")

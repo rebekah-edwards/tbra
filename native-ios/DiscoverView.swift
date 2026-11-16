@@ -415,6 +415,15 @@ struct DiscoverView: View {
             .multilineTextAlignment(.center)
     }
 
+    /// SF Symbol per mood for the refreshed (line-icon) tiles.
+    private static let moodSymbols: [String: String] = [
+        "cozy": "cup.and.saucer", "dark": "moon.stars", "thrilling": "bolt",
+        "romantic": "heart", "funny": "face.smiling", "emotional": "drop",
+        "adventurous": "map", "mindblowing": "brain.head.profile", "spooky": "eye",
+        "inspiring": "sun.max", "informative": "lightbulb", "fantastical": "wand.and.stars",
+        "historical": "building.columns", "sciencey": "atom", "dystopian": "building.2",
+    ]
+
     private func moodCard(_ mood: Mood) -> some View {
         let selected = model.moods.contains(mood.key)
         return Button {
@@ -423,7 +432,15 @@ struct DiscoverView: View {
             }
         } label: {
             VStack(spacing: 6) {
-                Text(mood.emoji).font(.system(size: 24))
+                if DesignPreview.on {
+                    // Refreshed (2026-11): line icons in the tile's own hue.
+                    Image(systemName: Self.moodSymbols[mood.key] ?? "sparkles")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundStyle(mood.tint)
+                        .frame(height: 29)
+                } else {
+                    Text(mood.emoji).font(.system(size: 24))
+                }
                 Text(mood.label)
                     .font(Theme.body(13, .medium))
                     .foregroundStyle(selected ? Theme.foreground : Theme.muted)

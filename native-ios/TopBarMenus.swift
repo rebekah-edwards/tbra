@@ -165,6 +165,243 @@ struct HamburgerMenuSheet: View {
     }
 
     var body: some View {
+        Group {
+            if DesignPreview.on { menuV2 } else { menuV1 }
+        }
+        .fullScreenCover(isPresented: $settingsOpen) {
+            NavigationStack {
+                SettingsView()
+                    .appDestinations()
+            }
+        }
+        .fullScreenCover(isPresented: $findReadersOpen) {
+            NavigationStack {
+                FindReadersView()
+                    .appDestinations()
+            }
+        }
+        .fullScreenCover(isPresented: $buddyReadsOpen) {
+            NavigationStack {
+                BuddyReadsView()
+                    .appDestinations()
+            }
+        }
+        .fullScreenCover(isPresented: $browseOpen) {
+            NavigationStack {
+                BrowseView()
+                    .appDestinations()
+            }
+        }
+        .fullScreenCover(isPresented: $adminOpen) {
+            AdminSheet()
+        }
+        .fullScreenCover(isPresented: $manageUsersOpen) {
+            AdminUsersSheet()
+                .environment(\.shellBarInsets, (top: 0, bottom: 0))
+                .environment(\.showsShellChrome, false)
+                .globalReportOverlay()
+        }
+        .fullScreenCover(isPresented: $basedReaderOpen) {
+            NavigationStack {
+                BasedReaderScreen()
+                    .appDestinations()
+            }
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
+            .environment(\.showsShellChrome, false)
+            .globalReportOverlay()
+        }
+    }
+
+    // ── Refreshed menu (2026-11) ────────────────────────────────────────
+    // Same destinations as v1, regrouped into cards on the ambient
+    // backdrop: who you are, the membership, the places, then housekeeping.
+    private var isAdmin: Bool { ["admin", "super_admin"].contains(user?.accountType ?? "") }
+
+    private var avatarURL: URL? {
+        guard let a = user?.avatarUrl else { return nil }
+        return a.hasPrefix("/") ? URL(string: a, relativeTo: APIClient.baseURL) : URL(string: a)
+    }
+
+    private var menuV2: some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                // Who you are → Profile
+                Button {
+                    dismiss()
+                    onProfile()
+                } label: {
+                    HStack(spacing: 14) {
+                        AsyncImage(url: avatarURL) { image in
+                            image.resizable().aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            ZStack {
+                                Theme.surfaceAlt
+                                Image(systemName: "person.fill").foregroundStyle(Theme.muted)
+                            }
+                        }
+                        .frame(width: 52, height: 52)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Theme.accent.opacity(0.8), lineWidth: 2))
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(user?.displayName ?? "Reader")
+                                .font(Theme.heading(20, .bold))
+                                .foregroundStyle(Theme.foreground)
+                            Text(user?.username.map { "@\($0)" } ?? user?.email ?? "")
+                                .font(Theme.body(13))
+                                .foregroundStyle(Theme.muted)
+                        }
+                        Spacer()
+                        Text("View profile")
+                            .font(Theme.body(12, .semibold))
+                            .foregroundStyle(Theme.neonBlue)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity)
+                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22))
+                }
+
+                // Membership
+                Button { basedReaderOpen = true } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 34, height: 34)
+                            .background(
+                                LinearGradient(colors: [Theme.neonPurple, Theme.neonBlue],
+                                               startPoint: .topLeading, endPoint: .bottomTrailing),
+                                in: RoundedRectangle(cornerRadius: 10))
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(isPremiumUser ? "Based Reader Premium" : "Upgrade to Premium")
+                                .font(Theme.body(15, .bold))
+                                .foregroundStyle(Theme.foreground)
+                            Text(isPremiumUser ? "Your membership and what's included"
+                                               : "Custom shelves, buddy reads and more")
+                                .font(Theme.body(12))
+                                .foregroundStyle(Theme.muted)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.muted)
+                    }
+                    .padding(14)
+                    .background(
+                        LinearGradient(colors: [Theme.neonPurple.opacity(0.16), Theme.neonBlue.opacity(0.10)],
+                                       startPoint: .leading, endPoint: .trailing),
+                        in: RoundedRectangle(cornerRadius: 18))
+                    .overlay(RoundedRectangle(cornerRadius: 18)
+                        .stroke(Theme.neonPurple.opacity(0.35), lineWidth: 1))
+                }
+
+                // Places
+                menuCard {
+                    cardRow("gearshape", "Settings", Theme.muted) { settingsOpen = true }
+                    cardDivider
+                    cardRow("person.2", "Find Readers", Theme.neonBlue) { findReadersOpen = true }
+                    cardDivider
+                    cardRow("book.pages", "Buddy Reads", Theme.neonPurple) { buddyReadsOpen = true }
+                    cardDivider
+                    cardRow("books.vertical", "Browse All Books", Theme.accentDark) { browseOpen = true }
+                    ForEach(items, id: \.path) { item in
+                        cardDivider
+                        cardRow(item.icon, item.label, Color(hex: "fb923c"), external: true) {
+                            if let url = URL(string: "https://thebasedreader.app\(item.path)") {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                    }
+                }
+
+                if isAdmin {
+                    menuCard {
+                        cardRow("wrench.and.screwdriver", "Admin", Theme.neonPurple) { adminOpen = true }
+                        if user?.accountType == "super_admin" {
+                            cardDivider
+                            cardRow("person.crop.circle.badge.checkmark", "Manage Users", Theme.neonPurple) {
+                                manageUsersOpen = true
+                            }
+                        }
+                    }
+                }
+
+                // Housekeeping
+                menuCard {
+                    HStack(spacing: 12) {
+                        rowIcon("circle.lefthalf.filled", Theme.muted)
+                        Text("Theme").font(Theme.body(15, .medium)).foregroundStyle(Theme.foreground)
+                        Spacer()
+                        Picker("", selection: $themeOverride) {
+                            Text("Dark").tag("dark")
+                            Text("Light").tag("light")
+                            Text("Auto").tag("system")
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 170)
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 9)
+                    cardDivider
+                    cardRow("envelope", "Contact Us", Theme.muted, external: true) {
+                        if let url = URL(string: "mailto:hello@thebasedreader.app") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                }
+
+                Button {
+                    dismiss()
+                    Task { await auth.logout() }
+                } label: {
+                    Text("Sign Out")
+                        .font(Theme.body(15, .semibold))
+                        .foregroundStyle(Theme.destructive)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Theme.destructive.opacity(0.08), in: RoundedRectangle(cornerRadius: 18))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 24)
+            .padding(.bottom, 32)
+        }
+        .background(AmbientBackground())
+    }
+
+    private func menuCard<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        VStack(spacing: 0) { content() }
+            .background(Theme.surface.opacity(0.75), in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.border.opacity(0.7), lineWidth: 1))
+    }
+
+    private var cardDivider: some View {
+        Rectangle().fill(Theme.border.opacity(0.6)).frame(height: 1).padding(.leading, 58)
+    }
+
+    private func rowIcon(_ icon: String, _ tint: Color) -> some View {
+        Image(systemName: icon)
+            .font(.system(size: 15, weight: .medium))
+            .foregroundStyle(tint)
+            .frame(width: 32, height: 32)
+            .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 9))
+    }
+
+    private func cardRow(_ icon: String, _ label: String, _ tint: Color, external: Bool = false,
+                         action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                rowIcon(icon, tint)
+                Text(label).font(Theme.body(15, .medium)).foregroundStyle(Theme.foreground)
+                Spacer()
+                Image(systemName: external ? "arrow.up.right" : "chevron.right")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Theme.muted.opacity(0.7))
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+    }
+
+    private var menuV1: some View {
         VStack(alignment: .leading, spacing: 0) {
             // User card
             VStack(alignment: .leading, spacing: 2) {
@@ -291,48 +528,6 @@ struct HamburgerMenuSheet: View {
             Spacer()
         }
         .background(Theme.bg)
-        .fullScreenCover(isPresented: $settingsOpen) {
-            NavigationStack {
-                SettingsView()
-                    .appDestinations()
-            }
-        }
-        .fullScreenCover(isPresented: $findReadersOpen) {
-            NavigationStack {
-                FindReadersView()
-                    .appDestinations()
-            }
-        }
-        .fullScreenCover(isPresented: $buddyReadsOpen) {
-            NavigationStack {
-                BuddyReadsView()
-                    .appDestinations()
-            }
-        }
-        .fullScreenCover(isPresented: $browseOpen) {
-            NavigationStack {
-                BrowseView()
-                    .appDestinations()
-            }
-        }
-        .fullScreenCover(isPresented: $adminOpen) {
-            AdminSheet()
-        }
-        .fullScreenCover(isPresented: $manageUsersOpen) {
-            AdminUsersSheet()
-                .environment(\.shellBarInsets, (top: 0, bottom: 0))
-                .environment(\.showsShellChrome, false)
-                .globalReportOverlay()
-        }
-        .fullScreenCover(isPresented: $basedReaderOpen) {
-            NavigationStack {
-                BasedReaderScreen()
-                    .appDestinations()
-            }
-            .environment(\.shellBarInsets, (top: 0, bottom: 0))
-            .environment(\.showsShellChrome, false)
-            .globalReportOverlay()
-        }
     }
 
     private func menuRow(icon: String, label: String, tint: Color = Theme.foreground) -> some View {

@@ -88,6 +88,11 @@ struct LibraryView: View {
     // "Current Read" instead of "Finished". onChange consumes this instead.
     @State private var pendingSubFilter: String?
 
+    // In-library search (refreshed header). Matches title or author.
+    @State private var searchActive = false
+    @State private var searchText = ""
+    @FocusState private var searchFocused: Bool
+
     // Advanced filters (web: the collapsible Filters panel, TBR + Activity)
     @State private var filtersOpen = false
     @State private var sort: SortKey = .recent
@@ -131,6 +136,16 @@ struct LibraryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                if DesignPreview.on {
+                    headerV2
+                    groupSegmentsV2
+                    toolbarRowV2
+                    if filtersOpen && showAdvanced && !searchActive { filtersPanel }
+                    if !showAdvanced && filteredBooks.count > 1 && !searchActive {
+                        HStack { Spacer(); sortMenu(includeRating: false) }
+                    }
+                    content
+                } else {
                 header
 
                 // My Shelves row card
@@ -156,6 +171,7 @@ struct LibraryView: View {
                 filtersRow
 
                 content
+                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
@@ -230,6 +246,169 @@ struct LibraryView: View {
                 .font(Theme.body(12))
                 .foregroundStyle(Theme.muted)
         }
+    }
+
+    // ── Refreshed header (2026-11) ──────────────────────────────────────
+    // v1 stacked five rows above the first cover: title+counts, My Shelves,
+    // the group switch, the sub-filter chips, and Filters. v2 is three:
+    //   1. title + a Shelves pill (was a full-width row)
+    //   2. the group switch, now carrying the counts
+    //   3. ONE toolbar: search · filters · sub-filter chips
+    // Search filters the books already in memory, so it is instant and
+    // works offline; it scopes to the tab and sub-filter on screen.
+    private var headerV2: some View {
+        HStack(alignment: .center) {
+            Text("My Library")
+                .font(Theme.heading(26, .bold))
+                .foregroundStyle(Theme.foreground)
+            Spacer()
+            NavigationLink(value: ShelvesListRoute()) {
+                HStack(spacing: 6) {
+                    Image(systemName: "books.vertical.fill")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Theme.accentText)
+                    Text("Shelves").font(Theme.body(14, .semibold))
+                    Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Theme.muted)
+                }
+                .foregroundStyle(Theme.foreground)
+                .padding(.horizontal, 14).padding(.vertical, 9)
+                .glassEffect(.regular, in: Capsule())
+            }
+        }
+    }
+
+    private func groupCount(_ g: Group) -> Int? {
+        switch g {
+        case .tbr: return tbrCount
+        case .owned: return ownedCount
+        case .activity: return nil
+        }
+    }
+
+    private var groupSegmentsV2: some View {
+        HStack(spacing: 4) {
+            ForEach(Group.allCases, id: \.self) { g in
+                let active = group == g
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) { group = g }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(g.rawValue)
+                            .font(Theme.body(15, active ? .bold : .medium))
+                        if let n = groupCount(g) {
+                            Text("\(n)")
+                                .font(Theme.body(12, .semibold))
+                                .opacity(active ? 0.6 : 0.7)
+                        }
+                    }
+                    .foregroundStyle(active ? Theme.onAccent : Theme.muted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(active ? Theme.accent : .clear, in: Capsule())
+                }
+            }
+        }
+        .padding(4)
+        .glassEffect(.regular, in: Capsule())
+    }
+
+    private func toolbarCircle(_ icon: String, active: Bool, badge: Int = 0,
+                               action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(active ? Theme.accentText : Theme.foreground)
+                .frame(width: 40, height: 40)
+                .glassEffect(.regular, in: Circle())
+                .overlay(Circle().stroke(active ? Theme.accent.opacity(0.7) : .clear, lineWidth: 1.5))
+                .overlay(alignment: .topTrailing) {
+                    if badge > 0 {
+                        Text("\(badge)")
+                            .font(Theme.body(10, .bold))
+                            .foregroundStyle(Theme.onAccent)
+                            .frame(width: 16, height: 16)
+                            .background(Theme.accent, in: Circle())
+                            .offset(x: 3, y: -3)
+                    }
+                }
+        }
+    }
+
+    @ViewBuilder private var toolbarRowV2: some View {
+        if searchActive {
+            HStack(spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Theme.muted)
+                    TextField("Search \(group.rawValue.lowercased() == "tbr" ? "your TBR" : group.rawValue.lowercased())",
+                              text: $searchText)
+                        .font(Theme.body(16))
+                        .foregroundStyle(Theme.foreground)
+                        .focused($searchFocused)
+                        .submitLabel(.search)
+                        .autocorrectionDisabled()
+                    if !searchText.isEmpty {
+                        Button { searchText = "" } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.muted)
+                        }
+                    }
+                }
+                .padding(.horizontal, 14)
+                .frame(height: 40)
+                .glassEffect(.regular, in: Capsule())
+
+                Button("Cancel") {
+                    searchText = ""
+                    searchFocused = false
+                    withAnimation(.easeOut(duration: 0.15)) { searchActive = false }
+                }
+                .font(Theme.body(15, .medium))
+                .foregroundStyle(Theme.neonBlue)
+            }
+        } else {
+            HStack(spacing: 8) {
+                toolbarCircle("magnifyingglass", active: false) {
+                    withAnimation(.easeOut(duration: 0.15)) { searchActive = true }
+                    searchFocused = true
+                }
+                .accessibilityLabel("Search library")
+                if showAdvanced {
+                    toolbarCircle("line.3.horizontal.decrease", active: filtersOpen,
+                                  badge: advancedFilterCount) {
+                        withAnimation(.easeOut(duration: 0.15)) { filtersOpen.toggle() }
+                    }
+                    .accessibilityLabel("Filters")
+                }
+                subFilterChipsV2
+            }
+        }
+    }
+
+    private var subFilterChipsV2: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(subFilters, id: \.key) { key, label in
+                    let active = subFilter == key
+                    Button { subFilter = key } label: {
+                        HStack(spacing: 5) {
+                            Text(label).font(Theme.body(14, active ? .semibold : .medium))
+                            Text("\(countFor(key))").font(Theme.body(12)).opacity(0.6)
+                        }
+                        .foregroundStyle(active ? Theme.foreground : Theme.muted)
+                        .padding(.horizontal, 14)
+                        .frame(height: 40)
+                        .background(active ? Theme.foreground.opacity(0.10) : .clear, in: Capsule())
+                        .overlay(Capsule().stroke(active ? Theme.foreground.opacity(0.35) : Theme.border,
+                                                  lineWidth: 1))
+                    }
+                }
+            }
+            .padding(.vertical, 2)
+            .padding(.trailing, 20)
+        }
+        .padding(.trailing, -20)   // chips run off the trailing edge
     }
 
     private var ownedCount: Int { model.books.filter { !$0.ownedFormats.isEmpty }.count }
@@ -526,6 +705,13 @@ struct LibraryView: View {
             else if fictionFilter == "nonfiction" { books = books.filter { $0.isFiction == false } }
             if let f = formatFilter {
                 books = books.filter { $0.ownedFormats.contains(f) || $0.activeFormats.contains(f) }
+            }
+        }
+        let q = searchText.trimmingCharacters(in: .whitespaces)
+        if searchActive, !q.isEmpty {
+            books = books.filter {
+                $0.title.localizedCaseInsensitiveContains(q)
+                    || $0.authors.contains { $0.localizedCaseInsensitiveContains(q) }
             }
         }
         switch sort {

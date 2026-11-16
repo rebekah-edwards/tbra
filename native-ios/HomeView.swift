@@ -252,6 +252,9 @@ struct HomeView: View {
                         }
                         ReadingStreakCardView(streak: home.streak)
                     }
+                    // v2 tiles stretch to the taller of the two, so the pair
+                    // always shares one height (v1 sized each to its content).
+                    .fixedSize(horizontal: false, vertical: DesignPreview.on)
                 }
 
                 // ── Up Next ──
@@ -443,7 +446,98 @@ private struct ReadingNowCard: View {
         .opacity(busy ? 0.5 : 1)
     }
 
-    private var cardBody: some View {
+    @ViewBuilder private var cardBody: some View {
+        if DesignPreview.on { cardBodyV2 } else { cardBodyV1 }
+    }
+
+    // Refreshed card (2026-11): a real progress bar instead of the "45%" tag
+    // under the cover, ONE lime action (log progress) with the state menu
+    // demoted to a neutral glass pill, and ~26pt less height per card so Up
+    // Next reaches the first screen. Same buttons, sheets and dropdown anchor
+    // as v1 — only the layout differs.
+    private var cardBodyV2: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Button(action: onOpen) {
+                HStack(alignment: .center, spacing: 12) {
+                    CoverThumb(url: book.coverImageUrl,
+                               width: book.usesAudiobookCover == true ? 64 : 48,
+                               height: book.usesAudiobookCover == true ? 64 : 72,
+                               radius: 7, title: book.title)
+                        .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(book.title)
+                            .font(Theme.body(15, .bold))
+                            .foregroundStyle(Theme.foreground)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(book.authors.joined(separator: ", "))
+                            .font(Theme.body(13))
+                            .foregroundStyle(Theme.foreground.opacity(0.70))
+                            .lineLimit(1)
+                        progressBar.padding(.top, 5)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+
+            VStack(spacing: 6) {
+                Button {
+                    showTrackSheet = true
+                } label: {
+                    Label("Update", systemImage: "plus")
+                        .labelStyle(.titleAndIcon)
+                        .font(Theme.body(12, .bold))
+                        .foregroundStyle(Theme.onAccent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(Theme.accent, in: Capsule())
+                }
+                .accessibilityLabel("Track progress")
+
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        openDropdownBookId = showStateDropdown ? nil : book.id
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("Reading")
+                        Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
+                    }
+                    .font(Theme.body(12, .semibold))
+                    .foregroundStyle(Theme.foreground)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
+                }
+                .anchorPreference(key: StateButtonAnchorKey.self, value: .bounds) { $0 }
+            }
+            .frame(width: 92)
+        }
+        .padding(12)
+    }
+
+    private var progressBar: some View {
+        let pct = max(0, min(100, book.progress ?? 0))
+        return HStack(spacing: 8) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Theme.foreground.opacity(0.14))
+                    Capsule().fill(Theme.accent)
+                        .frame(width: pct > 0 ? max(6, geo.size.width * CGFloat(pct) / 100) : 0)
+                }
+            }
+            .frame(height: 5)
+            Text(pct > 0 ? "\(pct)%" : "Not started")
+                .font(Theme.body(11, .bold))
+                .foregroundStyle(Theme.foreground.opacity(pct > 0 ? 0.85 : 0.5))
+                .fixedSize()
+        }
+    }
+
+    private var cardBodyV1: some View {
         HStack(alignment: .center, spacing: 16) {
             // Cover + title/author navigate to the book page (the action
             // buttons on the right keep their own tap targets).
@@ -848,8 +942,122 @@ private struct ReadingGoalCardView: View {
     var onAutoEditConsumed: () -> Void = {}
     let onChanged: () async -> Void
     @State private var editing = false
+    @State private var ringShown = false
 
     var body: some View {
+        Group {
+            if DesignPreview.on { bodyV2 } else { bodyV1 }
+        }
+        .onAppear {
+            guard autoEdit else { return }
+            onAutoEditConsumed()
+            editing = true
+        }
+        .sheet(isPresented: $editing) {
+            GoalEditSheet(year: year, current: goal?.targetBooks) { await onChanged() }
+                .presentationDetents([.height(260)])
+                .presentationBackground(Theme.surface)
+        }
+    }
+
+    /// Books ahead of (+) or behind (−) an even pace through the year.
+    private func paceDelta(_ goal: ReadingGoal) -> Int {
+        let cal = Calendar.current
+        let now = Date()
+        guard cal.component(.year, from: now) == year,
+              let day = cal.ordinality(of: .day, in: .year, for: now),
+              let days = cal.range(of: .day, in: .year, for: now)?.count else { return 0 }
+        let expected = Double(goal.targetBooks) * Double(day) / Double(days)
+        return goal.completedBooks - Int(expected.rounded(.down))
+    }
+
+    private func paceLine(_ goal: ReadingGoal) -> (text: String, good: Bool) {
+        let left = goal.targetBooks - goal.completedBooks
+        if left <= 0 { return ("Goal smashed", true) }
+        let delta = paceDelta(goal)
+        if delta > 0 { return ("\(delta) ahead of pace", true) }
+        if delta == 0 { return ("Right on pace", true) }
+        return ("\(left) to go", false)
+    }
+
+    // Refreshed tile (2026-11): the ring is the hero, drawn in a lime→blue
+    // sweep that animates in, with a pace line that changes as the year does.
+    private var bodyV2: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("\(String(year)) GOAL")
+                    .font(Theme.body(11, .bold)).tracking(0.8)
+                    .foregroundStyle(Theme.muted)
+                Spacer()
+                Button { editing = true } label: {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Theme.muted)
+                        .frame(width: 26, height: 22)
+                }
+            }
+            if let goal {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle().stroke(Theme.foreground.opacity(0.10), lineWidth: 8)
+                        Circle()
+                            .trim(from: 0, to: ringShown ? max(0.02, min(1, CGFloat(goal.percentComplete) / 100)) : 0)
+                            .stroke(
+                                AngularGradient(colors: [Theme.accent, Theme.neonBlue, Theme.accent],
+                                                center: .center),
+                                style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .shadow(color: Theme.accent.opacity(0.45), radius: 6)
+                        Text("\(goal.percentComplete)%")
+                            .font(Theme.heading(15, .bold))
+                            .foregroundStyle(Theme.foreground)
+                    }
+                    .frame(width: 66, height: 66)
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("\(goal.completedBooks)")
+                            .font(Theme.heading(34, .heavy))
+                            .foregroundStyle(Theme.foreground)
+                            .contentTransition(.numericText())
+                        Text("of \(goal.targetBooks) books")
+                            .font(Theme.body(12))
+                            .foregroundStyle(Theme.muted)
+                    }
+                }
+                Spacer(minLength: 0)
+                let pace = paceLine(goal)
+                Label(pace.text, systemImage: pace.good ? "bolt.fill" : "flag.checkered")
+                    .font(Theme.body(12, .semibold))
+                    .foregroundStyle(pace.good ? Theme.accentText : Theme.foreground.opacity(0.75))
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .background((pace.good ? Theme.accent : Theme.foreground).opacity(0.14), in: Capsule())
+            } else {
+                Button { editing = true } label: {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Image(systemName: "target")
+                            .font(.system(size: 30, weight: .semibold))
+                            .foregroundStyle(Theme.accentText)
+                        Text("Set your \(String(year)) goal")
+                            .font(Theme.heading(17, .bold))
+                            .foregroundStyle(Theme.foreground)
+                        Text("Pick a number and watch the ring fill.")
+                            .font(Theme.body(12))
+                            .foregroundStyle(Theme.muted)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(HomeTileBackground(glow: Theme.accent))
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.9).delay(0.15)) { ringShown = true }
+        }
+    }
+
+    private var bodyV1: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("\(String(year)) Reading Goal")
@@ -905,16 +1113,21 @@ private struct ReadingGoalCardView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.accent.opacity(0.20), lineWidth: 1))
-        .onAppear {
-            guard autoEdit else { return }
-            onAutoEditConsumed()
-            editing = true
+    }
+}
+
+/// Shared backing for the refreshed goal/streak tiles: a surface with one
+/// soft colour bloom in the top-trailing corner and a hairline in that colour.
+private struct HomeTileBackground: View {
+    let glow: Color
+    var body: some View {
+        ZStack {
+            Theme.surface
+            RadialGradient(colors: [glow.opacity(0.30), glow.opacity(0)],
+                           center: .topTrailing, startRadius: 0, endRadius: 150)
         }
-        .sheet(isPresented: $editing) {
-            GoalEditSheet(year: year, current: goal?.targetBooks) { await onChanged() }
-                .presentationDetents([.height(260)])
-                .presentationBackground(Theme.surface)
-        }
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(glow.opacity(0.28), lineWidth: 1))
     }
 }
 
@@ -922,6 +1135,88 @@ private struct ReadingStreakCardView: View {
     let streak: ReadingStreak
 
     var body: some View {
+        if DesignPreview.on { bodyV2 } else { bodyV1 }
+    }
+
+    private static let flame = Color(hex: "fb923c")   // orange-400
+    private static let ember = Color(hex: "f43f5e")   // rose-500
+
+    private var footer: String {
+        let cur = streak.currentStreak, best = streak.longestStreak
+        if cur == 0 { return "Log anything today to light it" }
+        if cur >= best { return "Your best streak yet" }
+        let gap = best - cur
+        return "\(gap) \(gap == 1 ? "day" : "days") to beat your best"
+    }
+
+    // Refreshed tile (2026-11): the flame is the hero, lit in an
+    // orange→rose gradient when the streak is alive and dimmed when it is
+    // not, with a bar that races the reader's own record.
+    private var bodyV2: some View {
+        let alive = streak.currentStreak > 0
+        let best = max(streak.longestStreak, streak.currentStreak, 1)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("STREAK")
+                    .font(Theme.body(11, .bold)).tracking(0.8)
+                    .foregroundStyle(Theme.muted)
+                Spacer()
+                if alive && streak.longestStreak > 0 {
+                    Text("Best \(streak.longestStreak)")
+                        .font(Theme.body(11, .semibold))
+                        .foregroundStyle(Theme.muted)
+                        .frame(height: 22)
+                }
+            }
+            HStack(spacing: 10) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 46, weight: .bold))
+                    .foregroundStyle(
+                        alive
+                        ? AnyShapeStyle(LinearGradient(colors: [Self.flame, Self.ember],
+                                                       startPoint: .top, endPoint: .bottom))
+                        : AnyShapeStyle(Theme.foreground.opacity(0.18)))
+                    .shadow(color: alive ? Self.flame.opacity(0.55) : .clear, radius: 10)
+                    .symbolEffect(.breathe, isActive: alive)
+                    .frame(width: 66, height: 66)
+
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("\(streak.currentStreak)")
+                        .font(Theme.heading(34, .heavy))
+                        .foregroundStyle(Theme.foreground)
+                        .contentTransition(.numericText())
+                    Text(streak.currentStreak == 1 ? "day in a row" : "days in a row")
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+            Spacer(minLength: 0)
+            VStack(alignment: .leading, spacing: 5) {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Theme.foreground.opacity(0.10))
+                        Capsule()
+                            .fill(LinearGradient(colors: [Self.flame, Self.ember],
+                                                 startPoint: .leading, endPoint: .trailing))
+                            .frame(width: alive
+                                   ? max(8, geo.size.width * CGFloat(streak.currentStreak) / CGFloat(best))
+                                   : 0)
+                    }
+                }
+                .frame(height: 5)
+                Text(footer)
+                    .font(Theme.body(12, .semibold))
+                    .foregroundStyle(Theme.foreground.opacity(0.75))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(HomeTileBackground(glow: alive ? Self.flame : Theme.neonPurple))
+    }
+
+    private var bodyV1: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("tbr streak")
                 .font(Theme.body(12, .medium))

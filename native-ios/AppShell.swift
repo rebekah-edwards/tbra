@@ -490,9 +490,12 @@ extension View {
     func tracksScrollAtTop() -> some View { modifier(TracksScrollAtTop()) }
 
     /// Liquid-glass capsule chrome for the floating bars.
-    @ViewBuilder func glassPill() -> some View {
+    @ViewBuilder func glassPill(backed: Bool = false) -> some View {
         if #available(iOS 26.0, *) {
-            self.glassEffect(.regular, in: Capsule())
+            // `backed` tints the glass with the page colour so busy content
+            // underneath (chart bars, covers) reads as a soft wash instead of
+            // recognisable coloured blobs. Still real Liquid Glass.
+            self.glassEffect(backed ? .regular.tint(Theme.bg.opacity(0.62)) : .regular, in: Capsule())
         } else {
             self
                 .background(.ultraThinMaterial, in: Capsule())
@@ -658,9 +661,10 @@ struct TopBarActions: View {
 /// glassPill in visual mode; a bare tappable capsule in hit mode.
 struct GlassPillIf: ViewModifier {
     let enabled: Bool
+    var backed = false
     func body(content: Content) -> some View {
         if enabled {
-            content.glassPill()
+            content.glassPill(backed: backed)
         } else {
             content.contentShape(Capsule())
         }
@@ -687,7 +691,7 @@ struct BottomNav: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
-        .modifier(GlassPillIf(enabled: !hitLayerOnly))
+        .modifier(GlassPillIf(enabled: !hitLayerOnly, backed: DesignPreview.on))
         .padding(.horizontal, 16)
         .padding(.top, 6)
         .padding(.bottom, 2)
@@ -709,10 +713,20 @@ struct BottomNav: View {
             // mode. The bg-tinted glow separates the glyphs from busy art.
             .foregroundStyle(hitLayerOnly
                              ? hitLayerInk
-                             : (active ? AnyShapeStyle(Theme.neonPurple) : AnyShapeStyle(Theme.foreground.opacity(0.78))))
+                             : (active
+                                ? AnyShapeStyle(DesignPreview.on ? Theme.accentText : Theme.neonPurple)
+                                : AnyShapeStyle(Theme.foreground.opacity(0.78))))
             .shadow(color: hitLayerOnly ? .clear : Theme.bg.opacity(0.55), radius: 2.5)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
+            // Refreshed (2026-11): lime marks where you are on EVERY tab —
+            // a tinted lozenge here, the solid circle on Home — instead of
+            // purple for four tabs and lime for one.
+            .background {
+                if DesignPreview.on && active && !hitLayerOnly {
+                    Capsule().fill(Theme.accent.opacity(0.24)).padding(.horizontal, 3)
+                }
+            }
             .contentShape(Rectangle())
         }
     }
@@ -758,7 +772,9 @@ struct BottomNav: View {
             } placeholder: { Theme.surfaceAlt }
             .frame(width: 22, height: 22)
             .clipShape(Circle())
-            .overlay(Circle().stroke(tab == .profile ? Theme.neonPurple : Theme.border,
+            .overlay(Circle().stroke(tab == .profile
+                                     ? (DesignPreview.on ? Theme.accentDark : Theme.neonPurple)
+                                     : Theme.border,
                                      lineWidth: tab == .profile ? 2 : 1))
         } else {
             PersonIcon().stroked().frame(width: 22, height: 22)

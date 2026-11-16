@@ -474,6 +474,16 @@ struct TbrNoteEditorSheet: View {
 
 // ── Hero — book-header.tsx ──
 private struct BookHero: View {
+    /// Refreshed hero badge: glass capsule, colour carried by a dot.
+    private func heroBadge(_ text: String, dot: Color) -> some View {
+        HStack(spacing: 6) {
+            Circle().fill(dot).frame(width: 7, height: 7)
+            Text(text).font(Theme.body(13, .semibold)).foregroundStyle(Theme.foreground)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 6)
+        .glassEffect(.regular, in: Capsule())
+    }
+
     let data: BookDetailData
     /// Reload the book after the admin cover picker closes.
     var onCoverChanged: () async -> Void = {}
@@ -630,6 +640,16 @@ private struct BookHero: View {
         // Genre + age pills: half-overlapping top-right (-top-3 right-4)
         .overlay(alignment: .topTrailing) {
             HStack(spacing: 6) {
+                if DesignPreview.on {
+                    // Refreshed (2026-11): glass badges with a colour DOT, so
+                    // the lime state button below is the only solid fill.
+                    if let genre = book.topLevelGenre {
+                        heroBadge(genre, dot: Theme.accent)
+                    }
+                    if let age = book.ageCategory {
+                        heroBadge(age, dot: Color(hex: "7c3aed"))
+                    }
+                } else {
                 if let genre = book.topLevelGenre {
                     Text(genre)
                         .font(Theme.body(13, .semibold))
@@ -645,6 +665,7 @@ private struct BookHero: View {
                         .padding(.horizontal, 14).padding(.vertical, 6)
                         .background(Color(hex: "7c3aed"), in: Capsule())
                         .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+                }
                 }
             }
             .padding(.trailing, 16)
@@ -1177,7 +1198,34 @@ private struct BookActionCluster: View {
         }
     }
 
+    @ViewBuilder
     private func clusterPill(icon: String, label: String, tint: Color, solid: Bool, action: @escaping () -> Void) -> some View {
+        if DesignPreview.on {
+            // Refreshed (2026-11): neutral glass for every secondary action.
+            // The hue survives only in the ICON (filled once active) and a
+            // faint ring, so the lime state button is the one solid colour.
+            Button(action: action) {
+                HStack(spacing: 7) {
+                    Image(systemName: icon)
+                        .symbolVariant(solid ? .fill : .none)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(tint)
+                    Text(label).font(Theme.body(14, .semibold)).lineLimit(1)
+                        .foregroundStyle(Theme.foreground.opacity(solid ? 1 : 0.75))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 13)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14)
+                    .stroke(solid ? tint.opacity(0.55) : Theme.foreground.opacity(0.12), lineWidth: 1))
+                .contentShape(RoundedRectangle(cornerRadius: 14))
+            }
+        } else {
+            clusterPillV1(icon: icon, label: label, tint: tint, solid: solid, action: action)
+        }
+    }
+
+    private func clusterPillV1(icon: String, label: String, tint: Color, solid: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: icon).font(.system(size: 13))
@@ -1457,12 +1505,18 @@ private struct BookStarsRow: View {
                 } label: {
                     // Same 14pt rounding as every other book-page button
                     // (user request 2026-07-14 — was the lone capsule).
-                    Text(data.userRating != nil ? "Edit your review" : "Rate & review")
+                    Label(data.userRating != nil ? "Edit your review" : "Rate & review",
+                          systemImage: "square.and.pencil")
                         .font(Theme.body(15, .semibold))
-                        .foregroundStyle(Theme.accentText)
+                        .foregroundStyle(DesignPreview.on ? Theme.foreground : Theme.accentText)
+                        .labelStyle(ReviewPillLabelStyle(showIcon: DesignPreview.on))
                         .padding(.horizontal, 20).padding(.vertical, 9)
-                        .background(Theme.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.accent.opacity(0.45), lineWidth: 1))
+                        .background(DesignPreview.on ? AnyShapeStyle(.ultraThinMaterial)
+                                                     : AnyShapeStyle(Theme.accent.opacity(0.1)),
+                                    in: RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14)
+                            .stroke(DesignPreview.on ? Theme.foreground.opacity(0.12)
+                                                     : Theme.accent.opacity(0.45), lineWidth: 1))
                         // Pin the hit region to the visible pill — taps near
                         // its lower edge were sometimes claimed by the
                         // content-flags banner below (user report 2026-07-22).
@@ -1514,14 +1568,57 @@ private struct BookStarsRow: View {
 // border in both modes, and a giant serif ” overhanging the bottom-right,
 // clipped by the card (user request 2026-07-14: outline was lost + quote
 // marks too small).
+/// Rate & review keeps a text-only label in v1 and gains a leading icon in
+/// the refreshed design.
+private struct ReviewPillLabelStyle: LabelStyle {
+    let showIcon: Bool
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 7) {
+            if showIcon { configuration.icon.font(.system(size: 13, weight: .semibold)) }
+            configuration.title
+        }
+    }
+}
+
 private struct SummaryQuoteCard: View {
     let summary: String
     @Environment(\.colorScheme) private var colorScheme
     @State private var breathe = false
 
     var body: some View {
+        if DesignPreview.on { bodyV2 } else { bodyV1 }
+    }
+
+    // Refreshed (2026-11): the one-line hook set as a headline on Liquid
+    // Glass. Drops the oversized serif quote mark and the edge-bleed card for
+    // the same rounded glass the search pill and tab bar use, with a hairline
+    // in the logo's lime→blue→purple.
+    private var bodyV2: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("THE SHORT VERSION", systemImage: "sparkles")
+                .font(Theme.body(11, .bold)).tracking(0.9)
+                .foregroundStyle(Theme.muted)
+            Text(summary)
+                .font(Theme.heading(17, .semibold))
+                .foregroundStyle(Theme.foreground)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(20)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22)
+                .stroke(LinearGradient(
+                    colors: [Theme.accent.opacity(0.55), Theme.neonBlue.opacity(0.35),
+                             Theme.neonPurple.opacity(0.45)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+        )
+    }
+
+    private var bodyV1: some View {
         let isLight = colorScheme == .light
-        ZStack {
+        return ZStack {
             // frosted-breathe: two radial ellipses, 6s ease-in-out infinite,
             // opacity .6→1 + scale 1→1.05 (globals.css frosted-blob).
             GeometryReader { geo in
