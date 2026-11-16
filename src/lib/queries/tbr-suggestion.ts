@@ -15,6 +15,7 @@ import {
 import { sql, eq, and, isNotNull } from "drizzle-orm";
 import { isEnglishTitle, looksLikeMidSeriesTitle } from "@/lib/queries/books";
 import { getEffectiveCoverUrl } from "@/lib/covers";
+import { isSpoilerGenre } from "@/lib/spoiler-genres";
 
 export interface TbrSuggestion {
   id: string;
@@ -210,7 +211,11 @@ async function buildTbrReason(
       .get(),
   ]);
 
-  const tbrGenres = new Set(tbrGenreRows.map((r) => r.genreName));
+  // The reason line names a genre ("Another gothic", "A noir pick") — never
+  // let it name a spoiler-sensitive one (lib/spoiler-genres.ts).
+  const tbrGenres = new Set(
+    tbrGenreRows.map((r) => r.genreName).filter((name: string) => !isSpoilerGenre(name)),
+  );
 
   if (!lastCompleted) {
     return genreBasedReason(tbrGenres) ?? (isOwned ? "From your owned shelf" : null);
@@ -224,7 +229,9 @@ async function buildTbrReason(
     .where(eq(bookGenres.bookId, lastCompleted.bookId))
     .all();
 
-  const lastGenres = new Set(lastGenreRows.map((r) => r.genreName));
+  const lastGenres = new Set(
+    lastGenreRows.map((r) => r.genreName).filter((name: string) => !isSpoilerGenre(name)),
+  );
 
   // Find shared genres
   const shared = [...tbrGenres].filter((g) => lastGenres.has(g));

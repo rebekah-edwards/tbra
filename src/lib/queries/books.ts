@@ -159,7 +159,9 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
 
   // Classify genres using the curated taxonomy.
   // Pass isFiction so the primary respects the fiction/nonfiction toggle.
-  const { primaryGenre: topLevelGenre, ageCategory, displayGenres: classifiedGenres } = classifyGenres(bookGenreRows, book.isFiction);
+  // Spoiler-sensitive tags (lib/spoiler-genres.ts) come back separately and
+  // are never part of `genres` / `topLevelGenre`.
+  const { primaryGenre: topLevelGenre, ageCategory, displayGenres: classifiedGenres, spoilerGenres } = classifyGenres(bookGenreRows, book.isFiction);
 
   const displayGenres = classifiedGenres;
 
@@ -337,13 +339,17 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
     parentFranchise = await getParentSeries(seriesRow[0].seriesId);
   }
 
-  // Raw genre names for admin editing (unfiltered, all linked genres)
+  // Raw genre names for admin editing (unfiltered, all linked genres —
+  // INCLUDING spoiler-sensitive ones). Admin surfaces only; anything that
+  // serves this to a non-admin must strip it with withoutSpoilerGenres().
   const allGenreNames = bookGenreRows.map((g) => g.name);
 
   return {
     ...book,
     authors: bookAuthorRows,
     genres: displayGenres,
+    // Hidden behind a tap-to-reveal on the book page; omitted everywhere else.
+    spoilerGenres,
     allGenreNames,
     topLevelGenre,
     ageCategory,
@@ -362,7 +368,10 @@ async function getBookWithDetailsInner(bookId: string, userId?: string | null) {
  */
 const getCachedBookDetails = unstable_cache(
   async (bookId: string) => getBookWithDetailsInner(bookId, null),
-  ["book-details"],
+  // Key bumped when `spoilerGenres` was split out of `genres`, so an entry
+  // cached by the previous deploy (spoiler tag still inside `genres`) is
+  // never served.
+  ["book-details", "v2-spoiler-genres"],
   { revalidate: 60 }
 );
 

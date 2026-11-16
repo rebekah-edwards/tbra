@@ -8,6 +8,8 @@
  * appears as a grey secondary pill instead.
  */
 
+import { isSpoilerGenre } from "@/lib/spoiler-genres";
+
 // ─── Fiction categories ───
 
 export const FICTION_GENRES = new Set([
@@ -268,19 +270,33 @@ export const GENRE_TO_TOP_LEVEL: Record<string, string> = {
  * 1. primaryGenre — the curated top-level genre for the green pill
  * 2. ageCategory — children's age category for a second pill (if applicable)
  * 3. displayGenres — remaining genres for grey secondary pills
+ * 4. spoilerGenres — spoiler-sensitive tags (see lib/spoiler-genres.ts). These
+ *    are pulled out FIRST and never appear in any of the three fields above;
+ *    only the book page's tap-to-reveal pill and the v1 `spoilerGenres` field
+ *    may use them.
  *
  * Priority for primary genre:
  * 1. Direct whitelist match (genre name IS in TOP_LEVEL_WHITELIST)
  * 2. Mapped match (genre maps to a whitelist entry via GENRE_TO_TOP_LEVEL)
  */
 export function classifyGenres(
-  genreRows: { genreId: string; name: string; parentGenreId: string | null }[],
+  allGenreRows: { genreId: string; name: string; parentGenreId: string | null }[],
   isFiction: boolean | null = null,
 ): {
   primaryGenre: string | null;
   ageCategory: string | null;
   displayGenres: string[];
+  spoilerGenres: string[];
 } {
+  // Spoiler-sensitive tags never take part in classification.
+  const spoilerGenres = [
+    ...new Set(allGenreRows.filter((g) => isSpoilerGenre(g.name)).map((g) => g.name)),
+  ];
+  const genreRows =
+    spoilerGenres.length > 0
+      ? allGenreRows.filter((g) => !isSpoilerGenre(g.name))
+      : allGenreRows;
+
   // Filter the whitelist by fiction/nonfiction when known
   const allowedSet =
     isFiction === true
@@ -382,5 +398,6 @@ export function classifyGenres(
     primaryGenre,
     ageCategory,
     displayGenres: secondaryGenres.slice(0, 5),
+    spoilerGenres,
   };
 }

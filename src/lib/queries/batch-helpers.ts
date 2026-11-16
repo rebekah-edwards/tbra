@@ -23,6 +23,7 @@ import {
 import { eq, and, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { classifyGenres } from "@/lib/genre-taxonomy";
+import { isSpoilerGenre } from "@/lib/spoiler-genres";
 
 /** Build a SQL IN clause from an array of string IDs */
 function inList(ids: string[]) {
@@ -198,7 +199,12 @@ export async function batchFetchTopLevelGenres(
   return map;
 }
 
-/** Batch fetch ALL genres for multiple books → Map<bookId, genreNames[]> */
+/**
+ * Batch fetch ALL genres for multiple books → Map<bookId, genreNames[]>.
+ * Spoiler-sensitive tags (lib/spoiler-genres.ts) are left out: this feeds
+ * library rows, genre filter chips and the /api/v1 library payload, none of
+ * which has a reveal.
+ */
 export async function batchFetchBookGenres(
   bookIds: string[]
 ): Promise<Map<string, string[]>> {
@@ -213,6 +219,7 @@ export async function batchFetchBookGenres(
 
   const map = new Map<string, string[]>();
   for (const row of rows) {
+    if (isSpoilerGenre(row.name)) continue;
     const existing = map.get(row.bookId) ?? [];
     existing.push(row.name);
     map.set(row.bookId, existing);

@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { readingSessions, books, bookGenres, genres, bookAuthors, authors, userBookRatings } from "@/db/schema";
 import { eq, and, like, sql, isNotNull } from "drizzle-orm";
+import { SPOILER_GENRE_NAMES_LOWER } from "@/lib/spoiler-genres";
 
 /**
  * Year filter helper: when year is set, filters by year AND excludes synthetic dates.
@@ -127,6 +128,13 @@ export async function getCompletedBooksByYear(
   return result;
 }
 
+// Spoiler-sensitive tags (lib/spoiler-genres.ts) never appear in genre
+// charts — web stats, /api/v1/stats and the home-screen widget all read this.
+const spoilerGenreSqlList = sql.join(
+  SPOILER_GENRE_NAMES_LOWER.map((name) => sql`${name}`),
+  sql`, `,
+);
+
 /** Genre breakdown for completed books — rolls up child genres to parent categories */
 export async function getGenreBreakdown(
   userId: string,
@@ -139,6 +147,7 @@ export async function getGenreBreakdown(
     JOIN book_genres bg ON ds.book_id = bg.book_id
     JOIN genres g ON bg.genre_id = g.id
     LEFT JOIN genres parent ON g.parent_genre_id = parent.id
+    WHERE LOWER(g.name) NOT IN (${spoilerGenreSqlList})
     GROUP BY COALESCE(parent.name, g.name)
     HAVING COALESCE(parent.name, g.name) != 'Own Voices'
     ORDER BY count DESC

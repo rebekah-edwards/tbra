@@ -22,6 +22,7 @@ import {
   reviewDescriptorTags,
 } from "@/db/schema";
 import { getMoodSignals } from "@/lib/mood-genre-map";
+import { isSpoilerGenre } from "@/lib/spoiler-genres";
 import { eq, sql, and, isNotNull, inArray } from "drizzle-orm";
 import { isEnglishTitle, looksLikeMidSeriesTitle } from "@/lib/queries/books";
 import { batchFetchBookAuthors } from "@/lib/queries/batch-helpers";
@@ -1793,7 +1794,9 @@ export async function getDiscoverRecommendations(
       outer: for (const kw of filters.boostKeywords ?? []) {
         for (const gid of book.genreIds) {
           const genre = allGenres.find((g) => g.id === gid);
-          if (genre && genre.name.toLowerCase().includes(kw)) {
+          // Reason pills are shown next to the book — never name a
+          // spoiler-sensitive tag (lib/spoiler-genres.ts).
+          if (genre && !isSpoilerGenre(genre.name) && genre.name.toLowerCase().includes(kw)) {
             matchedGenre = genre.name;
             break outer;
           }
@@ -1812,7 +1815,7 @@ export async function getDiscoverRecommendations(
         // AND without a keyword-matched genre were showing nothing).
         const firstGenre = book.genreIds
           .map((gid) => allGenres.find((g) => g.id === gid)?.name)
-          .find(Boolean);
+          .find((name) => !!name && !isSpoilerGenre(name));
         if (firstGenre) parts.push(`${lead} ${firstGenre} pick`);
         else if (pace) parts.push(`${lead} match for your picks`);
       }
@@ -1996,7 +1999,9 @@ async function getSimilarBooksInner(
       const sharedGenreNames = [...new Set(
         sharedGenreIds
           .map((gid) => genreNameMap.get(gid))
-          .filter(Boolean) as string[]
+          // "Similar books" reasons render on the book page and would out
+          // a spoiler-sensitive tag for BOTH books.
+          .filter((name) => !!name && !isSpoilerGenre(name)) as string[]
       )];
       if (sharedGenreNames.length > 0) {
         if (sharedGenreNames.length <= 3) {

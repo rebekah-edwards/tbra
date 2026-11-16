@@ -37,6 +37,8 @@ interface BookPageClientProps {
     coverImageUrl: string | null;
     authors: { id: string; name: string; slug?: string | null; role: string }[];
     genres: string[];
+    /** Spoiler-sensitive tags, hidden behind a reveal in the header. */
+    spoilerGenres?: string[];
     publicationYear: number | null;
     pages: number | null;
     audioLengthMinutes: number | null;
@@ -416,6 +418,7 @@ export function BookPageClient({
             coverImageUrl={effectiveCoverUrl}
             authors={book.authors}
             genres={book.genres}
+            spoilerGenres={book.spoilerGenres}
             publicationYear={book.publicationYear}
             pages={book.pages}
             audioLengthMinutes={book.audioLengthMinutes}

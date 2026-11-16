@@ -1,12 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { NoCover } from "@/components/no-cover";
+import { SpoilerGenrePills } from "@/components/book/spoiler-genre-pills";
 
 interface BookHeaderProps {
   title: string;
   coverImageUrl: string | null;
   authors: { id: string; name: string; slug?: string | null; role: string }[];
   genres: string[];
+  /** Spoiler-sensitive tags — shown only behind the tap-to-reveal pill. */
+  spoilerGenres?: string[];
   publicationYear: number | null;
   pages: number | null;
   audioLengthMinutes?: number | null;
@@ -36,6 +39,7 @@ export function BookHeader({
   coverImageUrl,
   authors,
   genres,
+  spoilerGenres = [],
   publicationYear,
   pages,
   audioLengthMinutes,
@@ -230,7 +234,7 @@ export function BookHeader({
               )}
             </div>
 
-            {(genres.length > 0 || isManuallyAdded || pacing) && (
+            {(genres.length > 0 || spoilerGenres.length > 0 || isManuallyAdded || pacing) && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {genres.map((genre) => (
                   <Link
@@ -241,6 +245,7 @@ export function BookHeader({
                     {genre}
                   </Link>
                 ))}
+                <SpoilerGenrePills genres={spoilerGenres} />
                 {pacing && PACING_CONFIG[pacing] && (
                   <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium inline-flex items-center gap-1 ${PACING_CONFIG[pacing].style}`}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70">

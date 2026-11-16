@@ -349,6 +349,7 @@ export default async function BookPage({
           coverImageUrl: book.coverImageUrl,
           authors: book.authors,
           genres: book.genres,
+          spoilerGenres: book.spoilerGenres ?? [],
           publicationYear: book.publicationYear,
           pages: book.pages,
           audioLengthMinutes: book.audioLengthMinutes,

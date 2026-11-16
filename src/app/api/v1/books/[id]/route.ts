@@ -1,5 +1,6 @@
 import { after } from "next/server";
-import { getApiUser } from "@/lib/auth";
+import { getApiUser, isAdmin } from "@/lib/auth";
+import { withoutSpoilerGenres } from "@/lib/spoiler-genres";
 import { jsonError, jsonOk } from "@/lib/api/http";
 import { triggerEnrichment } from "@/lib/enrichment/trigger";
 import { resolveBook, getBookWithDetails } from "@/lib/queries/books";
@@ -137,7 +138,16 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   }
 
   return jsonOk({
-    book, // full getBookWithDetails payload (authors, series, genres, ratings, summary, description, …)
+    // Full getBookWithDetails payload (authors, series, genres, ratings,
+    // summary, description, …). Spoiler-sensitive genre tags are NOT in
+    // `book.genres` (shape unchanged — still string[]); they ride separately
+    // as `book.spoilerGenres` so a client can put them behind its own reveal.
+    // `allGenreNames` is the raw admin-editor list, so non-admins get it with
+    // the spoiler tags stripped.
+    book: {
+      ...book,
+      allGenreNames: isAdmin(user) ? book.allGenreNames : withoutSpoilerGenres(book.allGenreNames),
+    },
     slug: resolved.book.slug,
     needsEnrichment,
     enrichmentQueued,

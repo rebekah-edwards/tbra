@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { parseFormats } from "@/lib/reading-formats";
 import { sql } from "drizzle-orm";
+import { isSpoilerGenre } from "@/lib/spoiler-genres";
 
 // ─── Types ───
 
@@ -214,6 +215,9 @@ export async function getShelfWithBooks(shelfId: string): Promise<ShelfDetail | 
 
   const genresByBook = new Map<string, string[]>();
   for (const g of allGenres) {
+    // Shelf rows + the shelf genre filter have no reveal — leave
+    // spoiler-sensitive tags out (lib/spoiler-genres.ts).
+    if (isSpoilerGenre(g.name)) continue;
     const arr = genresByBook.get(g.book_id) ?? [];
     arr.push(g.name);
     genresByBook.set(g.book_id, arr);
