@@ -27,6 +27,10 @@ final class StatsModel {
 
 struct StatsView: View {
     @State private var model = StatsModel()
+    @State private var goalEditing = false
+    private var currentYear: Int { Calendar.current.component(.year, from: Date()) }
+    /// The goal belongs to the current year; "All Time" shows it too.
+    private var isCurrentYear: Bool { model.year == "all" || model.year == String(currentYear) }
 
     private var yearOptions: [String] {
         let current = Calendar.current.component(.year, from: Date())
@@ -189,7 +193,33 @@ struct StatsView: View {
     }
 
     @ViewBuilder private func goalCard(_ data: StatsData) -> some View {
-        if DesignPreview.on, let goal = data.goal {
+        if DesignPreview.on, data.goal == nil, isCurrentYear {
+            statCard("Reading Goal") {
+                HStack(spacing: 16) {
+                    Image(systemName: "target")
+                        .font(.system(size: 34, weight: .semibold))
+                        .foregroundStyle(Theme.accentText)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Pick a number for \(String(currentYear)) and watch the ring fill.")
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button { goalEditing = true } label: {
+                            Text("Set a goal")
+                                .font(Theme.body(14, .bold))
+                                .foregroundStyle(Theme.onAccent)
+                                .padding(.horizontal, 16).padding(.vertical, 8)
+                                .background(Theme.accent, in: Capsule())
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $goalEditing) {
+                GoalEditSheet(year: currentYear, current: nil) { await model.load() }
+                    .presentationDetents([.height(260)])
+                    .presentationBackground(Theme.surface)
+            }
+        } else if DesignPreview.on, let goal = data.goal {
             // Refreshed (2026-11): the same ring, big number and pace pill
             // as the Home goal tile, given this card's extra width.
             statCard("Reading Goal") {

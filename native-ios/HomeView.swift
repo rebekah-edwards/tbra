@@ -214,8 +214,22 @@ struct HomeView: View {
         } message: { Text(model.error ?? homeModel.error ?? "") }
     }
 
+    @Environment(\.openSearch) private var openSearch
+
+    /// A reader with nothing in progress and nothing queued — in practice a
+    /// brand-new account, which is who the App Store will send us.
+    private var isBlankSlate: Bool {
+        guard let home = homeModel.home else { return false }
+        return home.readingNow.isEmpty && model.items.isEmpty && !model.loading
+    }
+
     private var homeSections: some View {
             VStack(alignment: .leading, spacing: 28) {
+                if DesignPreview.on && isBlankSlate {
+                    HomeStarterCard(
+                        onSearch: { openSearch() },
+                        onDiscover: { chrome?.tab = .discover })
+                }
                 // ── Reading Now ──
                 if let home = homeModel.home, !home.readingNow.isEmpty {
                     VStack(alignment: .leading, spacing: 14) {
@@ -307,7 +321,8 @@ struct HomeView: View {
                     }
 
                     if model.items.isEmpty && !model.loading {
-                        Text("Nothing queued yet")
+                        Text(DesignPreview.on ? "Books you plan to read next line up here."
+                                              : "Nothing queued yet")
                             .font(Theme.body(14))
                             .foregroundStyle(Theme.muted)
                             .frame(maxWidth: .infinity)

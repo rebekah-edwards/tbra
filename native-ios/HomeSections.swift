@@ -525,3 +525,76 @@ struct GoalPacePill: View {
             .background((pace.good ? Theme.accent : Theme.foreground).opacity(0.14), in: Capsule())
     }
 }
+
+// ── First-run starter card (2026-11) ──
+// The first thing a brand-new reader sees on Home, in place of two "nothing
+// here" lines. Three ways in, most valuable first: bring an existing library
+// over, add one book, or let Discover suggest something.
+struct HomeStarterCard: View {
+    let onSearch: () -> Void
+    let onDiscover: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Let's build your library")
+                    .font(Theme.heading(22, .bold))
+                    .foregroundStyle(Theme.foreground)
+                Text("Add a few books and tbr*a starts working for you.")
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.muted)
+            }
+            VStack(spacing: 8) {
+                row(icon: "tray.and.arrow.down.fill", tint: Color(hex: "fb923c"),
+                    title: "Bring your library over",
+                    blurb: "Import from Goodreads or StoryGraph in about a minute",
+                    external: true) {
+                    if let url = URL(string: "https://thebasedreader.app/import") {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                row(icon: "magnifyingglass", tint: Theme.neonBlue,
+                    title: "Find a book",
+                    blurb: "Search by title, author or series", action: onSearch)
+                row(icon: "sparkles", tint: Theme.neonPurple,
+                    title: "Find your next read",
+                    blurb: "Pick a mood and we'll match books to it", action: onDiscover)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22)
+                .stroke(LinearGradient(
+                    colors: [Theme.accent.opacity(0.55), Theme.neonBlue.opacity(0.35),
+                             Theme.neonPurple.opacity(0.45)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+        )
+    }
+
+    private func row(icon: String, tint: Color, title: String, blurb: String,
+                     external: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .frame(width: 38, height: 38)
+                    .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 11))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title).font(Theme.body(15, .bold)).foregroundStyle(Theme.foreground)
+                    Text(blurb).font(Theme.body(12)).foregroundStyle(Theme.muted)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: external ? "arrow.up.right" : "chevron.right")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Theme.muted.opacity(0.7))
+            }
+            .padding(10)
+            .background(Theme.surface.opacity(0.6), in: RoundedRectangle(cornerRadius: 14))
+            .contentShape(RoundedRectangle(cornerRadius: 14))
+        }
+    }
+}

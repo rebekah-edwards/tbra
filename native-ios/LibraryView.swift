@@ -666,7 +666,50 @@ struct LibraryView: View {
 
     @ViewBuilder private var content: some View {
         let books = filteredBooks
-        if books.isEmpty && !model.loading {
+        if DesignPreview.on && books.isEmpty && !model.loading {
+            let searching = searchActive && !searchText.trimmingCharacters(in: .whitespaces).isEmpty
+            VStack(spacing: 12) {
+                Image(systemName: searching ? "magnifyingglass" : "books.vertical")
+                    .font(.system(size: 30, weight: .medium))
+                    .foregroundStyle(Theme.muted)
+                Text(searching ? "No books match \u{201C}\(searchText)\u{201D}"
+                     : model.books.isEmpty ? "Your library starts here" : "Nothing in this view yet")
+                    .font(Theme.heading(19, .bold))
+                    .foregroundStyle(Theme.foreground)
+                    .multilineTextAlignment(.center)
+                if !searching {
+                    Text(model.books.isEmpty
+                         ? "Add the books you own, want to read, or have finished."
+                         : "Try another tab or filter, or add more books.")
+                        .font(Theme.body(14))
+                        .foregroundStyle(Theme.muted)
+                        .multilineTextAlignment(.center)
+                    Button { openSearch() } label: {
+                        Label("Find books to add", systemImage: "plus")
+                            .font(Theme.body(15, .bold))
+                            .foregroundStyle(Theme.onAccent)
+                            .padding(.horizontal, 20).padding(.vertical, 11)
+                            .background(Theme.accent, in: Capsule())
+                    }
+                    .padding(.top, 4)
+                    if model.books.isEmpty {
+                        Button {
+                            if let url = URL(string: "https://thebasedreader.app/import") {
+                                UIApplication.shared.open(url)
+                            }
+                        } label: {
+                            Text("Import from Goodreads or StoryGraph")
+                                .font(Theme.body(14, .medium))
+                                .foregroundStyle(Theme.neonBlue)
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 44).padding(.horizontal, 20)
+            .background(Theme.surface.opacity(0.5), in: RoundedRectangle(cornerRadius: 20))
+            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Theme.border, lineWidth: 1))
+        } else if books.isEmpty && !model.loading {
             VStack(spacing: 10) {
                 Text("Nothing here yet.")
                     .font(Theme.body(17))
