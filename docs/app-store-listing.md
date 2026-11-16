@@ -1,7 +1,9 @@
 # App Store listing copy (iOS 1.0)
 
-Draft agreed with Rebekah on 2026-11-16. Not yet entered into App Store
-Connect. Character limits are Apple's; keep each field inside them when editing.
+Agreed with Rebekah on 2026-11-16 and ENTERED into App Store Connect the same
+day (name, subtitle, categories, keywords, promotional text, description,
+support/marketing/privacy URLs, copyright, release type). This file is the
+source of truth: edit here, then re-run the PATCHes. Character limits are Apple's; keep each field inside them when editing.
 
 | Field | Limit | Value |
 |---|---|---|
@@ -59,10 +61,19 @@ Already tracking somewhere else? Bring your library over from the tbr*a website 
 
 The closing line is Rebekah's wording (2026-11-16).
 
+## Decided (Rebekah, 2026-11-16)
+
+- Copyright line: `2026 Rebekah Edwards`
+- Age rating: answer Apple's questionnaire for 13+ (public reviews plus
+  written descriptions of mature book content).
+- Minimum age for the Terms of Use: 13.
+- Release: go live automatically once Apple approves.
+
 ## Still open
 
-- Copyright line: "2026 Rebekah Edwards" or a business name.
-- Age rating: expected 13+ from Apple's questionnaire (public reviews plus
-  written descriptions of mature book content). Not yet confirmed by Rebekah.
-- Minimum age for the Terms of Use: proposed 13+. Not yet confirmed.
+- Age rating questionnaire in App Store Connect is NOT answered yet (30
+  questions under Apple's 2025 system; several of the new ones, such as
+  socialMedia, ageAssurance and healthOrWellnessTopics, need reading against
+  Apple's definitions before answering). Target outcome: 13+.
+- App Privacy answers (data collection labels) not entered yet.
 - Screenshots: to be shot at 6.9-inch size after the design refresh ships.
