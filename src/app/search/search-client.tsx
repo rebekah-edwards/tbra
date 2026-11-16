@@ -269,13 +269,13 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           <div>
             {bookHref ? (
               <Link href={bookHref}>
-                <h3 className="font-medium leading-tight hover:text-link transition-colors">
+                <h3 className="font-medium leading-tight hover:text-neon-blue transition-colors">
                   {result.englishTitle ?? result.title}
                 </h3>
               </Link>
             ) : (
               <button onClick={() => handleNavigateToBook(result)} disabled={navigating === result.key} className="text-left cursor-pointer disabled:opacity-50">
-                <h3 className="font-medium leading-tight hover:text-link transition-colors">
+                <h3 className="font-medium leading-tight hover:text-neon-blue transition-colors">
                   {result.englishTitle ?? result.title}
                 </h3>
               </button>
@@ -388,7 +388,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
                         <div className="flex flex-1 flex-col justify-between min-w-0">
                           <div>
                             <Link href={`/book/${book.slug || book.id}`}>
-                              <h3 className="text-sm font-medium leading-tight hover:text-link transition-colors truncate">{book.title}</h3>
+                              <h3 className="text-sm font-medium leading-tight hover:text-neon-blue transition-colors truncate">{book.title}</h3>
                             </Link>
                             <p className="text-xs text-muted">
                               {[
@@ -406,7 +406,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
                       </div>
                     ))}
                     {s.bookCount > s.books.length && (
-                      <Link href={`/search?series=${encodeURIComponent(s.id)}`} className="block text-center text-xs font-medium text-link py-1.5 hover:text-link/80 transition-colors">
+                      <Link href={`/search?series=${encodeURIComponent(s.id)}`} className="block text-center text-xs font-medium text-neon-blue py-1.5 hover:text-neon-blue/80 transition-colors">
                         View all {s.bookCount} books in series →
                       </Link>
                     )}

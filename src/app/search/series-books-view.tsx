@@ -235,7 +235,7 @@ export function SeriesBooksView({ seriesName, seriesId, books, isLoggedIn, isAdm
             <div className="flex flex-1 flex-col justify-between">
               <div>
                 <Link href={`/book/${book.slug || book.id}`}>
-                  <h3 className="font-medium leading-tight hover:text-link transition-colors">
+                  <h3 className="font-medium leading-tight hover:text-neon-blue transition-colors">
                     {book.title}
                   </h3>
                 </Link>
