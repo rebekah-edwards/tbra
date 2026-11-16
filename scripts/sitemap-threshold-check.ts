@@ -39,11 +39,16 @@ async function main() {
   // alert fired on 5K boundaries that did NOT correspond to a new /sitemap-books/N
   // page, sending Rebekah to GSC to submit a sitemap that did not exist. Counting
   // the indexable set means a crossing always equals exactly one new page.
+  //
+  // 2026-11-16: the sitemap now lists only the SEO core set (`seo_index_books`,
+  // see "SEO indexing: the core set" in CLAUDE.md on main). This is the same
+  // query as countIndexableBooks() in src/lib/seo/indexability.ts — change both
+  // together. The count dropped from ~75K to ~7K on that day by design.
   const { rows } = await client.execute(
-    `SELECT count(*) as n FROM books b
+    `SELECT count(*) as n FROM seo_index_books x
+       JOIN books b ON b.id = x.book_id
       WHERE b.visibility = 'public'
-        AND b.slug IS NOT NULL
-        AND EXISTS (SELECT 1 FROM book_category_ratings r WHERE r.book_id = b.id)`,
+        AND b.slug IS NOT NULL`,
   );
   const current = Number((rows[0] as any).n);
 
