@@ -394,6 +394,9 @@ struct LibraryBook: Codable, Identifiable, Hashable {
     let genres: [String]
     let completionYear: Int?
     let tbrNote: String?
+    /// Series the book belongs to — matched by in-library search. Optional
+    /// so payloads from before the field existed still decode.
+    let seriesNames: [String]?
     /// Server-computed "a rating exceeds the viewer's comfort zone"
     /// (2026-07-22) — drives the ⚠ cover badge + the Flagged sub-filter.
     let hasContentConflict: Bool?

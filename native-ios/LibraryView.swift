@@ -59,6 +59,91 @@ final class LibraryModel {
     }
 }
 
+/// "Search within my own library" — the Swift twin of
+/// src/lib/library-search.ts. KEEP THE TWO IN STEP: same folding, same
+/// every-word-must-appear rule, same initials handling, so a query finds
+/// the same books on the site and in the app.
+///   1. Fold both sides: compatibility-decompose, lowercase, strip
+///      diacritics, drop apostrophes and periods, turn every other run of
+///      punctuation into one space.
+///   2. A book matches when EVERY query word appears somewhere in its
+///      title + authors + series names.
+///   3. Runs of single letters are also indexed joined, so "aa milne",
+///      "a a milne" and "a.a. milne" all find A. A. Milne.
+enum LibrarySearch {
+    private static let specialFolds: [Unicode.Scalar: String] = [
+        "ø": "o", "đ": "d", "ð": "d", "ł": "l", "ı": "i", "ß": "ss",
+        "æ": "ae", "œ": "oe", "þ": "th", "ς": "σ",
+    ]
+    private static let dropped: Set<Unicode.Scalar> = ["'", "\u{2019}", "\u{2018}", "`", "."]
+
+    static func fold(_ input: String) -> String {
+        var out = String.UnicodeScalarView()
+        var needSpace = false
+        for scalar in input.decomposedStringWithCompatibilityMapping.lowercased().unicodeScalars {
+            switch scalar.properties.generalCategory {
+            case .nonspacingMark, .spacingMark, .enclosingMark:
+                continue
+            default: break
+            }
+            if dropped.contains(scalar) { continue }
+            let replacement = specialFolds[scalar]
+            let isWordChar: Bool
+            switch scalar.properties.generalCategory {
+            case .uppercaseLetter, .lowercaseLetter, .titlecaseLetter, .modifierLetter, .otherLetter,
+                 .decimalNumber, .letterNumber, .otherNumber:
+                isWordChar = true
+            default:
+                isWordChar = false
+            }
+            guard isWordChar || replacement != nil else { needSpace = true; continue }
+            if needSpace && !out.isEmpty { out.append(" ") }
+            needSpace = false
+            if let replacement { out.append(contentsOf: replacement.unicodeScalars) } else { out.append(scalar) }
+        }
+        return String(out)
+    }
+
+    static func searchText(title: String, authors: [String], seriesNames: [String]) -> String {
+        let folded = fold(([title] + authors + seriesNames).joined(separator: " "))
+        var initials: [String] = []
+        var run = ""
+        for word in folded.split(separator: " ") {
+            if word.count == 1 {
+                run += word
+            } else {
+                if run.count > 1 { initials.append(run) }
+                run = ""
+            }
+        }
+        if run.count > 1 { initials.append(run) }
+        return initials.isEmpty ? folded : folded + " " + initials.joined(separator: " ")
+    }
+
+    /// Folded query words; empty when the query is blank or punctuation-only.
+    static func tokens(_ query: String) -> [String] {
+        fold(query).split(separator: " ").map(String.init)
+    }
+
+    static func matches(_ searchText: String, _ tokens: [String]) -> Bool {
+        tokens.allSatisfy { searchText.contains($0) }
+    }
+
+    /// Per-book folded text, built once and reused across keystrokes. Keyed
+    /// by id AND title so an edited title can't serve a stale entry.
+    final class Index {
+        private var cache: [String: String] = [:]
+        func text(for book: LibraryBook) -> String {
+            let key = book.id + "\u{1F}" + book.title
+            if let hit = cache[key] { return hit }
+            let text = LibrarySearch.searchText(title: book.title, authors: book.authors,
+                                                seriesNames: book.seriesNames ?? [])
+            cache[key] = text
+            return text
+        }
+    }
+}
+
 struct LibraryView: View {
     @Environment(AuthStore.self) private var auth
     @Environment(ChromeState.self) private var chrome: ChromeState?
@@ -91,6 +176,7 @@ struct LibraryView: View {
     // In-library search (refreshed header). Matches title or author.
     @State private var searchActive = false
     @State private var searchText = ""
+    @State private var searchIndex = LibrarySearch.Index()
     @FocusState private var searchFocused: Bool
 
     // Advanced filters (web: the collapsible Filters panel, TBR + Activity)
@@ -342,8 +428,7 @@ struct LibraryView: View {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Theme.muted)
-                    TextField("Search \(group.rawValue.lowercased() == "tbr" ? "your TBR" : group.rawValue.lowercased())",
-                              text: $searchText)
+                    TextField("Title, author or series", text: $searchText)
                         .font(Theme.body(16))
                         .foregroundStyle(Theme.foreground)
                         .focused($searchFocused)
@@ -667,7 +752,7 @@ struct LibraryView: View {
     @ViewBuilder private var content: some View {
         let books = filteredBooks
         if DesignPreview.on && books.isEmpty && !model.loading {
-            let searching = searchActive && !searchText.trimmingCharacters(in: .whitespaces).isEmpty
+            let searching = searchActive && !LibrarySearch.tokens(searchText).isEmpty
             VStack(spacing: 12) {
                 Image(systemName: searching ? "magnifyingglass" : "books.vertical")
                     .font(.system(size: 30, weight: .medium))
@@ -750,12 +835,9 @@ struct LibraryView: View {
                 books = books.filter { $0.ownedFormats.contains(f) || $0.activeFormats.contains(f) }
             }
         }
-        let q = searchText.trimmingCharacters(in: .whitespaces)
-        if searchActive, !q.isEmpty {
-            books = books.filter {
-                $0.title.localizedCaseInsensitiveContains(q)
-                    || $0.authors.contains { $0.localizedCaseInsensitiveContains(q) }
-            }
+        let tokens = searchActive ? LibrarySearch.tokens(searchText) : []
+        if !tokens.isEmpty {
+            books = books.filter { LibrarySearch.matches(searchIndex.text(for: $0), tokens) }
         }
         switch sort {
         case .recent: return books  // base filter already sorts by updatedAt
