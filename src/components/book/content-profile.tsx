@@ -64,11 +64,40 @@ function ExpandableNote({ text }: { text: string }) {
 
   useEffect(() => {
     const el = textRef.current;
-    if (el) {
-      // Check if text overflows 5 lines
-      setClamped(el.scrollHeight > el.clientHeight);
-    }
-  }, [text]);
+    // Only measure while collapsed. Expanded, the clamp class is off, so
+    // scrollHeight === clientHeight and a re-measure would wrongly conclude
+    // "fits" and take the "Show less" button away.
+    if (!el || expanded) return;
+
+    let cancelled = false;
+    // Does the note overflow its 3-line clamp? Must be RE-measured, not read
+    // once at mount: the line count changes when the webfont swaps in over the
+    // fallback face (measured on a real 78-char note at 390px: 3 lines in the
+    // fallback, 4 in Plus Jakarta Sans) and whenever the grid column changes
+    // width (rotation, crossing the lg breakpoint). A single mount-time read
+    // left such notes clipped with no "Read more" at all.
+    const measure = () => {
+      if (!cancelled) setClamped(el.scrollHeight > el.clientHeight);
+    };
+    measure();
+
+    // Width / visibility changes of the paragraph itself.
+    const observer =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    observer?.observe(el);
+
+    // A font swap re-wraps the text without resizing an already-clamped box,
+    // so ResizeObserver alone can't see it.
+    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
+    fonts?.ready.then(measure).catch(() => {});
+    fonts?.addEventListener?.("loadingdone", measure);
+
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      fonts?.removeEventListener?.("loadingdone", measure);
+    };
+  }, [text, expanded]);
 
   return (
     <div className="mt-1">
@@ -80,7 +109,9 @@ function ExpandableNote({ text }: { text: string }) {
       </p>
       {clamped && (
         <button
+          type="button"
           onClick={() => setExpanded(!expanded)}
+          aria-expanded={expanded}
           className="text-xs font-semibold read-more-link"
         >
           {expanded ? "Show less" : "Read more"}
