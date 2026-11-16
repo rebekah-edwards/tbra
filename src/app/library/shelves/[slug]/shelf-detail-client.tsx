@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useDeferredValue } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -35,6 +35,10 @@ import {
 } from "@/lib/actions/shelves";
 import type { ShelfDetail, ShelfBook } from "@/lib/queries/shelves";
 import type { UserBookWithDetails } from "@/lib/queries/reading-state";
+import { librarySearchText, librarySearchTokens, matchesLibrarySearch } from "@/lib/library-search";
+
+// A handful of books needs no search box — it would only push the list down.
+const SHELF_SEARCH_MIN_BOOKS = 8;
 
 interface ShelfDetailClientProps {
   shelf: ShelfDetail;
@@ -52,6 +56,7 @@ function ShelfBookItem({
   selected,
   onToggleSelect,
   selectMode,
+  reorderDisabled,
 }: {
   book: ShelfBook;
   shelfId: string;
@@ -59,6 +64,9 @@ function ShelfBookItem({
   selected?: boolean;
   onToggleSelect?: (bookId: string) => void;
   selectMode?: boolean;
+  /** True while the list is search-filtered: dragging within a partial list
+   *  has no well-defined position in the full shelf order. */
+  reorderDisabled?: boolean;
 }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
@@ -72,7 +80,7 @@ function ShelfBookItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: book.bookId, disabled: selectMode || editingNote });
+  } = useSortable({ id: book.bookId, disabled: selectMode || editingNote || reorderDisabled });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -96,7 +104,7 @@ function ShelfBookItem({
       className={`flex items-center gap-3 py-3 px-1 border-b border-border/50 last:border-0 ${isDragging ? "bg-surface-alt/50 rounded-lg" : ""}`}
     >
       {/* Drag handle */}
-      {!selectMode && (
+      {!selectMode && !reorderDisabled && (
         <div
           {...attributes}
           {...listeners}
@@ -241,12 +249,11 @@ function AddBooksModal({
     return shelfBookIds.has(bookId);
   }
 
-  const filtered = search.trim()
-    ? allBooks.filter(
-        (b) =>
-          b.title.toLowerCase().includes(search.toLowerCase()) ||
-          b.authors.some((a) => a.toLowerCase().includes(search.toLowerCase())),
-      )
+  // Same matcher as the library page search: title, author and series,
+  // case- and diacritic-insensitive.
+  const searchTokens = librarySearchTokens(search);
+  const filtered = searchTokens.length > 0
+    ? allBooks.filter((b) => matchesLibrarySearch(librarySearchText(b), searchTokens))
     : allBooks.slice(0, 50);
 
   function handleToggle(bookId: string) {
@@ -346,6 +353,33 @@ export function ShelfDetailClient({ shelf: initialShelf, allBooks, isPremium, us
 
   const shelfBookIds = new Set(books.map((b) => b.bookId));
   const accentColor = shelf.color || "#d97706";
+
+  // Search within this shelf — in-memory, same matcher as the library page.
+  // Shelf rows carry no series data, so series names are borrowed from the
+  // library list by book id (a shelved book that is not in the library is
+  // still searchable by title and author).
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
+  const searchTokens = useMemo(() => librarySearchTokens(deferredQuery), [deferredQuery]);
+  const searchActive = searchTokens.length > 0;
+  const seriesByBookId = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const b of allBooks) map.set(b.id, b.seriesNames);
+    return map;
+  }, [allBooks]);
+  const visibleBooks = useMemo(
+    () =>
+      searchTokens.length === 0
+        ? books
+        : books.filter((b) =>
+            matchesLibrarySearch(
+              librarySearchText({ title: b.title, authors: b.authors, seriesNames: seriesByBookId.get(b.bookId) }),
+              searchTokens
+            )
+          ),
+    [books, searchTokens, seriesByBookId]
+  );
+  const showSearch = books.length >= SHELF_SEARCH_MIN_BOOKS || query !== "";
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -527,7 +561,7 @@ export function ShelfDetailClient({ shelf: initialShelf, allBooks, isPremium, us
       {/* Delete confirm */}
       {deleteConfirm && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 mb-4">
-          <p className="text-sm text-foreground font-medium">Delete "{shelf.name}"?</p>
+          <p className="text-sm text-foreground font-medium">Delete &quot;{shelf.name}&quot;?</p>
           <p className="text-xs text-muted mt-1">This will remove the shelf and all book assignments. Your books are not affected.</p>
           <div className="flex items-center gap-2 mt-3">
             <button
@@ -547,6 +581,67 @@ export function ShelfDetailClient({ shelf: initialShelf, allBooks, isPremium, us
         </div>
       )}
 
+      {/* Search within this shelf */}
+      {showSearch && (
+        <div className="mb-4">
+          <div className="relative">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            {/* text-base (16px): smaller makes iOS Safari zoom on focus. */}
+            <input
+              type="text"
+              inputMode="search"
+              enterKeyHint="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+                if (e.key === "Escape") setQuery("");
+              }}
+              placeholder="Search this shelf"
+              aria-label="Search this shelf by title, author, or series"
+              maxLength={100}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              className="w-full rounded-xl border border-border bg-surface-alt py-2.5 pl-10 pr-11 text-base text-foreground placeholder:text-muted/60 focus:outline-none focus:border-accent"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="absolute right-0.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-colors hover:text-foreground"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {searchActive && visibleBooks.length > 0 && !selectMode && (
+            <p className="mt-1.5 text-[11px] text-muted/60">
+              Showing {visibleBooks.length} of {books.length} · clear the search to reorder
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Book list */}
       {shelf.books.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-8 text-center">
@@ -555,20 +650,34 @@ export function ShelfDetailClient({ shelf: initialShelf, allBooks, isPremium, us
             Add some from any book page, or use the Add Books button above.
           </p>
         </div>
+      ) : visibleBooks.length === 0 ? (
+        <div className="rounded-xl border border-border bg-surface p-6 text-center" role="status">
+          <p className="text-sm text-muted break-words">
+            No books on this shelf match{" "}
+            <span className="text-foreground">&ldquo;{deferredQuery.trim()}&rdquo;</span>.
+          </p>
+          <button
+            onClick={() => setQuery("")}
+            className="mt-1 px-3 py-2 text-sm text-neon-blue hover:text-neon-blue/80"
+          >
+            Clear search
+          </button>
+        </div>
       ) : (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={books.map((b) => b.bookId)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={visibleBooks.map((b) => b.bookId)} strategy={verticalListSortingStrategy}>
             <div className="rounded-xl border border-border bg-surface/50 px-3">
-              {books.map((book) => (
+              {visibleBooks.map((book) => (
                 <ShelfBookItem
                   key={book.bookId}
                   book={book}
                   shelfId={shelf.id}
                   onRemove={handleRemoveBook}
+                  reorderDisabled={searchActive}
                   selectMode={selectMode}
                   selected={selectedBooks.has(book.bookId)}
                   onToggleSelect={toggleSelectBook}

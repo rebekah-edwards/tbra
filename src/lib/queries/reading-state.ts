@@ -10,6 +10,7 @@ import {
   batchFetchBookGenres,
   batchFetchCompletionYears,
   batchFetchBookContentRatings,
+  batchFetchBookSeriesNames,
 } from "@/lib/queries/batch-helpers";
 import { getTbrNotesForBooks } from "@/lib/queries/tbr-notes";
 
@@ -54,6 +55,9 @@ export interface UserBookWithDetails {
    *  alone must never square-crop the regular 2:3 cover. */
   usesAudiobookCover: boolean;
   authors: string[];
+  /** Series the book belongs to (plus the parent franchise, if any). Loaded
+   *  for the in-library search; empty for standalones. */
+  seriesNames: string[];
   state: string | null;
   ownedFormats: string[];
   activeFormats: string[];
@@ -121,18 +125,19 @@ export async function getUserBooks(
   const rows = await query.all();
   if (rows.length === 0) return [];
 
-  // Batch fetch all related data in 5 queries instead of N×per-book
+  // Batch fetch all related data in a fixed handful of queries instead of N×per-book
   const bookIds = rows.map((r) => r.bookId);
   // Collect TBR book IDs for note batch loading
   const tbrBookIds = rows.filter((r) => r.state === "tbr").map((r) => r.bookId);
 
-  const [authorsMap, ratingsMap, editionsMap, genresMap, completionYearsMap, contentRatingsMap, tbrNotesMap] = await Promise.all([
+  const [authorsMap, ratingsMap, editionsMap, genresMap, completionYearsMap, contentRatingsMap, seriesNamesMap, tbrNotesMap] = await Promise.all([
     batchFetchBookAuthors(bookIds),
     batchFetchUserRatings(userId, bookIds),
     batchFetchEditionCovers(userId, bookIds),
     batchFetchBookGenres(bookIds),
     batchFetchCompletionYears(userId, bookIds),
     batchFetchBookContentRatings(bookIds),
+    batchFetchBookSeriesNames(bookIds),
     tbrBookIds.length > 0 ? getTbrNotesForBooks(userId, tbrBookIds) : Promise.resolve(new Map<string, string>()),
   ]);
 
@@ -161,6 +166,7 @@ export async function getUserBooks(
       usesAudiobookCover:
         effectiveCover != null && effectiveCover === row.audiobookCoverUrl,
       authors: authorsMap.get(row.bookId) ?? [],
+      seriesNames: seriesNamesMap.get(row.bookId) ?? [],
       state: row.state,
       ownedFormats: parsedOwned,
       activeFormats,

@@ -17,8 +17,11 @@ import {
   readingSessions,
   bookCategoryRatings,
   taxonomyCategories,
+  bookSeries,
+  series,
 } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { classifyGenres } from "@/lib/genre-taxonomy";
 
 /** Build a SQL IN clause from an array of string IDs */
@@ -212,6 +215,42 @@ export async function batchFetchBookGenres(
   for (const row of rows) {
     const existing = map.get(row.bookId) ?? [];
     existing.push(row.name);
+    map.set(row.bookId, existing);
+  }
+  return map;
+}
+
+/**
+ * Batch fetch series names for multiple books → Map<bookId, seriesNames[]>.
+ * Includes the parent franchise name when the series has one (nesting is one
+ * level deep), so a book in "Mistborn" is also findable as "Cosmere". Feeds
+ * the in-library search (src/lib/library-search.ts) — one statement for the
+ * whole shelf, never per book.
+ */
+export async function batchFetchBookSeriesNames(
+  bookIds: string[]
+): Promise<Map<string, string[]>> {
+  if (bookIds.length === 0) return new Map();
+
+  const parentSeries = alias(series, "parent_series");
+  const rows = await db
+    .select({
+      bookId: bookSeries.bookId,
+      name: series.name,
+      parentName: parentSeries.name,
+    })
+    .from(bookSeries)
+    .innerJoin(series, eq(bookSeries.seriesId, series.id))
+    .leftJoin(parentSeries, eq(series.parentSeriesId, parentSeries.id))
+    .where(sql`${bookSeries.bookId} IN (${inList(bookIds)})`)
+    .all();
+
+  const map = new Map<string, string[]>();
+  for (const row of rows) {
+    const existing = map.get(row.bookId) ?? [];
+    for (const name of [row.name, row.parentName]) {
+      if (name && !existing.includes(name)) existing.push(name);
+    }
     map.set(row.bookId, existing);
   }
   return map;

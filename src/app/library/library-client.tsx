@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { memo, useState, useMemo, useRef, useEffect, useCallback, useDeferredValue } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { BookCard } from "@/components/book-card";
 import type { UserBookWithDetails } from "@/lib/queries/reading-state";
+import { librarySearchText, librarySearchTokens, matchesLibrarySearch } from "@/lib/library-search";
 
 type GroupKey = "activity" | "tbr" | "owned";
 type SortKey = "recent" | "title" | "author" | "rating";
@@ -38,6 +39,17 @@ const SUB_FILTERS: Record<GroupKey, { key: string; label: string }[]> = {
     { key: "audiobook", label: "Audiobook" },
   ],
 };
+
+// Where a search hit can live. When the current view has no matches but the
+// library does, the empty state offers these as one-tap jumps.
+const SEARCH_VIEWS: { group: GroupKey; filter: string; label: string }[] = [
+  { group: "tbr", filter: "all", label: "TBR" },
+  { group: "activity", filter: "currently_reading", label: "Current Read" },
+  { group: "activity", filter: "completed", label: "Finished" },
+  { group: "activity", filter: "paused", label: "Paused" },
+  { group: "activity", filter: "dnf", label: "DNF" },
+  { group: "owned", filter: "all", label: "Owned" },
+];
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "recent", label: "Recently Updated" },
@@ -250,6 +262,27 @@ function StarFilter({ value, onChange }: { value: number; onChange: (v: number) 
   );
 }
 
+/* ─── Book grid ─── */
+
+// Memoized so typing in the search field stays instant: each keystroke
+// re-renders LibraryClient, but the (up to four-figure) grid only re-renders
+// when the deferred, filtered list actually changes.
+const BookGrid = memo(function BookGrid({
+  books,
+  conflictIds,
+}: {
+  books: UserBookWithDetails[];
+  conflictIds: Set<string>;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+      {books.map((book, i) => (
+        <BookCard key={book.id} {...book} hasContentConflict={conflictIds.has(book.id)} staggerIndex={i} />
+      ))}
+    </div>
+  );
+});
+
 /* ─── Main Component ─── */
 
 export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWithDetails[]; contentPrefs?: Record<string, number> }) {
@@ -281,13 +314,42 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
     return !!(yearFilter || genreFilter || minRating || fictionFilter || formatFilter);
   });
 
+  // In-library search. `query` is what the input shows (updates on every
+  // keystroke); the filtering below runs off the deferred copy so a big
+  // grid never blocks typing. Purely in-memory over `books` — no requests.
+  const [query, setQuery] = useState(() => initialParams.get("q") ?? "");
+  const deferredQuery = useDeferredValue(query);
+  const searchPending = query !== deferredQuery;
+
+  // Mirror the query into the URL params as `q`, like tab/filter/sort, so
+  // coming back from a book page (or a reload) restores the search. Debounced:
+  // Safari throws once replaceState is called ~100 times in a short window,
+  // and a per-keystroke write would also re-render the whole page each time.
+  useEffect(() => {
+    const q = query.trim();
+    const timer = setTimeout(() => {
+      setParams((prev) => {
+        if ((prev.q ?? "") === q) return prev;
+        const next = { ...prev };
+        if (q) next.q = q;
+        else delete next.q;
+        return next;
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   // Keep the URL in sync as state changes so shared/bookmarked links work,
   // but drive the UI off local state to avoid a router-induced hang.
   useEffect(() => {
     const qs = new URLSearchParams(params).toString();
     const url = `${pathname}${qs ? `?${qs}` : ""}`;
     if (typeof window !== "undefined" && window.location.pathname + window.location.search !== url) {
-      window.history.replaceState(window.history.state, "", url);
+      try {
+        window.history.replaceState(window.history.state, "", url);
+      } catch {
+        // Browser rate-limited history writes — the UI state is still correct.
+      }
     }
   }, [params, pathname]);
   // Keep router / pathname imports live for any other routing use below.
@@ -336,8 +398,31 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
 
   const subFilters = SUB_FILTERS[validGroup];
 
+  // Search runs FIRST, over the whole library; the tab, sub-filter and
+  // advanced filters then narrow the matches as usual. That way the
+  // sub-filter counts, genre pills and year list all describe the matches.
+  // Folded title+author+series text is built once per book list, so a
+  // keystroke costs one substring test per book.
+  const searchIndex = useMemo(() => {
+    const index = new Map<string, string>();
+    for (const book of books) index.set(book.id, librarySearchText(book));
+    return index;
+  }, [books]);
+  const searchTokens = useMemo(() => librarySearchTokens(deferredQuery), [deferredQuery]);
+  const searchActive = searchTokens.length > 0;
+  const searchedBooks = useMemo(
+    () =>
+      searchTokens.length === 0
+        ? books
+        : books.filter((b) => matchesLibrarySearch(searchIndex.get(b.id) ?? "", searchTokens)),
+    [books, searchIndex, searchTokens]
+  );
+
   // Base filter (tab + sub-filter, before advanced filters)
-  const baseFiltered = filterBooks(books, validGroup, activeSubFilter, contentConflictIds);
+  const baseFiltered = useMemo(
+    () => filterBooks(searchedBooks, validGroup, activeSubFilter, contentConflictIds),
+    [searchedBooks, validGroup, activeSubFilter, contentConflictIds]
+  );
 
   // Get available genres from the current tab's books (not all books)
   const availableGenres = useMemo(() => {
@@ -361,27 +446,31 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
     return Array.from(years).sort((a, b) => b - a);
   }, [baseFiltered]);
   const showAdvanced = validGroup === "activity" || validGroup === "tbr";
-  const filteredBooks = showAdvanced
-    ? sortBooks(
-        applyAdvancedFilters(baseFiltered, {
-          year: yearFilter,
-          genre: genreFilter,
-          minRating,
-          fictionFilter,
-          format: formatFilter,
-        }),
-        sort
-      )
-    : sortBooks(baseFiltered, sort);
+  const filteredBooks = useMemo(
+    () =>
+      showAdvanced
+        ? sortBooks(
+            applyAdvancedFilters(baseFiltered, {
+              year: yearFilter,
+              genre: genreFilter,
+              minRating,
+              fictionFilter,
+              format: formatFilter,
+            }),
+            sort
+          )
+        : sortBooks(baseFiltered, sort),
+    [baseFiltered, showAdvanced, yearFilter, genreFilter, minRating, fictionFilter, formatFilter, sort]
+  );
 
-  // Count for each sub-filter badge
+  // Count for each sub-filter badge (of the search matches, when searching)
   const subFilterCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const sf of subFilters) {
-      counts[sf.key] = filterBooks(books, validGroup, sf.key, contentConflictIds).length;
+      counts[sf.key] = filterBooks(searchedBooks, validGroup, sf.key, contentConflictIds).length;
     }
     return counts;
-  }, [books, validGroup, subFilters, contentConflictIds]);
+  }, [searchedBooks, validGroup, subFilters, contentConflictIds]);
 
   // Active advanced filter count
   const advancedFilterCount = [yearFilter, genreFilter, minRating > 0 ? "y" : "", fictionFilter, formatFilter].filter(Boolean).length;
@@ -410,6 +499,38 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
   function clearAdvancedFilters() {
     updateParams({ year: null, genre: null, rating: null, fiction: null, format: null });
   }
+
+  function clearSearch() {
+    setQuery("");
+  }
+
+  // Jump to another tab/sub-filter, keeping the search (`q` is untouched).
+  function goToView(group: GroupKey, filter: string) {
+    updateParams({
+      tab: group === "tbr" ? null : group,
+      filter: filter === SUB_FILTERS[group][0].key ? null : filter,
+      sort: null,
+      year: null,
+      genre: null,
+      rating: null,
+      fiction: null,
+      format: null,
+    });
+  }
+
+  // Only needed for the search empty state: did the search hit anywhere the
+  // reader can actually see? (`books` also carries rows no view shows — e.g.
+  // removed books kept with a null state — so `searchedBooks.length` alone
+  // would overstate it.)
+  const searchCameUpEmpty = searchActive && filteredBooks.length === 0;
+  const matchesElsewhere = searchCameUpEmpty
+    ? SEARCH_VIEWS.filter((v) => !(v.group === validGroup && v.filter === activeSubFilter))
+        .map((v) => ({ ...v, count: filterBooks(searchedBooks, v.group, v.filter, contentConflictIds).length }))
+        .filter((v) => v.count > 0)
+    : [];
+  // Matches exist in this very view but the advanced filters hide them.
+  const matchesHiddenByFilters = searchCameUpEmpty && baseFiltered.length > 0;
+  const shownQuery = deferredQuery.trim();
 
   const showRating = validGroup === "activity" && activeSubFilter === "completed";
 
@@ -442,6 +563,59 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
           <path d="M9 18l6-6-6-6" />
         </svg>
       </Link>
+
+      {/* Search within the library — filters the loaded books in memory */}
+      <div className="relative mb-4">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        {/* text-base (16px) on purpose: anything smaller makes iOS Safari
+            zoom the page when the field is focused. */}
+        <input
+          type="text"
+          inputMode="search"
+          enterKeyHint="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur(); // dismiss the phone keyboard
+            if (e.key === "Escape") clearSearch();
+          }}
+          placeholder="Search your library"
+          aria-label="Search your library by title, author, or series"
+          maxLength={100}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          className="w-full rounded-xl border border-border bg-surface-alt py-2.5 pl-10 pr-11 text-base text-foreground placeholder:text-muted/60 focus:outline-none focus:border-accent"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={clearSearch}
+            aria-label="Clear search"
+            className="absolute right-0.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-colors hover:text-foreground"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
+      </div>
 
       {/* Top-tier segments */}
       <div className="flex gap-1 rounded-xl bg-surface-alt p-1 mb-4">
@@ -636,10 +810,50 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
 
       {/* Book Grid */}
       {filteredBooks.length > 0 ? (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-          {filteredBooks.map((book, i) => (
-            <BookCard key={book.id} {...book} hasContentConflict={contentConflictIds.has(book.id)} staggerIndex={i} />
-          ))}
+        <div className={`transition-opacity ${searchPending ? "opacity-60" : ""}`} aria-busy={searchPending}>
+          <BookGrid books={filteredBooks} conflictIds={contentConflictIds} />
+        </div>
+      ) : searchActive ? (
+        <div className="rounded-lg border border-border bg-surface p-6 text-center" role="status">
+          <p className="text-sm text-muted break-words">
+            {matchesElsewhere.length > 0 || matchesHiddenByFilters
+              ? "Nothing in this view matches "
+              : "No books in your library match "}
+            <span className="text-foreground">&ldquo;{shownQuery}&rdquo;</span>.
+          </p>
+          {matchesElsewhere.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs text-muted mb-2">Found elsewhere in your library:</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {matchesElsewhere.map((v) => (
+                  <button
+                    key={`${v.group}:${v.filter}`}
+                    onClick={() => goToView(v.group, v.filter)}
+                    className="flex items-center gap-1.5 rounded-full border border-neon-blue/30 bg-neon-blue/20 px-3.5 py-1.5 text-xs font-medium text-neon-blue whitespace-nowrap"
+                  >
+                    {v.label}
+                    <span className="text-[10px] text-muted">{v.count}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2">
+            {matchesHiddenByFilters && (
+              <button
+                onClick={clearAdvancedFilters}
+                className="px-3 py-2 text-sm text-neon-blue hover:text-neon-blue/80"
+              >
+                Clear filters
+              </button>
+            )}
+            <button
+              onClick={clearSearch}
+              className="px-3 py-2 text-sm text-neon-blue hover:text-neon-blue/80"
+            >
+              Clear search
+            </button>
+          </div>
         </div>
       ) : (
         <div className="rounded-lg border border-border bg-surface p-8 text-center">
@@ -649,12 +863,12 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
           {advancedFilterCount > 0 ? (
             <button
               onClick={clearAdvancedFilters}
-              className="text-sm text-link hover:text-link/80"
+              className="text-sm text-neon-blue hover:text-neon-blue/80"
             >
               Clear filters
             </button>
           ) : (
-            <Link href="/search" className="text-sm text-link hover:text-link/80">
+            <Link href="/search" className="text-sm text-neon-blue hover:text-neon-blue/80">
               Find books to add
             </Link>
           )}
