@@ -50,7 +50,11 @@ export async function GET(req: Request) {
   return jsonOk({
     currentYear,
     goal,
-    streak: { currentStreak: streak.currentStreak, longestStreak: streak.longestStreak },
+    streak: {
+      currentStreak: streak.currentStreak,
+      longestStreak: streak.longestStreak,
+      activeToday: streak.activeToday,
+    },
     booksByMonth,
     booksByYear,
     pagesByMonth,

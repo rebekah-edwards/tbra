@@ -320,7 +320,12 @@ function ReadingBookCard({ book, onReviewOpen }: {
         {!book.coverImageUrl && (
           <div className="absolute inset-0 bg-gradient-to-br from-primary-dark to-primary rounded-xl" />
         )}
-        <div className="relative z-10 flex items-center gap-4 p-4">
+        {/* Design refresh 2026-11 (mirrors native-ios HomeView cardBodyV2):
+            a real progress bar instead of the % tag under the cover, ONE lime
+            action ("Update" = track progress), and the reading-state menu as
+            a solid blue pill. Tighter padding and a smaller mobile cover so
+            Up Next reaches the first screen. */}
+        <div className="relative z-10 flex items-center gap-3 p-3 lg:gap-4 lg:p-4">
           <Link href={`/book/${book.slug || book.id}`} className="flex-shrink-0 relative">
             {book.coverImageUrl ? (
               <Image
@@ -328,54 +333,65 @@ function ReadingBookCard({ book, onReviewOpen }: {
                 alt={`Cover of ${book.title}`}
                 width={isAudiobook ? 80 : 80}
                 height={isAudiobook ? 80 : 120}
-                className={`${isAudiobook ? "h-[80px] w-[80px]" : "h-[90px] w-[60px] lg:h-[140px] lg:w-[94px]"} rounded-lg object-cover shadow-xl`}
+                className={`${isAudiobook ? "h-[64px] w-[64px] lg:h-[80px] lg:w-[80px]" : "h-[72px] w-[48px] lg:h-[140px] lg:w-[94px]"} rounded-lg object-cover shadow-xl`}
               />
             ) : (
-              <NoCover title={book.title} className="h-[90px] w-[60px] lg:h-[140px] lg:w-[94px] shadow-xl" size="sm" />
-            )}
-            {/* Progress pill — frosted glass overlay on cover */}
-            {book.progress != null && book.progress > 0 && (
-              <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums backdrop-blur-md bg-surface/50 border border-neon-purple/30 text-neon-purple shadow-[0_2px_12px_rgba(192,132,252,0.25)] whitespace-nowrap">
-                {book.progress}%
-              </span>
+              <NoCover title={book.title} className="h-[72px] w-[48px] lg:h-[140px] lg:w-[94px] shadow-xl" size="sm" />
             )}
           </Link>
           <div className="min-w-0 flex-1">
             <Link href={`/book/${book.slug || book.id}`}>
-              <h3 className="text-base font-bold book-header-text leading-snug">{book.title}</h3>
+              <h3 className="text-[15px] lg:text-base font-bold book-header-text leading-snug line-clamp-2">{book.title}</h3>
             </Link>
             {book.authors.length > 0 && (
-              <p className="mt-1 text-sm book-header-text-muted line-clamp-2">{book.authors.join(", ")}</p>
+              <p className="mt-0.5 text-[13px] lg:text-sm book-header-text-muted line-clamp-1">{book.authors.join(", ")}</p>
             )}
+            {/* Progress bar — lime fill on a translucent track, % alongside */}
+            <div className="mt-2 flex items-center gap-2">
+              <div
+                className="h-[5px] flex-1 overflow-hidden rounded-full bg-foreground/15"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={book.progress ?? 0}
+                aria-label="Reading progress"
+              >
+                <div
+                  className="h-full rounded-full bg-accent"
+                  style={{ width: `${Math.max(0, Math.min(100, book.progress ?? 0))}%` }}
+                />
+              </div>
+              <span className={`text-[11px] font-bold tabular-nums whitespace-nowrap book-header-text ${book.progress ? "" : "opacity-50"}`}>
+                {book.progress ? `${book.progress}%` : "Not started"}
+              </span>
+            </div>
           </div>
-          {/* Action buttons — stacked on the right, equal width, fully opaque.
-              Visual language matches book page: rounded-xl with 2px border.
-              Narrow column (104px) so title/author have room to breathe. */}
-          <div className={`flex flex-col gap-1.5 flex-shrink-0 w-[104px] ${isPending ? "opacity-50" : ""}`}>
-            {/* Track Progress — solid blue rounded-xl. text-black in dark mode,
-                white in light mode (see globals.css `.track-progress-btn` override). */}
+          {/* Action buttons — stacked on the right, equal width. */}
+          <div className={`flex flex-col gap-1.5 flex-shrink-0 w-[92px] ${isPending ? "opacity-50" : ""}`}>
+            {/* Update — the one lime action. Black text on solid lime, always. */}
             <button
               onClick={() => setTrackingBookId(trackingBookId === book.id ? null : book.id)}
-              className="track-progress-btn w-full rounded-xl bg-neon-blue border-2 border-neon-blue px-2 py-1.5 text-[11px] font-semibold text-black shadow-sm hover:brightness-110 active:scale-[0.98] transition-all whitespace-nowrap"
+              className="w-full rounded-full bg-accent px-2 py-2 text-xs font-bold text-black hover:brightness-110 active:scale-[0.98] transition-all whitespace-nowrap flex items-center justify-center gap-1"
               title="Track progress"
+              aria-label="Track progress"
             >
-              Track Progress
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" aria-hidden>
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Update
             </button>
-            {/* Reading state split button — rounded-xl to match book page */}
+            {/* Reading state menu — solid blue (not grey: Rebekah 2026-11-16),
+                white text in both themes like the other solid-blue pills. */}
             <div className="relative flex w-full" ref={(el) => { stateDropdownRefs.current[book.id] = el; }}>
               <button
                 onClick={() => setOpenStateDropdown(openStateDropdown === book.id ? null : book.id)}
-                className="flex-1 min-w-0 rounded-l-xl bg-accent border-2 border-accent border-r-0 px-2 py-1.5 text-[11px] font-semibold text-black text-center whitespace-nowrap flex items-center justify-center hover:brightness-110 active:scale-[0.98] transition-all"
+                className="w-full rounded-full bg-[#0ea5e9] px-2 py-2 text-xs font-bold text-white whitespace-nowrap flex items-center justify-center gap-1 hover:brightness-110 active:scale-[0.98] transition-all"
                 title="Change reading state"
+                aria-haspopup="menu"
+                aria-expanded={openStateDropdown === book.id}
               >
                 Reading
-              </button>
-              <button
-                onClick={() => setOpenStateDropdown(openStateDropdown === book.id ? null : book.id)}
-                className="flex-shrink-0 rounded-r-xl bg-accent text-black border-2 border-accent border-l border-l-black/20 px-2 py-1.5 hover:brightness-110 active:scale-[0.98] transition-all"
-                title="Change reading state"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </button>

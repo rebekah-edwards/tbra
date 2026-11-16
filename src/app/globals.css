@@ -194,6 +194,19 @@ h1, h2, h3, .font-heading {
 /* Track Progress button (Reading Now cards): black text in dark mode, white in light. */
 [data-theme="light"] .track-progress-btn { color: #ffffff !important; }
 
+/* Streak tile — "Not yet today" pill (2026-11). Amber, tuned per theme so it
+   stays legible on both the dark and light surfaces. */
+.streak-pending-pill {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.55);
+  background: rgba(251, 191, 36, 0.12);
+}
+[data-theme="light"] .streak-pending-pill {
+  color: #b45309;
+  border-color: rgba(180, 83, 9, 0.5);
+  background: rgba(180, 83, 9, 0.1);
+}
+
 /* Currently-reading card: subtle tinted gradient behind the blurred cover so
    the card never renders fully white in dark mode if the cover image stalls
    or fails. Light mode leaves the background transparent — the light-mode

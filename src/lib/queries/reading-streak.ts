@@ -8,7 +8,13 @@ export interface ReadingStreak {
   currentStreak: number;
   longestStreak: number;
   unit: "days";
+  /** True once the reader has any streak-counting activity TODAY (their
+   *  timezone). A live streak with this false is "safe until midnight, not
+   *  yet extended" — the UI says so. Never cached; see getReadingStreak. */
+  activeToday: boolean;
 }
+
+type CachedStreak = Omit<ReadingStreak, "activeToday">;
 
 /**
  * Calculate daily reading streaks.
@@ -69,6 +75,50 @@ function toStreakDay(raw: string, fmt: Intl.DateTimeFormat): string | null {
 }
 
 export async function getReadingStreak(userId: string, year?: number): Promise<ReadingStreak> {
+  // activeToday is read live, outside the cache: its whole job is to flip the
+  // moment a reader logs something, and a 60s-stale "not yet today" right
+  // after they logged would be exactly the wrong answer.
+  const [streak, activeToday] = await Promise.all([
+    getCachedReadingStreak(userId, year),
+    getActiveToday(userId),
+  ]);
+  // The cached count can lag today's first activity by up to a minute. If
+  // today is logged, the streak is at least 1 — never show "0 days, done".
+  return {
+    ...streak,
+    currentStreak: activeToday ? Math.max(streak.currentStreak, 1) : streak.currentStreak,
+    activeToday,
+  };
+}
+
+/** Has this reader done anything streak-counting today, in their timezone? */
+async function getActiveToday(userId: string): Promise<boolean> {
+  const rows = (await db.all(sql`
+    SELECT timezone,
+      (SELECT MAX(replace(created_at, ' ', 'T')) FROM reading_notes WHERE user_id = ${userId}) AS a,
+      (SELECT MAX(replace(updated_at, ' ', 'T')) FROM user_book_state WHERE user_id = ${userId}) AS b,
+      (SELECT MAX(replace(updated_at, ' ', 'T')) FROM reading_sessions WHERE user_id = ${userId}) AS c,
+      (SELECT MAX(replace(created_at, ' ', 'T')) FROM reading_sessions WHERE user_id = ${userId}) AS d,
+      (SELECT MAX(replace(created_at, ' ', 'T')) FROM user_book_reviews WHERE user_id = ${userId}) AS e,
+      (SELECT MAX(replace(updated_at, ' ', 'T')) FROM user_book_reviews WHERE user_id = ${userId}) AS f,
+      (SELECT MAX(replace(updated_at, ' ', 'T')) FROM user_book_ratings WHERE user_id = ${userId}) AS g
+    FROM users WHERE id = ${userId}
+  `)) as { timezone: string | null; [k: string]: string | null }[];
+  const row = rows[0];
+  if (!row) return false;
+  const fmt = dayFormatterFor(row.timezone || FALLBACK_TIMEZONE);
+  const today = fmt.format(new Date());
+  // replace(' ', 'T') inside MAX: the columns hold both ISO ("…T…") and naive
+  // ("… …") timestamps, and "T" sorts above " ", so a raw MAX could pick an
+  // earlier ISO value over a later naive one on the same UTC date. Each
+  // source's latest is then bucketed to a local day and compared to today.
+  return (["a", "b", "c", "d", "e", "f", "g"] as const).some((k) => {
+    const raw = row[k];
+    return raw ? toStreakDay(raw, fmt) === today : false;
+  });
+}
+
+async function getCachedReadingStreak(userId: string, year?: number): Promise<CachedStreak> {
   return unstable_cache(
     () => getReadingStreakInner(userId, year),
     [`reading-streak-${userId}-${year ?? "all"}`],
@@ -80,7 +130,7 @@ export async function getReadingStreak(userId: string, year?: number): Promise<R
   )();
 }
 
-async function getReadingStreakInner(userId: string, year?: number): Promise<ReadingStreak> {
+async function getReadingStreakInner(userId: string, year?: number): Promise<CachedStreak> {
   const tzRow = (await db.all(sql`
     SELECT timezone FROM users WHERE id = ${userId}
   `)) as { timezone: string | null }[];

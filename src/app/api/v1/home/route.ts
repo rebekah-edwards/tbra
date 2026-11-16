@@ -28,7 +28,12 @@ export async function GET(req: Request) {
     year: currentYear,
     readingNow,
     goal: readingGoal, // { targetBooks, completedBooks, percentComplete } | null
-    streak: { currentStreak: readingStreak.currentStreak, longestStreak: readingStreak.longestStreak },
+    streak: {
+      currentStreak: readingStreak.currentStreak,
+      longestStreak: readingStreak.longestStreak,
+      // Drives the "Today / Not yet" status on the streak tile.
+      activeToday: readingStreak.activeToday,
+    },
     tbrSuggestion, // { id, slug, title, coverImageUrl, authors, reason } | null
   });
 }
