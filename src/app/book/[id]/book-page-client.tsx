@@ -573,12 +573,18 @@ export function BookPageClient({
                     const formData = new FormData();
                     formData.append("cover", file);
                     const result = await uploadBookCover(book.id, formData);
-                    if (result.success && result.url) setBaseCoverUrl(result.url);
+                    if (!result.success) {
+                      // Keep the sheet open so the admin can try another file.
+                      alert(result.error || "Failed to upload cover");
+                      return;
+                    }
+                    if (result.url) setBaseCoverUrl(result.url);
+                    setEditingCover(false);
                   } catch (err) {
                     console.error("Failed to upload cover:", err);
+                    alert("Failed to upload cover. Please try again.");
                   } finally {
                     setSavingCover(false);
-                    setEditingCover(false);
                     if (coverFileRef.current) coverFileRef.current.value = "";
                   }
                 }}

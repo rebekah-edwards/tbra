@@ -1,5 +1,5 @@
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { revalidatePath } from "next/cache";
+import { storeCoverFile, validateCoverUpload } from "@/lib/cover-storage";
 import { jsonError, jsonOk } from "@/lib/api/http";
 import { db } from "@/db";
 import { books } from "@/db/schema";
@@ -58,30 +58,39 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!resolved) return jsonError("Book not found.", 404);
   const bookId = resolved.book.id;
 
+  // The web book page is cached per path; public URLs are slugs.
+  const revalidateBook = () => {
+    revalidatePath(`/book/${bookId}`);
+    const slug = resolved.book.slug;
+    if (slug && slug !== bookId) revalidatePath(`/book/${slug}`);
+  };
+
   const contentType = req.headers.get("content-type") ?? "";
 
   // ── Upload branch (multipart) ──
   if (contentType.includes("multipart/form-data")) {
     const form = await req.formData();
-    const file = form.get("cover") as File | null;
-    if (!file || file.size === 0) return jsonError("No file provided.", 400);
-    if (file.size > 2 * 1024 * 1024) return jsonError("File too large (max 2MB).", 400);
-    const validTypes = ["image/jpeg", "image/png", "image/webp"];
-    if (!validTypes.includes(file.type)) return jsonError("Invalid file type (JPG, PNG, WebP only).", 400);
+    const checked = validateCoverUpload(form.get("cover") as File | null);
+    if (!checked.ok) return jsonError(`${checked.error}.`, 400);
 
-    const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-    const filename = `cover-${Date.now()}.${ext}`;
-    const dir = path.join(process.cwd(), "public", "uploads", "covers");
-    await mkdir(dir, { recursive: true });
-    await writeFile(path.join(dir, filename), Buffer.from(await file.arrayBuffer()));
+    // Blob in production — the Vercel filesystem is read-only, so the old
+    // write-to-public/uploads version of this branch could never succeed
+    // there. Shared with actions/books.ts via lib/cover-storage.
+    let url: string;
+    try {
+      url = await storeCoverFile(checked.file, checked.ext);
+    } catch (err) {
+      console.error("[v1 admin cover] storing the cover failed:", err);
+      return jsonError("Couldn't save the image. Please try again.", 500);
+    }
 
-    const url = `/uploads/covers/${filename}`;
     await db.update(books).set({
       coverImageUrl: url,
       coverSource: "manual",
       coverVerified: true,
       updatedAt: new Date().toISOString(),
     }).where(eq(books.id, bookId));
+    revalidateBook();
     return jsonOk({ url });
   }
 
@@ -106,6 +115,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     await db.update(books)
       .set({ audiobookCoverUrl: url, updatedAt: new Date().toISOString() })
       .where(eq(books.id, bookId));
+    revalidateBook();
     return jsonOk({});
   }
 
@@ -121,5 +131,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         : { coverImageUrl: null, coverSource: "admin-removed", coverVerified: false, updatedAt: new Date().toISOString() },
     )
     .where(eq(books.id, bookId));
+  revalidateBook();
   return jsonOk({});
 }

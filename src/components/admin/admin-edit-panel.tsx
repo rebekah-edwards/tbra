@@ -185,16 +185,26 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
     const file = e.target.files?.[0];
     if (!file) return;
     setSaving(true);
-    const formData = new FormData();
-    formData.append("cover", file);
-    const result = await uploadBookCover(bookId, formData);
-    setSaving(false);
-    if (result.success) {
+    try {
+      const formData = new FormData();
+      formData.append("cover", file);
+      const result = await uploadBookCover(bookId, formData);
+      if (!result.success) {
+        alert(result.error || "Failed to upload cover");
+        return;
+      }
       setShowCoverSheet(false);
       router.refresh();
+    } catch (err) {
+      // A thrown action (e.g. the request body was rejected before the
+      // action ran) must not look like "nothing happened".
+      console.error("Failed to upload cover:", err);
+      alert("Failed to upload cover. Please try again.");
+    } finally {
+      setSaving(false);
+      // Reset input so picking the same file again re-fires onChange
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
-    // Reset input
-    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function selectOLCover(coverId: number) {

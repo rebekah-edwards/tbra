@@ -5,8 +5,7 @@ import { books, authors, bookAuthors, narrators, bookNarrators, genres, bookGenr
 import { eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { validateBookTitle } from "@/lib/book-validation";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { storeCoverFile, validateCoverUpload } from "@/lib/cover-storage";
 import {
   fetchOpenLibraryWork,
   fetchAuthorWorks,
@@ -36,6 +35,21 @@ const NONFICTION_GENRES = new Set([
 
 function detectIsFiction(genreNames: string[]): boolean {
   return !genreNames.some((g) => NONFICTION_GENRES.has(g));
+}
+
+/**
+ * Revalidate a book's page after an admin edit. Public book URLs are slugs
+ * (`/book/<slug>`), so revalidating only `/book/<uuid>` leaves the page the
+ * admin is actually looking at stale — do both.
+ */
+async function revalidateBookPaths(bookId: string) {
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath(`/book/${bookId}`);
+  const row = await db.query.books.findFirst({
+    where: eq(books.id, bookId),
+    columns: { slug: true },
+  });
+  if (row?.slug && row.slug !== bookId) revalidatePath(`/book/${row.slug}`);
 }
 
 async function delay(ms: number) {
@@ -572,21 +586,7 @@ export async function createBookManually(formData: FormData) {
     if (!allowedExts.includes(ext)) throw new Error("Invalid image type");
     if (coverFile.size > 1024 * 1024) throw new Error("Cover image must be under 1 MB");
 
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      // Production: upload to Vercel Blob
-      const { put } = await import("@vercel/blob");
-      const filename = `covers/cover-${Date.now()}.${ext}`;
-      const blob = await put(filename, coverFile, { access: "public" });
-      coverImageUrl = blob.url;
-    } else {
-      // Local dev: save to filesystem
-      const filename = `cover-${Date.now()}.${ext}`;
-      const uploadDir = path.join(process.cwd(), "public", "uploads", "covers");
-      await mkdir(uploadDir, { recursive: true });
-      const buffer = Buffer.from(await coverFile.arrayBuffer());
-      await writeFile(path.join(uploadDir, filename), buffer);
-      coverImageUrl = `/uploads/covers/${filename}`;
-    }
+    coverImageUrl = await storeCoverFile(coverFile, ext);
   }
 
   // Check if a book with this ISBN already exists (prevents UNIQUE constraint crash)
@@ -738,8 +738,6 @@ export async function setBookCover(
     }
   }
 
-  const { revalidatePath } = await import("next/cache");
-
   // Both branches set cover_source to a non-null value so Phase 4 enrichment's
   // gate skips the book on subsequent runs (`alreadyAttempted = cover_source != null`).
   // The remove branch uses 'admin-removed' — the book ends up on /admin/covers
@@ -763,7 +761,7 @@ export async function setBookCover(
     )
     .where(eq(books.id, bookId));
 
-  revalidatePath(`/book/${bookId}`);
+  await revalidateBookPaths(bookId);
   return { success: true };
 }
 
@@ -790,8 +788,6 @@ export async function setAudiobookCover(
     }
   }
 
-  const { revalidatePath } = await import("next/cache");
-
   await db
     .update(books)
     // updated_at bump matters: sync-pull's newer-timestamp path is what
@@ -801,13 +797,14 @@ export async function setAudiobookCover(
     .set({ audiobookCoverUrl: coverUrl || null, updatedAt: new Date().toISOString() })
     .where(eq(books.id, bookId));
 
-  revalidatePath(`/book/${bookId}`);
+  await revalidateBookPaths(bookId);
   return { success: true };
 }
 
 /**
  * Upload a cover image file for a book (admin only).
- * Saves to /public/uploads/covers/ and sets coverImageUrl.
+ * Stores the file via storeCoverFile (Vercel Blob in production, disk only
+ * on a dev machine with no Blob token) and sets coverImageUrl.
  */
 export async function uploadBookCover(
   bookId: string,
@@ -817,26 +814,33 @@ export async function uploadBookCover(
   const session = await getCurrentUser();
   if (session?.role !== "admin") return { success: false, error: "Unauthorized" };
 
-  const file = formData.get("cover") as File | null;
-  if (!file || file.size === 0) return { success: false, error: "No file provided" };
-  if (file.size > 2 * 1024 * 1024) return { success: false, error: "File too large (max 2MB)" };
+  const checked = validateCoverUpload(formData.get("cover") as File | null);
+  if (!checked.ok) return { success: false, error: checked.error };
 
-  const validTypes = ["image/jpeg", "image/png", "image/webp"];
-  if (!validTypes.includes(file.type)) return { success: false, error: "Invalid file type (JPG, PNG, WebP only)" };
+  let url: string;
+  try {
+    url = await storeCoverFile(checked.file, checked.ext);
+  } catch (err) {
+    // Return the failure instead of throwing: a thrown server action reaches
+    // the client as an opaque digest in production, which is how this upload
+    // came to look like "nothing happened".
+    console.error("[uploadBookCover] storing the cover failed:", err);
+    return { success: false, error: "Couldn't save the image. Please try again." };
+  }
 
-  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-  const filename = `cover-${Date.now()}.${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads", "covers");
+  // Same write the URL-paste path (setBookCover) and the v1 route make:
+  // verified + updated_at bump, so the change survives the live↔local sync.
+  await db
+    .update(books)
+    .set({
+      coverImageUrl: url,
+      coverSource: "manual",
+      coverVerified: true,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(books.id, bookId));
 
-  await mkdir(dir, { recursive: true });
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, filename), buffer);
-
-  const url = `/uploads/covers/${filename}`;
-  await db.update(books).set({ coverImageUrl: url, coverSource: "manual" }).where(eq(books.id, bookId));
-
-  const { revalidatePath } = await import("next/cache");
-  revalidatePath(`/book/${bookId}`);
+  await revalidateBookPaths(bookId);
   return { success: true, url };
 }
 
@@ -903,8 +907,7 @@ export async function updateBookFields(
 
   await db.update(books).set(updateSet).where(eq(books.id, bookId));
 
-  const { revalidatePath } = await import("next/cache");
-  revalidatePath(`/book/${bookId}`);
+  await revalidateBookPaths(bookId);
   return { success: true };
 }
 
@@ -934,8 +937,7 @@ export async function addBookGenre(
   // Link to book (ignore if already linked)
   await db.insert(bookGenres).values({ bookId, genreId: genre.id }).onConflictDoNothing();
 
-  const { revalidatePath } = await import("next/cache");
-  revalidatePath(`/book/${bookId}`);
+  await revalidateBookPaths(bookId);
   return { success: true };
 }
 
@@ -957,8 +959,7 @@ export async function removeBookGenre(
     sql`${bookGenres.bookId} = ${bookId} AND ${bookGenres.genreId} = ${genre.id}`
   );
 
-  const { revalidatePath } = await import("next/cache");
-  revalidatePath(`/book/${bookId}`);
+  await revalidateBookPaths(bookId);
   return { success: true };
 }
 
