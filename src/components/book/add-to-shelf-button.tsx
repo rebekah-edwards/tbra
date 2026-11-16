@@ -70,13 +70,15 @@ export function AddToShelfButton({ bookId, shelves, bookShelves, isPremium, isFa
     <>
       <button
         onClick={() => setOpen(true)}
-        className={`flex items-center justify-center gap-1.5 w-full rounded-xl border-2 py-3 px-2 text-sm font-semibold whitespace-nowrap transition-all ${
+        className={`flex items-center justify-center gap-1.5 w-full rounded-xl py-3 px-2 text-sm font-semibold whitespace-nowrap transition-all ${
+          // Design refresh 2026-11: neutral glass, blue only in the star and
+          // (once shelved) a thin ring. See owned-button.tsx.
           shelfCount > 0
-            ? "bg-neon-blue text-white shadow-[0_0_16px_rgba(96,165,250,0.3)] border-2 border-neon-blue"
-            : "bg-neon-blue/10 text-muted border-2 border-neon-blue/40 hover:text-foreground hover:border-neon-blue/70"
+            ? "bg-surface/60 backdrop-blur-md text-foreground border border-neon-blue/55"
+            : "bg-surface/60 backdrop-blur-md text-foreground/75 border border-foreground/15 hover:text-foreground hover:border-neon-blue/50"
         }`}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill={shelfCount > 0 ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue">
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
         {shelfCount > 0 ? `Shelves · ${shelfCount}` : "Shelves"}

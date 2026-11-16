@@ -77,38 +77,30 @@ export function BookSummary({
   }
 
   if (variant === "frosted") {
+    // Design refresh 2026-11 (mirrors iOS SummaryQuoteCard bodyV2): the
+    // one-line hook set as a headline on glass, with a hairline in the logo's
+    // lime → blue → purple. Replaces the edge-bleed grey card and the
+    // oversized serif quotation mark. Same footprint on mobile and desktop.
     return (
-      <div
-        className={
-          layout === "mobile"
-            ? "summary-frosted -mt-2 -mb-6 ml-[calc(-50vw+50%)] pr-[6%] py-10"
-            : "summary-frosted py-2"
-        }
-      >
+      <div className={layout === "mobile" ? "py-2" : "py-2"}>
         <div
-          className={`summary-frosted-card relative overflow-hidden backdrop-blur-xl p-6 border border-white/[0.06] ${
-            layout === "mobile"
-              ? "rounded-r-2xl pl-[calc(50vw-50%+1rem)]"
-              : "rounded-2xl"
-          }`}
+          className="relative rounded-[22px] p-px"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(163,230,53,0.55), rgba(56,189,248,0.35), rgba(192,132,252,0.45))",
+          }}
         >
-          {/* Breathing blob behind the card */}
-          <div className="summary-frosted-blob absolute inset-0 pointer-events-none" aria-hidden="true" />
-          {/* Oversized decorative quote — intentionally overflows the card, behind text */}
-          <span
-            className="absolute top-[calc(100%-90px)] right-[-15px] text-[280px] leading-none select-none pointer-events-none summary-frosted-quote z-0"
-            style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
-            aria-hidden="true"
-          >
-            &rdquo;
-          </span>
-          <p
-            className={`relative z-10 text-sm leading-relaxed text-foreground/70 ${
-              layout === "mobile" ? "text-left pr-8" : "text-left"
-            }`}
-          >
-            {summary}
-          </p>
+          <div className="rounded-[21px] bg-surface/85 backdrop-blur-xl p-5">
+            <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-muted">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M12 2l1.9 5.6a3 3 0 0 0 1.9 1.9L21.4 11.4l-5.6 1.9a3 3 0 0 0-1.9 1.9L12 20.8l-1.9-5.6a3 3 0 0 0-1.9-1.9L2.6 11.4l5.6-1.9a3 3 0 0 0 1.9-1.9L12 2z" />
+              </svg>
+              THE SHORT VERSION
+            </p>
+            <p className="mt-2.5 font-heading text-[17px] font-semibold leading-snug text-foreground text-left">
+              {summary}
+            </p>
+          </div>
         </div>
       </div>
     );

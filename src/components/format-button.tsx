@@ -136,14 +136,16 @@ export function FormatButton({
         }}
         disabled={disabled || isPending}
         className={`flex items-center gap-1.5 rounded-xl py-3 px-3 text-sm font-semibold transition-all w-full justify-center whitespace-nowrap ${
+          // Design refresh 2026-11: neutral glass, blue only in the icon and
+          // (once set) a thin ring. See owned-button.tsx.
           hasFormats
-            ? "bg-neon-blue text-white shadow-[0_0_16px_rgba(96,165,250,0.3)] border-2 border-neon-blue"
+            ? "bg-surface/60 backdrop-blur-md text-foreground border border-neon-blue/55"
             : disabled
-              ? "bg-neon-blue/10 text-muted/50 border-2 border-neon-blue/20 cursor-not-allowed"
-              : "bg-neon-blue/10 text-muted border-2 border-neon-blue/40 hover:text-foreground hover:border-neon-blue/70"
+              ? "bg-surface/40 text-muted/50 border border-foreground/10 cursor-not-allowed"
+              : "bg-surface/60 backdrop-blur-md text-foreground/75 border border-foreground/15 hover:text-foreground hover:border-neon-blue/50"
         } ${isPending ? "opacity-60" : ""}`}
       >
-        <FormatIcon format={leadIcon} size={18} className="flex-shrink-0" />
+        <FormatIcon format={leadIcon} size={18} className={`flex-shrink-0 ${disabled ? "" : "text-neon-blue"}`} />
         {formatSummary()}
       </button>
 

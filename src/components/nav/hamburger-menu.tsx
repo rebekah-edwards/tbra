@@ -185,15 +185,15 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
           {/* Backdrop */}
           <div className="fixed inset-0 z-40" aria-hidden onClick={() => setIsOpen(false)} />
           {/* Menu dropdown */}
-          <div className="absolute right-0 top-full mt-2 z-50 w-56 rounded-xl border border-border bg-surface shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-foreground/10 bg-surface/95 backdrop-blur-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
             <div className="py-1">
               {!isLoggedIn ? (
                 <>
                   <Link
                     href="/login"
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-alt transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-surface-alt transition-colors"
                   >
-                    <span className="text-muted">
+                    <span className="menu-icon-chip">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
                         <polyline points="10 17 15 12 10 7" />
@@ -205,9 +205,9 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
                   <div className="border-t border-border my-1" />
                   <Link
                     href="/methodology"
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-alt transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-surface-alt transition-colors"
                   >
-                    <span className="text-muted">
+                    <span className="menu-icon-chip">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10" />
                         <line x1="12" y1="16" x2="12" y2="12" />
@@ -218,9 +218,9 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
                   </Link>
                   <Link
                     href="/discover"
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-alt transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-surface-alt transition-colors"
                   >
-                    <span className="text-muted">
+                    <span className="menu-icon-chip">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="11" cy="11" r="8" />
                         <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -238,9 +238,9 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
               <>
               <Link
                 href="/profile"
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-alt transition-colors"
+                className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-surface-alt transition-colors"
               >
-                <span className="text-muted">
+                <span className="menu-icon-chip">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
@@ -250,9 +250,9 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
               </Link>
               <Link
                 href="/settings"
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-alt transition-colors"
+                className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-surface-alt transition-colors"
               >
-                <span className="text-muted">
+                <span className="menu-icon-chip">
                   <MenuIcon icon="settings" />
                 </span>
                 Settings
@@ -262,9 +262,9 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-alt transition-colors"
+                  className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-surface-alt transition-colors"
                 >
-                  <span className="text-muted">
+                  <span className="menu-icon-chip">
                     <MenuIcon icon={item.icon} />
                   </span>
                   {item.href === "/upgrade" && !isPremium ? "Upgrade to Premium" : item.label}
@@ -275,9 +275,9 @@ export function HamburgerMenu({ isLoggedIn, isAdmin = false, isSuperAdmin = fals
                   <div className="border-t border-border my-1" />
                   <Link
                     href="/admin"
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-surface-alt transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-surface-alt transition-colors"
                   >
-                    <span className="text-muted">
+                    <span className="menu-icon-chip">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                         <polyline points="9 22 9 12 15 12 15 22" />

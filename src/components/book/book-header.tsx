@@ -92,13 +92,17 @@ export function BookHeader({
       <div className="relative rounded-2xl overflow-visible">
         {(topLevelGenre || ageCategory) && (
           <div className="absolute -top-3 right-4 z-20 flex gap-1.5">
+            {/* Design refresh 2026-11: glass badges with a colour DOT, so the
+                lime state button below is the only solid fill on the page. */}
             {topLevelGenre && (
-              <span className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-black shadow-md">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-surface/80 backdrop-blur-md px-3 py-1 text-xs font-semibold text-foreground shadow-md">
+                <span className="h-[7px] w-[7px] rounded-full bg-accent" aria-hidden />
                 {topLevelGenre}
               </span>
             )}
             {ageCategory && (
-              <span className="rounded-full bg-purple-600 px-3 py-1 text-xs font-semibold text-white shadow-md">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-surface/80 backdrop-blur-md px-3 py-1 text-xs font-semibold text-foreground shadow-md">
+                <span className="h-[7px] w-[7px] rounded-full bg-purple-600" aria-hidden />
                 {ageCategory}
               </span>
             )}

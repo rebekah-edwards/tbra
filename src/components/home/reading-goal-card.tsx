@@ -152,7 +152,7 @@ export function ReadingGoalCard({ goal, year }: ReadingGoalCardProps) {
 }
 
 /** Same wording as the iOS tile (ReadingGoal.paceLine in Models.swift). */
-function paceLine(
+export function paceLine(
   goal: { targetBooks: number; completedBooks: number },
   year: number
 ): { text: string; good: boolean } {

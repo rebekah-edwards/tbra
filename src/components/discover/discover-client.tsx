@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { MoodIcon } from "@/components/discover/mood-icon";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -239,7 +240,7 @@ export function DiscoverClient({
                     : `${tint.idle} hover:scale-[1.02]`
                 }`}
               >
-                <span className="text-xl block mb-1">{mood.emoji}</span>
+                <MoodIcon moodKey={mood.key} fallback={mood.emoji} />
                 <span className={`text-[11px] font-medium block ${
                   isSelected ? "text-foreground" : "text-muted"
                 }`}>

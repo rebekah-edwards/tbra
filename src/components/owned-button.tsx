@@ -115,9 +115,12 @@ export function OwnedButton({
         }}
         disabled={isPending}
         className={`flex items-center gap-1.5 rounded-xl py-3 px-3 text-sm font-semibold transition-all w-full justify-center whitespace-nowrap ${
+          // Design refresh 2026-11: neutral glass, purple only in the icon
+          // and (once owned) a thin ring — the lime state button is the one
+          // solid colour on the page. Mirrors iOS clusterPill.
           isOwned
-            ? "bg-neon-purple text-white shadow-[0_0_16px_rgba(192,132,252,0.3)] border-2 border-neon-purple"
-            : "bg-neon-purple/10 text-muted border-2 border-neon-purple/40 hover:text-foreground hover:border-neon-purple/70"
+            ? "bg-surface/60 backdrop-blur-md text-foreground border border-neon-purple/55"
+            : "bg-surface/60 backdrop-blur-md text-foreground/75 border border-foreground/15 hover:text-foreground hover:border-neon-purple/50"
         } ${isPending ? "opacity-60" : ""}`}
         title={isOwned ? `Owned${realFormats.length > 0 ? `: ${realFormats.join(", ")}` : ""}` : "Mark as owned"}
       >
@@ -130,7 +133,7 @@ export function OwnedButton({
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="flex-shrink-0"
+          className="flex-shrink-0 text-neon-purple"
         >
           {/* Bookshelf: three books + shelf */}
           <rect x="3" y="4" width="4" height="14" rx="0.5" fill="none" />

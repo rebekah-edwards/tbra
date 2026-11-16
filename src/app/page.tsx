@@ -46,6 +46,7 @@ import { getRandomOwnedTbrBook } from "@/lib/queries/tbr-suggestion";
 import { BookCard } from "@/components/book-card";
 import { ReadingGoalCard } from "@/components/home/reading-goal-card";
 import { ReadingStreakCard } from "@/components/home/reading-streak-card";
+import { HomeStarterCard } from "@/components/home/home-starter-card";
 import { TbrSuggestionCard } from "@/components/home/tbr-suggestion-card";
 import { UpNextShelf } from "@/components/home/up-next-shelf";
 import { CurrentlyReadingSection } from "@/components/home/currently-reading-section";
@@ -259,6 +260,9 @@ export default async function Home() {
         <ReadingGoalCard goal={readingGoal} year={currentYear} />
         <ReadingStreakCard streak={readingStreak} />
       </section>
+
+      {/* Brand-new reader: nothing in progress, nothing queued. */}
+      {currentlyReading.length === 0 && upNextItems.length === 0 && <HomeStarterCard />}
 
       {/* Reading Now + Goal/Streak (mobile) + Up Next */}
       <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-8 lg:space-y-0">

@@ -132,15 +132,19 @@ export function BottomTabs({ isLoggedIn, avatarUrl }: BottomTabsProps) {
             <Link
               key={tab.label}
               href={href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-2.5 text-[10px] font-medium transition-colors tap-scale ${
+              // Design refresh 2026-11: lime marks where you are on EVERY tab
+              // (a tinted lozenge here, the solid circle on Home) instead of
+              // purple for four tabs and lime for one. text-accent flips to
+              // black in light mode via the globals.css override.
+              className={`flex flex-col items-center gap-0.5 rounded-full px-2.5 py-2 my-0.5 text-[10px] whitespace-nowrap transition-colors tap-scale ${
                 active
-                  ? "text-neon-purple"
-                  : "text-muted hover:text-accent"
+                  ? "bg-accent/20 text-accent font-bold"
+                  : "text-muted font-medium hover:text-accent"
               }`}
             >
               {isProfile && avatarUrl ? (
                 <div className={`w-[22px] h-[22px] rounded-full overflow-hidden flex-shrink-0 ${
-                  active ? "ring-2 ring-neon-purple" : "ring-1 ring-border"
+                  active ? "ring-2 ring-accent" : "ring-1 ring-border"
                 }`}>
                   <Image src={avatarUrl} alt="" width={22} height={22} className="w-full h-full object-cover" />
                 </div>

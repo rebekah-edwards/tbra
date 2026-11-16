@@ -194,6 +194,25 @@ h1, h2, h3, .font-heading {
 /* Track Progress button (Reading Now cards): black text in dark mode, white in light. */
 [data-theme="light"] .track-progress-btn { color: #ffffff !important; }
 
+/* Hamburger menu (2026-11 refresh): each row's icon sits in a soft rounded
+   chip, like the grouped cards in the iOS menu sheet. The premium row's chip
+   takes the purple→blue brand gradient. */
+.menu-icon-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  color: var(--color-muted, currentColor);
+  background: color-mix(in srgb, currentColor 9%, transparent);
+}
+a[href="/upgrade"] .menu-icon-chip {
+  color: #ffffff;
+  background: linear-gradient(135deg, #c084fc, #38bdf8);
+}
+
 /* Streak tile — "Not yet today" pill (2026-11). Amber, tuned per theme so it
    stays legible on both the dark and light surfaces. */
 .streak-pending-pill {

@@ -319,6 +319,9 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
   // grid never blocks typing. Purely in-memory over `books` — no requests.
   const [query, setQuery] = useState(() => initialParams.get("q") ?? "");
   const deferredQuery = useDeferredValue(query);
+  // Design refresh 2026-11: search lives behind a toolbar button and expands
+  // into the field. Open on arrival when the URL already carries a query.
+  const [searchOpen, setSearchOpen] = useState(() => (initialParams.get("q") ?? "") !== "");
   const searchPending = query !== deferredQuery;
 
   // Mirror the query into the URL params as `q`, like tab/filter/sort, so
@@ -376,7 +379,6 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
 
   // Compute summary stats
   const ownedCount = useMemo(() => books.filter((b) => b.ownedFormats.length > 0).length, [books]);
-  const readCount = useMemo(() => books.filter((b) => b.state === "completed").length, [books]);
   const tbrCount = useMemo(() => books.filter((b) => b.state === "tbr").length, [books]);
 
   // Compute which books have content conflicts with user preferences
@@ -536,153 +538,185 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
 
   return (
     <div className="lg:max-w-[60%] lg:mx-auto">
+      {/* Design refresh 2026-11 (mirrors native-ios LibraryView headerV2).
+          Five stacked rows became three: title + Shelves pill, the tab
+          switch (now carrying the counts), and ONE toolbar holding search,
+          filters and the sub-filter chips. */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-foreground text-2xl font-bold tracking-tight">
           My Library
         </h1>
-        <span className="text-xs text-muted">
-          {ownedCount} owned · {readCount} read · {tbrCount} tbr
-        </span>
-      </div>
-
-      {/* My Shelves link */}
-      <Link
-        href="/library/shelves"
-        className="flex items-center justify-between w-full rounded-xl border border-border bg-surface/50 px-4 py-3 mb-4 group transition-colors hover:border-accent/30"
-      >
-        <div className="flex items-center gap-2.5">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent shrink-0">
+        <Link
+          href="/library/shelves"
+          className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-surface/70 backdrop-blur-md px-3.5 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-accent/40"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-accent shrink-0" aria-hidden="true">
             <path d="M4 4h2v16H4z" />
             <path d="M8 4h2v16H8z" />
             <path d="M13 4l2 16" />
             <path d="M18 4l2 16" />
           </svg>
-          <span className="text-sm font-medium text-foreground">My Shelves</span>
-        </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted/40 group-hover:text-accent transition-colors">
-          <path d="M9 18l6-6-6-6" />
-        </svg>
-      </Link>
-
-      {/* Search within the library — filters the loaded books in memory */}
-      <div className="relative mb-4">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
-          aria-hidden="true"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        {/* text-base (16px) on purpose: anything smaller makes iOS Safari
-            zoom the page when the field is focused. */}
-        <input
-          type="text"
-          inputMode="search"
-          enterKeyHint="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur(); // dismiss the phone keyboard
-            if (e.key === "Escape") clearSearch();
-          }}
-          placeholder="Search your library"
-          aria-label="Search your library by title, author, or series"
-          maxLength={100}
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="none"
-          spellCheck={false}
-          className="w-full rounded-xl border border-border bg-surface-alt py-2.5 pl-10 pr-11 text-base text-foreground placeholder:text-muted/60 focus:outline-none focus:border-accent"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={clearSearch}
-            aria-label="Clear search"
-            className="absolute right-0.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-colors hover:text-foreground"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        )}
+          Shelves
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted" aria-hidden="true">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </Link>
       </div>
 
-      {/* Top-tier segments */}
-      <div className="flex gap-1 rounded-xl bg-surface-alt p-1 mb-4">
-        {GROUPS.map((group) => (
-          <button
-            key={group.key}
-            onClick={() => handleGroupChange(group.key)}
-            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
-              validGroup === group.key
-                ? "bg-accent text-black shadow-sm"
-                : "text-muted hover:text-foreground"
-            }`}
-          >
-            {group.label}
-          </button>
-        ))}
+      {/* Tab switch — counts moved in from the old header line */}
+      <div className="flex gap-1 rounded-full border border-foreground/10 bg-surface/70 backdrop-blur-md p-1 mb-3">
+        {GROUPS.map((group) => {
+          const active = validGroup === group.key;
+          const count = group.key === "tbr" ? tbrCount : group.key === "owned" ? ownedCount : null;
+          return (
+            <button
+              key={group.key}
+              onClick={() => handleGroupChange(group.key)}
+              className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm transition-all ${
+                active ? "bg-accent text-black font-bold shadow-sm" : "text-muted font-medium hover:text-foreground"
+              }`}
+            >
+              {group.label}
+              {count != null && <span className="text-xs font-semibold opacity-60 tabular-nums">{count}</span>}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Sub-filter pills */}
-      <div className="relative mb-4">
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 pr-12 no-scrollbar mask-fade-right">
-          {subFilters.map((sf) => {
-            const count = subFilterCounts[sf.key];
-            const isActive = activeSubFilter === sf.key;
-            return (
+      {/* Toolbar: search · filters · sub-filter chips. Search expands in place. */}
+      <div className="mb-4">
+        {searchOpen || query ? (
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex-1">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              {/* text-base (16px) on purpose: anything smaller makes iOS Safari
+                  zoom the page when the field is focused. */}
+              <input
+                type="text"
+                inputMode="search"
+                enterKeyHint="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur(); // dismiss the phone keyboard
+                  if (e.key === "Escape") {
+                    clearSearch();
+                    setSearchOpen(false);
+                  }
+                }}
+                placeholder="Title, author or series"
+                aria-label="Search your library by title, author, or series"
+                maxLength={100}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                autoFocus
+                className="h-10 w-full rounded-full border border-foreground/10 bg-surface/70 backdrop-blur-md pl-10 pr-11 text-base text-foreground placeholder:text-muted/60 focus:outline-none focus:border-accent"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  aria-label="Clear search"
+                  className="absolute right-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-colors hover:text-foreground"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                clearSearch();
+                setSearchOpen(false);
+              }}
+              className="text-sm font-medium text-neon-blue hover:text-neon-blue/80"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search your library"
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-foreground/10 bg-surface/70 backdrop-blur-md text-foreground shadow-sm transition-colors hover:border-accent/40"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </button>
+            {showAdvanced && (
               <button
-                key={sf.key}
-                onClick={() => handleSubFilterChange(sf.key)}
-                className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium whitespace-nowrap transition-all ${
-                  isActive
-                    ? "bg-neon-blue/20 text-neon-blue border border-neon-blue/30"
-                    : "bg-surface-alt text-muted hover:text-foreground hover:bg-surface-alt/80 border border-transparent"
+                type="button"
+                onClick={() => setFiltersOpen(!filtersOpen)}
+                aria-label="Filters"
+                aria-expanded={filtersOpen}
+                className={`relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border bg-surface/70 backdrop-blur-md text-foreground shadow-sm transition-colors ${
+                  filtersOpen ? "border-accent" : "border-foreground/10 hover:border-accent/40"
                 }`}
               >
-                {sf.label}
-                <span className={`text-[10px] ${isActive ? "text-neon-blue/70" : "text-muted/60"}`}>
-                  {count}
-                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                  <line x1="4" y1="7" x2="20" y2="7" />
+                  <line x1="7" y1="12" x2="17" y2="12" />
+                  <line x1="10" y1="17" x2="14" y2="17" />
+                </svg>
+                {advancedFilterCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-black">
+                    {advancedFilterCount}
+                  </span>
+                )}
               </button>
-            );
-          })}
-        </div>
+            )}
+            <div className="relative min-w-0 flex-1">
+              <div className="flex gap-2 overflow-x-auto py-0.5 pr-10 no-scrollbar mask-fade-right">
+                {subFilters.map((sf) => {
+                  const count = subFilterCounts[sf.key];
+                  const isActive = activeSubFilter === sf.key;
+                  return (
+                    <button
+                      key={sf.key}
+                      onClick={() => handleSubFilterChange(sf.key)}
+                      className={`flex h-10 items-center gap-1.5 rounded-full border px-3.5 text-[13px] whitespace-nowrap transition-all ${
+                        isActive
+                          ? "bg-foreground/10 text-foreground font-semibold border-foreground/35"
+                          : "text-muted font-medium border-border hover:text-foreground"
+                      }`}
+                    >
+                      {sf.label}
+                      <span className="text-[11px] opacity-60 tabular-nums">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Advanced Filters — collapsible, for Activity and TBR tabs */}
       {showAdvanced && (
         <div className="mb-4">
-          <button
-            onClick={() => setFiltersOpen(!filtersOpen)}
-            className="flex items-center gap-1.5 text-xs text-muted hover:text-foreground transition-colors mb-2"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
-            </svg>
-            Filters
-            {/* text-foreground, NOT text-accent: the count was rendering
-                lime-on-lime in light mode (user report 2026-07-22). */}
-            {advancedFilterCount > 0 && (
-              <span className="bg-accent/20 text-foreground text-[10px] font-medium rounded-full px-1.5 py-0.5">
-                {advancedFilterCount}
-              </span>
-            )}
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-transform ${filtersOpen ? "rotate-180" : ""}`}>
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-
           {filtersOpen && (
             <div className="rounded-xl border border-border bg-surface p-4 space-y-4">
               {/* Row 1: Year + Sort + Rating */}
@@ -856,21 +890,51 @@ export function LibraryClient({ books, contentPrefs = {} }: { books: UserBookWit
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border border-border bg-surface p-8 text-center">
-          <p className="text-sm text-muted mb-2">
-            {advancedFilterCount > 0 ? "No books match your filters." : "Nothing here yet."}
+        // Design refresh 2026-11 (mirrors iOS LibraryView's empty state): a
+        // headline, a lime action and, for a brand-new library, the import link.
+        <div className="rounded-[20px] border border-border bg-surface/60 px-5 py-11 text-center">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-muted" aria-hidden="true">
+            <path d="m16 6 4 14" />
+            <path d="M12 6v14" />
+            <path d="M8 8v12" />
+            <path d="M4 4v16" />
+          </svg>
+          <p className="mt-3 font-heading text-[19px] font-bold text-foreground">
+            {advancedFilterCount > 0
+              ? "No books match your filters"
+              : books.length === 0
+                ? "Your library starts here"
+                : "Nothing in this view yet"}
           </p>
           {advancedFilterCount > 0 ? (
             <button
               onClick={clearAdvancedFilters}
-              className="text-sm text-neon-blue hover:text-neon-blue/80"
+              className="mt-3 text-sm font-medium text-neon-blue hover:text-neon-blue/80"
             >
               Clear filters
             </button>
           ) : (
-            <Link href="/search" className="text-sm text-neon-blue hover:text-neon-blue/80">
-              Find books to add
-            </Link>
+            <>
+              <p className="mt-1.5 text-sm text-muted">
+                {books.length === 0
+                  ? "Add the books you own, want to read, or have finished."
+                  : "Try another tab or filter, or add more books."}
+              </p>
+              <Link
+                href="/search"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-accent px-5 py-2.5 text-[15px] font-bold text-black hover:brightness-110 transition-all"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Find books to add
+              </Link>
+              {books.length === 0 && (
+                <Link href="/import" className="mt-3 block text-sm font-medium text-neon-blue hover:text-neon-blue/80">
+                  Import from Goodreads or StoryGraph
+                </Link>
+              )}
+            </>
           )}
         </div>
       )}

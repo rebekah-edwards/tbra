@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { paceLine } from "@/components/home/reading-goal-card";
 import { useRouter } from "next/navigation";
 import type { ReadingGoalProgress } from "@/lib/queries/reading-goals";
 import type { ReadingStreak } from "@/lib/queries/reading-streak";
@@ -127,7 +128,7 @@ export function StatsClient({
         />
         <HeroCard
           icon="⭐"
-          iconBg="bg-accent/20"
+          iconBg="bg-yellow-500/15"
           value={ratingDistribution.length > 0
             ? (() => {
                 let total = 0, count = 0;
@@ -155,25 +156,42 @@ export function StatsClient({
         {goal && (
           <section className="rounded-2xl border border-border bg-surface p-5">
             <h2 className="section-heading text-xs mb-4">Reading Goal</h2>
-            <div className="flex items-center gap-6">
+            {/* Design refresh 2026-11: same lime→blue ring, big count and
+                pace pill as the Home goal tile. */}
+            <div className="flex items-center gap-5">
               <div className="relative w-24 h-24 flex-shrink-0">
-                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                  <circle cx="50" cy="50" r="42" fill="none" stroke="var(--surface-alt)" strokeWidth="8" />
-                  <circle cx="50" cy="50" r="42" fill="none" stroke="var(--accent)" strokeWidth="8" strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 42}`}
-                    strokeDashoffset={`${2 * Math.PI * 42 * (1 - Math.min(goal.percentComplete, 100) / 100)}`}
+                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90 drop-shadow-[0_0_6px_rgba(163,230,53,0.45)]">
+                  <defs>
+                    <linearGradient id="stats-goal-ring" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#a3e635" />
+                      <stop offset="100%" stopColor="#38bdf8" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="50" cy="50" r="41" fill="none" stroke="currentColor" strokeWidth="10" className="text-foreground/10" />
+                  <circle cx="50" cy="50" r="41" fill="none" stroke="url(#stats-goal-ring)" strokeWidth="10" strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 41}`}
+                    strokeDashoffset={`${2 * Math.PI * 41 * (1 - Math.max(2, Math.min(goal.percentComplete, 100)) / 100)}`}
                     className="transition-all duration-700" />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-lg font-bold font-heading">{goal.percentComplete}%</span>
+                  <span className="text-lg font-bold font-heading tabular-nums">{goal.percentComplete}%</span>
                 </div>
               </div>
               <div>
-                <p className="text-2xl font-bold font-heading">
-                  {goal.completedBooks} <span className="text-sm font-normal text-muted">of {goal.targetBooks}</span>
-                </p>
-                <p className="text-xs text-muted mt-0.5">books this year</p>
-                {goal.percentComplete >= 100 && <p className="text-xs text-accent font-medium mt-1">🎉 Goal reached!</p>}
+                <p className="font-heading text-[40px] font-extrabold leading-none tabular-nums">{goal.completedBooks}</p>
+                <p className="mt-1 text-sm text-muted">of {goal.targetBooks} books</p>
+                {(() => {
+                  const pace = paceLine(goal, typeof year === "number" ? year : new Date().getFullYear());
+                  return (
+                    <span
+                      className={`mt-2 inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        pace.good ? "bg-accent/15 text-accent" : "bg-foreground/10 text-foreground/75"
+                      }`}
+                    >
+                      {pace.text}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
           </section>
@@ -349,11 +367,51 @@ export function StatsClient({
 
 /* ─── Sub-components ─── */
 
+/** Line icons for the hero tiles (design refresh 2026-11) — same set as the
+ *  iOS Stats screen. Anything unrecognised falls back to the glyph passed in. */
+function HeroIcon({ icon }: { icon: string }) {
+  const common = {
+    width: 20,
+    height: 20,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+  if (icon === "📚") {
+    return (
+      <svg {...common} stroke="var(--color-neon-purple)">
+        <path d="m16 6 4 14" />
+        <path d="M12 6v14" />
+        <path d="M8 8v12" />
+        <path d="M4 4v16" />
+      </svg>
+    );
+  }
+  if (icon === "🔥") {
+    return (
+      <svg {...common} stroke="#fb923c">
+        <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+      </svg>
+    );
+  }
+  if (icon === "⭐") {
+    return (
+      <svg {...common} stroke="#eab308">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      </svg>
+    );
+  }
+  return <span className="text-lg">{icon}</span>;
+}
+
 function HeroCard({ icon, iconBg, value, label, href }: { icon: string; iconBg: string; value: string; label: string; href?: string }) {
   const content = (
     <>
       <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center mx-auto mb-2`}>
-        <span className="text-lg">{icon}</span>
+        <HeroIcon icon={icon} />
       </div>
       <p className="text-2xl font-bold font-heading">{value}</p>
       <p className="text-[10px] text-muted uppercase tracking-wider mt-0.5">{label}</p>
