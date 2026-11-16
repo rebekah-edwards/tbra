@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { StarRow } from "./rounded-star";
@@ -19,6 +19,13 @@ interface ReviewTriggerProps {
   aggregate: { average: number; count: number } | null;
   isLoggedIn: boolean;
   autoOpen?: boolean;
+  /**
+   * Called when the wizard (or the ARC form in front of it) is dismissed.
+   * A parent that drives `autoOpen` from state should reset it here —
+   * otherwise the flag stays latched at true and the parent can never
+   * re-open the wizard by setting it true again.
+   */
+  onDismiss?: () => void;
   hasCompletedSession?: boolean;
   prePublication?: boolean;
   /** When auto-opening the wizard, pre-seed DNF mode (book was just marked DNF) */
@@ -36,6 +43,7 @@ export function ReviewTrigger({
   aggregate,
   isLoggedIn,
   autoOpen = false,
+  onDismiss,
   hasCompletedSession = false,
   prePublication = false,
   autoOpenAsDnf = false,
@@ -47,10 +55,19 @@ export function ReviewTrigger({
   const [arcData, setArcData] = useState<ArcSourceData | null>(null);
   const router = useRouter();
 
+  // Read through a ref so the effect below doesn't re-fire (and re-open the
+  // wizard) when the review prop changes after a save.
+  const hasReviewRef = useRef(!!userReview);
+  useEffect(() => {
+    hasReviewRef.current = !!userReview;
+  }, [userReview]);
+
   // React to autoOpen changing from false→true after mount
   useEffect(() => {
     if (autoOpen) {
-      if (prePublication && !arcData) {
+      // Same gate as handleOpen: editing an existing review never needs the
+      // ARC-source form again.
+      if (prePublication && !arcData && !hasReviewRef.current) {
         setArcFormOpen(true);
       } else {
         setWizardOpen(true);
@@ -130,7 +147,10 @@ export function ReviewTrigger({
       {prePublication && (
         <ArcSourceForm
           open={arcFormOpen}
-          onClose={() => setArcFormOpen(false)}
+          onClose={() => {
+            setArcFormOpen(false);
+            onDismiss?.();
+          }}
           onSubmit={handleArcSubmit}
         />
       )}
@@ -141,7 +161,10 @@ export function ReviewTrigger({
         bookPages={bookPages}
         isFiction={isFiction}
         open={wizardOpen}
-        onClose={() => setWizardOpen(false)}
+        onClose={() => {
+          setWizardOpen(false);
+          onDismiss?.();
+        }}
         isExisting={!!userReview}
         existingReview={userReview}
         arcData={arcData}

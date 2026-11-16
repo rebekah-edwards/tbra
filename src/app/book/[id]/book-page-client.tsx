@@ -174,18 +174,31 @@ export function BookPageClient({
     }
   }, [searchParams, currentState, book.slug, book.id, router]);
 
-  // ?review=true → open the review wizard (used after marking finished from search)
+  // ?review=true → open the review wizard for a NEW review (used after
+  //                marking finished from search); ignored if one exists.
+  // ?review=edit → open the wizard on the user's EXISTING review (the "Edit"
+  //                link on their own review card, which used to just land here
+  //                and open nothing).
+  // Read in an effect, never in the useState initialiser: the server render
+  // and the first client render both start closed, so there is nothing to
+  // mismatch on hydration. The param is stripped as soon as it is consumed, so
+  // a reload / back-nav / closing the wizard can't open it a second time.
   const reviewTriggered = useRef(false);
   useEffect(() => {
-    if (
-      !reviewTriggered.current &&
-      searchParams.get("review") === "true" &&
-      !userReview
-    ) {
-      reviewTriggered.current = true;
-      setAutoOpenReview(true);
-      router.replace(`/book/${book.slug || book.id}`, { scroll: false });
+    const reviewParam = searchParams.get("review");
+    if (!reviewParam) {
+      // Param gone (we stripped it) — re-arm for a later in-app navigation.
+      reviewTriggered.current = false;
+      return;
     }
+    if (reviewTriggered.current) return;
+    const wantsNew = reviewParam === "true" && !userReview;
+    const wantsEdit = reviewParam === "edit" && !!userReview;
+    if (!wantsNew && !wantsEdit) return;
+    reviewTriggered.current = true;
+    setAutoOpenAsDnf(false);
+    setAutoOpenReview(true);
+    router.replace(`/book/${book.slug || book.id}`, { scroll: false });
   }, [searchParams, userReview, book.slug, book.id, router]);
 
   // Client-side fallback: trigger enrichment if server-side after() didn't fire
@@ -535,6 +548,7 @@ export function BookPageClient({
           aggregate={aggregate}
           isLoggedIn={isLoggedIn}
           autoOpen={autoOpenReview}
+          onDismiss={() => setAutoOpenReview(false)}
           autoOpenAsDnf={autoOpenAsDnf}
           hasCompletedSession={hasCompleted}
           prePublication={prePublication}

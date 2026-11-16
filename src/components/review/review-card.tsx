@@ -231,7 +231,9 @@ export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { 
       <div className="flex items-center justify-between pt-1">
         {isOwnReview ? (
           <Link
-            href={bookPath}
+            // ?review=edit is read by BookPageClient, which opens the review
+            // wizard on this review. A bare bookPath just showed the book page.
+            href={`${bookPath}?review=edit`}
             className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full read-more-link hover:bg-accent/10 transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
