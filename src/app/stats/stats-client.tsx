@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { paceLine } from "@/components/home/reading-goal-card";
+import { GoalRingTick, paceLine } from "@/components/home/reading-goal-card";
 import { useRouter } from "next/navigation";
 import type { ReadingGoalProgress } from "@/lib/queries/reading-goals";
 import type { ReadingStreak } from "@/lib/queries/reading-streak";
@@ -192,6 +192,11 @@ export function StatsClient({
                     strokeDashoffset={`${2 * Math.PI * 41 * (1 - Math.max(2, Math.min(goal.percentComplete, 100)) / 100)}`}
                     className="transition-all duration-700" />
                 </svg>
+                {/* Today's place in the year, on the ring itself — the iOS
+                    ring has it; this one only had the tick on the track below. */}
+                {yearProgress && (
+                  <GoalRingTick elapsed={yearProgress.elapsed} viewBox={100} radius={41} strokeWidth={10} />
+                )}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-lg font-bold font-heading tabular-nums">{goal.percentComplete}%</span>
                 </div>

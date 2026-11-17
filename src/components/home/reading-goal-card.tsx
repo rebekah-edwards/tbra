@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
+import { useEffect, useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { setReadingGoal } from "@/lib/actions/reading-goals";
@@ -18,6 +18,20 @@ export function ReadingGoalCard({ goal, year }: ReadingGoalCardProps) {
   // Unique per instance: the page renders this card twice (desktop + mobile,
   // one hidden), and a gradient in the display:none copy would not paint.
   const ringId = `goal-ring-${useId().replace(/:/g, "")}`;
+
+  // How far through the goal's year today is (0…1), drawn as a tick across
+  // the ring so the arc reads against it: past the tick is ahead of pace,
+  // short of it is behind. Mirrors native-ios GoalSweepRing.yearElapsed — the
+  // web ring shipped without it. Read after mount, not during render: the
+  // server's "today" (UTC) and the reader's can differ by a day.
+  const [yearElapsed, setYearElapsed] = useState<number | null>(null);
+  useEffect(() => {
+    const now = new Date();
+    if (year !== now.getFullYear()) return setYearElapsed(null);
+    const start = new Date(year, 0, 1).getTime();
+    const end = new Date(year + 1, 0, 1).getTime();
+    setYearElapsed(Math.min(1, Math.max(0, (now.getTime() - start) / (end - start))));
+  }, [year]);
 
   function handleSubmit() {
     const formData = new FormData();
@@ -130,6 +144,9 @@ export function ReadingGoalCard({ goal, year }: ReadingGoalCardProps) {
                 className="transition-all duration-700"
               />
             </svg>
+            {yearElapsed !== null && (
+              <GoalRingTick elapsed={yearElapsed} viewBox={80} radius={radius} strokeWidth={9} />
+            )}
             <span className="absolute inset-0 flex items-center justify-center font-heading text-[13px] font-bold tabular-nums">
               {goal.percentComplete}%
             </span>
@@ -148,6 +165,46 @@ export function ReadingGoalCard({ goal, year }: ReadingGoalCardProps) {
         </span>
       </Link>
     </div>
+  );
+}
+
+/**
+ * The "where today falls in the year" tick across a goal ring (iOS
+ * GoalSweepRing.yearElapsed): the arc past the tick is ahead of pace, short
+ * of it is behind. Lay it over the ring inside the same `relative` box and
+ * give it the ring's own viewBox size, radius and stroke width.
+ *
+ * It is its own svg so the ring's lime glow does not tint the tick, and it
+ * takes the same -90° turn as the ring: angle 0 is 12 o'clock, clockwise.
+ */
+export function GoalRingTick({
+  elapsed,
+  viewBox,
+  radius,
+  strokeWidth,
+}: {
+  /** 0…1 through the goal's year. */
+  elapsed: number;
+  viewBox: number;
+  radius: number;
+  strokeWidth: number;
+}) {
+  const centre = viewBox / 2;
+  const angle = 2 * Math.PI * Math.min(1, Math.max(0, elapsed));
+  const reach = strokeWidth / 2 + 4;
+  const at = (r: number) => ({ x: centre + r * Math.cos(angle), y: centre + r * Math.sin(angle) });
+  const inner = at(radius - reach);
+  const outer = at(radius + reach);
+  return (
+    <svg
+      aria-hidden
+      className="pointer-events-none absolute inset-0 h-full w-full -rotate-90 overflow-visible"
+      viewBox={`0 0 ${viewBox} ${viewBox}`}
+    >
+      {/* Dark under-stroke so the tick holds on both the lit arc and the track. */}
+      <line x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y} stroke="rgba(0,0,0,0.45)" strokeWidth={6} strokeLinecap="round" />
+      <line x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y} stroke="currentColor" strokeWidth={3.2} strokeLinecap="round" className="text-foreground" />
+    </svg>
   );
 }
 

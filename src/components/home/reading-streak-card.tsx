@@ -112,8 +112,11 @@ export function ReadingStreakCard({ streak, wide = false }: ReadingStreakCardPro
           <p className="font-heading text-[34px] font-extrabold leading-none tabular-nums">{streak.currentStreak}</p>
           <p className="mt-1 text-[11px] text-muted whitespace-nowrap">{streak.currentStreak === 1 ? "day in a row" : "days in a row"}</p>
         </div>
-        {wide && streak.longestStreak > 0 && (
-          <div className="ml-auto text-right">
+        {/* The best run beside the count: always on the Stats card, and on the
+            Home tile wherever it is wide enough (desktop, 300px). The phone
+            tile is half the screen and has no room for it. */}
+        {streak.longestStreak > 0 && (
+          <div className={`ml-auto text-right ${wide ? "" : "hidden lg:block"}`}>
             <p className="font-heading text-[26px] font-bold leading-none tabular-nums text-foreground/85">{streak.longestStreak}</p>
             <p className="mt-1 text-[11px] text-muted whitespace-nowrap">{streak.longestStreak === 1 ? "day · best" : "days · best"}</p>
           </div>
