@@ -76,15 +76,15 @@ struct FriendsFeedView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 12) {
-                    // Room for the floating back chevron.
-                    Color.clear.frame(width: 40, height: 40)
-                    Text("Friends Activity")
-                        .font(Theme.heading(24, .bold))
-                        .foregroundStyle(Theme.foreground)
-                }
-                .padding(.top, 14)
-                .padding(.bottom, 6)
+                // Large and left-aligned, on its own line under the floating
+                // back chevron (Rebekah, 2026-11-16: the inset title sitting
+                // below the chevron looked off, and beside the chevron it
+                // would run into the top-right actions pill).
+                Text("Friends Activity")
+                    .font(Theme.heading(30, .bold))
+                    .foregroundStyle(Theme.foreground)
+                    .padding(.top, 10)
+                    .padding(.bottom, 8)
 
                 ForEach(model.items, id: \.feedKey) { item in
                     Group {
