@@ -64,6 +64,9 @@ struct HomeView: View {
     @Environment(ChromeState.self) private var chrome: ChromeState?
     @State private var model = UpNextModel()
     @State private var homeModel = HomeModel()
+    // Goal / streak tiles the reader has hidden (MotivationPrefs).
+    @AppStorage(MotivationPrefs.hideGoalKey) private var hideGoal = false
+    @AppStorage(MotivationPrefs.hideStreakKey) private var hideStreak = false
     // iOS-home-screen reorder (reworked 2026-11-16 — Rebekah: "it's not
     // simple or clean"). ONE gesture: hold a card and it lifts under the
     // finger, drag it and the others slide out of the way, let go and it
@@ -314,25 +317,46 @@ struct HomeView: View {
                 }
 
                 // ── Goal + streak (mobile order: between Reading Now and Up Next) ──
-                if let home = homeModel.home {
+                // Either tile can be hidden (long-press it, or Settings →
+                // Display). One hidden: the other takes the full width. Both
+                // hidden: the row is gone and Up Next moves up.
+                if let home = homeModel.home, !(hideGoal && hideStreak) {
                     HStack(alignment: .top, spacing: 12) {
-                        ReadingGoalCardView(goal: home.goal, year: home.year,
-                                            autoEdit: chrome?.pendingOpenGoalEditor == true,
-                                            onAutoEditConsumed: { chrome?.pendingOpenGoalEditor = false },
-                                            onOpenYear: {
-                                                // Same destination as the web card: this
-                                                // year's finished books in the library.
-                                                chrome?.pendingLibrarySelection = LibrarySelection(
-                                                    group: "activity", filter: "completed", year: home.year)
-                                                chrome?.selectTab(.library)
-                                            }) {
-                            await homeModel.load()
+                        if !hideGoal {
+                            ReadingGoalCardView(goal: home.goal, year: home.year,
+                                                autoEdit: chrome?.pendingOpenGoalEditor == true,
+                                                onAutoEditConsumed: { chrome?.pendingOpenGoalEditor = false },
+                                                onOpenYear: {
+                                                    // Same destination as the web card: this
+                                                    // year's finished books in the library.
+                                                    chrome?.pendingLibrarySelection = LibrarySelection(
+                                                        group: "activity", filter: "completed", year: home.year)
+                                                    chrome?.selectTab(.library)
+                                                },
+                                                onHide: { withAnimation { hideGoal = true } }) {
+                                await homeModel.load()
+                            }
+                            .contextMenu {
+                                Button { withAnimation { hideGoal = true } } label: {
+                                    Label("Hide reading goal", systemImage: "eye.slash")
+                                }
+                            }
                         }
-                        ReadingStreakCardView(streak: home.streak)
+                        if !hideStreak {
+                            ReadingStreakCardView(streak: home.streak)
+                                .contextMenu {
+                                    Button { withAnimation { hideStreak = true } } label: {
+                                        Label("Hide streak", systemImage: "eye.slash")
+                                    }
+                                }
+                        }
                     }
                     // v2 tiles stretch to the taller of the two, so the pair
                     // always shares one height (v1 sized each to its content).
                     .fixedSize(horizontal: false, vertical: DesignPreview.on)
+                    // The widget shows the same two numbers — keep it in step.
+                    .onChange(of: hideGoal) { Task.detached { await WidgetPublisher.refresh() } }
+                    .onChange(of: hideStreak) { Task.detached { await WidgetPublisher.refresh() } }
                 }
 
                 // ── Up Next ──
@@ -1023,6 +1047,8 @@ private struct ReadingGoalCardView: View {
     /// Tapping the tile (anywhere but the pencil) opens this year's finished
     /// books in the library — reading-goal-card.tsx links the same way.
     var onOpenYear: () -> Void = {}
+    /// "Goals aren't for me" in the set-a-goal sheet (no goal yet only).
+    var onHide: (() -> Void)? = nil
     let onChanged: () async -> Void
     @State private var editing = false
 
@@ -1036,8 +1062,9 @@ private struct ReadingGoalCardView: View {
             editing = true
         }
         .sheet(isPresented: $editing) {
-            GoalEditSheet(year: year, current: goal?.targetBooks) { await onChanged() }
-                .presentationDetents([.height(260)])
+            GoalEditSheet(year: year, current: goal?.targetBooks, onSaved: { await onChanged() }, onHide: onHide)
+                // Taller when the opt-out line is showing (no goal yet).
+                .presentationDetents([.height(goal == nil && onHide != nil ? 330 : 260)])
                 .presentationBackground(Theme.surface)
         }
     }

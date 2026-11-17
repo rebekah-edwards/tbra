@@ -29,6 +29,9 @@ struct StatsView: View {
     @Environment(ChromeState.self) private var chrome: ChromeState?
     @State private var model = StatsModel()
     @State private var goalEditing = false
+    // Goal / streak the reader has hidden (MotivationPrefs) — hidden here too.
+    @AppStorage(MotivationPrefs.hideGoalKey) private var hideGoal = false
+    @AppStorage(MotivationPrefs.hideStreakKey) private var hideStreak = false
     private var currentYear: Int { Calendar.current.component(.year, from: Date()) }
     /// The goal belongs to the current year; "All Time" shows it too.
     private var isCurrentYear: Bool { model.year == "all" || model.year == String(currentYear) }
@@ -51,8 +54,8 @@ struct StatsView: View {
                 if let data = model.data {
                     heroCards(data)
                     miniStats(data)
-                    goalCard(data)
-                    if DesignPreview.on, isCurrentYear { streakCard(data.streak) }
+                    if !hideGoal { goalCard(data) }
+                    if DesignPreview.on, isCurrentYear, !hideStreak { streakCard(data.streak) }
                     monthlyChart(data)
                     if data.ratingDistribution.contains(where: { $0.count > 0 }) {
                         ratingDistribution(data)
@@ -107,8 +110,10 @@ struct StatsView: View {
         HStack(spacing: 12) {
             heroCard(emoji: "📚", bg: Theme.neonPurple.opacity(0.25),
                      value: "\(data.pageStats.bookCount)", label: "BOOKS")
-            heroCard(emoji: "🔥", bg: Color.orange.opacity(0.25),
-                     value: "\(data.streak.currentStreak)", label: "DAY STREAK")
+            if !hideStreak {
+                heroCard(emoji: "🔥", bg: Color.orange.opacity(0.25),
+                         value: "\(data.streak.currentStreak)", label: "DAY STREAK")
+            }
             heroCard(emoji: "⭐", bg: Theme.accentDark.opacity(0.3),
                      value: avgRatingLabel(data), label: "AVG RATING")
         }
@@ -217,8 +222,9 @@ struct StatsView: View {
                 }
             }
             .sheet(isPresented: $goalEditing) {
-                GoalEditSheet(year: currentYear, current: nil) { await model.load() }
-                    .presentationDetents([.height(260)])
+                GoalEditSheet(year: currentYear, current: nil, onSaved: { await model.load() },
+                              onHide: { withAnimation { hideGoal = true } })
+                    .presentationDetents([.height(330)])
                     .presentationBackground(Theme.surface)
             }
         } else if DesignPreview.on, let goal = data.goal {

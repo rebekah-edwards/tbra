@@ -746,10 +746,28 @@ struct StarRow: View {
 }
 
 // ── Goal edit sheet — reading-goal-card.tsx editing state ──
+/// Some readers find a goal or a streak takes away from reading, so each can
+/// be hidden on its own. Hidden means hidden everywhere on this phone — Home,
+/// Stats and the widget — and both keep counting underneath, so switching one
+/// back on shows the real number.
+///
+/// Stored on the device for now (UserDefaults). Following the reader's
+/// account across devices and the web needs two columns on the server
+/// (user_reading_preferences.hide_goal / hide_streak) — not added yet.
+enum MotivationPrefs {
+    static let hideGoalKey = "hideReadingGoal"
+    static let hideStreakKey = "hideReadingStreak"
+    static var hideGoal: Bool { UserDefaults.standard.bool(forKey: hideGoalKey) }
+    static var hideStreak: Bool { UserDefaults.standard.bool(forKey: hideStreakKey) }
+}
+
 struct GoalEditSheet: View {
     let year: Int
     let current: Int?
     let onSaved: () async -> Void
+    /// Offered only to a reader who has never set a goal: opt out right here
+    /// instead of hunting for the setting. nil hides the option.
+    var onHide: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var target: String = ""
     @State private var busy = false
@@ -787,6 +805,26 @@ struct GoalEditSheet: View {
             }
             .buttonStyle(AccentButtonStyle())
             .disabled(busy || Int(target) == nil)
+
+            if current == nil, let onHide {
+                VStack(spacing: 3) {
+                    Button {
+                        onHide()
+                        dismiss()
+                    } label: {
+                        Text("Goals aren't for me \u{2014} hide this")
+                            .font(Theme.body(14, .semibold))
+                            .foregroundStyle(Theme.neonBlue)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                            .contentShape(Rectangle())
+                    }
+                    Text("You can bring it back any time in Settings.")
+                        .font(Theme.body(11))
+                        .foregroundStyle(Theme.muted)
+                }
+                .frame(maxWidth: .infinity)
+            }
         }
         .padding(20)
         .background(Theme.surface)

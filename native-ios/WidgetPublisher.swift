@@ -83,11 +83,14 @@ enum WidgetPublisher {
                 pagesThisYear: res.stats.pagesThisYear,
                 minutesListened: res.stats.minutesListened
             ),
-            currentStreak: res.streak.currentStreak,
-            longestStreak: res.streak.longestStreak,
-            goalTarget: res.goal?.targetBooks,
-            goalCompleted: res.goal?.completedBooks,
-            goalPercent: res.goal?.percentComplete,
+            // A hidden streak or goal is hidden on the home screen too: the
+            // widget draws the streak only when it is above zero and the goal
+            // only when it has a target.
+            currentStreak: MotivationPrefs.hideStreak ? 0 : res.streak.currentStreak,
+            longestStreak: MotivationPrefs.hideStreak ? 0 : res.streak.longestStreak,
+            goalTarget: MotivationPrefs.hideGoal ? nil : res.goal?.targetBooks,
+            goalCompleted: MotivationPrefs.hideGoal ? nil : res.goal?.completedBooks,
+            goalPercent: MotivationPrefs.hideGoal ? nil : res.goal?.percentComplete,
             updatedAt: Date(),
             signedIn: true
         ))

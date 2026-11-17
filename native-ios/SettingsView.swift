@@ -235,6 +235,8 @@ struct SettingsView: View {
     @State private var model = SettingsModel()
     @AppStorage("themeOverride") private var themeOverride = "dark"
     @AppStorage("textSize") private var textSizeLocal = "medium"
+    @AppStorage(MotivationPrefs.hideGoalKey) private var hideGoal = false
+    @AppStorage(MotivationPrefs.hideStreakKey) private var hideStreak = false
     /// Staff-only switch between the shipped look ("v1") and the 2026-11
     /// refresh ("v2"). Read by DesignPreview.on; see Theme.swift.
     @AppStorage("designPreview") private var designPreview = "v2"
@@ -778,6 +780,23 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
             }
+            // Goal & streak — each can be hidden on its own (MotivationPrefs).
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Goal & Streak").font(Theme.body(14, .semibold)).foregroundStyle(Theme.foreground)
+                Text("Not everyone reads better with a target. Hide either one \u{2014} it keeps counting, so you can bring it back any time.")
+                    .font(Theme.body(12)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                Toggle(isOn: Binding(get: { !hideGoal }, set: { hideGoal = !$0 })) {
+                    Text("Show reading goal").font(Theme.body(14)).foregroundStyle(Theme.foreground)
+                }
+                .tint(Theme.accent)
+                Toggle(isOn: Binding(get: { !hideStreak }, set: { hideStreak = !$0 })) {
+                    Text("Show reading streak").font(Theme.body(14)).foregroundStyle(Theme.foreground)
+                }
+                .tint(Theme.accent)
+            }
+            .onChange(of: hideGoal) { Task.detached { await WidgetPublisher.refresh() } }
+            .onChange(of: hideStreak) { Task.detached { await WidgetPublisher.refresh() } }
             if isStaff {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Design preview").font(Theme.body(14, .semibold)).foregroundStyle(Theme.foreground)
