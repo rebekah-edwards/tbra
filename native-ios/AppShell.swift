@@ -437,6 +437,13 @@ struct AppShell: View {
 // hit-test geometry from the 2026-07-07 fixes is untouched — only the
 // visuals changed (transparent inset area, glass capsules inside it).
 
+/// A one-shot Library deep-link (see ChromeState.pendingLibrarySelection).
+struct LibrarySelection {
+    var group: String
+    var filter: String
+    var year: Int? = nil
+}
+
 /// The chrome hub. Holds the state the bars render from (current tab,
 /// scroll-at-top) plus the actions the PER-SCREEN hit layers invoke — the
 /// shell wires the closures once in onAppear. See PushedScreenChrome for
@@ -452,8 +459,10 @@ final class ChromeState {
     var currentPage = "/"
     /// One-shot library deep-link: profile stat pills set this + switch to
     /// the Library tab; LibraryView consumes it in onAppear ("tbr"/"activity"/
-    /// "owned" + sub-filter key) and clears it.
-    var pendingLibrarySelection: (group: String, filter: String)?
+    /// "owned" + sub-filter key) and clears it. `year` narrows Finished/DNF
+    /// to one completion year — the Home goal tile sends the current year,
+    /// like the web card's /library?tab=activity&filter=completed&year=.
+    var pendingLibrarySelection: LibrarySelection?
     /// One-shot: the home-screen widget's goal ring was tapped
     /// (tbra://goal). HomeView's goal card consumes this in onAppear, opens
     /// the edit sheet, and clears it.

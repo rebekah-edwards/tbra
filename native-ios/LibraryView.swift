@@ -172,6 +172,9 @@ struct LibraryView: View {
     // stomps subFilter back to the group default, which sent "Read" taps to
     // "Current Read" instead of "Finished". onChange consumes this instead.
     @State private var pendingSubFilter: String?
+    /// Same one-shot, for a deep-link that also names a completion year (the
+    /// Home goal tile). Applied after the group change clears the filters.
+    @State private var pendingYearFilter: Int?
 
     // In-library search (refreshed header). Matches title or author.
     @State private var searchActive = false
@@ -290,13 +293,21 @@ struct LibraryView: View {
                 case "owned": newGroup = .owned
                 default: newGroup = .tbr
                 }
+                // A deep-link is a fresh view of the library, not a
+                // refinement of whatever search was left open.
+                searchText = ""
+                searchActive = false
                 if newGroup == group {
                     // No group change → onChange won't fire; apply directly.
                     subFilter = sel.filter
+                    clearAdvancedFilters()
+                    yearFilter = sel.year
+                    filtersOpen = sel.year != nil
                 } else {
                     // Group change → let .onChange(of: group) apply the filter,
                     // otherwise it overwrites it with the group default.
                     pendingSubFilter = sel.filter
+                    pendingYearFilter = sel.year
                     group = newGroup
                 }
                 chrome?.pendingLibrarySelection = nil
@@ -313,7 +324,12 @@ struct LibraryView: View {
                 subFilter = group == .activity ? "currently_reading" : "all"
             }
             clearAdvancedFilters()
-            filtersOpen = false
+            // A year from a deep-link is shown, not just applied: the panel
+            // opens so "Year: 2026" is on screen and the short list explains
+            // itself.
+            yearFilter = pendingYearFilter
+            filtersOpen = pendingYearFilter != nil
+            pendingYearFilter = nil
         }
     }
 

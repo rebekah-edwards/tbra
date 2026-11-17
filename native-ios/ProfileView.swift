@@ -236,16 +236,16 @@ struct ProfileView: View {
     private func statPills(_ data: ProfileData) -> some View {
         HStack(spacing: 12) {
             statPill("\(data.stats.completed)", "Read", tint: Theme.neonPurple,
-                     dest: (group: "activity", filter: "completed"))
+                     dest: LibrarySelection(group: "activity", filter: "completed"))
             statPill("\(data.stats.currentlyReading)", "Reading", tint: Theme.neonBlue,
-                     dest: (group: "activity", filter: "currently_reading"))
+                     dest: LibrarySelection(group: "activity", filter: "currently_reading"))
             statPill("\(data.stats.tbr)", "TBR", tint: Theme.accent,
-                     dest: (group: "tbr", filter: "all"))
+                     dest: LibrarySelection(group: "tbr", filter: "all"))
         }
     }
 
     private func statPill(_ value: String, _ label: String, tint: Color,
-                          dest: (group: String, filter: String)) -> some View {
+                          dest: LibrarySelection) -> some View {
         Button {
             chrome?.pendingLibrarySelection = dest
             chrome?.selectTab(.library)

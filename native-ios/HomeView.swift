@@ -64,38 +64,71 @@ struct HomeView: View {
     @Environment(ChromeState.self) private var chrome: ChromeState?
     @State private var model = UpNextModel()
     @State private var homeModel = HomeModel()
-    @State private var dragging: UpNextItem?
-    // iOS-home-screen reorder: 1s long-press enters wiggle mode, cards
-    // jiggle and become draggable (whole card), Done exits. No drag handle.
+    // iOS-home-screen reorder (reworked 2026-11-16 — Rebekah: "it's not
+    // simple or clean"). ONE gesture: hold a card and it lifts under the
+    // finger, drag it and the others slide out of the way, let go and it
+    // settles and saves. Cards jiggle from the lift until Done; while they
+    // jiggle a short press is enough to pick the next one up.
+    //
+    // The old version needed two long-presses (1s to start the jiggle, then
+    // the system .onDrag's own lift) and went through drag-and-drop, which
+    // drew a system preview, greyed the source and lost drops that ended in
+    // a gap. This one never touches drag-and-drop: the grid places every card
+    // by its index, so a move is just an index change, and the lifted card is
+    // placed by the finger instead.
     @State private var wiggleMode = false
-    // Oscillation driver: jumps to -amplitude, then animates to +amplitude
-    // with repeatForever(autoreverses) so the cards ACTIVELY rock back and
-    // forth (a static rotationEffect keyed on wiggleMode only tilted them
-    // once). Cells alternate sign by index for the home-screen look.
-    @State private var wobble: Double = 0
+    @State private var lifted: UpNextLift?
+    @State private var gridWidth: CGFloat = 0
+    /// The order when the current drag began — only a changed order is saved.
+    @State private var orderAtLift: [String] = []
 
-    private func setWiggle(_ on: Bool) {
-        wiggleMode = on
-        if on {
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) { wobble = -1.7 }
-            withAnimation(.easeInOut(duration: 0.14).repeatForever(autoreverses: true)) {
-                wobble = 1.7
-            }
-        } else {
-            withAnimation(.easeOut(duration: 0.15)) { wobble = 0 }
+    private func finishWiggle() {
+        withAnimation(.easeOut(duration: 0.15)) {
+            wiggleMode = false
+            lifted = nil
         }
     }
 
-    /// Exit wiggle mode, clearing any stuck drag ghost and persisting the
-    /// final order — the drop's performDrop does the same, but a drop that
-    /// ends outside a cell never fires it (that was the "stays grayed out /
-    /// didn't save" bug), so Done is the guaranteed commit point.
-    private func finishWiggle() {
-        setWiggle(false)
-        if dragging != nil { dragging = nil }
-        model.persistOrder()
+    private func handleReorderPress(_ state: UIGestureRecognizer.State, at point: CGPoint) {
+        let count = model.items.count
+        switch state {
+        case .began:
+            guard gridWidth > 0,
+                  let index = UpNextGrid.slot(containing: point, count: count, gridWidth: gridWidth)
+            else { return }
+            let origin = UpNextGrid.origin(index, gridWidth: gridWidth)
+            orderAtLift = model.items.map(\.id)
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                wiggleMode = true
+                lifted = UpNextLift(id: model.items[index].id,
+                                    grab: CGSize(width: point.x - origin.x, height: point.y - origin.y),
+                                    finger: point)
+            }
+        case .changed:
+            guard var lift = lifted,
+                  let from = model.items.firstIndex(where: { $0.id == lift.id }) else { return }
+            lift.finger = point
+            lifted = lift   // unanimated: the card stays under the finger
+            // The slot whose centre is nearest the CARD's centre — steadier
+            // than testing the fingertip, which flickers at a slot boundary.
+            let centre = CGPoint(
+                x: lift.origin.x + UpNextGrid.columnWidth(gridWidth) / 2,
+                y: lift.origin.y + UpNextGrid.cardHeight / 2)
+            let target = UpNextGrid.nearestSlot(to: centre, count: count, gridWidth: gridWidth)
+            guard target != from else { return }
+            UISelectionFeedbackGenerator().selectionChanged()
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                model.items.move(fromOffsets: IndexSet(integer: from),
+                                 toOffset: target > from ? target + 1 : target)
+            }
+        case .ended, .cancelled, .failed:
+            guard lifted != nil else { return }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { lifted = nil }
+            if model.items.map(\.id) != orderAtLift { model.persistOrder() }
+        default:
+            break
+        }
     }
     @State private var ready = false
     // Hoisted like the web's openStateDropdown so the whole Reading Now
@@ -112,53 +145,52 @@ struct HomeView: View {
         }
     }
 
-    @ViewBuilder private func upNextCell(index: Int) -> some View {
-        let item = model.items[index]
-        // Plain Button + path.append instead of NavigationLink(value:) — on
-        // iOS 27 the value-based links in this grid fired the VALUE of the
-        // cell one row down (tap/frame/payload logs all proved the tap, the
-        // layout and the API data were correct; only the fired value was
-        // wrong). A closure capturing `item` can't be misassociated.
-        //
-        // Reorder = iOS-home-screen pattern (user request 2026-07-11): a 1s
-        // long-press enters wiggle mode; only THEN does the whole card carry
-        // .onDrag (attaching it permanently hijacked plain taps — the
-        // original glitchy-reorder bug). Taps are inert while wiggling.
-        //
-        // Plain gestures, NOT a Button: on iOS 27 neither
-        // simultaneousGesture(LongPressGesture) nor .onLongPressGesture ever
-        // fires on a Button in this scroll content (sim-verified), and the
-        // button's pressed-state also renders on the wrong card after a
-        // scroll. onTapGesture + onLongPressGesture compose correctly.
-        let core = UpNextCard(item: item, number: index + 1)
+    // Plain onTapGesture, NOT a Button or NavigationLink(value:): on iOS 27
+    // value-based links in this grid fired the VALUE of the cell one row down,
+    // and a Button's pressed state rendered on the wrong card after a scroll.
+    // A closure capturing `item` can't be misassociated. Taps are inert while
+    // the cards jiggle, like home-screen icons.
+    private func upNextCell(_ item: UpNextItem, index: Int) -> some View {
+        let isLifted = lifted?.id == item.id
+        let origin = isLifted ? (lifted?.origin ?? .zero)
+                              : UpNextGrid.origin(index, gridWidth: gridWidth)
+        let width = UpNextGrid.columnWidth(gridWidth)
+        return UpNextCard(item: item, number: index + 1)
+            .frame(width: width, height: UpNextGrid.cardHeight)
             .contentShape(Rectangle())
             .onTapGesture {
                 guard !wiggleMode else { return }
                 path.append(BookRoute(idOrSlug: item.slug ?? item.bookId))
             }
-            .onLongPressGesture(minimumDuration: 1.0) {
-                guard !wiggleMode else { return }
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                setWiggle(true)
-            }
             .background(HitFrameReporter(label: "upnext[\(index + 1)] \(item.title.prefix(14))"))
-            .opacity(dragging?.id == item.id ? 0.4 : 1)
-            .rotationEffect(.degrees(index.isMultiple(of: 2) ? wobble : -wobble))
-            .onDrop(of: [.text], delegate: GridReorderDelegate(
-                item: item,
-                items: $model.items,
-                dragging: $dragging,
-                commit: { model.persistOrder() }
-            ))
+            .modifier(Jiggle(active: wiggleMode && !isLifted, seed: item.id))
+            .frame(width: width, height: UpNextGrid.cardHeight)
+            .scaleEffect(isLifted ? 1.06 : 1)
+            .shadow(color: .black.opacity(isLifted ? 0.45 : 0), radius: 18, y: 10)
+            .offset(x: origin.x, y: origin.y)
+            .zIndex(isLifted ? 10 : 0)
+            .accessibilityAddTraits(.isButton)
+    }
 
-        if wiggleMode {
-            core.onDrag {
-                dragging = item
-                return NSItemProvider(object: item.bookId as NSString)
+    // Two columns of equal slots, each card placed by its index. Eager on
+    // purpose (the queue is tiny, and it keeps iOS 27's lazy-container
+    // interaction bugs out of this much-churned screen), and identified by
+    // item so a reorder slides the cards instead of swapping their contents.
+    private var upNextGrid: some View {
+        ZStack(alignment: .topLeading) {
+            if gridWidth > 0 {
+                ForEach(Array(model.items.enumerated()), id: \.element.id) { index, item in
+                    upNextCell(item, index: index)
+                }
             }
-        } else {
-            core
         }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .frame(height: UpNextGrid.height(count: model.items.count), alignment: .topLeading)
+        .contentShape(Rectangle())
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { gridWidth = $0 }
+        .gesture(ReorderPressGesture(minimumDuration: wiggleMode ? 0.12 : 0.4,
+                                     onChange: handleReorderPress))
+        .onDisappear { if wiggleMode { finishWiggle() } }
     }
 
     private var homeContent: some View {
@@ -261,7 +293,14 @@ struct HomeView: View {
                     HStack(alignment: .top, spacing: 12) {
                         ReadingGoalCardView(goal: home.goal, year: home.year,
                                             autoEdit: chrome?.pendingOpenGoalEditor == true,
-                                            onAutoEditConsumed: { chrome?.pendingOpenGoalEditor = false }) {
+                                            onAutoEditConsumed: { chrome?.pendingOpenGoalEditor = false },
+                                            onOpenYear: {
+                                                // Same destination as the web card: this
+                                                // year's finished books in the library.
+                                                chrome?.pendingLibrarySelection = LibrarySelection(
+                                                    group: "activity", filter: "completed", year: home.year)
+                                                chrome?.selectTab(.library)
+                                            }) {
                             await homeModel.load()
                         }
                         ReadingStreakCardView(streak: home.streak)
@@ -291,34 +330,7 @@ struct HomeView: View {
                         }
                     }
 
-                    // NON-lazy 2-column grid. The one-row-off tap bug turned
-                    // out to be TapScaleButtonStyle on the cells (see the
-                    // button below), but the grid stays eager on purpose —
-                    // the queue is tiny and it removes a whole class of
-                    // iOS 27 lazy-container interaction bugs from this
-                    // much-churned screen.
-                    VStack(spacing: 12) {
-                        ForEach(Array(stride(from: 0, to: model.items.count, by: 2)), id: \.self) { rowStart in
-                            HStack(alignment: .top, spacing: 12) {
-                                upNextCell(index: rowStart)
-                                if rowStart + 1 < model.items.count {
-                                    upNextCell(index: rowStart + 1)
-                                } else {
-                                    Color.clear.frame(maxWidth: .infinity)
-                                }
-                            }
-                        }
-                    }
-                    // Catch-all for drops that end in the grid's gaps or on
-                    // the dragged card itself — without this, performDrop
-                    // never fires there, so the ghost stayed at 40% opacity
-                    // and the new order was never persisted.
-                    .onDrop(of: [.text], isTargeted: nil) { _ in
-                        guard dragging != nil else { return false }
-                        dragging = nil
-                        model.persistOrder()
-                        return true
-                    }
+                    upNextGrid
 
                     if model.items.isEmpty && !model.loading {
                         Text(DesignPreview.on ? "Books you plan to read next line up here."
@@ -327,8 +339,8 @@ struct HomeView: View {
                             .foregroundStyle(Theme.muted)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 40)
-                    } else if !model.items.isEmpty {
-                        Text("Hold & drag to reorder")
+                    } else if model.items.count > 1 {
+                        Text(wiggleMode ? "Drag a book to move it" : "Hold & drag to reorder")
                             .font(Theme.body(14))
                             .foregroundStyle(Theme.muted)
                             .frame(maxWidth: .infinity)
@@ -958,6 +970,9 @@ private struct ReadingGoalCardView: View {
     /// edit sheet on arrival instead of leaving the reader to find it.
     var autoEdit = false
     var onAutoEditConsumed: () -> Void = {}
+    /// Tapping the tile (anywhere but the pencil) opens this year's finished
+    /// books in the library — reading-goal-card.tsx links the same way.
+    var onOpenYear: () -> Void = {}
     let onChanged: () async -> Void
     @State private var editing = false
 
@@ -979,8 +994,11 @@ private struct ReadingGoalCardView: View {
 
     // Refreshed tile (2026-11): the ring is the hero, drawn in a lime→blue
     // sweep that animates in, with a pace line that changes as the year does.
+    // Ring, count and pace pill sit CENTRED in the tile: leading-aligned they
+    // hugged the left edge and left a ragged gap on the right whenever the
+    // count was short (Rebekah, 2026-11-16).
     private var bodyV2: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(spacing: 10) {
             HStack {
                 Text("\(String(year)) GOAL")
                     .font(Theme.body(11, .bold)).tracking(0.8)
@@ -991,12 +1009,14 @@ private struct ReadingGoalCardView: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(Theme.muted)
                         .frame(width: 26, height: 22)
+                        .contentShape(Rectangle())
                 }
+                .accessibilityLabel("Edit reading goal")
             }
             if let goal {
                 HStack(spacing: 12) {
                     GoalSweepRing(percent: goal.percentComplete)
-                    .frame(width: 66, height: 66)
+                        .frame(width: 66, height: 66)
 
                     VStack(alignment: .leading, spacing: 0) {
                         Text("\(goal.completedBooks)")
@@ -1007,9 +1027,13 @@ private struct ReadingGoalCardView: View {
                             .font(Theme.body(12))
                             .foregroundStyle(Theme.muted)
                     }
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 }
+                .frame(maxWidth: .infinity)
                 Spacer(minLength: 0)
                 GoalPacePill(pace: goal.paceLine(year: year))
+                    .frame(maxWidth: .infinity)
             } else {
                 Button { editing = true } label: {
                     VStack(alignment: .leading, spacing: 6) {
@@ -1024,13 +1048,21 @@ private struct ReadingGoalCardView: View {
                             .foregroundStyle(Theme.muted)
                             .multilineTextAlignment(.leading)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 Spacer(minLength: 0)
             }
         }
         .padding(14)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(HomeTileBackground(glow: Theme.accent))
+        .contentShape(RoundedRectangle(cornerRadius: 18))
+        .onTapGesture {
+            // No goal yet: the tile's own button opens the editor instead.
+            if goal != nil { onOpenYear() }
+        }
+        .accessibilityAddTraits(goal != nil ? .isButton : [])
+        .accessibilityHint(goal != nil ? "Shows the books you finished in \(String(year))" : "")
     }
 
     private var bodyV1: some View {
@@ -1259,7 +1291,104 @@ private struct ReadingStreakCardView: View {
     }
 }
 
-// ── Up Next card + reorder delegate (unchanged from the parity pass) ──
+// ── Up Next grid geometry ──
+// Every slot is the same size, so a card's place is pure arithmetic on its
+// index — which is what lets the reorder move cards by changing an index.
+enum UpNextGrid {
+    static let spacing: CGFloat = 12
+    /// Tall enough for a four-line title at full size beside the cover (a
+    /// longer one shrinks slightly to fit five); follows the reader's
+    /// text-size setting like every font in the card.
+    static var cardHeight: CGFloat { (126 * Theme.textScale).rounded() }
+
+    static func columnWidth(_ gridWidth: CGFloat) -> CGFloat {
+        max(0, (gridWidth - spacing) / 2)
+    }
+
+    static func origin(_ index: Int, gridWidth: CGFloat) -> CGPoint {
+        CGPoint(x: CGFloat(index % 2) * (columnWidth(gridWidth) + spacing),
+                y: CGFloat(index / 2) * (cardHeight + spacing))
+    }
+
+    static func height(count: Int) -> CGFloat {
+        let rows = CGFloat((count + 1) / 2)
+        return rows == 0 ? 0 : rows * cardHeight + (rows - 1) * spacing
+    }
+
+    /// The slot under a point, or nil in a gap or past the last card.
+    static func slot(containing point: CGPoint, count: Int, gridWidth: CGFloat) -> Int? {
+        let size = CGSize(width: columnWidth(gridWidth), height: cardHeight)
+        return (0..<count).first { CGRect(origin: origin($0, gridWidth: gridWidth), size: size).contains(point) }
+    }
+
+    /// The slot whose centre is closest to a point (always a valid index).
+    static func nearestSlot(to point: CGPoint, count: Int, gridWidth: CGFloat) -> Int {
+        let half = CGSize(width: columnWidth(gridWidth) / 2, height: cardHeight / 2)
+        func distance(_ index: Int) -> CGFloat {
+            let o = origin(index, gridWidth: gridWidth)
+            return hypot(o.x + half.width - point.x, o.y + half.height - point.y)
+        }
+        return (0..<count).min { distance($0) < distance($1) } ?? 0
+    }
+}
+
+/// The card being dragged: which one, where on the card the finger took hold,
+/// and where the finger is now (grid coordinates).
+struct UpNextLift: Equatable {
+    let id: String
+    let grab: CGSize
+    var finger: CGPoint
+    var origin: CGPoint { CGPoint(x: finger.x - grab.width, y: finger.y - grab.height) }
+}
+
+/// One long-press recogniser for the whole grid. UIKit's, not SwiftUI's
+/// LongPressGesture.sequenced(before: DragGesture): once this one begins, the
+/// scroll view's pan is ruled out for that touch, so the page cannot scroll
+/// under a card being dragged, while a plain swipe still scrolls because the
+/// press fails as soon as the finger travels.
+struct ReorderPressGesture: UIGestureRecognizerRepresentable {
+    var minimumDuration: TimeInterval
+    var onChange: @MainActor (UIGestureRecognizer.State, CGPoint) -> Void
+
+    func makeUIGestureRecognizer(context: Context) -> UILongPressGestureRecognizer {
+        let recognizer = UILongPressGestureRecognizer()
+        recognizer.minimumPressDuration = minimumDuration
+        return recognizer
+    }
+
+    func updateUIGestureRecognizer(_ recognizer: UILongPressGestureRecognizer, context: Context) {
+        // Never mid-press: changing the duration resets a recogniser in flight.
+        guard recognizer.state == .possible,
+              recognizer.minimumPressDuration != minimumDuration else { return }
+        recognizer.minimumPressDuration = minimumDuration
+    }
+
+    func handleUIGestureRecognizerAction(_ recognizer: UILongPressGestureRecognizer, context: Context) {
+        onChange(recognizer.state, context.converter.localLocation)
+    }
+}
+
+/// The home-screen jiggle. Driven by the clock rather than a repeating
+/// animation, so it keeps going through the springs that slide cards around
+/// (a repeatForever rotation was cancelled by the first reorder) and stops
+/// costing anything the moment it is switched off.
+struct Jiggle: ViewModifier {
+    let active: Bool
+    /// Any stable string — neighbours get different phases and directions.
+    let seed: String
+
+    func body(content: Content) -> some View {
+        let hash = seed.unicodeScalars.reduce(0) { ($0 &* 31 &+ Int($1.value)) & 0xFFFF }
+        let direction: Double = hash.isMultiple(of: 2) ? 1 : -1
+        let phase = Double(hash % 7) / 7 * 0.28
+        TimelineView(.animation(paused: !active)) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate + phase
+            content.rotationEffect(.degrees(active ? sin(t * 2 * .pi / 0.28) * 1.6 * direction : 0))
+        }
+    }
+}
+
+// ── Up Next card ──
 private struct UpNextCard: View {
     let item: UpNextItem
     let number: Int
@@ -1274,9 +1403,38 @@ private struct UpNextCard: View {
             : String(format: "%.1fh", hours)
     }
 
+    /// Gives a long word somewhere sensible to wrap. The column fits about
+    /// twelve letters, so "Responsibilities" used to be cut wherever the line
+    /// ran out ("Responsibiliti / es"). A soft hyphen is invisible unless the
+    /// line breaks on it, and then draws as a hyphen; it goes before a
+    /// consonant that sits between two vowels, which is where English mostly
+    /// splits ("Responsibili-ties"). A slash gets a plain break after it.
+    static func breakable(_ title: String) -> String {
+        let vowels = Set("aeiouyAEIOUY")
+        return title.split(separator: " ", omittingEmptySubsequences: false).map { word -> String in
+            let chars = Array(word)
+            guard chars.count >= 12 else { return String(word) }
+            var out = ""
+            for (i, ch) in chars.enumerated() {
+                if i >= 4, chars.count - i >= 3, i + 1 < chars.count,
+                   ch.isLetter, chars[i - 1].isLetter, chars[i + 1].isLetter,
+                   vowels.contains(chars[i - 1]), !vowels.contains(ch), vowels.contains(chars[i + 1]) {
+                    out.append("\u{00AD}")
+                }
+                out.append(ch)
+                if ch == "/", i + 1 < chars.count { out.append("\u{200B}") }
+            }
+            return out
+        }.joined(separator: " ")
+    }
+
+    // The text column is only ~90pt wide, so the title gets the card's full
+    // height: up to five lines, where it used to get two under a 28pt row
+    // reserved for a drag handle that no longer exists (Rebekah, 2026-11-16:
+    // "lots of book titles there that are very cut off").
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            CoverThumb(url: item.coverImageUrl, width: 52, height: 78, radius: 8, title: item.title)
+        HStack(alignment: .center, spacing: 10) {
+            CoverThumb(url: item.coverImageUrl, width: 56, height: 84, radius: 8, title: item.title)
                 .overlay(alignment: .topLeading) {
                     Text("\(number)")
                         .font(Theme.body(12, .bold))
@@ -1286,27 +1444,26 @@ private struct UpNextCard: View {
                         .clipShape(Circle())
                         .offset(x: -6, y: -6)
                 }
-                .padding(.top, 4)
                 .padding(.leading, 4)
 
             VStack(alignment: .leading, spacing: 3) {
-                HStack(alignment: .top, spacing: 4) {
-                    Text((item.topLevelGenre ?? " ").uppercased())
+                if let genre = item.topLevelGenre, !genre.isEmpty {
+                    Text(genre.uppercased())
                         .font(Theme.body(9, .semibold))
                         .tracking(0.8)
                         .foregroundStyle(Theme.muted)
                         .lineLimit(1)
-                        .padding(.top, 9)
-                    Spacer(minLength: 2)
-                    // (reorder handle is drawn by the grid overlay — it owns
-                    // the .onDrag so plain taps never start a reorder)
-                    Color.clear.frame(width: 28, height: 28)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                Text(item.title)
-                    .font(Theme.body(15, .bold))
+                Text(UpNextCard.breakable(item.title))
+                    .font(Theme.body(14, .bold))
                     .foregroundStyle(Theme.foreground)
-                    .lineLimit(2)
+                    // Up to five lines, shrinking a little before it will
+                    // truncate: a 50-character title still reads in full.
+                    .lineLimit(5)
+                    .minimumScaleFactor(0.82)
                     .multilineTextAlignment(.leading)
+                    .accessibilityLabel(item.title)
                 // Meta row: pages · audiobook length (mirrors the web Up Next card)
                 if item.pages != nil || item.audioLengthMinutes != nil {
                     HStack(spacing: 3) {
@@ -1325,11 +1482,13 @@ private struct UpNextCard: View {
                     .font(Theme.body(12))
                     .foregroundStyle(Theme.muted)
                     .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(8)
-        .frame(maxWidth: .infinity, minHeight: 110, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .background(
             ZStack {
                 Theme.surfaceAlt
