@@ -217,3 +217,42 @@ export async function sendEnrichmentFailureEmail(
     console.error("[email] Failed to send enrichment failure notification:", err);
   }
 }
+
+/**
+ * Tell the admin a reader reported a review or profile. App Review expects
+ * objectionable-content reports to be acted on within 24 hours; the row in
+ * /admin/issues is the record, this email is what makes someone look.
+ */
+export async function sendContentReportEmail(report: {
+  subject: string;
+  reason: string;
+  details: string;
+  reporter: string;
+  pageUrl: string | null;
+}): Promise<void> {
+  const appUrl = process.env.APP_URL ?? "https://thebasedreader.app";
+  const esc = (v: string) =>
+    v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const link = report.pageUrl ? `${appUrl}${report.pageUrl.startsWith("/") ? "" : "/"}${report.pageUrl}` : null;
+
+  try {
+    await resend.emails.send({
+      from: FROM_ADDRESS,
+      to: ADMIN_EMAIL,
+      subject: `[tbr*a] Content report: ${report.subject}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+          <h1 style="font-size: 20px; font-weight: 700; color: #111; margin-bottom: 8px;">A reader reported content</h1>
+          <p style="font-size: 16px; color: #444; line-height: 1.5; margin-bottom: 8px;"><strong>${esc(report.subject)}</strong></p>
+          <p style="font-size: 14px; color: #444; line-height: 1.5; margin-bottom: 8px;">Reason: ${esc(report.reason)}</p>
+          ${report.details ? `<p style="font-size: 14px; color: #666; line-height: 1.5; margin-bottom: 8px;">${esc(report.details)}</p>` : ""}
+          <p style="font-size: 13px; color: #666; margin-bottom: 16px;">Reported by ${esc(report.reporter)}</p>
+          ${link ? `<a href="${esc(link)}" style="display: inline-block; background: #a3e635; color: #18181b; font-weight: 700; font-size: 14px; padding: 10px 24px; border-radius: 8px; text-decoration: none;">Open the page</a>` : ""}
+          <p style="font-size: 12px; color: #aaa; margin-top: 24px;">Also listed in ${esc(appUrl)}/admin/issues. Aim to act within 24 hours.</p>
+        </div>
+      `,
+    });
+  } catch (err) {
+    console.error("[email] Failed to send content report email:", err);
+  }
+}

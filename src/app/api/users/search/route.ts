@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { like, or, ne, and } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
+import { getHiddenUserIds } from "@/lib/queries/blocks";
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q")?.trim();
@@ -38,5 +39,7 @@ export async function GET(request: NextRequest) {
     .limit(20)
     .all();
 
-  return NextResponse.json(results);
+  // Blocks: never surface a reader the viewer blocked, or who blocked them.
+  const hidden = await getHiddenUserIds(currentUser?.userId);
+  return NextResponse.json(hidden.size === 0 ? results : results.filter((r) => !hidden.has(r.id)));
 }

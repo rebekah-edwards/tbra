@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { getHiddenUserIds } from "@/lib/queries/blocks";
 import {
   userBookReviews,
   reviewDescriptorTags,
@@ -35,8 +36,11 @@ const DIMENSION_PHRASES: Record<string, { noun: string; verb: string }> = {
 };
 
 export async function getBookReviewSummaryData(
-  bookId: string
+  bookId: string,
+  /** When given, quoted reviews by readers hidden from this viewer by a block are left out. */
+  viewerId?: string | null
 ): Promise<ReviewSummaryData | null> {
+  const hidden = await getHiddenUserIds(viewerId);
   // 1. Get all review IDs + moods for this book
   const allReviews = await db
     .select({
@@ -106,6 +110,7 @@ export async function getBookReviewSummaryData(
   const reviewsWithText = await db
     .select({
       id: userBookReviews.id,
+      userId: userBookReviews.userId,
       displayName: users.displayName,
       username: users.username,
       avatarUrl: users.avatarUrl,
@@ -124,7 +129,7 @@ export async function getBookReviewSummaryData(
     .all();
 
   const topReviews: CompactReview[] = reviewsWithText
-    .filter((r) => r.reviewText && r.reviewText.trim() !== "")
+    .filter((r) => r.reviewText && r.reviewText.trim() !== "" && !hidden.has(r.userId))
     .map((r) => ({
       id: r.id,
       displayName: r.isAnonymous ? null : r.displayName,

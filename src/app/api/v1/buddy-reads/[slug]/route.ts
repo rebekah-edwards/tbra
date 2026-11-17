@@ -19,7 +19,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
 
   const [detail, messages, membership] = await Promise.all([
     getBuddyReadDetail(row.id),
-    getBuddyReadMessages(row.id, 50, 0),
+    getBuddyReadMessages(row.id, 50, 0, user.userId),
     isBuddyReadMember(row.id, user.userId),
   ]);
   if (!detail) return jsonError("Buddy read not found.", 404);

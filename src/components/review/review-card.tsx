@@ -11,6 +11,7 @@ import { toggleHelpfulVote } from "@/lib/actions/helpful";
 import { formatRating } from "@/lib/text-utils";
 import { sanitizeHtml } from "@/lib/sanitize";
 import type { BookReviewEntry } from "@/lib/queries/review";
+import { SafetyMenu } from "@/components/safety/safety-menu";
 
 function getInitials(name: string | null): string {
   if (!name) return "?";
@@ -279,6 +280,7 @@ export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { 
           </button>
         )}
 
+        <div className="flex items-center gap-0.5">
         <button
           type="button"
           onClick={async () => {
@@ -313,6 +315,19 @@ export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { 
             <line x1="12" y1="2" x2="12" y2="15" />
           </svg>
         </button>
+        {/* Report / Block — required for user-generated content (App Review
+            1.2). Not on your own review; Block is hidden for an anonymous one. */}
+        {!isOwnReview && (
+          <SafetyMenu
+            kind="review"
+            targetUserId={review.userId}
+            username={review.isAnonymous ? null : review.username}
+            reviewId={review.id}
+            bookId={bookId}
+            pageUrl={`${bookPath}/reviews`}
+          />
+        )}
+        </div>
       </div>
     </div>
   );

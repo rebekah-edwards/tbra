@@ -22,15 +22,18 @@ import { LocationSettings } from "@/components/settings/location-settings";
 import { getHiddenBooks } from "@/lib/actions/hidden-books";
 import { ExportSection } from "@/components/settings/export-section";
 import { isPremium } from "@/lib/auth";
+import { getBlockedUsers } from "@/lib/queries/blocks";
+import { BlockedReaders } from "@/components/safety/blocked-readers";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [prefs, notifPrefs, hiddenBooks, activeCategoriesRaw] = await Promise.all([
+  const [prefs, notifPrefs, hiddenBooks, blockedReaders, activeCategoriesRaw] = await Promise.all([
     getUserReadingPreferences(user.userId),
     getNotificationPreferences(user.userId),
     getHiddenBooks(user.userId),
+    getBlockedUsers(user.userId),
     db
       .select({ id: taxonomyCategories.id, key: taxonomyCategories.key, name: taxonomyCategories.name })
       .from(taxonomyCategories)
@@ -97,6 +100,20 @@ export default async function SettingsPage() {
           Books hidden from all recommendations. Unhide to see them again.
         </p>
         <HiddenBooksManager initialBooks={hiddenBooks} />
+      </details>
+
+      {/* Blocked readers — collapsed like Hidden Books. */}
+      <details className="group">
+        <summary className="flex items-center justify-between cursor-pointer list-none">
+          <h2 className="section-heading text-lg">Blocked Readers {blockedReaders.length > 0 && (<span className="text-xs font-normal text-muted ml-2">({blockedReaders.length})</span>)}</h2>
+          <svg className="w-4 h-4 text-muted transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </summary>
+        <p className="text-xs text-muted mt-3 mb-3">
+          Readers you&rsquo;ve blocked. You don&rsquo;t see each other&rsquo;s reviews, profiles or buddy-read messages.
+        </p>
+        <BlockedReaders initial={blockedReaders} />
       </details>
 
       <ChangePassword />

@@ -9,6 +9,9 @@ import { getUserFavorites } from "@/lib/queries/favorites";
 import { getUserReviewsWithBooks } from "@/lib/queries/user-reviews";
 import { getFollowerCount, getFollowingCount, isFollowing } from "@/lib/queries/follows";
 import { getCurrentUser } from "@/lib/auth";
+import { getBlockRelation } from "@/lib/queries/blocks";
+import { SafetyMenu } from "@/components/safety/safety-menu";
+import { UnblockButton } from "@/components/safety/unblock-button";
 import { getPublicShelves } from "@/lib/queries/shelves";
 import { FavoritesShelf } from "@/components/profile/favorites-shelf";
 import { ProfileShelvesSection } from "@/components/shelves/profile-shelves-section";
@@ -141,6 +144,44 @@ export default async function PublicProfilePage({
     );
   }
 
+  // Blocks (App Review 1.2). If the viewer blocked this reader, say so and
+  // offer Unblock. If this reader blocked the viewer, show the same screen
+  // as a private profile — a block is never announced to the person blocked.
+  const relation = await getBlockRelation(session?.userId, user.id);
+  if (relation.viewerBlocked || relation.blockedViewer) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface border border-border mb-4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-7 w-7 text-muted">
+            {relation.viewerBlocked ? (
+              <>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="4.93" x2="19.07" y1="4.93" y2="19.07" />
+              </>
+            ) : (
+              <>
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0110 0v4" />
+              </>
+            )}
+          </svg>
+        </div>
+        {relation.viewerBlocked ? (
+          <>
+            <h1 className="text-foreground text-lg font-bold mb-1">You blocked @{username}</h1>
+            <p className="text-sm text-muted mb-4">You won&rsquo;t see each other&rsquo;s reviews or profiles.</p>
+            <UnblockButton targetUserId={user.id} />
+          </>
+        ) : (
+          <>
+            <h1 className="text-foreground text-lg font-bold mb-1">This profile is private</h1>
+            <p className="text-sm text-muted">@{username} has chosen to keep their reading life private.</p>
+          </>
+        )}
+      </div>
+    );
+  }
+
   const [stats, favorites, reviews, followerCount, followingCount, currentlyFollowing, publicShelves] = await Promise.all([
     getUserStats(user.id),
     getUserFavorites(user.id),
@@ -225,10 +266,18 @@ export default async function PublicProfilePage({
                 </Link>
               </p>
               {!isOwner && session && (
-                <FollowButton
-                  targetUserId={user.id}
-                  initialIsFollowing={currentlyFollowing}
-                />
+                <div className="flex items-center gap-1">
+                  <FollowButton
+                    targetUserId={user.id}
+                    initialIsFollowing={currentlyFollowing}
+                  />
+                  <SafetyMenu
+                    kind="profile"
+                    targetUserId={user.id}
+                    username={user.username}
+                    pageUrl={`/u/${user.username}`}
+                  />
+                </div>
               )}
             </div>
             {/* Social icons — inline on desktop */}

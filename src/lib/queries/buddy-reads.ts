@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { getHiddenUserIds } from "@/lib/queries/blocks";
 import { sql } from "drizzle-orm";
 
 // ─── Types ───
@@ -328,8 +329,11 @@ export async function getBuddyReadMessages(
   buddyReadId: string,
   limit = 50,
   offset = 0,
+  /** When given, messages from readers hidden from this viewer by a block are dropped. */
+  viewerId?: string | null,
 ): Promise<BuddyReadMessage[]> {
-  const rows = await db.all(sql`
+  const hidden = await getHiddenUserIds(viewerId);
+  const rows = (await db.all(sql`
     SELECT
       brm.id,
       brm.message,
@@ -346,7 +350,7 @@ export async function getBuddyReadMessages(
   `) as {
     id: string; message: string; created_at: string; user_id: string;
     display_name: string | null; username: string | null; avatar_url: string | null;
-  }[];
+  }[]).filter((row) => !hidden.has(row.user_id));
 
   return rows.map((row) => ({
     id: row.id,

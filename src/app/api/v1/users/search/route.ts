@@ -3,6 +3,7 @@ import { jsonError, jsonOk } from "@/lib/api/http";
 import { db } from "@/db";
 import { users, userFollows } from "@/db/schema";
 import { like, or, ne, and, eq, inArray } from "drizzle-orm";
+import { getHiddenUserIds } from "@/lib/queries/blocks";
 
 /**
  * GET /api/v1/users/search?q= — reader directory search (same query as
@@ -17,7 +18,7 @@ export async function GET(req: Request) {
   if (!q || q.length < 2) return jsonOk({ results: [] });
 
   const pattern = `%${q}%`;
-  const rows = await db
+  const found = await db
     .select({
       id: users.id,
       displayName: users.displayName,
@@ -32,6 +33,10 @@ export async function GET(req: Request) {
     ))
     .limit(20)
     .all();
+  // Blocks: never surface a reader the viewer blocked, or who blocked them.
+  // (No `.then()` on the query: locally `.all()` is synchronous.)
+  const hidden = await getHiddenUserIds(viewer.userId);
+  const rows = hidden.size === 0 ? found : found.filter((r) => !hidden.has(r.id));
 
   let followedIds = new Set<string>();
   if (rows.length > 0) {

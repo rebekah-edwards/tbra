@@ -126,6 +126,7 @@ export async function deleteAccount(confirmPhrase: string): Promise<ActionResult
     await db.run(sql`DELETE FROM shelf_books WHERE shelf_id IN (SELECT id FROM shelves WHERE user_id = ${uid})`);
     await db.run(sql`DELETE FROM shelves WHERE user_id = ${uid}`);
     await db.run(sql`DELETE FROM user_follows WHERE follower_id = ${uid} OR followed_id = ${uid}`);
+    await db.run(sql`DELETE FROM user_blocks WHERE blocker_id = ${uid} OR blocked_id = ${uid}`);
     await db.run(sql`DELETE FROM author_follows WHERE user_id = ${uid}`);
     await db.run(sql`DELETE FROM tbr_notes WHERE user_id = ${uid}`);
     await db.run(sql`DELETE FROM user_hidden_books WHERE user_id = ${uid}`);

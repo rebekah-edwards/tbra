@@ -222,7 +222,7 @@ export default async function BookPage({
     user ? isBookHidden(user.userId, bookId) : false,
     user ? getFollowedUsersWhoRead(user.userId, bookId) : Promise.resolve([]),
     getBookAggregateRating(bookId),
-    getBookReviewSummaryData(bookId),
+    getBookReviewSummaryData(bookId, user?.userId),
     user ? getUserContentSensitivities(user.userId) : null,
     user ? getUserShelves(user.userId) : Promise.resolve([]),
     user ? getBookShelves(user.userId, bookId) : Promise.resolve([]),

@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { getHiddenUserIds } from "@/lib/queries/blocks";
 import {
   userBookReviews,
   userBookDimensionRatings,
@@ -137,6 +138,14 @@ export interface BookReviewEntry {
 }
 
 export async function getBookReviews(bookId: string, currentUserId?: string | null): Promise<BookReviewEntry[]> {
+  const entries = await getBookReviewsUnfiltered(bookId, currentUserId);
+  // Blocks (App Review 1.2): a reader never sees reviews by someone they
+  // blocked, or by someone who blocked them. Signed-out visitors see all.
+  const hidden = await getHiddenUserIds(currentUserId);
+  return hidden.size === 0 ? entries : entries.filter((r) => !hidden.has(r.userId));
+}
+
+async function getBookReviewsUnfiltered(bookId: string, currentUserId?: string | null): Promise<BookReviewEntry[]> {
   // Fetch all reviews for this book joined with user info
   let rows;
   try {

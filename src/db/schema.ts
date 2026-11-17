@@ -655,6 +655,20 @@ export const userFollows = sqliteTable("user_follows", {
   index("user_follows_followed_idx").on(table.followedId),
 ]);
 
+// ─── User blocks ───
+// App Review guideline 1.2: readers must be able to block an abusive user.
+// One row hides each side from the other (see src/lib/queries/blocks.ts).
+// Created by scripts/create-user-blocks-table.ts.
+
+export const userBlocks = sqliteTable("user_blocks", {
+  blockerId: text("blocker_id").notNull().references(() => users.id),
+  blockedId: text("blocked_id").notNull().references(() => users.id),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("user_blocks_unique").on(table.blockerId, table.blockedId),
+  index("user_blocks_blocked_idx").on(table.blockedId),
+]);
+
 // ─── Author follows ───
 
 export const authorFollows = sqliteTable("author_follows", {

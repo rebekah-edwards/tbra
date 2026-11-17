@@ -40,7 +40,7 @@ export default async function BuddyReadDetailPage({ params }: Props) {
 
   const [detail, messages, membership] = await Promise.all([
     getBuddyReadDetail(br.id),
-    getBuddyReadMessages(br.id),
+    getBuddyReadMessages(br.id, 50, 0, session.userId),
     isBuddyReadMember(br.id, session.userId),
   ]);
 

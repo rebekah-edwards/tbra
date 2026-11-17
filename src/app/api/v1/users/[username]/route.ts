@@ -6,6 +6,7 @@ import { getUserReviewsWithBooks } from "@/lib/queries/user-reviews";
 import { getFollowerCount, getFollowingCount, isFollowing } from "@/lib/queries/follows";
 import { getPublicShelves } from "@/lib/queries/shelves";
 import { followUserFor, unfollowUserFor } from "@/lib/actions/follows";
+import { getBlockRelation } from "@/lib/queries/blocks";
 
 /**
  * GET /api/v1/users/[username] — the public profile payload, same
@@ -21,6 +22,17 @@ export async function GET(req: Request, ctx: { params: Promise<{ username: strin
 
   const isOwner = viewer.userId === user.id;
   if (user.isPrivate && !isOwner) {
+    return jsonOk({ private: true, username });
+  }
+
+  // Blocks. If the viewer blocked this reader, say so (with enough to offer
+  // Unblock). If this reader blocked the viewer, answer exactly like a
+  // private profile — a block is not announced to the person blocked.
+  const relation = await getBlockRelation(viewer.userId, user.id);
+  if (relation.viewerBlocked) {
+    return jsonOk({ private: true, username, blockedByViewer: true, displayName: user.displayName });
+  }
+  if (relation.blockedViewer) {
     return jsonOk({ private: true, username });
   }
 
@@ -75,6 +87,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ username: stri
 
   const body = await parseJsonBody(req);
   const follow = body?.follow === true;
+  if (follow) {
+    const relation = await getBlockRelation(viewer.userId, user.id);
+    if (relation.viewerBlocked || relation.blockedViewer) {
+      return jsonError("You can't follow this reader.", 403);
+    }
+  }
   const result = follow
     ? await followUserFor(viewer.userId, user.id)
     : await unfollowUserFor(viewer.userId, user.id);
