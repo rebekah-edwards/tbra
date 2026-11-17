@@ -359,15 +359,16 @@ async function DeferredHomeSections({ userId }: { userId: string }) {
 
   return (
     <>
-      {becauseYouLiked.length > 0 && (
-        <BecauseYouLiked suggestions={becauseYouLiked} />
-      )}
-
+      {/* Friends Activity sits directly under Pick From Your Shelf. */}
       {friendsActivity.length > 0 && (
         <section>
           <SectionHeading>Friends Activity</SectionHeading>
           <FriendsActivity activity={friendsActivity} />
         </section>
+      )}
+
+      {becauseYouLiked.length > 0 && (
+        <BecauseYouLiked suggestions={becauseYouLiked} />
       )}
 
       {discoveryBooks.length > 0 && (
