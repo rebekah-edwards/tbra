@@ -45,6 +45,51 @@ final class ShelfDetailModel {
     }
 }
 
+// ── Refreshed controls for the shelf pages (2026-11) ──
+// Same rules as Home and My Library: neutral actions are glass capsules, the
+// ONE primary action on a screen is solid lime with black text, and a
+// destructive one keeps its red in the label rather than in a tinted fill.
+struct ShelfPill<Content: View>: View {
+    enum Kind { case neutral, active, primary, destructive }
+    var kind: Kind = .neutral
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        let base = content
+            .font(Theme.body(14, .semibold))
+            .lineLimit(1)
+            .padding(.horizontal, 14)
+            .frame(height: 38)
+        switch kind {
+        case .primary:
+            base.foregroundStyle(Theme.onAccent)
+                .background(Theme.accent, in: Capsule())
+        case .neutral:
+            base.foregroundStyle(Theme.foreground)
+                .glassEffect(.regular, in: Capsule())
+        case .active:
+            base.foregroundStyle(Theme.accentText)
+                .glassEffect(.regular, in: Capsule())
+                .overlay(Capsule().stroke(Theme.accent.opacity(0.7), lineWidth: 1.5))
+        case .destructive:
+            base.foregroundStyle(Theme.destructive)
+                .glassEffect(.regular, in: Capsule())
+        }
+    }
+}
+
+/// A 38pt glass circle for the icon-only actions (edit, share).
+struct ShelfIconCircle: View {
+    let systemName: String
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(Theme.foreground)
+            .frame(width: 38, height: 38)
+            .glassEffect(.regular, in: Circle())
+    }
+}
+
 struct ShelfDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthStore.self) private var auth
@@ -107,10 +152,15 @@ struct ShelfDetailView: View {
             if let shelf = model.shelf, shelf.isPublic, let username = shelf.ownerUsername,
                let url = URL(string: "https://thebasedreader.app/u/\(username)/shelves/\(shelf.slug)") {
                 ShareLink(item: url) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 18))
-                        .foregroundStyle(Theme.muted)
-                        .frame(width: 44, height: 44)
+                    if DesignPreview.on {
+                        ShelfIconCircle(systemName: "square.and.arrow.up")
+                            .frame(width: 44, height: 44)
+                    } else {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 18))
+                            .foregroundStyle(Theme.muted)
+                            .frame(width: 44, height: 44)
+                    }
                 }
                 .padding(.trailing, 16)
                 .padding(.top, 12)
@@ -145,8 +195,11 @@ struct ShelfDetailView: View {
         return "you"
     }
 
-    /// Blue in light mode (lime is illegible on white), lime in dark.
-    private let linkTint = Color(dark: "a3e635", light: "0ea5e9")
+    /// Refreshed: links are the app's blue in both themes. v1: blue in light
+    /// mode (lime is illegible on white), lime in dark.
+    private var linkTint: Color {
+        DesignPreview.on ? Theme.neonBlue : Color(dark: "a3e635", light: "0ea5e9")
+    }
 
     private var header: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -194,7 +247,59 @@ struct ShelfDetailView: View {
         (genreFilter != nil ? 1 : 0) + (ownershipFilter != nil ? 1 : 0)
     }
 
-    private var controlsRow: some View {
+    @ViewBuilder private var controlsRow: some View {
+        if DesignPreview.on { controlsRowV2 } else { controlsRowV1 }
+    }
+
+    // Refreshed (2026-11): three glass pills. Filters lights up lime only
+    // while a filter is on; Edit is a pill now, not a lime text link.
+    private var controlsRowV2: some View {
+        HStack(spacing: 8) {
+            Menu {
+                ForEach(ShelfSort.allCases, id: \.self) { key in
+                    Button(key.rawValue) { sort = key }
+                }
+            } label: {
+                ShelfPill {
+                    HStack(spacing: 6) {
+                        Text(sort.rawValue)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Theme.muted)
+                    }
+                }
+            }
+
+            Button {
+                withAnimation(.easeOut(duration: 0.15)) { filtersOpen.toggle() }
+            } label: {
+                ShelfPill(kind: activeFilterCount > 0 || filtersOpen ? .active : .neutral) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "line.3.horizontal.decrease")
+                            .font(.system(size: 13, weight: .semibold))
+                        Text(activeFilterCount > 0 ? "Filters \(activeFilterCount)" : "Filters")
+                    }
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            if isOwner {
+                NavigationLink(value: ShelfEditorRoute(shelfId: model.shelfId)) {
+                    ShelfPill {
+                        HStack(spacing: 6) {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Theme.accentText)
+                            Text("Edit")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var controlsRowV1: some View {
         HStack(spacing: 10) {
             Menu {
                 ForEach(ShelfSort.allCases, id: \.self) { key in
@@ -555,20 +660,29 @@ struct ShelfEditorView: View {
             Button {
                 if let shelf = model.shelf { editingSeed = ShelfEditSeed(detail: shelf) }
             } label: {
-                Image(systemName: "pencil")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Theme.muted)
-                    .frame(width: 38, height: 38)
-                    .background(Theme.surfaceAlt.opacity(0.7), in: Circle())
-            }
-            if let shelf = model.shelf, shelf.isPublic, let username = shelf.ownerUsername,
-               let url = URL(string: "https://thebasedreader.app/u/\(username)/shelves/\(shelf.slug)") {
-                ShareLink(item: url) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 15))
+                if DesignPreview.on {
+                    ShelfIconCircle(systemName: "pencil")
+                } else {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(Theme.muted)
                         .frame(width: 38, height: 38)
                         .background(Theme.surfaceAlt.opacity(0.7), in: Circle())
+                }
+            }
+            .accessibilityLabel("Edit shelf details")
+            if let shelf = model.shelf, shelf.isPublic, let username = shelf.ownerUsername,
+               let url = URL(string: "https://thebasedreader.app/u/\(username)/shelves/\(shelf.slug)") {
+                ShareLink(item: url) {
+                    if DesignPreview.on {
+                        ShelfIconCircle(systemName: "square.and.arrow.up")
+                    } else {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 15))
+                            .foregroundStyle(Theme.muted)
+                            .frame(width: 38, height: 38)
+                            .background(Theme.surfaceAlt.opacity(0.7), in: Circle())
+                    }
                 }
             }
         }
@@ -592,6 +706,63 @@ struct ShelfEditorView: View {
     }
 
     @ViewBuilder private var actionBar: some View {
+        if DesignPreview.on { actionBarV2 } else { actionBarV1 }
+    }
+
+    // Refreshed (2026-11): Add Books is the screen's one lime action; Select
+    // and Delete Shelf are glass, with Delete keeping its red in the label.
+    @ViewBuilder private var actionBarV2: some View {
+        if selectMode {
+            HStack(spacing: 10) {
+                Text("\(selected.count) selected")
+                    .font(Theme.body(14, .medium))
+                    .foregroundStyle(Theme.muted)
+                Spacer(minLength: 0)
+                Button {
+                    bulkRemove()
+                } label: {
+                    ShelfPill(kind: .destructive) { Text("Remove Selected") }
+                }
+                .disabled(selected.isEmpty)
+                .opacity(selected.isEmpty ? 0.4 : 1)
+                Button {
+                    selectMode = false; selected = []
+                } label: {
+                    Text("Cancel")
+                        .font(Theme.body(15, .medium))
+                        .foregroundStyle(Theme.neonBlue)
+                }
+            }
+        } else {
+            HStack(spacing: 8) {
+                Button {
+                    addOpen = true
+                } label: {
+                    ShelfPill(kind: .primary) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "plus").font(.system(size: 12, weight: .bold))
+                            Text("Add Books")
+                        }
+                    }
+                }
+                if !model.books.isEmpty {
+                    Button {
+                        selectMode = true
+                    } label: {
+                        ShelfPill { Text("Select") }
+                    }
+                }
+                Spacer(minLength: 0)
+                Button {
+                    confirmDelete = true
+                } label: {
+                    ShelfPill(kind: .destructive) { Text("Delete Shelf") }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private var actionBarV1: some View {
         if selectMode {
             HStack(spacing: 10) {
                 Text("\(selected.count) selected")
