@@ -232,6 +232,8 @@ struct ActivityItem: Codable, Hashable {
     let reviewId: String?
     let percentComplete: Double?
     let pageNumber: Int?
+    /// The entry's note text — sent ONLY when its author marked it shared.
+    let notePreview: String?
     let timestamp: String
 }
 
@@ -544,6 +546,9 @@ struct FriendWhoRead: Codable, Hashable, Identifiable {
     /// Their review of THIS book — the payload always carried it; tapping
     /// the card opens it (user request 2026-07-14).
     let reviewId: String?
+    /// Their latest note on this book that they marked shared (never a
+    /// private one). Absent on servers that predate it.
+    let sharedNote: String?
 }
 
 struct BookDetailData: Codable, Hashable {

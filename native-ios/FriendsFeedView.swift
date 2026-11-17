@@ -88,7 +88,7 @@ struct FriendsFeedView: View {
 
                 ForEach(model.items, id: \.feedKey) { item in
                     Group {
-                        if item.isWrittenReview {
+                        if item.hasQuote {
                             FriendsReviewCard(item: item, fullWidth: true, onOpen: { onOpen(item) })
                         } else {
                             FriendsActivityListRow(item: item, onOpen: { onOpen(item) })

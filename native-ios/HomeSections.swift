@@ -212,6 +212,10 @@ extension ActivityItem {
     var hasProgress: Bool { (percentComplete ?? 0) > 0 || (pageNumber ?? 0) > 0 }
     /// Only a review with text gets the wide card; a bare rating is a tile.
     var isWrittenReview: Bool { type == "review" && !(reviewPreview ?? "").isEmpty }
+    /// A reading entry whose author marked its note shared ("Visible to friends").
+    var isSharedNote: Bool { type != "review" && !(notePreview ?? "").isEmpty }
+    /// Anything with words to read gets the wide card: a written review or a shared note.
+    var hasQuote: Bool { isWrittenReview || isSharedNote }
     /// A server that predates the redesign still sends `reading_note` items.
     /// One carrying a page/percent is shown as progress; one without is a
     /// private note and is dropped.
@@ -275,13 +279,13 @@ struct FriendsActivityRow: View {
 
     var body: some View {
         let items = activity.filter(\.isFeedVisible)
-        let rowHeight = items.contains(where: \.isWrittenReview)
+        let rowHeight = items.contains(where: \.hasQuote)
             ? FriendsFeedMetrics.reviewRowHeight
             : FriendsFeedMetrics.tileRowHeight
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-                    if item.isWrittenReview {
+                    if item.hasQuote {
                         FriendsReviewCard(item: item, onOpen: { onOpen(item) })
                     } else {
                         FriendsActivityTile(item: item, height: rowHeight, onOpen: { onOpen(item) })
@@ -412,18 +416,26 @@ struct FriendsReviewCard: View {
     private var cardBody: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
-                Text("REVIEWED")
+                // Lime pill for a shared reading note, purple for a review.
+                let tint = item.isSharedNote ? Theme.accent : Theme.neonPurple
+                Text(item.isSharedNote ? "READING NOTE" : "REVIEWED")
                     .font(Theme.body(9, .semibold))
                     .tracking(0.5)
-                    .foregroundStyle(Theme.neonPurple)
+                    .foregroundStyle(item.isSharedNote ? Theme.accentText : Theme.neonPurple)
                     .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(Theme.neonPurple.opacity(0.15), in: Capsule())
-                    .overlay(Capsule().stroke(Theme.neonPurple.opacity(0.2), lineWidth: 1))
-                if let rating = item.rating, rating > 0 {
+                    .background(tint.opacity(0.15), in: Capsule())
+                    .overlay(Capsule().stroke(tint.opacity(0.2), lineWidth: 1))
+                if item.isSharedNote {
+                    if item.hasProgress {
+                        Text(item.feedCaption.text)
+                            .font(Theme.body(11, .medium))
+                            .foregroundStyle(Theme.muted)
+                    }
+                } else if let rating = item.rating, rating > 0 {
                     StarRow(rating: rating)
                 }
             }
-            Text("\u{201C}\(item.reviewPreview ?? "")\u{201D}")
+            Text("\u{201C}\((item.isSharedNote ? item.notePreview : item.reviewPreview) ?? "")\u{201D}")
                 .font(Theme.body(fullWidth ? 13 : 11))
                 .foregroundStyle(Theme.foreground.opacity(0.75))
                 .lineSpacing(2)

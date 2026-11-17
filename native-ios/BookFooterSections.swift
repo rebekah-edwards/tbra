@@ -16,8 +16,15 @@ struct FriendsWhoReadSection: View {
     @State private var expanded = false
     private static let collapsedCount = 3
 
+    /// Friends who shared a note on this book lead the list, so the note is
+    /// visible without expanding it; everyone else keeps the server's order.
+    private var ordered: [FriendWhoRead] {
+        let hasNote: (FriendWhoRead) -> Bool = { !($0.sharedNote ?? "").isEmpty }
+        return friends.filter(hasNote) + friends.filter { !hasNote($0) }
+    }
+
     private var visible: [FriendWhoRead] {
-        expanded ? friends : Array(friends.prefix(Self.collapsedCount))
+        expanded ? ordered : Array(ordered.prefix(Self.collapsedCount))
     }
 
     var body: some View {
@@ -75,6 +82,15 @@ struct FriendsWhoReadSection: View {
                 Text(friend.reviewId != nil ? "\(stateLabel(friend.state)) · reviewed it" : stateLabel(friend.state))
                     .font(Theme.body(13))
                     .foregroundStyle(Theme.muted)
+                // A note they marked shared. The server never sends a private one.
+                if let note = friend.sharedNote, !note.isEmpty {
+                    Text("\u{201C}\(note)\u{201D}")
+                        .font(Theme.body(13))
+                        .foregroundStyle(Theme.foreground.opacity(0.8))
+                        .lineLimit(3)
+                        .multilineTextAlignment(.leading)
+                        .padding(.top, 2)
+                }
             }
             Spacer()
             if let rating = friend.rating {

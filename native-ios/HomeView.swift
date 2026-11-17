@@ -453,7 +453,8 @@ private struct ReadingNowCard: View {
                 cardBody
             }
             .background(cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            // The refreshed card shares the goal/streak tiles' 18pt corners.
+            .clipShape(RoundedRectangle(cornerRadius: DesignPreview.on ? 18 : 12))
             // Applied AFTER clipShape so the menu isn't clipped by the card.
             .overlayPreferenceValue(StateButtonAnchorKey.self) { anchor in
                 GeometryReader { proxy in
@@ -490,23 +491,27 @@ private struct ReadingNowCard: View {
     }
 
     // Refreshed card (2026-11): a real progress bar instead of the "45%" tag
-    // under the cover, ONE lime action (log progress) with the state menu
-    // demoted to a neutral glass pill, and ~26pt less height per card so Up
-    // Next reaches the first screen. Same buttons, sheets and dropdown anchor
-    // as v1 — only the layout differs.
+    // under the cover, ONE lime action (log progress) and the state menu as a
+    // blue pill. Same buttons, sheets and dropdown anchor as v1 — only the
+    // layout differs.
+    // Proportions (2026-11-16, later the same day): the first cut was ~26pt
+    // slimmer than v1 and looked thin beside the goal and streak tiles
+    // (Rebekah). It now takes their shell — 18pt corners, 14pt padding — with
+    // a 60x90 cover, a thicker bar, the percent as a heading-font number and
+    // taller pills. About 118pt per card.
     private var cardBodyV2: some View {
         HStack(alignment: .center, spacing: 12) {
             Button(action: onOpen) {
                 HStack(alignment: .center, spacing: 12) {
                     CoverThumb(url: book.coverImageUrl,
-                               width: book.usesAudiobookCover == true ? 64 : 48,
-                               height: book.usesAudiobookCover == true ? 64 : 72,
-                               radius: 7, title: book.title)
+                               width: book.usesAudiobookCover == true ? 80 : 60,
+                               height: book.usesAudiobookCover == true ? 80 : 90,
+                               radius: 8, title: book.title)
                         .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(book.title)
-                            .font(Theme.body(15, .bold))
+                            .font(Theme.body(17, .bold))
                             .foregroundStyle(Theme.foreground)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
@@ -515,22 +520,22 @@ private struct ReadingNowCard: View {
                             .font(Theme.body(13))
                             .foregroundStyle(Theme.foreground.opacity(0.70))
                             .lineLimit(1)
-                        progressBar.padding(.top, 5)
+                        progressBar.padding(.top, 7)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
 
-            VStack(spacing: 6) {
+            VStack(spacing: 8) {
                 Button {
                     showTrackSheet = true
                 } label: {
                     Label("Update", systemImage: "plus")
                         .labelStyle(.titleAndIcon)
-                        .font(Theme.body(12, .bold))
+                        .font(Theme.body(13, .bold))
                         .foregroundStyle(Theme.onAccent)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, 10)
                         .background(Theme.accent, in: Capsule())
                 }
                 .accessibilityLabel("Track progress")
@@ -548,33 +553,36 @@ private struct ReadingNowCard: View {
                     // must not read as disabled (Rebekah, 2026-11-16: "I
                     // don't like it grey"). Solid, so it holds its own
                     // against the blurred cover art behind the card.
-                    .font(Theme.body(12, .bold))
+                    .font(Theme.body(13, .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 10)
                     .background(Color(hex: "0ea5e9"), in: Capsule())
                 }
                 .anchorPreference(key: StateButtonAnchorKey.self, value: .bounds) { $0 }
             }
-            .frame(width: 92)
+            .frame(width: 100)
         }
-        .padding(12)
+        .padding(14)
     }
 
     private var progressBar: some View {
         let pct = max(0, min(100, book.progress ?? 0))
-        return HStack(spacing: 8) {
+        return HStack(spacing: 10) {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Theme.foreground.opacity(0.14))
                     Capsule().fill(Theme.accent)
-                        .frame(width: pct > 0 ? max(6, geo.size.width * CGFloat(pct) / 100) : 0)
+                        .frame(width: pct > 0 ? max(8, geo.size.width * CGFloat(pct) / 100) : 0)
                 }
             }
-            .frame(height: 5)
+            .frame(height: 8)
+            // The percent is the card's headline number, in the heading font
+            // like the goal and streak tiles; "Not started" stays quiet.
             Text(pct > 0 ? "\(pct)%" : "Not started")
-                .font(Theme.body(11, .bold))
-                .foregroundStyle(Theme.foreground.opacity(pct > 0 ? 0.85 : 0.5))
+                .font(pct > 0 ? Theme.heading(20, .heavy) : Theme.body(11, .bold))
+                .monospacedDigit()
+                .foregroundStyle(Theme.foreground.opacity(pct > 0 ? 1 : 0.5))
                 .fixedSize()
         }
     }
