@@ -16,6 +16,8 @@ struct TbraApp: App {
         URLCache.shared = URLCache(memoryCapacity: 32 * 1024 * 1024,
                                    diskCapacity: 256 * 1024 * 1024)
         Theme.configureNavigationBarAppearance()
+        // Must run before any view: it tells a fresh install from an update.
+        WhatsNew.prepareOnLaunch()
         #if DEBUG && targetEnvironment(simulator)
         // Headless light-mode verification: SIMCTL_CHILD_TBRA_DEBUG_THEME=light
         if let t = ProcessInfo.processInfo.environment["TBRA_DEBUG_THEME"] {

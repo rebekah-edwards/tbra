@@ -288,6 +288,12 @@ actor APIClient {
         try await send(path, method: "GET", query: query)
     }
 
+    /// GET with query items and no bearer token (public, account-free
+    /// endpoints such as the "What's New" note).
+    func get<T: Decodable>(_ path: String, query: [URLQueryItem], authed: Bool) async throws -> T {
+        try await send(path, method: "GET", query: query, authed: authed)
+    }
+
     /// Generic POST with a JSON body.
     func post<T: Decodable>(_ path: String, body: [String: Any]) async throws -> T {
         try await send(path, method: "POST", body: body)

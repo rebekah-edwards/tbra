@@ -245,6 +245,9 @@ struct SettingsView: View {
     /// shell is told to re-render every screen at the new Theme.textScale.
     @State private var textSizeOnAppear: String?
     @State private var openSection: String? = nil
+    @State private var whatsNewNote: WhatsNewNote?
+    @State private var whatsNewLoading = false
+    @State private var whatsNewEmpty = false
     @State private var warningInput = ""
     @State private var locationSaved = false
     @State private var exportURL: URL?
@@ -304,6 +307,7 @@ struct SettingsView: View {
                     if !model.hiddenBooks.isEmpty { hiddenBooksSection }
                     BlockedReadersSection(openSection: $openSection)
                     passwordSection
+                    whatsNewRow
                     accountCard
                     dangerZone
                 } else {
@@ -351,6 +355,12 @@ struct SettingsView: View {
                 })
                 .presentationBackground(Theme.bg)
             }
+        }
+        .sheet(item: $whatsNewNote) { note in
+            WhatsNewSheet(note: note)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Theme.bg)
         }
         .sheet(item: $dangerAction) { action in
             DangerConfirmSheet(action: action) { succeeded in
@@ -1102,6 +1112,54 @@ struct SettingsView: View {
     }
 
     // ── 8. Account + 9. Danger zone ──
+    /// Reopens the latest "What's New" note (the one shown once after an
+    /// update). Says so plainly when there is nothing to show.
+    private var whatsNewRow: some View {
+        Button {
+            guard !whatsNewLoading else { return }
+            whatsNewLoading = true
+            whatsNewEmpty = false
+            Task {
+                let note = await WhatsNew.latest()
+                whatsNewLoading = false
+                if let note { whatsNewNote = note } else { whatsNewEmpty = true }
+            }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Theme.accentText)
+                    .frame(width: 34, height: 34)
+                    .background(Theme.accent.opacity(0.12), in: Circle())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("What\u{2019}s New")
+                        .font(Theme.heading(17, .bold))
+                        .foregroundStyle(Theme.foreground)
+                    Text(whatsNewEmpty
+                         ? "Nothing to show right now. Try again later."
+                         : "See what changed in the latest update")
+                        .font(Theme.body(13))
+                        .foregroundStyle(Theme.muted)
+                }
+                Spacer(minLength: 8)
+                if whatsNewLoading {
+                    ProgressView().tint(Theme.accent)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(Theme.surface.opacity(0.6))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
+    }
+
     private var accountCard: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Account").font(Theme.heading(17, .bold)).foregroundStyle(Theme.foreground)

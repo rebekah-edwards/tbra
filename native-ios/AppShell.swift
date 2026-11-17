@@ -25,6 +25,8 @@ struct AppShell: View {
     @State private var tourSettingsOpen = false
     /// Bumped when Settings closes after a text-size change (see Theme).
     @State private var fontEpoch = 0
+    /// The one-time "What's New" note for this build, when there is one.
+    @State private var whatsNewNote: WhatsNewNote?
     @State private var notifications = NotificationsModel()
     // Per-tab navigation paths, lifted here so re-tapping the ACTIVE tab
     // pops its stack to root (web: bottom nav always goes to the page top).
@@ -270,6 +272,23 @@ struct AppShell: View {
             CoachStep(id: "tour-menu", title: "Start here",
                       text: "This menu is home base: Import Your Library brings your whole Goodreads or StoryGraph history over in about a minute, and Settings holds your privacy and content preferences."),
         ], ctaLabel: "Go to Settings", onCTA: { tourSettingsOpen = true })
+        // One-time "What's New" note after an update (see WhatsNew.swift).
+        // Waits a beat so Home has settled, and stands down if anything else
+        // is already up — it will be offered again on the next launch.
+        .task {
+            try? await Task.sleep(for: .seconds(1.2))
+            guard let note = await WhatsNew.pending() else { return }
+            guard !bellOpen, !menuOpen, !searchOpen, !fullSearchOpen, !tourSettingsOpen,
+                  presentedBookSlug == nil, presentedProfileUsername == nil else { return }
+            whatsNewNote = note
+        }
+        .sheet(item: $whatsNewNote) { note in
+            WhatsNewSheet(note: note)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Theme.bg)
+                .onDisappear { WhatsNew.markSeen(note) }
+        }
         .fullScreenCover(isPresented: $tourSettingsOpen) {
             NavigationStack {
                 SettingsView()
