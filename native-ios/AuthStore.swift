@@ -205,6 +205,11 @@ private final class GoogleAuthSession: NSObject, ASWebAuthenticationPresentation
 /// its own label off the frame height, so pinning both to one number is the
 /// only way they read as the same control.
 let ssoButtonHeight: CGFloat = 45
+/// The sign-in buttons' outline: capsules in the refreshed look, to sit with
+/// the capsule fields and the lime Sign in; 14pt rects in v1.
+var ssoButtonShape: AnyShape {
+    DesignPreview.on ? AnyShape(Capsule()) : AnyShape(RoundedRectangle(cornerRadius: 14))
+}
 
 /// White "Continue with Google" button (web GoogleButton parity: official G
 /// mark, white field, black label — identical in both themes).
@@ -223,8 +228,8 @@ struct GoogleSignInButton: View {
                     .foregroundStyle(.black)
             }
             .frame(maxWidth: .infinity, minHeight: ssoButtonHeight)
-            .background(.white, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.black.opacity(0.12), lineWidth: 1))
+            .background(.white, in: ssoButtonShape)
+            .overlay(ssoButtonShape.stroke(Color.black.opacity(0.12), lineWidth: 1))
         }
     }
 }
@@ -380,7 +385,7 @@ struct LoginView: View {
                 }
                 .signInWithAppleButtonStyle(.white)
                 .frame(height: ssoButtonHeight)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .clipShape(ssoButtonShape)
                 .disabled(busy)
 
                 GoogleSignInButton {
@@ -491,7 +496,7 @@ struct SignupSheet: View {
                 }
                 .signInWithAppleButtonStyle(.white)
                 .frame(height: ssoButtonHeight)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .clipShape(ssoButtonShape)
                 .disabled(busy)
 
                 GoogleSignInButton(label: "Sign up with Google") {
@@ -599,14 +604,25 @@ struct OnboardingView: View {
                 HStack {
                     Spacer()
                     if page < Self.pageCount - 1 {
-                        Button("Skip") { onFinish(false) }
-                            .font(Theme.body(15, .medium))
-                            .foregroundStyle(Theme.muted)
-                            .padding(.trailing, 24)
-                            .padding(.top, 10)
+                        Button { onFinish(false) } label: {
+                            if DesignPreview.on {
+                                Text("Skip")
+                                    .font(Theme.body(14, .semibold))
+                                    .foregroundStyle(Theme.foreground)
+                                    .padding(.horizontal, 14).padding(.vertical, 8)
+                                    .glassEffect(.regular, in: Capsule())
+                            } else {
+                                Text("Skip")
+                                    .font(Theme.body(15, .medium))
+                                    .foregroundStyle(Theme.muted)
+                            }
+                        }
+                        .padding(.trailing, 24)
+                        .padding(.top, 10)
                     } else {
                         // Reserve the row so the layout doesn't jump.
                         Text("Skip").font(Theme.body(15, .medium)).opacity(0)
+                            .padding(.vertical, DesignPreview.on ? 8 : 0)
                             .padding(.trailing, 24).padding(.top, 10)
                     }
                 }
@@ -687,10 +703,8 @@ struct OnboardingView: View {
                                 .lineSpacing(2)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        .padding(16)
-                        .background(Theme.surface.opacity(0.75))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+                        .padding(DesignPreview.on ? 18 : 16)
+                        .modifier(OnboardCardStyle())
                     }
                 )
             },
@@ -706,9 +720,8 @@ struct OnboardingView: View {
             art: {
                 AnyView(
                     VStack(spacing: 12) {
-                        Image(systemName: "shield.lefthalf.filled")
-                            .font(.system(size: 56, weight: .medium))
-                            .foregroundStyle(Theme.accent)
+                        OnboardGlyph(systemName: "shield.lefthalf.filled", tint: Theme.accent,
+                                     iconTint: Theme.accentText, v1Size: 56)
                         // Mini content-rating chips, echoing the What's Inside section
                         HStack(spacing: 8) {
                             OnboardChip(label: "Violence · Mild", tint: Theme.accent, textTint: Theme.accentText)
@@ -724,7 +737,9 @@ struct OnboardingView: View {
                 )
             },
             headline: "See What's Inside",
-            copy: "Every book gets detailed content ratings — violence, language, sexual content, and more. Set your comfort zone once and we'll flag anything that crosses it. Then fine-tune what you DO want: heart the genres you love and dismiss the ones you don't."
+            copy: "Every book gets detailed content ratings — violence, language, sexual content, and more. Set your comfort zone once and we'll flag anything that crosses it. Then fine-tune what you DO want: heart the genres you love and dismiss the ones you don't.",
+            // The refreshed glyph disc is taller than the bare symbol was.
+            artHeight: DesignPreview.on ? 246 : 190
         )
     }
 
@@ -733,9 +748,7 @@ struct OnboardingView: View {
             art: {
                 AnyView(
                     VStack(spacing: 12) {
-                        Image(systemName: "books.vertical.fill")
-                            .font(.system(size: 64, weight: .medium))
-                            .foregroundStyle(Theme.neonBlue)
+                        OnboardGlyph(systemName: "books.vertical.fill", tint: Theme.neonBlue, v1Size: 64)
                         HStack(spacing: 8) {
                             OnboardChip(label: "Reading Now", tint: Theme.accent, textTint: Theme.accentText)
                             OnboardChip(label: "TBR", tint: Theme.neonBlue)
@@ -754,9 +767,8 @@ struct OnboardingView: View {
             art: {
                 AnyView(
                     VStack(spacing: 12) {
-                        Image(systemName: "star.circle.fill")
-                            .font(.system(size: 56, weight: .medium))
-                            .foregroundStyle(Theme.neonPurple)
+                        OnboardGlyph(systemName: "star.circle.fill", v2SystemName: "star.fill",
+                                     tint: Theme.neonPurple, v1Size: 56)
                         Text("BASED READER PREMIUM")
                             .font(Theme.body(12, .bold))
                             .kerning(1.2)
@@ -774,7 +786,7 @@ struct OnboardingView: View {
             },
             headline: "Make It Yours",
             copy: "Go premium to organize books any way you like with custom shelves, keep private notes on your TBR, and read together with buddy reads. Then let Discover match books to your exact taste — so every recommendation actually fits.",
-            artHeight: 230
+            artHeight: DesignPreview.on ? 250 : 230
         )
     }
 }
@@ -830,6 +842,29 @@ private struct OnboardChip: View {
     var textTint: Color? = nil
 
     var body: some View {
+        if DesignPreview.on { bodyV2 } else { bodyV1 }
+    }
+
+    // Refreshed (2026-11): neutral glass, with the hue carried by the icon
+    // (or a dot) — the same rule as the book page's badges.
+    private var bodyV2: some View {
+        HStack(spacing: 6) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(textTint ?? tint)
+            } else {
+                Circle().fill(tint).frame(width: 7, height: 7)
+            }
+            Text(label).foregroundStyle(Theme.foreground)
+        }
+        .font(Theme.body(13, .semibold))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .glassEffect(.regular, in: Capsule())
+    }
+
+    private var bodyV1: some View {
         HStack(spacing: 5) {
             if let systemImage {
                 Image(systemName: systemImage).font(.system(size: 11, weight: .semibold))
@@ -843,5 +878,56 @@ private struct OnboardChip: View {
         .background(tint.opacity(0.14))
         .clipShape(Capsule())
         .overlay(Capsule().stroke(tint.opacity(0.35), lineWidth: 1))
+    }
+}
+
+/// The big symbol on an onboarding page. Refreshed: the icon in its hue inside
+/// a soft tinted disc with a glow, like the Stats hero tiles at scale. v1: the
+/// bare filled symbol.
+private struct OnboardGlyph: View {
+    let systemName: String
+    var v2SystemName: String? = nil
+    let tint: Color
+    var iconTint: Color? = nil
+    let v1Size: CGFloat
+
+    var body: some View {
+        if DesignPreview.on {
+            Image(systemName: v2SystemName ?? systemName)
+                .font(.system(size: 42, weight: .semibold))
+                .foregroundStyle(iconTint ?? tint)
+                .frame(width: 104, height: 104)
+                .background(tint.opacity(0.16), in: Circle())
+                .overlay(Circle().stroke(tint.opacity(0.35), lineWidth: 1))
+                .shadow(color: tint.opacity(0.35), radius: 22)
+                .padding(.bottom, 6)
+        } else {
+            Image(systemName: systemName)
+                .font(.system(size: v1Size, weight: .medium))
+                .foregroundStyle(tint)
+        }
+    }
+}
+
+/// The welcome page's definition card. Refreshed: glass with the wordmark's
+/// three colours as a hairline, like Home's starter card.
+private struct OnboardCardStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        if DesignPreview.on {
+            content
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22)
+                        .stroke(LinearGradient(
+                            colors: [Theme.accent.opacity(0.55), Theme.neonBlue.opacity(0.35),
+                                     Theme.neonPurple.opacity(0.45)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+                )
+        } else {
+            content
+                .background(Theme.surface.opacity(0.75))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+        }
     }
 }

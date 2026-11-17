@@ -178,7 +178,9 @@ struct AccentButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
             .background(isEnabled ? (configuration.isPressed ? Theme.accentDark : Theme.accent) : Theme.surfaceAlt)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            // Refreshed look (2026-11): every primary action is a capsule,
+            // like Home's Update and the Library switch. v1 was a 12pt rect.
+            .clipShape(DesignPreview.on ? AnyShape(Capsule()) : AnyShape(RoundedRectangle(cornerRadius: 12)))
             .scaleEffect(configuration.isPressed ? 0.97 : 1)   // .tap-scale
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
@@ -187,14 +189,25 @@ struct AccentButtonStyle: ButtonStyle {
 // ── Branded text field chrome (login) ──
 struct BrandedFieldModifier: ViewModifier {
     func body(content: Content) -> some View {
-        content
-            .font(Theme.body(16))
-            .foregroundStyle(Theme.foreground)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 13)
-            .background(Theme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+        if DesignPreview.on {
+            // Refreshed (2026-11): a glass capsule, the same field the
+            // Library search uses.
+            content
+                .font(Theme.body(16))
+                .foregroundStyle(Theme.foreground)
+                .padding(.horizontal, 18)
+                .frame(minHeight: 50)
+                .glassEffect(.regular, in: Capsule())
+        } else {
+            content
+                .font(Theme.body(16))
+                .foregroundStyle(Theme.foreground)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 13)
+                .background(Theme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+        }
     }
 }
 
