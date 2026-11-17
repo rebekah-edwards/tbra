@@ -121,7 +121,10 @@ export function ReadingGoalCard({ goal, year }: ReadingGoalCardProps) {
         className="relative flex flex-1 flex-col gap-2.5"
       >
         <p className="text-[11px] font-bold tracking-wider text-muted">{year} GOAL</p>
-        <div className="flex items-center gap-2.5">
+        {/* Ring, count and pace pill sit CENTRED in the tile, like the iOS
+            tile: left-aligned they hugged the edge and left a ragged gap on
+            the right, most of all in the 300px desktop tile. */}
+        <div className="flex items-center justify-center gap-2.5">
           <div className="relative h-[58px] w-[58px] flex-shrink-0">
             <svg className="h-[58px] w-[58px] -rotate-90 drop-shadow-[0_0_6px_rgba(163,230,53,0.45)]" viewBox="0 0 80 80">
               <defs>
@@ -156,15 +159,38 @@ export function ReadingGoalCard({ goal, year }: ReadingGoalCardProps) {
             <p className="mt-1 text-[11px] text-muted whitespace-nowrap">of {goal.targetBooks} books</p>
           </div>
         </div>
-        <span
-          className={`mt-auto inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-            pace.good ? "bg-accent/15 text-accent" : "bg-foreground/10 text-foreground/75"
-          }`}
-        >
-          {pace.text}
-        </span>
+        <PacePill pace={pace} className="mt-auto self-center" />
       </Link>
     </div>
+  );
+}
+
+/**
+ * The status pill that sits with the ring ("3 ahead of pace", "18 to go") —
+ * iOS GoalPacePill. A bolt when the reader is on or ahead of pace, a
+ * chequered flag when there are books still to go.
+ */
+export function PacePill({ pace, className = "" }: { pace: { text: string; good: boolean }; className?: string }) {
+  return (
+    <span
+      className={`inline-flex w-fit items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
+        pace.good ? "bg-accent/15 text-accent" : "bg-foreground/10 text-foreground/75"
+      } ${className}`}
+    >
+      {pace.good ? (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+          <path d="M13.2 2 4.5 13.4a.6.6 0 0 0 .48.96H10l-1.1 7.2a.4.4 0 0 0 .72.3L18.5 10.6a.6.6 0 0 0-.48-.96H13l1-7.3a.4.4 0 0 0-.8-.34Z" />
+        </svg>
+      ) : (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M5 21V4" />
+          <path d="M5 4h14v10H5" />
+          <path d="M9.67 4v10M14.33 4v10M5 9h14" strokeWidth="1.4" />
+          <path d="M5 4h4.67v5H5zM14.33 4H19v5h-4.67zM9.67 9h4.66v5H9.67z" fill="currentColor" stroke="none" />
+        </svg>
+      )}
+      {pace.text}
+    </span>
   );
 }
 

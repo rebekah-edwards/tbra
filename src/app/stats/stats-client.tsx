@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { GoalRingTick, paceLine } from "@/components/home/reading-goal-card";
+import { GoalRingTick, PacePill, paceLine } from "@/components/home/reading-goal-card";
 import { useRouter } from "next/navigation";
 import type { ReadingGoalProgress } from "@/lib/queries/reading-goals";
 import type { ReadingStreak } from "@/lib/queries/reading-streak";
@@ -209,15 +209,7 @@ export function StatsClient({
                   </div>
                   {(() => {
                     const pace = paceLine(goal, typeof year === "number" ? year : new Date().getFullYear());
-                    return (
-                      <span
-                        className={`inline-flex w-fit items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          pace.good ? "bg-accent/15 text-accent" : "bg-foreground/10 text-foreground/75"
-                        }`}
-                      >
-                        {pace.text}
-                      </span>
-                    );
+                    return <PacePill pace={pace} />;
                   })()}
                 </div>
                 {/* Goal progress against a tick for today's place in the
