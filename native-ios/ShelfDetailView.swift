@@ -50,7 +50,11 @@ struct ShelfDetailView: View {
     @Environment(AuthStore.self) private var auth
     let route: ShelfRoute
     @State private var model: ShelfDetailModel
-    @State private var dragging: ShelfBook?
+    @State private var reorder = ReorderDrag<ShelfBook>()
+    /// The book a tap opens. Pushed from state rather than a NavigationLink:
+    /// a link under the reorder press still fired when the finger lifted, so
+    /// dropping a book opened its page.
+    @State private var openedBook: BookRoute?
 
     // SORT_OPTIONS from shelf-view-client.tsx
     enum ShelfSort: String, CaseIterable {
@@ -113,6 +117,10 @@ struct ShelfDetailView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .navigationDestination(item: $openedBook) { route in
+            BookDetailView(idOrSlug: route.idOrSlug, justCompleted: route.justCompleted)
+                .modifier(PushedScreenChrome())
+        }
         .refreshable { await model.load() }
         .task { await model.load() }
         .alert("Error", isPresented: .constant(model.error != nil)) {
@@ -322,7 +330,11 @@ struct ShelfDetailView: View {
         if ownershipFilter == "owned" { books = books.filter { !$0.ownedFormats.isEmpty } }
         else if ownershipFilter == "unowned" { books = books.filter { $0.ownedFormats.isEmpty } }
         switch sort {
-        case .position: return books.sorted { $0.position < $1.position }
+        // The array IS the shelf order (the API returns it by position). It
+        // must not be re-sorted by each book's `position` field: that field is
+        // the order at load time, so a drag reordered the array and saved,
+        // while this view snapped every book back to where it had been.
+        case .position: return books
         case .dateAdded: return books.sorted { $0.addedAt > $1.addedAt }
         case .title: return books.sorted { $0.title.localizedCompare($1.title) == .orderedAscending }
         case .author: return books.sorted { ($0.authors.first ?? "").localizedCompare($1.authors.first ?? "") == .orderedAscending }
@@ -379,6 +391,16 @@ struct ShelfDetailView: View {
                     Color.clear.frame(height: 6)
                 }
             }
+            // Hold a book and it lifts off the shelf; the others make room.
+            // Only on the shelf's own order — a sorted or filtered view is not
+            // the order being saved.
+            .reorderContainer(reorder, space: "shelf-bookcase") { book in
+                BookOnShelfCell(book: book, ownerAvatarUrl: model.shelf?.ownerAvatarUrl)
+            }
+            .gesture(ReorderPressGesture(minimumDuration: 0.4) { state, point in
+                guard canReorder || reorder.lift != nil else { return }
+                reorder.press(state, at: point, items: $model.books) { model.persistOrder() }
+            })
             .background(
                 LinearGradient(colors: [tint.opacity(0.024), tint.opacity(0.063)],
                                startPoint: .top, endPoint: .bottom)
@@ -388,26 +410,16 @@ struct ShelfDetailView: View {
         }
     }
 
-    @ViewBuilder private func bookCell(_ book: ShelfBook) -> some View {
-        let cell = NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.bookId)) {
-            BookOnShelfCell(book: book, ownerAvatarUrl: model.shelf?.ownerAvatarUrl)
-        }
-        if canReorder {
-            cell
-                .opacity(dragging?.id == book.id ? 0.4 : 1)
-                .onDrag {
-                    dragging = book
-                    return NSItemProvider(object: book.bookId as NSString)
-                }
-                .onDrop(of: [.text], delegate: GridReorderDelegate(
-                    item: book,
-                    items: $model.books,
-                    dragging: $dragging,
-                    commit: { model.persistOrder() }
-                ))
-        } else {
-            cell
-        }
+    private func bookCell(_ book: ShelfBook) -> some View {
+        BookOnShelfCell(book: book, ownerAvatarUrl: model.shelf?.ownerAvatarUrl)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                // Not while a book is in the air or settling back.
+                guard reorder.lift == nil else { return }
+                openedBook = BookRoute(idOrSlug: book.slug ?? book.bookId)
+            }
+            .accessibilityAddTraits(.isButton)
+            .reorderCell(book, in: reorder)
     }
 }
 
@@ -468,7 +480,8 @@ struct ShelfEditorView: View {
     @Environment(\.dismiss) private var dismiss
     let shelfId: String
     @State private var model: ShelfDetailModel
-    @State private var dragging: ShelfBook?
+    @State private var reorder = ReorderDrag<ShelfBook>()
+    private static let reorderSpace = "shelf-editor-rows"
     @State private var editingSeed: ShelfEditSeed?
     @State private var addOpen = false
     @State private var selectMode = false
@@ -677,6 +690,28 @@ struct ShelfEditorView: View {
                     }
                 }
             }
+            .reorderContainer(reorder, space: Self.reorderSpace) { book in
+                // The row as it reads at a glance: grip, cover, title, author.
+                HStack(spacing: 10) {
+                    GripDots().frame(width: 18, height: 40)
+                    CoverThumb(url: book.coverImageUrl, width: 44, height: 66, radius: 4, title: book.title)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(book.title)
+                            .font(Theme.body(14, .medium))
+                            .foregroundStyle(Theme.foreground)
+                            .lineLimit(1)
+                        Text(book.authors.joined(separator: ", "))
+                            .font(Theme.body(12))
+                            .foregroundStyle(Theme.muted)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                .padding(.horizontal, -8)
+            }
             .padding(.horizontal, 12)
             .background(Theme.surface.opacity(0.5))
             .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -697,13 +732,18 @@ struct ShelfEditorView: View {
                         .foregroundStyle(selected.contains(book.bookId) ? Theme.accent : Theme.muted.opacity(0.5))
                 }
             } else {
+                // Press the grip and the row lifts and follows the finger.
                 GripDots()
                     .frame(width: 18, height: 40)
+                    .padding(.horizontal, 8)
                     .contentShape(Rectangle())
-                    .onDrag {
-                        dragging = book
-                        return NSItemProvider(object: book.bookId as NSString)
-                    }
+                    .padding(.horizontal, -8)
+                    .gesture(ReorderPressGesture(minimumDuration: 0.1,
+                                                 space: Self.reorderSpace) { state, point in
+                        reorder.press(state, at: point, picking: book,
+                                      items: $model.books) { model.persistOrder() }
+                    })
+                    .accessibilityLabel("Reorder \(book.title)")
             }
 
             CoverThumb(url: book.coverImageUrl, width: 44, height: 66, radius: 4, title: book.title)
@@ -793,13 +833,7 @@ struct ShelfEditorView: View {
             }
         }
         .padding(.vertical, 10)
-        .opacity(dragging?.id == book.id ? 0.4 : 1)
-        .onDrop(of: [.text], delegate: GridReorderDelegate(
-            item: book,
-            items: $model.books,
-            dragging: $dragging,
-            commit: { model.persistOrder() }
-        ))
+        .reorderCell(book, in: reorder, placeholderOpacity: 0.25)
     }
 
     private func saveNote(_ book: ShelfBook) {

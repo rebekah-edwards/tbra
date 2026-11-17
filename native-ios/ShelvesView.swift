@@ -45,7 +45,8 @@ struct LibraryShelvesView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthStore.self) private var auth
     @State private var model = ShelvesModel()
-    @State private var dragging: ShelfSummary?
+    @State private var reorder = ReorderDrag<ShelfSummary>()
+    private static let reorderSpace = "shelves-list"
     @State private var filter: ShelvesFilter = .mine
     @State private var createOpen = false
 
@@ -108,15 +109,22 @@ struct LibraryShelvesView: View {
                                 // card (custom shelves sit indented under the
                                 // full-width Top Shelf). Drag starts on the
                                 // HANDLE, not the card, so card taps stay
-                                // clean; drops land anywhere on the row.
+                                // clean: press the grip and the shelf lifts
+                                // and follows the finger straight away.
                                 HStack(spacing: 8) {
                                     GripDots()
                                         .frame(width: 22, height: 44)
+                                        // A wider target than the dots, without
+                                        // moving the card.
+                                        .padding(.horizontal, 7)
                                         .contentShape(Rectangle())
-                                        .onDrag {
-                                            dragging = shelf
-                                            return NSItemProvider(object: shelf.id as NSString)
-                                        }
+                                        .padding(.horizontal, -7)
+                                        .gesture(ReorderPressGesture(minimumDuration: 0.1,
+                                                                     space: Self.reorderSpace) { state, point in
+                                            reorder.press(state, at: point, picking: shelf,
+                                                          items: $model.shelves) { model.persistOrder() }
+                                        })
+                                        .accessibilityLabel("Reorder \(shelf.name)")
 
                                     NavigationLink(value: ShelfRoute(shelfId: shelf.id)) {
                                         ShelfCard(shelf: shelf)
@@ -136,13 +144,13 @@ struct LibraryShelvesView: View {
                                         .padding(10)
                                     }
                                 }
-                                .opacity(dragging?.id == shelf.id ? 0.4 : 1)
-                                .onDrop(of: [.text], delegate: GridReorderDelegate(
-                                    item: shelf,
-                                    items: $model.shelves,
-                                    dragging: $dragging,
-                                    commit: { model.persistOrder() }
-                                ))
+                                .reorderCell(shelf, in: reorder, placeholderOpacity: 0.25)
+                            }
+                        }
+                        .reorderContainer(reorder, space: Self.reorderSpace) { shelf in
+                            HStack(spacing: 8) {
+                                GripDots().frame(width: 22, height: 44)
+                                ShelfCard(shelf: shelf)
                             }
                         }
                         }
@@ -744,7 +752,7 @@ final class TopShelfModel {
 struct TopShelfView: View {
     @Environment(AuthStore.self) private var auth
     @State private var model = TopShelfModel()
-    @State private var dragging: FavoriteBookRow?
+    @State private var reorder = ReorderDrag<FavoriteBookRow>()
 
     private var avatarUrl: String? {
         if case .signedIn(let user) = auth.phase { return user.avatarUrl }
@@ -760,7 +768,7 @@ struct TopShelfView: View {
                         Text("Top Shelf")
                             .font(Theme.heading(26, .bold))
                             .foregroundStyle(Theme.foreground)
-                        Text("\(model.favorites.count) book\(model.favorites.count == 1 ? "" : "s") · Drag to reorder")
+                        Text("\(model.favorites.count) book\(model.favorites.count == 1 ? "" : "s") · Hold & drag to reorder")
                             .font(Theme.body(12))
                             .foregroundStyle(Theme.muted)
                     }
@@ -794,9 +802,17 @@ struct TopShelfView: View {
                         GridItem(.flexible(), spacing: 12),
                     ], spacing: 14) {
                         ForEach(model.favorites) { fav in
-                            favoriteCell(fav)
+                            favoriteCell(fav, showsRemove: true)
+                                .reorderCell(fav, in: reorder)
                         }
                     }
+                    // Hold a cover and it lifts; the others make room.
+                    .reorderContainer(reorder, space: "top-shelf") { fav in
+                        favoriteCell(fav, showsRemove: false)
+                    }
+                    .gesture(ReorderPressGesture(minimumDuration: 0.4) { state, point in
+                        reorder.press(state, at: point, items: $model.favorites) { model.persistOrder() }
+                    })
                 }
             }
             .padding(.horizontal, 20)
@@ -810,9 +826,10 @@ struct TopShelfView: View {
         .refreshable { await model.load() }
     }
 
-    @ViewBuilder private func favoriteCell(_ fav: FavoriteBookRow) -> some View {
-        // Plain view + tap gesture (NOT Button/NavigationLink): mixed
-        // tap-plus-drag cells inside scroll content misroute on iOS 27.
+    /// `showsRemove` is off for the copy drawn under the finger mid-drag.
+    @ViewBuilder private func favoriteCell(_ fav: FavoriteBookRow, showsRemove: Bool) -> some View {
+        // Plain view (NOT Button/NavigationLink): mixed tap-plus-drag cells
+        // inside scroll content misroute on iOS 27.
         VStack(spacing: 0) {
             GeometryReader { geo in
                 CoverThumb(url: fav.coverImageUrl,
@@ -835,6 +852,7 @@ struct TopShelfView: View {
                         }
                     }
                     .overlay(alignment: .topTrailing) {
+                        if showsRemove {
                         Button {
                             withAnimation { model.remove(bookId: fav.id) }
                         } label: {
@@ -845,21 +863,11 @@ struct TopShelfView: View {
                                 .background(.black.opacity(0.6), in: Circle())
                         }
                         .padding(4)
+                        }
                     }
             }
             .aspectRatio(2 / 3, contentMode: .fit)
         }
-        .opacity(dragging?.id == fav.id ? 0.4 : 1)
-        .onDrag {
-            dragging = fav
-            return NSItemProvider(object: fav.id as NSString)
-        }
-        .onDrop(of: [.text], delegate: GridReorderDelegate(
-            item: fav,
-            items: $model.favorites,
-            dragging: $dragging,
-            commit: { model.persistOrder() }
-        ))
     }
 
     @ViewBuilder private var favAvatarBubble: some View {

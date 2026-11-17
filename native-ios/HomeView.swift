@@ -1211,8 +1211,12 @@ private struct ReadingStreakCardView: View {
                 }
             }
             HStack(spacing: 10) {
-                // Outline while today is still open, filled once it counts.
-                Image(systemName: pendingToday ? "flame" : "flame.fill")
+                // The flame pulses for as long as the streak is alive — most
+                // of all while today is still open, when it is the nudge
+                // (Rebekah, 2026-11-16: "bring back the pulsing fire symbol
+                // for before I've done something to log today"). The glow is
+                // what arrives once today counts; the pill says it in words.
+                Image(systemName: "flame.fill")
                     .font(.system(size: 46, weight: .bold))
                     .foregroundStyle(
                         alive
@@ -1220,7 +1224,7 @@ private struct ReadingStreakCardView: View {
                                                        startPoint: .top, endPoint: .bottom))
                         : AnyShapeStyle(Theme.foreground.opacity(0.18)))
                     .shadow(color: alive && !pendingToday ? Self.flame.opacity(0.55) : .clear, radius: 10)
-                    .symbolEffect(.breathe, isActive: alive && !pendingToday)
+                    .symbolEffect(.breathe, isActive: alive)
                     .frame(width: 66, height: 66)
 
                 VStack(alignment: .leading, spacing: 0) {
@@ -1348,6 +1352,10 @@ struct UpNextLift: Equatable {
 /// press fails as soon as the finger travels.
 struct ReorderPressGesture: UIGestureRecognizerRepresentable {
     var minimumDuration: TimeInterval
+    /// A named coordinate space to report the touch in — for a recogniser on a
+    /// drag handle, whose own bounds move with its row. nil reports it in the
+    /// view the gesture is attached to.
+    var space: String? = nil
     var onChange: @MainActor (UIGestureRecognizer.State, CGPoint) -> Void
 
     func makeUIGestureRecognizer(context: Context) -> UILongPressGestureRecognizer {
@@ -1364,7 +1372,9 @@ struct ReorderPressGesture: UIGestureRecognizerRepresentable {
     }
 
     func handleUIGestureRecognizerAction(_ recognizer: UILongPressGestureRecognizer, context: Context) {
-        onChange(recognizer.state, context.converter.localLocation)
+        let point = space.map { context.converter.location(in: .named($0)) }
+            ?? context.converter.localLocation
+        onChange(recognizer.state, point)
     }
 }
 
@@ -1502,29 +1512,145 @@ private struct UpNextCard: View {
     }
 }
 
-// Live-reordering drop delegate shared by the card grids: swaps items as
-// the drag passes over them, persists once on drop (the API wants the
-// complete final order).
-struct GridReorderDelegate<Item: Identifiable & Equatable>: DropDelegate {
-    let item: Item
-    @Binding var items: [Item]
-    @Binding var dragging: Item?
-    let commit: () -> Void
+// ── Hold-and-drag reordering for any layout (shelves, Top Shelf) ──
+//
+// Up Next can place its cards by index because every slot is the same size.
+// The shelf screens can't (rows of three on planks, a lazy grid, list rows of
+// different heights), so this version leaves the layout alone:
+//   · every cell reports its frame;
+//   · the lifted cell stays in the layout as a placeholder, and a copy of it
+//     is drawn over the container under the finger;
+//   · when the copy's centre enters another cell, the array is reordered and
+//     the layout animates the rest.
+// It replaces the system drag-and-drop these screens used (.onDrag + a drop
+// delegate), which needed its own long-press to lift, drew a system preview
+// and dropped the move if the finger was released over a gap.
 
-    func dropEntered(info: DropInfo) {
-        guard let dragging, dragging != item,
-              let from = items.firstIndex(of: dragging),
-              let to = items.firstIndex(of: item) else { return }
-        withAnimation(.easeOut(duration: 0.15)) {
-            items.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+struct ReorderFramesKey<ID: Hashable>: PreferenceKey {
+    static var defaultValue: [ID: Anchor<CGRect>] { [:] }
+    static func reduce(value: inout [ID: Anchor<CGRect>], nextValue: () -> [ID: Anchor<CGRect>]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
+@MainActor
+@Observable
+final class ReorderDrag<Item: Identifiable & Equatable> {
+    struct Lift {
+        let item: Item
+        /// Where on the cell the finger took hold.
+        let grab: CGSize
+        var finger: CGPoint
+        let size: CGSize
+        /// Set on release: the copy glides here (its slot) before it goes.
+        var settleAt: CGPoint?
+        var origin: CGPoint {
+            settleAt ?? CGPoint(x: finger.x - grab.width, y: finger.y - grab.height)
         }
     }
 
-    func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }
+    var lift: Lift?
+    /// Cell frames in the container's space, refreshed on every layout.
+    /// Not observed: it is written while the container's overlay renders.
+    @ObservationIgnored var frames: [Item.ID: CGRect] = [:]
+    @ObservationIgnored private var orderAtLift: [Item.ID] = []
+    /// The cell last swapped with. With cells of different heights the copy's
+    /// centre can still be inside it after the swap, and would swap straight
+    /// back; it is ignored until the centre has left it.
+    @ObservationIgnored private var lastSwap: Item.ID?
+    @ObservationIgnored private var generation = 0
 
-    func performDrop(info: DropInfo) -> Bool {
-        dragging = nil
-        commit()
-        return true
+    func isLifted(_ item: Item) -> Bool { lift?.item.id == item.id }
+
+    /// Feed it the recogniser's state. `picking` names the item when the
+    /// gesture sits on that item's own handle; otherwise the item under the
+    /// touch is taken. `commit` runs once, on release, if the order changed.
+    func press(_ state: UIGestureRecognizer.State, at point: CGPoint, picking picked: Item? = nil,
+               items: Binding<[Item]>, commit: () -> Void) {
+        switch state {
+        case .began:
+            let list = items.wrappedValue
+            guard let item = picked ?? list.first(where: { frames[$0.id]?.contains(point) == true }),
+                  let frame = frames[item.id] else { return }
+            generation += 1
+            orderAtLift = list.map(\.id)
+            lastSwap = nil
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            withAnimation(.easeOut(duration: 0.12)) {
+                lift = Lift(item: item,
+                            grab: CGSize(width: point.x - frame.minX, height: point.y - frame.minY),
+                            finger: point, size: frame.size)
+            }
+        case .changed:
+            guard var current = lift, current.settleAt == nil else { return }
+            current.finger = point
+            lift = current   // unanimated: the copy stays under the finger
+            let centre = CGPoint(x: current.origin.x + current.size.width / 2,
+                                 y: current.origin.y + current.size.height / 2)
+            let list = items.wrappedValue
+            guard let over = list.first(where: {
+                $0.id != current.item.id && frames[$0.id]?.contains(centre) == true
+            }) else {
+                lastSwap = nil
+                return
+            }
+            guard over.id != lastSwap,
+                  let from = list.firstIndex(where: { $0.id == current.item.id }),
+                  let to = list.firstIndex(where: { $0.id == over.id }) else { return }
+            lastSwap = over.id
+            UISelectionFeedbackGenerator().selectionChanged()
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                items.wrappedValue.move(fromOffsets: IndexSet(integer: from),
+                                        toOffset: to > from ? to + 1 : to)
+            }
+        case .ended, .cancelled, .failed:
+            guard var current = lift, current.settleAt == nil else { return }
+            current.settleAt = frames[current.item.id]?.origin ?? current.origin
+            withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) { lift = current }
+            let mine = generation
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(240))
+                if self.generation == mine { self.lift = nil }
+            }
+            if items.wrappedValue.map(\.id) != orderAtLift { commit() }
+        default:
+            break
+        }
+    }
+}
+
+extension View {
+    /// A cell the reorder can pick up: reports its frame and steps aside
+    /// (to `placeholderOpacity`) while its copy is being dragged. Rows whose
+    /// drag handle carries the gesture keep a faint placeholder, so the handle
+    /// under the finger is never fully hidden mid-gesture.
+    func reorderCell<Item: Identifiable & Equatable>(
+        _ item: Item, in drag: ReorderDrag<Item>, placeholderOpacity: Double = 0
+    ) -> some View {
+        self.opacity(drag.isLifted(item) ? placeholderOpacity : 1)
+            .anchorPreference(key: ReorderFramesKey<Item.ID>.self, value: .bounds) { [item.id: $0] }
+    }
+
+    /// The layout holding the cells: resolves their frames and draws the
+    /// lifted copy. `space` names its coordinate space for handle gestures;
+    /// a gesture attached straight after this modifier is already in it.
+    func reorderContainer<Item: Identifiable & Equatable, Copy: View>(
+        _ drag: ReorderDrag<Item>, space: String, @ViewBuilder copy: @escaping (Item) -> Copy
+    ) -> some View {
+        self.overlayPreferenceValue(ReorderFramesKey<Item.ID>.self) { anchors in
+            GeometryReader { proxy in
+                let frames = anchors.mapValues { proxy[$0] }
+                let _ = (drag.frames = frames)
+                if let lift = drag.lift {
+                    copy(lift.item)
+                        .frame(width: lift.size.width, height: lift.size.height)
+                        .scaleEffect(lift.settleAt == nil ? 1.04 : 1)
+                        .shadow(color: .black.opacity(lift.settleAt == nil ? 0.45 : 0), radius: 16, y: 9)
+                        .offset(x: lift.origin.x, y: lift.origin.y)
+                }
+            }
+            .allowsHitTesting(false)
+        }
+        .coordinateSpace(.named(space))
     }
 }
