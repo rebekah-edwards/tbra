@@ -442,7 +442,18 @@ actor APIClient {
     func home() async throws -> HomeData {
         let res: HomeResponse = try await send("/api/v1/home", method: "GET")
         return HomeData(year: res.year, readingNow: res.readingNow, goal: res.goal,
-                        streak: res.streak, tbrSuggestion: res.tbrSuggestion)
+                        streak: res.streak, tbrSuggestion: res.tbrSuggestion,
+                        hideGoal: res.hideGoal, hideStreak: res.hideStreak)
+    }
+
+    /// Hide or show the reading goal / streak on the reader's account
+    /// (PATCH /api/v1/settings { display }). Pass only what changed.
+    func setDisplayPrefs(hideGoal: Bool? = nil, hideStreak: Bool? = nil) async throws {
+        var display: [String: Any] = [:]
+        if let hideGoal { display["hideGoal"] = hideGoal }
+        if let hideStreak { display["hideStreak"] = hideStreak }
+        guard !display.isEmpty else { return }
+        _ = try await send("/api/v1/settings", method: "PATCH", body: ["display": display]) as OkResponse
     }
 
     /// The deferred home sections (Because You Liked / Friends Activity /

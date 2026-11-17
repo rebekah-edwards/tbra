@@ -181,6 +181,10 @@ struct HomeData: Hashable {
     let goal: ReadingGoal?
     let streak: ReadingStreak
     let tbrSuggestion: TbrSuggestion?
+    /// The account's hide-goal / hide-streak switches. nil from a server
+    /// that predates them — the phone then keeps its own setting.
+    var hideGoal: Bool? = nil
+    var hideStreak: Bool? = nil
 }
 
 struct HomeResponse: Codable {
@@ -190,6 +194,8 @@ struct HomeResponse: Codable {
     let goal: ReadingGoal?
     let streak: ReadingStreak
     let tbrSuggestion: TbrSuggestion?
+    let hideGoal: Bool?
+    let hideStreak: Bool?
 }
 
 // ─── Home deferred sections (/api/v1/home/discover) ───

@@ -44,6 +44,9 @@ final class HomeModel {
         loading = true; defer { loading = false }
         do {
             home = try await APIClient.shared.home()
+            // The account's hide-goal / hide-streak switches (set on the web
+            // or another device) take effect here.
+            MotivationPrefs.adopt(serverHideGoal: home?.hideGoal, serverHideStreak: home?.hideStreak)
             // Republish the home-screen widgets. Detached so the extra request
             // never delays the view — the widget keeps its previous snapshot
             // until this finishes.
@@ -333,11 +336,11 @@ struct HomeView: View {
                                                         group: "activity", filter: "completed", year: home.year)
                                                     chrome?.selectTab(.library)
                                                 },
-                                                onHide: { withAnimation { hideGoal = true } }) {
+                                                onHide: { withAnimation { MotivationPrefs.setHideGoal(true) } }) {
                                 await homeModel.load()
                             }
                             .contextMenu {
-                                Button { withAnimation { hideGoal = true } } label: {
+                                Button { withAnimation { MotivationPrefs.setHideGoal(true) } } label: {
                                     Label("Hide reading goal", systemImage: "eye.slash")
                                 }
                             }
@@ -345,7 +348,7 @@ struct HomeView: View {
                         if !hideStreak {
                             ReadingStreakCardView(streak: home.streak)
                                 .contextMenu {
-                                    Button { withAnimation { hideStreak = true } } label: {
+                                    Button { withAnimation { MotivationPrefs.setHideStreak(true) } } label: {
                                         Label("Hide streak", systemImage: "eye.slash")
                                     }
                                 }
@@ -354,9 +357,6 @@ struct HomeView: View {
                     // v2 tiles stretch to the taller of the two, so the pair
                     // always shares one height (v1 sized each to its content).
                     .fixedSize(horizontal: false, vertical: DesignPreview.on)
-                    // The widget shows the same two numbers — keep it in step.
-                    .onChange(of: hideGoal) { Task.detached { await WidgetPublisher.refresh() } }
-                    .onChange(of: hideStreak) { Task.detached { await WidgetPublisher.refresh() } }
                 }
 
                 // ── Up Next ──

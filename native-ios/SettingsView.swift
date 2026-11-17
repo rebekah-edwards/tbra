@@ -786,17 +786,15 @@ struct SettingsView: View {
                 Text("Not everyone reads better with a target. Hide either one \u{2014} it keeps counting, so you can bring it back any time.")
                     .font(Theme.body(12)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
-                Toggle(isOn: Binding(get: { !hideGoal }, set: { hideGoal = !$0 })) {
+                Toggle(isOn: Binding(get: { !hideGoal }, set: { MotivationPrefs.setHideGoal(!$0) })) {
                     Text("Show reading goal").font(Theme.body(14)).foregroundStyle(Theme.foreground)
                 }
                 .tint(Theme.accent)
-                Toggle(isOn: Binding(get: { !hideStreak }, set: { hideStreak = !$0 })) {
+                Toggle(isOn: Binding(get: { !hideStreak }, set: { MotivationPrefs.setHideStreak(!$0) })) {
                     Text("Show reading streak").font(Theme.body(14)).foregroundStyle(Theme.foreground)
                 }
                 .tint(Theme.accent)
             }
-            .onChange(of: hideGoal) { Task.detached { await WidgetPublisher.refresh() } }
-            .onChange(of: hideStreak) { Task.detached { await WidgetPublisher.refresh() } }
             if isStaff {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Design preview").font(Theme.body(14, .semibold)).foregroundStyle(Theme.foreground)

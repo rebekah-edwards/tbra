@@ -751,14 +751,59 @@ struct StarRow: View {
 /// Stats and the widget — and both keep counting underneath, so switching one
 /// back on shows the real number.
 ///
-/// Stored on the device for now (UserDefaults). Following the reader's
-/// account across devices and the web needs two columns on the server
-/// (user_reading_preferences.hide_goal / hide_streak) — not added yet.
+/// The reader's ACCOUNT holds the setting (user_reading_preferences
+/// .hide_goal / .hide_streak), so the web and other devices follow it. The
+/// phone keeps a copy in UserDefaults that views read through @AppStorage —
+/// instant, and it works offline. Change it only through the setters below:
+/// they update the copy, save to the account and refresh the widget.
 enum MotivationPrefs {
     static let hideGoalKey = "hideReadingGoal"
     static let hideStreakKey = "hideReadingStreak"
+    /// Set once this phone has reconciled with the account for the first time.
+    private static let syncedKey = "motivationPrefsSyncedToAccount"
+
     static var hideGoal: Bool { UserDefaults.standard.bool(forKey: hideGoalKey) }
     static var hideStreak: Bool { UserDefaults.standard.bool(forKey: hideStreakKey) }
+
+    static func setHideGoal(_ hidden: Bool) {
+        UserDefaults.standard.set(hidden, forKey: hideGoalKey)
+        push(hideGoal: hidden, hideStreak: nil)
+    }
+
+    static func setHideStreak(_ hidden: Bool) {
+        UserDefaults.standard.set(hidden, forKey: hideStreakKey)
+        push(hideGoal: nil, hideStreak: hidden)
+    }
+
+    /// Reconcile with what /api/v1/home says. The account wins — except the
+    /// very first time, when a choice made on this phone before the setting
+    /// was saved to accounts is sent up instead of being thrown away.
+    static func adopt(serverHideGoal: Bool?, serverHideStreak: Bool?) {
+        // An older server does not send the flags: keep the phone's own copy.
+        guard let serverGoal = serverHideGoal, let serverStreak = serverHideStreak else { return }
+        let defaults = UserDefaults.standard
+        var goal = serverGoal, streak = serverStreak
+        if !defaults.bool(forKey: syncedKey) {
+            defaults.set(true, forKey: syncedKey)
+            goal = serverGoal || defaults.bool(forKey: hideGoalKey)
+            streak = serverStreak || defaults.bool(forKey: hideStreakKey)
+            if goal != serverGoal || streak != serverStreak {
+                push(hideGoal: goal, hideStreak: streak)
+            }
+        }
+        // Write only on a real change so @AppStorage views do not re-render.
+        if defaults.bool(forKey: hideGoalKey) != goal { defaults.set(goal, forKey: hideGoalKey) }
+        if defaults.bool(forKey: hideStreakKey) != streak { defaults.set(streak, forKey: hideStreakKey) }
+    }
+
+    private static func push(hideGoal: Bool?, hideStreak: Bool?) {
+        Task.detached {
+            // Best effort: a failed save leaves the phone's copy in place and
+            // the next change sends the latest values again.
+            try? await APIClient.shared.setDisplayPrefs(hideGoal: hideGoal, hideStreak: hideStreak)
+            await WidgetPublisher.refresh()
+        }
+    }
 }
 
 struct GoalEditSheet: View {

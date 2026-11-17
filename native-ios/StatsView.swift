@@ -223,7 +223,7 @@ struct StatsView: View {
             }
             .sheet(isPresented: $goalEditing) {
                 GoalEditSheet(year: currentYear, current: nil, onSaved: { await model.load() },
-                              onHide: { withAnimation { hideGoal = true } })
+                              onHide: { withAnimation { MotivationPrefs.setHideGoal(true) } })
                     .presentationDetents([.height(330)])
                     .presentationBackground(Theme.surface)
             }
