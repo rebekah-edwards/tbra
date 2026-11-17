@@ -16,6 +16,9 @@ struct UserRoute: Hashable { let username: String }
 final class PublicProfileModel {
     let username: String
     var isPrivate = false
+    /// The viewer blocked this reader: show the blocked screen with Unblock.
+    /// (A reader who blocked the VIEWER just looks private — never announced.)
+    var blockedByViewer = false
     var user: ProfileUser?
     var isOwner = false
     var isFollowing = false
@@ -32,6 +35,7 @@ final class PublicProfileModel {
     struct Res: Codable {
         let ok: Bool
         let `private`: Bool
+        let blockedByViewer: Bool?
         let user: ProfileUser?
         let isOwner: Bool?
         let isFollowing: Bool?
@@ -47,6 +51,7 @@ final class PublicProfileModel {
         defer { loaded = true }
         guard let res: Res = try? await APIClient.shared.get("/api/v1/users/\(username)") else { return }
         isPrivate = res.private
+        blockedByViewer = res.blockedByViewer ?? false
         user = res.user
         isOwner = res.isOwner ?? false
         isFollowing = res.isFollowing ?? false
@@ -89,7 +94,9 @@ struct PublicProfileView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                if model.isPrivate {
+                if model.blockedByViewer {
+                    blockedGate
+                } else if model.isPrivate {
                     privateGate
                 } else if let user = model.user {
                     header(user)
@@ -120,6 +127,42 @@ struct PublicProfileView: View {
         .reportsPage("/u/\(model.username)")
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }
+    }
+
+    @State private var unblocking = false
+
+    private var blockedGate: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "nosign")
+                .font(.system(size: 26))
+                .foregroundStyle(Theme.muted)
+                .frame(width: 64, height: 64)
+                .background(Theme.surface, in: Circle())
+                .overlay(Circle().stroke(Theme.border, lineWidth: 1))
+            Text("You blocked @\(model.username)")
+                .font(Theme.heading(18, .bold))
+                .foregroundStyle(Theme.foreground)
+            Text("You won't see each other's reviews or profiles.")
+                .font(Theme.body(14))
+                .foregroundStyle(Theme.muted)
+                .multilineTextAlignment(.center)
+            Button {
+                Task {
+                    unblocking = true; defer { unblocking = false }
+                    if (try? await SafetyAPI.unblock(model.username)) != nil { await model.load() }
+                }
+            } label: {
+                Text(unblocking ? "Unblocking…" : "Unblock")
+                    .font(Theme.body(14, .semibold))
+                    .foregroundStyle(Theme.foreground)
+                    .padding(.horizontal, 22).padding(.vertical, 9)
+                    .overlay(Capsule().stroke(Theme.border, lineWidth: 1))
+            }
+            .disabled(unblocking)
+            .padding(.top, 6)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 60)
     }
 
     private var privateGate: some View {
@@ -206,6 +249,7 @@ struct PublicProfileView: View {
                 .foregroundStyle(Theme.foreground.opacity(0.85))
 
                 if !model.isOwner {
+                    HStack(spacing: 4) {
                     Button {
                         Task { await model.toggleFollow() }
                     } label: {
@@ -215,6 +259,11 @@ struct PublicProfileView: View {
                             .padding(.horizontal, 18).padding(.vertical, 8)
                             .background(model.isFollowing ? Theme.accent.opacity(0.15) : Theme.accent, in: Capsule())
                             .overlay(Capsule().stroke(Theme.accent.opacity(model.isFollowing ? 0.5 : 1), lineWidth: 1))
+                    }
+                    // Report / Block (App Review 1.2).
+                    SafetyMenuButton(
+                        target: SafetyTarget(kind: .profile, username: model.username),
+                        onBlocked: { Task { await model.load() } })
                     }
                     .padding(.top, 4)
                 }

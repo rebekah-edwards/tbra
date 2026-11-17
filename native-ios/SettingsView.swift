@@ -300,6 +300,7 @@ struct SettingsView: View {
                     notificationsSection
                     exportSection
                     if !model.hiddenBooks.isEmpty { hiddenBooksSection }
+                    BlockedReadersSection(openSection: $openSection)
                     passwordSection
                     accountCard
                     dangerZone
@@ -1088,6 +1089,10 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Account").font(Theme.heading(17, .bold)).foregroundStyle(Theme.foreground)
             Text(model.email).font(Theme.body(14)).foregroundStyle(Theme.muted)
+            Text("[Terms of Use](https://thebasedreader.app/terms)  ·  [Privacy Policy](https://thebasedreader.app/privacy)")
+                .font(Theme.body(13))
+                .tint(Theme.neonBlue)
+                .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)

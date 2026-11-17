@@ -374,6 +374,8 @@ struct LoginView: View {
                 }
                 .font(Theme.body(14, .medium))
                 .foregroundStyle(Theme.neonBlue)
+
+                LegalAgreementText(action: "continuing")
                 .padding(.top, 8)
 
                 Spacer()
@@ -485,6 +487,8 @@ struct SignupSheet: View {
                 Text("We'll email you a verification link.")
                     .font(Theme.body(12))
                     .foregroundStyle(Theme.muted)
+
+                LegalAgreementText()
             }
             .padding(.horizontal, 28)
             .padding(.bottom, 30)

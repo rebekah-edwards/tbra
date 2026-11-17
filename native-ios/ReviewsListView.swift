@@ -75,6 +75,12 @@ final class ReviewsListModel {
 
 struct ReviewsListView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthStore.self) private var auth
+
+    private var currentUserId: String? {
+        if case .signedIn(let user) = auth.phase { return user.id }
+        return nil
+    }
     let bookTitle: String
     /// When set, scroll to this review after load and highlight it briefly.
     var scrollToReviewId: String? = nil
@@ -210,7 +216,8 @@ struct ReviewsListView: View {
             // and the per-dimension stars + pacing never rendered at all.
             reviewDimensionDetails(review)
 
-            // Helpful pill
+            // Helpful pill + (on other readers' reviews) Report / Block.
+            HStack {
             Button {
                 Task { await model.toggleHelpful(review) }
             } label: {
@@ -226,6 +233,17 @@ struct ReviewsListView: View {
                 .padding(.horizontal, 11).padding(.vertical, 6)
                 .background(review.currentUserVoted ? Theme.accent.opacity(0.1) : Theme.surfaceAlt.opacity(0.5), in: Capsule())
                 .overlay(Capsule().stroke(review.currentUserVoted ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1))
+            }
+            Spacer()
+            // App Review 1.2: every piece of user content can be reported and
+            // its author blocked. Not on your own review. An anonymous review
+            // can be reported but not blocked, or the menu would name its author.
+            if review.userId != currentUserId, let username = review.username {
+                SafetyMenuButton(
+                    target: SafetyTarget(kind: .review, username: username, reviewId: review.id,
+                                         bookSlug: model.bookIdOrSlug, canBlock: !review.isAnonymous),
+                    onBlocked: { Task { await model.load() } })
+            }
             }
         }
         .padding(14)
