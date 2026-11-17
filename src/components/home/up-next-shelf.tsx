@@ -99,10 +99,13 @@ function SortableUpNextCard({
         <div className="absolute inset-0 bg-gradient-to-br from-surface-alt to-surface rounded-xl" />
       )}
 
-      {/* Drag handle — sits in top-right, above the Link */}
+      {/* Drag handle — on the cover's bottom corner, above the Link. It sat
+          top-right, where it covered the end of the genre and title lines; on
+          the cover it costs the text nothing, so the title gets the card's
+          full width and height. */}
       <button
         {...listeners}
-        className="absolute top-2 right-2 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm text-white/70 active:text-white touch-none"
+        className="absolute bottom-1.5 left-[44px] lg:left-[62px] z-30 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 backdrop-blur-sm text-white/80 active:text-white touch-none"
         aria-label="Drag to reorder"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -120,7 +123,7 @@ function SortableUpNextCard({
         href={`/book/${item.slug || item.bookId}`}
         onClick={(e) => { if (isDragging) e.preventDefault(); }}
         draggable={false}
-        className="relative z-10 flex items-center gap-3 p-3"
+        className="relative z-10 flex h-full items-center gap-2.5 p-2.5 lg:gap-3 lg:p-3"
       >
         {/* Cover */}
         <div className="flex-shrink-0">
@@ -145,7 +148,7 @@ function SortableUpNextCard({
               {item.topLevelGenre}
             </span>
           )}
-          <h3 className="text-sm font-bold book-header-text leading-tight line-clamp-2 mt-0.5">
+          <h3 className="text-[13px] lg:text-sm font-bold book-header-text leading-tight line-clamp-5 lg:line-clamp-3 hyphens-auto break-words mt-0.5">
             {item.title}
           </h3>
           {item.authorName && (
