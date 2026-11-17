@@ -99,7 +99,9 @@ struct TbrSuggestionCard: View {
 
     var body: some View {
         Group {
-            if let book {
+            if let book, DesignPreview.on {
+                cardV2(book)
+            } else if let book {
                 VStack(spacing: 0) {
                     NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
                         HStack(spacing: 16) {
@@ -170,6 +172,89 @@ struct TbrSuggestionCard: View {
                     .stroke(DesignPreview.on ? Theme.foreground.opacity(0.10) : Theme.border, lineWidth: 1))
             }
         }
+    }
+
+    // Designed, not just matched (Rebekah, 2026-11-16: "doesn't vibe with the
+    // rest"): the pick sits on its own cover art like the Reading Now and Up
+    // Next cards around it, inside the wordmark-colour hairline the hero cards
+    // use, with the cover tipped as if just pulled off the shelf. The reason
+    // is a glass badge and shuffling is a real button, not a strip along the
+    // bottom. Mirrors tbr-suggestion-card.tsx.
+    private func cardV2(_ book: TbrSuggestion) -> some View {
+        let route = BookRoute(idOrSlug: book.slug ?? book.id)
+        return HStack(alignment: .center, spacing: 16) {
+            NavigationLink(value: route) {
+                CoverThumb(url: book.coverImageUrl, width: 80, height: 120, radius: 8, title: book.title)
+                    .shadow(color: .black.opacity(0.45), radius: 12, y: 8)
+                    .rotationEffect(.degrees(-3))
+            }
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(spacing: 6) {
+                    Circle().fill(Theme.accent).frame(width: 7, height: 7)
+                    Text(book.reason ?? "From your TBR")
+                        .font(Theme.body(11, .semibold))
+                        .foregroundStyle(Theme.foreground)
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 10).padding(.vertical, 5)
+                .glassEffect(.regular, in: Capsule())
+
+                NavigationLink(value: route) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(book.title)
+                            .font(Theme.heading(19, .bold))
+                            .foregroundStyle(Theme.foreground)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                        if !book.authors.isEmpty {
+                            Text(book.authors.joined(separator: ", "))
+                                .font(Theme.body(14))
+                                .foregroundStyle(Theme.foreground.opacity(0.70))
+                                .lineLimit(1)
+                        }
+                    }
+                }
+
+                Button {
+                    Task { await shuffle() }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "shuffle")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(Theme.neonBlue)
+                        Text(shuffling ? "Shuffling…" : "Show me another")
+                            .font(Theme.body(12, .semibold))
+                            .foregroundStyle(Theme.foreground)
+                    }
+                    .padding(.horizontal, 13).padding(.vertical, 7)
+                    .glassEffect(.regular, in: Capsule())
+                }
+                .disabled(shuffling)
+            }
+        }
+        .padding(16)
+        // The cover and text sit as one group in the MIDDLE of the card, not
+        // against its left edge (Rebekah, 2026-11-16).
+        .frame(maxWidth: .infinity, alignment: .center)
+        .background(
+            ZStack {
+                Theme.surfaceAlt
+                if let cover = book.coverImageUrl, let url = URL(string: cover) {
+                    CoverBlurImage(url: url)
+                    Theme.scrim
+                }
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22)
+                .stroke(LinearGradient(
+                    colors: [Theme.accent.opacity(0.55), Theme.neonBlue.opacity(0.35),
+                             Theme.neonPurple.opacity(0.45)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+        )
+        .opacity(shuffling ? 0.6 : 1)
+        .animation(.easeOut(duration: 0.15), value: shuffling)
     }
 
     private func shuffle() async {

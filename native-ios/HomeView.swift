@@ -1202,7 +1202,11 @@ private struct ReadingStreakCardView: View {
                     Text(streak.currentStreak == 1 ? "day in a row" : "days in a row")
                         .font(Theme.body(12))
                         .foregroundStyle(Theme.muted)
+                        // One line: "days in / a row" wrapped beside the flame.
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                 }
+                .layoutPriority(1)
             }
             Spacer(minLength: 0)
             VStack(alignment: .leading, spacing: 5) {
