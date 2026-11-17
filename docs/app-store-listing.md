@@ -92,8 +92,21 @@ review submission `64d0f824-d48d-415a-bfba-5b9481107869`), because build 17
 predates the design refresh, the Up Next and shelf reorder, note to self on the
 book page and the Friends Activity list.
 
+**2026-11-17, swap to build 19 (Rebekah's call), NOT YET RESUBMITTED.** The
+build 18 submission was cancelled at about 01:20 ET, build 19 was attached to
+version 1.0, and a new draft submission
+`fe3c1ff8-e249-4865-8911-8dcfee0c854b` holds the version only. Step 4 below
+could not be done: the App Store Connect website had signed out and needs
+Rebekah's sign-in. Until the group and both plans are added and the draft is
+submitted, nothing is in Apple's queue. Do not submit the draft with the
+version alone; the paywall's plans have never been approved and must go with
+it.
+
 ### Swapping the build on a version that is waiting for review
 
+0. First open the App Store Connect website and confirm it is signed in
+   (step 4 needs it, and the session lapses within about an hour). If it is
+   not, ask Rebekah to sign in before cancelling anything.
 1. `PATCH /v1/reviewSubmissions/{id}` with `canceled: true`. The version goes
    to `DEVELOPER_REJECTED`/`PREPARE_FOR_SUBMISSION` within a minute and the
    subscriptions return to `READY_TO_SUBMIT`.
