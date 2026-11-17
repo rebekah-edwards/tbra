@@ -83,14 +83,23 @@ The closing line is Rebekah's wording (2026-11-16).
   report/block/Terms for guideline 1.2, account deletion).
 - Build 17 attached to version 1.0; both subscriptions `READY_TO_SUBMIT`.
 
-## Still open before submitting
+## Submitted for review 2026-11-16
 
-- **App Privacy labels**: no API, entered in the App Store Connect website.
-  Planned answers, all "linked to you", none used for tracking, purpose App
-  Functionality: email address, name, user ID, photos (profile picture),
-  other user content (reviews, notes, shelves), purchase history.
-- **Reviewer demo account**: must be a plain reader account (the test
-  account is staff). Sign-in name and password go in App Review Information.
-- **EU trader declaration** (Digital Services Act) on the Business page:
-  Rebekah's to make.
+Version 1.0 (build 17), the Based Reader subscription group and both plans
+went to App Review together; release is automatic on approval.
+
+- App Privacy labels published: name, email address, photos or videos, other
+  user content, user ID, purchase history. Each is used for App Functionality,
+  linked to the user, not used for tracking.
+- App price: Free. Content rights: uses third-party content, with rights
+  (Rebekah's declaration).
+- Availability: 174 countries and regions. China mainland is excluded by
+  choice (it requires a security assessment and an AI-content filing).
+- Reviewer sign-in: a non-premium reader account, entered by Rebekah. Keep it
+  non-premium so the reviewer sees the plan picker.
+
+## Still open
+
 - A real sandbox purchase from TestFlight build 17 has not been run yet.
+- App Compliance shows the developer declared as a non-trader under the EU
+  Digital Services Act; with paid subscriptions that may need revisiting.
