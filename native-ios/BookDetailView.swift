@@ -99,6 +99,8 @@ struct BookDetailView: View {
     /// book auto-opens the review wizard, then the "What to Read Next" sheet.
     private let justCompleted: Bool
     @State private var autoOpenReview = false
+    /// The note-to-self card's editor (the state menu has its own entry).
+    @State private var noteEditorOpen = false
     /// .sheet(item:) not (isPresented:) — with `if let data = model.data`
     /// inside the builder, a background reload swapped the sheet's content for
     /// a fresh PostCompletionSheet whose .task re-ran and, on the losing race,
@@ -185,6 +187,12 @@ struct BookDetailView: View {
                                  onReviewSaved: { Task { await model.load() } },
                                  autoOpen: $autoOpenReview,
                                  onWizardClosed: reviewWizardClosed)
+                    // The reader's private note, on the page it is about
+                    // (Rebekah, 2026-11-16: it only showed on the TBR list in
+                    // My Library). Shown whenever one exists; tap to edit.
+                    if let note = data.tbrNote, !note.isEmpty {
+                        NoteToSelfCard(note: note) { noteEditorOpen = true }
+                    }
                     // Comfort-zone flags — web places the banner between the
                     // action area and the summary on mobile.
                     ContentFlagsBanner(
@@ -297,6 +305,15 @@ struct BookDetailView: View {
         }
         .reportsPage("/book/\(model.idOrSlug)")
         .toolbar(.hidden, for: .navigationBar)
+        .sheet(isPresented: $noteEditorOpen) {
+            if let data = model.data {
+                TbrNoteEditorSheet(bookId: data.book.id, existing: data.tbrNote) {
+                    Task { await model.load() }
+                }
+                .presentationDetents([.medium])
+                .presentationBackground(Theme.surface)
+            }
+        }
         .task {
             await model.load()
             #if DEBUG && targetEnvironment(simulator)
@@ -386,6 +403,44 @@ struct BookDetailView: View {
     #if DEBUG && targetEnvironment(simulator)
     @State private var debugEditionsOpen = false
     #endif
+}
+
+/// The reader's "note to self" shown on the book page: glass, with the
+/// premium purple in the icon only. The whole card opens the editor.
+struct NoteToSelfCard: View {
+    let note: String
+    let onEdit: () -> Void
+
+    var body: some View {
+        Button(action: onEdit) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "note.text")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(Theme.neonPurple)
+                    Text("NOTE TO SELF")
+                        .font(Theme.body(11, .bold)).tracking(0.9)
+                        .foregroundStyle(Theme.muted)
+                    Spacer()
+                    Image(systemName: "pencil")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Theme.muted)
+                }
+                Text(note)
+                    .font(Theme.body(15))
+                    .foregroundStyle(Theme.foreground)
+                    .lineSpacing(3)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(16)
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.neonPurple.opacity(0.30), lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: 18))
+        }
+        .accessibilityLabel("Note to self: \(note). Double tap to edit.")
+    }
 }
 
 // ── TBR note editor — tbr-note-editor.tsx (premium "note to self") ──
