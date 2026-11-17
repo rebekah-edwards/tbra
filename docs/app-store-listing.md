@@ -69,11 +69,28 @@ The closing line is Rebekah's wording (2026-11-16).
 - Minimum age for the Terms of Use: 13.
 - Release: go live automatically once Apple approves.
 
-## Still open
+## Entered 2026-11-16
 
-- Age rating questionnaire in App Store Connect is NOT answered yet (30
-  questions under Apple's 2025 system; several of the new ones, such as
-  socialMedia, ageAssurance and healthOrWellnessTopics, need reading against
-  Apple's definitions before answering). Target outcome: 13+.
-- App Privacy answers (data collection labels) not entered yet.
-- Screenshots: to be shot at 6.9-inch size after the design refresh ships.
+- Age rating questionnaire answered (social media = No, Rebekah's call).
+  Apple computed **12+** (Brazil 14).
+- Screenshots: six 6.9-inch (1320x2868, dark) in
+  `docs/app-store-assets/screenshots-6.9/`, uploaded in the order book,
+  What's Inside, home, library, Discover, stats. Shot from the simulator with
+  `TBRA_DEBUG_NO_TOURS=1 TBRA_DEBUG_AS_READER=1`; the book page is Project
+  Hail Mary because other books showed testers' names under "Friends Who Read
+  It", and the library is the Owned tab because TBR showed a private note.
+- App Review contact details and reviewer notes (sign-in, In-App Purchase,
+  report/block/Terms for guideline 1.2, account deletion).
+- Build 17 attached to version 1.0; both subscriptions `READY_TO_SUBMIT`.
+
+## Still open before submitting
+
+- **App Privacy labels**: no API, entered in the App Store Connect website.
+  Planned answers, all "linked to you", none used for tracking, purpose App
+  Functionality: email address, name, user ID, photos (profile picture),
+  other user content (reviews, notes, shelves), purchase history.
+- **Reviewer demo account**: must be a plain reader account (the test
+  account is staff). Sign-in name and password go in App Review Information.
+- **EU trader declaration** (Digital Services Act) on the Business page:
+  Rebekah's to make.
+- A real sandbox purchase from TestFlight build 17 has not been run yet.
