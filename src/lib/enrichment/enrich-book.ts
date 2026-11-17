@@ -42,7 +42,7 @@ import { findDuplicateBook } from "./dedup";
 import { fetchOLMetadata } from "./ol-metadata";
 import { discoverAuthorBooks } from "./discover-author";
 import { normalizePubDate } from "@/lib/publication-date";
-import { findOrCreateAuthor } from "@/lib/actions/books";
+import { findOrCreateAuthor } from "@/lib/authors/find-or-create";
 
 /**
  * Guard for the two uniquely-indexed identity columns on `books`
@@ -1876,18 +1876,11 @@ export async function discoverSeriesBooks(
       for (let i = 0; i < resultAuthors.length; i++) {
         const name = resultAuthors[i];
         const olKey = result.author_key?.[i];
-        let author = await db.query.authors.findFirst({
-          where: eq(authors.name, name),
-        });
-        if (!author) {
-          [author] = await db
-            .insert(authors)
-            .values({ name, openLibraryKey: olKey ?? null })
-            .returning();
-        }
+        // Shared lookup — normalises "Last, First" before matching or inserting.
+        const authorId = await findOrCreateAuthor(name, olKey);
         await db
           .insert(bookAuthors)
-          .values({ bookId: newBook.id, authorId: author.id })
+          .values({ bookId: newBook.id, authorId })
           .onConflictDoNothing();
       }
 

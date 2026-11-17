@@ -17,6 +17,8 @@
  * - Spoiler column: "true" means review contains spoilers
  */
 
+import { normalizeAuthorName, splitAuthorList } from "@/lib/text/author-name";
+
 export interface GoodreadsRow {
   goodreadsId: string;
   title: string; // Cleaned title (series info removed)
@@ -261,12 +263,17 @@ export function parseGoodreadsCSV(csvText: string): GoodreadsRow[] {
       const { cleanTitle, seriesName, seriesPosition } = parseSeriesFromTitle(rawTitle);
 
       const goodreadsId = getCell(cells, columnMap, "goodreadsId");
-      const author = getCell(cells, columnMap, "author");
+      // Goodreads' "Author" column is natural order, but exports edited by hand
+      // (or produced by other tools) sometimes carry "Last, First".
+      const author = normalizeAuthorName(getCell(cells, columnMap, "author"));
 
-      // Additional authors: comma-separated
+      // Additional authors: comma-separated, natural order. splitAuthorList
+      // keeps "Pascal Covici, Jr." whole instead of minting an author "Jr.".
       const additionalAuthorsRaw = getCell(cells, columnMap, "additionalAuthors");
       const additionalAuthors = additionalAuthorsRaw
-        ? additionalAuthorsRaw.split(",").map((a) => a.trim()).filter(Boolean)
+        ? splitAuthorList(additionalAuthorsRaw, { commaSeparated: true }).filter(
+            (a) => a.toLowerCase() !== author.toLowerCase(),
+          )
         : [];
 
       // ISBNs — strip Goodreads wrapper format

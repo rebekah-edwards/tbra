@@ -12,7 +12,8 @@ import {
   userFavoriteBooks,
 } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { findOrCreateAuthor } from "@/lib/actions/books";
+import { findOrCreateAuthor } from "@/lib/authors/find-or-create";
+import { normalizeAuthorName } from "@/lib/text/author-name";
 import { classifyBook } from "@/lib/enrichment/enrichable";
 import { isBoxSetTitle } from "@/lib/queries/books";
 import crypto from "crypto";
@@ -682,7 +683,9 @@ export async function buildLookupCache(userId: string) {
       userStateMap.set(bookId, state);
     },
     /** Get or create an author — uses cache to avoid DB lookup for known authors */
-    async getOrCreateAuthor(name: string): Promise<string> {
+    async getOrCreateAuthor(rawName: string): Promise<string> {
+      // Same normalisation as findOrCreateAuthor — never store "Last, First".
+      const name = normalizeAuthorName(rawName) || rawName.trim();
       const key = name.toLowerCase();
       const cached = authorMap.get(key);
       if (cached) return cached;

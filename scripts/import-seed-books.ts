@@ -10,6 +10,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { eq } from "drizzle-orm";
 import path from "path";
 import * as schema from "../src/db/schema";
+import { findOrCreateAuthor } from "../src/lib/authors/find-or-create";
 
 const {
   books,
@@ -172,22 +173,8 @@ function detectIsFiction(genreNames: string[]): boolean {
 
 // ─── DB helpers ───
 
-async function findOrCreateAuthor(name: string, olKey?: string): Promise<string> {
-  let author = await db.query.authors.findFirst({
-    where: eq(authors.name, name),
-  });
-  if (author) {
-    if (olKey && !author.openLibraryKey) {
-      await db.update(authors).set({ openLibraryKey: olKey }).where(eq(authors.id, author.id));
-    }
-    return author.id;
-  }
-  const [created] = await db
-    .insert(authors)
-    .values({ name, openLibraryKey: olKey ?? null })
-    .returning();
-  return created.id;
-}
+// findOrCreateAuthor is shared (src/lib/authors/find-or-create.ts) so every
+// lane stores the normalised "First Last" name — never "Last, First".
 
 async function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

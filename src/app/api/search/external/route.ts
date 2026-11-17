@@ -7,6 +7,7 @@ import { eq, or } from "drizzle-orm";
 import { isJunkTitle } from "@/lib/openlibrary";
 import { isBoxSetTitle, isEnglishTitle } from "@/lib/queries/books";
 import { classifyLanguageValue } from "@/lib/enrichment/enrichable";
+import { normalizeAuthorName } from "@/lib/text/author-name";
 
 /**
  * Hard daily cap for search-driven ISBNdb calls.
@@ -169,7 +170,10 @@ export async function GET(request: NextRequest) {
     results.push({
       key: `isbndb:${isbn}`,
       title: book.title,
-      author_name: book.authors ?? [],
+      // ISBNdb files most people as "Last, First" ("Yarros, Rebecca"). Normalise
+      // here so the result card, the dedup below and the import all see the
+      // same "First Last" form.
+      author_name: [...new Set((book.authors ?? []).map((a) => normalizeAuthorName(a ?? "")).filter(Boolean))],
       first_publish_year: Number.isFinite(year) ? year : undefined,
       isbn: [isbn13, isbn10, book.isbn].filter(Boolean) as string[],
       number_of_pages_median: book.pages,

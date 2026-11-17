@@ -22,6 +22,7 @@ import {
   findEnglishEditionTitle,
 } from "../src/lib/openlibrary";
 import { enrichBook } from "../src/lib/enrichment/enrich-book";
+import { findOrCreateAuthor } from "../src/lib/authors/find-or-create";
 
 const NONFICTION_GENRES = new Set([
   "Nonfiction", "Biography", "Memoir", "Self-Help", "True Crime", "Philosophy",
@@ -235,19 +236,8 @@ const NYT_QUERIES = [
 
 // ── Helper functions ──────────────────────────────────────────────
 
-async function findOrCreateAuthor(name: string, olKey?: string): Promise<string> {
-  let author = await db.query.authors.findFirst({
-    where: eq(authors.name, name),
-  });
-  if (author) {
-    if (olKey && !author.openLibraryKey) {
-      await db.update(authors).set({ openLibraryKey: olKey }).where(eq(authors.id, author.id));
-    }
-    return author.id;
-  }
-  const [created] = await db.insert(authors).values({ name, openLibraryKey: olKey ?? null }).returning();
-  return created.id;
-}
+// findOrCreateAuthor is shared (src/lib/authors/find-or-create.ts) so every
+// lane stores the normalised "First Last" name — never "Last, First".
 
 let totalNewBooks = 0;
 const MAX_NEW_BOOKS = 1000;

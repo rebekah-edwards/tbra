@@ -36,6 +36,7 @@ import { isLikelyNonEnglish } from "../src/lib/enrichment/enrichable";
 import { findCanonicalForEdition } from "../src/lib/enrichment/canonical-edition";
 import { enrichBook } from "../src/lib/enrichment/enrich-book";
 import { NYT_LISTS, NYT_DELAY_MS, fetchNytList, upsertNytEntries } from "../src/lib/enrichment/nyt";
+import { findOrCreateAuthor } from "../src/lib/authors/find-or-create";
 
 const NONFICTION_GENRES = new Set([
   "Nonfiction", "Biography", "Memoir", "Self-Help", "True Crime", "Philosophy",
@@ -476,19 +477,8 @@ const CHRISTIAN_NONFICTION_QUERIES = [
   "Seasons of Sorrow Tim Challies",
 ];
 
-async function findOrCreateAuthor(name: string, olKey?: string): Promise<string> {
-  let author = await db.query.authors.findFirst({
-    where: eq(authors.name, name),
-  });
-  if (author) {
-    if (olKey && !author.openLibraryKey) {
-      await db.update(authors).set({ openLibraryKey: olKey }).where(eq(authors.id, author.id));
-    }
-    return author.id;
-  }
-  const [created] = await db.insert(authors).values({ name, openLibraryKey: olKey ?? null }).returning();
-  return created.id;
-}
+// findOrCreateAuthor is shared (src/lib/authors/find-or-create.ts) so every
+// lane stores the normalised "First Last" name — never "Last, First".
 
 // Cap the per-author backlist pull so one prolific author can't dominate a
 // single night's volume budget.

@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { parseFormats } from "@/lib/reading-formats";
 import { books, bookAuthors, userBookState, userBookRatings, readingSessions, userBookReviews } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { findOrCreateAuthor } from "@/lib/actions/books";
+import { findOrCreateAuthor } from "@/lib/authors/find-or-create";
 import crypto from "crypto";
 import type { StoryGraphRow } from "./parse-storygraph";
 import { mergeOwnedFormats, isStateProgression, formatImportError, type ImportOptions, DEFAULT_IMPORT_OPTIONS } from "./import-options";
@@ -171,9 +171,11 @@ async function processRow(
 
       cache?.registerBook(bookId, row.title, primaryAuthor, isbn13, isbn10);
 
-      // Link author if we have one
-      if (primaryAuthor) {
-        const authorId = await findOrCreateAuthor(primaryAuthor);
+      // Link every author. The parser now splits StoryGraph's comma-joined
+      // "Authors" cell, so co-authors each get their own row instead of one
+      // row named "Agatha Christie, Sophie Hannah".
+      for (const authorName of row.authors) {
+        const authorId = await findOrCreateAuthor(authorName);
         await db
           .insert(bookAuthors)
           .values({ bookId, authorId })

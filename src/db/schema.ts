@@ -370,6 +370,27 @@ export const bookSlugHistory = sqliteTable("book_slug_history", {
   index("book_slug_history_book").on(table.bookId),
 ]);
 
+/**
+ * Where a retired author identifier now lives.
+ *
+ * An author row disappears when two rows for the same person are merged
+ * ("Yarros, Rebecca" into "Rebecca Yarros"), and its slug changes when it is
+ * renamed. `old_key` is whatever used to address the row — its old slug, or
+ * the UUID of a merged-away row — so links, bookmarks and the iOS app's cached
+ * author ids keep resolving. Maps to the CURRENT author id (not a slug), so a
+ * second rename still resolves in one hop. Written by
+ * scripts/sweep-inverted-authors.ts on local + Turso; not part of sync.
+ */
+export const authorRedirects = sqliteTable("author_redirects", {
+  oldKey: text("old_key").primaryKey(),
+  authorId: text("author_id").notNull().references(() => authors.id),
+  /** 'merge' | 'rename' */
+  reason: text("reason"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  index("author_redirects_author").on(table.authorId),
+]);
+
 /** An edition row whose open_library_key is a real OL key, not a synthetic one. */
 export function isOpenLibraryEdition(e: { source?: string | null; openLibraryKey?: string | null }) {
   return (e.source ?? "openlibrary") === "openlibrary" && !e.openLibraryKey?.startsWith("local:");

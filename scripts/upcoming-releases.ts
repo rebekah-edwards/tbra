@@ -86,6 +86,8 @@ import { findCanonicalForEdition } from "../src/lib/enrichment/canonical-edition
 import { updateSearchIndex } from "../src/lib/search/search-index";
 import { enrichBook } from "../src/lib/enrichment/enrich-book";
 import { findReleaseDateViaBrave } from "../src/lib/enrichment/release-date";
+import { findOrCreateAuthor } from "../src/lib/authors/find-or-create";
+import { normalizeAuthorName } from "../src/lib/text/author-name";
 
 const MAX_AUTHORS = Number(process.env.MAX_AUTHORS ?? 150);
 const MAX_BOOKS = Number(process.env.MAX_BOOKS ?? 60);
@@ -343,12 +345,8 @@ async function alreadyHave(
   return canon != null;
 }
 
-async function findOrCreateAuthor(name: string): Promise<string> {
-  const existing = await db.query.authors.findFirst({ where: eq(authors.name, name) });
-  if (existing) return existing.id;
-  const [created] = await db.insert(authors).values({ name }).returning();
-  return created.id;
-}
+// findOrCreateAuthor is shared (src/lib/authors/find-or-create.ts) so every
+// lane stores the normalised "First Last" name — never "Last, First".
 
 async function main() {
   if (!process.env.GOOGLE_BOOKS_API_KEY) {
@@ -469,7 +467,7 @@ async function main() {
       candidatesSeen++;
 
       const { isbn13, isbn10 } = getGoogleBooksIsbns(vol);
-      const volAuthors = (info.authors ?? []).filter((a) => a?.trim());
+      const volAuthors = (info.authors ?? []).filter((a) => a?.trim()).map(normalizeAuthorName);
       const primaryAuthor = volAuthors[0] ?? authorName;
 
       // Dedup against the existing catalog.

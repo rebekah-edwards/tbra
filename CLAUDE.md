@@ -111,6 +111,13 @@ Google dropped the site to ONE indexed page (the homepage) after ~104K templated
 - **Re-reads:** Goodreads only exports ONE dateRead per book even for re-reads. Import creates only ONE session with the known date. Users can manually add re-read sessions via the Reading History UI.
 - **Supported sources:** Goodreads, StoryGraph, Libby (OverDrive audiobook loans)
 
+## Author names (added 2026-11-16)
+- **Stored form is always "First Last".** `normalizeAuthorName()` / `splitAuthorList()` in `src/lib/text/author-name.ts` are the only normalisers, and `findOrCreateAuthor()` in `src/lib/authors/find-or-create.ts` is the only way to get an `authors` row — web actions, enrichment, the three CSV importers and the scheduled scripts (`nightly-import`, `upcoming-releases`) all import it. Never `db.insert(authors)` with a raw source string: ISBNdb and many OpenLibrary author records are "Last, First", often with life dates or a role bolted on ("Tolkien, J. R. R., 1892-1973", "Smith, John (Editor)"). Before this, nothing normalised them and the catalogue grew "Yarros, Rebecca" beside "Rebecca Yarros".
+- The normaliser is conservative on purpose — organisations, "First Last, Jr.", and several people in one string are returned untouched (`analyzeAuthorName()` says why). Cases live in `scripts/test-author-name.ts` (`npx tsx scripts/test-author-name.ts`, no DB); add one whenever a new shape shows up.
+- **StoryGraph's "Authors" column is comma-separated**, not `;`. The old `;` split minted one author row per co-written book ("Agatha Christie, Sophie Hannah").
+- **Sweep:** `npx tsx scripts/sweep-inverted-authors.ts` (dry run by default; `--apply` writes local + Turso + Meilisearch). Renames in place, merges into an existing correctly-ordered row (links moved with `UPDATE`, collisions removed explicitly), splits comma-joined co-authors, collapses stray whitespace, and lists everything it declines. Idempotent; hand decisions go in its `OVERRIDES` map. Run from the checkout that holds `data/tbra.db`.
+- **`author_redirects`** (old slug or old UUID → current author id; exists on local + Turso, written by the sweep, not part of sync) keeps retired author URLs and the iOS app's cached author ids resolving. `resolveAuthor()` and `src/middleware.ts` both consult it.
+
 ## Deduplication
 
 Three dedup tools, each for a distinct pattern:

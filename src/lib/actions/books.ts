@@ -28,6 +28,8 @@ import {
 import { assignBookSlug, findBookBySlugCollision } from "@/lib/utils/slugify";
 import { resolveEditionVariant } from "@/lib/enrichment/canonical-edition";
 import { stripSubtitle, suffixesConflict } from "@/lib/text/title-separators";
+import { findOrCreateAuthor } from "@/lib/authors/find-or-create";
+import { normalizeAuthorName } from "@/lib/text/author-name";
 
 const NONFICTION_GENRES = new Set([
   "Nonfiction", "Biography", "Memoir", "Self-Help", "True Crime", "Philosophy",
@@ -54,30 +56,6 @@ async function revalidateBookPaths(bookId: string) {
 
 async function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export async function findOrCreateAuthor(
-  name: string,
-  olKey?: string
-): Promise<string> {
-  let author = await db.query.authors.findFirst({
-    where: eq(authors.name, name),
-  });
-  if (author) {
-    // Update OL key if we have one and author doesn't
-    if (olKey && !author.openLibraryKey) {
-      await db
-        .update(authors)
-        .set({ openLibraryKey: olKey })
-        .where(eq(authors.id, author.id));
-    }
-    return author.id;
-  }
-  const [created] = await db
-    .insert(authors)
-    .values({ name, openLibraryKey: olKey ?? null })
-    .returning();
-  return created.id;
 }
 
 /**
@@ -260,7 +238,13 @@ async function importCascadeBooks(authorOlKeys: string[]) {
   }
 }
 
-export async function importFromOpenLibrary(result: OLSearchResult) {
+export async function importFromOpenLibrary(rawResult: OLSearchResult) {
+  // OpenLibrary author records are sometimes filed "Last, First" — store and
+  // match on the normalised name (dedup, slug and the authors row all use it).
+  const result: OLSearchResult = {
+    ...rawResult,
+    author_name: rawResult.author_name?.map(normalizeAuthorName),
+  };
   // Check if OL key is blocked (deleted junk, wrong author, etc.)
   const blocked = await db.query.blockedOlKeys.findFirst({
     where: eq(blockedOlKeys.openLibraryKey, result.key),
@@ -417,7 +401,13 @@ export async function importFromOpenLibrary(result: OLSearchResult) {
 }
 
 // Same as importFromOpenLibrary but returns book ID instead of redirecting
-export async function importFromOpenLibraryAndReturn(result: OLSearchResult): Promise<string | null> {
+export async function importFromOpenLibraryAndReturn(rawResult: OLSearchResult): Promise<string | null> {
+  // OpenLibrary author records are sometimes filed "Last, First" — store and
+  // match on the normalised name (dedup, slug and the authors row all use it).
+  const result: OLSearchResult = {
+    ...rawResult,
+    author_name: rawResult.author_name?.map(normalizeAuthorName),
+  };
   // Check if OL key is blocked
   const blocked = await db.query.blockedOlKeys.findFirst({
     where: eq(blockedOlKeys.openLibraryKey, result.key),
@@ -553,7 +543,9 @@ export async function importFromOpenLibraryAndReturn(result: OLSearchResult): Pr
 
 export async function createBookManually(formData: FormData) {
   const title = formData.get("title") as string;
-  const authorName = formData.get("author") as string;
+  const authorNameRaw = formData.get("author") as string;
+  // A hand-typed "Edwards, Rebekah" is stored as "Rebekah Edwards".
+  const authorName = authorNameRaw ? normalizeAuthorName(authorNameRaw) : authorNameRaw;
   const description = (formData.get("description") as string) || null;
   const yearStr = formData.get("year") as string;
   // Normalize ISBNs immediately — users paste hyphenated ISBNs from Amazon
@@ -982,7 +974,12 @@ export async function importFromISBNdbAndReturn(params: {
   /** Upstream language value (ISBNdb). Feeds the junk gate below. */
   language?: string | null;
 }): Promise<string | null> {
-  const { isbn, title, authors: authorNames, coverUrl, publicationYear, pages, language } = params;
+  const { isbn, title, coverUrl, publicationYear, pages, language } = params;
+  // ISBNdb files most people as "Last, First". Normalise before anything reads
+  // the names: the fuzzy dedup, the slug and the authors rows all depend on it.
+  const authorNames = [
+    ...new Set((params.authors ?? []).map((a) => normalizeAuthorName(a ?? "")).filter(Boolean)),
+  ];
 
   // 1. Normalize the ISBN to digits-only (with optional trailing 'X' for
   // ISBN-10 checksum). ISBNdb and other sources return ISBNs in wildly

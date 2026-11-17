@@ -15,6 +15,8 @@
  * - Some ISBNs may be empty
  */
 
+import { splitAuthorList } from "@/lib/text/author-name";
+
 export interface LibbyRow {
   title: string;
   authors: string[];
@@ -133,40 +135,12 @@ function parseLibbyTimestamp(raw: string): string | null {
 
 /**
  * Split Libby author field into individual authors.
- * Libby uses comma separation: "Michael Crichton, James Patterson"
- * But some author names themselves might have suffixes like "Jr." or "III"
- * We split on ", " followed by an uppercase letter (start of a new name).
+ * Libby uses comma separation in natural order: "Michael Crichton, James Patterson".
+ * The shared splitter keeps suffixes attached ("Harry Turtledove, Jr."), drops
+ * "(ed.)"-style role labels and credentials, and removes repeats.
  */
 function splitAuthors(raw: string): string[] {
-  if (!raw) return [];
-
-  // Handle editor notation: "Harry Turtledove (ed.)" → "Harry Turtledove"
-  const cleaned = raw.replace(/\s*\(ed\.\)\s*/gi, "");
-
-  // Split on comma-space where the next segment starts with an uppercase letter
-  // This handles "Michael Crichton, James Patterson" but not "Turtledove, Jr."
-  const authors: string[] = [];
-  const parts = cleaned.split(",");
-
-  let current = "";
-  for (const part of parts) {
-    const trimmed = part.trim();
-    if (!trimmed) continue;
-
-    if (current && /^[A-Z]/.test(trimmed)) {
-      // New author starts with uppercase — save previous and start new
-      authors.push(current.trim());
-      current = trimmed;
-    } else if (current) {
-      // Continuation (e.g., "Jr." or "III")
-      current += ", " + trimmed;
-    } else {
-      current = trimmed;
-    }
-  }
-  if (current) authors.push(current.trim());
-
-  return authors.filter(Boolean);
+  return splitAuthorList(raw, { commaSeparated: true });
 }
 
 /**

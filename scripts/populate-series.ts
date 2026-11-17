@@ -26,6 +26,7 @@ import {
   findEnglishEditionTitle,
 } from "../src/lib/openlibrary";
 import { enrichBook } from "../src/lib/enrichment/enrich-book";
+import { findOrCreateAuthor } from "../src/lib/authors/find-or-create";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -199,11 +200,8 @@ async function main() {
         for (let i = 0; i < resultAuthors.length; i++) {
           const name = resultAuthors[i];
           const olKey = result.author_key?.[i];
-          let author = await db.query.authors.findFirst({ where: eq(authors.name, name) });
-          if (!author) {
-            [author] = await db.insert(authors).values({ name, openLibraryKey: olKey ?? null }).returning();
-          }
-          await db.insert(bookAuthors).values({ bookId: newBook.id, authorId: author.id }).onConflictDoNothing();
+          const authorId = await findOrCreateAuthor(name, olKey);
+          await db.insert(bookAuthors).values({ bookId: newBook.id, authorId }).onConflictDoNothing();
         }
 
         // Link genres

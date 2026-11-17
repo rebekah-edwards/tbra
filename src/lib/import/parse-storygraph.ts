@@ -5,6 +5,8 @@
  * dynamically, so it works regardless of column ordering changes in StoryGraph.
  */
 
+import { splitAuthorList } from "@/lib/text/author-name";
+
 /** One read from the "Dates Read" column. StoryGraph records a start–end
  *  range per read, at whatever precision the user logged. */
 export interface StoryGraphRead {
@@ -265,12 +267,12 @@ export function parseStoryGraphCSV(csvText: string): StoryGraphRow[] {
       const title = getCell(cells, columnMap, "title");
       if (!title) return null;
 
-      // Authors: semicolon-separated
+      // Authors: StoryGraph joins them with COMMAS, in natural order
+      // ("Agatha Christie, Sophie Hannah"). This used to split on ";" only, so
+      // every co-written book minted one author row holding both names, and a
+      // repeated name ("Leila Russo, Leila Russo") was stored verbatim.
       const authorsRaw = getCell(cells, columnMap, "authors");
-      const authors = authorsRaw
-        .split(";")
-        .map((a) => a.trim())
-        .filter(Boolean);
+      const authors = splitAuthorList(authorsRaw, { commaSeparated: true });
 
       // ISBN/UID — detect numeric ISBNs and alphanumeric ASINs separately
       const isbnRaw = getCell(cells, columnMap, "isbn");

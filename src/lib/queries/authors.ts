@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { db } from "@/db";
-import { authors, bookAuthors, books, bookSeries, series } from "@/db/schema";
+import { authors, authorRedirects, bookAuthors, books, bookSeries, series } from "@/db/schema";
 import { eq, asc, and, ne } from "drizzle-orm";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -36,11 +36,33 @@ export async function getAuthorWithBooks(authorId: string) {
 export const resolveAuthor = cache(async function resolveAuthor(idOrSlug: string) {
   if (UUID_PATTERN.test(idOrSlug)) {
     const author = await db.query.authors.findFirst({ where: eq(authors.id, idOrSlug) });
-    return author ? { author, isIdLookup: true } : null;
+    if (author) return { author, isIdLookup: true };
+    const moved = await resolveRetiredAuthor(idOrSlug);
+    return moved ? { author: moved, isIdLookup: true } : null;
   }
   const author = await db.query.authors.findFirst({ where: eq(authors.slug, idOrSlug) });
-  return author ? { author, isIdLookup: false } : null;
+  if (author) return { author, isIdLookup: false };
+  // isIdLookup:true makes the page redirect to the author's current URL.
+  const moved = await resolveRetiredAuthor(idOrSlug);
+  return moved ? { author: moved, isIdLookup: true } : null;
 });
+
+/**
+ * A slug or id that no longer names a row may be one we retired when merging
+ * duplicate author rows or renaming an inverted name ("Yarros, Rebecca").
+ * Never throws: if the table is missing the lookup simply finds nothing.
+ */
+async function resolveRetiredAuthor(oldKey: string) {
+  try {
+    const hit = await db.query.authorRedirects.findFirst({
+      where: eq(authorRedirects.oldKey, oldKey),
+    });
+    if (!hit) return null;
+    return (await db.query.authors.findFirst({ where: eq(authors.id, hit.authorId) })) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Get an author by slug with all their books (excluding box sets),

@@ -7,6 +7,7 @@ import { books } from "@/db/schema";
 import { eq, or } from "drizzle-orm";
 import { isJunkTitle } from "@/lib/openlibrary";
 import { isBoxSetTitle, isEnglishTitle } from "@/lib/queries/books";
+import { normalizeAuthorName } from "@/lib/text/author-name";
 
 // Shares the ISBNdb search quota key + limit with /api/search/external —
 // one budget across web and native.
@@ -67,7 +68,8 @@ export async function GET(req: Request) {
     results.push({
       isbn,
       title: book.title,
-      authors: book.authors ?? [],
+      // ISBNdb files people as "Last, First" — show (and later import) "First Last".
+      authors: [...new Set((book.authors ?? []).map((a) => normalizeAuthorName(a ?? "")).filter(Boolean))],
       publicationYear: Number.isFinite(year) ? year : null,
       pages: book.pages ?? null,
       coverUrl: getISBNdbCoverUrl(book) ?? null,

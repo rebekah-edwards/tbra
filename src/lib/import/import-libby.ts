@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { parseFormats } from "@/lib/reading-formats";
 import { books, bookAuthors, userBookState, readingSessions } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { findOrCreateAuthor } from "@/lib/actions/books";
+import { findOrCreateAuthor } from "@/lib/authors/find-or-create";
 import crypto from "crypto";
 import type { LibbyRow } from "./parse-libby";
 import { formatImportError, type ImportOptions, DEFAULT_IMPORT_OPTIONS } from "./import-options";

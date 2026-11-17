@@ -10,7 +10,7 @@ import {
   normalizeGenres,
   findOldestHardcoverCover,
 } from "@/lib/openlibrary";
-import { findOrCreateAuthor } from "@/lib/actions/books";
+import { findOrCreateAuthor } from "@/lib/authors/find-or-create";
 import { enrichBook } from "@/lib/enrichment/enrich-book";
 
 const OL_DELAY_MS = 500;

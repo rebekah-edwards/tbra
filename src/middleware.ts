@@ -93,7 +93,7 @@ async function resolveEntity(kind: string, segment: string): Promise<EntityVerdi
   if (UUID_PATTERN.test(segment)) {
     const rows = await tursoQuery(`SELECT slug FROM ${table} WHERE id = ? LIMIT 1`, [segment]);
     if (!rows) return { kind: "pass" };
-    if (rows.length === 0) return { kind: "missing" };
+    if (rows.length === 0) return kind === "author" ? retiredAuthor(segment) : { kind: "missing" };
     const slug = rows[0][0];
     // Slug-less rows are legitimately served at their UUID URL.
     return slug ? { kind: "moved", to: `/${kind}/${encodeURIComponent(slug)}` } : { kind: "pass" };
@@ -102,7 +102,8 @@ async function resolveEntity(kind: string, segment: string): Promise<EntityVerdi
   if (kind !== "book") {
     const rows = await tursoQuery(`SELECT 1 FROM ${table} WHERE slug = ? LIMIT 1`, [segment]);
     if (!rows) return { kind: "pass" };
-    return rows.length > 0 ? { kind: "pass" } : { kind: "missing" };
+    if (rows.length > 0) return { kind: "pass" };
+    return kind === "author" ? retiredAuthor(segment) : { kind: "missing" };
   }
 
   // Books: a live slug wins; otherwise a retired slug (merge/rename) 301s to
@@ -119,6 +120,21 @@ async function resolveEntity(kind: string, segment: string): Promise<EntityVerdi
   if (!old) return { kind: "missing" };
   const target = old[1] || old[2];
   return target ? { kind: "moved", to: `/book/${encodeURIComponent(target)}` } : { kind: "missing" };
+}
+
+/**
+ * An author slug or id that no longer names a row: 301 to the author it was
+ * merged into or renamed to (`author_redirects`), otherwise a real 404. If the
+ * lookup itself fails the answer stays "missing" — exactly what this URL got
+ * before the table existed.
+ */
+async function retiredAuthor(oldKey: string): Promise<EntityVerdict> {
+  const rows = await tursoQuery(
+    `SELECT a.slug, a.id FROM author_redirects r JOIN authors a ON a.id = r.author_id WHERE r.old_key = ? LIMIT 1`,
+    [oldKey],
+  ).catch(() => null);
+  const target = rows?.[0]?.[0] || rows?.[0]?.[1];
+  return target ? { kind: "moved", to: `/author/${encodeURIComponent(target)}` } : { kind: "missing" };
 }
 
 export async function middleware(request: NextRequest) {
