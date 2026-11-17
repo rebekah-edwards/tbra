@@ -166,6 +166,14 @@ struct AmbientBackground: View {
     }
 }
 
+extension Theme {
+    /// A control's outline: a capsule in the refreshed look (2026-11), the
+    /// rounded rect it had in v1 otherwise.
+    static func controlShape(_ v1Radius: CGFloat) -> AnyShape {
+        DesignPreview.on ? AnyShape(Capsule()) : AnyShape(RoundedRectangle(cornerRadius: v1Radius))
+    }
+}
+
 // ── Primary CTA — solid lime, black text; neutral surface when disabled
 // (a disabled CTA must read as neutral, never as darkened/olive green). ──
 struct AccentButtonStyle: ButtonStyle {

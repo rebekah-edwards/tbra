@@ -2689,10 +2689,10 @@ struct AdminRatingEditorSheet: View {
             } label: {
                 Text(saving ? "Saving…" : "Save & Verify")
                     .font(Theme.body(15, .semibold))
-                    .foregroundStyle(.black)
+                    .foregroundStyle(Theme.onAccent)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 13)
-                    .background(Theme.accent, in: RoundedRectangle(cornerRadius: 14))
+                    .background(Theme.accent, in: Theme.controlShape(14))
             }
             .disabled(saving)
             Spacer()

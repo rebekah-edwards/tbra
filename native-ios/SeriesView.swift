@@ -272,6 +272,20 @@ extension View {
     func appDestinations() -> some View { modifier(AppDestinations()) }
 }
 
+/// The trough behind a segmented switch: glass capsule in the refreshed look
+/// (My Library, Shelves, Series), a tinted rounded rect in v1.
+struct SegmentTrack: ViewModifier {
+    func body(content: Content) -> some View {
+        if DesignPreview.on {
+            content.glassEffect(.regular, in: Capsule())
+        } else {
+            content
+                .background(Theme.surfaceAlt.opacity(0.6))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+    }
+}
+
 struct SeriesBookRow: Codable, Hashable, Identifiable {
     let id: String
     let slug: String?
@@ -510,17 +524,16 @@ struct SeriesView: View {
                             .font(Theme.body(13))
                             .opacity(0.7)
                     }
-                    .foregroundStyle(tab == t ? .black : Theme.muted)
+                    .foregroundStyle(tab == t ? Theme.onAccent : Theme.muted)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
+                    .padding(.vertical, DesignPreview.on ? 10 : 11)
                     .background(tab == t ? Theme.accent : .clear)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(DesignPreview.on ? AnyShape(Capsule()) : AnyShape(RoundedRectangle(cornerRadius: 12)))
                 }
             }
         }
         .padding(4)
-        .background(Theme.surfaceAlt.opacity(0.6))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .modifier(SegmentTrack())
     }
 
     private func seriesCard(_ book: SeriesBookRow) -> some View {

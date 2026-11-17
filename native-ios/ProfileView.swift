@@ -301,9 +301,9 @@ struct ProfileView: View {
                 } label: {
                     Text(copiedReferral ? "Copied!" : "Copy")
                         .font(Theme.body(15, .semibold))
-                        .foregroundStyle(.black)
+                        .foregroundStyle(Theme.onAccent)
                         .padding(.horizontal, 18).padding(.vertical, 10)
-                        .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12))
+                        .background(Theme.accent, in: Theme.controlShape(12))
                 }
             }
             // Always shown, and tappable — it used to appear only once

@@ -175,13 +175,45 @@ struct OwnedPill: View {
     var body: some View {
         if count > 0 {
             HStack(spacing: 6) {
-                Image(systemName: "books.vertical").font(.system(size: 12))
+                Image(systemName: DesignPreview.on ? "books.vertical.fill" : "books.vertical")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.neonPurple)
                 Text(count == 1 ? "Owned" : "Owned · \(count)")
                     .font(Theme.body(14, .medium))
             }
-            .foregroundStyle(Theme.neonPurple)
-            .padding(.horizontal, 14).padding(.vertical, 9)
-            .background(Capsule().stroke(Theme.neonPurple.opacity(0.35), lineWidth: 1.5))
+            .modifier(OwnedPillChrome(owned: true, interactive: false))
+        }
+    }
+}
+
+/// The Owned pill's surface. Refreshed (2026-11): neutral glass with the
+/// purple in the icon and a thin ring once owned — the book page's rule, so a
+/// list row no longer carries a solid purple pill beside its lime one.
+struct OwnedPillChrome: ViewModifier {
+    let owned: Bool
+    /// The tappable compact button (v1: solid purple when owned) versus the
+    /// static label (v1: purple outline).
+    let interactive: Bool
+
+    func body(content: Content) -> some View {
+        if DesignPreview.on {
+            content
+                .foregroundStyle(owned ? Theme.foreground : Theme.muted)
+                .padding(.horizontal, 14).padding(.vertical, 9)
+                .glassEffect(.regular, in: Capsule())
+                .overlay(Capsule().stroke(owned ? Theme.neonPurple.opacity(0.7) : Color.clear, lineWidth: 1.5))
+        } else if interactive {
+            content
+                .foregroundStyle(owned ? .white : Theme.muted)
+                .padding(.horizontal, 14).padding(.vertical, 9)
+                .background(owned ? AnyShapeStyle(Theme.neonPurple) : AnyShapeStyle(Theme.neonPurple.opacity(0.1)))
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(Theme.neonPurple.opacity(owned ? 1 : 0.4), lineWidth: 1.5))
+        } else {
+            content
+                .foregroundStyle(Theme.neonPurple)
+                .padding(.horizontal, 14).padding(.vertical, 9)
+                .background(Capsule().stroke(Theme.neonPurple.opacity(0.35), lineWidth: 1.5))
         }
     }
 }
@@ -222,15 +254,17 @@ struct CompactOwnedButton: View {
             onDropdownChange?(open)
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: "books.vertical").font(.system(size: 12))
+                if DesignPreview.on {
+                    Image(systemName: isOwned ? "books.vertical.fill" : "books.vertical")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.neonPurple)
+                } else {
+                    Image(systemName: "books.vertical").font(.system(size: 12))
+                }
                 Text(isOwned ? (formats.count == 1 ? "Owned" : "Owned · \(formats.count)") : "Owned")
                     .font(Theme.body(14, .medium))
             }
-            .foregroundStyle(isOwned ? .white : Theme.muted)
-            .padding(.horizontal, 14).padding(.vertical, 9)
-            .background(isOwned ? AnyShapeStyle(Theme.neonPurple) : AnyShapeStyle(Theme.neonPurple.opacity(0.1)))
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(Theme.neonPurple.opacity(isOwned ? 1 : 0.4), lineWidth: 1.5))
+            .modifier(OwnedPillChrome(owned: isOwned, interactive: true))
         }
         .opacity(busy ? 0.6 : 1)
         .overlay(alignment: .topLeading) { dropdown }

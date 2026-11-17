@@ -833,14 +833,16 @@ private struct TrackProgressSheet: View {
                                 } label: {
                                     Text(m.rawValue)
                                         .font(Theme.body(12, .medium))
-                                        .foregroundStyle(pageMode == m ? .black : Theme.muted)
+                                        .foregroundStyle(pageMode == m ? Theme.onAccent : Theme.muted)
                                         .padding(.horizontal, 12).padding(.vertical, 6)
-                                        .background(pageMode == m ? Theme.accent : .clear)
+                                        .background(pageMode == m ? Theme.accent : .clear,
+                                                    in: Theme.controlShape(0))
                                 }
                             }
                         }
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .padding(DesignPreview.on ? 3 : 0)
+                        .overlay(Theme.controlShape(10).stroke(Theme.border, lineWidth: 1))
+                        .clipShape(Theme.controlShape(10))
 
                         TextField(pageMode == .page ? "Page #" : "Percent", text: $pageValue)
                             .keyboardType(.numberPad)
@@ -928,8 +930,8 @@ private struct TrackProgressSheet: View {
                         .foregroundStyle(Theme.accentText)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Theme.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.accent.opacity(0.45), lineWidth: 1))
+                        .background(Theme.accent.opacity(0.1), in: Theme.controlShape(14))
+                        .overlay(Theme.controlShape(14).stroke(Theme.accent.opacity(0.45), lineWidth: 1))
                         .disabled(busy || Int(pageValue) == nil)
                     }
                 }
