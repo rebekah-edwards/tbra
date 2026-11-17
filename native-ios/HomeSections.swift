@@ -110,9 +110,9 @@ struct TbrSuggestionCard: View {
                                 // BLUE in light mode (lime is unreadable on the
                                 // white card — user request 2026-07-11).
                                 Text((book.reason ?? "From Your TBR").uppercased())
-                                    .font(Theme.body(10, .medium))
+                                    .font(Theme.body(DesignPreview.on ? 11 : 10, DesignPreview.on ? .bold : .medium))
                                     .tracking(1.0)
-                                    .foregroundStyle(Color(dark: "a3e635", light: "0ea5e9"))
+                                    .foregroundStyle(DesignPreview.on ? Theme.muted : Color(dark: "a3e635", light: "0ea5e9"))
                                 Text(book.title)
                                     .font(Theme.body(16, .bold))
                                     .foregroundStyle(Theme.foreground)
@@ -140,15 +140,16 @@ struct TbrSuggestionCard: View {
                             Text(shuffling ? "Shuffling..." : "Show me another")
                                 .font(Theme.body(12, .medium))
                         }
-                        .foregroundStyle(Theme.muted)
+                        .foregroundStyle(DesignPreview.on ? Theme.neonBlue : Theme.muted)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                     }
                     .disabled(shuffling)
                 }
-                .background(Theme.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                .background(Theme.surface.opacity(DesignPreview.on ? 0.8 : 1))
+                .clipShape(RoundedRectangle(cornerRadius: DesignPreview.on ? 18 : 12))
+                .overlay(RoundedRectangle(cornerRadius: DesignPreview.on ? 18 : 12)
+                    .stroke(DesignPreview.on ? Theme.foreground.opacity(0.10) : Theme.border, lineWidth: 1))
             } else {
                 // Empty state: "No owned TBR books yet. Find books to add"
                 HStack(spacing: 4) {
@@ -158,14 +159,15 @@ struct TbrSuggestionCard: View {
                     Button { openSearch() } label: {
                         Text("Find books to add")
                             .font(Theme.body(14, .medium))
-                            .foregroundStyle(Theme.accent)
+                            .foregroundStyle(DesignPreview.on ? Theme.neonBlue : Theme.accent)
                     }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
-                .background(Theme.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                .background(Theme.surface.opacity(DesignPreview.on ? 0.8 : 1))
+                .clipShape(RoundedRectangle(cornerRadius: DesignPreview.on ? 18 : 12))
+                .overlay(RoundedRectangle(cornerRadius: DesignPreview.on ? 18 : 12)
+                    .stroke(DesignPreview.on ? Theme.foreground.opacity(0.10) : Theme.border, lineWidth: 1))
             }
         }
     }
