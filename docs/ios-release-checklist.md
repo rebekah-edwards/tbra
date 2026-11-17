@@ -56,6 +56,28 @@ upload an archive that hasn't passed it.
    upload rather than by email afterwards.
 7. `xcrun altool --upload-app`.
 
+## The in-app "What's New" note (build 19 onward)
+
+After an update the app shows a one-time sheet with what changed, and Settings
+has a "What's New" row that reopens it. The wording is NOT in the app: it is
+served by `GET /api/v1/whats-new?build=<n>` from `src/lib/whats-new.ts`, and
+the app shows the newest entry at or below its own build that it has not shown
+before.
+
+- **Before a build reaches testers, add an entry for that build number and
+  deploy the website.** No entry means no note — the build ships silently.
+  Deploy first: a tester who opens the new build before the entry is live sees
+  nothing, though the note still appears on a later launch.
+- It is text shown to readers in Rebekah's name. Get her OK on the wording.
+- Wording can be corrected after release with a web deploy alone. Readers who
+  already dismissed the note will not see it again (the device remembers the
+  entry's build number), but Settings > What's New shows the current text.
+- A fresh install never sees a note for the build it installed; builds 18 and
+  earlier cannot show notes at all.
+- `icon` is an SF Symbol name; an unknown one falls back to a sparkle.
+- Simulator: `SIMCTL_CHILD_TBRA_DEBUG_WHATS_NEW=1` forces the sheet;
+  `TBRA_DEBUG_NO_TOURS=1` suppresses it (store screenshots).
+
 ## Reading App Store Connect afterwards
 
 - **A build in `PROCESSING` does not appear in the ASC API's `/v1/builds`
