@@ -224,7 +224,7 @@ struct ActivityBookRef: Codable, Hashable {
     let coverImageUrl: String?
 }
 struct ActivityItem: Codable, Hashable {
-    let type: String   // completed | review | rating | currently_reading | tbr | reading_note
+    let type: String   // completed | review | rating | currently_reading | tbr (reading_note: legacy servers only, never shown as a note)
     let user: ActivityUser
     let book: ActivityBookRef
     let rating: Double?

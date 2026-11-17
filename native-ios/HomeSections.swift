@@ -200,16 +200,54 @@ struct BecauseYouLikedSection: View {
 }
 
 // ── Friends Activity — friends-activity.tsx ──
+// Two tiers (2026-11 redesign, mirrors the web):
+//   • a written review is the content — a wide card with the quote
+//   • everything else (TBR'd, started, progress, finished, rated) is a small
+//     glass tile: who, the cover, one caption line
+// Reading notes are private to their author and never appear here.
+
+extension ActivityItem {
+    var hasProgress: Bool { (percentComplete ?? 0) > 0 || (pageNumber ?? 0) > 0 }
+    /// Only a review with text gets the wide card; a bare rating is a tile.
+    var isWrittenReview: Bool { type == "review" && !(reviewPreview ?? "").isEmpty }
+    /// A server that predates the redesign still sends `reading_note` items.
+    /// One carrying a page/percent is shown as progress; one without is a
+    /// private note and is dropped.
+    var isFeedVisible: Bool { type != "reading_note" || hasProgress }
+}
+
+private enum FriendsFeedMetrics {
+    static let reviewWidth: CGFloat = 236
+    static let tileWidth: CGFloat = 116
+    static let bannerHeight: CGFloat = 92
+    /// Row height when a review card is present (banner + 3-line quote), and
+    /// when the row is tiles only.
+    static let reviewRowHeight: CGFloat = 186
+    static let tileRowHeight: CGFloat = 154
+    static let corner: CGFloat = 12
+    /// Text over the blurred cover — white on dark, near-black on the light
+    /// frosted treatment (web .book-header-text flips the same way).
+    static let overlayText = Color(dark: "ffffff", light: "18181b")
+}
+
 struct FriendsActivityRow: View {
     let activity: [ActivityItem]
-    /// Card tap → book page (reviews → the review itself); wired by HomeView.
+    /// Card tap → book page (written reviews → the review itself); wired by HomeView.
     var onOpen: (ActivityItem) -> Void = { _ in }
 
     var body: some View {
+        let items = activity.filter(\.isFeedVisible)
+        let rowHeight = items.contains(where: \.isWrittenReview)
+            ? FriendsFeedMetrics.reviewRowHeight
+            : FriendsFeedMetrics.tileRowHeight
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                ForEach(Array(activity.enumerated()), id: \.offset) { _, item in
-                    FriendsActivityCard(item: item, onOpen: { onOpen(item) })
+            HStack(spacing: 10) {
+                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                    if item.isWrittenReview {
+                        FriendsReviewCard(item: item, onOpen: { onOpen(item) })
+                    } else {
+                        FriendsActivityTile(item: item, height: rowHeight, onOpen: { onOpen(item) })
+                    }
                 }
             }
             .padding(.trailing, 48)
@@ -224,37 +262,13 @@ struct FriendsActivityRow: View {
     }
 }
 
-private struct FriendsActivityCard: View {
+// ── Tier 1: a written review ──
+private struct FriendsReviewCard: View {
     let item: ActivityItem
     var onOpen: () -> Void = {}
 
-    /// (label, pill tint, label colour). The lime pills need `Theme.accentText`
-    /// on the label — lime-on-lime-15% is unreadable in light mode, and the web
-    /// gets the same treatment for free via the `text-accent` override.
-    private var actionLabel: (String, Color, Color) {
-        switch item.type {
-        case "completed": return ("FINISHED", Theme.neonBlue, Theme.neonBlue)
-        case "review": return ("REVIEWED", Theme.neonPurple, Theme.neonPurple)
-        case "rating": return ("RATED", Theme.accent, Theme.accentText)
-        case "currently_reading": return ("READING", Theme.accent, Theme.accentText)
-        case "tbr": return ("TBR'D", Theme.neonBlue, Theme.neonBlue)
-        default: return ("READING NOTE", .orange, .orange)
-        }
-    }
-
-    private var userName: String {
-        item.user.displayName ?? item.user.username ?? "Reader"
-    }
-
-    private var progressLabel: String? {
-        if let pct = item.percentComplete, pct > 0 { return "\(Int(pct.rounded()))% complete" }
-        if let page = item.pageNumber, page > 0 { return "On page \(page)" }
-        return nil
-    }
-
-    /// Text over the banner scrim — white on dark, near-black on the light
-    /// frosted treatment (web .book-header-text flips the same way).
-    private let bannerText = Color(dark: "ffffff", light: "18181b")
+    private let overlayText = FriendsFeedMetrics.overlayText
+    private let bannerHeight = FriendsFeedMetrics.bannerHeight
 
     var body: some View {
         // Plain Button — NavigationLink(value:) dies in sibling-card runs on
@@ -263,12 +277,14 @@ private struct FriendsActivityCard: View {
             VStack(alignment: .leading, spacing: 0) {
                 banner
                 cardBody
+                Spacer(minLength: 0)
             }
-            .frame(width: 200, alignment: .leading)
+            .frame(width: FriendsFeedMetrics.reviewWidth,
+                   height: FriendsFeedMetrics.reviewRowHeight, alignment: .topLeading)
             .background(Theme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
-            .contentShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: FriendsFeedMetrics.corner))
+            .overlay(RoundedRectangle(cornerRadius: FriendsFeedMetrics.corner).stroke(Theme.border, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: FriendsFeedMetrics.corner))
         }
         .buttonStyle(.plain)
     }
@@ -279,10 +295,10 @@ private struct FriendsActivityCard: View {
     private var banner: some View {
         ZStack(alignment: .bottomLeading) {
             if let cover = item.book.coverImageUrl, let url = URL(string: cover) {
-                CoverBlurImage(url: url).frame(height: 92)
-                Theme.scrim.frame(height: 92).allowsHitTesting(false)
+                CoverBlurImage(url: url).frame(height: bannerHeight)
+                Theme.scrim.frame(height: bannerHeight).allowsHitTesting(false)
             } else {
-                Theme.surfaceAlt.frame(height: 92)
+                Theme.surfaceAlt.frame(height: bannerHeight)
             }
 
             HStack(alignment: .bottom, spacing: 8) {
@@ -290,38 +306,174 @@ private struct FriendsActivityCard: View {
                     .shadow(color: .black.opacity(0.35), radius: 4, y: 2)
                 Text(item.book.title)
                     .font(Theme.body(12, .bold))
-                    .foregroundStyle(bannerText)
+                    .foregroundStyle(overlayText)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                     .padding(.bottom, 2)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 10)
             .padding(.bottom, 6)
         }
-        .frame(height: 92)
+        .frame(height: bannerHeight)
         .clipped()
         .overlay(alignment: .topLeading) {
             HStack(spacing: 6) {
-                avatar
-                Text(userName)
+                FriendsAvatar(user: item.user)
+                Text(item.user.feedName)
                     .font(Theme.body(11, .semibold))
-                    .foregroundStyle(bannerText)
+                    .foregroundStyle(overlayText)
                     .lineLimit(1)
                 Spacer(minLength: 4)
-                Text(timeAgo(item.timestamp))
+                Text(friendsTimeAgo(item.timestamp))
                     .font(Theme.body(10))
-                    .foregroundStyle(bannerText.opacity(0.7))
+                    .foregroundStyle(overlayText.opacity(0.7))
             }
-            .padding(.horizontal, 8)
-            .padding(.top, 7)
+            .padding(.horizontal, 10)
+            .padding(.top, 8)
         }
     }
 
-    private var avatar: some View {
-        // Avatar (lime fallback initial, like the web)
+    private var cardBody: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Text("REVIEWED")
+                    .font(Theme.body(9, .semibold))
+                    .tracking(0.5)
+                    .foregroundStyle(Theme.neonPurple)
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(Theme.neonPurple.opacity(0.15), in: Capsule())
+                    .overlay(Capsule().stroke(Theme.neonPurple.opacity(0.2), lineWidth: 1))
+                if let rating = item.rating, rating > 0 {
+                    StarRow(rating: rating)
+                }
+            }
+            Text("\u{201C}\(item.reviewPreview ?? "")\u{201D}")
+                .font(Theme.body(11))
+                .foregroundStyle(Theme.foreground.opacity(0.75))
+                .lineSpacing(2)
+                .lineLimit(3)
+                .multilineTextAlignment(.leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+    }
+}
+
+// ── Tier 2: everything else ──
+private struct FriendsActivityTile: View {
+    let item: ActivityItem
+    let height: CGFloat
+    var onOpen: () -> Void = {}
+
+    private let overlayText = FriendsFeedMetrics.overlayText
+    private let width = FriendsFeedMetrics.tileWidth
+
+    /// The one caption line: SF Symbol, its tint, the text, and the phrase
+    /// VoiceOver reads between the reader's name and the book title.
+    private var caption: (icon: String, tint: Color, text: String, spoken: String) {
+        let stars: String? = {
+            guard let rating = item.rating, rating > 0 else { return nil }
+            return friendsRatingText(rating)
+        }()
+        switch item.type {
+        case "tbr":
+            return ("bookmark.fill", Theme.neonBlue, "TBR'd", "added to TBR")
+        case "currently_reading", "reading_note":
+            if let pct = item.percentComplete, pct > 0 {
+                let p = Int(pct.rounded())
+                return ("book", Theme.accentText, "\(p)% read", "is \(p)% through")
+            }
+            if let page = item.pageNumber, page > 0 {
+                return ("book", Theme.accentText, "p. \(page)", "is on page \(page) of")
+            }
+            return ("book", Theme.accentText, "Reading", "started reading")
+        case "completed":
+            return ("checkmark", Theme.neonBlue, "Finished", "finished")
+        case "rating":
+            return ("star.fill", Theme.accentText, stars ?? "Rated", stars.map { "rated \($0) stars" } ?? "rated")
+        default:
+            // A review with no text is a rating in practice.
+            if let stars { return ("star.fill", Theme.accentText, stars, "rated \(stars) stars") }
+            return ("pencil", Theme.neonPurple, "Reviewed", "reviewed")
+        }
+    }
+
+    var body: some View {
+        let caption = self.caption
+        // Plain Button — see FriendsReviewCard.
+        Button(action: onOpen) {
+            ZStack {
+                // Frame-bounded backdrop (iOS 27 rule — see CoverBlurImage).
+                if let cover = item.book.coverImageUrl, let url = URL(string: cover) {
+                    CoverBlurImage(url: url).frame(width: width, height: height)
+                    Theme.scrim.frame(width: width, height: height).allowsHitTesting(false)
+                } else {
+                    Theme.surfaceAlt.frame(width: width, height: height)
+                }
+
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 6) {
+                        FriendsAvatar(user: item.user)
+                        Text(item.user.feedFirstName)
+                            .font(Theme.body(11, .semibold))
+                            .foregroundStyle(overlayText)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                    }
+
+                    Spacer(minLength: 6)
+                    CoverThumb(url: item.book.coverImageUrl, width: 60, height: 90, radius: 6, title: item.book.title)
+                        .shadow(color: .black.opacity(0.35), radius: 5, y: 2)
+                        .frame(maxWidth: .infinity)
+                    Spacer(minLength: 6)
+
+                    HStack(spacing: 4) {
+                        Image(systemName: caption.icon)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(caption.tint)
+                        Text(caption.text)
+                            .font(Theme.body(11, .semibold))
+                            .foregroundStyle(overlayText)
+                            .lineLimit(1)
+                            .layoutPriority(1)
+                        Spacer(minLength: 4)
+                        Text(friendsTimeAgo(item.timestamp))
+                            .font(Theme.body(10))
+                            .foregroundStyle(overlayText.opacity(0.7))
+                            .lineLimit(1)
+                    }
+                }
+                .padding(8)
+                .frame(width: width, height: height)
+            }
+            .frame(width: width, height: height)
+            .background(Theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: FriendsFeedMetrics.corner))
+            .overlay(RoundedRectangle(cornerRadius: FriendsFeedMetrics.corner).stroke(Theme.border, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: FriendsFeedMetrics.corner))
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(item.user.feedName) \(caption.spoken) \(item.book.title)")
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+private extension ActivityUser {
+    var feedName: String { displayName ?? username ?? "Reader" }
+    var feedFirstName: String {
+        feedName.split(separator: " ").first.map(String.init) ?? feedName
+    }
+}
+
+/// Avatar (lime fallback initial, like the web).
+private struct FriendsAvatar: View {
+    let user: ActivityUser
+
+    var body: some View {
         Group {
-            if let avatarUrl = item.user.avatarUrl,
+            if let avatarUrl = user.avatarUrl,
                let url = avatarUrl.hasPrefix("/")
                    ? URL(string: avatarUrl, relativeTo: APIClient.baseURL)
                    : URL(string: avatarUrl) {
@@ -331,7 +483,7 @@ private struct FriendsActivityCard: View {
             } else {
                 ZStack {
                     Theme.accent
-                    Text(String(userName.prefix(1)).uppercased())
+                    Text(String(user.feedName.prefix(1)).uppercased())
                         .font(Theme.body(9, .bold))
                         .foregroundStyle(.black)
                 }
@@ -340,61 +492,41 @@ private struct FriendsActivityCard: View {
         .frame(width: 20, height: 20)
         .clipShape(Circle())
     }
+}
 
-    private var cardBody: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            let (label, color, labelColor) = actionLabel
-            HStack(spacing: 6) {
-                Text(label)
-                    .font(Theme.body(9, .semibold))
-                    .tracking(0.5)
-                    .foregroundStyle(labelColor)
-                    .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(color.opacity(0.15), in: Capsule())
-                    .overlay(Capsule().stroke(color.opacity(0.2), lineWidth: 1))
-                if let rating = item.rating, rating > 0 {
-                    StarRow(rating: rating)
-                }
-            }
+/// "4.5", or "3.75" for quarter-star ratings (web formatRating).
+private func friendsRatingText(_ rating: Double) -> String {
+    let frac = rating.truncatingRemainder(dividingBy: 1)
+    let quarter = abs(frac - 0.25) < 0.01 || abs(frac - 0.75) < 0.01
+    return String(format: quarter ? "%.2f" : "%.1f", rating)
+}
 
-            if item.type == "reading_note" {
-                // Progress only — the note body is private and never even
-                // reaches the client (see activity-feed.ts).
-                Text(progressLabel ?? "Logged a private note")
-                    .font(Theme.body(10))
-                    .foregroundStyle(Theme.muted)
-            }
-            if let preview = item.reviewPreview, !preview.isEmpty, item.type != "reading_note" {
-                Text(preview)
-                    .font(Theme.body(10))
-                    .foregroundStyle(Theme.muted)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-    }
-
-    private func timeAgo(_ timestamp: String) -> String {
-        // Shared parser — this used to skip the naive-UTC form entirely and
-        // fall through to a date-only parse in device-local time.
-        let then = DateFmt.parse(timestamp)
-        guard let then else { return "" }
-        let diff = Date().timeIntervalSince(then)
-        let minutes = Int(diff / 60), hours = Int(diff / 3600), days = Int(diff / 86400)
-        if minutes < 1 { return "now" }
-        if minutes < 60 { return "\(minutes)m" }
-        if hours < 24 { return "\(hours)h" }
-        if days < 30 { return "\(days)d" }
+/// Short relative time for the feed ("now", "12m", "3h", "5d", "Nov 2").
+private func friendsTimeAgo(_ timestamp: String) -> String {
+    let monthDay: (Date) -> String = { date in
         let out = DateFormatter(); out.dateFormat = "MMM d"
-        return out.string(from: then)
+        return out.string(from: date)
     }
-
-    private func dateOnly(_ s: String) -> Date? {
+    // Finish dates are calendar days with no time — count whole days.
+    if timestamp.count == 10 {
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
-        return f.date(from: String(s.prefix(10)))
+        guard let then = f.date(from: timestamp) else { return "" }
+        let cal = Calendar.current
+        let days = cal.dateComponents([.day], from: cal.startOfDay(for: then),
+                                      to: cal.startOfDay(for: Date())).day ?? 0
+        if days <= 0 { return "today" }
+        if days < 30 { return "\(days)d" }
+        return monthDay(then)
     }
+    // Shared parser — handles ISO and the naive-UTC SQL form.
+    guard let then = DateFmt.parse(timestamp) else { return "" }
+    let diff = Date().timeIntervalSince(then)
+    let minutes = Int(diff / 60), hours = Int(diff / 3600), days = Int(diff / 86400)
+    if minutes < 1 { return "now" }
+    if minutes < 60 { return "\(minutes)m" }
+    if hours < 24 { return "\(hours)h" }
+    if days < 30 { return "\(days)d" }
+    return monthDay(then)
 }
 
 extension ISO8601DateFormatter {

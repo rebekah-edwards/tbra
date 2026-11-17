@@ -362,13 +362,13 @@ struct HomeView: View {
                         BecauseYouLikedSection(section: section)
                     }
 
-                    if !discover.friendsActivity.isEmpty {
+                    if discover.friendsActivity.contains(where: \.isFeedVisible) {
                         VStack(alignment: .leading, spacing: 14) {
                             SectionHeading("Friends Activity")
                             FriendsActivityRow(activity: discover.friendsActivity) { item in
                                 // Reviews open the review itself; everything
                                 // else opens the book page.
-                                if item.type == "review", let reviewId = item.reviewId {
+                                if item.isWrittenReview, let reviewId = item.reviewId {
                                     path.append(ReviewsRoute(
                                         bookIdOrSlug: item.book.slug ?? item.book.id,
                                         bookTitle: item.book.title,
