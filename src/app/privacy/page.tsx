@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 // Required for the Google Play listing (and app-store reviews generally).
 // Keep this honest and in sync with actual practice — it is intentionally
 // written in plain language, not boilerplate.
-const LAST_UPDATED = "July 17, 2026";
+const LAST_UPDATED = "November 16, 2026";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -42,6 +42,8 @@ export default function PrivacyPage() {
           <strong>Account information.</strong> Your email address, a display name and username, and
           a password (stored only as a salted hash — we cannot see it). If you sign in with Google,
           we receive your name, email address, and profile picture from Google instead of a password.
+          If you sign in with Apple, we receive the name and email address you choose to share
+          (which can be Apple&rsquo;s private relay address) instead of a password.
         </p>
         <p>
           <strong>Reading activity.</strong> The books you shelve, your reading states, sessions,
@@ -71,9 +73,10 @@ export default function PrivacyPage() {
 
       <Section title="Payments">
         <p>
-          Premium subscriptions are processed by Stripe. Your card details go directly to Stripe and
-          never touch our servers; we store only your subscription status and a Stripe customer
-          reference.
+          Subscriptions bought on the website are processed by Stripe. Your card details go
+          directly to Stripe and never touch our servers; we store only your subscription status
+          and a Stripe customer reference. Subscriptions bought in the iPhone app are billed by
+          Apple; we never see your payment details, only whether the subscription is active.
         </p>
       </Section>
 
@@ -95,7 +98,8 @@ export default function PrivacyPage() {
 
       <Section title="Third-party services we rely on">
         <p>
-          Stripe (payments), Google (optional sign-in, analytics), Resend (email), Vercel (hosting
+          Stripe and Apple (payments), Google and Apple (optional sign-in), Google (analytics on
+          the website), Resend (email), Vercel (hosting
           and image storage), and Turso (database). Book metadata comes from public catalog sources
           (OpenLibrary, ISBNdb, Google Books, Library of Congress, the New York Times Books API).
           Amazon links on book pages are affiliate links — as an Amazon Associate, tbr*a earns from

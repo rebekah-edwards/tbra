@@ -31,6 +31,10 @@ const UNVERIFIED_ALLOWED = new Set([
   "/signup",
   "/api/auth",
   "/methodology",
+  // Someone who has just signed up must be able to read what they agreed to
+  // before verifying their email.
+  "/terms",
+  "/privacy",
 ]);
 
 // Prefixes that should always pass through (static assets, API routes, etc.)

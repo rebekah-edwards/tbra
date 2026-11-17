@@ -108,6 +108,15 @@ export default function SignupPage() {
           {state.success ? "Redirecting..." : pending ? "Creating account..." : "Sign up"}
         </button>
 
+        {/* Required by App Review 1.2 for an app with user-generated
+            content: people agree to the terms when they create an account. */}
+        <p className="text-center text-xs text-muted">
+          By creating an account you agree to the{" "}
+          <Link href="/terms" className="text-neon-blue hover:text-neon-blue/80">Terms of Use</Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="text-neon-blue hover:text-neon-blue/80">Privacy Policy</Link>.
+        </p>
+
         <p className="text-center text-sm text-muted">
           Already have an account?{" "}
           <Link href="/login" className="text-link hover:text-link/80">
