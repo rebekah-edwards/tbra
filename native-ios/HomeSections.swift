@@ -493,6 +493,11 @@ struct GoalSweepRing: View {
     let percent: Int
     var lineWidth: CGFloat = 8
     var labelSize: CGFloat = 15
+    /// How far through the year today is (0…1): drawn as a tick across the
+    /// ring, so the arc reads against it — past the tick is ahead of pace,
+    /// short of it is behind (Rebekah, 2026-11-16: "a white line at the point
+    /// in the year on the circle where we are"). nil draws no tick.
+    var yearElapsed: Double? = nil
     @State private var shown = false
 
     var body: some View {
@@ -504,6 +509,19 @@ struct GoalSweepRing: View {
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .shadow(color: Theme.accent.opacity(0.45), radius: 6)
+            if let yearElapsed {
+                GeometryReader { geo in
+                    let side = min(geo.size.width, geo.size.height)
+                    Capsule()
+                        .fill(Theme.foreground)
+                        .frame(width: 2.5, height: lineWidth + 7)
+                        .shadow(color: .black.opacity(0.5), radius: 1.5)
+                        .position(x: geo.size.width / 2, y: geo.size.height / 2 - side / 2)
+                        .rotationEffect(.degrees(360 * min(1, max(0, yearElapsed))))
+                }
+                .opacity(shown ? 1 : 0)
+                .accessibilityHidden(true)
+            }
             Text("\(percent)%")
                 .font(Theme.heading(labelSize, .bold))
                 .foregroundStyle(Theme.foreground)
@@ -596,5 +614,101 @@ struct HomeStarterCard: View {
             .background(Theme.surface.opacity(0.6), in: RoundedRectangle(cornerRadius: 14))
             .contentShape(RoundedRectangle(cornerRadius: 14))
         }
+    }
+}
+
+// ── Streak pieces (2026-11), shared by the Home tile and the Stats card ──
+enum StreakStyle {
+    static let flame = Color(hex: "fb923c")   // orange-400
+    static let ember = Color(hex: "f43f5e")   // rose-500
+    static let pending = Color(dark: "fbbf24", light: "b45309")   // amber
+    static let gradient = [flame, ember]
+}
+
+extension ReadingStreak {
+    var isAlive: Bool { currentStreak > 0 }
+    /// A live streak that has not been extended today: safe until midnight,
+    /// but only if the reader logs something.
+    var pendingToday: Bool { currentStreak > 0 && activeToday == false }
+
+    /// The one line under the bar: what today needs, or how far the record is.
+    var footerLine: String {
+        if currentStreak == 0 { return "Log anything today to light it" }
+        if pendingToday { return "Log anything today to keep it" }
+        if currentStreak >= longestStreak { return "Your best streak yet" }
+        let gap = longestStreak - currentStreak
+        return "\(gap) \(gap == 1 ? "day" : "days") to beat your best"
+    }
+}
+
+/// Icon and title 4pt apart — the default Label gap wastes room in a pill.
+struct TightLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 4) {
+            configuration.icon
+            configuration.title
+        }
+    }
+}
+
+/// Today's status, stated outright (Rebekah 2026-11-16): a filled lime check
+/// once today counts, an amber outline while the streak still waits on today.
+struct StreakTodayPill: View {
+    let doneToday: Bool
+    var body: some View {
+        Label(doneToday ? "Today" : "Not yet",
+              systemImage: doneToday ? "checkmark.circle.fill" : "circle.dashed")
+            .font(Theme.body(11, .bold))
+            .labelStyle(TightLabelStyle())
+            .lineLimit(1)
+            .fixedSize()   // never truncate: "Not…" says nothing
+            .foregroundStyle(doneToday ? Theme.accentText : StreakStyle.pending)
+            .padding(.horizontal, 8)
+            .frame(height: 22)
+            .background((doneToday ? Theme.accent : StreakStyle.pending).opacity(doneToday ? 0.22 : 0.12),
+                        in: Capsule())
+            .overlay(Capsule().stroke(doneToday ? Color.clear : StreakStyle.pending.opacity(0.55),
+                                      lineWidth: 1))
+            .accessibilityLabel(doneToday ? "Streak logged today" : "Streak not logged yet today")
+    }
+}
+
+/// The flame. It pulses for as long as the streak is alive — most of all while
+/// today is still open, when it is the nudge (Rebekah, 2026-11-16: "bring back
+/// the pulsing fire symbol for before I've done something to log today"). The
+/// glow is what arrives once today counts; the pill says it in words.
+struct StreakFlame: View {
+    let streak: ReadingStreak
+    var size: CGFloat = 46
+    var body: some View {
+        Image(systemName: "flame.fill")
+            .font(.system(size: size, weight: .bold))
+            .foregroundStyle(
+                streak.isAlive
+                ? AnyShapeStyle(LinearGradient(colors: StreakStyle.gradient, startPoint: .top, endPoint: .bottom))
+                : AnyShapeStyle(Theme.foreground.opacity(0.18)))
+            .shadow(color: streak.isAlive && !streak.pendingToday ? StreakStyle.flame.opacity(0.55) : .clear,
+                    radius: 10)
+            .symbolEffect(.breathe, isActive: streak.isAlive)
+    }
+}
+
+/// The bar that races the reader's own record.
+struct StreakRaceBar: View {
+    let streak: ReadingStreak
+    var height: CGFloat = 5
+    var body: some View {
+        let best = max(streak.longestStreak, streak.currentStreak, 1)
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Theme.foreground.opacity(0.10))
+                Capsule()
+                    .fill(LinearGradient(colors: StreakStyle.gradient, startPoint: .leading, endPoint: .trailing))
+                    .frame(width: streak.isAlive
+                           ? max(8, geo.size.width * CGFloat(streak.currentStreak) / CGFloat(best))
+                           : 0)
+            }
+        }
+        .frame(height: height)
     }
 }

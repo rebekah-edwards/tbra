@@ -66,7 +66,7 @@ struct LibraryShelvesView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     header
-                    filterPills
+                    if DesignPreview.on { filterSegmentsV2 } else { filterPills }
 
                     if filter == .mine {
                         // Top Shelf — always first, full-width (no handle
@@ -134,12 +134,15 @@ struct LibraryShelvesView: View {
                                     // editor (web /library/shelves/[slug]).
                                     .overlay(alignment: .topTrailing) {
                                         NavigationLink(value: ShelfEditorRoute(shelfId: shelf.id)) {
-                                            Image(systemName: "pencil")
+                                            let pencil = Image(systemName: "pencil")
                                                 .font(.system(size: 13, weight: .medium))
                                                 .foregroundStyle(Theme.foreground.opacity(0.85))
                                                 .frame(width: 34, height: 34)
-                                                .background(Theme.scrim)
-                                                .clipShape(Circle())
+                                            if DesignPreview.on {
+                                                pencil.glassEffect(.regular, in: Circle())
+                                            } else {
+                                                pencil.background(Theme.scrim).clipShape(Circle())
+                                            }
                                         }
                                         .padding(10)
                                     }
@@ -193,14 +196,11 @@ struct LibraryShelvesView: View {
                         HStack(spacing: 5) {
                             Image(systemName: "plus")
                                 .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(DesignPreview.on ? Theme.accentText : Theme.onAccent)
                             Text("New Shelf")
                                 .font(Theme.body(14, .semibold))
                         }
-                        .foregroundStyle(Theme.onAccent)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(Theme.accent)
-                        .clipShape(Capsule())
+                        .modifier(NewShelfPillStyle())
                     }
                     .padding(.trailing, 20)
                     .padding(.top, 16)
@@ -232,6 +232,37 @@ struct LibraryShelvesView: View {
         .padding(.top, 16)
     }
 
+    // Refreshed (2026-11), matching My Library: ONE glass switch whose active
+    // half is the screen's only solid lime, with the count riding in it.
+    private var filterSegmentsV2: some View {
+        HStack(spacing: 4) {
+            segment("My Shelves", count: model.shelves.count + 1, active: filter == .mine) { filter = .mine }
+            segment("Following", count: model.followed.count, active: filter == .following) { filter = .following }
+        }
+        .padding(4)
+        .glassEffect(.regular, in: Capsule())
+    }
+
+    private func segment(_ label: String, count: Int, active: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.15)) { action() }
+        } label: {
+            HStack(spacing: 6) {
+                Text(label).font(Theme.body(15, active ? .bold : .medium))
+                if count > 0 {
+                    Text("\(count)")
+                        .font(Theme.body(12, .semibold))
+                        .opacity(active ? 0.6 : 0.7)
+                }
+            }
+            .foregroundStyle(active ? Theme.onAccent : Theme.muted)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(active ? Theme.accent : .clear, in: Capsule())
+            .contentShape(Capsule())
+        }
+    }
+
     private var filterPills: some View {
         HStack(spacing: 10) {
             pill("My Shelves", active: filter == .mine) { filter = .mine }
@@ -248,6 +279,27 @@ struct LibraryShelvesView: View {
                 .padding(.horizontal, 18)
                 .padding(.vertical, 10)
                 .background(active ? Theme.accent : Theme.surfaceAlt)
+                .clipShape(Capsule())
+        }
+    }
+}
+
+/// "+ New Shelf": a glass pill with a lime plus in the refreshed look (the
+/// same shape as My Library's Shelves pill), the old solid lime pill in v1.
+private struct NewShelfPillStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        if DesignPreview.on {
+            content
+                .foregroundStyle(Theme.foreground)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .glassEffect(.regular, in: Capsule())
+        } else {
+            content
+                .foregroundStyle(Theme.onAccent)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Theme.accent)
                 .clipShape(Capsule())
         }
     }

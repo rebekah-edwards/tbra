@@ -145,6 +145,18 @@ extension ReadingGoal {
     }
 }
 
+/// Where the calendar is in a goal's year. nil for any year but the current
+/// one — a finished year has no "today" to mark.
+enum GoalYear {
+    static func progress(year: Int?) -> (elapsed: Double, daysLeft: Int)? {
+        let cal = Calendar.current, now = Date()
+        guard (year ?? cal.component(.year, from: now)) == cal.component(.year, from: now),
+              let day = cal.ordinality(of: .day, in: .year, for: now),
+              let days = cal.range(of: .day, in: .year, for: now)?.count else { return nil }
+        return (Double(day) / Double(days), days - day)
+    }
+}
+
 struct ReadingStreak: Codable, Hashable {
     let currentStreak: Int
     let longestStreak: Int

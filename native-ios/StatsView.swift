@@ -26,6 +26,7 @@ final class StatsModel {
 }
 
 struct StatsView: View {
+    @Environment(ChromeState.self) private var chrome: ChromeState?
     @State private var model = StatsModel()
     @State private var goalEditing = false
     private var currentYear: Int { Calendar.current.component(.year, from: Date()) }
@@ -51,6 +52,7 @@ struct StatsView: View {
                     heroCards(data)
                     miniStats(data)
                     goalCard(data)
+                    if DesignPreview.on, isCurrentYear { streakCard(data.streak) }
                     monthlyChart(data)
                     if data.ratingDistribution.contains(where: { $0.count > 0 }) {
                         ratingDistribution(data)
@@ -220,28 +222,156 @@ struct StatsView: View {
                     .presentationBackground(Theme.surface)
             }
         } else if DesignPreview.on, let goal = data.goal {
-            // Refreshed (2026-11): the same ring, big number and pace pill
-            // as the Home goal tile, given this card's extra width.
+            // Refreshed (2026-11): the same ring, big number and pace pill as
+            // the Home goal tile. The right-hand column runs to the card's
+            // edge (Rebekah, 2026-11-16: "a ton of open space to the right"):
+            // the count and pace pill share a row, and under them a track
+            // sets the goal's progress against how much of the year is gone.
             statCard("Reading Goal") {
-                HStack(spacing: 20) {
-                    GoalSweepRing(percent: goal.percentComplete, lineWidth: 10, labelSize: 19)
+                HStack(spacing: 18) {
+                    GoalSweepRing(percent: goal.percentComplete, lineWidth: 10, labelSize: 19,
+                                  yearElapsed: yearProgress?.elapsed)
                         .frame(width: 96, height: 96)
-                    VStack(alignment: .leading, spacing: 8) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text("\(goal.completedBooks)")
-                                .font(Theme.heading(40, .heavy))
-                                .foregroundStyle(Theme.foreground)
-                            Text("of \(goal.targetBooks) books")
-                                .font(Theme.body(14))
-                                .foregroundStyle(Theme.muted)
+                    VStack(alignment: .leading, spacing: 12) {
+                        ViewThatFits(in: .horizontal) {
+                            HStack(alignment: .center, spacing: 8) {
+                                goalCount(goal)
+                                Spacer(minLength: 0)
+                                GoalPacePill(pace: goal.paceLine(year: Int(model.year)))
+                            }
+                            VStack(alignment: .leading, spacing: 8) {
+                                goalCount(goal)
+                                GoalPacePill(pace: goal.paceLine(year: Int(model.year)))
+                            }
                         }
-                        GoalPacePill(pace: goal.paceLine(year: Int(model.year)))
+                        goalTrack(goal)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+            .onTapGesture {
+                // Same destination as the Home tile and the web card.
+                chrome?.pendingLibrarySelection = LibrarySelection(
+                    group: "activity", filter: "completed", year: Int(model.year) ?? currentYear)
+                chrome?.selectTab(.library)
+            }
+            .accessibilityAddTraits(.isButton)
         } else {
             goalCardV1(data)
         }
+    }
+
+    private func goalCount(_ goal: ReadingGoal) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("\(goal.completedBooks)")
+                .font(Theme.heading(40, .heavy))
+                .foregroundStyle(Theme.foreground)
+            Text("of \(goal.targetBooks) books")
+                .font(Theme.body(14))
+                .foregroundStyle(Theme.muted)
+        }
+        .lineLimit(1)
+        .fixedSize()
+    }
+
+    /// Today's place in the goal's year — nil for a past year.
+    private var yearProgress: (elapsed: Double, daysLeft: Int)? {
+        GoalYear.progress(year: Int(model.year))
+    }
+
+    /// Goal progress as a full-width track, with a tick where the year is:
+    /// fill past the tick is ahead of pace, short of it is behind.
+    private func goalTrack(_ goal: ReadingGoal) -> some View {
+        let done = min(1, max(0, Double(goal.percentComplete) / 100))
+        return VStack(alignment: .leading, spacing: 6) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Theme.foreground.opacity(0.10))
+                    Capsule()
+                        .fill(LinearGradient(colors: [Theme.accent, Theme.neonBlue],
+                                             startPoint: .leading, endPoint: .trailing))
+                        .frame(width: done > 0 ? max(8, geo.size.width * done) : 0)
+                    if let elapsed = yearProgress?.elapsed {
+                        Capsule()
+                            .fill(Theme.foreground)
+                            .frame(width: 2, height: 14)
+                            .offset(x: min(geo.size.width - 2, max(0, geo.size.width * elapsed - 1)))
+                    }
+                }
+                .frame(height: geo.size.height)
+            }
+            .frame(height: 14)
+            HStack(spacing: 0) {
+                Text("\(goal.percentComplete)% of goal")
+                Spacer(minLength: 8)
+                if let left = yearProgress?.daysLeft {
+                    Text("\(left) \(left == 1 ? "day" : "days") left")
+                }
+            }
+            .font(Theme.body(11, .medium))
+            .foregroundStyle(Theme.muted)
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
+        }
+    }
+
+    // ── Streak (2026-11) — the Home tile's flame, status and record bar, at
+    // this page's full width (Rebekah, 2026-11-16). The hero row above keeps
+    // the bare number; this is where today's status and the best run live.
+    private func streakCard(_ streak: ReadingStreak) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Reading Streak")
+                    .font(Theme.heading(14, .semibold))
+                    .foregroundStyle(Theme.foreground)
+                Spacer()
+                if let doneToday = streak.activeToday {
+                    StreakTodayPill(doneToday: doneToday)
+                }
+            }
+            HStack(spacing: 14) {
+                StreakFlame(streak: streak, size: 52)
+                    .frame(width: 72, height: 72)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("\(streak.currentStreak)")
+                        .font(Theme.heading(40, .heavy))
+                        .foregroundStyle(Theme.foreground)
+                        .contentTransition(.numericText())
+                    Text(streak.currentStreak == 1 ? "day in a row" : "days in a row")
+                        .font(Theme.body(14))
+                        .foregroundStyle(Theme.muted)
+                }
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text("\(streak.longestStreak)")
+                        .font(Theme.heading(26, .bold))
+                        .foregroundStyle(Theme.foreground.opacity(0.85))
+                    Text(streak.longestStreak == 1 ? "day · best" : "days · best")
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                StreakRaceBar(streak: streak, height: 6)
+                Text(streak.footerLine)
+                    .font(Theme.body(12, .semibold))
+                    .foregroundStyle(Theme.foreground.opacity(0.75))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(
+            ZStack {
+                Theme.surface.opacity(0.5)
+                RadialGradient(
+                    colors: [(streak.isAlive ? StreakStyle.flame : Theme.neonPurple).opacity(0.22), .clear],
+                    center: .topTrailing, startRadius: 0, endRadius: 220)
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16)
+            .stroke((streak.isAlive ? StreakStyle.flame : Theme.neonPurple).opacity(0.28), lineWidth: 1))
     }
 
     private func goalCardV1(_ data: StatsData) -> some View {
