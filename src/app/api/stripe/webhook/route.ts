@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { stripe } from "@/lib/stripe";
 
 /**
@@ -25,14 +25,23 @@ export async function POST(req: Request) {
   }
 
   async function setType(userId: string, type: "premium" | "reader") {
-    const row = await db.select({ accountType: users.accountType })
-      .from(users).where(eq(users.id, userId)).get();
+    const rows = (await db.all(sql`
+      SELECT account_type, premium_source FROM users WHERE id = ${userId}
+    `)) as { account_type: string; premium_source: string | null }[];
+    const row = rows[0];
     if (!row) return;
-    if (!["reader", "premium"].includes(row.accountType)) return; // staff accounts untouched
-    if (row.accountType === type) return;
-    await db.update(users)
-      .set({ accountType: type, updatedAt: new Date().toISOString() })
-      .where(eq(users.id, userId));
+    if (!["reader", "premium"].includes(row.account_type)) return; // staff accounts untouched
+    // Premium has two billers. Someone paying through Apple (iOS In-App
+    // Purchase, see src/lib/iap.ts) stays premium whatever Stripe says.
+    if (type === "reader" && row.premium_source === "apple") return;
+    if (row.account_type === type) return;
+    await db.run(sql`
+      UPDATE users SET
+        account_type = ${type},
+        premium_source = ${type === "premium" ? "stripe" : null},
+        updated_at = ${new Date().toISOString()}
+      WHERE id = ${userId}
+    `);
   }
 
   async function userByCustomer(customerId: string) {
