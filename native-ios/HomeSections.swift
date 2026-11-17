@@ -361,6 +361,8 @@ struct FriendsActivityRow: View {
     var onOpen: (ActivityItem) -> Void = { _ in }
     /// The trailing "See more" tile → the full activity list. Hidden when nil.
     var onSeeMore: (() -> Void)? = nil
+    /// Name or photo tap → that reader's profile.
+    var onProfile: (ActivityUser) -> Void = { _ in }
 
     var body: some View {
         let items = activity.filter(\.isFeedVisible)
@@ -371,9 +373,11 @@ struct FriendsActivityRow: View {
             HStack(spacing: 10) {
                 ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                     if item.hasQuote {
-                        FriendsReviewCard(item: item, onOpen: { onOpen(item) })
+                        FriendsReviewCard(item: item, onOpen: { onOpen(item) },
+                                          onProfile: { onProfile(item.user) })
                     } else {
-                        FriendsActivityTile(item: item, height: rowHeight, onOpen: { onOpen(item) })
+                        FriendsActivityTile(item: item, height: rowHeight, onOpen: { onOpen(item) },
+                                            onProfile: { onProfile(item.user) })
                     }
                 }
                 if let onSeeMore {
@@ -389,6 +393,39 @@ struct FriendsActivityRow: View {
                 .init(color: .clear, location: 1),
             ], startPoint: .leading, endPoint: .trailing)
         )
+    }
+}
+
+/// The person (photo + name) as its own tap target, laid over a feed card.
+///
+/// Every card is one Button that opens the book. This transparent Button sits
+/// on top of the card's person row, so a tap on the name or photo opens the
+/// profile and a tap anywhere else still opens the book. It is an overlay —
+/// not a Button nested in the card's label, which SwiftUI would swallow.
+/// Hidden for a reader with no username (nothing to open).
+struct FriendsProfileTapArea: ViewModifier {
+    let user: ActivityUser
+    /// Size of the strip, from the card's top-leading corner.
+    var width: CGFloat? = nil
+    var height: CGFloat
+    /// Kept clear on the trailing edge (e.g. the time label).
+    var trailingInset: CGFloat = 0
+    let action: () -> Void
+
+    func body(content: Content) -> some View {
+        content.overlay(alignment: .topLeading) {
+            if user.username != nil {
+                Button(action: action) {
+                    Color.clear
+                        .frame(maxWidth: width ?? .infinity)
+                        .frame(width: width, height: height)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, trailingInset)
+                .accessibilityLabel("\(user.feedName)'s profile")
+            }
+        }
     }
 }
 
@@ -429,6 +466,7 @@ struct FriendsReviewCard: View {
     let item: ActivityItem
     var fullWidth = false
     var onOpen: () -> Void = {}
+    var onProfile: () -> Void = {}
 
     private let overlayText = FriendsFeedMetrics.overlayText
     private let bannerHeight = FriendsFeedMetrics.bannerHeight
@@ -451,6 +489,9 @@ struct FriendsReviewCard: View {
             .contentShape(RoundedRectangle(cornerRadius: FriendsFeedMetrics.corner))
         }
         .buttonStyle(.plain)
+        // The top strip (photo + name) opens the profile; the time label on
+        // the right is left out of it.
+        .modifier(FriendsProfileTapArea(user: item.user, height: 38, trailingInset: 48, action: onProfile))
     }
 
     // Banner: blurred cover backdrop (CoverBlurImage — frame-bounded per the
@@ -537,6 +578,7 @@ private struct FriendsActivityTile: View {
     let item: ActivityItem
     let height: CGFloat
     var onOpen: () -> Void = {}
+    var onProfile: () -> Void = {}
 
     private let overlayText = FriendsFeedMetrics.overlayText
     private let width = FriendsFeedMetrics.tileWidth
@@ -599,6 +641,8 @@ private struct FriendsActivityTile: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(item.user.feedName) \(caption.spoken) \(item.book.title)")
         .accessibilityAddTraits(.isButton)
+        // The top strip (photo + first name) opens the profile.
+        .modifier(FriendsProfileTapArea(user: item.user, width: width, height: 36, action: onProfile))
     }
 }
 

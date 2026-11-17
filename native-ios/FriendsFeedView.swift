@@ -71,6 +71,8 @@ struct FriendsFeedView: View {
     /// Row tap → book page (written reviews → the review itself); HomeView
     /// pushes onto its own path.
     var onOpen: (ActivityItem) -> Void = { _ in }
+    /// Name or photo tap → that reader's profile.
+    var onProfile: (ActivityUser) -> Void = { _ in }
     @State private var model = FriendsFeedModel()
 
     var body: some View {
@@ -89,9 +91,11 @@ struct FriendsFeedView: View {
                 ForEach(model.items, id: \.feedKey) { item in
                     Group {
                         if item.hasQuote {
-                            FriendsReviewCard(item: item, fullWidth: true, onOpen: { onOpen(item) })
+                            FriendsReviewCard(item: item, fullWidth: true, onOpen: { onOpen(item) },
+                                              onProfile: { onProfile(item.user) })
                         } else {
-                            FriendsActivityListRow(item: item, onOpen: { onOpen(item) })
+                            FriendsActivityListRow(item: item, onOpen: { onOpen(item) },
+                                                   onProfile: { onProfile(item.user) })
                         }
                     }
                     .onAppear { model.rowAppeared(item) }
@@ -148,6 +152,7 @@ struct FriendsFeedView: View {
 private struct FriendsActivityListRow: View {
     let item: ActivityItem
     var onOpen: () -> Void = {}
+    var onProfile: () -> Void = {}
 
     var body: some View {
         let caption = item.feedCaption
@@ -158,7 +163,13 @@ private struct FriendsActivityListRow: View {
                 FriendsAvatar(user: item.user, size: 32)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("\(Text(item.user.feedName).fontWeight(.semibold).foregroundStyle(Theme.foreground)) \(caption.spoken) \(Text(item.book.title).fontWeight(.semibold).foregroundStyle(Theme.foreground))")
+                    // The name gets its own line so it can be its own tap
+                    // target (→ profile); see the overlays at the bottom.
+                    Text(item.user.feedName)
+                        .font(Theme.body(14, .semibold))
+                        .foregroundStyle(Theme.foreground)
+                        .lineLimit(1)
+                    Text("\(caption.spoken) \(Text(item.book.title).fontWeight(.semibold).foregroundStyle(Theme.foreground))")
                         .font(Theme.body(13))
                         .foregroundStyle(Theme.foreground.opacity(0.8))
                         .lineLimit(2)
@@ -190,5 +201,10 @@ private struct FriendsActivityListRow: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(item.user.feedName) \(caption.spoken) \(item.book.title)")
         .accessibilityAddTraits(.isButton)
+        // Photo (the whole left column) and the name line open the profile;
+        // the rest of the row opens the book. The cover on the right is kept
+        // out of the name strip.
+        .modifier(FriendsProfileTapArea(user: item.user, width: 56, height: 62, action: onProfile))
+        .modifier(FriendsProfileTapArea(user: item.user, height: 32, trailingInset: 56, action: onProfile))
     }
 }

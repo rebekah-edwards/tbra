@@ -26,6 +26,8 @@ final class PublicProfileModel {
     var favorites: [FavoriteBookRow] = []
     var publicShelves: [ShelfSummary] = []
     var reviews: [UserReviewRow] = []
+    /// Notes they marked shared — the server sends them to followers only.
+    var sharedNotes: [SharedNote] = []
     var followerCount = 0
     var followingCount = 0
     var loaded = false
@@ -45,6 +47,7 @@ final class PublicProfileModel {
         let followerCount: Int?
         let followingCount: Int?
         let publicShelves: [ShelfSummary]?
+        let sharedNotes: [SharedNote]?
     }
 
     func load() async {
@@ -59,6 +62,7 @@ final class PublicProfileModel {
         favorites = res.favorites ?? []
         publicShelves = res.publicShelves ?? []
         reviews = res.reviews ?? []
+        sharedNotes = res.sharedNotes ?? []
         followerCount = res.followerCount ?? 0
         followingCount = res.followingCount ?? 0
     }
@@ -104,6 +108,7 @@ struct PublicProfileView: View {
                     if let stats = model.stats { statPills(stats) }
                     if !model.favorites.isEmpty { topShelf }
                     if !model.publicShelves.isEmpty { shelvesSection }
+                    if !model.sharedNotes.isEmpty { notesSection }
                     if !model.reviews.isEmpty { reviewsSection }
                 } else if model.loaded {
                     Text("Couldn't load this profile.")
@@ -396,6 +401,52 @@ struct PublicProfileView: View {
             // Same shelf furniture as the private profile (TopShelfCase).
             TopShelfCase(favorites: model.favorites, avatarUrl: model.user?.avatarUrl)
         }
+    }
+
+    // Reading notes this reader marked shared (web: shared-notes.tsx). Each
+    // opens its book.
+    private var notesSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SectionHeading("Reading Notes")
+            ForEach(model.sharedNotes) { note in
+                NavigationLink(value: BookRoute(idOrSlug: note.bookSlug ?? note.bookId)) {
+                    HStack(alignment: .top, spacing: 12) {
+                        CoverThumb(url: note.bookCoverUrl, width: 40, height: 60, radius: 5, title: note.bookTitle)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(note.bookTitle)
+                                .font(Theme.body(14, .semibold))
+                                .foregroundStyle(Theme.foreground)
+                                .lineLimit(1)
+                            Text(sharedNoteMeta(note))
+                                .font(Theme.body(11))
+                                .foregroundStyle(Theme.muted)
+                            Text("\u{201C}\(note.noteText)\u{201D}")
+                                .font(Theme.body(13))
+                                .foregroundStyle(Theme.foreground.opacity(0.8))
+                                .lineSpacing(2)
+                                .lineLimit(4)
+                                .multilineTextAlignment(.leading)
+                                .padding(.top, 3)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Theme.surface.opacity(0.55))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    /// "42% read · Nov 16, 2026" (progress first when the entry has one).
+    private func sharedNoteMeta(_ note: SharedNote) -> String {
+        let when = DateFmt.display(note.createdAt, precision: nil)
+        if let pct = note.percentComplete, pct > 0 { return "\(pct)% read · \(when)" }
+        if let page = note.pageNumber, page > 0 { return "p. \(page) · \(when)" }
+        return when
     }
 
     /// 3 → expand to 8 → a full screen beyond that (punch list #5.1). The rail

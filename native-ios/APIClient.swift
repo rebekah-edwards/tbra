@@ -478,9 +478,11 @@ actor APIClient {
     func addReadingNote(
         bookId: String, noteText: String,
         pageNumber: Int? = nil, percentComplete: Int? = nil,
-        mood: String? = nil, pace: String? = nil, buddyReadId: String? = nil
+        mood: String? = nil, pace: String? = nil, buddyReadId: String? = nil,
+        isPrivate: Bool = true
     ) async throws {
-        var body: [String: Any] = ["bookId": bookId, "noteText": noteText]
+        // Notes are private unless the sheet's share switch is on.
+        var body: [String: Any] = ["bookId": bookId, "noteText": noteText, "isPrivate": isPrivate]
         if let pageNumber { body["pageNumber"] = pageNumber }
         if let percentComplete { body["percentComplete"] = percentComplete }
         if let mood { body["mood"] = mood }

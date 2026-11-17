@@ -145,10 +145,16 @@ struct HomeView: View {
                 // Registered here, not in AppDestinations: the screen's rows
                 // are plain Buttons that push onto THIS stack's path.
                 .navigationDestination(for: FriendsFeedRoute.self) { _ in
-                    FriendsFeedView(onOpen: { openActivity($0) })
+                    FriendsFeedView(onOpen: { openActivity($0) }, onProfile: { openProfile($0) })
                         .modifier(PushedScreenChrome())
                 }
         }
+    }
+
+    /// A name or photo in the friends feed → that reader's profile.
+    private func openProfile(_ user: ActivityUser) {
+        guard let username = user.username else { return }
+        path.append(UserRoute(username: username))
     }
 
     /// A friends-activity item → its destination: a written review opens the
@@ -384,7 +390,8 @@ struct HomeView: View {
                             FriendsActivityRow(
                                 activity: discover.friendsActivity,
                                 onOpen: { openActivity($0) },
-                                onSeeMore: { path.append(FriendsFeedRoute()) })
+                                onSeeMore: { path.append(FriendsFeedRoute()) },
+                                onProfile: { openProfile($0) })
                         }
                     }
 
@@ -798,6 +805,9 @@ private struct TrackProgressSheet: View {
     @State private var mood: String?
     @State private var pace: String?
     @State private var showExtras = false
+    /// Off by default: a note is private unless the reader shares it.
+    /// Progress is not covered — friends see page/percent either way.
+    @State private var shareNote = false
     @State private var busy = false
     @State private var saved = false
     @State private var errorText: String?
@@ -926,6 +936,23 @@ private struct TrackProgressSheet: View {
                         }
                     }
 
+                    // Share switch — always on screen so it is easy to find;
+                    // it covers the note only, never the page/percent.
+                    Toggle(isOn: $shareNote) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Share this note with friends")
+                                .font(Theme.body(14, .medium))
+                                .foregroundStyle(Theme.foreground)
+                            Text(shareNote
+                                 ? "Friends will see it in their feed, on this book and on your profile."
+                                 : "Only you can see your note. Your progress still shows to friends.")
+                                .font(Theme.body(11))
+                                .foregroundStyle(Theme.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .tint(Theme.accent)
+
                     if let errorText {
                         Text(errorText).font(Theme.body(12)).foregroundStyle(Theme.destructive)
                     }
@@ -971,7 +998,8 @@ private struct TrackProgressSheet: View {
                 noteText: noteText.trimmingCharacters(in: .whitespacesAndNewlines),
                 pageNumber: pageMode == .page ? value : nil,
                 percentComplete: pageMode == .percent ? value : nil,
-                mood: mood, pace: pace
+                mood: mood, pace: pace,
+                isPrivate: !shareNote
             )
             saved = true
             await onSaved()

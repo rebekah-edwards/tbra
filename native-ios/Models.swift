@@ -237,6 +237,20 @@ struct ActivityItem: Codable, Hashable {
     let timestamp: String
 }
 
+/// A reading note its author marked shared, as listed on their profile
+/// (GET /api/v1/users/<username> → sharedNotes; followers and the owner only).
+struct SharedNote: Codable, Hashable, Identifiable {
+    let id: String
+    let bookId: String
+    let bookSlug: String?
+    let bookTitle: String
+    let bookCoverUrl: String?
+    let noteText: String
+    let pageNumber: Int?
+    let percentComplete: Int?
+    let createdAt: String
+}
+
 /// One page of the full friends activity list (GET /api/v1/friends-activity).
 /// `nextOffset` is nil when there is nothing further to load.
 struct FriendsActivityPage: Codable {
