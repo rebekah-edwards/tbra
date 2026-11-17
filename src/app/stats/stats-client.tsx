@@ -13,6 +13,8 @@ interface StatsClientProps {
   currentYear: number;
   goal: ReadingGoalProgress | null;
   streak: ReadingStreak;
+  /** The reader hid the streak (Settings → Display). */
+  hideStreak?: boolean;
   booksByMonth: { month: string; count: number }[];
   booksByYear: { year: string | null; count: number; pages: number }[];
   pagesByMonth: { month: string; pages: number }[];
@@ -48,6 +50,7 @@ export function StatsClient({
   currentYear,
   goal,
   streak,
+  hideStreak = false,
   booksByMonth,
   booksByYear,
   pagesByMonth,
@@ -136,12 +139,14 @@ export function StatsClient({
             : "/library?tab=activity&filter=completed"
           }
         />
-        <HeroCard
-          icon="🔥"
-          iconBg="bg-orange-500/20"
-          value={streak.currentStreak > 0 ? `${streak.currentStreak}` : "—"}
-          label={streak.currentStreak === 1 ? "Day streak" : "Day streak"}
-        />
+        {!hideStreak && (
+          <HeroCard
+            icon="🔥"
+            iconBg="bg-orange-500/20"
+            value={streak.currentStreak > 0 ? `${streak.currentStreak}` : "—"}
+            label={streak.currentStreak === 1 ? "Day streak" : "Day streak"}
+          />
+        )}
         <HeroCard
           icon="⭐"
           iconBg="bg-yellow-500/15"
@@ -244,7 +249,7 @@ export function StatsClient({
             </div>
           </section>
         )}
-        {(year === currentYear || isAllTime) && (
+        {(year === currentYear || isAllTime) && !hideStreak && (
           <div className={goal ? "" : "lg:col-span-2"}>
             <ReadingStreakCard streak={streak} wide />
           </div>

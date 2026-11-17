@@ -608,6 +608,11 @@ export const userReadingPreferences = sqliteTable("user_reading_preferences", {
   dislikedTropes: text("disliked_tropes"), // JSON array: ["chosen-one",...] (disliked character tropes)
   customContentWarnings: text("custom_content_warnings"), // JSON array of user-typed warnings: ["infidelity","animal death",...]
   textSize: text("text_size"), // 'small' | 'medium' | 'large' | null (null = medium)
+  // Reader chose to hide the reading goal / streak (2026-11). Hidden means
+  // hidden everywhere — Home, Stats, the widget — but both keep counting, so
+  // turning one back on shows the real number.
+  hideGoal: integer("hide_goal", { mode: "boolean" }).notNull().default(false),
+  hideStreak: integer("hide_streak", { mode: "boolean" }).notNull().default(false),
   onboardingCompleted: integer("onboarding_completed").notNull().default(0),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });

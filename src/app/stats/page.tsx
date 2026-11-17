@@ -22,6 +22,7 @@ import {
   getFictionNonfictionSplit,
 } from "@/lib/queries/stats-detailed";
 import { StatsClient } from "./stats-client";
+import { getDisplayPrefs } from "@/lib/queries/display-prefs";
 
 export default async function StatsPage({
   searchParams,
@@ -67,12 +68,16 @@ export default async function StatsPage({
     getFictionNonfictionSplit(session.userId, selectedYear),
   ]);
 
+  const display = await getDisplayPrefs(session.userId);
+
   return (
     <StatsClient
       year={yearLabel}
       currentYear={currentYear}
-      goal={goal}
+      // Hidden by the reader (Settings → Display): hidden here too.
+      goal={display.hideGoal ? null : goal}
       streak={streak}
+      hideStreak={display.hideStreak}
       booksByMonth={booksByMonth}
       booksByYear={booksByYear}
       pagesByMonth={pagesByMonth}

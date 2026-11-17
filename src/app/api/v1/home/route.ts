@@ -3,6 +3,7 @@ import { jsonError, jsonOk } from "@/lib/api/http";
 import { getReadingNow } from "@/lib/queries/reading-now";
 import { getReadingGoal } from "@/lib/queries/reading-goals";
 import { getReadingStreak } from "@/lib/queries/reading-streak";
+import { getDisplayPrefs } from "@/lib/queries/display-prefs";
 import { getRandomOwnedTbrBook } from "@/lib/queries/tbr-suggestion";
 
 /**
@@ -17,11 +18,12 @@ export async function GET(req: Request) {
 
   const currentYear = new Date().getFullYear();
 
-  const [readingNow, readingGoal, readingStreak, tbrSuggestion] = await Promise.all([
+  const [readingNow, readingGoal, readingStreak, tbrSuggestion, display] = await Promise.all([
     getReadingNow(user.userId),
     getReadingGoal(user.userId, currentYear),
     getReadingStreak(user.userId),
     getRandomOwnedTbrBook(user.userId),
+    getDisplayPrefs(user.userId),
   ]);
 
   return jsonOk({
@@ -35,5 +37,9 @@ export async function GET(req: Request) {
       activeToday: readingStreak.activeToday,
     },
     tbrSuggestion, // { id, slug, title, coverImageUrl, authors, reason } | null
+    // The reader switched these off (Settings, or "hide" on the tile). The
+    // numbers above are still sent so switching back on needs no refetch.
+    hideGoal: display.hideGoal,
+    hideStreak: display.hideStreak,
   });
 }

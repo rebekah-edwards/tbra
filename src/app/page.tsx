@@ -42,6 +42,7 @@ import { getUserUpNext } from "@/lib/queries/up-next";
 import { getSmartDiscoveryBooks, getBecauseYouLikedSuggestions } from "@/lib/queries/recommendations";
 import { getReadingGoal } from "@/lib/queries/reading-goals";
 import { getReadingStreak } from "@/lib/queries/reading-streak";
+import { getDisplayPrefs } from "@/lib/queries/display-prefs";
 import { getRandomOwnedTbrBook } from "@/lib/queries/tbr-suggestion";
 import { BookCard } from "@/components/book-card";
 import { ReadingGoalCard } from "@/components/home/reading-goal-card";
@@ -165,13 +166,17 @@ export default async function Home() {
   const currentYear = new Date().getFullYear();
 
   // ── Fast queries: load immediately ──
-  const [allBooks, upNextItems, readingGoal, readingStreak, tbrSuggestion] = await Promise.all([
+  const [allBooks, upNextItems, readingGoal, readingStreak, tbrSuggestion, display] = await Promise.all([
     getUserBooks(user.userId),
     getUserUpNext(user.userId),
     getReadingGoal(user.userId, currentYear),
     getReadingStreak(user.userId),
     getRandomOwnedTbrBook(user.userId),
+    // Goal / streak the reader has hidden (Settings → Display).
+    getDisplayPrefs(user.userId),
   ]);
+  const showGoal = !display.hideGoal;
+  const showStreak = !display.hideStreak;
 
   const currentlyReading = allBooks.filter((b) => b.state === "currently_reading");
 
@@ -256,10 +261,12 @@ export default async function Home() {
   return (
     <div className="space-y-8 lg:space-y-6 lg:max-w-[1194px] lg:mx-auto">
       {/* Goal + Streak: shown first on desktop via order, stays in DOM position on mobile */}
-      <section className="hidden lg:flex gap-3 lg:justify-center">
-        <ReadingGoalCard goal={readingGoal} year={currentYear} />
-        <ReadingStreakCard streak={readingStreak} />
-      </section>
+      {(showGoal || showStreak) && (
+        <section className="hidden lg:flex gap-3 lg:justify-center">
+          {showGoal && <ReadingGoalCard goal={readingGoal} year={currentYear} />}
+          {showStreak && <ReadingStreakCard streak={readingStreak} />}
+        </section>
+      )}
 
       {/* Brand-new reader: nothing in progress, nothing queued. */}
       {currentlyReading.length === 0 && upNextItems.length === 0 && <HomeStarterCard />}
@@ -271,11 +278,14 @@ export default async function Home() {
         <CurrentlyReadingSection books={currentlyReadingWithProgress} />
       </section>
 
-      {/* Mobile only: goal/streak between Reading Now and Up Next */}
-      <section className="flex gap-3 lg:hidden">
-        <ReadingGoalCard goal={readingGoal} year={currentYear} />
-        <ReadingStreakCard streak={readingStreak} />
-      </section>
+      {/* Mobile only: goal/streak between Reading Now and Up Next. Either
+          can be hidden; the other then takes the full width. */}
+      {(showGoal || showStreak) && (
+        <section className="flex gap-3 lg:hidden">
+          {showGoal && <ReadingGoalCard goal={readingGoal} year={currentYear} />}
+          {showStreak && <ReadingStreakCard streak={readingStreak} />}
+        </section>
+      )}
 
       {(upNextItems.length > 0 || currentlyReading.length > 0) && (
         <section>

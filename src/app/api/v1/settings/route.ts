@@ -8,6 +8,7 @@ import { getUserReadingPreferences } from "@/lib/queries/reading-preferences";
 import { getNotificationPreferences } from "@/lib/actions/notification-preferences";
 import { getHiddenBooks } from "@/lib/actions/hidden-books";
 import { canonicalizeWarning } from "@/lib/content-warnings/vocabulary";
+import { setDisplayPrefs } from "@/lib/queries/display-prefs";
 
 /** JSON-array column → string[]; legacy single value → [value]; null → []. */
 function parseMaybeArray(raw: string | null | undefined): string[] {
@@ -95,6 +96,8 @@ export async function GET(req: Request) {
       textSize: rawPrefs?.textSize ?? null,
       hasPrefsRow: rawPrefs != null,
     },
+    // Reading goal / streak switched off by the reader.
+    display: { hideGoal: !!rawPrefs?.hideGoal, hideStreak: !!rawPrefs?.hideStreak },
     location: userRow?.location ?? "",
     locationVisibility: userRow?.locationVisibility ?? "public",
     email: userRow?.email ?? "",
@@ -106,6 +109,7 @@ export async function GET(req: Request) {
  *  { categoryId, maxTolerance }             (content comfort zone)
  *  { customWarnings: string[] }             (topics to avoid, canonicalized)
  *  { notifications: { emailNewFollower?, emailNewCorrection?, emailWeeklyDigest? } }
+ *  { display: { hideGoal?: boolean, hideStreak?: boolean } }   (hide goal / streak)
  * Same writes as the web actions.
  */
 export async function PATCH(req: Request) {
@@ -125,6 +129,18 @@ export async function PATCH(req: Request) {
       })
       .run();
     return jsonOk({});
+  }
+
+  if (body.display && typeof body.display === "object") {
+    const d = body.display as Record<string, unknown>;
+    if (typeof d.hideGoal !== "boolean" && typeof d.hideStreak !== "boolean") {
+      return jsonError("No valid display keys.", 400);
+    }
+    const display = await setDisplayPrefs(user.userId, {
+      hideGoal: typeof d.hideGoal === "boolean" ? d.hideGoal : undefined,
+      hideStreak: typeof d.hideStreak === "boolean" ? d.hideStreak : undefined,
+    });
+    return jsonOk({ display });
   }
 
   if (Array.isArray(body.customWarnings)) {

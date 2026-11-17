@@ -4,6 +4,7 @@ import { useEffect, useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { setReadingGoal } from "@/lib/actions/reading-goals";
+import { updateDisplayPrefs } from "@/lib/actions/display-prefs";
 
 interface ReadingGoalCardProps {
   goal: { targetBooks: number; completedBooks: number; percentComplete: number } | null;
@@ -79,6 +80,26 @@ export function ReadingGoalCard({ goal, year }: ReadingGoalCardProps) {
             </button>
           )}
         </div>
+        {/* Never set a goal: opt out right here instead of hunting for the
+            setting. Not asked during onboarding on purpose. */}
+        {!goal && (
+          <div className="mt-3">
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() =>
+                startTransition(async () => {
+                  const result = await updateDisplayPrefs({ hideGoal: true });
+                  if (result.success) router.refresh();
+                })
+              }
+              className="text-xs font-semibold text-neon-blue disabled:opacity-50"
+            >
+              Goals aren&apos;t for me &mdash; hide this
+            </button>
+            <p className="mt-0.5 text-[11px] text-muted">You can bring it back any time in Settings.</p>
+          </div>
+        )}
       </div>
     );
   }
