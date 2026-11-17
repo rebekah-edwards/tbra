@@ -174,7 +174,7 @@ export function FriendsWhoRead({ friends, bookId, bookSlug }: FriendsWhoReadProp
         ? `${getName(friend)} left a reading note: \u201C${friend.sharedNote}\u201D`
         : `${getName(friend)} left a reading note`,
       right: friend.username ? chevron : null,
-      href: friend.username ? `/u/${friend.username}` : undefined,
+      href: friend.username ? `/u/${friend.username}#notes` : undefined,
     });
   }
 

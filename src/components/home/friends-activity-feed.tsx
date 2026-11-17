@@ -7,9 +7,10 @@ import type { ActivityItem } from "@/lib/queries/activity-feed";
 import { NoCover } from "@/components/no-cover";
 import {
   CaptionIcon,
+  CardLink,
+  PersonLink,
   ReviewCard,
   UserAvatar,
-  activityHref,
   describe,
   displayName,
   hasQuote,
@@ -29,14 +30,14 @@ function ActivityRow({ item }: { item: ActivityItem }) {
   const name = displayName(item.user);
   const { glyph, tint, spoken } = describe(item);
   return (
-    <Link
-      href={activityHref(item)}
-      className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2 transition-colors hover:border-foreground/25"
-    >
-      <UserAvatar user={item.user} size="md" />
+    <div className="relative isolate flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2 transition-colors hover:border-foreground/25">
+      {/* Photo and name open the reader's profile; the rest of the row opens the book. */}
+      <PersonLink user={item.user} className="flex-shrink-0">
+        <UserAvatar user={item.user} size="md" />
+      </PersonLink>
       <div className="min-w-0 flex-1">
         <p className="text-[13px] leading-snug text-foreground/80 line-clamp-2">
-          <span className="font-semibold text-foreground">{name}</span> {spoken}{" "}
+          <PersonLink user={item.user} className="font-semibold text-foreground">{name}</PersonLink> {spoken}{" "}
           <span className="font-semibold text-foreground">{item.book.title}</span>
         </p>
         <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted">
@@ -56,7 +57,8 @@ function ActivityRow({ item }: { item: ActivityItem }) {
       ) : (
         <NoCover title={item.book.title} className="h-12 w-8 flex-shrink-0" size="sm" />
       )}
-    </Link>
+      <CardLink item={item} label={`${name} ${spoken} ${item.book.title}`} />
+    </div>
   );
 }
 

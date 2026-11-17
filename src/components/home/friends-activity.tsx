@@ -104,6 +104,46 @@ export function displayName(user: ActivityItem["user"]) {
   return user.displayName || user.username || "Reader";
 }
 
+/** A reader's public profile, or null when they have no username to link to. */
+export function profileHref(user: ActivityItem["user"]): string | null {
+  return user.username ? `/u/${user.username}` : null;
+}
+
+/**
+ * The person (photo + name) as its own link to their profile.
+ *
+ * Every card is one big link to the book, laid over the card as a stretched
+ * overlay (`z-10`). This link sits above that overlay (`z-20`), so tapping the
+ * name or photo opens the profile and tapping anywhere else opens the book.
+ * No username → plain text, and the tap falls through to the book.
+ */
+export function PersonLink({
+  user,
+  className = "",
+  children,
+}: {
+  user: ActivityItem["user"];
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const href = profileHref(user);
+  if (!href) return <span className={className}>{children}</span>;
+  return (
+    <Link
+      href={href}
+      aria-label={`${displayName(user)}'s profile`}
+      className={`relative z-20 pointer-events-auto ${className}`}
+    >
+      {children}
+    </Link>
+  );
+}
+
+/** The stretched link that makes the whole card open its book or review. */
+export function CardLink({ item, label }: { item: ActivityItem; label: string }) {
+  return <Link href={activityHref(item)} aria-label={label} className="absolute inset-0 z-10 rounded-xl" />;
+}
+
 /** Blurred-cover backdrop shared by both tiers (same recipe as Up Next). */
 function CoverBackdrop({ src, sizes }: { src: string; sizes: string }) {
   return (
@@ -149,9 +189,8 @@ export function ReviewCard({ item, layout = "rail" }: { item: ActivityItem; layo
   const name = displayName(item.user);
   const frame = layout === "rail" ? "w-[236px] lg:w-[288px] flex-shrink-0" : "w-full";
   return (
-    <Link
-      href={activityHref(item)}
-      className={`flex ${frame} flex-col overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-neon-purple/40`}
+    <div
+      className={`relative isolate flex ${frame} flex-col overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-neon-purple/40`}
     >
       {/* Banner: the person up top, the book below — mirrors the native app */}
       <div className="relative h-[5.75rem] lg:h-24 flex-shrink-0 overflow-hidden">
@@ -175,9 +214,13 @@ export function ReviewCard({ item, layout = "rail" }: { item: ActivityItem; layo
         ) : (
           <NoCover title={item.book.title} className="h-full w-full rounded-none" size="sm" />
         )}
-        <span className="absolute top-2 left-2.5 right-2.5 lg:left-3 lg:right-3 z-10 flex items-center gap-1.5">
-          <UserAvatar user={item.user} />
-          <span className="text-xs font-semibold book-header-text truncate">{name}</span>
+        {/* z-20 + pointer-events-none: only the person link inside takes taps;
+            the rest of this strip falls through to the card link. */}
+        <span className="pointer-events-none absolute top-2 left-2.5 right-2.5 lg:left-3 lg:right-3 z-20 flex items-center gap-1.5">
+          <PersonLink user={item.user} className="flex min-w-0 items-center gap-1.5">
+            <UserAvatar user={item.user} />
+            <span className="text-xs font-semibold book-header-text truncate">{name}</span>
+          </PersonLink>
           <span className="ml-auto flex-shrink-0 text-[10px] book-header-text-muted" suppressHydrationWarning>
             {shortAgo(item.timestamp)}
           </span>
@@ -204,7 +247,11 @@ export function ReviewCard({ item, layout = "rail" }: { item: ActivityItem; layo
           &ldquo;{isSharedNote(item) ? item.notePreview : item.reviewPreview}&rdquo;
         </p>
       </div>
-    </Link>
+      <CardLink
+        item={item}
+        label={`${name}'s ${isSharedNote(item) ? "reading note on" : "review of"} ${item.book.title}`}
+      />
+    </div>
   );
 }
 
@@ -287,22 +334,20 @@ function ActivityTile({ item }: { item: ActivityItem }) {
   const cover = item.book.coverImageUrl;
 
   return (
-    <Link
-      href={activityHref(item)}
-      aria-label={`${name} ${spoken} ${item.book.title}`}
-      className="relative flex w-[116px] lg:w-[132px] flex-shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-foreground/25"
-    >
+    <div className="relative isolate flex w-[116px] lg:w-[132px] flex-shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-foreground/25">
       {cover ? (
         <CoverBackdrop src={cover} sizes="132px" />
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-surface-alt to-surface" />
       )}
 
-      <div className="relative z-10 flex flex-1 flex-col p-2">
-        <div className="flex items-center gap-1.5">
+      {/* No z-index here on purpose: a stacking context would trap the person
+          link underneath the card link. */}
+      <div className="relative flex flex-1 flex-col p-2">
+        <PersonLink user={item.user} className="flex w-fit max-w-full items-center gap-1.5">
           <UserAvatar user={item.user} />
           <span className="text-[11px] font-semibold book-header-text truncate">{firstName}</span>
-        </div>
+        </PersonLink>
 
         <div className="flex flex-1 items-center justify-center py-2">
           {cover ? (
@@ -327,7 +372,8 @@ function ActivityTile({ item }: { item: ActivityItem }) {
           </span>
         </div>
       </div>
-    </Link>
+      <CardLink item={item} label={`${name} ${spoken} ${item.book.title}`} />
+    </div>
   );
 }
 

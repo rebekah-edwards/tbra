@@ -4,7 +4,7 @@ import { addReadingNoteFor } from "@/lib/mutations/reading-notes";
 
 /**
  * POST /api/v1/reading-notes
- * { bookId, noteText, pageNumber?, percentComplete?, mood?, pace?, buddyReadId? }
+ * { bookId, noteText, pageNumber?, percentComplete?, mood?, pace?, isPrivate?, buddyReadId? }
  * The Track Progress sheet — identical validation + writes to the web action.
  */
 export async function POST(req: Request) {
@@ -21,6 +21,8 @@ export async function POST(req: Request) {
     percentComplete: typeof body.percentComplete === "number" ? Math.trunc(body.percentComplete) : null,
     mood: asString(body.mood),
     pace: asString(body.pace),
+    // Private unless the app's share switch sent an explicit false.
+    isPrivate: body.isPrivate !== false,
     buddyReadId: asString(body.buddyReadId),
   });
 

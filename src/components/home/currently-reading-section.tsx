@@ -60,6 +60,9 @@ function TrackSheet({
   const [pace, setPace] = useState<string | null>(null);
   const [showExtras, setShowExtras] = useState(false);
   const [shareToBuddyRead, setShareToBuddyRead] = useState(false);
+  // Notes are private unless the reader turns this on. Progress is not
+  // covered by it — friends see page/percent either way.
+  const [shareNote, setShareNote] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
 
@@ -75,6 +78,7 @@ function TrackSheet({
     if (mood) formData.set("mood", mood);
     if (pace) formData.set("pace", pace);
     if (shareToBuddyRead && buddyReadId) formData.set("buddyReadId", buddyReadId);
+    formData.set("isPrivate", shareNote ? "false" : "true");
 
     startTransition(async () => {
       const result = await addReadingNote(formData);
@@ -176,6 +180,22 @@ function TrackSheet({
           </div>
         </div>
       )}
+
+      {/* Share switch — off by default. */}
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={shareNote}
+          onChange={(e) => setShareNote(e.target.checked)}
+          className="sr-only peer"
+        />
+        <div className="relative w-8 h-4 flex-shrink-0 rounded-full bg-border peer-checked:bg-accent transition-colors">
+          <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${shareNote ? "translate-x-4" : ""}`} />
+        </div>
+        <span className="text-xs text-muted">
+          {shareNote ? "Friends can see this note" : "Share this note with friends"}
+        </span>
+      </label>
 
       {buddyReadId && (
         <label className="flex items-center gap-2 cursor-pointer">

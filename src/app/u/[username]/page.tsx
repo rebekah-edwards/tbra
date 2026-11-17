@@ -10,6 +10,8 @@ import { getUserReviewsWithBooks } from "@/lib/queries/user-reviews";
 import { getFollowerCount, getFollowingCount, isFollowing } from "@/lib/queries/follows";
 import { getCurrentUser } from "@/lib/auth";
 import { getBlockRelation } from "@/lib/queries/blocks";
+import { getSharedNotes } from "@/lib/queries/reading-notes";
+import { SharedNotes } from "@/components/profile/shared-notes";
 import { SafetyMenu } from "@/components/safety/safety-menu";
 import { UnblockButton } from "@/components/safety/unblock-button";
 import { getPublicShelves } from "@/lib/queries/shelves";
@@ -192,6 +194,9 @@ export default async function PublicProfilePage({
     getPublicShelves(user.id),
   ]);
 
+  // Shared reading notes are "visible to friends": the owner and followers.
+  const sharedNotes = isOwner || currentlyFollowing ? await getSharedNotes(user.id, 10) : [];
+
   // Which of these shelves the viewer already follows, so the inline Follow
   // buttons render in the right state (punch list #5.2).
   const followedShelfIds =
@@ -354,6 +359,9 @@ export default async function PublicProfilePage({
         canFollow={!!session && session.userId !== user.id}
         followedShelfIds={followedShelfIds}
       />
+
+      {/* Notes they chose to share — followers only */}
+      <SharedNotes notes={sharedNotes} />
 
       {/* Reviews (no anonymous, no journal) */}
       <PublicReviewHistory reviews={publicReviews} />
