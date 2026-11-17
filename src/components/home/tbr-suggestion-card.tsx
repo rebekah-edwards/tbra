@@ -69,7 +69,7 @@ export function TbrSuggestionCard({ initialBook }: TbrSuggestionCardProps) {
             <div className="absolute inset-0 currently-reading-overlay" />
           </div>
         )}
-        <div className={`relative flex items-center gap-4 p-4 lg:gap-5 lg:p-5 transition-opacity ${isShuffling ? "opacity-60" : ""}`}>
+        <div className={`relative flex items-center justify-center gap-4 p-4 lg:gap-5 lg:p-5 transition-opacity ${isShuffling ? "opacity-60" : ""}`}>
           <Link href={href} className="flex-shrink-0 -rotate-3 transition-transform duration-200 hover:rotate-0">
             {book.coverImageUrl ? (
               <Image
@@ -83,7 +83,9 @@ export function TbrSuggestionCard({ initialBook }: TbrSuggestionCardProps) {
               <NoCover title={book.title} className="h-[120px] w-[80px] lg:h-[138px] lg:w-[92px] shadow-xl" size="md" />
             )}
           </Link>
-          <div className="min-w-0 flex-1">
+          {/* Not flex-1: the cover and text sit as one group in the middle of
+              the card instead of hugging its left edge (Rebekah, 2026-11-16). */}
+          <div className="min-w-0">
             <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-foreground/10 bg-surface/80 px-2.5 py-1 text-[11px] font-semibold text-foreground backdrop-blur-md">
               <span className="h-[7px] w-[7px] flex-shrink-0 rounded-full bg-accent" />
               <span className="truncate">{book.reason || "From your TBR"}</span>
