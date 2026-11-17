@@ -302,9 +302,9 @@ function ReadingBookCard({ book, onReviewOpen }: {
           reading-state dropdown can render outside the card bounds. The
           background image below has its own rounded clip. Outer wrapper gets
           z-50 when dropdown is open so it paints above the next sibling card. */}
-      <div className="relative rounded-xl currently-reading-card-base">
+      <div className="relative rounded-[18px] currently-reading-card-base">
         {book.coverImageUrl && (
-          <div className="absolute inset-0 overflow-hidden rounded-xl">
+          <div className="absolute inset-0 overflow-hidden rounded-[18px]">
             <Image
               src={book.coverImageUrl}
               alt=""
@@ -318,14 +318,18 @@ function ReadingBookCard({ book, onReviewOpen }: {
           </div>
         )}
         {!book.coverImageUrl && (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-dark to-accent rounded-xl" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-dark to-accent rounded-[18px]" />
         )}
         {/* Design refresh 2026-11 (mirrors native-ios HomeView cardBodyV2):
             a real progress bar instead of the % tag under the cover, ONE lime
             action ("Update" = track progress), and the reading-state menu as
-            a solid blue pill. Tighter padding and a smaller mobile cover so
-            Up Next reaches the first screen. */}
-        <div className="relative z-10 flex items-center gap-3 p-3 lg:gap-4 lg:p-4">
+            a solid blue pill.
+            Proportions (2026-11-16, later the same day): the slim version
+            looked thin beside the goal and streak tiles, so the card takes
+            their shell — 18px corners, 14px padding — with a larger cover,
+            a thicker bar, the percent as a heading-font number and taller
+            pills. Layout and behaviour are unchanged. */}
+        <div className="relative z-10 flex items-center gap-3 p-3.5 lg:gap-4 lg:p-4">
           <Link href={`/book/${book.slug || book.id}`} className="flex-shrink-0 relative">
             {book.coverImageUrl ? (
               <Image
@@ -333,23 +337,23 @@ function ReadingBookCard({ book, onReviewOpen }: {
                 alt={`Cover of ${book.title}`}
                 width={isAudiobook ? 80 : 80}
                 height={isAudiobook ? 80 : 120}
-                className={`${isAudiobook ? "h-[64px] w-[64px] lg:h-[80px] lg:w-[80px]" : "h-[72px] w-[48px] lg:h-[140px] lg:w-[94px]"} rounded-lg object-cover shadow-xl`}
+                className={`${isAudiobook ? "h-[80px] w-[80px]" : "h-[90px] w-[60px] lg:h-[140px] lg:w-[94px]"} rounded-lg object-cover shadow-xl`}
               />
             ) : (
-              <NoCover title={book.title} className="h-[72px] w-[48px] lg:h-[140px] lg:w-[94px] shadow-xl" size="sm" />
+              <NoCover title={book.title} className="h-[90px] w-[60px] lg:h-[140px] lg:w-[94px] shadow-xl" size="sm" />
             )}
           </Link>
           <div className="min-w-0 flex-1">
             <Link href={`/book/${book.slug || book.id}`}>
-              <h3 className="text-[15px] lg:text-base font-bold book-header-text leading-snug line-clamp-2">{book.title}</h3>
+              <h3 className="text-[17px] font-bold book-header-text leading-snug line-clamp-2">{book.title}</h3>
             </Link>
             {book.authors.length > 0 && (
               <p className="mt-0.5 text-[13px] lg:text-sm book-header-text-muted line-clamp-1">{book.authors.join(", ")}</p>
             )}
             {/* Progress bar — lime fill on a translucent track, % alongside */}
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2.5 flex items-center gap-2.5">
               <div
-                className="h-[5px] flex-1 overflow-hidden rounded-full bg-foreground/15"
+                className="h-2 flex-1 overflow-hidden rounded-full bg-foreground/15"
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={100}
@@ -361,17 +365,17 @@ function ReadingBookCard({ book, onReviewOpen }: {
                   style={{ width: `${Math.max(0, Math.min(100, book.progress ?? 0))}%` }}
                 />
               </div>
-              <span className={`text-[11px] font-bold tabular-nums whitespace-nowrap book-header-text ${book.progress ? "" : "opacity-50"}`}>
+              <span className={`tabular-nums whitespace-nowrap book-header-text ${book.progress ? "font-heading text-xl font-extrabold leading-none" : "text-[11px] font-bold opacity-50"}`}>
                 {book.progress ? `${book.progress}%` : "Not started"}
               </span>
             </div>
           </div>
           {/* Action buttons — stacked on the right, equal width. */}
-          <div className={`flex flex-col gap-1.5 flex-shrink-0 w-[92px] ${isPending ? "opacity-50" : ""}`}>
+          <div className={`flex flex-col gap-2 flex-shrink-0 w-[100px] ${isPending ? "opacity-50" : ""}`}>
             {/* Update — the one lime action. Black text on solid lime, always. */}
             <button
               onClick={() => setTrackingBookId(trackingBookId === book.id ? null : book.id)}
-              className="w-full rounded-full bg-accent px-2 py-2 text-xs font-bold text-black hover:brightness-110 active:scale-[0.98] transition-all whitespace-nowrap flex items-center justify-center gap-1"
+              className="w-full rounded-full bg-accent px-2 py-2.5 text-[13px] font-bold text-black hover:brightness-110 active:scale-[0.98] transition-all whitespace-nowrap flex items-center justify-center gap-1"
               title="Track progress"
               aria-label="Track progress"
             >
@@ -385,7 +389,7 @@ function ReadingBookCard({ book, onReviewOpen }: {
             <div className="relative flex w-full" ref={(el) => { stateDropdownRefs.current[book.id] = el; }}>
               <button
                 onClick={() => setOpenStateDropdown(openStateDropdown === book.id ? null : book.id)}
-                className="w-full rounded-full bg-[#0ea5e9] px-2 py-2 text-xs font-bold text-white whitespace-nowrap flex items-center justify-center gap-1 hover:brightness-110 active:scale-[0.98] transition-all"
+                className="w-full rounded-full bg-[#0ea5e9] px-2 py-2.5 text-[13px] font-bold text-white whitespace-nowrap flex items-center justify-center gap-1 hover:brightness-110 active:scale-[0.98] transition-all"
                 title="Change reading state"
                 aria-haspopup="menu"
                 aria-expanded={openStateDropdown === book.id}

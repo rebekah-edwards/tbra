@@ -27,6 +27,9 @@ export interface ActivityItem {
   // latest progress entry. The entry's note text never leaves the DB.
   percentComplete?: number | null;
   pageNumber?: number | null;
+  // The text of that entry's note — ONLY when its author marked the entry
+  // shared ("Visible to friends"). Null for every private entry.
+  notePreview?: string | null;
   timestamp: string;
 }
 
@@ -151,12 +154,14 @@ async function loadActivityRows(
       ORDER BY ubs.updated_at DESC LIMIT ${limit}
     `) as Promise<RawActivityRow[]>,
 
-    // Progress only (page / percent), from every entry — shared or private.
-    // Rebekah's rule (2026-11-16): the privacy switch on an entry covers its
-    // NOTE, not the reader's position; progress is fine to show. The note text
-    // is never selected here, so nothing in this feed can show one, and an
-    // entry with no page or percent is not a feed item at all. Only while the
-    // book is still being read.
+    // Reading entries. Rebekah's rule (2026-11-16): the privacy switch on an
+    // entry covers its NOTE, not the reader's position.
+    //   • page / percent: shown from every entry, shared or private
+    //   • note text: selected ONLY for entries marked shared (is_private = 0);
+    //     the CASE below is the single place that decides it, so a private
+    //     note's text never leaves the database
+    // An entry with neither progress nor a shared note is not a feed item.
+    // Only while the book is still being read.
     db.all(sql`
       SELECT
         'progress' as type,
@@ -165,14 +170,16 @@ async function loadActivityRows(
         rn.created_at as timestamp,
         NULL as rating, NULL as review_preview,
         rn.percent_complete as percent_complete,
-        rn.page_number as page_number
+        rn.page_number as page_number,
+        CASE WHEN rn.is_private = 0 AND TRIM(rn.note_text) != '' THEN rn.note_text ELSE NULL END as note_preview
       FROM reading_notes rn
       INNER JOIN users u ON rn.user_id = u.id
       INNER JOIN books b ON rn.book_id = b.id
       INNER JOIN user_book_state ubs
         ON ubs.user_id = rn.user_id AND ubs.book_id = rn.book_id AND ubs.state = 'currently_reading'
       WHERE rn.user_id IN (${inClause})
-        AND (rn.percent_complete > 0 OR rn.page_number > 0)
+        AND (rn.percent_complete > 0 OR rn.page_number > 0
+             OR (rn.is_private = 0 AND TRIM(rn.note_text) != ''))
       ORDER BY rn.created_at DESC LIMIT ${limit}
     `) as Promise<RawActivityRow[]>,
   ]);
@@ -239,6 +246,7 @@ function toActivityItem(r: RawActivityRow): ActivityItem {
       reviewId: r.review_id ?? null,
       percentComplete: isProgress ? r.percent_complete ?? null : null,
       pageNumber: isProgress ? r.page_number ?? null : null,
+      notePreview: isProgress && r.note_preview ? truncate(stripHtml(r.note_preview), 160) : null,
       timestamp: r.timestamp ?? "",
     };
 }
@@ -269,4 +277,5 @@ interface RawActivityRow {
   review_id?: string | null;
   percent_complete?: number | null;
   page_number?: number | null;
+  note_preview?: string | null;
 }

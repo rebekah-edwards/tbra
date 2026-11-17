@@ -12,7 +12,7 @@ import {
   activityHref,
   describe,
   displayName,
-  isWrittenReview,
+  hasQuote,
   shortAgo,
 } from "@/components/home/friends-activity";
 
@@ -124,7 +124,7 @@ export function FriendsActivityFeed({ initialItems, initialNextOffset }: Friends
   return (
     <div className="space-y-2.5">
       {items.map((item) =>
-        isWrittenReview(item) ? (
+        hasQuote(item) ? (
           <ReviewCard key={keyOf(item)} item={item} layout="feed" />
         ) : (
           <ActivityRow key={keyOf(item)} item={item} />

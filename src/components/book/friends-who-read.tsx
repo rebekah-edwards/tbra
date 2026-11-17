@@ -164,13 +164,17 @@ export function FriendsWhoRead({ friends, bookId, bookSlug }: FriendsWhoReadProp
     });
   }
 
+  // Shared notes only (the query never returns a private one). The row opens
+  // THEIR profile — it used to open the viewer's own notes for this book.
   for (const friend of withNotes) {
     rows.push({
       key: `notes-${friend.userId}`,
       avatars: [friend],
-      text: `${getName(friend)} left reading notes`,
-      right: chevron,
-      href: `${bookPath}/notes`,
+      text: friend.sharedNote
+        ? `${getName(friend)} left a reading note: \u201C${friend.sharedNote}\u201D`
+        : `${getName(friend)} left a reading note`,
+      right: friend.username ? chevron : null,
+      href: friend.username ? `/u/${friend.username}` : undefined,
     });
   }
 
@@ -209,14 +213,14 @@ export function FriendsWhoRead({ friends, bookId, bookSlug }: FriendsWhoReadProp
       {/* Expanded detail rows */}
       <div
         className="overflow-hidden transition-all duration-200"
-        style={{ maxHeight: expanded ? `${rows.length * 52 + 16}px` : "0px", opacity: expanded ? 1 : 0 }}
+        style={{ maxHeight: expanded ? `${rows.length * 52 + withNotes.length * 44 + 16}px` : "0px", opacity: expanded ? 1 : 0 }}
       >
         <div className="space-y-1 pt-1">
           {rows.map((row) => {
             const content = (
               <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-surface-alt/50">
                 <StackedAvatars friends={row.avatars} />
-                <span className="flex-1 text-sm text-foreground/80">{row.text}</span>
+                <span className="flex-1 text-sm text-foreground/80 line-clamp-3">{row.text}</span>
                 {row.right && <span className="flex-shrink-0">{row.right}</span>}
               </div>
             );

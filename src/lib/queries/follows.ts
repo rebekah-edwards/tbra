@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { userFollows, users, userBookState, userBookRatings } from "@/db/schema";
 import { eq, and, sql, inArray } from "drizzle-orm";
+import { stripHtml, truncate } from "@/lib/text-utils";
 
 export async function getFollowerCount(userId: string): Promise<number> {
   const row = await db
@@ -105,7 +106,10 @@ export interface FriendWhoRead {
   state: string | null;
   rating: number | null;
   reviewId: string | null;
+  /** True only when they have a SHARED note on this book. */
   hasNotes: boolean;
+  /** Their latest note on this book that they marked shared; never a private one. */
+  sharedNote: string | null;
 }
 
 export async function getFollowedUsersWhoRead(
@@ -121,7 +125,12 @@ export async function getFollowedUsersWhoRead(
       ubs.state,
       ubr.rating,
       rev.id as review_id,
-      (SELECT COUNT(*) FROM reading_notes rn WHERE rn.user_id = uf.followed_id AND rn.book_id = ${bookId}) as note_count
+      -- Shared notes only (is_private = 0). A private note is not even counted:
+      -- it used to make this row announce "left reading notes".
+      (SELECT rn.note_text FROM reading_notes rn
+        WHERE rn.user_id = uf.followed_id AND rn.book_id = ${bookId}
+          AND rn.is_private = 0 AND TRIM(rn.note_text) != ''
+        ORDER BY rn.created_at DESC LIMIT 1) as shared_note
     FROM user_follows uf
     INNER JOIN user_book_state ubs
       ON uf.followed_id = ubs.user_id AND ubs.book_id = ${bookId}
@@ -146,7 +155,7 @@ export async function getFollowedUsersWhoRead(
     state: string | null;
     rating: number | null;
     review_id: string | null;
-    note_count: number;
+    shared_note: string | null;
   }[];
 
   return rows.map((r) => ({
@@ -157,6 +166,7 @@ export async function getFollowedUsersWhoRead(
     state: r.state,
     rating: r.rating,
     reviewId: r.review_id,
-    hasNotes: r.note_count > 0,
+    hasNotes: !!r.shared_note,
+    sharedNote: r.shared_note ? truncate(stripHtml(r.shared_note), 140) : null,
   }));
 }

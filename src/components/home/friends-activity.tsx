@@ -122,7 +122,7 @@ function CoverBackdrop({ src, sizes }: { src: string; sizes: string }) {
   );
 }
 
-// ── Tier 1: a written review ──────────────────────────────────────────────
+// ── Tier 1: words to read — a written review, or a note its author shared ──
 
 /** Where an item leads: a written review opens that review, the rest open the book. */
 export function activityHref(item: ActivityItem): string {
@@ -132,6 +132,16 @@ export function activityHref(item: ActivityItem): string {
 
 export function isWrittenReview(item: ActivityItem): boolean {
   return item.type === "review" && !!item.reviewPreview;
+}
+
+/** A reading entry whose author marked its note shared ("Visible to friends"). */
+export function isSharedNote(item: ActivityItem): boolean {
+  return item.type !== "review" && !!item.notePreview;
+}
+
+/** Anything with words to read gets the wide card: a written review or a shared note. */
+export function hasQuote(item: ActivityItem): boolean {
+  return isWrittenReview(item) || isSharedNote(item);
 }
 
 /** `rail` = fixed-width card in the home row; `feed` = full width on /activity. */
@@ -175,14 +185,23 @@ export function ReviewCard({ item, layout = "rail" }: { item: ActivityItem; layo
       </div>
 
       <div className="flex flex-1 flex-col gap-1.5 p-2.5 lg:p-3">
-        <div className="flex items-center gap-2">
-          <span className="rounded-full border border-neon-purple/20 bg-neon-purple/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-neon-purple">
-            Reviewed
-          </span>
-          {item.rating != null && item.rating > 0 && <StarDisplay rating={item.rating} />}
-        </div>
+        {isSharedNote(item) ? (
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border border-accent/20 bg-accent/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-accent">
+              Reading note
+            </span>
+            {hasProgress(item) && <span className="text-[11px] font-medium text-muted">{describe(item).text}</span>}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border border-neon-purple/20 bg-neon-purple/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-neon-purple">
+              Reviewed
+            </span>
+            {item.rating != null && item.rating > 0 && <StarDisplay rating={item.rating} />}
+          </div>
+        )}
         <p className={`text-foreground/75 leading-relaxed ${layout === "rail" ? "text-xs line-clamp-3" : "text-[13px] line-clamp-5"}`}>
-          &ldquo;{item.reviewPreview}&rdquo;
+          &ldquo;{isSharedNote(item) ? item.notePreview : item.reviewPreview}&rdquo;
         </p>
       </div>
     </Link>
@@ -227,6 +246,10 @@ export function CaptionIcon({ glyph, className }: { glyph: Glyph; className: str
         </svg>
       );
   }
+}
+
+function hasProgress(item: ActivityItem): boolean {
+  return (item.percentComplete ?? 0) > 0 || (item.pageNumber ?? 0) > 0;
 }
 
 /** The one caption line a tile carries, plus the sentence a screen reader gets. */
@@ -343,7 +366,7 @@ export function FriendsActivity({ activity }: FriendsActivityProps) {
     <div className="flex items-stretch gap-2.5 lg:gap-3 overflow-x-auto pb-2 -mx-2 px-2 pr-12 no-scrollbar mask-fade-right">
       {activity.map((item, i) => {
         const key = `${item.user.id}-${item.book.id}-${i}`;
-        return isWrittenReview(item) ? <ReviewCard key={key} item={item} /> : <ActivityTile key={key} item={item} />;
+        return hasQuote(item) ? <ReviewCard key={key} item={item} /> : <ActivityTile key={key} item={item} />;
       })}
       <SeeMoreTile />
     </div>
