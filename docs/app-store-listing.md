@@ -85,8 +85,28 @@ The closing line is Rebekah's wording (2026-11-16).
 
 ## Submitted for review 2026-11-16
 
-Version 1.0 (build 17), the Based Reader subscription group and both plans
-went to App Review together; release is automatic on approval.
+Version 1.0, the Based Reader subscription group and both plans went to App
+Review together; release is automatic on approval. First sent with build 17
+(22:44 ET); pulled and resubmitted the same night with **build 18** (23:59 ET,
+review submission `64d0f824-d48d-415a-bfba-5b9481107869`), because build 17
+predates the design refresh, the Up Next and shelf reorder, note to self on the
+book page and the Friends Activity list.
+
+### Swapping the build on a version that is waiting for review
+
+1. `PATCH /v1/reviewSubmissions/{id}` with `canceled: true`. The version goes
+   to `DEVELOPER_REJECTED`/`PREPARE_FOR_SUBMISSION` within a minute and the
+   subscriptions return to `READY_TO_SUBMIT`.
+2. `PATCH /v1/appStoreVersions/{id}/relationships/build` to the new build.
+3. `POST /v1/reviewSubmissions` (draft), then `POST /v1/reviewSubmissionItems`
+   for the version.
+4. The subscription group and each plan must be added in the App Store Connect
+   website: open the group, then each plan, and choose Add for Review > the
+   draft submission. The API refuses them ("has no pending version for
+   submission") and the version page has no purchases section. A group cannot
+   go without at least one of its plans.
+5. Check the draft has four items, then `PATCH` the submission with
+   `submitted: true`.
 
 - App Privacy labels published: name, email address, photos or videos, other
   user content, user ID, purchase history. Each is used for App Functionality,
@@ -100,6 +120,8 @@ went to App Review together; release is automatic on approval.
 
 ## Still open
 
-- A real sandbox purchase from TestFlight build 17 has not been run yet.
+- A real sandbox purchase (subscribe, then restore) from a TestFlight build
+  has not been run yet. Rebekah chose on 2026-11-16 to skip it for now and
+  look at it herself in the following days.
 - App Compliance shows the developer declared as a non-trader under the EU
   Digital Services Act; with paid subscriptions that may need revisiting.
