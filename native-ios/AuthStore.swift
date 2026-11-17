@@ -63,6 +63,17 @@ final class AuthStore {
     /// timezone so reading streaks bucket days in the reader's own calendar
     /// (UTC bucketing credited late-evening activity to the next day).
     private func markSignedIn(_ user: PublicUser) {
+        var user = user
+        #if DEBUG && targetEnvironment(simulator)
+        // Store screenshots: show a staff account's real library as a plain
+        // reader would see it, without the admin pencils and Verify buttons.
+        // Display only — the server still knows who this is. Simulator only.
+        if ProcessInfo.processInfo.environment["TBRA_DEBUG_AS_READER"] != nil {
+            user = PublicUser(id: user.id, email: user.email, username: user.username,
+                              displayName: user.displayName, avatarUrl: user.avatarUrl,
+                              accountType: "reader", emailVerified: user.emailVerified)
+        }
+        #endif
         phase = .signedIn(user)
         Task { await APIClient.shared.reportTimezone() }
         // Start hearing about subscription renewals and off-device purchases.

@@ -1019,6 +1019,9 @@ private struct GuidedTourModifier: ViewModifier {
                 #if DEBUG && targetEnvironment(simulator)
                 // Headless verification: force tours despite the once-flag.
                 if ProcessInfo.processInfo.environment["TBRA_DEBUG_TOUR"] != nil { done = false }
+                // Store screenshots: a fresh simulator has seen no tours, and a
+                // coach mark over the screen is not what the listing should show.
+                if ProcessInfo.processInfo.environment["TBRA_DEBUG_NO_TOURS"] != nil { done = true }
                 #endif
                 appeared = true
                 tryStart()

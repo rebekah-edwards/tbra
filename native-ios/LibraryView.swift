@@ -155,6 +155,9 @@ struct LibraryView: View {
         if ProcessInfo.processInfo.environment["TBRA_DEBUG_ROUTE"] == "library:activity" {
             return .activity
         }
+        if ProcessInfo.processInfo.environment["TBRA_DEBUG_ROUTE"] == "library:owned" {
+            return .owned
+        }
         #endif
         return .tbr
     }()

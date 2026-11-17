@@ -302,7 +302,11 @@ struct BookDetailView: View {
             #if DEBUG && targetEnvironment(simulator)
             if let anchor = ProcessInfo.processInfo.environment["TBRA_DEBUG_SCROLL_TO"] {
                 try? await Task.sleep(for: .seconds(1))
-                withAnimation { scrollProxy.scrollTo(anchor, anchor: .top) }
+                // TBRA_DEBUG_SCROLL_Y (0…1) places the anchor that far down the
+                // screen instead of flush under the status bar — used to frame
+                // store screenshots so a heading clears the back button.
+                let y = ProcessInfo.processInfo.environment["TBRA_DEBUG_SCROLL_Y"].flatMap(Double.init) ?? 0
+                withAnimation { scrollProxy.scrollTo(anchor, anchor: UnitPoint(x: 0, y: y)) }
             }
             #endif
             // Unenriched book: the payload fetch auto-triggered enrichment
