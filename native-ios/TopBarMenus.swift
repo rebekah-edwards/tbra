@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 
 // The top bar's two remaining controls, recreated from the web nav:
@@ -545,31 +546,26 @@ struct HamburgerMenuSheet: View {
     }
 }
 
-// ── Based Reader — native pricing screen (2026-07-15) ──
-// Mirrors the web /upgrade page: aurora backdrop, gradient wordmark, pricing
-// cards ($4.99/mo · $39.99/yr), feature grid, roadmap. Checkout/portal URLs
-// come from POST /api/v1/stripe and open in an IN-APP Safari sheet (user
-// request: never kick out to the browser).
-
-import SafariServices
-
-struct SafariSheet: UIViewControllerRepresentable {
-    let url: URL
-    func makeUIViewController(context: Context) -> SFSafariViewController {
-        let vc = SFSafariViewController(url: url)
-        vc.preferredControlTintColor = UIColor(Theme.neonPurple)
-        return vc
-    }
-    func updateUIViewController(_ vc: SFSafariViewController, context: Context) {}
-}
+// ── Based Reader — membership screen ──
+// Hero, plans, what's included, roadmap. Since 2026-11 the plans are Apple
+// In-App Purchase subscriptions (see Store.swift): App Review rejects an
+// external checkout, so the Stripe sheet that used to open here is gone.
+// Apple also requires this screen to show each plan's price and period, a
+// Restore Purchases button, and links to the Terms of Use and Privacy Policy.
 
 struct BasedReaderScreen: View {
     @Environment(AuthStore.self) private var auth
     @Environment(\.colorScheme) private var colorScheme
     @State private var breathe = false
-    @State private var busy = false
-    @State private var error: String?
-    @State private var checkoutURL: URL?
+    @State private var store = StoreModel.shared
+    /// The plan the lime button will buy. Yearly first: it is the better deal.
+    @State private var selectedPlan = StoreModel.yearlyID
+    @State private var manageOpen = false
+
+    private var userId: String? {
+        if case .signedIn(let u) = auth.phase { return u.id }
+        return nil
+    }
 
     private var accountType: String {
         if case .signedIn(let u) = auth.phase { return u.accountType }
@@ -667,24 +663,12 @@ struct BasedReaderScreen: View {
                     .allowsHitTesting(false)
                 }
 
-                // ── Pricing ──
+                // ── Plans ──
                 if isSubscriber {
-                    Button {
-                        openBilling(action: "portal")
-                    } label: {
-                        Text(busy ? "Opening…" : "Manage subscription")
-                            .font(Theme.body(15, .semibold))
-                            .foregroundStyle(Theme.neonPurple)
-                            .padding(.horizontal, 24).padding(.vertical, 12)
-                            .background(Theme.neonPurple.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.neonPurple.opacity(0.4), lineWidth: 2))
-                    }
-                    .disabled(busy)
-                    Text("Update payment, switch plans, or cancel anytime.")
-                        .font(Theme.body(11)).foregroundStyle(Theme.muted).padding(.top, 8)
+                    subscriberCard
                 } else if isBeta {
-                    // Member without a Stripe subscription: nothing to bill,
-                    // nothing to manage — just confirm the membership.
+                    // Member without a subscription: nothing to bill or
+                    // manage — just confirm the membership.
                     HStack(spacing: 6) {
                         Image(systemName: "star.fill").font(.system(size: 12))
                         Text("Based Reader — included with your account")
@@ -695,22 +679,7 @@ struct BasedReaderScreen: View {
                     .background(Theme.neonPurple.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
                     .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.neonPurple.opacity(0.4), lineWidth: 2))
                 } else {
-                    HStack(spacing: 12) {
-                        priceCard(price: "$4.99", per: "per month", cta: "Go monthly",
-                                  note: "Billed monthly", plan: "monthly", highlight: false, badge: nil)
-                        priceCard(price: "$39.99", per: "per year", cta: "Get the year",
-                                  note: "That's $3.33 a month", plan: "annual", highlight: true, badge: "4 months free")
-                    }
-                    .padding(.horizontal, 20)
-                    Text(isAdminStaff
-                         ? "Admin preview — this is what reader accounts see. Staff accounts can't subscribe."
-                         : "Cancel anytime. Secure checkout by Stripe.")
-                        .font(Theme.body(11)).foregroundStyle(Theme.muted)
-                        .multilineTextAlignment(.center)
-                        .padding(.top, 10).padding(.horizontal, 30)
-                }
-                if let error {
-                    Text(error).font(Theme.body(12)).foregroundStyle(Theme.destructive).padding(.top, 6)
+                    plansSection
                 }
 
                 // ── Features ──
@@ -766,13 +735,11 @@ struct BasedReaderScreen: View {
                 }
                 .padding(.horizontal, 20).padding(.top, 30)
 
-                // ── Trust ──
-                VStack(spacing: 4) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "lock.fill").font(.system(size: 10))
-                        Text("Secure checkout by Stripe · Cancel anytime")
-                    }
-                    .font(Theme.body(11)).foregroundStyle(Theme.muted)
+                // ── Fine print ──
+                VStack(spacing: 8) {
+                    Text("[Terms of Use](https://thebasedreader.app/terms)  ·  [Privacy Policy](https://thebasedreader.app/privacy)")
+                        .font(Theme.body(12, .medium))
+                        .tint(Theme.neonBlue)
                     if let mail = URL(string: "mailto:hello@thebasedreader.app") {
                         Link("Questions? hello@thebasedreader.app", destination: mail)
                             .font(Theme.body(11, .medium)).foregroundStyle(Theme.neonBlue)
@@ -787,71 +754,210 @@ struct BasedReaderScreen: View {
         .onAppear {
             withAnimation(.easeInOut(duration: 7).repeatForever(autoreverses: true)) { breathe = true }
         }
-        .sheet(isPresented: Binding(
-            get: { checkoutURL != nil },
-            set: { if !$0 { checkoutURL = nil } }
-        )) {
-            if let checkoutURL {
-                SafariSheet(url: checkoutURL).ignoresSafeArea()
-            }
+        .task {
+            if !store.loaded { await store.loadProducts() }
+            await store.refreshEntitlement()
+        }
+        .manageSubscriptionsSheet(isPresented: $manageOpen)
+        .onChange(of: manageOpen) { was, now in
+            // The sheet may have cancelled or switched the plan.
+            if was && !now { Task { await store.refreshEntitlement(); await auth.refreshUser() } }
         }
     }
 
-    private func priceCard(price: String, per: String, cta: String, note: String,
-                           plan: String, highlight: Bool, badge: String?) -> some View {
-        Button {
-            openBilling(action: "checkout", plan: plan)
-        } label: {
-            VStack(spacing: 3) {
-                Text(price).font(Theme.heading(30, .heavy)).foregroundStyle(Theme.foreground)
-                Text(per).font(Theme.body(11)).foregroundStyle(Theme.muted)
-                Text(busy ? "…" : cta)
-                    .font(Theme.body(12, .bold))
-                    .foregroundStyle(highlight ? .white : Theme.foreground)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
-                    .background(highlight ? AnyShapeStyle(Theme.neonPurple) : AnyShapeStyle(Theme.surfaceAlt),
-                                in: RoundedRectangle(cornerRadius: 10))
-                    .padding(.top, 8)
-                Text(note).font(Theme.body(9)).foregroundStyle(Theme.muted).padding(.top, 3)
-            }
-            .padding(.horizontal, 12).padding(.vertical, 16)
-            .frame(maxWidth: .infinity)
-            .background(highlight ? Theme.neonPurple.opacity(0.1) : Theme.surface.opacity(0.7),
-                        in: RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18)
-                .stroke(highlight ? Theme.neonPurple.opacity(0.6) : Theme.border, lineWidth: 2))
-            .overlay(alignment: .top) {
-                if let badge {
-                    Text(badge)
-                        .font(Theme.body(10, .bold)).foregroundStyle(.white)
-                        .padding(.horizontal, 10).padding(.vertical, 3)
-                        .background(Theme.neonPurple, in: Capsule())
-                        .offset(y: -10)
-                }
-            }
-            .shadow(color: highlight ? Theme.neonPurple.opacity(0.25) : .clear, radius: 14)
-        }
-        .disabled(busy || isAdminStaff)
+    // ── Plans (free readers, and the staff preview) ──
+    /// What a plan row shows. Built from the StoreKit `Product`, so prices
+    /// and currency are always Apple's for the reader's storefront.
+    private struct PlanDisplay: Identifiable {
+        let id: String
+        let title: String
+        let price: String
+        let period: String      // "year" | "month"
+        let detail: String
+        let badge: String?
     }
 
-    private func openBilling(action: String, plan: String? = nil) {
-        busy = true; error = nil
-        Task {
-            defer { busy = false }
-            struct Res: Codable { let ok: Bool; let url: String? }
-            var body: [String: Any] = ["action": action]
-            if let plan { body["plan"] = plan }
-            do {
-                let res: Res = try await APIClient.shared.request("/api/v1/stripe", method: "POST", body: body)
-                if let s = res.url, let url = URL(string: s) {
-                    checkoutURL = url
+    private var plans: [PlanDisplay] {
+        var out: [PlanDisplay] = []
+        if let yearly = store.yearly {
+            let perMonth = (yearly.price / 12).formatted(yearly.priceFormatStyle)
+            out.append(PlanDisplay(id: yearly.id, title: "Yearly", price: yearly.displayPrice, period: "year",
+                                   detail: "That's \(perMonth) a month",
+                                   badge: store.yearlySavingsPercent.map { "Save \($0)%" }))
+        }
+        if let monthly = store.monthly {
+            out.append(PlanDisplay(id: monthly.id, title: "Monthly", price: monthly.displayPrice, period: "month",
+                                   detail: "Billed every month", badge: nil))
+        }
+        #if DEBUG && targetEnvironment(simulator)
+        // Layout review only (SIMCTL_CHILD_TBRA_DEBUG_PLANS=1): the simulator
+        // has no App Store products unless Xcode injects a StoreKit file, so
+        // stand-in rows let the screen be checked and screenshotted. The
+        // Subscribe button does nothing in this mode. Never in a device build.
+        if out.isEmpty, ProcessInfo.processInfo.environment["TBRA_DEBUG_PLANS"] != nil {
+            return [
+                PlanDisplay(id: StoreModel.yearlyID, title: "Yearly", price: "$39.99", period: "year",
+                            detail: "That's $3.33 a month", badge: "Save 33%"),
+                PlanDisplay(id: StoreModel.monthlyID, title: "Monthly", price: "$4.99", period: "month",
+                            detail: "Billed every month", badge: nil),
+            ]
+        }
+        #endif
+        return out
+    }
+
+    private var selectedPlanDisplay: PlanDisplay? {
+        plans.first { $0.id == selectedPlan } ?? plans.first
+    }
+
+    private func product(for plan: PlanDisplay) -> Product? {
+        plan.id == StoreModel.yearlyID ? store.yearly : store.monthly
+    }
+
+    private var plansSection: some View {
+        VStack(spacing: 12) {
+            if plans.isEmpty {
+                if store.loaded {
+                    VStack(spacing: 8) {
+                        Text("Plans aren't available right now.")
+                            .font(Theme.body(14, .semibold)).foregroundStyle(Theme.foreground)
+                        Button("Try again") { Task { await store.loadProducts() } }
+                            .font(Theme.body(14, .medium)).foregroundStyle(Theme.neonBlue)
+                    }
+                    .frame(maxWidth: .infinity).padding(.vertical, 24)
                 } else {
-                    error = "Couldn't start checkout."
+                    ProgressView().tint(Theme.accent).frame(maxWidth: .infinity).padding(.vertical, 30)
                 }
-            } catch {
-                self.error = (error as? APIError)?.errorDescription ?? "Couldn't start checkout."
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(plans) { plan in planRow(plan) }
+                }
+
+                if let plan = selectedPlanDisplay {
+                    let priceLine = "\(plan.price) per \(plan.period)"
+                    Button {
+                        guard let userId, let product = product(for: plan) else { return }
+                        Task {
+                            if await store.purchase(product, userId: userId) { await auth.refreshUser() }
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            if store.working == plan.id { ProgressView().tint(Theme.onAccent) }
+                            Text("Subscribe · \(priceLine)")
+                                .font(Theme.body(16, .bold))
+                        }
+                        .foregroundStyle(Theme.onAccent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(Theme.accent, in: Capsule())
+                    }
+                    .disabled(store.working != nil || isAdminStaff)
+                    .opacity(isAdminStaff ? 0.5 : 1)
+                    .padding(.top, 4)
+
+                    // Apple 3.1.2: state the price, the period and that it renews.
+                    Text(isAdminStaff
+                         ? "Admin preview — this is what reader accounts see. Staff accounts can't subscribe."
+                         : "\(priceLine), billed to your Apple Account. Renews automatically until you cancel, at least 24 hours before the period ends, in your Apple Account settings.")
+                        .font(Theme.body(11)).foregroundStyle(Theme.muted)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Button {
+                    Task { if await store.restore() { await auth.refreshUser() } }
+                } label: {
+                    Text(store.working == "restore" ? "Restoring…" : "Restore Purchases")
+                        .font(Theme.body(14, .semibold))
+                        .foregroundStyle(Theme.neonBlue)
+                        .padding(.vertical, 6)
+                }
+                .disabled(store.working != nil)
+
+                // Apple 3.1.2: the EULA and privacy policy must be reachable
+                // from the purchase screen itself, not only further down.
+                Text("[Terms of Use](https://thebasedreader.app/terms)  ·  [Privacy Policy](https://thebasedreader.app/privacy)")
+                    .font(Theme.body(12, .medium))
+                    .tint(Theme.neonBlue)
+            }
+            if let error = store.error {
+                Text(error).font(Theme.body(12)).foregroundStyle(Theme.destructive)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .padding(.horizontal, 20)
+    }
+
+    /// One selectable plan: neutral glass, lime ring and check when chosen.
+    private func planRow(_ plan: PlanDisplay) -> some View {
+        let chosen = selectedPlanDisplay?.id == plan.id
+        return Button { selectedPlan = plan.id } label: {
+            HStack(spacing: 12) {
+                Image(systemName: chosen ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(chosen ? Theme.accentText : Theme.muted.opacity(0.6))
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 8) {
+                        Text(plan.title).font(Theme.body(16, .bold)).foregroundStyle(Theme.foreground)
+                        if let badge = plan.badge {
+                            Text(badge)
+                                .font(Theme.body(10, .bold))
+                                .foregroundStyle(Theme.onAccent)
+                                .padding(.horizontal, 8).padding(.vertical, 3)
+                                .background(Theme.accent, in: Capsule())
+                        }
+                    }
+                    Text(plan.detail).font(Theme.body(12)).foregroundStyle(Theme.muted)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(plan.price)
+                        .font(Theme.heading(20, .heavy)).foregroundStyle(Theme.foreground)
+                    Text("per \(plan.period)")
+                        .font(Theme.body(11)).foregroundStyle(Theme.muted)
+                }
+            }
+            .padding(.horizontal, 14).padding(.vertical, 14)
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18)
+                .stroke(chosen ? Theme.accent : Theme.border.opacity(0.6), lineWidth: chosen ? 2 : 1))
+            .contentShape(RoundedRectangle(cornerRadius: 18))
+        }
+        .accessibilityLabel("\(plan.title), \(plan.price) per \(plan.period)\(chosen ? ", selected" : "")")
+    }
+
+    // ── Paying member ──
+    private var subscriberCard: some View {
+        VStack(spacing: 10) {
+            if store.activeProductID != nil {
+                Button { manageOpen = true } label: {
+                    Text("Manage subscription")
+                        .font(Theme.body(15, .semibold))
+                        .foregroundStyle(Theme.foreground)
+                        .padding(.horizontal, 24).padding(.vertical, 12)
+                        .glassEffect(.regular, in: Capsule())
+                }
+                Text("Switch plans or cancel anytime. Billed to your Apple Account.")
+                    .font(Theme.body(11)).foregroundStyle(Theme.muted)
+            } else {
+                // Premium, but not through an Apple purchase on this Apple
+                // Account: a website subscription, or bought on another one.
+                Text("Your membership is active.")
+                    .font(Theme.body(15, .semibold)).foregroundStyle(Theme.foreground)
+                Text("It isn't billed through this Apple Account. If you subscribed on thebasedreader.app, manage it there.")
+                    .font(Theme.body(12)).foregroundStyle(Theme.muted)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    Task { if await store.restore() { await auth.refreshUser() } }
+                } label: {
+                    Text(store.working == "restore" ? "Restoring…" : "Restore Purchases")
+                        .font(Theme.body(13, .semibold)).foregroundStyle(Theme.neonBlue)
+                }
+                .disabled(store.working != nil)
+            }
+        }
+        .padding(.horizontal, 30)
     }
 }

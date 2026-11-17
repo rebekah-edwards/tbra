@@ -52,12 +52,21 @@ final class AuthStore {
     }
 
 
+    /// Re-read the signed-in user (e.g. after a purchase flips them to
+    /// premium). A network failure leaves the current user in place.
+    func refreshUser() async {
+        guard case .signedIn = phase, let user = try? await APIClient.shared.me() else { return }
+        phase = .signedIn(user)
+    }
+
     /// Single entry point for "we are signed in". Also reports the device
     /// timezone so reading streaks bucket days in the reader's own calendar
     /// (UTC bucketing credited late-evening activity to the next day).
     private func markSignedIn(_ user: PublicUser) {
         phase = .signedIn(user)
         Task { await APIClient.shared.reportTimezone() }
+        // Start hearing about subscription renewals and off-device purchases.
+        StoreModel.shared.start()
     }
 
     func register(email: String, password: String, referralCode: String?) async {
