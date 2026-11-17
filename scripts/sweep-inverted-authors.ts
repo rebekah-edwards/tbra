@@ -53,10 +53,11 @@ const SKIP_MEILI = process.argv.includes("--no-meili");
 
 /**
  * Hand decisions for names the rules cannot get right. Key = the stored name.
- * A string is the corrected name; `null` means leave the row alone (it is then
- * listed under "Left for a human" with the note below).
+ *   string    → the corrected name (rename, or merge into that author if it exists)
+ *   string[]  → the row is several people: one link per name
+ *   null      → leave the row alone; it is listed under "Left for a human"
  */
-const OVERRIDES: Record<string, string | null> = {
+const OVERRIDES: Record<string, string | string[] | null> = {
   // "First, Last" — a stray comma in natural order, not an inversion.
   "Anne, McElvoy": "Anne McElvoy",
   "Markus, Wolf": "Markus Wolf",
@@ -68,10 +69,36 @@ const OVERRIDES: Record<string, string | null> = {
   "Weaver, Mr. Travis James": "Travis James Weaver",
   "Malkmus, George, H.": "George H. Malkmus",
   "Morris, Heather teacher.": "Heather Morris",
-  // Not confidently one thing or the other — leave for a human.
+
+  // ── The rows the first run left for a human, decided 2026-11-16 (Rebekah: "apply suggestions") ──
+  // Catalogue headings for one person.
+  "Athanasius Saint, Patriarch of Alexandria": "Athanasius of Alexandria",
+  "Eusebius of Caesarea, Bishop of Caesarea": "Eusebius of Caesarea",
+  "Fullerton, Georgiana Lady": "Lady Georgiana Fullerton",
+  "Douglas, Gertrude Lady.": "Lady Gertrude Douglas",
+  "Jay D., Lieut. Blaufox": "Jay D. Blaufox",
+  // The same person written twice, or a pen name plus the legal name.
+  "Michele Pariza Wacek, Michele P.W.": "Michele Pariza Wacek",
+  "Dani Sabia, D Sabia, D Sabia": "Dani Sabia",
+  "Lecrae, Lecrae Moore": "Lecrae",
+  "Sapphire, Lofton, Ramona": "Sapphire",
+  // Author plus a translator / an audio-drama cast: keep the author.
+  "Lindsay, Jeffry P./ Murillo, Eduardo G. (TRN)": "Jeffry P. Lindsay",
+  "Eleanor Tomlinson, Douglas Booth, Jeremy Irvine, Ella Purnell, Anna Lea, Lily Cole, Emma Thompson, Jane Austen": "Jane Austen",
+  // Several people in one row.
+  "CARD, ORSOM SCOTT/ KUBERT, ANDY/ FERRY, PASQUAL": ["Orson Scott Card", "Andy Kubert", "Pasqual Ferry"],
+  "Foxe, John, and King, Marie Gentert (editor)": ["John Foxe", "Marie Gentert King"],
+  "Jimmy; Gray, Justin Palmiotti": ["Jimmy Palmiotti", "Justin Gray"],
+  "John Polidori, Mary Shelley, Lord Byron": ["Mary Shelley", "John William Polidori", "Lord Byron"],
+  "Nenia Campbell, Drethi A.": ["Nenia Campbell", "Drethi A."],
+  "Philpott, Kent Allan, Philpott, Katie L. C.": ["Kent Allan Philpott", "Katie L. C. Philpott"],
+  "Raymond T.; Florescu, Radu McNally": ["Raymond T. McNally", "Radu Florescu"],
+  "STEWART, PAUL, RIDDELL, CHRIS": ["Paul Stewart", "Chris Riddell"],
+  // Matt Dinniman's book; "Tevagah" kept as a second credit rather than dropped.
+  "Tevagah, Matt Dinniman": ["Matt Dinniman", "Tevagah"],
+
+  // Still not confidently one thing or the other — leave for a human.
   "Wesley, B Jarvis": null,
-  "Tevagah, Matt Dinniman": null,
-  "Dani Sabia, D Sabia, D Sabia": null,
 };
 
 // ── types ──────────────────────────────────────────────────────────────────
@@ -181,7 +208,8 @@ function buildPlan(
   // Keys that some candidate will be renamed TO — used by the "First, Last" guard.
   const targetKeys = new Map<string, string>();
   for (const { row, analysis } of candidates) {
-    const t = row.name in OVERRIDES ? OVERRIDES[row.name] : analysis.action === "declined" ? null : analysis.name;
+    const o = OVERRIDES[row.name];
+    const t = row.name in OVERRIDES ? (typeof o === "string" ? o : null) : analysis.action === "declined" ? null : analysis.name;
     if (t) targetKeys.set(row.id, authorNameKey(t));
   }
 
@@ -238,8 +266,13 @@ function buildPlan(
       continue;
     }
 
+    // A hand-listed set of people skips straight to the split below.
+    const handParts = Array.isArray(override) ? override : null;
+
     // ── a single corrected name ──
-    const target = typeof override === "string" ? override : analysis.action !== "declined" ? analysis.name : null;
+    const target = handParts
+      ? null
+      : typeof override === "string" ? override : analysis.action !== "declined" ? analysis.name : null;
     if (target && target !== row.name) {
       if (!overridden && analysis.action === "flipped") {
         // Guard 1: "Markus, Wolf" might be "First, Last". If the natural-order
@@ -285,12 +318,14 @@ function buildPlan(
       continue;
     }
 
-    if (analysis.action !== "declined") continue;
+    if (analysis.action !== "declined" && !handParts) continue;
 
     // ── several people in one row ──
     const splittable = ["multiple-authors", "repeated-word", "unrecognised-shape"].includes(analysis.reason ?? "");
-    const parts = splittable && !/[;/&\[\]()\d|]/.test(row.name) ? splitAuthorList(row.name, { commaSeparated: true }) : [];
-    if (parts.length >= 2 && parts.length <= 4 && parts.every(looksLikeFullName)) {
+    const parts =
+      handParts ??
+      (splittable && !/[;/&\[\]()\d|]/.test(row.name) ? splitAuthorList(row.name, { commaSeparated: true }) : []);
+    if (handParts ? parts.length >= 2 : parts.length >= 2 && parts.length <= 4 && parts.every(looksLikeFullName)) {
       const steps: Step[] = [];
       const touched: string[] = [];
       // First person: reuse this row (rename) or fold into their existing row.
@@ -315,6 +350,7 @@ function buildPlan(
         sourceId: original.id,
         sourceName: original.name,
         result: parts.join("  +  "),
+        ...(handParts ? { note: "hand override" } : {}),
         steps,
         touched,
       });
