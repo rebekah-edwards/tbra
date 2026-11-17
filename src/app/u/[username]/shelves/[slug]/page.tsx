@@ -150,7 +150,7 @@ export default async function PublicShelfPage({ params }: Props) {
           </h1>
           <p className="text-xs text-muted">
             by{" "}
-            <Link href={`/u/${username}`} className="text-accent hover:text-accent-dark font-medium">
+            <Link href={`/u/${username}`} className="text-accent hover:text-accent font-medium">
               {user.displayName || `@${username}`}
             </Link>
           </p>

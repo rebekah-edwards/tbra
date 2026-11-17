@@ -90,7 +90,7 @@ export function BuyButton(props: BuyButtonProps) {
                 target="_blank"
                 rel="sponsored noopener noreferrer"
                 onClick={() => setShowDialog(false)}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold bg-accent text-black text-center hover:brightness-110 transition-all"
+                className="w-full py-2.5 rounded-full text-sm font-semibold bg-accent text-black text-center hover:brightness-110 transition-all"
               >
                 Continue to Amazon
               </a>

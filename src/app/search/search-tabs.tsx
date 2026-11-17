@@ -18,28 +18,22 @@ export function SearchTabs({ isLoggedIn, initialQuery, initialTab }: SearchTabsP
   return (
     <div>
       {/* Tab bar */}
-      <div className="flex gap-1 rounded-lg bg-surface-alt/50 p-1 mb-6">
-        <button
-          onClick={() => setActiveTab("search")}
-          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === "search"
-              ? "bg-surface text-foreground shadow-sm"
-              : "text-muted hover:text-foreground"
-          }`}
-        >
-          <span className="mr-1.5">🔍</span>
-          Search
+      <div className="seg-glass mb-6">
+        <button onClick={() => setActiveTab("search")} data-active={activeTab === "search"}>
+          <span className="inline-flex items-center justify-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.500" />
+            </svg>
+            Search
+          </span>
         </button>
-        <button
-          onClick={() => setActiveTab("discover")}
-          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === "discover"
-              ? "bg-surface text-foreground shadow-sm"
-              : "text-muted hover:text-foreground"
-          }`}
-        >
-          <span className="mr-1.5">✨</span>
-          Discover
+        <button onClick={() => setActiveTab("discover")} data-active={activeTab === "discover"}>
+          <span className="inline-flex items-center justify-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3l1.9 5.1L19 10l-5.100 1.900L12 17l-1.900-5.100L5 10l5.100-1.900z" /><path d="M19 15l.8 2.2L22 18l-2.200.800L19 21l-.800-2.200L16 18l2.200-.800z" />
+            </svg>
+            Discover
+          </span>
         </button>
       </div>
 

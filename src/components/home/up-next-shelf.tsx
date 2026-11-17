@@ -77,7 +77,7 @@ function SortableUpNextCard({
       ref={setNodeRef}
       style={style}
       className={`relative rounded-xl overflow-hidden transition-shadow ${
-        isDragging ? "ring-2 ring-primary shadow-xl" : ""
+        isDragging ? "ring-2 ring-accent shadow-xl" : ""
       }`}
       {...attributes}
     >
@@ -158,11 +158,12 @@ function SortableUpNextCard({
             {item.pages && item.audioLengthMinutes && <span>·</span>}
             {item.audioLengthMinutes && (
               <span className="inline-flex items-center gap-0.5">
-                🎧 {formatAudioCompact(item.audioLengthMinutes)}
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z" /></svg>
+                {formatAudioCompact(item.audioLengthMinutes)}
               </span>
             )}
             {item.userRating && (
-              <span className="font-medium text-primary ml-auto">
+              <span className="font-medium text-accent ml-auto">
                 {formatRating(item.userRating)} ★
               </span>
             )}

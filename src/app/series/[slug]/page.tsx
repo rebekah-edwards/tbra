@@ -105,7 +105,8 @@ export default async function SeriesPage({
   }
 
   return (
-    <div>
+    // One readable column on desktop — the rows stretched the full 1194px.
+    <div className="lg:mx-auto lg:max-w-3xl">
       <SeriesBooksView
         seriesName={seriesData.name}
         seriesId={seriesId}

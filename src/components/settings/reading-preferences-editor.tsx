@@ -547,7 +547,7 @@ export function ReadingPreferencesEditor({
                     }}
                     className={`rounded-full px-3 py-1 text-xs font-medium transition-all border ${
                       state === "like"
-                        ? "bg-accent/20 text-accent-dark border-accent/40"
+                        ? "bg-accent/20 text-accent border-accent/40"
                         : state === "dislike"
                           ? "bg-destructive/15 text-destructive border-destructive/30"
                           : "bg-surface-alt text-muted border-transparent"
@@ -599,11 +599,11 @@ export function ReadingPreferencesEditor({
                           ? tl.value === 0
                             ? "bg-destructive/20 text-destructive"
                             : tl.value === 1
-                              ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                              ? "bg-yellow-500/20 text-yellow-500"
                               : tl.value === 2
-                                ? "bg-orange-500/20 text-orange-600 dark:text-orange-400"
+                                ? "bg-orange-500/20 text-orange-500"
                                 : tl.value === 3
-                                  ? "bg-orange-600/20 text-orange-700 dark:text-orange-300"
+                                  ? "bg-orange-600/20 text-orange-500"
                                   : "bg-accent/20 text-foreground"
                           : "text-muted hover:text-foreground"
                       }`}
@@ -751,7 +751,7 @@ function GenrePill({
 }) {
   const stateClass =
     state === "love"
-      ? "bg-accent/20 text-accent-dark border-accent/40"
+      ? "bg-accent/20 text-accent border-accent/40"
       : state === "dislike"
         ? "bg-destructive/15 text-destructive border-destructive/30"
         : "bg-surface-alt text-muted border-transparent hover:text-foreground";

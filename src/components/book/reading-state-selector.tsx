@@ -79,7 +79,7 @@ export function ReadingStateSelector({
         <div className="flex items-center gap-2">
           <Link
             href="/login"
-            className="flex-1 block rounded-xl bg-accent py-3 text-center text-base font-semibold text-black shadow-[0_0_20px_rgba(163,230,53,0.25)] hover:shadow-[0_0_28px_rgba(163,230,53,0.4)] transition-all"
+            className="flex-1 block rounded-full bg-accent py-3 text-center text-base font-semibold text-black shadow-[0_0_20px_rgba(163,230,53,0.25)] hover:shadow-[0_0_28px_rgba(163,230,53,0.4)] transition-all"
           >
             Sign in to track
           </Link>

@@ -255,7 +255,7 @@ export function StepOverallRating({
                   // Without bookPages, store raw page count in dnfPercentComplete
                   onDnfPercentChange(val || null);
                 }}
-                className="w-20 px-3 py-2 text-sm text-center rounded-lg bg-surface-alt border border-border text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-20 px-3 py-2 text-sm text-center rounded-lg bg-surface-alt border border-border text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
               />
               <span className="text-sm text-muted">pages</span>
             </div>

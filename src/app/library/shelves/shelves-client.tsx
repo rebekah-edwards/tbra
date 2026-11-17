@@ -120,7 +120,7 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
         {isPremium && activeTab === "mine" && (
           <button
             onClick={() => setCreateOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-black transition-all hover:brightness-110"
+            className="flex items-center gap-1.5 rounded-full bg-accent px-3 py-2 text-xs font-semibold text-black transition-all hover:brightness-110"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -132,22 +132,12 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-5">
-        <button
-          onClick={() => setActiveTab("mine")}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-            activeTab === "mine" ? "bg-accent text-black" : "bg-surface-alt text-muted hover:text-foreground"
-          }`}
-        >
+      <div className="seg-glass mb-5 max-w-md">
+        <button onClick={() => setActiveTab("mine")} data-active={activeTab === "mine"}>
           My Shelves
         </button>
-        <button
-          onClick={() => setActiveTab("following")}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-            activeTab === "following" ? "bg-accent text-black" : "bg-surface-alt text-muted hover:text-foreground"
-          }`}
-        >
-          Following{followedShelves.length > 0 ? ` (${followedShelves.length})` : ""}
+        <button onClick={() => setActiveTab("following")} data-active={activeTab === "following"}>
+          Following{followedShelves.length > 0 ? ` ${followedShelves.length}` : ""}
         </button>
       </div>
 

@@ -82,7 +82,7 @@ export function ReadingJournal({ notes }: ReadingJournalProps) {
                     <NoCover title={group.title} className="h-[36px] w-[24px]" size="sm" />
                   )}
                 </Link>
-                <Link href={`/book/${group.slug || bookId}`} className="text-xs font-semibold hover:text-link transition-colors truncate">
+                <Link href={`/book/${group.slug || bookId}`} className="text-xs font-semibold hover:text-neon-blue transition-colors truncate">
                   {group.title}
                 </Link>
                 <span className="text-[10px] text-muted ml-auto flex-shrink-0">{group.notes.length} {group.notes.length === 1 ? "note" : "notes"}</span>

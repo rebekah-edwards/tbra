@@ -166,7 +166,7 @@ export function ContentWarningBanner({
                 }
               });
             }}
-            className="mt-2 text-xs text-link hover:text-link/80 transition-colors"
+            className="mt-2 text-xs text-neon-blue hover:text-neon-blue/80 transition-colors"
           >
             See all content details &darr;
           </button>

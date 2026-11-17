@@ -115,7 +115,7 @@ export default async function ProfilePage() {
             <div className="flex items-center gap-3 mt-1.5">
               <Link
                 href="/profile/edit"
-                className="text-sm text-link hover:text-link/80"
+                className="text-sm text-neon-blue hover:text-neon-blue/80"
               >
                 Edit Profile
               </Link>
@@ -124,7 +124,7 @@ export default async function ProfilePage() {
                   <span className="text-muted">·</span>
                   <Link
                     href={`/u/${user.username}`}
-                    className="text-sm text-link hover:text-link/80 transition-colors"
+                    className="text-sm text-neon-blue hover:text-neon-blue/80 transition-colors"
                   >
                     View public profile
                   </Link>
@@ -193,7 +193,7 @@ export default async function ProfilePage() {
       {/* Import Library */}
       <Link
         href="/import"
-        className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 hover:border-primary/30 transition-colors"
+        className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 hover:border-accent/30 transition-colors"
       >
         <span className="text-lg">📥</span>
         <div>

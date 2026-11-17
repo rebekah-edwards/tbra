@@ -99,7 +99,7 @@ export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { 
           {review.isAnonymous ? (
             <p className="text-sm font-medium truncate text-muted italic">Anonymous</p>
           ) : review.username ? (
-            <Link href={`/u/${review.username}`} className="text-sm font-medium truncate text-foreground hover:text-primary transition-colors block">
+            <Link href={`/u/${review.username}`} className="text-sm font-medium truncate text-foreground hover:text-neon-blue transition-colors block">
               {review.displayName || `@${review.username}`}
             </Link>
           ) : (
@@ -260,7 +260,7 @@ export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { 
             }}
             className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full transition-colors ${
               voted
-                ? "bg-purple-500/15 text-purple-700 dark:text-purple-400"
+                ? "bg-purple-500/15 text-purple-500"
                 : "text-muted hover:text-foreground hover:bg-surface-alt"
             }`}
           >

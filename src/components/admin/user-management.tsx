@@ -197,7 +197,7 @@ export function UserManagement({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   {user.username ? (
-                    <Link href={`/u/${user.username}`} className="text-sm font-medium text-foreground truncate hover:text-primary transition-colors">
+                    <Link href={`/u/${user.username}`} className="text-sm font-medium text-foreground truncate hover:text-neon-blue transition-colors">
                       {user.displayName || user.email.split("@")[0]}
                     </Link>
                   ) : (
@@ -213,7 +213,7 @@ export function UserManagement({
                 </div>
                 <p className="text-xs text-muted truncate">{user.email}</p>
                 {user.username && (
-                  <Link href={`/u/${user.username}`} className="text-xs text-muted/70 hover:text-primary transition-colors">
+                  <Link href={`/u/${user.username}`} className="text-xs text-muted/70 hover:text-neon-blue transition-colors">
                     @{user.username}
                   </Link>
                 )}

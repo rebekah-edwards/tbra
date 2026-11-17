@@ -56,7 +56,7 @@ export function BroadcastForm() {
       <button
         type="submit"
         disabled={isPending || !title.trim() || !message.trim()}
-        className="w-full rounded-xl bg-accent py-3 text-sm font-semibold text-black transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full rounded-full bg-accent py-3 text-sm font-semibold text-black transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {isPending ? "Sending..." : "Send to All Users"}
       </button>

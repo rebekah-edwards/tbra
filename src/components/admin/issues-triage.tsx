@@ -99,7 +99,7 @@ function IssueCard({
           {issue.bookId ? (
             <Link
               href={`/book/${issue.bookId}`}
-              className="text-sm font-semibold text-link hover:underline truncate block"
+              className="text-sm font-semibold text-neon-blue hover:underline truncate block"
               target="_blank"
             >
               {issue.bookTitle ?? issue.bookId}
@@ -130,7 +130,7 @@ function IssueCard({
       </div>
 
       {/* Description */}
-      <blockquote className="text-sm text-foreground/90 border-l-2 border-primary/40 pl-3 italic">
+      <blockquote className="text-sm text-foreground/90 border-l-2 border-accent/40 pl-3 italic">
         {issue.description}
       </blockquote>
 
@@ -144,19 +144,19 @@ function IssueCard({
 
       {/* Resolve form */}
       {showResolveForm && (
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
+        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-3">
           <p className="text-xs font-medium text-foreground">Resolution notes (optional):</p>
           <textarea
             value={resolutionText}
             onChange={(e) => setResolutionText(e.target.value)}
             placeholder="What was done to resolve this issue..."
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none resize-none"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none resize-none"
             rows={3}
           />
           <div className="flex gap-2">
             <button
               onClick={handleResolve}
-              className="flex-1 rounded-lg bg-primary py-2 text-xs font-semibold text-background"
+              className="flex-1 rounded-lg bg-accent py-2 text-xs font-semibold text-black"
             >
               Resolve
             </button>
@@ -184,7 +184,7 @@ function IssueCard({
           {(isNew || isInProgress) && (
             <button
               onClick={() => setShowResolveForm(true)}
-              className="rounded-lg border border-primary/50 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+              className="rounded-lg border border-accent/50 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition-colors"
             >
               Resolve
             </button>
@@ -277,7 +277,7 @@ export function IssuesTriageDashboard({
               <span
                 className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                   activeStatus === tab.key
-                    ? "bg-primary/20 text-primary"
+                    ? "bg-accent/20 text-accent"
                     : "bg-border text-muted"
                 }`}
               >

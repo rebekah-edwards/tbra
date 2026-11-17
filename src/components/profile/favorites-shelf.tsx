@@ -145,7 +145,7 @@ function SeriesStack({ books, userAvatarUrl }: { books: FavoriteBook[]; userAvat
         {/* Stack count badge — positioned relative to the top book */}
         {stackCount > 1 && (
           <div
-            className="absolute z-20 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-background shadow-md"
+            className="absolute z-20 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-black shadow-md"
             style={{
               top: BADGE_INSET - 6,
               right: -4,
@@ -179,7 +179,7 @@ export function FavoritesShelf({ favorites, userAvatarUrl }: FavoritesShelfProps
       {favorites.length > 0 ? (
         <div className="relative">
           {/* Bookshelf container */}
-          <div className="relative rounded-xl bg-gradient-to-b from-amber-900/10 to-amber-800/20 dark:from-amber-900/20 dark:to-amber-800/30 border border-amber-800/20 dark:border-amber-700/20 px-4 pt-4 pb-2">
+          <div className="relative rounded-xl bg-gradient-to-b from-amber-900/10 to-amber-800/20 border border-amber-800/20 px-4 pt-4 pb-2">
             {/* Books row */}
             <div className="flex gap-2.5 items-center overflow-x-auto pb-3 pt-2 -mx-1 px-1 pr-10 no-scrollbar mask-fade-right">
               {shelfItems.map((item) => {
@@ -205,7 +205,7 @@ export function FavoritesShelf({ favorites, userAvatarUrl }: FavoritesShelfProps
               })}
             </div>
             {/* Shelf edge */}
-            <div className="h-[6px] -mx-4 rounded-b-xl bg-gradient-to-b from-amber-800/30 to-amber-900/40 dark:from-amber-700/30 dark:to-amber-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]" />
+            <div className="h-[6px] -mx-4 rounded-b-xl bg-gradient-to-b from-amber-800/30 to-amber-900/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]" />
           </div>
           {/* Shelf shadow */}
           <div className="h-2 mx-2 bg-gradient-to-b from-black/10 to-transparent rounded-b-lg" />

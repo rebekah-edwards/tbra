@@ -90,7 +90,7 @@ export function BookReviewCard({ book }: { book: ReviewBook }) {
             {missingItems.map((item) => (
               <span
                 key={item}
-                className="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-500/10 text-red-500 dark:bg-red-500/20"
+                className="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-500/10 text-red-500"
               >
                 {item}
               </span>

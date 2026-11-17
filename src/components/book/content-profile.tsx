@@ -162,7 +162,7 @@ function CorrectionModal({
         {submitted ? (
           <div className="text-center py-6">
             <div className="text-3xl mb-3">&#10003;</div>
-            <p className="text-sm font-medium text-primary">Thanks for the report!</p>
+            <p className="text-sm font-medium text-accent">Thanks for the report!</p>
             <p className="text-xs text-muted mt-1">We&apos;ll review it shortly.</p>
           </div>
         ) : (
@@ -194,8 +194,8 @@ function CorrectionModal({
                   onClick={() => setProposedIntensity(level === proposedIntensity ? null : level)}
                   className={`flex-1 rounded-lg py-2 text-xs font-medium border-2 transition-all ${
                     proposedIntensity === level
-                      ? "border-primary bg-primary/15 text-primary"
-                      : "border-border bg-surface-alt text-muted hover:border-primary/30"
+                      ? "border-accent bg-accent/15 text-accent"
+                      : "border-border bg-surface-alt text-muted hover:border-accent/30"
                   }`}
                 >
                   {level}
@@ -213,7 +213,7 @@ function CorrectionModal({
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Describe the issue — e.g., 'This book has a graphic torture scene in chapter 12 that should be rated higher'"
               maxLength={500}
-              className="w-full rounded-xl border-2 border-border bg-surface-alt/30 px-4 py-3 text-sm text-foreground placeholder:text-muted/50 focus:border-primary focus:outline-none transition-colors resize-none"
+              className="w-full rounded-xl border-2 border-border bg-surface-alt/30 px-4 py-3 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none transition-colors resize-none"
             />
             <div className="flex justify-between mt-1 px-1">
               {error ? (
@@ -227,7 +227,7 @@ function CorrectionModal({
             <button
               onClick={handleSubmit}
               disabled={isPending || message.trim().length < 10}
-              className="mt-4 w-full rounded-xl bg-primary py-3 text-sm font-semibold text-background shadow-[0_0_20px_rgba(163,230,53,0.25)] hover:shadow-[0_0_28px_rgba(163,230,53,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-4 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-black shadow-[0_0_20px_rgba(163,230,53,0.25)] hover:shadow-[0_0_28px_rgba(163,230,53,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPending ? "Submitting..." : "Submit Report"}
             </button>
@@ -304,8 +304,8 @@ function AdminEditModal({
               onClick={() => setIntensity(level)}
               className={`flex-1 rounded-lg py-2 text-xs font-medium border-2 transition-all ${
                 intensity === level
-                  ? "border-primary bg-primary/15 text-primary"
-                  : "border-border bg-surface-alt text-muted hover:border-primary/30"
+                  ? "border-accent bg-accent/15 text-accent"
+                  : "border-border bg-surface-alt text-muted hover:border-accent/30"
               }`}
             >
               {level}
@@ -322,7 +322,7 @@ function AdminEditModal({
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Content description for this category"
           maxLength={500}
-          className="w-full rounded-xl border-2 border-border bg-surface-alt/30 px-4 py-3 text-sm text-foreground placeholder:text-muted/50 focus:border-primary focus:outline-none transition-colors resize-none"
+          className="w-full rounded-xl border-2 border-border bg-surface-alt/30 px-4 py-3 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none transition-colors resize-none"
         />
         {error && (
           <p className="text-xs text-destructive mt-1">{error}</p>
@@ -331,7 +331,7 @@ function AdminEditModal({
         <button
           onClick={handleSave}
           disabled={isPending}
-          className="mt-4 w-full rounded-xl bg-primary py-3 text-sm font-semibold text-background shadow-[0_0_20px_rgba(163,230,53,0.25)] hover:shadow-[0_0_28px_rgba(163,230,53,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-4 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-black shadow-[0_0_20px_rgba(163,230,53,0.25)] hover:shadow-[0_0_28px_rgba(163,230,53,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPending ? "Saving..." : "Save & Verify"}
         </button>
@@ -467,13 +467,13 @@ export function ContentProfile({ ratings, bookId, isLoggedIn, isAdmin }: Content
                 });
               }}
               disabled={verifyPending}
-              className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+              className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-medium text-accent hover:bg-accent/20 transition-colors disabled:opacity-50"
             >
               {verifyPending ? "Verifying..." : "Verify All"}
             </button>
           )}
           {isAdmin && allVerified && ratings.length > 0 && (
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
               All Verified
             </span>
           )}

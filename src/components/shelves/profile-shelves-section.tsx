@@ -206,7 +206,7 @@ export function ProfileShelvesSection({
           <p className="text-sm text-muted">No shelves yet</p>
           <Link
             href="/library/shelves"
-            className="mt-2 inline-block text-xs font-medium text-accent hover:text-accent-dark"
+            className="mt-2 inline-block text-xs font-medium text-accent hover:text-accent"
           >
             Create your first shelf →
           </Link>

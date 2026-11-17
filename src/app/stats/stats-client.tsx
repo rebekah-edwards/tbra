@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { paceLine } from "@/components/home/reading-goal-card";
 import { useRouter } from "next/navigation";
 import type { ReadingGoalProgress } from "@/lib/queries/reading-goals";
 import type { ReadingStreak } from "@/lib/queries/reading-streak";
+import { ReadingStreakCard } from "@/components/home/reading-streak-card";
 
 interface StatsClientProps {
   year: number | "all";
@@ -67,6 +69,20 @@ export function StatsClient({
   const totalFictionNonfiction = fictionSplit.fiction + fictionSplit.nonfiction;
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const isAllTime = year === "all";
+
+  // Today's place in the goal's year. Read after mount, not during render:
+  // the server's "today" (UTC) and the reader's can differ by a day, which
+  // would mismatch the "N days left" text on hydration.
+  const [yearProgress, setYearProgress] = useState<{ elapsed: number; daysLeft: number } | null>(null);
+  useEffect(() => {
+    const now = new Date();
+    if (!(year === "all" || year === now.getFullYear())) return setYearProgress(null);
+    const start = new Date(now.getFullYear(), 0, 1).getTime();
+    const end = new Date(now.getFullYear() + 1, 0, 1).getTime();
+    const days = Math.round((end - start) / 86_400_000);
+    const day = Math.floor((now.getTime() - start) / 86_400_000) + 1;
+    setYearProgress({ elapsed: day / days, daysLeft: days - day });
+  }, [year]);
   // All Time shows one bar per tracked year (plus "No Year" for completions
   // with no date). Year-specific views show one bar per month.
   const chartData = isAllTime
@@ -151,8 +167,11 @@ export function StatsClient({
         <MiniStat value={minutesListened > 0 ? formatMinutes(minutesListened) : "—"} label="Listened" />
       </div>
 
-      {/* ─── Row 1: Reading Goal + Monthly Reading ─── */}
-      <div className="lg:grid lg:grid-cols-3 lg:gap-4 space-y-6 lg:space-y-0">
+      {/* ─── Row 1: Reading Goal + Streak, then Monthly Reading ───
+          Goal and streak share a row so the goal card has room for a full
+          line of numbers (in a third of the row "of 65 books" and the pace
+          pill both wrapped) and the streak gets what the Home tile shows. */}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-6 lg:space-y-0">
         {goal && (
           <section className="rounded-2xl border border-border bg-surface p-5">
             <h2 className="section-heading text-xs mb-4">Reading Goal</h2>
@@ -177,24 +196,61 @@ export function StatsClient({
                   <span className="text-lg font-bold font-heading tabular-nums">{goal.percentComplete}%</span>
                 </div>
               </div>
-              <div>
-                <p className="font-heading text-[40px] font-extrabold leading-none tabular-nums">{goal.completedBooks}</p>
-                <p className="mt-1 text-sm text-muted">of {goal.targetBooks} books</p>
-                {(() => {
-                  const pace = paceLine(goal, typeof year === "number" ? year : new Date().getFullYear());
-                  return (
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                  <div>
+                    <p className="font-heading text-[40px] font-extrabold leading-none tabular-nums">{goal.completedBooks}</p>
+                    <p className="mt-1 whitespace-nowrap text-sm text-muted">of {goal.targetBooks} books</p>
+                  </div>
+                  {(() => {
+                    const pace = paceLine(goal, typeof year === "number" ? year : new Date().getFullYear());
+                    return (
+                      <span
+                        className={`inline-flex w-fit items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          pace.good ? "bg-accent/15 text-accent" : "bg-foreground/10 text-foreground/75"
+                        }`}
+                      >
+                        {pace.text}
+                      </span>
+                    );
+                  })()}
+                </div>
+                {/* Goal progress against a tick for today's place in the
+                    year: fill past the tick is ahead of pace. */}
+                <div className="relative mt-3.5 h-3.5">
+                  <div className="absolute inset-x-0 top-1/2 h-[7px] -translate-y-1/2 overflow-hidden rounded-full bg-foreground/10">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${Math.max(goal.percentComplete > 0 ? 3 : 0, Math.min(goal.percentComplete, 100))}%`,
+                        background: "linear-gradient(90deg, #a3e635, #38bdf8)",
+                      }}
+                    />
+                  </div>
+                  {yearProgress && (
                     <span
-                      className={`mt-2 inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        pace.good ? "bg-accent/15 text-accent" : "bg-foreground/10 text-foreground/75"
-                      }`}
-                    >
-                      {pace.text}
+                      aria-hidden
+                      className="absolute top-0 h-full w-[2px] rounded-full bg-foreground"
+                      style={{ left: `calc(${Math.min(yearProgress.elapsed * 100, 100)}% - 1px)` }}
+                    />
+                  )}
+                </div>
+                <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] font-medium text-muted">
+                  <span className="whitespace-nowrap">{goal.percentComplete}% of goal</span>
+                  {yearProgress && (
+                    <span className="whitespace-nowrap">
+                      {yearProgress.daysLeft} {yearProgress.daysLeft === 1 ? "day" : "days"} left
                     </span>
-                  );
-                })()}
+                  )}
+                </div>
               </div>
             </div>
           </section>
+        )}
+        {(year === currentYear || isAllTime) && (
+          <div className={goal ? "" : "lg:col-span-2"}>
+            <ReadingStreakCard streak={streak} wide />
+          </div>
         )}
         {chartData.length > 0 && (
           <section className="rounded-2xl border border-border bg-surface p-5 lg:col-span-2">
@@ -292,7 +348,7 @@ export function StatsClient({
                 return (
                   <div key={a.author} className="flex items-center gap-3">
                     <span className="text-sm w-5 text-center flex-shrink-0">
-                      {i === 0 ? "👑" : <span className="text-xs text-muted">{i + 1}</span>}
+                      {i === 0 ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-intensity-2" aria-label="Most read"><path d="M3 7l4.5 4L12 5l4.5 6L21 7l-2 11H5z" /></svg> : <span className="text-xs text-muted">{i + 1}</span>}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
@@ -355,9 +411,11 @@ export function StatsClient({
 
       {/* Empty state */}
       {booksByMonth.length === 0 && booksByYear.length === 0 && genreBreakdown.length === 0 && ratingDistribution.length === 0 && (
-        <div className="rounded-2xl border border-border bg-surface p-12 text-center">
-          <span className="text-4xl mb-3 block">📖</span>
-          <p className="text-sm font-medium mb-1">No reading data yet</p>
+        <div className="rounded-[20px] border border-border bg-surface/60 px-5 py-11 text-center">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3 text-muted" aria-hidden="true">
+            <path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z" /><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z" />
+          </svg>
+          <p className="font-heading text-[19px] font-bold mb-1">No reading data yet</p>
           <p className="text-xs text-muted">Start tracking books to see your stats come alive!</p>
         </div>
       )}
@@ -420,7 +478,7 @@ function HeroCard({ icon, iconBg, value, label, href }: { icon: string; iconBg: 
 
   if (href) {
     return (
-      <Link href={href} className="rounded-2xl border border-border bg-surface p-4 text-center hover:border-primary/30 transition-colors">
+      <Link href={href} className="rounded-2xl border border-border bg-surface p-4 text-center hover:border-accent/30 transition-colors">
         {content}
       </Link>
     );

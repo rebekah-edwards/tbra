@@ -25,14 +25,14 @@ function renderMarkdown(text: string): string {
     // Inline links: [text](url) — validate protocol
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, text: string, url: string) => {
       const safeUrl = /^https?:\/\//i.test(url) ? url : '#';
-      return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-primary hover:text-primary-dark underline">${text}</a>`;
+      return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-neon-blue hover:text-neon-blue/80 underline">${text}</a>`;
     })
     // Reference-style links: [text][1] or ([text][1]) — validate protocol
     .replace(/\[([^\]]+)\]\[([^\]]+)\]/g, (_match, linkText: string, ref: string) => {
       const url = refLinks[ref];
       if (url) {
         const safeUrl = /^https?:\/\//i.test(url) ? url : '#';
-        return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-primary hover:text-primary-dark underline">${linkText}</a>`;
+        return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-neon-blue hover:text-neon-blue/80 underline">${linkText}</a>`;
       }
       return linkText;
     })

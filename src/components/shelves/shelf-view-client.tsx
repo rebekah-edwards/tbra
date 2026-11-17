@@ -141,7 +141,7 @@ export function ShelfViewClient({ books: initialBooks, accentColor, userAvatarUr
             {isOwner && editHref && (
               <Link
                 href={editHref}
-                className="ml-auto flex items-center gap-1 text-xs text-link hover:text-link/80 transition-colors"
+                className="ml-auto flex items-center gap-1 text-xs text-neon-blue hover:text-neon-blue/80 transition-colors"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
@@ -188,7 +188,7 @@ export function ShelfViewClient({ books: initialBooks, accentColor, userAvatarUr
               {hasFilters && (
                 <button
                   onClick={() => { setGenreFilter(""); setOwnershipFilter(""); }}
-                  className="text-[10px] text-link hover:text-link/80"
+                  className="text-[10px] text-neon-blue hover:text-neon-blue/80"
                 >
                   Clear filters
                 </button>

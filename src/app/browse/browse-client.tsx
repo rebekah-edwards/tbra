@@ -212,7 +212,7 @@ export function BrowseClient({ isLoggedIn, hasFollows, initial = null }: BrowseC
         </button>
 
         {activeFilterCount > 0 && (
-          <button onClick={clearFilters} className="text-[10px] text-link hover:text-link/80">
+          <button onClick={clearFilters} className="text-[10px] text-neon-blue hover:text-neon-blue/80">
             Clear all
           </button>
         )}
@@ -373,7 +373,7 @@ export function BrowseClient({ isLoggedIn, hasFollows, initial = null }: BrowseC
         <div className="rounded-xl border border-dashed border-border p-8 text-center">
           <p className="text-sm text-muted">No books match your filters.</p>
           {activeFilterCount > 0 && (
-            <button onClick={clearFilters} className="mt-2 text-sm text-link hover:text-link/80">
+            <button onClick={clearFilters} className="mt-2 text-sm text-neon-blue hover:text-neon-blue/80">
               Clear filters
             </button>
           )}

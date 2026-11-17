@@ -366,9 +366,9 @@ export function ReviewWizard({ bookId, bookPages, isFiction, open, onClose, isEx
             key={i}
             className={`w-3 h-3 rounded-full transition-all duration-300 ${
               i === step
-                ? "bg-primary scale-110"
+                ? "bg-accent scale-110"
                 : i < step
-                  ? "bg-primary/50"
+                  ? "bg-accent/50"
                   : "bg-surface-alt"
             }`}
           />
@@ -504,9 +504,7 @@ export function ReviewWizard({ bookId, bookPages, isFiction, open, onClose, isEx
             type="button"
             onClick={() => (isLastStep ? handleSave() : setStep(step + 1))}
             disabled={isPending}
-            className={`flex-[2] py-3 rounded-xl font-medium text-background transition-all ${
-              isPending ? "bg-primary/50" : "bg-foreground hover:bg-foreground/90 active:scale-[0.98]"
-            }`}
+            className="btn-lime flex-[2] py-3 text-sm"
           >
             {isPending ? "Posting..." : isLastStep ? (state.didNotFinish ? "Save" : "Post Review") : "Next"}
           </button>

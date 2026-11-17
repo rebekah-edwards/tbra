@@ -156,7 +156,7 @@ export default function MethodologyPage() {
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 inline-flex flex-shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent-dark">
+            <span className="mt-0.5 inline-flex flex-shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">
               Verified
             </span>
             <div>

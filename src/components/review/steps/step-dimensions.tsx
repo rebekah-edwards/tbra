@@ -115,7 +115,7 @@ export function StepDimensions({
           navEl.querySelectorAll("[data-nav]").forEach((el) => {
             const isActive = el.getAttribute("data-nav") === closest;
             el.classList.toggle("text-foreground", isActive);
-            el.classList.toggle("border-primary", isActive);
+            el.classList.toggle("border-accent", isActive);
             el.classList.toggle("text-muted", !isActive);
             el.classList.toggle("border-transparent", !isActive);
           });
@@ -157,7 +157,7 @@ export function StepDimensions({
             onClick={() => scrollToSection(section.key)}
             className={`whitespace-nowrap px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               i === 0
-                ? "border-primary text-foreground"
+                ? "border-accent text-foreground"
                 : "border-transparent text-muted"
             }`}
           >
@@ -256,7 +256,7 @@ const DimensionSection = forwardRef<
               onClick={() => onTagToggle(tag)}
               className={`rounded-full px-4 py-2 text-sm transition-all ${
                 isSelected
-                  ? "bg-purple-500/20 border-2 border-purple-400 text-purple-700 dark:text-purple-300 font-medium"
+                  ? "bg-purple-500/20 border-2 border-purple-400 text-purple-500 font-medium"
                   : "bg-transparent border-2 border-purple-500/30 text-foreground/70 hover:border-purple-400/50"
               }`}
             >

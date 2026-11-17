@@ -458,8 +458,10 @@ export default async function BookPage({
 
         if (!isPreRelease) return null;
         return (
-          <div className="mt-6 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm text-foreground">
-            <span>📅</span>
+          <div className="mt-6 flex items-center gap-2.5 rounded-2xl border border-accent/30 bg-accent/5 px-4 py-2.5 text-sm text-foreground">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-accent" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
             <span>
               Releases <strong>{releaseLabel}</strong>
             </span>
@@ -472,7 +474,7 @@ export default async function BookPage({
         const hasSeries = book.seriesInfo && book.seriesInfo.books.length > 1;
         const hasReviews = reviewSummary && reviewSummary.totalReviewCount > 0;
         return (
-      <div className={hasSeries ? "lg:grid lg:grid-cols-[1fr_0.85fr_1fr] lg:gap-6 lg:mt-4 lg:overflow-hidden" : "lg:grid lg:grid-cols-[3fr_2fr] lg:gap-8 lg:max-w-4xl lg:mx-auto lg:mt-4"}>
+      <div className={hasSeries ? "lg:grid lg:grid-cols-[1fr_0.85fr_1fr] lg:gap-6 lg:mt-4 lg:overflow-hidden" : "lg:grid lg:grid-cols-[3fr_2fr] lg:gap-8 lg:mt-4"}>
         {/* Left column: About + Details */}
         <div className="lg:min-h-0 lg:min-w-0">
           <BookAboutDetails

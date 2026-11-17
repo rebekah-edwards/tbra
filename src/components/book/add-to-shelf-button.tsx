@@ -131,7 +131,7 @@ export function AddToShelfButton({ bookId, shelves, bookShelves, isPremium, isFa
               <p className="text-sm text-muted">No custom shelves yet.</p>
               <Link
                 href="/library/shelves"
-                className="mt-2 inline-block text-sm font-medium text-accent hover:text-accent-dark"
+                className="mt-2 inline-block text-sm font-medium text-accent hover:text-accent"
                 onClick={() => setOpen(false)}
               >
                 Create your first shelf →
@@ -172,7 +172,7 @@ export function AddToShelfButton({ bookId, shelves, bookShelves, isPremium, isFa
               })}
               <Link
                 href="/library/shelves"
-                className="block mt-3 py-2 text-center text-xs font-medium text-accent hover:text-accent-dark"
+                className="block mt-3 py-2 text-center text-xs font-medium text-accent hover:text-accent"
                 onClick={() => setOpen(false)}
               >
                 Manage Shelves →

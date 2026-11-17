@@ -293,7 +293,7 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
                 <span className="text-xs font-medium uppercase tracking-wide text-muted w-28">Cover</span>
                 <button
                   onClick={openCoverEditor}
-                  className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                  className="text-xs text-accent hover:text-accent flex items-center gap-1"
                 >
                   <PencilIcon /> Change
                 </button>
@@ -306,7 +306,7 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
                 <span className="text-xs font-medium uppercase tracking-wide text-muted w-28">Genres</span>
                 <button
                   onClick={() => setShowGenreSheet(true)}
-                  className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                  className="text-xs text-accent hover:text-accent flex items-center gap-1"
                 >
                   <PencilIcon /> Edit
                 </button>
@@ -335,7 +335,7 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
                   </dd>
                   <button
                     onClick={() => startEdit(fd)}
-                    className="flex-shrink-0 text-muted hover:text-primary transition-colors p-0.5"
+                    className="flex-shrink-0 text-muted hover:text-neon-blue transition-colors p-0.5"
                     title={`Edit ${fd.label}`}
                   >
                     <PencilIcon />
@@ -363,8 +363,8 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
                     onClick={() => setEditValue(v)}
                     className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium border-2 transition-all ${
                       editValue === v
-                        ? "border-primary bg-primary/15 text-primary"
-                        : "border-border bg-surface-alt/50 text-muted hover:border-primary/30"
+                        ? "border-accent bg-accent/15 text-accent"
+                        : "border-border bg-surface-alt/50 text-muted hover:border-accent/30"
                     }`}
                   >
                     {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -379,8 +379,8 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
                     onClick={() => setEditValue(v)}
                     className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium border-2 transition-all ${
                       editValue === v
-                        ? "border-primary bg-primary/15 text-primary"
-                        : "border-border bg-surface-alt/50 text-muted hover:border-primary/30"
+                        ? "border-accent bg-accent/15 text-accent"
+                        : "border-border bg-surface-alt/50 text-muted hover:border-accent/30"
                     }`}
                   >
                     {v === "true" ? "Fiction" : "Nonfiction"}
@@ -392,7 +392,7 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 rows={6}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
                 autoFocus
               />
             ) : (
@@ -400,7 +400,7 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
                 type={editing.type === "number" ? "number" : "text"}
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-foreground focus:border-accent focus:outline-none"
                 autoFocus
                 placeholder={editing.label}
               />
@@ -410,7 +410,7 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
               <button
                 onClick={saveField}
                 disabled={saving}
-                className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-background disabled:opacity-50"
+                className="flex-1 rounded-xl bg-accent py-2.5 text-sm font-semibold text-black disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save"}
               </button>
@@ -449,7 +449,7 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleCoverUpload}
-                className="w-full text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-primary/15 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary hover:file:bg-primary/25 file:cursor-pointer"
+                className="w-full text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-accent/15 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-accent hover:file:bg-accent/25 file:cursor-pointer"
               />
               <p className="mt-1 text-[10px] text-muted">JPG, PNG, or WebP. Max 2MB.</p>
             </div>
@@ -464,7 +464,7 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
                   type="text"
                   placeholder="https://..."
                   id="cover-url-input"
-                  className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                  className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
                 />
                 <button
                   onClick={async () => {
@@ -482,7 +482,7 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
                     router.refresh();
                   }}
                   disabled={saving}
-                  className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-background disabled:opacity-50"
+                  className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-black disabled:opacity-50"
                 >
                   Set
                 </button>
@@ -645,12 +645,12 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
                 onChange={(e) => setNewGenre(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddGenre()}
                 placeholder="Add genre..."
-                className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
               />
               <button
                 onClick={handleAddGenre}
                 disabled={saving || !newGenre.trim()}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-background disabled:opacity-50"
+                className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
               >
                 Add
               </button>

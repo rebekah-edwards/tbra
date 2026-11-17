@@ -109,7 +109,7 @@ export default function EditProfilePage() {
   }
 
   const inputClass =
-    "w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
+    "w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent";
 
   if (loading) {
     return <p className="text-sm text-muted">Loading...</p>;
@@ -131,7 +131,7 @@ export default function EditProfilePage() {
             )}
           </div>
           <div className="flex flex-col gap-1">
-            <label className={`cursor-pointer text-sm text-link hover:text-link/80 ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
+            <label className={`cursor-pointer text-sm text-neon-blue hover:text-neon-blue/80 ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
               {uploading ? "Uploading..." : "Upload photo"}
               <input
                 type="file"
@@ -286,7 +286,7 @@ export default function EditProfilePage() {
               aria-checked={isPrivate}
               onClick={() => setIsPrivate(!isPrivate)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                isPrivate ? "bg-primary" : "bg-border"
+                isPrivate ? "bg-accent" : "bg-border"
               }`}
             >
               <span
@@ -306,7 +306,7 @@ export default function EditProfilePage() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-full bg-primary px-6 py-2 text-sm font-medium text-background hover:bg-primary-dark transition-colors disabled:opacity-50"
+            className="rounded-full bg-accent px-6 py-2 text-sm font-medium text-black hover:brightness-110 transition-colors disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save"}
           </button>

@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { createBookManually } from "@/lib/actions/books";
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
+  "mt-1 w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent";
 
 export function AddBookForm() {
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -159,7 +159,7 @@ export function AddBookForm() {
               type="file"
               accept="image/jpeg,image/png,image/webp"
               onChange={handleFileChange}
-              className="mt-1 block w-full text-sm text-muted file:mr-3 file:rounded-full file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary hover:file:bg-primary/20"
+              className="mt-1 block w-full text-sm text-muted file:mr-3 file:rounded-full file:border-0 file:bg-accent/10 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-accent hover:file:bg-accent/20"
             />
             <p className="mt-1 text-xs text-muted">Max 1 MB. JPG, PNG, or WebP.</p>
           </div>
@@ -216,7 +216,7 @@ export function AddBookForm() {
                 type="number"
                 min="0"
                 max="99"
-                className="w-full rounded-lg border border-border bg-surface py-2.5 pl-4 pr-8 text-sm placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border bg-surface py-2.5 pl-4 pr-8 text-sm placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 placeholder="0"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted pointer-events-none">hr</span>
@@ -227,7 +227,7 @@ export function AddBookForm() {
                 type="number"
                 min="0"
                 max="59"
-                className="w-full rounded-lg border border-border bg-surface py-2.5 pl-4 pr-10 text-sm placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border bg-surface py-2.5 pl-4 pr-10 text-sm placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 placeholder="0"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted pointer-events-none">min</span>

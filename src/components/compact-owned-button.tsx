@@ -132,8 +132,8 @@ export function CompactOwnedButton({
         disabled={isPending || importing}
         className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
           isOwned
-            ? "bg-neon-purple text-white border border-neon-purple"
-            : "bg-neon-purple/10 text-muted border border-neon-purple/40 hover:text-foreground hover:border-neon-purple/70"
+            ? "bg-surface/60 backdrop-blur-md text-foreground border border-neon-purple/55 [&>svg]:text-neon-purple"
+            : "bg-surface/60 backdrop-blur-md text-foreground/75 border border-foreground/15 hover:text-foreground hover:border-neon-purple/50 [&>svg]:text-neon-purple"
         } ${isPending || importing ? "opacity-60" : ""}`}
       >
         {importing ? (

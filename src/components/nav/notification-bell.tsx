@@ -144,7 +144,7 @@ export function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={markAllRead}
-                className="text-[10px] text-link hover:text-link/80"
+                className="text-[10px] text-neon-blue hover:text-neon-blue/80"
               >
                 Mark all read
               </button>

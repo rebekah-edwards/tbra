@@ -30,8 +30,8 @@ export function AuthorFollowButton({ authorId, initialIsFollowing }: AuthorFollo
       disabled={isPending}
       className={`rounded-full px-5 py-1.5 text-[11px] font-semibold transition-all ${
         optimisticFollowing
-          ? "bg-accent text-black"
-          : "border border-accent text-accent hover:bg-accent/10"
+          ? "border border-accent/60 bg-surface/60 text-foreground backdrop-blur-md"
+          : "bg-accent text-black font-bold hover:brightness-110"
       } ${isPending ? "opacity-60" : ""}`}
     >
       {optimisticFollowing ? "Following" : "Follow"}

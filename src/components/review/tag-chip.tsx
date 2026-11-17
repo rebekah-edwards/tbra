@@ -13,7 +13,7 @@ export function TagChip({ label, selected, onToggle }: TagChipProps) {
       onClick={onToggle}
       className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
         selected
-          ? "bg-primary text-background font-medium"
+          ? "bg-accent text-black font-medium"
           : "bg-surface-alt text-foreground/70 hover:bg-surface-alt/80"
       }`}
     >

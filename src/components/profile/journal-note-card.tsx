@@ -48,7 +48,7 @@ export function JournalNoteCard({ note, showYear = true }: JournalNoteCardProps)
   if (deleted) return null;
 
   return (
-    <div className="flex gap-3 rounded-lg border border-border bg-surface p-3 hover:border-primary/30 transition-colors">
+    <div className="flex gap-3 rounded-lg border border-border bg-surface p-3 hover:border-accent/30 transition-colors">
       <Link href={`/book/${note.bookSlug || note.bookId}`} className="flex-shrink-0">
         {note.bookCoverUrl ? (
           <Image
@@ -64,7 +64,7 @@ export function JournalNoteCard({ note, showYear = true }: JournalNoteCardProps)
       </Link>
       <div className="min-w-0 flex-1">
         <Link href={`/book/${note.bookSlug || note.bookId}`}>
-          <h4 className="text-sm font-semibold leading-tight line-clamp-1 hover:text-link transition-colors">{note.bookTitle}</h4>
+          <h4 className="text-sm font-semibold leading-tight line-clamp-1 hover:text-neon-blue transition-colors">{note.bookTitle}</h4>
         </Link>
         <div className="flex items-center gap-2 mt-0.5">
           {note.mood && (

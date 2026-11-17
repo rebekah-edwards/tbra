@@ -100,7 +100,7 @@ function ScrollWheel({
     <div className="relative" style={{ height: containerHeight }}>
       {/* Selection highlight */}
       <div
-        className="pointer-events-none absolute left-0 right-0 rounded-lg bg-primary/15 border-y border-primary/20"
+        className="pointer-events-none absolute left-0 right-0 rounded-lg bg-accent/15 border-y border-accent/20"
         style={{ top: itemHeight * 2, height: itemHeight }}
       />
       {/* Fade top */}

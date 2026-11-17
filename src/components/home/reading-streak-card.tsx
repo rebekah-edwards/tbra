@@ -20,7 +20,10 @@ const FLAME_PATH =
  * outline while today is still open, grey at zero. A header pill states
  * today's status outright, and a bar races the reader's own best.
  */
-export function ReadingStreakCard({ streak }: ReadingStreakCardProps) {
+export function ReadingStreakCard({ streak, wide = false }: ReadingStreakCardProps & {
+  /** Stats page: fills its column and shows the best run beside the count. */
+  wide?: boolean;
+}) {
   const alive = streak.currentStreak > 0;
   const doneToday = streak.activeToday;
   const pendingToday = alive && doneToday === false;
@@ -43,9 +46,9 @@ export function ReadingStreakCard({ streak }: ReadingStreakCardProps) {
 
   return (
     <div
-      className={`relative flex-1 min-w-0 lg:flex-none lg:w-[300px] overflow-hidden rounded-[18px] border bg-surface p-3.5 lg:px-6 flex flex-col gap-2.5 ${
-        alive ? "border-orange-400/30" : "border-neon-purple/30"
-      }`}
+      className={`relative overflow-hidden rounded-[18px] border bg-surface flex flex-col ${
+        wide ? "h-full w-full gap-3.5 p-5" : "flex-1 min-w-0 lg:flex-none lg:w-[300px] gap-2.5 p-3.5 lg:px-6"
+      } ${alive ? "border-orange-400/30" : "border-neon-purple/30"}`}
     >
       {/* One soft colour bloom in the top-right corner */}
       <div
@@ -88,7 +91,10 @@ export function ReadingStreakCard({ streak }: ReadingStreakCardProps) {
           height="50"
           viewBox="0 0 24 24"
           aria-hidden
-          className={`flex-shrink-0 ${alive && !pendingToday ? "drop-shadow-[0_0_10px_rgba(251,146,60,0.55)]" : ""}`}
+          // Pulses for as long as the streak is alive — most of all while
+          // today is still open, when it is the nudge (Rebekah, 2026-11-16).
+          // The glow is what arrives once today counts.
+          className={`flex-shrink-0 ${alive ? "streak-breathe" : ""} ${alive && !pendingToday ? "drop-shadow-[0_0_10px_rgba(251,146,60,0.55)]" : ""}`}
         >
           <defs>
             <linearGradient id={flameId} x1="0" y1="0" x2="0" y2="1">
@@ -98,10 +104,7 @@ export function ReadingStreakCard({ streak }: ReadingStreakCardProps) {
           </defs>
           <path
             d={FLAME_PATH}
-            fill={!alive ? "currentColor" : pendingToday ? "none" : `url(#${flameId})`}
-            stroke={pendingToday ? `url(#${flameId})` : "none"}
-            strokeWidth={pendingToday ? 1.8 : 0}
-            strokeLinejoin="round"
+            fill={!alive ? "currentColor" : `url(#${flameId})`}
             className={!alive ? "text-foreground/20" : ""}
           />
         </svg>
@@ -109,6 +112,12 @@ export function ReadingStreakCard({ streak }: ReadingStreakCardProps) {
           <p className="font-heading text-[34px] font-extrabold leading-none tabular-nums">{streak.currentStreak}</p>
           <p className="mt-1 text-[11px] text-muted whitespace-nowrap">{streak.currentStreak === 1 ? "day in a row" : "days in a row"}</p>
         </div>
+        {wide && streak.longestStreak > 0 && (
+          <div className="ml-auto text-right">
+            <p className="font-heading text-[26px] font-bold leading-none tabular-nums text-foreground/85">{streak.longestStreak}</p>
+            <p className="mt-1 text-[11px] text-muted whitespace-nowrap">{streak.longestStreak === 1 ? "day · best" : "days · best"}</p>
+          </div>
+        )}
       </div>
 
       <div className="relative mt-auto space-y-1.5">

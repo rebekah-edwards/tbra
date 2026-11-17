@@ -111,19 +111,19 @@ export default async function AuthorPage({
             <h2 className="section-heading text-lg">
               <Link
                 href={slug ? `/series/${slug}` : `/search?series=${seriesId}`}
-                className="hover:text-link transition-colors"
+                className="hover:text-neon-blue transition-colors"
               >
                 {name}
               </Link>
             </h2>
             <Link
               href={slug ? `/series/${slug}` : `/search?series=${seriesId}`}
-              className="text-xs text-link hover:text-link/80 transition-colors whitespace-nowrap"
+              className="text-xs text-neon-blue hover:text-neon-blue/80 transition-colors whitespace-nowrap"
             >
               View Series &rarr;
             </Link>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
+          <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8">
             {seriesBooks.map((book) => (
               <Link
                 key={book.id}
@@ -143,7 +143,7 @@ export default async function AuthorPage({
                     <NoCover title={book.title} className="aspect-[2/3] w-full shadow-sm" size="md" />
                   )}
                 </div>
-                <p className="mt-2 text-sm font-medium leading-tight group-hover:text-link">
+                <p className="mt-2 text-sm font-medium leading-tight group-hover:text-neon-blue">
                   {book.title}
                 </p>
                 {book.publicationYear && (
@@ -168,7 +168,7 @@ export default async function AuthorPage({
               Books ({standaloneBooks.length})
             </h2>
           )}
-          <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
+          <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8">
             {standaloneBooks.map((book) => (
               <Link
                 key={book.id}
@@ -188,16 +188,13 @@ export default async function AuthorPage({
                     <NoCover title={book.title} className="aspect-[2/3] w-full shadow-sm" size="md" />
                   )}
                   {book.isFiction != null && (
-                    <span className={`absolute top-1.5 left-1.5 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide backdrop-blur-sm ${
-                      book.isFiction
-                        ? "bg-accent/80 text-black"
-                        : "bg-neon-blue/80 text-white"
-                    }`}>
+                    <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/55 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur-md">
+                      <span className={`h-1.5 w-1.5 rounded-full ${book.isFiction ? "bg-accent" : "bg-neon-blue"}`} />
                       {book.isFiction ? "Fiction" : "Nonfiction"}
                     </span>
                   )}
                 </div>
-                <p className="mt-2 text-sm font-medium leading-tight group-hover:text-link">
+                <p className="mt-2 text-sm font-medium leading-tight group-hover:text-neon-blue">
                   {book.title}
                 </p>
                 {book.publicationYear && (

@@ -129,7 +129,7 @@ export function LandingAdminClient({ paradeBooks, featuredBook }: Props) {
                 )}
               </a>
               <div className="flex-1 min-w-0">
-                <a href={`/book/${book.bookSlug}`} className="text-xs font-medium truncate hover:text-primary transition-colors block">
+                <a href={`/book/${book.bookSlug}`} className="text-xs font-medium truncate hover:text-neon-blue transition-colors block">
                   {book.bookTitle || book.bookSlug}
                 </a>
               </div>
@@ -155,7 +155,7 @@ export function LandingAdminClient({ paradeBooks, featuredBook }: Props) {
             onClick={() => setAddType("parade")}
             className={`text-xs px-3 py-1 rounded-full border transition-colors ${
               addType === "parade"
-                ? "bg-accent/20 border-accent text-accent-dark"
+                ? "bg-accent/20 border-accent text-accent"
                 : "border-border text-muted hover:text-foreground"
             }`}
           >
@@ -165,7 +165,7 @@ export function LandingAdminClient({ paradeBooks, featuredBook }: Props) {
             onClick={() => setAddType("featured")}
             className={`text-xs px-3 py-1 rounded-full border transition-colors ${
               addType === "featured"
-                ? "bg-accent/20 border-accent text-accent-dark"
+                ? "bg-accent/20 border-accent text-accent"
                 : "border-border text-muted hover:text-foreground"
             }`}
           >

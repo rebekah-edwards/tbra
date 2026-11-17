@@ -22,7 +22,7 @@ export default async function BookNotesPage({
   const bookUrl = `/book/${book.slug || book.id}`;
 
   return (
-    <div className="lg:max-w-2xl">
+    <div className="lg:mx-auto lg:max-w-2xl">
       <Link
         href={bookUrl}
         className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors mb-4"

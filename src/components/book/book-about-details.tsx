@@ -38,13 +38,13 @@ function renderMarkdown(text: string): string {
       // Quote-encode so a crafted URL can't break out of the href attribute
       // (the surrounding text is already entity-escaped above).
       const safeUrl = (/^https?:\/\//i.test(url) ? url : '#').replace(/"/g, "%22");
-      return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-primary hover:text-primary-dark underline">${text}</a>`;
+      return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-neon-blue hover:text-neon-blue/80 underline">${text}</a>`;
     })
     .replace(/\[([^\]]+)\]\[([^\]]+)\]/g, (_match, linkText: string, ref: string) => {
       const url = refLinks[ref];
       if (url) {
         const safeUrl = (/^https?:\/\//i.test(url) ? url : '#').replace(/"/g, "%22");
-        return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-primary hover:text-primary-dark underline">${linkText}</a>`;
+        return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-neon-blue hover:text-neon-blue/80 underline">${linkText}</a>`;
       }
       return linkText;
     })

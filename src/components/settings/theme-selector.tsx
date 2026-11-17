@@ -55,15 +55,15 @@ export function ThemeSelector() {
   ];
 
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-border bg-surface-alt p-1">
+    <div className="flex items-center gap-1 rounded-full border border-foreground/10 bg-surface/70 p-1 backdrop-blur-md">
       {options.map((opt) => (
         <button
           key={opt.value}
           onClick={() => setTheme(opt.value)}
-          className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
+          className={`flex-1 flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-all ${
             current === opt.value
-              ? "bg-surface text-foreground shadow-sm"
-              : "text-muted hover:text-foreground"
+              ? "bg-accent text-black font-bold"
+              : "font-medium text-muted hover:text-foreground"
           }`}
         >
           {opt.icon}

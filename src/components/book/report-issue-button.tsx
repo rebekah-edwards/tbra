@@ -148,7 +148,7 @@ export function ReportIssueButton({
               )}
 
               {isPending && slowSubmit && !error && (
-                <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-600 dark:text-yellow-400">
+                <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-500">
                   Still working — server is taking longer than usual. Don&apos;t close this.
                 </div>
               )}
@@ -156,7 +156,7 @@ export function ReportIssueButton({
               <button
                 onClick={handleSubmit}
                 disabled={isPending || !description.trim()}
-                className="w-full rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-lime w-full px-4 py-2.5 text-sm"
               >
                 {isPending ? "Submitting..." : "Submit Issue"}
               </button>

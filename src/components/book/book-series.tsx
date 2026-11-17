@@ -65,7 +65,7 @@ export function BookSeries({ seriesId, seriesSlug, name, books, currentBookId }:
               data-current-book={isCurrent ? "" : undefined}
               className={`group flex-shrink-0 ${isCurrent ? "opacity-100" : "opacity-80 hover:opacity-100"} transition-opacity`}
             >
-              <div className={`relative w-[120px] ${isCurrent ? "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-lg" : ""}`}>
+              <div className={`relative w-[120px] ${isCurrent ? "ring-2 ring-accent ring-offset-2 ring-offset-background rounded-lg" : ""}`}>
                 {book.coverImageUrl ? (
                   <Image
                     src={book.coverImageUrl}

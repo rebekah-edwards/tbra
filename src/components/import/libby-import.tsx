@@ -385,7 +385,7 @@ export function LibbyImport() {
           </p>
           <button
             onClick={resetToIdle}
-            className="text-xs text-link hover:text-link/80 font-medium"
+            className="text-xs text-neon-blue hover:text-neon-blue/80 font-medium"
           >
             Start over
           </button>
@@ -425,7 +425,7 @@ export function LibbyImport() {
             <div>
               <button
                 onClick={() => setShowErrors(!showErrors)}
-                className="text-xs text-link hover:text-link/80 font-medium"
+                className="text-xs text-neon-blue hover:text-neon-blue/80 font-medium"
               >
                 {showErrors ? "Hide errors" : "Show errors"}
               </button>
@@ -449,7 +449,7 @@ export function LibbyImport() {
 
           <button
             onClick={resetToIdle}
-            className="text-xs text-link hover:text-link/80 font-medium"
+            className="text-xs text-neon-blue hover:text-neon-blue/80 font-medium"
           >
             Import another file
           </button>
@@ -462,7 +462,7 @@ export function LibbyImport() {
           <p className="text-sm font-medium text-destructive">{errorMessage}</p>
           <button
             onClick={resetToIdle}
-            className="text-xs text-link hover:text-link/80 font-medium"
+            className="text-xs text-neon-blue hover:text-neon-blue/80 font-medium"
           >
             Try again
           </button>

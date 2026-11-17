@@ -42,7 +42,7 @@ export default async function AllReviewsPage() {
             <Link
               key={review.reviewId}
               href={`/book/${review.bookSlug || review.bookId}/reviews#review-${review.reviewId}`}
-              className="flex gap-3 rounded-lg border border-border bg-surface p-3 hover:border-primary/30 transition-colors"
+              className="flex gap-3 rounded-lg border border-border bg-surface p-3 hover:border-accent/30 transition-colors"
             >
               {review.coverImageUrl ? (
                 <Image
@@ -60,7 +60,7 @@ export default async function AllReviewsPage() {
                 <p className="text-xs text-muted line-clamp-1">{review.authors.join(", ")}</p>
                 <div className="flex items-center gap-2 mt-1">
                   {review.rating && (
-                    <span className="text-xs text-primary font-medium">
+                    <span className="text-xs text-accent font-medium">
                       {formatRating(review.rating)} ★
                     </span>
                   )}

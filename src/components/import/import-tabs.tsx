@@ -19,15 +19,15 @@ export function ImportTabs() {
   return (
     <div className="space-y-6">
       {/* Tab bar */}
-      <div className="flex gap-1 rounded-xl bg-surface-alt p-1">
+      <div className="flex gap-1 rounded-full border border-foreground/10 bg-surface/70 p-1 backdrop-blur-md">
         {sources.map((s) => (
           <button
             key={s.key}
             onClick={() => setActive(s.key)}
-            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 rounded-full px-3 py-2 text-sm transition-colors ${
               active === s.key
-                ? "bg-accent text-black shadow-sm"
-                : "text-muted hover:text-foreground"
+                ? "bg-accent text-black font-bold"
+                : "font-medium text-muted hover:text-foreground"
             }`}
           >
             {s.label}

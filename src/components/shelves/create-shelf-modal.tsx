@@ -166,7 +166,7 @@ export function CreateShelfModal({ open, onClose, onCreated, editShelf, isPremiu
         <button
           type="submit"
           disabled={pending || !name.trim()}
-          className="w-full rounded-xl bg-accent py-3 text-center text-sm font-semibold text-black transition-all hover:brightness-110 disabled:opacity-50"
+          className="w-full rounded-full bg-accent py-3 text-center text-sm font-semibold text-black transition-all hover:brightness-110 disabled:opacity-50"
         >
           {pending ? (isEdit ? "Saving..." : "Creating...") : (isEdit ? "Save Changes" : "Create Shelf")}
         </button>

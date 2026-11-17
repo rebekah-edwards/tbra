@@ -265,10 +265,10 @@ export function DiscoverClient({
             <button
               key={opt.key}
               onClick={() => setFictionPref((prev) => (prev === opt.key ? null : opt.key))}
-              className={`rounded-lg px-4 py-2 text-sm font-medium border-2 transition-all ${
+              className={`rounded-full px-4 py-2 text-sm font-medium border transition-all ${
                 fictionPref === opt.key
-                  ? "border-accent bg-accent/15 text-accent"
-                  : "border-border bg-surface-alt/50 text-muted hover:border-accent/30"
+                  ? "border-foreground/35 bg-foreground/10 text-foreground font-semibold"
+                  : "border-foreground/10 bg-surface/70 text-muted hover:border-foreground/25 hover:text-foreground"
               }`}
             >
               {opt.label}
@@ -292,10 +292,10 @@ export function DiscoverClient({
               onClick={() => setLengthPref((prev) =>
                 prev.includes(opt.key) ? prev.filter((k) => k !== opt.key) : [...prev, opt.key]
               )}
-              className={`rounded-lg px-3 py-2 text-center border-2 transition-all ${
+              className={`rounded-2xl px-3 py-2 text-center border transition-all ${
                 lengthPref.includes(opt.key)
-                  ? "border-accent bg-accent/15 text-accent"
-                  : "border-border bg-surface-alt/50 text-muted hover:border-accent/30"
+                  ? "border-foreground/35 bg-foreground/10 text-foreground font-semibold"
+                  : "border-foreground/10 bg-surface/70 text-muted hover:border-foreground/25 hover:text-foreground"
               }`}
             >
               <span className="text-sm font-medium block">{opt.label}</span>
@@ -323,10 +323,10 @@ export function DiscoverClient({
                 const without = prev.filter((k) => k !== opt.key && k !== "any");
                 return prev.includes(opt.key) ? without : [...without, opt.key];
               })}
-              className={`rounded-lg px-3 py-2 text-sm font-medium border-2 transition-all ${
+              className={`rounded-full px-3 py-2 text-sm font-medium border transition-all ${
                 audiencePref.includes(opt.key)
-                  ? "border-accent bg-accent/15 text-accent"
-                  : "border-border bg-surface-alt/50 text-muted hover:border-accent/30"
+                  ? "border-foreground/35 bg-foreground/10 text-foreground font-semibold"
+                  : "border-foreground/10 bg-surface/70 text-muted hover:border-foreground/25 hover:text-foreground"
               }`}
             >
               {opt.label}
@@ -352,10 +352,10 @@ export function DiscoverClient({
             <button
               key={opt.key ?? "all"}
               onClick={() => setLibraryFilter((prev) => (prev === opt.key ? null : opt.key))}
-              className={`rounded-lg px-4 py-2 text-sm font-medium border-2 transition-all ${
+              className={`rounded-full px-4 py-2 text-sm font-medium border transition-all ${
                 libraryFilter === opt.key
-                  ? "border-accent bg-accent/15 text-accent"
-                  : "border-border bg-surface-alt/50 text-muted hover:border-accent/30"
+                  ? "border-foreground/35 bg-foreground/10 text-foreground font-semibold"
+                  : "border-foreground/10 bg-surface/70 text-muted hover:border-foreground/25 hover:text-foreground"
               }`}
             >
               {opt.label}
@@ -396,12 +396,12 @@ export function DiscoverClient({
       {/* ─── Discover Button with pulse glow when moods selected ─── */}
       <div className="relative">
         {selectedMoods.length > 0 && !loading && (
-          <div className="absolute inset-0 rounded-2xl animate-pulse bg-accent/20 blur-xl" />
+          <div className="absolute inset-0 rounded-full animate-pulse bg-accent/20 blur-xl" />
         )}
         <button
           onClick={handleDiscover}
           disabled={selectedMoods.length === 0 || loading || (!isPremium && remaining === 0)}
-          className="relative w-full rounded-2xl bg-accent py-3.5 text-sm font-semibold text-black shadow-[0_0_20px_rgba(163,230,53,0.25)] hover:shadow-[0_0_28px_rgba(163,230,53,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-lime relative w-full py-3.5 text-sm"
         >
           {loading ? "Finding books..." : `Find Books${selectedMoods.length > 0 ? ` (${selectedMoods.length} mood${selectedMoods.length > 1 ? "s" : ""})` : ""}`}
         </button>
@@ -422,7 +422,7 @@ export function DiscoverClient({
             </p>
             <a
               href="/upgrade"
-              className="mt-3 inline-block rounded-xl bg-neon-purple px-5 py-2.5 text-sm font-semibold text-white"
+              data-active="true" style={{ ["--ring" as string]: "var(--neon-purple)" }} className="btn-glass mt-3 px-5 py-2.5 text-sm"
             >
               Upgrade to Based Reader
             </a>
@@ -509,14 +509,14 @@ function TogglePill({ active, onClick, icon, label, color }: {
   color: "accent" | "neon-purple";
 }) {
   const activeClasses = color === "accent"
-    ? "border-accent bg-accent/15 text-accent"
+    ? "border-foreground/35 bg-foreground/10 text-foreground font-semibold"
     : "border-neon-purple bg-neon-purple/15 text-neon-purple";
 
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium border-2 transition-all ${
-        active ? activeClasses : "border-border bg-surface-alt/50 text-muted hover:border-accent/30"
+      className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium border transition-all ${
+        active ? activeClasses : "border-foreground/10 bg-surface/70 text-muted hover:border-foreground/25 hover:text-foreground"
       }`}
     >
       {icon}

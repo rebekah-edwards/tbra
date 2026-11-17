@@ -33,7 +33,7 @@ function ToolbarBtn({
       }}
       className={`p-2 rounded transition-colors ${
         active
-          ? "bg-primary/20 text-primary"
+          ? "bg-accent/20 text-accent"
           : "text-muted hover:text-foreground hover:bg-surface-alt"
       }`}
     >
@@ -251,7 +251,7 @@ export function StepReviewText({ text, isAnonymous, didNotFinish, onChange, onAn
         onMouseUp={updateActiveFormats}
         onPaste={handlePaste}
         onFocus={() => setFocused(true)}
-        className="w-full flex-1 rounded-b-xl border border-border bg-surface-alt p-4 text-sm text-foreground resize-none focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary overflow-y-auto review-editor spoiler-editor empty:before:content-[attr(data-placeholder)] empty:before:text-muted"
+        className="w-full flex-1 rounded-b-xl border border-border bg-surface-alt p-4 text-sm text-foreground resize-none focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent overflow-y-auto review-editor spoiler-editor empty:before:content-[attr(data-placeholder)] empty:before:text-muted"
         data-placeholder={didNotFinish ? "What made you put it down?" : "Tap here and start typing."}
       />
 
@@ -263,7 +263,7 @@ export function StepReviewText({ text, isAnonymous, didNotFinish, onChange, onAn
           onClick={() => onAnonymousChange(!isAnonymous)}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
             isAnonymous
-              ? "bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/30"
+              ? "bg-purple-500/15 text-purple-500 border border-purple-500/30"
               : "text-muted hover:text-foreground border border-border/50 hover:border-border"
           }`}
         >

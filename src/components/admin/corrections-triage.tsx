@@ -115,7 +115,7 @@ function CorrectionCard({
         <div className="min-w-0 flex-1">
           <Link
             href={`/book/${correction.bookId}`}
-            className="text-sm font-semibold text-link hover:underline truncate block"
+            className="text-sm font-semibold text-neon-blue hover:underline truncate block"
             target="_blank"
           >
             {correction.bookTitle ?? correction.bookId}
@@ -150,13 +150,13 @@ function CorrectionCard({
       )}
 
       {/* Message */}
-      <blockquote className="text-sm text-foreground/90 border-l-2 border-primary/40 pl-3 italic">
+      <blockquote className="text-sm text-foreground/90 border-l-2 border-accent/40 pl-3 italic">
         {correction.message}
       </blockquote>
 
       {/* Apply form (inline intensity picker before applying) */}
       {showApplyForm && (
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
+        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-3">
           <p className="text-xs font-medium text-foreground">
             Apply intensity to <em>{correction.categoryName}</em>:
           </p>
@@ -168,8 +168,8 @@ function CorrectionCard({
                 onClick={() => setApplyIntensity(level)}
                 className={`flex-1 rounded-lg py-1.5 text-xs font-medium border-2 transition-all ${
                   applyIntensity === level
-                    ? "border-primary bg-primary/15 text-primary"
-                    : "border-border bg-surface-alt text-muted hover:border-primary/30"
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-border bg-surface-alt text-muted hover:border-accent/30"
                 }`}
               >
                 {level}
@@ -179,7 +179,7 @@ function CorrectionCard({
           <div className="flex gap-2">
             <button
               onClick={submitApply}
-              className="flex-1 rounded-lg bg-primary py-2 text-xs font-semibold text-background"
+              className="flex-1 rounded-lg bg-accent py-2 text-xs font-semibold text-black"
             >
               ✓ Apply & Accept
             </button>
@@ -199,7 +199,7 @@ function CorrectionCard({
           {(isNew || isTriaged) && (
             <button
               onClick={handleApply}
-              className="rounded-lg border border-primary/50 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+              className="rounded-lg border border-accent/50 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition-colors"
             >
               {correction.categoryId ? "Accept & Apply" : "Accept"}
             </button>
@@ -320,7 +320,7 @@ export function CorrectionsTriageDashboard({
             {(counts[tab.key] ?? 0) > 0 && (
               <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                 activeStatus === tab.key
-                  ? "bg-primary/20 text-primary"
+                  ? "bg-accent/20 text-accent"
                   : "bg-border text-muted"
               }`}>
                 {counts[tab.key]}

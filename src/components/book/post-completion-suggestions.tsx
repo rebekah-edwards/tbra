@@ -83,7 +83,7 @@ export function PostCompletionSuggestions({
 
         {loading && (
           <div className="flex items-center justify-center py-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
           </div>
         )}
 
@@ -155,7 +155,7 @@ function SuggestionCard({
 
       <div className="min-w-0 flex-1">
         <Link href={`/book/${book.slug || book.id}`}>
-          <h4 className="text-sm font-semibold leading-tight line-clamp-1 hover:text-primary transition-colors">
+          <h4 className="text-sm font-semibold leading-tight line-clamp-1 hover:text-neon-blue transition-colors">
             {book.title}
           </h4>
         </Link>
@@ -165,7 +165,7 @@ function SuggestionCard({
           </p>
         )}
         {book.reason && (
-          <p className="text-[10px] text-primary/80 mt-0.5">{book.reason}</p>
+          <p className="text-[10px] text-accent mt-0.5">{book.reason}</p>
         )}
       </div>
 
@@ -174,7 +174,7 @@ function SuggestionCard({
         disabled={added}
         className={`flex-shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
           added
-            ? "bg-primary/10 text-primary cursor-default"
+            ? "bg-accent/10 text-accent cursor-default"
             : "bg-accent text-black hover:bg-accent/90"
         }`}
       >

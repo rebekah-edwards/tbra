@@ -52,14 +52,14 @@ export function TextSizeSelector() {
 
   return (
     <div>
-      <div className="flex items-center gap-1 rounded-lg border border-border bg-surface-alt p-1">
+      <div className="flex items-center gap-1 rounded-full border border-foreground/10 bg-surface/70 p-1 backdrop-blur-md">
         {options.map((opt) => (
           <button
             key={opt.value}
             onClick={() => handleChange(opt.value)}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
+            className={`flex-1 rounded-full px-3 py-1.5 text-sm font-medium transition-all ${
               size === opt.value
-                ? "bg-surface text-foreground shadow-sm"
+                ? "bg-accent text-black font-bold"
                 : "text-muted hover:text-foreground"
             }`}
           >

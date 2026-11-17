@@ -30,10 +30,10 @@ export function TbrSuggestionCard({ initialBook }: TbrSuggestionCardProps) {
 
   if (!book) {
     return (
-      <div className="rounded-xl border border-border bg-surface p-6 text-center">
+      <div className="rounded-[18px] border border-foreground/10 bg-surface/60 p-6 text-center">
         <p className="text-sm text-muted">
           No owned TBR books yet.{" "}
-          <Link href="/search" className="text-primary hover:text-primary-dark">
+          <Link href="/search" className="font-medium text-neon-blue hover:text-neon-blue/80">
             Find books to add
           </Link>
         </p>
@@ -42,7 +42,7 @@ export function TbrSuggestionCard({ initialBook }: TbrSuggestionCardProps) {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface overflow-hidden lg:flex">
+    <div className="overflow-hidden rounded-[18px] border border-foreground/10 bg-surface/80 lg:flex">
       <Link href={`/book/${book.slug || book.id}`} className="flex items-center gap-4 p-4 lg:p-5 lg:flex-1 min-w-0">
         {book.coverImageUrl ? (
           <Image
@@ -57,9 +57,9 @@ export function TbrSuggestionCard({ initialBook }: TbrSuggestionCardProps) {
         )}
         <div className="min-w-0 flex-1">
           {book.reason ? (
-            <p className="tbr-reason-tag text-[10px] font-medium uppercase tracking-wider mb-1">{book.reason}</p>
+            <p className="eyebrow mb-1">{book.reason}</p>
           ) : (
-            <p className="tbr-reason-tag text-[10px] font-medium uppercase tracking-wider mb-1">From Your TBR</p>
+            <p className="eyebrow mb-1">From Your TBR</p>
           )}
           <h3 className="text-base font-bold leading-tight line-clamp-2">{book.title}</h3>
           {book.authors.length > 0 && (
@@ -70,7 +70,7 @@ export function TbrSuggestionCard({ initialBook }: TbrSuggestionCardProps) {
       <button
         onClick={handleShuffle}
         disabled={isShuffling}
-        className="w-full lg:w-auto border-t border-border px-4 py-2.5 flex items-center justify-center lg:border-t-0 lg:border-l lg:px-6 text-xs font-medium text-muted hover:text-primary hover:bg-surface-alt/50 transition-colors disabled:opacity-50 cursor-pointer gap-1.5"
+        className="w-full lg:w-auto border-t border-foreground/10 px-4 py-2.5 flex items-center justify-center lg:border-t-0 lg:border-l lg:px-6 text-xs font-medium text-neon-blue hover:bg-surface-alt/50 transition-colors disabled:opacity-50 cursor-pointer gap-1.5"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="16 3 21 3 21 8" />

@@ -106,7 +106,7 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
                 setShowAll(true);
               }}
               placeholder="Search reviews..."
-              className="w-full rounded-lg border border-border bg-surface pl-9 pr-4 py-2 text-xs placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full rounded-lg border border-border bg-surface pl-9 pr-4 py-2 text-xs placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
 
@@ -117,7 +117,7 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
               onClick={() => { setActiveFilter("all"); setShowAll(false); }}
               className={`rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${
                 activeFilter === "all"
-                  ? "bg-primary/20 text-foreground"
+                  ? "bg-accent/20 text-foreground"
                   : "bg-surface border border-border text-muted hover:text-foreground"
               }`}
             >
@@ -163,7 +163,7 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
             <Link
               key={review.reviewId}
               href={`/book/${review.bookSlug || review.bookId}/reviews#review-${review.reviewId}`}
-              className="flex gap-3 rounded-lg border border-border bg-surface p-3 hover:border-primary/30 hover:bg-surface-alt transition-all duration-200 group"
+              className="flex gap-3 rounded-lg border border-border bg-surface p-3 hover:border-accent/30 hover:bg-surface-alt transition-all duration-200 group"
             >
               <div className="relative flex-shrink-0">
                 {review.coverImageUrl ? (

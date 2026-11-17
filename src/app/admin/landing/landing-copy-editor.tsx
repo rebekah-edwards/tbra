@@ -81,7 +81,7 @@ export function LandingCopyEditor({ sections }: { sections: CopySection[] }) {
           <button
             onClick={handleSaveAll}
             disabled={isPending}
-            className="px-4 py-2 rounded-lg bg-accent text-black text-sm font-bold hover:brightness-110 transition-all disabled:opacity-50"
+            className="px-4 py-2 rounded-full bg-accent text-black text-sm font-bold hover:brightness-110 transition-all disabled:opacity-50"
           >
             {isPending ? "Saving..." : `Save All Changes (${dirty.size})`}
           </button>

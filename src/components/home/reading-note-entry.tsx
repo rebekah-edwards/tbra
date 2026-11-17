@@ -97,7 +97,7 @@ export function ReadingNoteEntry({ books, activeBuddyReads = [] }: ReadingNoteEn
     return (
       <button
         onClick={() => setExpanded(true)}
-        className="w-full rounded-xl border border-border bg-surface p-3 text-left text-sm text-muted hover:border-primary/30 transition-colors"
+        className="w-full rounded-xl border border-border bg-surface p-3 text-left text-sm text-muted hover:border-accent/30 transition-colors"
       >
         📝 How&apos;s the read going?
       </button>
@@ -223,7 +223,7 @@ export function ReadingNoteEntry({ books, activeBuddyReads = [] }: ReadingNoteEn
         <button
           onClick={handleSubmit}
           disabled={isPending || !noteText.trim()}
-          className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
+          className="rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
         >
           {isPending ? "Saving..." : "Save Note"}
         </button>

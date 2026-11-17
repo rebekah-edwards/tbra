@@ -88,7 +88,7 @@ export function EnrichmentDashboardClient({ failedBooks, neverEnriched }: Props)
             <button
               onClick={() => bulkReEnrich(allFailedIds)}
               disabled={bulkRunning}
-              className="text-sm px-3 py-1.5 rounded-lg bg-accent text-black font-medium hover:bg-accent/80 disabled:opacity-50 transition-colors"
+              className="text-sm px-3 py-1.5 rounded-full bg-accent text-black font-medium hover:bg-accent/80 disabled:opacity-50 transition-colors"
             >
               {bulkRunning ? "Running..." : "Re-enrich All Failed"}
             </button>
@@ -206,7 +206,7 @@ function BookRow({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <a href={`/book/${id}`} className="text-sm font-medium text-foreground hover:text-link truncate block">
+        <a href={`/book/${id}`} className="text-sm font-medium text-foreground hover:text-neon-blue truncate block">
           {title}
         </a>
         <div className="mt-0.5">{subtitle}</div>
@@ -219,7 +219,7 @@ function BookRow({
         ) : error ? (
           <div className="text-right">
             <span className="text-xs text-destructive block">{error}</span>
-            <button onClick={onEnrich} className="text-xs text-link hover:underline mt-0.5">
+            <button onClick={onEnrich} className="text-xs text-neon-blue hover:underline mt-0.5">
               Retry
             </button>
           </div>

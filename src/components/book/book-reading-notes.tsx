@@ -161,7 +161,7 @@ export function BookReadingNotes({ notes, bookSlug, bookId }: BookReadingNotesPr
           {peekCount >= 1 && (
             <div className="absolute bottom-[-6px] left-1 right-1 h-2 rounded-b-xl border border-t-0 border-border/40 bg-surface/70 z-10" />
           )}
-          <div className="relative z-20 group-hover:border-primary/30 rounded-xl transition-colors">
+          <div className="relative z-20 group-hover:border-accent/30 rounded-xl transition-colors">
             <NoteCard note={topNote} />
           </div>
         </Link>

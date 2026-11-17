@@ -33,7 +33,7 @@ export function MobileMenu({ email, avatarUrl, displayName }: MobileMenuProps) {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-background overflow-hidden"
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-black overflow-hidden"
       >
         {avatarUrl ? (
           <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />

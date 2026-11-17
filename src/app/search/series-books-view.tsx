@@ -130,20 +130,20 @@ export function SeriesBooksView({ seriesName, seriesId, books, isLoggedIn, isAdm
       )}
 
       {/* Segmented control */}
-      <div className={`${subSeries ? "mt-3" : "mt-4"} flex gap-1 rounded-xl bg-surface-alt p-1`}>
+      <div className={`${subSeries ? "mt-3" : "mt-4"} flex gap-1 rounded-full border border-foreground/10 bg-surface/70 p-1 backdrop-blur-md`}>
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+            className={`flex-1 rounded-full px-3 py-2 text-sm transition-all ${
               activeTab === tab.key
-                ? "bg-accent text-black shadow-sm"
-                : "text-muted hover:text-foreground"
+                ? "bg-accent text-black font-bold"
+                : "font-medium text-muted hover:text-foreground"
             }`}
           >
             {tab.label}
             {counts[tab.key] > 0 && (
-              <span className={`ml-1.5 text-xs ${activeTab === tab.key ? "opacity-80" : "opacity-60"}`}>
+              <span className="ml-1.5 text-xs font-semibold tabular-nums opacity-60">
                 {counts[tab.key]}
               </span>
             )}
@@ -173,7 +173,7 @@ export function SeriesBooksView({ seriesName, seriesId, books, isLoggedIn, isAdm
         {filteredBooks.map((book) => (
           <div
             key={book.id}
-            className="flex gap-4 rounded-lg border border-border bg-surface p-4"
+            className="flex gap-4 rounded-[18px] border border-foreground/10 bg-surface/80 p-4"
           >
             <div className="relative flex-shrink-0">
               <Link href={`/book/${book.slug || book.id}`}>

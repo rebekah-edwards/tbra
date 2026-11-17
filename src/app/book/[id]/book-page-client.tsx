@@ -393,7 +393,7 @@ export function BookPageClient({
       {mounted && showEnrichmentBanner && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-4 px-8 text-center">
-            <div className="w-10 h-10 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+            <div className="w-10 h-10 border-3 border-accent/30 border-t-accent rounded-full animate-spin" />
             <p className="text-base text-white/90 max-w-sm leading-relaxed">
               This book is currently being added to our database. Please wait 10&ndash;20 seconds for content details to be added.
             </p>
@@ -612,7 +612,7 @@ export function BookPageClient({
                   }
                 }}
                 disabled={savingCover}
-                className="w-full text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-primary/15 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary hover:file:bg-primary/25 file:cursor-pointer"
+                className="w-full text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-accent/15 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-accent hover:file:bg-accent/25 file:cursor-pointer"
               />
               <p className="mt-1 text-[10px] text-muted">JPG, PNG, or WebP. Max 2MB.</p>
             </div>
@@ -627,7 +627,7 @@ export function BookPageClient({
                   type="text"
                   placeholder="https://..."
                   id="header-cover-url-input"
-                  className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                  className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
                 />
                 <button
                   onClick={async () => {
@@ -646,7 +646,7 @@ export function BookPageClient({
                     setEditingCover(false);
                   }}
                   disabled={savingCover}
-                  className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-background disabled:opacity-50"
+                  className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-black disabled:opacity-50"
                 >
                   Set
                 </button>
@@ -776,7 +776,7 @@ export function BookPageClient({
                   placeholder="https://..."
                   id="audiobook-cover-url-input"
                   defaultValue={book.audiobookCoverUrl ?? ""}
-                  className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                  className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
                 />
                 <button
                   onClick={async () => {
@@ -792,7 +792,7 @@ export function BookPageClient({
                     setSavingCover(false);
                   }}
                   disabled={savingCover}
-                  className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-background disabled:opacity-50"
+                  className="rounded-full bg-accent px-3 py-2 text-sm font-medium text-black disabled:opacity-50"
                 >
                   Set
                 </button>

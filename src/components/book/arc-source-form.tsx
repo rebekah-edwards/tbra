@@ -173,7 +173,7 @@ export function ArcSourceForm({
           type="button"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="w-full rounded-xl bg-accent py-3 text-sm font-semibold text-black transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full rounded-full bg-accent py-3 text-sm font-semibold text-black transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Submit
         </button>

@@ -318,7 +318,7 @@ function ReadingBookCard({ book, onReviewOpen }: {
           </div>
         )}
         {!book.coverImageUrl && (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-dark to-primary rounded-xl" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-dark to-accent rounded-xl" />
         )}
         {/* Design refresh 2026-11 (mirrors native-ios HomeView cardBodyV2):
             a real progress bar instead of the % tag under the cover, ONE lime
@@ -437,7 +437,7 @@ function ReadingBookCard({ book, onReviewOpen }: {
             </button>
             <button
               onClick={() => executeStateChange(confirmAction.bookId, confirmAction.state)}
-              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-black bg-primary hover:brightness-110 transition-all"
+              className="rounded-full px-3 py-1.5 text-xs font-semibold text-black bg-accent hover:brightness-110 transition-all"
             >
               {confirmAction.label}
             </button>
@@ -478,7 +478,7 @@ export function CurrentlyReadingSection({ books }: { books: CurrentlyReadingBook
         <p className="text-lg font-semibold text-foreground/80">Nothing on the nightstand</p>
         <p className="mt-1 text-sm text-muted">
           Pick a book from your TBR or{" "}
-          <Link href="/search" className="text-link hover:text-link/80">
+          <Link href="/search" className="text-neon-blue hover:text-neon-blue/80">
             search for something new
           </Link>
         </p>
@@ -504,7 +504,7 @@ export function CurrentlyReadingSection({ books }: { books: CurrentlyReadingBook
       {!showAll && books.length > 3 && (
         <button
           onClick={() => setShowAll(true)}
-          className="w-full text-center text-xs text-link hover:text-link/80 transition-colors py-2"
+          className="w-full text-center text-xs text-neon-blue hover:text-neon-blue/80 transition-colors py-2"
         >
           Show all ({books.length})
         </button>

@@ -87,7 +87,7 @@ export function ArcReviewQueue({ reviews, statusCounts, activeStatus }: ArcRevie
                 <div className="flex-1 min-w-0">
                   <Link
                     href={`/book/${review.bookSlug || review.bookId}`}
-                    className="text-sm font-semibold text-foreground hover:text-link"
+                    className="text-sm font-semibold text-foreground hover:text-neon-blue"
                   >
                     {review.bookTitle}
                   </Link>
@@ -113,7 +113,7 @@ export function ArcReviewQueue({ reviews, statusCounts, activeStatus }: ArcRevie
                 <button
                   type="button"
                   onClick={() => setExpandedId(expandedId === review.id ? null : review.id)}
-                  className="text-xs text-link shrink-0"
+                  className="text-xs text-neon-blue shrink-0"
                 >
                   {expandedId === review.id ? "Collapse" : "Details"}
                 </button>
@@ -148,7 +148,7 @@ export function ArcReviewQueue({ reviews, statusCounts, activeStatus }: ArcRevie
                         type="button"
                         onClick={() => handleAction(review.id, "approve")}
                         disabled={isPending}
-                        className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black hover:brightness-110 transition-all disabled:opacity-50"
+                        className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-black hover:brightness-110 transition-all disabled:opacity-50"
                       >
                         Approve
                       </button>

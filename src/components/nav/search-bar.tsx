@@ -337,7 +337,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                 />
 
                 {loading && (
-                  <div className="flex-shrink-0 w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
+                  <div className="flex-shrink-0 w-4 h-4 border-2 border-muted border-t-accent rounded-full animate-spin" />
                 )}
 
                 {query && !loading && (
@@ -440,7 +440,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                               </div>
                               <div className="flex-shrink-0">
                                 {importingKey === ext.key ? (
-                                  <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
+                                  <div className="w-4 h-4 border-2 border-muted border-t-accent rounded-full animate-spin" />
                                 ) : (
                                   <span className="text-[10px] font-medium text-neon-blue bg-neon-blue/10 px-2 py-0.5 rounded-full">
                                     Add
@@ -460,8 +460,8 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                               onClick={collapse}
                               className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-alt transition-colors"
                             >
-                              <div className="flex-shrink-0 w-10 h-[60px] rounded overflow-hidden bg-primary/10 flex items-center justify-center">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                              <div className="flex-shrink-0 w-10 h-[60px] rounded overflow-hidden bg-accent/10 flex items-center justify-center">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
                                   <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
                                   <path d="M8 7h6" />
                                 </svg>
@@ -569,7 +569,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
                             </div>
                             <div className="flex-shrink-0">
                               {book.state ? (
-                                <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                <span className="text-[10px] font-medium text-accent bg-accent/10 px-2 py-0.5 rounded-full">
                                   {stateLabel(book.state)}
                                 </span>
                               ) : (

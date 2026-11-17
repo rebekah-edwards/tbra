@@ -326,6 +326,19 @@ a[href="/upgrade"] .menu-icon-chip {
   background: linear-gradient(135deg, #c084fc, #38bdf8);
 }
 
+/* Streak flame: a slow breath while the streak is alive. */
+@keyframes streak-breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.09); opacity: 0.82; }
+}
+.streak-breathe {
+  transform-origin: 50% 70%;
+  animation: streak-breathe 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .streak-breathe { animation: none; }
+}
+
 /* Streak tile — "Not yet today" pill (2026-11). Amber, tuned per theme so it
    stays legible on both the dark and light surfaces. */
 .streak-pending-pill {

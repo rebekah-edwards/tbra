@@ -83,13 +83,13 @@ export function ReviewListClient({ reviews, bookId, bookSlug, currentUserId }: R
       {/* Sort + Filters */}
       <div className="flex items-center justify-between pb-1">
         {/* Segmented control for sort */}
-        <div className="inline-flex rounded-lg bg-surface-alt border border-border/50 p-0.5">
+        <div className="inline-flex rounded-full border border-foreground/10 bg-surface/70 p-0.5 backdrop-blur-md">
           <button
             type="button"
             onClick={() => setSortBy("latest")}
-            className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+            className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
               sortBy === "latest"
-                ? "bg-purple-500/20 text-purple-400 font-medium shadow-sm"
+                ? "bg-accent text-black font-bold"
                 : "text-muted hover:text-foreground"
             }`}
           >
@@ -98,9 +98,9 @@ export function ReviewListClient({ reviews, bookId, bookSlug, currentUserId }: R
           <button
             type="button"
             onClick={() => setSortBy("helpful")}
-            className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+            className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
               sortBy === "helpful"
-                ? "bg-purple-500/20 text-purple-400 font-medium shadow-sm"
+                ? "bg-accent text-black font-bold"
                 : "text-muted hover:text-foreground"
             }`}
           >

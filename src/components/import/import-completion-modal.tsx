@@ -138,7 +138,7 @@ export function ImportCompletionModal({ importedCount, hasEnrichment, onDismiss 
         {/* Dismiss button */}
         <button
           onClick={onDismiss}
-          className="inline-flex items-center gap-1.5 bg-accent text-black px-5 py-2.5 rounded-xl text-sm font-semibold hover:brightness-110 transition-all"
+          className="inline-flex items-center gap-1.5 bg-accent text-black px-5 py-2.5 rounded-full text-sm font-semibold hover:brightness-110 transition-all"
         >
           Start exploring
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
