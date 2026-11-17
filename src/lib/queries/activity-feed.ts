@@ -24,7 +24,7 @@ export interface ActivityItem {
   reviewPreview?: string | null;
   reviewId?: string | null;
   // Progress fields — only on `currently_reading` items, from the reader's
-  // latest shared progress entry. The entry's note text never leaves the DB.
+  // latest progress entry. The entry's note text never leaves the DB.
   percentComplete?: number | null;
   pageNumber?: number | null;
   timestamp: string;
@@ -151,10 +151,12 @@ async function loadActivityRows(
       ORDER BY ubs.updated_at DESC LIMIT ${limit}
     `) as Promise<RawActivityRow[]>,
 
-    // Progress only (page / percent). A reading note's text is private to its
-    // author: it is never selected here, and an entry with no page or percent
-    // is not a feed item at all. Only entries the reader marked shared count,
-    // and only while the book is still being read.
+    // Progress only (page / percent), from every entry — shared or private.
+    // Rebekah's rule (2026-11-16): the privacy switch on an entry covers its
+    // NOTE, not the reader's position; progress is fine to show. The note text
+    // is never selected here, so nothing in this feed can show one, and an
+    // entry with no page or percent is not a feed item at all. Only while the
+    // book is still being read.
     db.all(sql`
       SELECT
         'progress' as type,
@@ -169,7 +171,7 @@ async function loadActivityRows(
       INNER JOIN books b ON rn.book_id = b.id
       INNER JOIN user_book_state ubs
         ON ubs.user_id = rn.user_id AND ubs.book_id = rn.book_id AND ubs.state = 'currently_reading'
-      WHERE rn.user_id IN (${inClause}) AND rn.is_private = 0
+      WHERE rn.user_id IN (${inClause})
         AND (rn.percent_complete > 0 OR rn.page_number > 0)
       ORDER BY rn.created_at DESC LIMIT ${limit}
     `) as Promise<RawActivityRow[]>,
