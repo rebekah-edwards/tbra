@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useId, useState, useTransition, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -181,6 +181,12 @@ export function UpNextShelf({ items: initialItems }: { items: UpNextItem[] }) {
   const [items, setItems] = useState(initialItems);
   const [isPending, startTransition] = useTransition();
   const wasDragged = useRef(false);
+  // A stable id for the drag-and-drop context. Without one dnd-kit numbers its
+  // screen-reader instructions from a global counter, which differs between
+  // the server render and the browser ("DndDescribedBy-2" vs "-6"): React
+  // logged a hydration mismatch and left every card's aria-describedby
+  // pointing at an element that does not exist.
+  const dndId = useId();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -225,6 +231,7 @@ export function UpNextShelf({ items: initialItems }: { items: UpNextItem[] }) {
   return (
     <div>
       <DndContext
+        id={dndId}
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
