@@ -230,7 +230,7 @@ export default async function RootLayout({
 
         <ThemeProvider>
           <TextSizeInitializer />
-          <nav className="sticky top-0 z-50 overflow-visible border-b border-border bg-surface shadow-sm pt-[env(safe-area-inset-top)]">
+          <nav className="sticky top-0 z-50 overflow-visible border-b border-foreground/10 bg-surface/85 backdrop-blur-xl pt-[env(safe-area-inset-top)]">
             <div className="mx-auto flex max-w-3xl lg:max-w-[1194px] items-center justify-between gap-4 px-6 py-3">
               <Link href="/" className="logo-gradient font-logo text-xl tracking-tight flex-shrink-0">
                 tbr*a
@@ -242,7 +242,7 @@ export default async function RootLayout({
                 {!session && (
                   <Link
                     href="/signup"
-                    className="lg:hidden rounded-full bg-accent px-3 py-1 text-xs font-semibold text-black hover:brightness-110 transition-all"
+                    data-active="true" className="btn-glass lg:hidden px-3 py-1 text-xs"
                   >
                     Sign Up
                   </Link>
@@ -261,7 +261,7 @@ export default async function RootLayout({
                     </Link>
                     <Link
                       href="/signup"
-                      className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-black hover:brightness-110 transition-all"
+                      data-active="true" className="btn-glass px-4 py-1.5 text-sm"
                     >
                       Sign Up
                     </Link>
@@ -279,8 +279,20 @@ export default async function RootLayout({
                 against the nav on multiple pages. */}
             <main className="relative z-0 mx-auto max-w-3xl lg:max-w-[1194px] px-6 pt-8 pb-32 lg:pb-8">{children}</main>
           </PullToRefresh>
-          <footer className="hidden lg:block mx-auto max-w-3xl lg:max-w-[1194px] px-6 pb-6 pt-2">
-            <p className="text-[10px] text-muted/40 text-center">
+          {/* Desktop footer: the pages a visitor looks for at the bottom of a
+              site. On phones these live in the menu, and the bottom tabs own
+              that edge. */}
+          <footer className="hidden lg:block mx-auto max-w-3xl lg:max-w-[1194px] px-6 pb-8 pt-10">
+            <div className="flex items-center justify-between gap-6 border-t border-foreground/10 pt-5">
+              <span className="logo-gradient font-logo text-base tracking-tight">tbr*a</span>
+              <nav aria-label="Footer" className="flex items-center gap-6 text-sm text-muted">
+                <Link href="/methodology" className="hover:text-foreground transition-colors">Our Methodology</Link>
+                <Link href="/contact" className="hover:text-foreground transition-colors">Contact</Link>
+                <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+                <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+              </nav>
+            </div>
+            <p className="mt-4 text-[11px] text-muted/60 text-center">
               As an Amazon Associate, tbr*a earns from qualifying purchases.
             </p>
           </footer>

@@ -56,13 +56,13 @@ export function UpNextButton({
       }
       className={`
         relative flex items-center justify-center gap-1.5
-        rounded-xl px-4 py-2.5
+        rounded-2xl px-4 py-2.5 backdrop-blur-md
         text-sm font-semibold
         transition-all
         ${isPending ? "opacity-50" : ""}
         ${isInQueue
-          ? "bg-muted/15 text-foreground border-2 border-muted/50"
-          : "bg-surface-alt text-muted border-2 border-border hover:border-muted/50 hover:text-foreground"
+          ? "bg-surface/60 text-foreground border border-accent/55"
+          : "bg-surface/60 text-foreground/75 border border-foreground/15 hover:border-accent/45 hover:text-foreground"
         }
         ${!isInQueue && count >= MAX_UP_NEXT ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
       `}

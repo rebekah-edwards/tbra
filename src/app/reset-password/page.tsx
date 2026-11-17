@@ -28,7 +28,7 @@ export default function ResetPasswordPage() {
         </p>
         <Link
           href="/forgot-password"
-          className="mt-6 text-sm text-link hover:text-link/80"
+          className="mt-6 text-sm text-neon-blue hover:text-neon-blue/80"
         >
           Request a new reset link
         </Link>
@@ -45,11 +45,11 @@ export default function ResetPasswordPage() {
         Enter your new password below.
       </p>
 
-      <form action={action} className="mt-8 w-full max-w-sm space-y-4">
+      <form action={action} className="card-hairline mt-8 w-full max-w-[26rem] space-y-4 p-5 sm:p-7">
         <input type="hidden" name="token" value={token} />
 
         {state.error && (
-          <div className="rounded-lg border border-intensity-4/30 bg-intensity-4/10 px-4 py-3 text-sm text-intensity-4">
+          <div className="rounded-2xl border border-intensity-4/30 bg-intensity-4/10 px-4 py-3 text-sm text-intensity-4">
             {state.error}
           </div>
         )}
@@ -88,7 +88,7 @@ export default function ResetPasswordPage() {
         <button
           type="submit"
           disabled={pending || state.success}
-          className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-primary-dark disabled:opacity-50"
+          className="btn-lime w-full px-4 py-3 text-sm"
         >
           {state.success
             ? "Redirecting..."
@@ -98,7 +98,7 @@ export default function ResetPasswordPage() {
         </button>
 
         <p className="text-center text-sm text-muted">
-          <Link href="/login" className="text-link hover:text-link/80">
+          <Link href="/login" className="text-neon-blue hover:text-neon-blue/80">
             Back to sign in
           </Link>
         </p>

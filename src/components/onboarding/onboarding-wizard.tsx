@@ -250,9 +250,10 @@ export function OnboardingWizard() {
 
   const content = (
     <div className="fixed inset-0 z-50 flex flex-col bg-background pt-[env(safe-area-inset-top)]">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <span className="text-xs font-medium text-muted uppercase tracking-wide">
+      {/* Header — like every row below, held to one centred column so the
+          wizard does not stretch edge to edge on a desktop window. */}
+      <div className="mx-auto flex w-full max-w-lg items-center justify-between px-4 py-3">
+        <span className="eyebrow">
           Step {step + 1} of {totalSteps}
         </span>
         <button
@@ -267,15 +268,17 @@ export function OnboardingWizard() {
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-surface-alt">
+      <div className="mx-auto w-full max-w-lg px-4">
+        <div className="h-[5px] overflow-hidden rounded-full bg-foreground/15">
         <div
-          className="h-full bg-accent transition-all duration-300"
+          className="h-full rounded-full bg-accent transition-all duration-300"
           style={{ width: `${progress}%` }}
         />
+        </div>
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-5 py-6">
+      <div className="flex-1 overflow-y-auto px-5 py-6 [&>*]:mx-auto [&>*]:w-full [&>*]:max-w-lg">
         {step === 0 && (
           <StepGenres
             fictionPref={fictionPref}
@@ -340,11 +343,7 @@ export function OnboardingWizard() {
           <button
             onClick={() => (isLastStep ? handleSubmit() : setStep(step + 1))}
             disabled={isPending}
-            className={`flex-[2] py-3 rounded-xl font-medium transition-all ${
-              isPending
-                ? "bg-accent/50 text-black/50"
-                : "bg-accent text-black hover:brightness-110 active:scale-[0.98]"
-            }`}
+            className="btn-lime flex-[2] py-3 text-sm"
           >
             {isPending ? "Saving..." : isLastStep ? "Start Reading" : "Next"}
           </button>
@@ -396,18 +395,14 @@ function StepGenres({
       </div>
 
       {/* Fiction/Nonfiction/Both toggle */}
-      <div className="flex gap-2">
+      <div className="seg-glass">
         {fictionOptions.map((opt) => (
           <button
             key={opt.key}
             onClick={() =>
               setFictionPref(fictionPref === opt.key ? null : opt.key)
             }
-            className={`flex-1 rounded-xl py-3 text-sm font-semibold transition-all ${
-              fictionPref === opt.key
-                ? "bg-accent text-black"
-                : "bg-surface-alt text-muted hover:text-foreground"
-            }`}
+            data-active={fictionPref === opt.key}
           >
             {opt.label}
           </button>
@@ -466,18 +461,18 @@ function GenrePill({
   state: "love" | "dislike" | null;
   onToggle: (genre: string) => void;
 }) {
-  const baseClass = "rounded-full px-3.5 py-1.5 text-xs font-medium transition-all border";
+  const baseClass = "inline-flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all border";
   const stateClass =
     state === "love"
-      ? "bg-accent/20 text-accent-dark border-accent/40"
+      ? "bg-accent/15 text-accent border-accent/45 font-semibold"
       : state === "dislike"
         ? "bg-destructive/15 text-destructive border-destructive/30"
-        : "bg-surface-alt text-muted border-transparent hover:text-foreground";
+        : "bg-surface/70 text-muted border-foreground/10 hover:text-foreground hover:border-foreground/25";
 
   return (
     <button onClick={() => onToggle(genre)} className={`${baseClass} ${stateClass}`}>
-      {state === "love" && "♥ "}
-      {state === "dislike" && "✕ "}
+      {state === "love" && <HeartGlyph />}
+      {state === "dislike" && <CrossGlyph />}
       {genre}
     </button>
   );
@@ -524,10 +519,10 @@ function StepStyle({
             <button
               key={p.key}
               onClick={() => togglePace(p.key)}
-              className={`flex-1 rounded-xl py-2.5 text-sm font-medium transition-all ${
+              className={`flex-1 rounded-full py-2.5 text-sm font-medium transition-all ${
                 paces.has(p.key)
-                  ? "bg-neon-blue/20 text-neon-blue border border-neon-blue/30"
-                  : "bg-surface-alt text-muted border border-transparent hover:text-foreground"
+                  ? "bg-foreground/10 text-foreground font-semibold border border-foreground/35"
+                  : "bg-surface/70 text-muted border border-foreground/10 hover:text-foreground hover:border-foreground/25"
               }`}
             >
               {p.label}
@@ -546,10 +541,10 @@ function StepStyle({
               onClick={() =>
                 setLengthPref(lengthPref === l.key ? null : l.key)
               }
-              className={`flex-1 rounded-xl py-2.5 text-center transition-all ${
+              className={`flex-1 rounded-2xl py-2.5 text-center transition-all ${
                 lengthPref === l.key
-                  ? "bg-neon-blue/20 text-neon-blue border border-neon-blue/30"
-                  : "bg-surface-alt text-muted border border-transparent hover:text-foreground"
+                  ? "bg-foreground/10 text-foreground font-semibold border border-foreground/35"
+                  : "bg-surface/70 text-muted border border-foreground/10 hover:text-foreground hover:border-foreground/25"
               }`}
             >
               <span className="text-sm font-medium block">{l.label}</span>
@@ -569,8 +564,8 @@ function StepStyle({
               onClick={() => toggleMood(m.key)}
               className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-all border ${
                 moods.has(m.key)
-                  ? "bg-neon-purple/20 text-neon-purple border-neon-purple/30"
-                  : "bg-surface-alt text-muted border-transparent hover:text-foreground"
+                  ? "bg-foreground/10 text-foreground font-semibold border-foreground/35"
+                  : "bg-surface/70 text-muted border-foreground/10 hover:text-foreground hover:border-foreground/25"
               }`}
             >
               {m.label}
@@ -617,10 +612,10 @@ function StepStoryPreferences({
             <button
               key={opt.key}
               onClick={() => setStoryFocus(storyFocus === opt.key ? null : opt.key)}
-              className={`rounded-xl py-2.5 px-3 text-center transition-all ${
+              className={`rounded-2xl py-2.5 px-3 text-center transition-all ${
                 storyFocus === opt.key
-                  ? "bg-neon-blue/20 text-neon-blue border border-neon-blue/30"
-                  : "bg-surface-alt text-muted border border-transparent hover:text-foreground"
+                  ? "bg-foreground/10 text-foreground font-semibold border border-foreground/35"
+                  : "bg-surface/70 text-muted border border-foreground/10 hover:text-foreground hover:border-foreground/25"
               }`}
             >
               <span className="text-sm font-medium block">{opt.label}</span>
@@ -643,10 +638,10 @@ function StepStoryPreferences({
                 onClick={() => toggleTrope(t.key)}
                 className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-all border ${
                   state === "like"
-                    ? "bg-accent/20 text-accent-dark border-accent/40"
+                    ? "bg-accent/15 text-accent border-accent/45 font-semibold"
                     : state === "dislike"
                       ? "bg-destructive/15 text-destructive border-destructive/30"
-                      : "bg-surface-alt text-muted border-transparent hover:text-foreground"
+                      : "bg-surface/70 text-muted border-foreground/10 hover:text-foreground hover:border-foreground/25"
                 }`}
               >
                 {state === "like" && "\u2665 "}
@@ -703,7 +698,7 @@ function StepContent({
         {CONTENT_CATEGORIES.map((cat) => (
           <div
             key={cat.key}
-            className="flex items-center justify-between rounded-xl bg-surface-alt px-4 py-3"
+            className="flex items-center justify-between rounded-2xl border border-foreground/10 bg-surface/70 px-4 py-2.5"
           >
             <span className="text-sm font-medium text-foreground">
               {cat.name}
@@ -713,15 +708,15 @@ function StepContent({
                 <button
                   key={tl.value}
                   onClick={() => setTolerance(cat.key, tl.value)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
                     contentPrefs[cat.key] === tl.value
                       ? tl.value === 0
                         ? "bg-destructive/20 text-destructive"
                         : tl.value === 1
-                          ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                          ? "bg-intensity-2/20 text-intensity-2"
                           : tl.value === 2
-                            ? "bg-orange-500/20 text-orange-600 dark:text-orange-400"
-                            : "bg-accent/20 text-accent-dark"
+                            ? "bg-intensity-3/20 text-intensity-3"
+                            : "bg-accent/20 text-accent"
                       : "text-muted hover:text-foreground"
                   }`}
                 >
@@ -751,11 +746,11 @@ function StepContent({
               }
             }}
             placeholder="Type a topic and press Enter"
-            className="flex-1 rounded-xl bg-surface-alt px-4 py-2.5 text-sm text-foreground placeholder:text-muted border border-transparent focus:border-accent/40 focus:outline-none transition-colors"
+            className="field-glass min-w-0 flex-1 text-sm"
           />
           <button
             onClick={addCustomWarning}
-            className="rounded-xl bg-surface-alt px-4 py-2.5 text-sm font-medium text-muted hover:text-foreground transition-colors"
+            className="btn-glass px-5 text-sm"
           >
             Add
           </button>
@@ -772,7 +767,7 @@ function StepContent({
                   onClick={() => removeCustomWarning(w)}
                   className="hover:text-destructive/70 transition-colors"
                 >
-                  ✕
+                  <CrossGlyph />
                 </button>
               </span>
             ))}
@@ -783,12 +778,34 @@ function StepContent({
   );
 }
 
+// Line glyphs for a loved / dismissed chip — text "♥" and "✕" rendered in
+// whatever emoji or symbol font the platform picked.
+function HeartGlyph() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.810 14.760 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+    </svg>
+  );
+}
+function CrossGlyph() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
 // ─── Step 4: Summary ───
 
 function StepSummary() {
   return (
     <div className="flex flex-col items-center justify-center text-center py-8 space-y-4">
-      <div className="text-5xl">📚</div>
+      <div className="flex h-20 w-20 items-center justify-center rounded-full border border-accent/35 bg-accent/15 text-accent shadow-[0_0_44px_rgba(163,230,53,0.25)]">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+          <path d="M9 7h6" />
+        </svg>
+      </div>
       <h2
         className="text-2xl font-bold tracking-tight"
        

@@ -60,12 +60,12 @@ const SHOWCASE_CATEGORIES = [
 
 function SignUpButton({ size = "lg" }: { size?: "lg" | "md" }) {
   const cls = size === "lg"
-    ? "px-8 py-4 text-lg font-bold rounded-2xl"
-    : "px-6 py-3 text-base font-bold rounded-xl";
+    ? "px-8 py-4 text-lg"
+    : "px-6 py-3 text-base";
   return (
     <Link
       href="/signup"
-      className={`inline-block bg-accent text-black ${cls} shadow-[0_0_24px_rgba(163,230,53,0.3)] hover:brightness-110 transition-all`}
+      className={`btn-lime ${cls}`}
     >
       Sign Up Free
     </Link>
@@ -146,7 +146,7 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
               <h3 className="font-heading text-lg font-bold text-foreground">{c("avatar_parents_title", "For Parents")}</h3>
             </div>
             <p className="text-muted leading-relaxed">
-              {c("avatar_parents_body", "Not sure what's in the book your kid wants to read? tbr*a breaks down exactly how sensitive topics are handled — from mild to intense — so you can make informed decisions without reading every page yourself.")}
+              {c("avatar_parents_body", "Not sure what's in the book your kid wants to read? tbr*a breaks down exactly how sensitive topics are handled — from mild to extreme — so you can make informed decisions without reading every page yourself.")}
             </p>
           </div>
         </div>
@@ -162,9 +162,9 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
             {c("showcase_subheading", "Every book on tbr*a comes with a detailed content breakdown. No surprises, no guessing.")}
           </p>
 
-          <div className="rounded-2xl border border-border bg-surface overflow-hidden lg:flex lg:items-stretch">
+          <div className="card-hairline overflow-hidden lg:flex lg:items-stretch">
             {/* Book cover + title */}
-            <div className="relative p-6 lg:p-8 lg:w-64 flex flex-col items-center justify-center lg:border-r lg:border-border">
+            <div className="relative p-6 lg:p-8 lg:w-64 flex flex-col items-center justify-center lg:border-r lg:border-foreground/10">
               <Link href={`/book/${featuredBook.slug}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -179,7 +179,7 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
 
             {/* Content ratings */}
             <div className="flex-1 p-6 lg:p-8">
-              <p className="text-xs font-semibold uppercase tracking-wide text-neon-blue mb-4">What&apos;s Inside</p>
+              <p className="eyebrow mb-4">What&apos;s Inside</p>
               <div className="space-y-2.5">
                 {featuredBook.ratings
                   .filter(r => SHOWCASE_CATEGORIES.includes(r.categoryKey))

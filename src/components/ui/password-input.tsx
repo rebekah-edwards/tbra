@@ -39,14 +39,14 @@ export function PasswordInput({
         autoComplete={autoComplete}
         defaultValue={defaultValue}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-border bg-surface px-4 py-2 pr-11 text-foreground placeholder:text-muted focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
+        className="field-glass w-full pr-11"
       />
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? "Hide password" : "Show password"}
         tabIndex={-1}
-        className="absolute inset-y-0 right-0 flex items-center px-3 text-muted hover:text-foreground transition-colors"
+        className="absolute inset-y-0 right-0 flex items-center px-4 text-muted hover:text-foreground transition-colors"
       >
         {visible ? (
           // Eye-off icon

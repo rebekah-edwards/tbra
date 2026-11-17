@@ -9,7 +9,9 @@
   --primary-dark: #84cc16;
   --accent: #a3e635;
   --accent-dark: #84cc16;
-  --link: #a3e635;
+  /* Links are the app's blue in both themes (2026-11): `text-link` used to
+     resolve to lime here and dark green in light mode. */
+  --link: #38bdf8;
   --neon-purple: #c084fc;
   --neon-blue: #38bdf8;
   --surface: #141420;
@@ -44,7 +46,7 @@
   --primary-dark: #84cc16;
   --accent: #a3e635;
   --accent-dark: #84cc16;
-  --link: #16a34a;
+  --link: #0ea5e9;
   --neon-purple: #a855f7;
   --neon-blue: #0ea5e9;
   --surface: #fbfafd;
@@ -168,9 +170,9 @@ h1, h2, h3, .font-heading {
   display: inline;
 }
 
-/* Read more links: green in dark mode, purple in light mode */
-.read-more-link { color: #a3e635; }
-[data-theme="light"] .read-more-link { color: var(--neon-purple); }
+/* Read more links: the link blue in both themes (2026-11; was lime in dark
+   mode and purple in light). */
+.read-more-link { color: var(--neon-blue); }
 
 /* TBR suggestion reason tag: green in dark mode, purple in light mode */
 .tbr-reason-tag { color: #a3e635; }
@@ -190,6 +192,117 @@ h1, h2, h3, .font-heading {
 [data-theme="light"] .text-accent { color: #000000 !important; }
 [data-theme="light"] .bg-accent { color: #000000; }
 [data-theme="light"] .border-accent { color: #000000; }
+
+/* Any solid lime fill takes near-black text in BOTH themes — `bg-primary
+   text-background` buttons were near-white on lime in light mode. */
+.bg-primary { color: #18181b; }
+[data-theme="light"] .bg-primary.text-background { color: #18181b; }
+
+/* ── 2026-11 refresh: shared controls ──────────────────────────────────
+   One solid-lime primary per screen; everything else is glass. These are the
+   same shapes the refreshed home, library and book page use, as classes so
+   the rest of the site can take them without re-deriving the recipe. */
+/* In the components layer ON PURPOSE: unlayered rules outrank every Tailwind
+   utility, so an unlayered `.btn-glass { display: inline-flex }` beat
+   `lg:hidden` and showed the phone-only Sign Up pill on desktop too. */
+@layer components {
+  .btn-lime {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    background: var(--accent);
+    color: #18181b;
+    font-weight: 700;
+    transition: transform 0.1s ease, filter 0.15s ease, opacity 0.15s ease;
+  }
+  .btn-lime:hover { filter: brightness(1.07); }
+  .btn-lime:active { transform: scale(0.97); }
+  .btn-lime:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+
+  .btn-glass {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--foreground) 14%, transparent);
+    background: color-mix(in srgb, var(--surface) 62%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    color: var(--foreground);
+    font-weight: 600;
+    transition: border-color 0.15s ease, transform 0.1s ease, background 0.15s ease;
+  }
+  .btn-glass:hover { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+  .btn-glass:active { transform: scale(0.97); }
+  /* A glass control that is "on": a thin ring in its hue (set --ring). */
+  .btn-glass[data-active="true"] {
+    border-color: color-mix(in srgb, var(--ring, var(--accent)) 60%, transparent);
+  }
+
+  .field-glass {
+    height: 46px;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    padding: 0 1.125rem;
+    color: var(--foreground);
+    transition: border-color 0.15s ease;
+  }
+  .field-glass::placeholder { color: var(--muted); }
+  .field-glass:focus { outline: none; border-color: var(--accent); }
+
+  /* Hero card: surface with a 1px hairline in the wordmark's three colours. */
+  .card-hairline {
+    border: 1px solid transparent;
+    border-radius: 22px;
+    background:
+      linear-gradient(color-mix(in srgb, var(--surface) 92%, transparent),
+                      color-mix(in srgb, var(--surface) 92%, transparent)) padding-box,
+      linear-gradient(135deg, rgba(163, 230, 53, 0.55), rgba(56, 189, 248, 0.35),
+                      rgba(192, 132, 252, 0.45)) border-box;
+  }
+
+  /* The small-caps label over a tile or card ("2026 GOAL", "NOTE TO SELF"). */
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Glass switch (My Library tabs): a capsule trough with a lime active half. */
+  .seg-glass {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  .seg-glass > * {
+    flex: 1;
+    border-radius: 9999px;
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--muted);
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .seg-glass > [data-active="true"] {
+    background: var(--accent);
+    color: #18181b;
+    font-weight: 700;
+  }
+}
 
 /* Track Progress button (Reading Now cards): black text in dark mode, white in light. */
 [data-theme="light"] .track-progress-btn { color: #ffffff !important; }

@@ -126,6 +126,16 @@ const nextConfig: NextConfig = {
         hostname: "images.isbndb.com",
         pathname: "/covers/**",
       },
+      // Covers pasted by hand in /admin/covers come from wherever the
+      // publisher or retailer hosts them. A host missing from this list makes
+      // next/image THROW in development (the whole page falls to the error
+      // boundary) and serve a broken image in production — six books had one
+      // on 2026-11-16, including a book on the owner's Up Next.
+      { protocol: "https", hostname: "upload.wikimedia.org" },
+      { protocol: "https", hostname: "mpd-biblio-covers.imgix.net" },
+      { protocol: "https", hostname: "images.booksense.com" },
+      { protocol: "https", hostname: "g.christianbook.com" },
+      { protocol: "https", hostname: "bakerbookhouse.com" },
       {
         protocol: "https",
         hostname: "static01.nyt.com",

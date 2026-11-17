@@ -102,7 +102,7 @@ export function BookSeries({ seriesId, seriesSlug, name, books, currentBookId }:
 
       <Link
         href={seriesSlug ? `/series/${seriesSlug}` : `/search?series=${encodeURIComponent(seriesId)}`}
-        className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-neon-purple text-white py-3 px-5 text-sm font-semibold shadow-[0_0_16px_rgba(192,132,252,0.3)] hover:brightness-110 transition-all max-w-full"
+        className="btn-glass mt-3 flex w-full max-w-full py-3 px-5 text-sm"
       >
         View all books in this series
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -32,17 +32,17 @@ export default function SignupPage() {
         Track your reading and build your shelves.
       </p>
 
-      <form action={action} className="mt-8 w-full max-w-sm space-y-4">
+      <form action={action} className="card-hairline mt-8 w-full max-w-[26rem] space-y-4 p-5 sm:p-7">
         {referralCode && (
           <>
             <input type="hidden" name="referralCode" value={referralCode} />
-            <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-center text-sm text-primary font-medium">
+            <div className="rounded-full border border-accent/30 bg-accent/10 px-4 py-2.5 text-center text-sm font-medium text-foreground">
               You were invited to tbr*a!
             </div>
           </>
         )}
         {state.error && (
-          <div className="rounded-lg border border-intensity-4/30 bg-intensity-4/10 px-4 py-3 text-sm text-intensity-4">
+          <div className="rounded-2xl border border-intensity-4/30 bg-intensity-4/10 px-4 py-3 text-sm text-intensity-4">
             {state.error}
           </div>
         )}
@@ -64,7 +64,7 @@ export default function SignupPage() {
             type="email"
             required
             autoComplete="email"
-            className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-foreground placeholder:text-muted focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
+            className="field-glass w-full"
             placeholder="you@example.com"
           />
         </div>
@@ -103,7 +103,7 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-primary-dark disabled:opacity-50"
+          className="btn-lime w-full px-4 py-3 text-sm"
         >
           {state.success ? "Redirecting..." : pending ? "Creating account..." : "Sign up"}
         </button>
@@ -119,7 +119,7 @@ export default function SignupPage() {
 
         <p className="text-center text-sm text-muted">
           Already have an account?{" "}
-          <Link href="/login" className="text-link hover:text-link/80">
+          <Link href="/login" className="text-neon-blue hover:text-neon-blue/80">
             Sign in
           </Link>
         </p>

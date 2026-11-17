@@ -54,19 +54,17 @@ export function DesktopNav({ isLoggedIn, avatarUrl, displayName }: DesktopNavPro
             <Link
               key={tab.label}
               href={href}
-              className={`relative px-3 py-2 text-sm font-medium transition-colors ${
+              // Refreshed (2026-11): the same lime lozenge that marks the
+              // active tab in the phone's bottom bar, in place of the 2px
+              // underline.
+              aria-current={active ? "page" : undefined}
+              className={`rounded-full px-3.5 py-1.5 text-sm transition-colors ${
                 active
-                  ? "text-foreground"
-                  : "text-muted hover:text-foreground"
+                  ? "bg-accent/20 text-accent font-bold"
+                  : "font-medium text-muted hover:bg-foreground/5 hover:text-foreground"
               }`}
             >
               {tab.label}
-              {active && (
-                <span
-                  aria-hidden
-                  className="absolute left-3 right-3 -bottom-0.5 h-[2px] rounded-full bg-accent"
-                />
-              )}
             </Link>
           );
         })}

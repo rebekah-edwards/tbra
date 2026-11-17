@@ -1,5 +1,6 @@
 "use client";
 
+import { NoteToSelfCard } from "@/components/book/note-to-self-card";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -495,6 +496,7 @@ export function BookPageClient({
                 <span className="text-sm text-muted/60">Finish reading to leave a review</span>
               ) : null}
             </div>
+            {isLoggedIn && <NoteToSelfCard key={initialTbrNote ?? ""} bookId={book.id} initialNote={initialTbrNote} />}
             {(contentConflicts.length > 0 || customWarningMatches.length > 0 || noteWarningMatches.length > 0) && (
               <ContentWarningBanner
                 conflicts={contentConflicts}
@@ -538,6 +540,10 @@ export function BookPageClient({
           Last read via {lastReadFormat === "ebook" ? "eBook" : lastReadFormat === "audiobook" ? "audiobook" : lastReadFormat}{" "}
           in {formatReadDate(lastReadDate, lastReadPrecision)}
         </p>
+      )}
+
+      {isLoggedIn && (
+        <NoteToSelfCard key={initialTbrNote ?? ""} bookId={book.id} initialNote={initialTbrNote} className="mt-4 lg:hidden" />
       )}
 
       {/* Hide rating display on desktop (shown in right panel), but keep review dialog functional */}

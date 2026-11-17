@@ -54,7 +54,7 @@ export function BuyButton(props: BuyButtonProps) {
           e.preventDefault();
           setShowDialog(true);
         }}
-        className="flex flex-col items-center justify-center rounded-xl border-2 border-border hover:bg-muted/10 transition-colors px-3 shrink-0 self-stretch gap-0.5"
+        className="flex flex-col items-center justify-center rounded-2xl border border-foreground/15 bg-surface/60 backdrop-blur-md hover:border-accent/45 transition-colors px-3 shrink-0 self-stretch gap-0.5"
         title="Buy on Amazon"
       >
         <svg

@@ -47,7 +47,7 @@ export function VerifyEmailClient({ email, errorMessage }: Props) {
     <div className="flex min-h-[80vh] items-center justify-center px-4">
       <div className="w-full max-w-md text-center">
         {/* Email icon */}
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-accent/15">
           <svg
             width="32"
             height="32"
@@ -57,7 +57,7 @@ export function VerifyEmailClient({ email, errorMessage }: Props) {
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-primary"
+            className="text-accent"
           >
             <rect x="2" y="4" width="20" height="16" rx="2" />
             <path d="M22 7l-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7" />
@@ -79,14 +79,14 @@ export function VerifyEmailClient({ email, errorMessage }: Props) {
         </p>
 
         {error && (
-          <div className="mt-4 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-2.5">
-            <p className="text-sm text-red-400">{error}</p>
+          <div className="mt-4 rounded-2xl bg-intensity-4/10 border border-intensity-4/30 px-4 py-2.5">
+            <p className="text-sm text-intensity-4">{error}</p>
           </div>
         )}
 
         {resent && (
-          <div className="mt-4 rounded-lg bg-green-500/10 border border-green-500/20 px-4 py-2.5">
-            <p className="text-sm text-green-400">
+          <div className="mt-4 rounded-2xl bg-accent/10 border border-accent/30 px-4 py-2.5">
+            <p className="text-sm text-foreground">
               Verification email sent! Check your inbox (and spam folder).
             </p>
           </div>
@@ -96,7 +96,7 @@ export function VerifyEmailClient({ email, errorMessage }: Props) {
           <button
             onClick={handleResend}
             disabled={isPending}
-            className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-background hover:brightness-110 transition-all disabled:opacity-50"
+            className="btn-lime w-full py-3 text-sm"
           >
             {isPending ? "Sending..." : "Resend verification email"}
           </button>

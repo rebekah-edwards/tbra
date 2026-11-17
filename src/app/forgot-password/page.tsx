@@ -16,15 +16,15 @@ export default function ForgotPasswordPage() {
         Enter your email and we&apos;ll send you a reset link.
       </p>
 
-      <form action={action} className="mt-8 w-full max-w-sm space-y-4">
+      <form action={action} className="card-hairline mt-8 w-full max-w-[26rem] space-y-4 p-5 sm:p-7">
         {state.error && (
-          <div className="rounded-lg border border-intensity-4/30 bg-intensity-4/10 px-4 py-3 text-sm text-intensity-4">
+          <div className="rounded-2xl border border-intensity-4/30 bg-intensity-4/10 px-4 py-3 text-sm text-intensity-4">
             {state.error}
           </div>
         )}
 
         {state.success ? (
-          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+          <div className="rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-foreground">
             If that email exists in our system, we&apos;ve sent a password reset link.
             Check your inbox.
           </div>
@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
                 type="email"
                 required
                 autoComplete="email"
-                className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-foreground placeholder:text-muted focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
+                className="field-glass w-full"
                 placeholder="you@example.com"
               />
             </div>
@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={pending}
-              className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-primary-dark disabled:opacity-50"
+              className="btn-lime w-full px-4 py-3 text-sm"
             >
               {pending ? "Sending..." : "Send reset link"}
             </button>
@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
 
         <p className="text-center text-sm text-muted">
           Remember your password?{" "}
-          <Link href="/login" className="text-link hover:text-link/80">
+          <Link href="/login" className="text-neon-blue hover:text-neon-blue/80">
             Sign in
           </Link>
         </p>
