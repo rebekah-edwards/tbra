@@ -235,6 +235,14 @@ struct ActivityItem: Codable, Hashable {
     let timestamp: String
 }
 
+/// One page of the full friends activity list (GET /api/v1/friends-activity).
+/// `nextOffset` is nil when there is nothing further to load.
+struct FriendsActivityPage: Codable {
+    let ok: Bool
+    let items: [ActivityItem]
+    let nextOffset: Int?
+}
+
 struct HomeDiscoverData: Hashable {
     let becauseYouLiked: [BylSection]
     let friendsActivity: [ActivityItem]

@@ -216,11 +216,45 @@ extension ActivityItem {
     /// One carrying a page/percent is shown as progress; one without is a
     /// private note and is dropped.
     var isFeedVisible: Bool { type != "reading_note" || hasProgress }
+    /// One reader + book appears once in the feed, so that pair is the identity.
+    var feedKey: String { "\(user.id)|\(book.id)" }
+
+    /// The one caption line: SF Symbol, its tint, the short text for a tile,
+    /// and the phrase that sits between the reader's name and the book title
+    /// (list rows and VoiceOver).
+    var feedCaption: (icon: String, tint: Color, text: String, spoken: String) {
+        let stars: String? = {
+            guard let rating, rating > 0 else { return nil }
+            return friendsRatingText(rating)
+        }()
+        switch type {
+        case "tbr":
+            return ("bookmark.fill", Theme.neonBlue, "TBR'd", "added to TBR")
+        case "currently_reading", "reading_note":
+            if let pct = percentComplete, pct > 0 {
+                let p = Int(pct.rounded())
+                return ("book", Theme.accentText, "\(p)% read", "is \(p)% through")
+            }
+            if let page = pageNumber, page > 0 {
+                return ("book", Theme.accentText, "p. \(page)", "is on page \(page) of")
+            }
+            return ("book", Theme.accentText, "Reading", "started reading")
+        case "completed":
+            return ("checkmark", Theme.neonBlue, "Finished", "finished")
+        case "rating":
+            return ("star.fill", Theme.accentText, stars ?? "Rated", stars.map { "rated \($0) stars" } ?? "rated")
+        default:
+            // A review with no text is a rating in practice.
+            if let stars { return ("star.fill", Theme.accentText, stars, "rated \(stars) stars") }
+            return ("pencil", Theme.neonPurple, "Reviewed", "reviewed")
+        }
+    }
 }
 
-private enum FriendsFeedMetrics {
+enum FriendsFeedMetrics {
     static let reviewWidth: CGFloat = 236
     static let tileWidth: CGFloat = 116
+    static let seeMoreWidth: CGFloat = 92
     static let bannerHeight: CGFloat = 92
     /// Row height when a review card is present (banner + 3-line quote), and
     /// when the row is tiles only.
@@ -236,6 +270,8 @@ struct FriendsActivityRow: View {
     let activity: [ActivityItem]
     /// Card tap → book page (written reviews → the review itself); wired by HomeView.
     var onOpen: (ActivityItem) -> Void = { _ in }
+    /// The trailing "See more" tile → the full activity list. Hidden when nil.
+    var onSeeMore: (() -> Void)? = nil
 
     var body: some View {
         let items = activity.filter(\.isFeedVisible)
@@ -251,6 +287,9 @@ struct FriendsActivityRow: View {
                         FriendsActivityTile(item: item, height: rowHeight, onOpen: { onOpen(item) })
                     }
                 }
+                if let onSeeMore {
+                    FriendsSeeMoreTile(height: rowHeight, action: onSeeMore)
+                }
             }
             .padding(.trailing, 48)
         }
@@ -264,9 +303,42 @@ struct FriendsActivityRow: View {
     }
 }
 
+/// Last tile in the rail: opens the full, endless activity list.
+private struct FriendsSeeMoreTile: View {
+    let height: CGFloat
+    let action: () -> Void
+
+    var body: some View {
+        // Plain Button — see FriendsReviewCard.
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Theme.foreground)
+                    .frame(width: 40, height: 40)
+                    .background(Theme.surfaceAlt, in: Circle())
+                    .overlay(Circle().stroke(Theme.foreground.opacity(0.15), lineWidth: 1))
+                Text("See more")
+                    .font(Theme.body(11, .semibold))
+                    .foregroundStyle(Theme.foreground.opacity(0.8))
+            }
+            .frame(width: FriendsFeedMetrics.seeMoreWidth, height: height)
+            .background(Theme.surface.opacity(0.6))
+            .clipShape(RoundedRectangle(cornerRadius: FriendsFeedMetrics.corner))
+            .overlay(RoundedRectangle(cornerRadius: FriendsFeedMetrics.corner).stroke(Theme.border, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: FriendsFeedMetrics.corner))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("See more friends activity")
+    }
+}
+
 // ── Tier 1: a written review ──
-private struct FriendsReviewCard: View {
+/// Fixed-size card in the home rail; `fullWidth` stretches it for the
+/// activity list, where the quote also gets more lines.
+struct FriendsReviewCard: View {
     let item: ActivityItem
+    var fullWidth = false
     var onOpen: () -> Void = {}
 
     private let overlayText = FriendsFeedMetrics.overlayText
@@ -279,10 +351,11 @@ private struct FriendsReviewCard: View {
             VStack(alignment: .leading, spacing: 0) {
                 banner
                 cardBody
-                Spacer(minLength: 0)
+                if !fullWidth { Spacer(minLength: 0) }
             }
-            .frame(width: FriendsFeedMetrics.reviewWidth,
-                   height: FriendsFeedMetrics.reviewRowHeight, alignment: .topLeading)
+            .frame(width: fullWidth ? nil : FriendsFeedMetrics.reviewWidth,
+                   height: fullWidth ? nil : FriendsFeedMetrics.reviewRowHeight, alignment: .topLeading)
+            .frame(maxWidth: fullWidth ? .infinity : nil, alignment: .topLeading)
             .background(Theme.surface)
             .clipShape(RoundedRectangle(cornerRadius: FriendsFeedMetrics.corner))
             .overlay(RoundedRectangle(cornerRadius: FriendsFeedMetrics.corner).stroke(Theme.border, lineWidth: 1))
@@ -351,10 +424,10 @@ private struct FriendsReviewCard: View {
                 }
             }
             Text("\u{201C}\(item.reviewPreview ?? "")\u{201D}")
-                .font(Theme.body(11))
+                .font(Theme.body(fullWidth ? 13 : 11))
                 .foregroundStyle(Theme.foreground.opacity(0.75))
                 .lineSpacing(2)
-                .lineLimit(3)
+                .lineLimit(fullWidth ? 5 : 3)
                 .multilineTextAlignment(.leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -371,38 +444,8 @@ private struct FriendsActivityTile: View {
     private let overlayText = FriendsFeedMetrics.overlayText
     private let width = FriendsFeedMetrics.tileWidth
 
-    /// The one caption line: SF Symbol, its tint, the text, and the phrase
-    /// VoiceOver reads between the reader's name and the book title.
-    private var caption: (icon: String, tint: Color, text: String, spoken: String) {
-        let stars: String? = {
-            guard let rating = item.rating, rating > 0 else { return nil }
-            return friendsRatingText(rating)
-        }()
-        switch item.type {
-        case "tbr":
-            return ("bookmark.fill", Theme.neonBlue, "TBR'd", "added to TBR")
-        case "currently_reading", "reading_note":
-            if let pct = item.percentComplete, pct > 0 {
-                let p = Int(pct.rounded())
-                return ("book", Theme.accentText, "\(p)% read", "is \(p)% through")
-            }
-            if let page = item.pageNumber, page > 0 {
-                return ("book", Theme.accentText, "p. \(page)", "is on page \(page) of")
-            }
-            return ("book", Theme.accentText, "Reading", "started reading")
-        case "completed":
-            return ("checkmark", Theme.neonBlue, "Finished", "finished")
-        case "rating":
-            return ("star.fill", Theme.accentText, stars ?? "Rated", stars.map { "rated \($0) stars" } ?? "rated")
-        default:
-            // A review with no text is a rating in practice.
-            if let stars { return ("star.fill", Theme.accentText, stars, "rated \(stars) stars") }
-            return ("pencil", Theme.neonPurple, "Reviewed", "reviewed")
-        }
-    }
-
     var body: some View {
-        let caption = self.caption
+        let caption = item.feedCaption
         // Plain Button — see FriendsReviewCard.
         Button(action: onOpen) {
             ZStack {
@@ -462,7 +505,7 @@ private struct FriendsActivityTile: View {
     }
 }
 
-private extension ActivityUser {
+extension ActivityUser {
     var feedName: String { displayName ?? username ?? "Reader" }
     var feedFirstName: String {
         feedName.split(separator: " ").first.map(String.init) ?? feedName
@@ -470,8 +513,9 @@ private extension ActivityUser {
 }
 
 /// Avatar (lime fallback initial, like the web).
-private struct FriendsAvatar: View {
+struct FriendsAvatar: View {
     let user: ActivityUser
+    var size: CGFloat = 20
 
     var body: some View {
         Group {
@@ -486,25 +530,25 @@ private struct FriendsAvatar: View {
                 ZStack {
                     Theme.accent
                     Text(String(user.feedName.prefix(1)).uppercased())
-                        .font(Theme.body(9, .bold))
+                        .font(Theme.body(size * 0.45, .bold))
                         .foregroundStyle(.black)
                 }
             }
         }
-        .frame(width: 20, height: 20)
+        .frame(width: size, height: size)
         .clipShape(Circle())
     }
 }
 
 /// "4.5", or "3.75" for quarter-star ratings (web formatRating).
-private func friendsRatingText(_ rating: Double) -> String {
+func friendsRatingText(_ rating: Double) -> String {
     let frac = rating.truncatingRemainder(dividingBy: 1)
     let quarter = abs(frac - 0.25) < 0.01 || abs(frac - 0.75) < 0.01
     return String(format: quarter ? "%.2f" : "%.1f", rating)
 }
 
 /// Short relative time for the feed ("now", "12m", "3h", "5d", "Nov 2").
-private func friendsTimeAgo(_ timestamp: String) -> String {
+func friendsTimeAgo(_ timestamp: String) -> String {
     let monthDay: (Date) -> String = { date in
         let out = DateFormatter(); out.dateFormat = "MMM d"
         return out.string(from: date)

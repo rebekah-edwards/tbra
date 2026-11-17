@@ -454,6 +454,15 @@ actor APIClient {
                                 discover: res.discover)
     }
 
+    /// One page of the full friends activity list — the endless screen behind
+    /// the home rail's "See more".
+    func friendsActivity(offset: Int, limit: Int = 20) async throws -> FriendsActivityPage {
+        try await get("/api/v1/friends-activity", query: [
+            URLQueryItem(name: "offset", value: String(offset)),
+            URLQueryItem(name: "limit", value: String(limit)),
+        ])
+    }
+
     /// "Show me another" — reshuffle the Pick From Your Shelf suggestion.
     func shuffleTbrSuggestion() async throws -> TbrSuggestion? {
         let res: TbrSuggestionResponse = try await send("/api/v1/home/tbr-suggestion", method: "GET")

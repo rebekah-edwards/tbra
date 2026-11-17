@@ -142,6 +142,25 @@ struct HomeView: View {
                 .pushedScreenChrome()
                 .toolbar(.hidden, for: .navigationBar)
                 .appDestinations()
+                // Registered here, not in AppDestinations: the screen's rows
+                // are plain Buttons that push onto THIS stack's path.
+                .navigationDestination(for: FriendsFeedRoute.self) { _ in
+                    FriendsFeedView(onOpen: { openActivity($0) })
+                        .modifier(PushedScreenChrome())
+                }
+        }
+    }
+
+    /// A friends-activity item → its destination: a written review opens the
+    /// review itself, everything else opens the book page.
+    private func openActivity(_ item: ActivityItem) {
+        if item.isWrittenReview, let reviewId = item.reviewId {
+            path.append(ReviewsRoute(
+                bookIdOrSlug: item.book.slug ?? item.book.id,
+                bookTitle: item.book.title,
+                scrollToReviewId: reviewId))
+        } else {
+            path.append(BookRoute(idOrSlug: item.book.slug ?? item.book.id))
         }
     }
 
@@ -358,26 +377,19 @@ struct HomeView: View {
 
                 // ── Deferred sections (web renders these via Suspense) ──
                 if let discover = homeModel.discover {
-                    ForEach(discover.becauseYouLiked, id: \.seed.id) { section in
-                        BecauseYouLikedSection(section: section)
-                    }
-
+                    // Friends Activity sits directly under Pick From Your Shelf.
                     if discover.friendsActivity.contains(where: \.isFeedVisible) {
                         VStack(alignment: .leading, spacing: 14) {
                             SectionHeading("Friends Activity")
-                            FriendsActivityRow(activity: discover.friendsActivity) { item in
-                                // Reviews open the review itself; everything
-                                // else opens the book page.
-                                if item.isWrittenReview, let reviewId = item.reviewId {
-                                    path.append(ReviewsRoute(
-                                        bookIdOrSlug: item.book.slug ?? item.book.id,
-                                        bookTitle: item.book.title,
-                                        scrollToReviewId: reviewId))
-                                } else {
-                                    path.append(BookRoute(idOrSlug: item.book.slug ?? item.book.id))
-                                }
-                            }
+                            FriendsActivityRow(
+                                activity: discover.friendsActivity,
+                                onOpen: { openActivity($0) },
+                                onSeeMore: { path.append(FriendsFeedRoute()) })
                         }
+                    }
+
+                    ForEach(discover.becauseYouLiked, id: \.seed.id) { section in
+                        BecauseYouLikedSection(section: section)
                     }
 
                     if !discover.discover.isEmpty {
