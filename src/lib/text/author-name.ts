@@ -386,6 +386,60 @@ export function splitAuthorList(raw: string, opts: { commaSeparated?: boolean } 
   return out;
 }
 
+const RANK_WORDS = new Set([...TRAILING_TITLES, "prince", "princess", "king", "queen"]);
+const SPLITTABLE = new Set(["multiple-authors", "repeated-word", "unrecognised-shape"]);
+
+/**
+ * Is this piece of a comma-joined string plainly ONE person's full name, in
+ * natural order? Used to decide whether "A B, C D" can safely be split into
+ * two people. Strict on purpose: a title ("Lord Byron"), a lone word, or a
+ * trailing initial ("Drethi A.") all fail, and the row is left for a human.
+ */
+export function looksLikeFullName(part: string): boolean {
+  const toks = collapse(part).split(" ").filter(Boolean);
+  if (toks.length < 2 || toks.length > 5) return false;
+  if (!toks.every((t) => (NAME_TOKEN.test(t) && startsUpper(t)) || isParticle(t))) return false;
+  if (RANK_WORDS.has(bare(toks[0]))) return false;
+  const last = toks[toks.length - 1];
+  const surname = isSuffix(last) ? toks[toks.length - 2] : last;
+  const letters = (t: string) => [...t.replace(/[^\p{L}]/gu, "")].length;
+  if (INITIAL.test(surname) || /^\p{Lu}{1,2}\.$/u.test(surname) || letters(surname) < 2) return false;
+  // At least one real word, not just initials.
+  if (!toks.some((t) => !INITIAL.test(t) && letters(t) >= 3)) return false;
+  // And the piece must not itself need fixing.
+  return analyzeAuthorName(part).action === "unchanged";
+}
+
+/**
+ * Normalise a source's author ARRAY, additionally unpacking an element that
+ * is really several people. ISBNdb does this on audiobook and anthology
+ * records: `["Evie Woods, Avena Mansergh-wallace, Olivia Mace, Et. Al."]`.
+ * Only unpacked when every piece is plainly a full name; otherwise the
+ * element is kept whole (and normalised as one name).
+ */
+export function expandAuthorNames(rawNames: readonly (string | null | undefined)[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (n: string) => {
+    const key = n.toLowerCase();
+    if (!n || seen.has(key)) return;
+    seen.add(key);
+    out.push(n);
+  };
+  for (const raw of rawNames ?? []) {
+    const a = analyzeAuthorName(raw ?? "");
+    if (a.action === "declined" && SPLITTABLE.has(a.reason ?? "") && !/[;/&\[\]()\d|]/.test(a.name)) {
+      const parts = splitAuthorList(a.name.replace(/,?\s*\bet\.?\s*al\.?\s*$/i, ""), { commaSeparated: true });
+      if (parts.length >= 2 && parts.length <= 6 && parts.every(looksLikeFullName)) {
+        parts.forEach(push);
+        continue;
+      }
+    }
+    push(a.name);
+  }
+  return out;
+}
+
 /**
  * Loose comparison key for "is this the same person's name": letters only,
  * de-accented, lowercased. "J.R.R. Tolkien" === "JRR Tolkien" === "J R R Tolkien".

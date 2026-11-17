@@ -8,7 +8,7 @@
  * catalogue — the normaliser is shared by every import path, so a regression
  * here is a regression everywhere.
  */
-import { analyzeAuthorName, normalizeAuthorName, splitAuthorList } from "../src/lib/text/author-name";
+import { analyzeAuthorName, expandAuthorNames, looksLikeFullName, normalizeAuthorName, splitAuthorList } from "../src/lib/text/author-name";
 
 let failed = 0;
 let passed = 0;
@@ -194,6 +194,33 @@ for (const [input, commaSeparated, want] of LIST_CASES) {
     want,
   );
 }
+
+/** [source array, expected] — what the ISBNdb routes do with `book.authors`. */
+const EXPAND_CASES: Array<[string[], string[]]> = [
+  [["Yarros, Rebecca"], ["Rebecca Yarros"]],
+  [["Rebecca Yarros"], ["Rebecca Yarros"]],
+  [["Dekker, Ted", "Dekker, Rachelle"], ["Ted Dekker", "Rachelle Dekker"]],
+  [["Evie Woods, Avena Mansergh-wallace, Olivia Mace, Et. Al."], ["Evie Woods", "Avena Mansergh-wallace", "Olivia Mace"]],
+  [["Agatha Christie, Sophie Hannah"], ["Agatha Christie", "Sophie Hannah"]],
+  [["Yarros, Rebecca", "Rebecca Yarros"], ["Rebecca Yarros"]],
+  // not plainly full names → kept whole, never guessed at
+  [["Prince Harry, Duke of Sussex"], ["Prince Harry, Duke of Sussex"]],
+  [["John Polidori, Mary Shelley, Lord Byron"], ["John Polidori, Mary Shelley, Lord Byron"]],
+  [["Lecrae, Lecrae Moore"], ["Lecrae, Lecrae Moore"]],
+  [["Anderson Galleries, Inc"], ["Anderson Galleries, Inc"]],
+  [["Horatio Alger, Jr."], ["Horatio Alger, Jr."]],
+  [["Smith, Jones, and Lee"], ["Smith, Jones, and Lee"]],
+  [[], []],
+];
+for (const [input, want] of EXPAND_CASES) {
+  eq(`expandAuthorNames(${JSON.stringify(input)})`, expandAuthorNames(input), want);
+}
+eq("fullName yes", looksLikeFullName("Theodore C. Van Alst Jr."), true);
+eq("fullName initials", looksLikeFullName("C.N. Crawford"), true);
+eq("fullName title", looksLikeFullName("Lord Byron"), false);
+eq("fullName one word", looksLikeFullName("Lecrae"), false);
+eq("fullName trailing initial", looksLikeFullName("Drethi A."), false);
+eq("fullName inverted", looksLikeFullName("Yarros, Rebecca"), false);
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

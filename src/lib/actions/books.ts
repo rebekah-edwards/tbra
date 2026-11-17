@@ -29,7 +29,7 @@ import { assignBookSlug, findBookBySlugCollision } from "@/lib/utils/slugify";
 import { resolveEditionVariant } from "@/lib/enrichment/canonical-edition";
 import { stripSubtitle, suffixesConflict } from "@/lib/text/title-separators";
 import { findOrCreateAuthor } from "@/lib/authors/find-or-create";
-import { normalizeAuthorName } from "@/lib/text/author-name";
+import { expandAuthorNames, normalizeAuthorName } from "@/lib/text/author-name";
 
 const NONFICTION_GENRES = new Set([
   "Nonfiction", "Biography", "Memoir", "Self-Help", "True Crime", "Philosophy",
@@ -977,9 +977,8 @@ export async function importFromISBNdbAndReturn(params: {
   const { isbn, title, coverUrl, publicationYear, pages, language } = params;
   // ISBNdb files most people as "Last, First". Normalise before anything reads
   // the names: the fuzzy dedup, the slug and the authors rows all depend on it.
-  const authorNames = [
-    ...new Set((params.authors ?? []).map((a) => normalizeAuthorName(a ?? "")).filter(Boolean)),
-  ];
+  // (expandAuthorNames also unpacks ISBNdb's "A B, C D, Et. Al." single strings.)
+  const authorNames = expandAuthorNames(params.authors ?? []);
 
   // 1. Normalize the ISBN to digits-only (with optional trailing 'X' for
   // ISBN-10 checksum). ISBNdb and other sources return ISBNs in wildly

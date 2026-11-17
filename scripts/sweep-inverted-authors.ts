@@ -45,7 +45,7 @@ import path from "path";
 import crypto from "crypto";
 import type { InStatement } from "@libsql/client";
 import { createGuardedTurso } from "./lib/turso-guard";
-import { analyzeAuthorName, authorNameKey, splitAuthorList } from "../src/lib/text/author-name";
+import { analyzeAuthorName, authorNameKey, looksLikeFullName, splitAuthorList } from "../src/lib/text/author-name";
 
 const APPLY = process.argv.includes("--apply");
 const LIMIT = Number(process.argv.find((a) => a.startsWith("--limit="))?.split("=")[1] ?? 0) || Infinity;
@@ -129,33 +129,6 @@ function authorSlug(name: string): string {
     .trim()
     .toLowerCase()
     .replace(/\s/g, "-");
-}
-
-const RANK_WORDS = new Set([
-  "lieut", "lt", "capt", "captain", "col", "colonel", "gen", "general", "sgt", "major", "rev",
-  "reverend", "dr", "mr", "mrs", "ms", "miss", "prof", "professor", "sir", "lord", "lady", "dame",
-  "saint", "bishop", "pope", "father", "brother", "sister", "duke", "prince", "princess", "king", "queen",
-]);
-const PARTICLE = /^(de|del|della|der|den|di|da|dos|du|la|le|van|von|ter|ten|bin|ibn|al|el|y)$/i;
-const WORD = /^\p{Lu}[\p{L}\p{M}'’.\-]*$/u;
-const INITIALISH = /^(?:\p{Lu}\.?|(?:\p{Lu}\.){2,}|\p{Lu}{1,2}\.)$/u;
-
-/** Is this piece of a comma-joined string plainly one person's full name? */
-function looksLikeFullName(part: string): boolean {
-  const toks = part.split(" ").filter(Boolean);
-  if (toks.length < 2 || toks.length > 5) return false;
-  if (!toks.every((t) => WORD.test(t) || PARTICLE.test(t))) return false;
-  const first = toks[0].replace(/\./g, "").toLowerCase();
-  if (RANK_WORDS.has(first)) return false;
-  const last = toks[toks.length - 1];
-  const lastBare = last.replace(/\./g, "");
-  const suffix = /^(jr|sr|ii|iii|iv)$/i.test(lastBare);
-  const surname = suffix ? toks[toks.length - 2] : last;
-  if (INITIALISH.test(surname) || [...surname.replace(/[^\p{L}]/gu, "")].length < 2) return false;
-  // At least one real word, not just initials.
-  if (!toks.some((t) => !INITIALISH.test(t) && [...t.replace(/[^\p{L}]/gu, "")].length >= 3)) return false;
-  // And the piece must not itself need fixing.
-  return analyzeAuthorName(part).action === "unchanged";
 }
 
 function fmt(n: number): string {
