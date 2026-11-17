@@ -410,7 +410,7 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
               <button
                 onClick={saveField}
                 disabled={saving}
-                className="flex-1 rounded-xl bg-accent py-2.5 text-sm font-semibold text-black disabled:opacity-50"
+                className="flex-1 rounded-full bg-accent py-2.5 text-sm font-semibold text-black disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save"}
               </button>
@@ -482,7 +482,7 @@ export function AdminEditPanel({ bookId, bookTitle, openLibraryKey, authors, cur
                     router.refresh();
                   }}
                   disabled={saving}
-                  className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-black disabled:opacity-50"
+                  className="rounded-full bg-accent px-3 py-2 text-sm font-medium text-black disabled:opacity-50"
                 >
                   Set
                 </button>

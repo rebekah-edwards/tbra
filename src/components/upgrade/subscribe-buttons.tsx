@@ -114,12 +114,12 @@ export function SubscribeButtons({
             disabled={busy !== null || preview}
             className={
               p.highlight
-                ? "upgrade-card-glow relative rounded-2xl border-2 border-neon-purple/60 bg-neon-purple/10 px-4 py-5 text-center backdrop-blur-sm hover:bg-neon-purple/15 transition-colors disabled:opacity-90"
-                : "relative rounded-2xl border-2 border-border bg-surface/70 px-4 py-5 text-center backdrop-blur-sm hover:border-neon-purple/40 transition-colors disabled:opacity-90"
+                ? "upgrade-card-glow relative rounded-[22px] border border-neon-purple/60 bg-neon-purple/10 px-4 py-5 text-center backdrop-blur-sm hover:bg-neon-purple/15 transition-colors disabled:opacity-90"
+                : "relative rounded-[22px] border border-foreground/12 bg-surface/70 px-4 py-5 text-center backdrop-blur-sm hover:border-neon-purple/40 transition-colors disabled:opacity-90"
             }
           >
             {p.badge && (
-              <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-neon-purple px-2.5 py-0.5 text-[10px] font-bold text-white">
+              <span className="absolute -top-2.5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full border border-neon-purple/50 bg-surface px-2.5 py-0.5 text-[10px] font-bold text-foreground before:h-1.5 before:w-1.5 before:rounded-full before:bg-neon-purple before:content-['']">
                 {p.badge}
               </span>
             )}
@@ -127,10 +127,10 @@ export function SubscribeButtons({
               {p.price}
             </span>
             <span className="block text-xs text-muted mt-0.5">{p.per}</span>
-            <span className={`mt-3 block rounded-lg py-2 text-xs font-bold ${
+            <span className={`mt-3 block rounded-full py-2 text-xs font-bold ${
               p.highlight
-                ? "bg-neon-purple text-white"
-                : "bg-surface-alt text-foreground"
+                ? "bg-accent text-black"
+                : "border border-foreground/15 bg-surface/70 text-foreground"
             }`}>
               {busy ? "Redirecting…" : isPremiumLabel(p.plan)}
             </span>

@@ -53,7 +53,7 @@ export default async function ProfilePage() {
         {/* Left: avatar + info */}
         <div className="flex gap-4 lg:flex-1">
           {/* Avatar */}
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-3xl font-bold text-black overflow-hidden flex-shrink-0 shadow-[0_0_20px_rgba(163,230,53,0.3)]">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-3xl font-bold text-black overflow-hidden flex-shrink-0">
             {user.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={user.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
@@ -136,12 +136,12 @@ export default async function ProfilePage() {
 
         {/* Right: stats pills (desktop only — mobile shows below) */}
         <div className="hidden lg:block lg:flex-shrink-0 lg:w-[200px]">
-          <Link href="/library?tab=activity&filter=completed" className="block rounded-xl border border-neon-purple/20 bg-neon-purple/8 p-4 text-center mb-2 hover:border-neon-purple/40 transition-colors">
+          <Link href="/library?tab=activity&filter=completed" className="block rounded-[18px] border border-neon-purple/30 bg-surface/80 p-4 text-center mb-2 hover:border-neon-purple/40 transition-colors">
             <p className="text-3xl font-bold text-foreground">{stats.completed}</p>
             <p className="text-xs text-muted">Read</p>
           </Link>
           <div className="grid grid-cols-2 gap-2">
-            <Link href="/library?tab=activity&filter=currently_reading" className="rounded-xl border border-neon-blue/20 bg-neon-blue/8 p-2.5 text-center hover:border-neon-blue/40 transition-colors">
+            <Link href="/library?tab=activity&filter=currently_reading" className="rounded-[18px] border border-neon-blue/30 bg-surface/80 p-2.5 text-center hover:border-neon-blue/40 transition-colors">
               <p className="text-xl font-bold text-foreground">{stats.currentlyReading}</p>
               <p className="text-[10px] text-muted">Reading</p>
             </Link>
@@ -155,11 +155,11 @@ export default async function ProfilePage() {
 
       {/* Stats row — mobile only */}
       <div className="grid grid-cols-3 gap-3 lg:hidden">
-        <Link href="/library?tab=activity&filter=completed" className="rounded-xl border border-neon-purple/20 bg-neon-purple/8 p-3 text-center hover:border-neon-purple/40 transition-colors">
+        <Link href="/library?tab=activity&filter=completed" className="rounded-[18px] border border-neon-purple/30 bg-surface/80 p-3 text-center hover:border-neon-purple/40 transition-colors">
           <p className="text-2xl font-bold text-foreground">{stats.completed}</p>
           <p className="text-xs text-muted">Read</p>
         </Link>
-        <Link href="/library?tab=activity&filter=currently_reading" className="rounded-xl border border-neon-blue/20 bg-neon-blue/8 p-3 text-center hover:border-neon-blue/40 transition-colors">
+        <Link href="/library?tab=activity&filter=currently_reading" className="rounded-[18px] border border-neon-blue/30 bg-surface/80 p-3 text-center hover:border-neon-blue/40 transition-colors">
           <p className="text-2xl font-bold text-foreground">{stats.currentlyReading}</p>
           <p className="text-xs text-muted">Reading</p>
         </Link>

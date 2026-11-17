@@ -1,5 +1,6 @@
 "use client";
 
+import { ToleranceSelector } from "@/components/settings/tolerance-selector";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -83,27 +84,8 @@ const CHARACTER_TROPES = [
 // component — sourced from taxonomy_categories WHERE active=true. Keeps the
 // Settings UI automatically in sync with book-side taxonomy migrations.
 
-// Tolerance scale matches book content-rating intensities (0-4) 1:1 so users
-// can target Significant without being forced to accept Extreme. The "Any"
-// option stays for the "no cap, don't filter" case.
-const TOLERANCE_LABELS = [
-  { value: 0, label: "None" },
-  { value: 1, label: "Mild" },
-  { value: 2, label: "Moderate" },
-  { value: 3, label: "Significant" },
-  { value: 4, label: "Any" },
-];
-
-// Shown under the selected level (and as hover tooltips) — beta testers were
-// overshooting (e.g. "None" everywhere) without realizing how strict each
-// step is. Keep in sync with the iOS SettingsCatalog.toleranceHints.
-const TOLERANCE_HINTS = [
-  "Strictest — flags even a passing mention.",
-  "Brief or non-graphic content is okay; more gets flagged.",
-  "Recurring but non-graphic content is okay.",
-  "Graphic or frequent content is okay — only extremes get flagged.",
-  "No limit — this category is never flagged for you.",
-];
+// Levels, hints and the selector itself are shared with the onboarding
+// wizard — see tolerance-selector.tsx.
 
 const FICTION_LIST = [...FICTION_GENRES].filter(
   (g) => !["Dystopia", "Crime Fiction"].includes(g)
@@ -165,7 +147,7 @@ export function ReadingPreferencesEditor({
         </p>
         <Link
           href="/onboarding"
-          className="inline-block rounded-xl bg-accent text-black px-4 py-2 text-sm font-semibold hover:brightness-110 transition-all"
+          className="inline-block rounded-full bg-accent text-black px-4 py-2 text-sm font-semibold hover:brightness-110 transition-all"
         >
           Set Up Preferences
         </Link>
@@ -579,44 +561,13 @@ export function ReadingPreferencesEditor({
           </p>
           <div className="space-y-2">
             {CONTENT_CATEGORIES.map((cat) => (
-              // Stack label on top + buttons full-width on mobile so the 5
-              // tolerance options (None/Mild/Moderate/Significant/Any) can
-              // space evenly without overflowing. Switch to inline on sm:+.
-              <div
-                key={cat.key}
-                className="rounded-lg bg-surface-alt px-3 py-2.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
-              >
-                <span className="text-xs font-medium flex-shrink-0">{cat.name}</span>
-                <div className="flex flex-col gap-1 w-full sm:w-auto sm:items-end">
-                <div className="flex gap-1 w-full sm:w-auto">
-                  {TOLERANCE_LABELS.map((tl) => (
-                    <button
-                      key={tl.value}
-                      title={TOLERANCE_HINTS[tl.value]}
-                      onClick={() => handleContentChange(cat.key, tl.value)}
-                      className={`flex-1 sm:flex-none rounded-md px-2 py-1 text-[10px] font-medium transition-all text-center ${
-                        contentPrefs[cat.key] === tl.value
-                          ? tl.value === 0
-                            ? "bg-destructive/20 text-destructive"
-                            : tl.value === 1
-                              ? "bg-yellow-500/20 text-yellow-500"
-                              : tl.value === 2
-                                ? "bg-orange-500/20 text-orange-500"
-                                : tl.value === 3
-                                  ? "bg-orange-600/20 text-orange-500"
-                                  : "bg-accent/20 text-foreground"
-                          : "text-muted hover:text-foreground"
-                      }`}
-                    >
-                      {tl.label}
-                    </button>
-                  ))}
-                </div>
-                {/* Live hint for the selected level (overshoot guard) */}
-                <span className="text-[10px] text-muted/80 leading-snug">
-                  {TOLERANCE_HINTS[contentPrefs[cat.key] ?? 4]}
-                </span>
-                </div>
+              <div key={cat.key} className="rounded-2xl border border-foreground/10 bg-surface/70 px-3 py-2.5">
+                <p className="mb-1.5 px-1 text-xs font-medium">{cat.name}</p>
+                <ToleranceSelector
+                  name={cat.name}
+                  value={contentPrefs[cat.key] ?? 4}
+                  onChange={(v) => handleContentChange(cat.key, v)}
+                />
               </div>
             ))}
           </div>

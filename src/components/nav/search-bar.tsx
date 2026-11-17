@@ -305,7 +305,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
               {/* Rounded pill search bar */}
               <form
                 onSubmit={handleSubmit}
-                className="flex items-center gap-3 rounded-full bg-surface border border-border shadow-xl px-4 py-3"
+                className="flex items-center gap-3 rounded-full border border-foreground/12 bg-surface/90 shadow-xl backdrop-blur-xl px-4 py-3"
               >
                 {/* Search icon inside bar */}
                 <svg
@@ -373,7 +373,7 @@ export function SearchBar({ isLoggedIn }: SearchBarProps) {
               {/* Results dropdown — appears below the pill */}
               {showDropdown && (
                 <div
-                  className="mt-2 rounded-2xl border border-border bg-surface shadow-xl overflow-hidden transition-all duration-200 ease-out"
+                  className="mt-2 rounded-2xl border border-foreground/10 bg-surface/95 shadow-xl backdrop-blur-xl overflow-hidden transition-all duration-200 ease-out"
                   style={{
                     maxHeight: "60vh",
                     overflowY: "auto",

@@ -260,8 +260,8 @@ export function ReadingStateButton({
             disabled={isPending}
             className={`rounded-l-full py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
               isActive
-                ? "px-3 bg-accent text-black border border-accent border-r-0"
-                : "px-5 bg-accent/20 text-foreground border-2 border-accent/60 border-r-0 hover:bg-accent/30"
+                ? "px-3 bg-accent text-black font-semibold border border-accent border-r-0"
+                : "px-4 bg-accent/15 text-foreground border border-accent/45 border-r-0 hover:bg-accent/25"
             } ${isPending ? "opacity-60" : ""}`}
           >
             {isPending ? "..." : isActive ? mainLabel : (
@@ -284,7 +284,7 @@ export function ReadingStateButton({
             className={`rounded-r-full px-2 py-1.5 transition-colors border-l ${
               isActive
                 ? "bg-accent text-black border border-accent border-l-black/20"
-                : "bg-accent/20 text-foreground border-2 border-accent/60 border-l-accent/40 hover:bg-accent/30"
+                : "bg-accent/15 text-foreground border border-accent/45 border-l-accent/30 hover:bg-accent/25"
             } ${isPending ? "opacity-60" : ""}`}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -293,7 +293,7 @@ export function ReadingStateButton({
           </button>
 
           {open && (
-            <div className="absolute top-full left-0 mt-1 w-44 rounded-lg border border-border bg-surface shadow-lg z-50 popover-enter">
+            <div className="absolute top-full left-0 mt-1 w-44 overflow-hidden rounded-2xl border border-foreground/10 bg-surface/95 shadow-lg backdrop-blur-xl z-50 popover-enter">
               {STATES.map((s) => (
                 <button
                   key={s.value}
@@ -306,7 +306,7 @@ export function ReadingStateButton({
                 >
                   {s.label}
                   {currentState === s.value && (
-                    <span className="float-right text-accent">✓</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="float-right mt-0.5 text-accent" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
                   )}
                 </button>
               ))}
@@ -391,10 +391,10 @@ export function ReadingStateButton({
         <button
           onClick={handleMainClick}
           disabled={isPending}
-          className={`flex-1 min-w-0 rounded-l-xl h-[52px] flex items-center justify-center text-base font-semibold tracking-wide transition-all border-2 border-r-0 ${
+          className={`flex-1 min-w-0 rounded-l-2xl h-[52px] flex items-center justify-center text-base font-bold transition-all border border-r-0 ${
             isActive
-              ? "bg-accent text-black border-accent shadow-[0_0_20px_rgba(163,230,53,0.25)]"
-              : "bg-accent/20 text-foreground border-accent/60 hover:bg-accent/30"
+              ? "bg-accent text-black border-accent"
+              : "bg-accent/15 text-foreground border-accent/45 hover:bg-accent/25"
           } ${isPending ? "opacity-60" : ""}`}
         >
           {isPending ? "..." : isActive ? mainLabel : (
@@ -414,10 +414,10 @@ export function ReadingStateButton({
             setOpen(!open);
           }}
           disabled={isPending}
-          className={`flex-shrink-0 rounded-r-xl px-4 h-[52px] flex items-center transition-all border-2 ${
+          className={`flex-shrink-0 rounded-r-2xl px-4 h-[52px] flex items-center transition-all border ${
             isActive
-              ? "bg-accent text-black border-accent border-l-black/20 shadow-[0_0_20px_rgba(163,230,53,0.25)]"
-              : "bg-accent/20 text-foreground border-accent/60 border-l-accent/40 hover:bg-accent/30"
+              ? "bg-accent text-black border-accent border-l-black/15"
+              : "bg-accent/15 text-foreground border-accent/45 border-l-accent/30 hover:bg-accent/25"
           } ${isPending ? "opacity-60" : ""}`}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -426,7 +426,7 @@ export function ReadingStateButton({
         </button>
 
         {open && (
-          <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-border bg-surface shadow-xl z-50 popover-enter" onMouseDown={(e) => e.stopPropagation()}>
+          <div className="absolute top-full left-0 right-0 mt-2 overflow-hidden rounded-2xl border border-foreground/10 bg-surface/95 shadow-xl backdrop-blur-xl z-50 popover-enter" onMouseDown={(e) => e.stopPropagation()}>
             {STATES.map((s) => (
               <button
                 key={s.value}
@@ -439,7 +439,7 @@ export function ReadingStateButton({
               >
                 {s.label}
                 {currentState === s.value && (
-                  <span className="float-right text-accent">✓</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="float-right mt-0.5 text-accent" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
                 )}
               </button>
             ))}

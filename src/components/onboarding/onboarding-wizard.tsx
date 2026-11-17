@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { saveOnboardingPreferences } from "@/lib/actions/reading-preferences";
+import { ToleranceSelector } from "@/components/settings/tolerance-selector";
 import { FICTION_GENRES, NONFICTION_GENRES } from "@/lib/genre-taxonomy";
 
 // ─── Constants ───
@@ -82,12 +83,6 @@ const CONTENT_CATEGORIES = [
   { key: "ca67197a-61d3-4f2a-9441-5c23757b1515", name: "LGBTQ+ representation" },
 ];
 
-const TOLERANCE_LABELS = [
-  { value: 0, label: "None" },
-  { value: 1, label: "Mild" },
-  { value: 2, label: "Moderate" },
-  { value: 4, label: "Any" },
-];
 
 // ─── Genre lists for display ───
 
@@ -696,34 +691,18 @@ function StepContent({
 
       <div className="space-y-2">
         {CONTENT_CATEGORIES.map((cat) => (
+          // Name above, levels below: five levels (None … Significant, Any)
+          // do not fit beside the name on a phone.
           <div
             key={cat.key}
-            className="flex items-center justify-between rounded-2xl border border-foreground/10 bg-surface/70 px-4 py-2.5"
+            className="rounded-2xl border border-foreground/10 bg-surface/70 px-3 py-2.5"
           >
-            <span className="text-sm font-medium text-foreground">
-              {cat.name}
-            </span>
-            <div className="flex gap-1">
-              {TOLERANCE_LABELS.map((tl) => (
-                <button
-                  key={tl.value}
-                  onClick={() => setTolerance(cat.key, tl.value)}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                    contentPrefs[cat.key] === tl.value
-                      ? tl.value === 0
-                        ? "bg-destructive/20 text-destructive"
-                        : tl.value === 1
-                          ? "bg-intensity-2/20 text-intensity-2"
-                          : tl.value === 2
-                            ? "bg-intensity-3/20 text-intensity-3"
-                            : "bg-accent/20 text-accent"
-                      : "text-muted hover:text-foreground"
-                  }`}
-                >
-                  {tl.label}
-                </button>
-              ))}
-            </div>
+            <p className="mb-1.5 px-1 text-sm font-medium text-foreground">{cat.name}</p>
+            <ToleranceSelector
+              name={cat.name}
+              value={contentPrefs[cat.key] ?? 4}
+              onChange={(v) => setTolerance(cat.key, v)}
+            />
           </div>
         ))}
       </div>

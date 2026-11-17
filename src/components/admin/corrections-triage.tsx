@@ -179,7 +179,7 @@ function CorrectionCard({
           <div className="flex gap-2">
             <button
               onClick={submitApply}
-              className="flex-1 rounded-lg bg-accent py-2 text-xs font-semibold text-black"
+              className="flex-1 rounded-full bg-accent py-2 text-xs font-semibold text-black"
             >
               ✓ Apply & Accept
             </button>

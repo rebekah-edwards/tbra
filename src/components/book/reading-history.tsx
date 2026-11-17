@@ -166,7 +166,7 @@ function SessionRow({
 
   return (
     <div
-      className={`flex items-center gap-3 rounded-lg border border-border/50 bg-surface px-3 py-2.5 text-sm transition-opacity ${isPending ? "opacity-50" : ""}`}
+      className={`flex items-center gap-3 rounded-2xl border border-foreground/10 bg-surface/80 px-3 py-2.5 text-sm transition-opacity ${isPending ? "opacity-50" : ""}`}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -206,7 +206,7 @@ function SessionRow({
                 if (e.key === "Escape") setEditingStart(false);
               }}
               autoFocus
-              className="rounded border border-border bg-surface-alt px-1.5 py-0.5 text-xs text-foreground"
+              className="rounded-full border border-foreground/12 bg-surface/70 px-2 py-0.5 text-xs text-foreground"
             />
           ) : (
             <button
@@ -240,7 +240,7 @@ function SessionRow({
                     if (e.key === "Escape") setEditingPaused(false);
                   }}
                   autoFocus
-                  className="rounded border border-border bg-surface-alt px-1.5 py-0.5 text-xs text-foreground"
+                  className="rounded-full border border-foreground/12 bg-surface/70 px-2 py-0.5 text-xs text-foreground"
                 />
               ) : (
                 <button
@@ -273,7 +273,7 @@ function SessionRow({
                 if (e.key === "Escape") setEditingEnd(false);
               }}
               autoFocus
-              className="rounded border border-border bg-surface-alt px-1.5 py-0.5 text-xs text-foreground"
+              className="rounded-full border border-foreground/12 bg-surface/70 px-2 py-0.5 text-xs text-foreground"
             />
           ) : (
             <button
@@ -441,7 +441,7 @@ export function ReadingHistory({ sessions, bookId }: ReadingHistoryProps) {
       {/* Add re-read */}
       {showAddForm ? (
         <div
-          className={`rounded-lg border border-neon-blue/30 bg-neon-blue/5 p-3 space-y-3 ${isPending ? "opacity-50" : ""}`}
+          className={`rounded-2xl border border-foreground/10 bg-surface/80 p-3 space-y-3 ${isPending ? "opacity-50" : ""}`}
         >
           <p className="text-sm font-medium text-foreground">Add a re-read</p>
           <div className="flex items-center gap-3 flex-wrap">
@@ -451,7 +451,7 @@ export function ReadingHistory({ sessions, bookId }: ReadingHistoryProps) {
                 type="date"
                 value={newStart}
                 onChange={(e) => setNewStart(e.target.value)}
-                className="ml-1.5 rounded border border-border bg-surface-alt px-2 py-1 text-xs text-foreground"
+                className="ml-1.5 rounded-full border border-foreground/12 bg-surface/70 px-2.5 py-1 text-xs text-foreground"
               />
             </label>
             <label className="text-xs text-muted">
@@ -460,7 +460,7 @@ export function ReadingHistory({ sessions, bookId }: ReadingHistoryProps) {
                 type="date"
                 value={newEnd}
                 onChange={(e) => setNewEnd(e.target.value)}
-                className="ml-1.5 rounded border border-border bg-surface-alt px-2 py-1 text-xs text-foreground"
+                className="ml-1.5 rounded-full border border-foreground/12 bg-surface/70 px-2.5 py-1 text-xs text-foreground"
               />
             </label>
           </div>
@@ -468,7 +468,7 @@ export function ReadingHistory({ sessions, bookId }: ReadingHistoryProps) {
             <button
               onClick={handleAddReread}
               disabled={isPending}
-              className="rounded-lg bg-neon-blue/20 px-3 py-1.5 text-xs font-medium text-neon-blue hover:bg-neon-blue/30 transition-colors"
+              className="btn-lime px-3.5 py-1.5 text-xs"
             >
               Save
             </button>
@@ -487,7 +487,7 @@ export function ReadingHistory({ sessions, bookId }: ReadingHistoryProps) {
       ) : (
         <button
           onClick={() => setShowAddForm(true)}
-          className="rounded-lg border border-neon-blue/30 bg-neon-blue/10 px-3 py-1.5 text-xs font-medium text-neon-blue hover:bg-neon-blue/20 transition-colors"
+          className="btn-glass px-3.5 py-1.5 text-xs"
         >
           + Add re-read
         </button>

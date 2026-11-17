@@ -23,6 +23,10 @@ interface ContentProfileProps {
 
 import { CONTENT_CATEGORY_ORDER as CATEGORY_ORDER } from "@/lib/content-category-order";
 
+// The five levels by name. The report and edit pop-ups used to offer buttons
+// labelled 0-4, which a reader has no way to interpret.
+const INTENSITY_NAMES = ["None", "Mild", "Moderate", "Significant", "Extreme"];
+
 // Short display names for mobile-friendly single-line rendering
 const SHORT_NAMES: Record<string, string> = {
   "romance_sex": "Sexual content",
@@ -186,19 +190,19 @@ function CorrectionModal({
             <label className="text-xs font-medium text-muted block mb-2">
               What should the rating be?
             </label>
-            <div className="flex gap-2 mb-4">
+            <div className="flex gap-1 mb-4">
               {[0, 1, 2, 3, 4].map((level) => (
                 <button
                   key={level}
                   type="button"
                   onClick={() => setProposedIntensity(level === proposedIntensity ? null : level)}
-                  className={`flex-1 rounded-lg py-2 text-xs font-medium border-2 transition-all ${
+                  className={`flex-auto whitespace-nowrap rounded-full px-1.5 py-2 text-xs border transition-all ${
                     proposedIntensity === level
-                      ? "border-accent bg-accent/15 text-accent"
-                      : "border-border bg-surface-alt text-muted hover:border-accent/30"
+                      ? "border-foreground/35 bg-foreground/10 text-foreground font-semibold"
+                      : "border-foreground/10 bg-surface/70 text-muted font-medium hover:border-foreground/25"
                   }`}
                 >
-                  {level}
+                  {INTENSITY_NAMES[level]}
                 </button>
               ))}
             </div>
@@ -213,7 +217,7 @@ function CorrectionModal({
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Describe the issue — e.g., 'This book has a graphic torture scene in chapter 12 that should be rated higher'"
               maxLength={500}
-              className="w-full rounded-xl border-2 border-border bg-surface-alt/30 px-4 py-3 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none transition-colors resize-none"
+              className="w-full rounded-2xl border border-foreground/12 bg-surface/70 px-4 py-3 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none transition-colors resize-none"
             />
             <div className="flex justify-between mt-1 px-1">
               {error ? (
@@ -227,7 +231,7 @@ function CorrectionModal({
             <button
               onClick={handleSubmit}
               disabled={isPending || message.trim().length < 10}
-              className="mt-4 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-black shadow-[0_0_20px_rgba(163,230,53,0.25)] hover:shadow-[0_0_28px_rgba(163,230,53,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-4 w-full rounded-full bg-accent py-3 text-sm font-semibold text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPending ? "Submitting..." : "Submit Report"}
             </button>
@@ -296,19 +300,19 @@ function AdminEditModal({
         <label className="text-xs font-medium text-muted block mb-2">
           Intensity
         </label>
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-1 mb-4">
           {[0, 1, 2, 3, 4].map((level) => (
             <button
               key={level}
               type="button"
               onClick={() => setIntensity(level)}
-              className={`flex-1 rounded-lg py-2 text-xs font-medium border-2 transition-all ${
+              className={`flex-auto whitespace-nowrap rounded-full px-1.5 py-2 text-xs border transition-all ${
                 intensity === level
-                  ? "border-accent bg-accent/15 text-accent"
-                  : "border-border bg-surface-alt text-muted hover:border-accent/30"
+                  ? "border-foreground/35 bg-foreground/10 text-foreground font-semibold"
+                  : "border-foreground/10 bg-surface/70 text-muted font-medium hover:border-foreground/25"
               }`}
             >
-              {level}
+              {INTENSITY_NAMES[level]}
             </button>
           ))}
         </div>
@@ -322,7 +326,7 @@ function AdminEditModal({
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Content description for this category"
           maxLength={500}
-          className="w-full rounded-xl border-2 border-border bg-surface-alt/30 px-4 py-3 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none transition-colors resize-none"
+          className="w-full rounded-2xl border border-foreground/12 bg-surface/70 px-4 py-3 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none transition-colors resize-none"
         />
         {error && (
           <p className="text-xs text-destructive mt-1">{error}</p>
@@ -331,7 +335,7 @@ function AdminEditModal({
         <button
           onClick={handleSave}
           disabled={isPending}
-          className="mt-4 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-black shadow-[0_0_20px_rgba(163,230,53,0.25)] hover:shadow-[0_0_28px_rgba(163,230,53,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-4 w-full rounded-full bg-accent py-3 text-sm font-semibold text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPending ? "Saving..." : "Save & Verify"}
         </button>

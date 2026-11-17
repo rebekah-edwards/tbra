@@ -78,10 +78,14 @@ export async function getReadingStreak(userId: string, year?: number): Promise<R
   // activeToday is read live, outside the cache: its whole job is to flip the
   // moment a reader logs something, and a 60s-stale "not yet today" right
   // after they logged would be exactly the wrong answer.
-  const [streak, activeToday] = await Promise.all([
-    getCachedReadingStreak(userId, year),
-    getActiveToday(userId),
-  ]);
+  // The live read also yields a stamp — today's date plus the newest activity
+  // timestamp — that goes into the cache key. Without it the cached count was
+  // served stale-while-revalidate: the first load after ANY quiet period showed
+  // the old streak (Rebekah, 2026-11-16: 2 days in the app, 1 on desktop after
+  // her activity had already synced). Now new activity or a new day is a new
+  // key, so the count is recomputed exactly when it can have changed.
+  const { activeToday, stamp } = await getActiveToday(userId);
+  const streak = await getCachedReadingStreak(userId, year, stamp);
   // The cached count can lag today's first activity by up to a minute. If
   // today is logged, the streak is at least 1 — never show "0 days, done".
   return {
@@ -92,7 +96,7 @@ export async function getReadingStreak(userId: string, year?: number): Promise<R
 }
 
 /** Has this reader done anything streak-counting today, in their timezone? */
-async function getActiveToday(userId: string): Promise<boolean> {
+async function getActiveToday(userId: string): Promise<{ activeToday: boolean; stamp: string }> {
   const rows = (await db.all(sql`
     SELECT timezone,
       (SELECT MAX(replace(created_at, ' ', 'T')) FROM reading_notes WHERE user_id = ${userId}) AS a,
@@ -105,23 +109,27 @@ async function getActiveToday(userId: string): Promise<boolean> {
     FROM users WHERE id = ${userId}
   `)) as { timezone: string | null; [k: string]: string | null }[];
   const row = rows[0];
-  if (!row) return false;
+  if (!row) return { activeToday: false, stamp: "none" };
   const fmt = dayFormatterFor(row.timezone || FALLBACK_TIMEZONE);
   const today = fmt.format(new Date());
+  const keys = ["a", "b", "c", "d", "e", "f", "g"] as const;
+  const latest = keys.map((k) => row[k] ?? "").sort().pop() ?? "";
+  const stamp = `${today}|${latest}`;
   // replace(' ', 'T') inside MAX: the columns hold both ISO ("…T…") and naive
   // ("… …") timestamps, and "T" sorts above " ", so a raw MAX could pick an
   // earlier ISO value over a later naive one on the same UTC date. Each
   // source's latest is then bucketed to a local day and compared to today.
-  return (["a", "b", "c", "d", "e", "f", "g"] as const).some((k) => {
+  const activeToday = keys.some((k) => {
     const raw = row[k];
     return raw ? toStreakDay(raw, fmt) === today : false;
   });
+  return { activeToday, stamp };
 }
 
-async function getCachedReadingStreak(userId: string, year?: number): Promise<CachedStreak> {
+async function getCachedReadingStreak(userId: string, year: number | undefined, stamp: string): Promise<CachedStreak> {
   return unstable_cache(
     () => getReadingStreakInner(userId, year),
-    [`reading-streak-${userId}-${year ?? "all"}`],
+    [`reading-streak-${userId}-${year ?? "all"}-${stamp}`],
     // Was 3600. An hour-long cache meant today's activity took up to an hour
     // to show, and Home and Stats — separate cache entries — could hold
     // different values at the same moment, which is how the same account read

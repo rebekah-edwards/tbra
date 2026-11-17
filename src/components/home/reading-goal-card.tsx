@@ -52,7 +52,7 @@ export function ReadingGoalCard({ goal, year }: ReadingGoalCardProps) {
           <button
             onClick={handleSubmit}
             disabled={isPending}
-            className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
+            className="rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
           >
             {isPending ? "Saving..." : "Save"}
           </button>

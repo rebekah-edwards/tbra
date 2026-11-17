@@ -76,7 +76,7 @@ export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { 
     <div
       id={`review-${review.id}`}
       ref={containerRef}
-      className="rounded-xl bg-surface-alt border border-border/50 p-4 space-y-3"
+      className="rounded-[18px] border border-foreground/10 bg-surface/80 p-4 space-y-3"
     >
       {/* Header: avatar, name, date */}
       <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ export function ReviewCard({ review, bookId, bookSlug, isOwnReview = false }: { 
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {review.arcStatus === "approved" && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-neon-blue/15 text-neon-blue border border-neon-blue/30 font-semibold">
+            <span className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-surface/80 px-1.5 py-0.5 text-[9px] font-semibold text-foreground before:h-1 before:w-1 before:rounded-full before:bg-neon-blue before:content-['']">
               ARC
             </span>
           )}

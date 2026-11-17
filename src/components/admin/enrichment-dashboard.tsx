@@ -139,7 +139,7 @@ export function EnrichmentDashboardClient({ failedBooks, neverEnriched }: Props)
             <button
               onClick={() => bulkReEnrich(allNeverIds)}
               disabled={bulkRunning}
-              className="text-sm px-3 py-1.5 rounded-lg bg-accent text-black font-medium hover:bg-accent/80 disabled:opacity-50 transition-colors"
+              className="text-sm px-3 py-1.5 rounded-full bg-accent text-black font-medium hover:bg-accent/80 disabled:opacity-50 transition-colors"
             >
               {bulkRunning ? "Running..." : "Enrich All"}
             </button>

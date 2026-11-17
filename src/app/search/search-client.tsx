@@ -331,7 +331,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search by title, author, or series..."
-        className="w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm placeholder-muted focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
+        className="field-glass w-full text-sm"
       />
 
       {loading && (

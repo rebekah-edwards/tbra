@@ -111,16 +111,16 @@ function TrackSheet({
       />
 
       <div className="flex items-center gap-2">
-        <div className="flex rounded-lg border border-border overflow-hidden text-xs">
+        <div className="flex gap-0.5 rounded-full border border-foreground/10 bg-surface/70 p-0.5 text-xs">
           <button
             onClick={() => setPageMode("page")}
-            className={`px-2.5 py-1 ${pageMode === "page" ? "bg-accent text-black" : "text-muted"}`}
+            className={`rounded-full px-2.5 py-1 ${pageMode === "page" ? "bg-foreground/12 text-foreground font-semibold" : "text-muted"}`}
           >
             Page
           </button>
           <button
             onClick={() => setPageMode("percent")}
-            className={`px-2.5 py-1 ${pageMode === "percent" ? "bg-accent text-black" : "text-muted"}`}
+            className={`rounded-full px-2.5 py-1 ${pageMode === "percent" ? "bg-foreground/12 text-foreground font-semibold" : "text-muted"}`}
           >
             %
           </button>
@@ -151,11 +151,11 @@ function TrackSheet({
                 onClick={() => setMood(mood === m.key ? null : m.key)}
                 className={`rounded-full px-2.5 py-1 text-xs transition-all ${
                   mood === m.key
-                    ? "bg-neon-purple/20 text-neon-purple border border-neon-purple/30"
-                    : "bg-surface-alt text-muted border border-transparent hover:text-foreground"
+                    ? "bg-foreground/10 text-foreground font-semibold border border-foreground/35"
+                    : "bg-surface/70 text-muted border border-foreground/10 hover:text-foreground"
                 }`}
               >
-                {m.emoji} {m.label}
+                {m.label}
               </button>
             ))}
           </div>
@@ -196,7 +196,7 @@ function TrackSheet({
         <button
           onClick={handleSubmit}
           disabled={isPending || !noteText.trim()}
-          className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
+          className="rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
         >
           {isPending ? "Saving..." : "Save"}
         </button>
@@ -396,7 +396,7 @@ function ReadingBookCard({ book, onReviewOpen }: {
                 </svg>
               </button>
               {openStateDropdown === book.id && (
-                <div className="absolute right-0 top-full mt-2 z-50 w-full rounded-xl border border-border bg-surface shadow-xl overflow-hidden">
+                <div className="absolute right-0 top-full mt-2 z-50 w-full rounded-2xl border border-foreground/10 bg-surface/95 shadow-xl backdrop-blur-xl overflow-hidden">
                   <button
                     onClick={() => { setOpenStateDropdown(null); handleStateChange(book.id, "completed"); }}
                     className="w-full px-3 py-2 text-left text-[13px] font-medium text-foreground hover:bg-surface-alt transition-colors border-b border-border/50"
@@ -424,14 +424,14 @@ function ReadingBookCard({ book, onReviewOpen }: {
       </div>
       {/* Confirmation prompt for DNF / Pause */}
       {confirmAction && (
-        <div className="rounded-xl border border-border bg-surface p-3 mt-2 flex items-center justify-between gap-3">
+        <div className="rounded-[18px] border border-foreground/10 bg-surface/90 p-3 mt-2 flex items-center justify-between gap-3">
           <p className="text-sm text-foreground">
             Mark <strong className="font-semibold">{book.title}</strong> as {confirmAction.label}?
           </p>
           <div className="flex gap-2 flex-shrink-0">
             <button
               onClick={() => setConfirmAction(null)}
-              className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted hover:text-foreground border border-border hover:bg-surface-alt transition-colors"
+              className="btn-glass px-3 py-1.5 text-xs"
             >
               Cancel
             </button>

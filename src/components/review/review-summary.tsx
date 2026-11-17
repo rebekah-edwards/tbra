@@ -35,7 +35,7 @@ export function ReviewSummary({
             <Link
               key={review.id}
               href={`/book/${bookSlug || bookId}/reviews#review-${review.id}`}
-              className="block rounded-lg bg-surface-alt border border-border/50 p-3 space-y-1.5 hover:border-border transition-colors"
+              className="block rounded-2xl border border-foreground/10 bg-surface/80 p-3 space-y-1.5 hover:border-foreground/25 transition-colors"
             >
               {/* Header: avatar + name + stars */}
               <div className="flex items-center gap-2.5">

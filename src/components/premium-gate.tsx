@@ -59,7 +59,7 @@ export function PremiumGate({
       </p>
       <Link
         href="/upgrade"
-        className="mt-4 inline-block rounded-lg bg-neon-purple px-6 py-2 text-sm font-semibold text-white hover:bg-neon-purple/90 transition-colors"
+        data-active="true" style={{ ["--ring" as string]: "var(--neon-purple)" }} className="btn-glass mt-4 px-6 py-2 text-sm"
       >
         Learn More
       </Link>

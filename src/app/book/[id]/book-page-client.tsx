@@ -646,7 +646,7 @@ export function BookPageClient({
                     setEditingCover(false);
                   }}
                   disabled={savingCover}
-                  className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-black disabled:opacity-50"
+                  className="rounded-full bg-accent px-3 py-2 text-sm font-medium text-black disabled:opacity-50"
                 >
                   Set
                 </button>
