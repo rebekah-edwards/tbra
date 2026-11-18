@@ -74,18 +74,55 @@ const M = "lower(r.notes) LIKE '%no evidence found%'";
   // full books table for the visibility check — that join is what made the scan drift
   // past the timeout as the ratings table grew). Public-visibility is filtered in JS
   // against a cheap id set, and titles are fetched only for the ≤MAX final targets.
-  console.log("Selecting thin books by ratings (decomposed, no books-join)…");
+  console.log("Selecting thin books by ratings (keyset-paginated, aggregated in JS)…");
   const M2 = "lower(notes) LIKE '%no evidence found%'";
-  // The no-evidence COUNT rides along (it is already computed for the HAVING)
-  // so candidates can be ordered thinnest-first — see the sort below.
-  const thinRows = (await remote.execute(`
-    SELECT book_id AS id, SUM(CASE WHEN ${M2} THEN 1 ELSE 0 END) AS ne FROM book_category_ratings
-    GROUP BY book_id
-    HAVING CAST(SUM(CASE WHEN ${M2} THEN 1 ELSE 0 END) AS REAL)/COUNT(*) >= 0.5
-  `)).rows as any[];
-  const noEvid = new Map<string, number>(thinRows.map((r) => [String(r.id), Number(r.ne) || 0]));
-  const thinByRatings = thinRows.map((r) => String(r.id));
-  heartbeat(`thin-by-ratings: ${thinByRatings.length}`);
+  // 2026-11-18: the single server-side `GROUP BY book_id … HAVING` aggregate finally
+  // blew the 480s query timeout and the whole night produced ZERO books. The table is
+  // now 1.095M rows / 87,555 distinct books, and Turso's planner materialises the
+  // whole grouping before returning anything, so the cost is one unbounded query that
+  // only ever gets slower — exactly the drift the old comment tracked (38s → 136s →
+  // >240s → >480s). Replaced with keyset pagination over the unique
+  // (book_id, category_id) index, aggregating the per-book counts in JS: ~34s per
+  // 200k-row page, ~6 pages, and no single query anywhere near the timeout. Same
+  // keyset fix applied to sync-pull for the same reason (memory
+  // project_sync_pull_category_ratings_regression). Do NOT collapse this back into
+  // one GROUP BY, and do NOT "fix" it by raising QUERY_TIMEOUT_MS — the growth is
+  // unbounded, pagination is not.
+  const PAGE = Number(process.env.SELECT_PAGE_SIZE) || 200_000;
+  const total = new Map<string, number>();
+  const noEvid = new Map<string, number>();
+  let cursor = "";
+  let pages = 0;
+  for (;;) {
+    const page = await remote.execute({
+      sql: `SELECT book_id, CASE WHEN ${M2} THEN 1 ELSE 0 END AS ne
+            FROM book_category_ratings
+            WHERE book_id >= ?
+            ORDER BY book_id
+            LIMIT ${PAGE}`,
+      args: [cursor],
+    });
+    const rows = page.rows as any[];
+    if (rows.length === 0) break;
+    pages++;
+    // The last book_id in a full page is almost certainly cut in half, so its rows are
+    // dropped here and re-fetched as the first group of the next page (>= cursor, not >).
+    const lastId = String(rows[rows.length - 1].book_id);
+    const partial = rows.length === PAGE;
+    for (const r of rows) {
+      const id = String(r.book_id);
+      if (partial && id === lastId) continue;
+      total.set(id, (total.get(id) ?? 0) + 1);
+      if (Number(r.ne) === 1) noEvid.set(id, (noEvid.get(id) ?? 0) + 1);
+    }
+    heartbeat(`select page ${pages}: ${rows.length} rows, ${total.size} books so far`);
+    if (!partial) break;
+    cursor = lastId;
+  }
+  const thinByRatings = [...total.keys()].filter(
+    (id) => (noEvid.get(id) ?? 0) / (total.get(id) || 1) >= 0.5,
+  );
+  heartbeat(`thin-by-ratings: ${thinByRatings.length} of ${total.size} rated books (${pages} pages)`);
 
   const publicIds = new Set(
     (await remote.execute(`SELECT id FROM books WHERE visibility='public'`)).rows.map((r: any) => String(r.id)),
