@@ -755,3 +755,37 @@ to show `review_text` natively. Grep for `Text(` applied to a `reviewText` befor
 review surface — as of tonight the remaining plain-text use is `ReviewImportSheet.swift:259`, which
 is correct because CSV-imported review text is stripped to plain at import
 ([import-goodreads.ts:427](src/lib/import/import-goodreads.ts:427)).
+
+## 2026-11-18 — "no one's profile pictures are showing up" (NEW, filed overnight)
+
+Report `0e9e42a0-79d4-46a1-b54f-f6bce63ac082`, filed 2026-11-18 03:13, reporter
+`74acead3-f20c-42fd-a0f7-2150a9526061`, `page_url = /profile`. Verbatim: "Since the update, no
+one's profile pictures are showing up". Captured by `nightly-report-triage`; left `status='new'`
+on purpose so it stays visible in /admin/issues.
+
+**Ruled out tonight so nobody re-does it — this is NOT a data problem.**
+- 59 of 139 production `users` rows carry a non-empty `avatar_url`. The column was not wiped.
+- The stored URLs are well-formed absolute URLs, both Vercel Blob
+  (`1ilpfl6zvuc5zdl4.public.blob.vercel-storage.com/avatars/…`) and Google
+  (`lh3.googleusercontent.com/...`). None are the relative `/uploads/...` shape that broke things in
+  the 2026-08-27 investigation above.
+- Two blob avatars were fetched directly: both answered **HTTP 200** with correct
+  `image/png` / `image/jpeg` content types and non-trivial bodies (1.78MB, 92KB). Blob storage is
+  serving fine and nothing is 403/404.
+
+So the data and the storage are healthy and the defect is on the **rendering** side.
+
+**Where to look first.** `page_url = /profile` is the convention the native iOS app reports under
+(`ProfileView.swift` → `.reportsPage("/profile")`, same as the 2026-11-07 item above), and "since
+the update" fits a TestFlight build landing — build 19 is the current beta. iOS avatar rendering
+goes through `AppShell.swift:794` and `AdminUsersView.swift:295`, both of which branch on
+`avatarUrl.hasPrefix("/")` to decide relative-vs-absolute. Worth checking whether a recent change
+altered what the API returns for `avatarUrl` (`APIClient.swift:365` expects a NON-optional
+`String`) — a null/missing field there would decode-fail rather than fall back.
+
+**Do not rule out the web half without checking it.** Three design-refresh commits landed on
+origin/main in the same window and touched profile/feed components: `f61d8fbb` ("name/photo open
+the profile"), `c435903f` and `4d6b2b31` (design refresh batches 3 and 4). `f61d8fbb` in particular
+rewired what the name/photo renders as.
+
+**Not fixable by the triage lane** — it needs a client build and a device/browser to reproduce.
