@@ -718,6 +718,8 @@ struct CustomGoal: Codable, Hashable, Identifiable {
     let target: Int
     let current: Double
     let percentComplete: Int
+    /// Part of `current` from books still being read (current year).
+    let fromInProgress: Double?
     let missingAudio: [CustomGoalMissingAudio]?
 }
 
@@ -1022,6 +1024,11 @@ struct CustomGoalsCard: View {
                             .foregroundStyle(Theme.foreground)
                         Text("of \(goal.target.formatted()) \(unit)")
                             .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                    }
+                    if let partial = goal.fromInProgress, partial > 0 {
+                        Text("incl. \(CustomGoalKindMeta.format(partial, goal.kind)) from books in progress")
+                            .font(Theme.body(11))
                             .foregroundStyle(Theme.muted)
                     }
                 }
