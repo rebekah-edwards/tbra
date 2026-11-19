@@ -331,7 +331,7 @@ struct PublicProfileView: View {
     private func heroV2(_ user: ProfileUser) -> some View {
         let name = user.displayName ?? user.username ?? "Reader"
         return VStack(spacing: 14) {
-            avatarV2(user, name: name)
+            ProfileHeroAvatar(avatarUrl: user.avatarUrl, name: name)
 
             VStack(spacing: 6) {
                 Text(name)
@@ -344,7 +344,7 @@ struct PublicProfileView: View {
                             .font(Theme.body(14))
                             .foregroundStyle(Theme.muted)
                     }
-                    accountBadgeV2(user.accountType)
+                    ProfileTierBadge(type: user.accountType)
                 }
             }
 
@@ -401,9 +401,12 @@ struct PublicProfileView: View {
 
             if let stats = model.stats {
                 HStack(spacing: 10) {
-                    statTileV2("\(stats.completed)", "Read", Theme.neonPurple)
-                    statTileV2("\(stats.currentlyReading)", "Reading", Theme.neonBlue)
-                    statTileV2("\(stats.tbr)", "TBR", Theme.accent)
+                    ProfileStatCard(value: stats.completed, label: "Read", tint: Theme.neonPurple,
+                                    covers: stats.covers?.completed ?? [])
+                    ProfileStatCard(value: stats.currentlyReading, label: "Reading", tint: Theme.neonBlue,
+                                    covers: stats.covers?.currentlyReading ?? [])
+                    ProfileStatCard(value: stats.tbr, label: "TBR", tint: Theme.accent,
+                                    covers: stats.covers?.tbr ?? [])
                 }
                 .padding(.top, 2)
             }
@@ -422,73 +425,6 @@ struct PublicProfileView: View {
             }
         )
         .heroHairline()
-    }
-
-    /// Avatar inside a 2pt ring in the wordmark's three colours. The
-    /// placeholder is a soft tint, not solid lime — Follow is the one lime.
-    private func avatarV2(_ user: ProfileUser, name: String) -> some View {
-        Group {
-            if let avatarUrl = user.avatarUrl, let url = URL(string: avatarUrl) {
-                CachedCoverImage(url: url) { Theme.surfaceAlt }
-            } else {
-                ZStack {
-                    LinearGradient(colors: [Theme.accent.opacity(0.28), Theme.neonPurple.opacity(0.28)],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing)
-                    Text(String(name.prefix(1)).uppercased())
-                        .font(Theme.heading(32, .bold))
-                        .foregroundStyle(Theme.foreground)
-                }
-            }
-        }
-        .frame(width: 84, height: 84)
-        .clipShape(Circle())
-        .padding(3)
-        .overlay(
-            Circle().stroke(LinearGradient(colors: [Theme.accent, Theme.neonBlue, Theme.neonPurple],
-                                           startPoint: .topLeading, endPoint: .bottomTrailing),
-                            lineWidth: 2)
-        )
-        .shadow(color: Theme.neonPurple.opacity(0.25), radius: 14, y: 4)
-    }
-
-    /// Glass tier badge with a colour dot (purple for Based Reader / admin).
-    @ViewBuilder
-    private func accountBadgeV2(_ type: String?) -> some View {
-        if let type, type != "user" {
-            let display = type == "beta_tester" ? "premium" : type
-            let label: String = {
-                switch display {
-                case "super_admin": return "Super Admin"
-                case "admin": return "Admin"
-                case "premium": return "Based Reader"
-                case "reader": return "Reader"
-                default: return display.replacingOccurrences(of: "_", with: " ").capitalized
-                }
-            }()
-            let isPurple = ["super_admin", "admin", "premium"].contains(display)
-            DotBadge(text: label, dot: isPurple ? Theme.neonPurple : Theme.accent)
-        }
-    }
-
-    /// Eyebrow label over the count; the hue lives in the dot only.
-    private func statTileV2(_ value: String, _ label: String, _ tint: Color) -> some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 5) {
-                Circle().fill(tint).frame(width: 6, height: 6)
-                Text(label.uppercased())
-                    .font(Theme.body(10, .bold)).tracking(0.8)
-                    .foregroundStyle(Theme.muted)
-            }
-            Text(value)
-                .font(Theme.heading(24, .bold))
-                .foregroundStyle(Theme.foreground)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(Theme.foreground.opacity(0.04), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.foreground.opacity(0.08), lineWidth: 1))
     }
 
     /// The same links as `socialRow`, each in a 40pt glass circle.
@@ -1126,5 +1062,154 @@ struct AllShelvesSheet: View {
             }
             .appDestinations()
         }
+    }
+}
+
+
+// ── Profile hero pieces shared by the reader's own profile and /u/ (2026-11-19) ──
+// One implementation for both screens so they can't drift apart again
+// (Rebekah: "my private profile is now outdated based on the newly designed
+// public page").
+
+/// Avatar inside a 2pt ring in the wordmark's three colours. The placeholder
+/// is a soft tint, not solid lime.
+struct ProfileHeroAvatar: View {
+    let avatarUrl: String?
+    let name: String
+
+    var body: some View {
+        Group {
+            if let avatarUrl,
+               let url = avatarUrl.hasPrefix("/")
+                   ? URL(string: avatarUrl, relativeTo: APIClient.baseURL)
+                   : URL(string: avatarUrl) {
+                CachedCoverImage(url: url) { Theme.surfaceAlt }
+            } else {
+                ZStack {
+                    LinearGradient(colors: [Theme.accent.opacity(0.28), Theme.neonPurple.opacity(0.28)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                    Text(String(name.prefix(1)).uppercased())
+                        .font(Theme.heading(32, .bold))
+                        .foregroundStyle(Theme.foreground)
+                }
+            }
+        }
+        .frame(width: 84, height: 84)
+        .clipShape(Circle())
+        .padding(3)
+        .overlay(
+            Circle().stroke(LinearGradient(colors: [Theme.accent, Theme.neonBlue, Theme.neonPurple],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            lineWidth: 2)
+        )
+        .shadow(color: Theme.neonPurple.opacity(0.25), radius: 14, y: 4)
+    }
+}
+
+/// Glass tier badge with a colour dot (purple for Based Reader / staff).
+struct ProfileTierBadge: View {
+    let type: String?
+
+    var body: some View {
+        if let type, type != "user" {
+            let display = (type == "beta_tester" || type == "based_reader") ? "premium" : type
+            let label: String = {
+                switch display {
+                case "super_admin": return "Super Admin"
+                case "admin": return "Admin"
+                case "premium": return "Based Reader"
+                case "reader": return "Reader"
+                default: return display.replacingOccurrences(of: "_", with: " ").capitalized
+                }
+            }()
+            DotBadge(text: label,
+                     dot: ["super_admin", "admin", "premium"].contains(display) ? Theme.neonPurple : Theme.accent)
+        }
+    }
+}
+
+/// One of the Read / Reading / TBR cards, built like Pick From Your Shelf
+/// (Rebekah 2026-11-19): it sits on its pile's blurred cover art, the newest
+/// covers fan out tipped as if just pulled off the shelf, and the 1pt
+/// hairline carries the pile's colour. Mirrors StatTile in profile-hero.tsx.
+struct ProfileStatCard: View {
+    let value: Int
+    let label: String
+    let tint: Color
+    let covers: [String]
+
+    private struct Pose { let x: CGFloat; let y: CGFloat; let angle: Double; let z: Double }
+
+    private var poses: [Pose] {
+        switch min(covers.count, 3) {
+        case 1: return [Pose(x: 0, y: 0, angle: -4, z: 3)]
+        case 2: return [Pose(x: 9, y: 0, angle: 5, z: 3), Pose(x: -11, y: 0, angle: -8, z: 2)]
+        case 3: return [Pose(x: 0, y: -3, angle: -2, z: 3), Pose(x: -19, y: 0, angle: -11, z: 2),
+                        Pose(x: 19, y: 0, angle: 9, z: 1)]
+        default: return []
+        }
+    }
+
+    var body: some View {
+        let fan = Array(covers.prefix(3))
+        VStack(spacing: 0) {
+            ZStack(alignment: .bottom) {
+                if fan.isEmpty {
+                    Image(systemName: "book.closed")
+                        .font(.system(size: 17))
+                        .foregroundStyle(Theme.muted)
+                        .frame(width: 44, height: 44)
+                        .glassEffect(.regular, in: Circle())
+                        .padding(.bottom, 8)
+                } else {
+                    ForEach(Array(fan.enumerated()), id: \.offset) { i, url in
+                        let p = poses[i]
+                        CoverThumb(url: url, width: 39, height: 58, radius: 5)
+                            .shadow(color: .black.opacity(0.45), radius: 7, y: 5)
+                            .rotationEffect(.degrees(p.angle), anchor: .bottom)
+                            .offset(x: p.x, y: p.y)
+                            .zIndex(p.z)
+                    }
+                }
+            }
+            .frame(height: 66)
+            .frame(maxWidth: .infinity)
+
+            Text(value.formatted())
+                .font(Theme.heading(26, .bold))
+                .foregroundStyle(Theme.foreground)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .padding(.top, 10)
+            HStack(spacing: 5) {
+                Circle().fill(tint).frame(width: 6, height: 6)
+                Text(label.uppercased())
+                    .font(Theme.body(10, .bold)).tracking(0.8)
+                    .foregroundStyle(Theme.foreground.opacity(0.72))
+            }
+            .padding(.top, 6)
+        }
+        .padding(.top, 14)
+        .padding(.bottom, 12)
+        .padding(.horizontal, 6)
+        .frame(maxWidth: .infinity)
+        .background(
+            ZStack {
+                Theme.surfaceAlt
+                if let first = fan.first, let url = URL(string: first) {
+                    CoverBlurImage(url: url)
+                    Theme.scrim
+                }
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(LinearGradient(colors: [tint.opacity(0.75), tint.opacity(0.18), tint.opacity(0.45)],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing),
+                        lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(value) \(label)")
     }
 }

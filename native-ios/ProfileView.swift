@@ -47,8 +47,13 @@ struct ProfileView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 if let data = model.data {
-                    header(data)
-                    statPills(data)
+                    if DesignPreview.on {
+                        // Same hero as the public profile (2026-11-19).
+                        heroV2(data)
+                    } else {
+                        header(data)
+                        statPills(data)
+                    }
                     referralCard(data)
                     topShelf(data)
                     shelvesSection(data)
@@ -189,6 +194,141 @@ struct ProfileView: View {
         }
     }
 
+    // ── Refreshed hero (2026-11-19): the public profile's card, with Edit
+    // Profile / Public view in place of Follow and stat cards that open the
+    // matching Library view. Built from the shared ProfileHeroAvatar,
+    // ProfileTierBadge and ProfileStatCard (PublicProfileView.swift).
+    private func heroV2(_ data: ProfileData) -> some View {
+        let user = data.user
+        let name = user.displayName ?? user.username ?? "Reader"
+        return VStack(spacing: 14) {
+            ProfileHeroAvatar(avatarUrl: user.avatarUrl, name: name)
+
+            VStack(spacing: 6) {
+                Text(name)
+                    .font(Theme.heading(23, .bold))
+                    .foregroundStyle(Theme.foreground)
+                    .multilineTextAlignment(.center)
+                HStack(spacing: 8) {
+                    if let username = user.username {
+                        Text("@\(username)")
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                    }
+                    ProfileTierBadge(type: user.accountType)
+                }
+                Text("Member since \(memberSince(user.createdAt))")
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.muted)
+            }
+
+            if let bio = user.bio?.trimmingCharacters(in: .whitespacesAndNewlines), !bio.isEmpty {
+                Text(bio)
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.foreground.opacity(0.9))
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack(spacing: 6) {
+                if let username = user.username {
+                    NavigationLink(value: FollowListRoute(username: username, type: "followers")) {
+                        (Text("\(data.followerCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                         + Text(data.followerCount == 1 ? "follower" : "followers").foregroundColor(Theme.muted))
+                    }
+                    Text("·").foregroundStyle(Theme.muted)
+                    NavigationLink(value: FollowListRoute(username: username, type: "following")) {
+                        (Text("\(data.followingCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                         + Text("following").foregroundColor(Theme.muted))
+                    }
+                } else {
+                    (Text("\(data.followerCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                     + Text("followers").foregroundColor(Theme.muted))
+                    Text("·").foregroundStyle(Theme.muted)
+                    (Text("\(data.followingCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                     + Text("following").foregroundColor(Theme.muted))
+                }
+            }
+            .font(Theme.body(13))
+
+            HStack(spacing: 10) {
+                Button { editProfileOpen = true } label: {
+                    ShelfPill(kind: .neutral) {
+                        Label {
+                            Text("Edit Profile")
+                        } icon: {
+                            Image(systemName: "pencil").foregroundStyle(Theme.neonBlue)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                if let username = user.username {
+                    Button { path.append(UserRoute(username: username)) } label: {
+                        ShelfPill(kind: .neutral) {
+                            Label {
+                                Text("Public view")
+                            } icon: {
+                                Image(systemName: "eye").foregroundStyle(Theme.neonPurple)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            HStack(spacing: 10) {
+                statCardButton(data.stats.completed, "Read", Theme.neonPurple,
+                               data.stats.covers?.completed ?? [],
+                               LibrarySelection(group: "activity", filter: "completed"))
+                statCardButton(data.stats.currentlyReading, "Reading", Theme.neonBlue,
+                               data.stats.covers?.currentlyReading ?? [],
+                               LibrarySelection(group: "activity", filter: "currently_reading"))
+                statCardButton(data.stats.tbr, "TBR", Theme.accent,
+                               data.stats.covers?.tbr ?? [],
+                               LibrarySelection(group: "tbr", filter: "all"))
+            }
+            .padding(.top, 2)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 22)
+        .padding(.bottom, 18)
+        .frame(maxWidth: .infinity)
+        .background(
+            ZStack {
+                Theme.surface.opacity(0.92)
+                RadialGradient(colors: [Theme.neonPurple.opacity(0.16), .clear],
+                               center: .topLeading, startRadius: 0, endRadius: 220)
+                RadialGradient(colors: [Theme.accent.opacity(0.08), .clear],
+                               center: .bottomTrailing, startRadius: 0, endRadius: 200)
+            }
+        )
+        .heroHairline()
+        .overlay(alignment: .topTrailing) {
+            if let username = user.username,
+               let url = URL(string: "https://thebasedreader.app/u/\(username)") {
+                ShareLink(item: url) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Theme.foreground.opacity(0.9))
+                        .frame(width: 36, height: 36)
+                        .glassEffect(.regular, in: Circle())
+                }
+                .padding(12)
+            }
+        }
+    }
+
+    private func statCardButton(_ value: Int, _ label: String, _ tint: Color, _ covers: [String],
+                                _ dest: LibrarySelection) -> some View {
+        Button {
+            chrome?.pendingLibrarySelection = dest
+            chrome?.selectTab(.library)
+        } label: {
+            ProfileStatCard(value: value, label: label, tint: tint, covers: covers)
+        }
+        .buttonStyle(.plain)
+    }
+
     private func badgeLabel(_ type: String) -> String {
         switch type {
         case "super_admin": return "Super Admin"
@@ -289,9 +429,11 @@ struct ProfileView: View {
                     .foregroundStyle(Theme.muted)
                     .lineLimit(1)
                     .truncationMode(.tail)
-                    .padding(.horizontal, 12).padding(.vertical, 10)
-                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+                    .padding(.horizontal, DesignPreview.on ? 16 : 12).padding(.vertical, 10)
+                    .background(Theme.surface.opacity(DesignPreview.on ? 0.7 : 1),
+                                in: RoundedRectangle(cornerRadius: DesignPreview.on ? 22 : 10))
+                    .overlay(RoundedRectangle(cornerRadius: DesignPreview.on ? 22 : 10)
+                        .stroke(DesignPreview.on ? Theme.foreground.opacity(0.12) : Theme.border, lineWidth: 1))
                 Button {
                     UIPasteboard.general.string = "https://thebasedreader.app/signup?ref=\(data.referralCode)"
                     copiedReferral = true
@@ -311,7 +453,7 @@ struct ProfileView: View {
                 HStack(spacing: 4) {
                     Text(data.referralCount == 0
                          ? "No one has joined yet — see details"
-                         : "\(data.referralCount) reader\(data.referralCount == 1 ? "" : "s") joined through you 🎉")
+                         : "\(data.referralCount) reader\(data.referralCount == 1 ? "" : "s") joined through you" + (DesignPreview.on ? "" : " 🎉"))
                         .font(Theme.body(12, .medium))
                     Image(systemName: "chevron.right")
                         .font(.system(size: 9, weight: .semibold))
@@ -321,9 +463,10 @@ struct ProfileView: View {
             }
         }
         .padding(16)
-        .background(Theme.accent.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.accent.opacity(0.25), lineWidth: 1))
+        .background(DesignPreview.on ? Theme.surface.opacity(0.6) : Theme.accent.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: DesignPreview.on ? 18 : 16))
+        .overlay(RoundedRectangle(cornerRadius: DesignPreview.on ? 18 : 16)
+            .stroke(DesignPreview.on ? Theme.foreground.opacity(0.10) : Theme.accent.opacity(0.25), lineWidth: 1))
     }
 
     // ── Top-Shelf Reads ──
@@ -573,8 +716,40 @@ struct TopShelfCase: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        let isLight = colorScheme == .light
+        if DesignPreview.on { glassCase } else { woodCase }
+    }
+
+    /// Refreshed (2026-11-19, web favorites-shelf.tsx parity): neutral glass
+    /// with the wordmark gradient as a thin ledge — the amber wood is gone.
+    private var glassCase: some View {
         VStack(spacing: 0) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(favorites.sorted { $0.position < $1.position }) { fav in
+                        NavigationLink(value: BookRoute(idOrSlug: fav.slug ?? fav.id)) {
+                            FavoriteShelfCover(fav: fav, avatarUrl: avatarUrl)
+                        }
+                    }
+                }
+                .padding(.leading, 16)
+                .padding(.trailing, 48)
+                .padding(.top, 18)
+                .padding(.bottom, 16)
+            }
+            .maskFadeRight()
+            LinearGradient(colors: [Theme.accent.opacity(0.7), Theme.neonBlue.opacity(0.55),
+                                    Theme.neonPurple.opacity(0.6)],
+                           startPoint: .leading, endPoint: .trailing)
+                .frame(height: 3)
+        }
+        .background(Theme.surface.opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.foreground.opacity(0.10), lineWidth: 1))
+    }
+
+    private var woodCase: some View {
+        let isLight = colorScheme == .light
+        return VStack(spacing: 0) {
             VStack(spacing: 0) {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
@@ -697,6 +872,32 @@ struct ShelfRailCase: View {
                         .stroke(style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
                         .foregroundStyle(tint.opacity(0.15))
                 )
+        } else if DesignPreview.on {
+            // Refreshed (2026-11-19, web MiniShelfRow parity): glass case;
+            // the shelf's own colour is a thin ring and the ledge.
+            VStack(spacing: 0) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(coverUrls.prefix(8).enumerated()), id: \.offset) { i, url in
+                            let slug = i < coverSlugs.count ? coverSlugs[i] : ""
+                            if slug.isEmpty {
+                                railCover(url)
+                            } else {
+                                NavigationLink(value: BookRoute(idOrSlug: slug)) { railCover(url) }
+                            }
+                        }
+                    }
+                    .padding(.leading, 12)
+                    .padding(.trailing, 40)
+                    .padding(.top, 12)
+                    .padding(.bottom, 10)
+                }
+                .maskFadeRight()
+                tint.opacity(0.7).frame(height: 3)
+            }
+            .background(Theme.surface.opacity(0.6))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(tint.opacity(0.22), lineWidth: 1))
         } else {
             VStack(spacing: 0) {
                 VStack(spacing: 0) {

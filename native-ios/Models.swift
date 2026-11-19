@@ -307,6 +307,15 @@ struct ProfileStats: Codable, Hashable {
     let currentlyReading: Int
     let tbr: Int
     let owned: Int
+    /// Up to 3 cover URLs per pile, newest first (server 2026-11-19+; absent
+    /// on older responses, so optional).
+    let covers: ProfileStatCovers?
+}
+
+struct ProfileStatCovers: Codable, Hashable {
+    let completed: [String]
+    let currentlyReading: [String]
+    let tbr: [String]
 }
 
 struct JournalNote: Codable, Hashable, Identifiable {
