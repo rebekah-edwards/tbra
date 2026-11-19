@@ -1167,15 +1167,11 @@ struct ProfileStatCard: View {
     var body: some View {
         let fan = Array(covers.prefix(3))
         VStack(spacing: 0) {
-            ZStack(alignment: .bottom) {
-                if fan.isEmpty {
-                    Image(systemName: "book.closed")
-                        .font(.system(size: 17))
-                        .foregroundStyle(Theme.muted)
-                        .frame(width: 44, height: 44)
-                        .glassEffect(.regular, in: Circle())
-                        .padding(.bottom, 8)
-                } else {
+            // No covers in this pile: no placeholder art — the card collapses
+            // to the count and label (Rebekah 2026-11-19: the generic book
+            // icons took up too much height).
+            if !fan.isEmpty {
+                ZStack(alignment: .bottom) {
                     ForEach(Array(fan.enumerated()), id: \.offset) { i, url in
                         let p = poses[i]
                         CoverThumb(url: url, width: 39, height: 58, radius: 5)
@@ -1185,16 +1181,16 @@ struct ProfileStatCard: View {
                             .zIndex(p.z)
                     }
                 }
+                .frame(height: 66)
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 10)
             }
-            .frame(height: 66)
-            .frame(maxWidth: .infinity)
 
             Text(value.formatted())
                 .font(Theme.heading(26, .bold))
                 .foregroundStyle(Theme.foreground)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
-                .padding(.top, 10)
             HStack(spacing: 5) {
                 Circle().fill(tint).frame(width: 6, height: 6)
                 Text(label.uppercased())
