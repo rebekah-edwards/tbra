@@ -734,9 +734,7 @@ struct BuddyReadDetailView: View {
     private func initialAvatar(_ name: String, url: String?, size: CGFloat) -> some View {
         Group {
             if let url, let u = URL(string: url) {
-                AsyncImage(url: u) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
-                } placeholder: { Theme.surfaceAlt }
+                CachedCoverImage(url: u) { Theme.surfaceAlt }
             } else {
                 ZStack {
                     LinearGradient(colors: [Theme.accent.opacity(0.28), Theme.neonPurple.opacity(0.28)],

@@ -211,9 +211,7 @@ struct PublicProfileView: View {
             Color.clear.frame(width: 40, height: 40)
             Group {
                 if let avatarUrl = user.avatarUrl, let url = URL(string: avatarUrl) {
-                    AsyncImage(url: url) { image in
-                        image.resizable().aspectRatio(contentMode: .fill)
-                    } placeholder: { Theme.accent }
+                    CachedCoverImage(url: url) { Theme.accent }
                 } else {
                     ZStack {
                         Theme.accent
@@ -431,9 +429,7 @@ struct PublicProfileView: View {
     private func avatarV2(_ user: ProfileUser, name: String) -> some View {
         Group {
             if let avatarUrl = user.avatarUrl, let url = URL(string: avatarUrl) {
-                AsyncImage(url: url) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
-                } placeholder: { Theme.surfaceAlt }
+                CachedCoverImage(url: url) { Theme.surfaceAlt }
             } else {
                 ZStack {
                     LinearGradient(colors: [Theme.accent.opacity(0.28), Theme.neonPurple.opacity(0.28)],
