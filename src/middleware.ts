@@ -93,7 +93,7 @@ async function resolveEntity(kind: string, segment: string): Promise<EntityVerdi
   if (UUID_PATTERN.test(segment)) {
     const rows = await tursoQuery(`SELECT slug FROM ${table} WHERE id = ? LIMIT 1`, [segment]);
     if (!rows) return { kind: "pass" };
-    if (rows.length === 0) return kind === "author" ? retiredAuthor(segment) : { kind: "missing" };
+    if (rows.length === 0) return kind === "author" ? retiredAuthor(segment) : retiredSeries(segment);
     const slug = rows[0][0];
     // Slug-less rows are legitimately served at their UUID URL.
     return slug ? { kind: "moved", to: `/${kind}/${encodeURIComponent(slug)}` } : { kind: "pass" };
@@ -103,7 +103,7 @@ async function resolveEntity(kind: string, segment: string): Promise<EntityVerdi
     const rows = await tursoQuery(`SELECT 1 FROM ${table} WHERE slug = ? LIMIT 1`, [segment]);
     if (!rows) return { kind: "pass" };
     if (rows.length > 0) return { kind: "pass" };
-    return kind === "author" ? retiredAuthor(segment) : { kind: "missing" };
+    return kind === "author" ? retiredAuthor(segment) : retiredSeries(segment);
   }
 
   // Books: a live slug wins; otherwise a retired slug (merge/rename) 301s to
@@ -135,6 +135,16 @@ async function retiredAuthor(oldKey: string): Promise<EntityVerdict> {
   ).catch(() => null);
   const target = rows?.[0]?.[0] || rows?.[0]?.[1];
   return target ? { kind: "moved", to: `/author/${encodeURIComponent(target)}` } : { kind: "missing" };
+}
+
+/** Same as retiredAuthor, for series renamed or merged away (`series_redirects`). */
+async function retiredSeries(oldKey: string): Promise<EntityVerdict> {
+  const rows = await tursoQuery(
+    `SELECT s.slug, s.id FROM series_redirects r JOIN series s ON s.id = r.series_id WHERE r.old_key = ? LIMIT 1`,
+    [oldKey],
+  ).catch(() => null);
+  const target = rows?.[0]?.[0] || rows?.[0]?.[1];
+  return target ? { kind: "moved", to: `/series/${encodeURIComponent(target)}` } : { kind: "missing" };
 }
 
 export async function middleware(request: NextRequest) {

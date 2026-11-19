@@ -19,6 +19,7 @@ import {
   editions,
   userBookState,
   bookSlugHistory,
+  seriesRedirects,
 } from "@/db/schema";
 import { eq, and, asc, sql } from "drizzle-orm";
 import { getEffectiveCoverUrl } from "@/lib/covers";
@@ -64,7 +65,20 @@ export const resolveSeries = cache(async function resolveSeries(idOrSlug: string
     return row ? { series: row, isIdLookup: true } : null;
   }
   const row = await db.select({ id: series.id, slug: series.slug, name: series.name, parentSeriesId: series.parentSeriesId }).from(series).where(eq(series.slug, idOrSlug)).get();
-  return row ? { series: row, isIdLookup: false } : null;
+  if (row) return { series: row, isIdLookup: false };
+  // A retired slug (renamed/merged series). isIdLookup:true makes the page
+  // redirect to the current slug. Never throws: a missing table finds nothing.
+  try {
+    const moved = await db
+      .select({ id: series.id, slug: series.slug, name: series.name, parentSeriesId: series.parentSeriesId })
+      .from(seriesRedirects)
+      .innerJoin(series, eq(series.id, seriesRedirects.seriesId))
+      .where(eq(seriesRedirects.oldKey, idOrSlug))
+      .get();
+    return moved ? { series: moved, isIdLookup: true } : null;
+  } catch {
+    return null;
+  }
 });
 
 /**

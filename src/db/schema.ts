@@ -391,6 +391,23 @@ export const authorRedirects = sqliteTable("author_redirects", {
   index("author_redirects_author").on(table.authorId),
 ]);
 
+/**
+ * Where a retired series identifier now lives — same idea as authorRedirects.
+ * `old_key` is an old series slug (or a merged-away series UUID); maps to the
+ * CURRENT series id. Read by resolveSeries() and src/middleware.ts (301).
+ * Created 2026-11-19 (scripts/create-series-redirects-table.ts); first written
+ * by scripts/fix-malformed-slugs.ts. Not part of sync — write local + Turso.
+ */
+export const seriesRedirects = sqliteTable("series_redirects", {
+  oldKey: text("old_key").primaryKey(),
+  seriesId: text("series_id").notNull().references(() => series.id),
+  /** 'merge' | 'rename' | 'malformed-slug' */
+  reason: text("reason"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  index("series_redirects_series").on(table.seriesId),
+]);
+
 /** An edition row whose open_library_key is a real OL key, not a synthetic one. */
 export function isOpenLibraryEdition(e: { source?: string | null; openLibraryKey?: string | null }) {
   return (e.source ?? "openlibrary") === "openlibrary" && !e.openLibraryKey?.startsWith("local:");

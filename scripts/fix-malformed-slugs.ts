@@ -12,8 +12,9 @@
  *   - trailing "-": an old importer cut slugs at 80 chars mid-word;
  *   - "--": a title containing " - ".
  *
- * Series slugs are NOT touched: series have no redirect table, so renaming one
- * would turn its old URL into a 404. (9 series have "--"/trailing "-".)
+ * Series are covered too (since 2026-11-19, via series_redirects). Run the
+ * series part only once that table exists and the middleware that reads it
+ * is deployed — otherwise the old series URLs 404.
  *
  *   npx tsx scripts/fix-malformed-slugs.ts [--local=path/to/tbra.db]          # dry run
  *   npx tsx scripts/fix-malformed-slugs.ts [--local=...] --apply
@@ -23,7 +24,7 @@ dotenv.config({ path: ".env.vercel.local" });
 
 import Database from "better-sqlite3";
 import { createGuardedTurso } from "./lib/turso-guard";
-import { generateAuthorSlug, generateBookSlug } from "../src/lib/utils/slugify";
+import { generateAuthorSlug, generateBookSlug, generateSeriesSlug } from "../src/lib/utils/slugify";
 
 const APPLY = process.argv.includes("--apply");
 const LOCAL_PATH = process.argv.find((a) => a.startsWith("--local="))?.slice(8) ?? "data/tbra.db";
@@ -53,10 +54,13 @@ const clean = (s: string) => s.replace(/-{2,}/g, "-").replace(/^-+|-+$/g, "");
     queryTimeoutMs: 60_000,
   });
 
-  const taken = async (table: "books" | "authors", slug: string, selfId: string) => {
+  const taken = async (table: "books" | "authors" | "series", slug: string, selfId: string) => {
     const l = local.prepare(`SELECT id FROM ${table} WHERE slug = ?`).get(slug) as { id: string } | undefined;
     const t = (await remote.execute({ sql: `SELECT id FROM ${table} WHERE slug = ?`, args: [slug] })).rows[0];
-    const histTable = table === "books" ? "book_slug_history WHERE old_slug" : "author_redirects WHERE old_key";
+    const histTable =
+      table === "books" ? "book_slug_history WHERE old_slug"
+      : table === "authors" ? "author_redirects WHERE old_key"
+      : "series_redirects WHERE old_key";
     const h = (await remote.execute({ sql: `SELECT 1 FROM ${histTable} = ?`, args: [slug] })).rows[0];
     return (!!l && l.id !== selfId) || (!!t && String(t.id) !== selfId) || !!h;
   };
@@ -115,7 +119,30 @@ const clean = (s: string) => s.replace(/-{2,}/g, "-").replace(/^-+|-+$/g, "");
     local.prepare("UPDATE authors SET slug = ? WHERE id = ? AND slug = ?").run(slug, id, oldSlug);
   }
 
-  console.log(`\n${APPLY ? "renamed" : "would rename"}: ${renamed} books, ${authorsRenamed} authors`);
+  // ── Series ── (series_redirects exists since 2026-11-19; middleware 301s it)
+  const seriesRows = (await remote.execute(`SELECT id, slug, name FROM series WHERE ${MALFORMED}`)).rows;
+  let seriesRenamed = 0;
+  for (const s of seriesRows) {
+    const id = String(s.id);
+    const oldSlug = String(s.slug);
+    const base = clean(generateSeriesSlug(String(s.name ?? ""))) || "untitled-series";
+    let slug = base;
+    for (let n = 2; await taken("series", slug, id); n++) slug = `${base}-${n}`;
+    if (slug === oldSlug) continue;
+    console.log(`series ${oldSlug}  ->  ${slug}`);
+    seriesRenamed++;
+    if (!APPLY) continue;
+
+    await remote.execute({
+      sql: "INSERT OR IGNORE INTO series_redirects (old_key, series_id, reason) VALUES (?,?,?)",
+      args: [oldSlug, id, "malformed-slug"],
+    });
+    await remote.execute({ sql: "UPDATE series SET slug = ? WHERE id = ? AND slug = ?", args: [slug, id, oldSlug] });
+    local.prepare("INSERT OR IGNORE INTO series_redirects (old_key, series_id, reason) VALUES (?,?,?)").run(oldSlug, id, "malformed-slug");
+    local.prepare("UPDATE series SET slug = ? WHERE id = ? AND slug = ?").run(slug, id, oldSlug);
+  }
+
+  console.log(`\n${APPLY ? "renamed" : "would rename"}: ${renamed} books, ${authorsRenamed} authors, ${seriesRenamed} series`);
   if (!APPLY) console.log("DRY RUN — add --apply");
   shutdown();
   process.exit(0);
