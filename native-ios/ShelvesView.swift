@@ -861,6 +861,7 @@ struct TopShelfView: View {
     @Environment(AuthStore.self) private var auth
     @State private var model = TopShelfModel()
     @State private var reorder = ReorderDrag<FavoriteBookRow>()
+    @State private var addOpen = false
 
     private var avatarUrl: String? {
         if case .signedIn(let user) = auth.phase { return user.avatarUrl }
@@ -876,12 +877,35 @@ struct TopShelfView: View {
                         Text("Top Shelf")
                             .font(Theme.heading(26, .bold))
                             .foregroundStyle(Theme.foreground)
-                        Text("\(model.favorites.count) book\(model.favorites.count == 1 ? "" : "s") · Hold & drag to reorder")
+                        Text("\(model.favorites.count) book\(model.favorites.count == 1 ? "" : "s")\(model.favorites.count > 1 ? " · Hold & drag to reorder" : "")")
                             .font(Theme.body(12))
                             .foregroundStyle(Theme.muted)
                     }
                 }
                 .padding(.top, 14)
+
+                // Add Books — same action the custom shelves have.
+                Button {
+                    addOpen = true
+                } label: {
+                    addBooksLabel
+                }
+                .buttonStyle(.plain)
+
+                // How to add from a book page (web: the same hint line).
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Image(systemName: "star")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color(hex: "f59e0b"))
+                    (Text("Your all-time favorites. You can also add a book from its page: tap ")
+                        + Text("Shelves").foregroundColor(Theme.foreground).bold()
+                        + Text(", then check ")
+                        + Text("Top Shelf").foregroundColor(Theme.foreground).bold()
+                        + Text("."))
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 if model.favorites.isEmpty {
                     VStack(spacing: 10) {
@@ -896,7 +920,7 @@ struct TopShelfView: View {
                             .font(Theme.body(16, .bold))
                             .foregroundStyle(Theme.foreground)
                         if model.loaded {
-                            Text("Tap Top Shelf on any book page to add it here.")
+                            Text("Use Add Books above to pick from your library.")
                                 .font(Theme.body(13))
                                 .foregroundStyle(Theme.muted)
                         }
@@ -932,6 +956,35 @@ struct TopShelfView: View {
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }
         .refreshable { await model.load() }
+        .sheet(isPresented: $addOpen) {
+            AddToTopShelfSheet(favoriteIds: Set(model.favorites.map(\.id))) {
+                Task { await model.load() }
+            }
+        }
+    }
+
+    /// Mirrors ShelfDetailView's Add Books button (refresh vs. classic).
+    @ViewBuilder private var addBooksLabel: some View {
+        if DesignPreview.on {
+            ShelfPill(kind: .primary) {
+                HStack(spacing: 5) {
+                    Image(systemName: "plus").font(.system(size: 12, weight: .bold))
+                    Text("Add Books")
+                }
+            }
+        } else {
+            HStack(spacing: 5) {
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .bold))
+                Text("Add Books")
+                    .font(Theme.body(13, .medium))
+            }
+            .foregroundStyle(Theme.accentText)
+            .padding(.horizontal, 12).padding(.vertical, 9)
+            .background(Theme.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10)
+                .stroke(Theme.accent.opacity(0.2), lineWidth: 1))
+        }
     }
 
     /// `showsRemove` is off for the copy drawn under the finger mid-drag.
@@ -1001,6 +1054,145 @@ struct TopShelfView: View {
         rating.truncatingRemainder(dividingBy: 1) == 0
             ? String(Int(rating))
             : String(format: "%.2f", rating).replacingOccurrences(of: "0$", with: "", options: .regularExpression)
+    }
+}
+
+// ── Add to Top Shelf sheet (web: AddToTopShelfSheet — search your
+// library, toggle). Same layout as ShelfDetailView's AddBooksSheet; the
+// favorite endpoint is a toggle, so each tap flips the current state.
+
+private struct AddToTopShelfSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let favoriteIds: Set<String>
+    var onChanged: () -> Void
+
+    @State private var allBooks: [LibraryBook] = []
+    @State private var search = ""
+    @State private var added: Set<String> = []
+    @State private var removed: Set<String> = []
+    @State private var loaded = false
+    @State private var errorText: String?
+
+    private func isOnTopShelf(_ id: String) -> Bool {
+        if removed.contains(id) { return false }
+        if added.contains(id) { return true }
+        return favoriteIds.contains(id)
+    }
+
+    private var filtered: [LibraryBook] {
+        let q = search.trimmingCharacters(in: .whitespaces).lowercased()
+        if q.isEmpty { return Array(allBooks.prefix(50)) }
+        return allBooks.filter {
+            $0.title.lowercased().contains(q)
+                || $0.authors.contains { $0.lowercased().contains(q) }
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Add to Top Shelf")
+                    .font(Theme.heading(20, .bold))
+                    .foregroundStyle(Theme.foreground)
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+            .padding(.top, 20)
+
+            TextField("Search your library...", text: $search)
+                .font(Theme.body(15))
+                .padding(.horizontal, 12).padding(.vertical, 11)
+                .background(Theme.surfaceAlt.opacity(0.8))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+
+            if let errorText {
+                Text(errorText)
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.destructive)
+            }
+
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    if !loaded {
+                        Text("Loading…")
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                            .padding(.vertical, 24)
+                    } else if filtered.isEmpty {
+                        Text("No books found")
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                            .padding(.vertical, 24)
+                    } else {
+                        ForEach(filtered) { book in
+                            Button {
+                                toggle(book)
+                            } label: {
+                                HStack(spacing: 10) {
+                                    CoverThumb(url: book.coverImageUrl, width: 32, height: 48, radius: 3, title: book.title)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(book.title)
+                                            .font(Theme.body(14))
+                                            .foregroundStyle(Theme.foreground)
+                                            .lineLimit(1)
+                                        Text(book.authors.joined(separator: ", "))
+                                            .font(Theme.body(12))
+                                            .foregroundStyle(Theme.muted)
+                                            .lineLimit(1)
+                                    }
+                                    Spacer()
+                                    Image(systemName: isOnTopShelf(book.id)
+                                          ? "checkmark.square.fill" : "square")
+                                        .font(.system(size: 19))
+                                        .foregroundStyle(isOnTopShelf(book.id)
+                                                         ? Color(hex: "f59e0b") : Theme.muted.opacity(0.5))
+                                }
+                                .padding(.vertical, 7)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .background(Theme.bg)
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .task {
+            allBooks = (try? await APIClient.shared.library()) ?? []
+            loaded = true
+        }
+        .onDisappear { onChanged() }
+    }
+
+    private func toggle(_ book: LibraryBook) {
+        errorText = nil
+        let wasOn = isOnTopShelf(book.id)
+        setLocal(book.id, on: !wasOn)
+        Task {
+            do {
+                try await APIClient.shared.toggleFavorite(bookId: book.id)
+            } catch {
+                // e.g. "Top Shelf is full (50 max)." — undo the optimistic flip.
+                setLocal(book.id, on: wasOn)
+                errorText = (error as? APIError)?.errorDescription ?? "Couldn't update Top Shelf."
+            }
+        }
+    }
+
+    private func setLocal(_ id: String, on: Bool) {
+        if on {
+            removed.remove(id); added.insert(id)
+        } else {
+            added.remove(id); removed.insert(id)
+        }
     }
 }
 
