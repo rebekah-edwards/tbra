@@ -27,6 +27,44 @@ export type WhatsNewNote = {
 
 export const WHATS_NEW_NOTES: WhatsNewNote[] = [
   {
+    // Build 20 (TestFlight, 2026-11-19). Wording approved by Rebekah.
+    build: 20,
+    title: "What's new",
+    items: [
+      {
+        icon: "target",
+        heading: "Custom goals (Based Readers)",
+        body: "Set goals for pages read, hours listened, days read, or books in a genre. Books you're reading count as you go, and you can fill in a missing page count or audiobook length yourself. Find them on Stats.",
+      },
+      {
+        icon: "arrow.clockwise",
+        heading: "Reading goal",
+        body: "Re-reads now count toward your goal. Edit your goal right from the Stats card.",
+      },
+      {
+        icon: "person.crop.circle",
+        heading: "Profiles",
+        body: "A new look for your profile and everyone else's, with your latest covers on the Read, Reading and TBR cards.",
+      },
+      {
+        icon: "books.vertical",
+        heading: "Shelves",
+        body: "Shelves look like real bookshelves again, and Top Shelf has an Add Books button.",
+      },
+      {
+        icon: "person.2",
+        heading: "Buddy Reads",
+        body: "A new look, and the list shows who's actually hosting.",
+      },
+      {
+        icon: "photo",
+        heading: "Profile pictures",
+        body: "Profile pictures load reliably again.",
+      },
+    ],
+    footer: "Tell us what you think with the flag button.",
+  },
+  {
     // Build 19 is the first build that can show a note, so this one also
     // carries what arrived in build 18.
     build: 19,
