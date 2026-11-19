@@ -3,9 +3,13 @@ import { db } from "@/db";
 import {
   reportCorrections,
   bookCategoryRatings,
+  books,
 } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { getCurrentUser, isAdmin } from "@/lib/auth";
+
+const MAX_NOTES_LENGTH = 1000;
 
 /**
  * POST /api/admin/corrections/[id]/apply
@@ -32,6 +36,29 @@ export async function POST(
     body = await request.json();
   } catch {
     // no body is fine
+  }
+
+  // The admin editor sends both overrides ("Save & Verify"); reject anything
+  // that isn't a whole 0-4 strength or a non-empty note.
+  if (
+    body.intensityOverride !== undefined &&
+    !(Number.isInteger(body.intensityOverride) &&
+      body.intensityOverride >= 0 &&
+      body.intensityOverride <= 4)
+  ) {
+    return NextResponse.json({ error: "Strength must be a whole number from 0 to 4." }, { status: 400 });
+  }
+  if (body.notesOverride !== undefined) {
+    if (typeof body.notesOverride !== "string") {
+      return NextResponse.json({ error: "Notes must be text." }, { status: 400 });
+    }
+    body.notesOverride = body.notesOverride.trim();
+    if (!body.notesOverride) {
+      return NextResponse.json({ error: "Notes can't be empty." }, { status: 400 });
+    }
+    if (body.notesOverride.length > MAX_NOTES_LENGTH) {
+      return NextResponse.json({ error: `Notes must be under ${MAX_NOTES_LENGTH} characters.` }, { status: 400 });
+    }
   }
 
   // Fetch the correction
@@ -107,6 +134,15 @@ export async function POST(
     .update(reportCorrections)
     .set({ status: "accepted" })
     .where(eq(reportCorrections.id, id));
+
+  // Book pages are ISR (60s); show the verified rating right away.
+  const book = await db
+    .select({ slug: books.slug })
+    .from(books)
+    .where(eq(books.id, correction.bookId))
+    .get();
+  if (book?.slug) revalidatePath(`/book/${book.slug}`);
+  revalidatePath("/admin/corrections");
 
   return NextResponse.json({ ok: true });
 }

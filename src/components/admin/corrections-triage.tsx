@@ -14,11 +14,15 @@ type Correction = {
   createdAt: string;
   bookId: string;
   bookTitle: string | null;
+  bookSlug: string | null;
   userId: string | null;
   userEmail: string | null;
   categoryId: string | null;
   categoryName: string | null;
   categoryKey: string | null;
+  currentIntensity: number | null;
+  currentNotes: string | null;
+  currentEvidence: string | null;
 };
 
 type Props = {
@@ -36,6 +40,16 @@ const STATUS_TABS = [
 
 const INTENSITY_LABELS = ["None", "Mild", "Moderate", "Significant", "Extreme"];
 
+// Content notes read best at 70-190 characters (short mobile labels).
+const NOTE_MIN = 70;
+const NOTE_MAX = 190;
+
+const EVIDENCE_LABELS: Record<string, string> = {
+  ai_inferred: "AI-inferred",
+  cited: "Cited",
+  human_verified: "Verified",
+};
+
 function IntensityBadge({ intensity }: { intensity: number | null }) {
   if (intensity === null) return <span className="text-muted text-xs italic">not specified</span>;
   const colors = [
@@ -52,6 +66,25 @@ function IntensityBadge({ intensity }: { intensity: number | null }) {
   );
 }
 
+/**
+ * The submission message is usually auto-generated ("Reviewer proposed
+ * intensity N for key; proposed note: …") and just repeats the proposed
+ * fields. Only show it when the reader wrote something beyond that.
+ */
+function extraMessage(c: Correction): string | null {
+  const msg = c.message?.trim();
+  if (!msg) return null;
+  if (/^Reviewer proposed intensity \d+ for /i.test(msg)) return null;
+  if (c.proposedNotes && msg === c.proposedNotes.trim()) return null;
+  return msg;
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">{children}</p>
+  );
+}
+
 function CorrectionCard({
   correction,
   onAction,
@@ -60,10 +93,21 @@ function CorrectionCard({
   onAction: (id: string, action: "accept" | "reject" | "triage" | "delete") => Promise<void>;
 }) {
   const [isPending, startTransition] = useTransition();
-  const [applyIntensity, setApplyIntensity] = useState<number>(
-    correction.proposedIntensity ?? 0
+  const [draftNotes, setDraftNotes] = useState(correction.currentNotes ?? "");
+  const [draftIntensity, setDraftIntensity] = useState<number>(
+    correction.currentIntensity ?? correction.proposedIntensity ?? 0
   );
-  const [showApplyForm, setShowApplyForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isOpen = correction.status === "new" || correction.status === "triaged";
+  const hasCategory = !!correction.categoryId;
+  const extra = extraMessage(correction);
+  const readerNote = correction.proposedNotes?.trim() || null;
+  const trimmedDraft = draftNotes.trim();
+  const noteLength = trimmedDraft.length;
+  const bookHref = correction.bookSlug
+    ? `/book/${correction.bookSlug}`
+    : `/book/${correction.bookId}`;
 
   function handleAction(action: "accept" | "reject" | "triage" | "delete") {
     startTransition(async () => {
@@ -71,40 +115,32 @@ function CorrectionCard({
     });
   }
 
-  async function handleApply() {
-    if (!correction.categoryId) {
-      // No category — call /apply which will mark accepted without writing rating
+  function saveAndVerify() {
+    setError(null);
+    if (hasCategory && !trimmedDraft) {
+      setError("Add the final wording before saving.");
+      return;
+    }
+    startTransition(async () => {
       const res = await fetch(`/api/admin/corrections/${correction.id}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify(
+          hasCategory ? { intensityOverride: draftIntensity, notesOverride: trimmedDraft } : {}
+        ),
       });
-      if (res.ok) {
-        onAction(correction.id, "accept");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setError(body?.error ?? "Save failed. Try again.");
+        return;
       }
-      return;
-    }
-    setShowApplyForm(true);
-  }
-
-  async function submitApply() {
-    const res = await fetch(`/api/admin/corrections/${correction.id}/apply`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ intensityOverride: applyIntensity }),
+      await onAction(correction.id, "accept");
     });
-    if (res.ok) {
-      onAction(correction.id, "accept");
-    }
   }
-
-  const isNew = correction.status === "new";
-  const isTriaged = correction.status === "triaged";
-  const isPending_ = isPending;
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-5 space-y-3 relative">
-      {isPending_ && (
+    <div className="rounded-xl border border-border bg-surface p-5 space-y-4 relative">
+      {isPending && (
         <div className="absolute inset-0 rounded-xl bg-surface/70 flex items-center justify-center z-10">
           <span className="text-xs text-muted animate-pulse">Saving…</span>
         </div>
@@ -114,7 +150,7 @@ function CorrectionCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <Link
-            href={`/book/${correction.bookId}`}
+            href={bookHref}
             className="text-sm font-semibold text-neon-blue hover:underline truncate block"
             target="_blank"
           >
@@ -136,100 +172,154 @@ function CorrectionCard({
             })}
           </p>
         </div>
-
-        {/* Status badge */}
         <StatusBadge status={correction.status} />
       </div>
 
-      {/* Proposed intensity */}
-      {correction.categoryId && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted">Proposed:</span>
-          <IntensityBadge intensity={correction.proposedIntensity} />
+      {/* Reader's suggestion vs. the current entry */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg bg-surface-alt p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <SectionLabel>Reader suggests</SectionLabel>
+            {hasCategory && <IntensityBadge intensity={correction.proposedIntensity} />}
+          </div>
+          {readerNote ? (
+            <p className="text-sm text-foreground/90 whitespace-pre-wrap">{readerNote}</p>
+          ) : !extra ? (
+            <p className="text-sm text-muted italic">No note given.</p>
+          ) : null}
+          {extra && (
+            <p className="text-xs text-muted whitespace-pre-wrap">
+              <span className="font-medium text-foreground/70">Message: </span>
+              {extra}
+            </p>
+          )}
+        </div>
+
+        {hasCategory && (
+          <div className="rounded-lg bg-surface-alt p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <SectionLabel>Current entry</SectionLabel>
+              {correction.currentIntensity !== null && (
+                <IntensityBadge intensity={correction.currentIntensity} />
+              )}
+            </div>
+            {correction.currentIntensity === null ? (
+              <p className="text-sm text-muted italic">No rating in this category yet.</p>
+            ) : (
+              <>
+                <p className="text-sm text-foreground/90 whitespace-pre-wrap">
+                  {correction.currentNotes?.trim() || <span className="text-muted italic">No text.</span>}
+                </p>
+                {correction.currentEvidence && (
+                  <p className="text-[11px] text-muted">
+                    {EVIDENCE_LABELS[correction.currentEvidence] ?? correction.currentEvidence}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Editor: final wording + strength */}
+      {isOpen && hasCategory && (
+        <div className="space-y-3 border-t border-border pt-4">
+          <div className="space-y-1.5">
+            <label htmlFor={`notes-${correction.id}`} className="block">
+              <SectionLabel>Final wording</SectionLabel>
+            </label>
+            <textarea
+              id={`notes-${correction.id}`}
+              value={draftNotes}
+              onChange={(e) => setDraftNotes(e.target.value)}
+              rows={3}
+              placeholder="Write the content note readers will see"
+              className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent focus:outline-none"
+            />
+            <p className={`text-[11px] ${noteLength > 0 && (noteLength < NOTE_MIN || noteLength > NOTE_MAX) ? "text-orange-400" : "text-muted"}`}>
+              {noteLength} characters · aim for {NOTE_MIN}–{NOTE_MAX}
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <SectionLabel>Strength</SectionLabel>
+            <div className="grid grid-cols-5 gap-1.5">
+              {[0, 1, 2, 3, 4].map((level) => {
+                const selected = draftIntensity === level;
+                const tags = [
+                  correction.currentIntensity === level ? "current" : null,
+                  correction.proposedIntensity === level ? "reader" : null,
+                ].filter(Boolean);
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setDraftIntensity(level)}
+                    aria-pressed={selected}
+                    className={`rounded-lg border-2 px-1 py-1.5 text-center transition-colors ${
+                      selected
+                        ? "border-accent bg-accent/15"
+                        : "border-border bg-surface-alt hover:border-accent/40"
+                    }`}
+                  >
+                    <span className={`block text-sm font-semibold ${selected ? "text-accent" : "text-foreground"}`}>
+                      {level}
+                    </span>
+                    <span className="block text-[10px] text-muted leading-tight">
+                      {INTENSITY_LABELS[level]}
+                    </span>
+                    <span className="block text-[9px] text-muted/70 leading-tight min-h-[11px]">
+                      {tags.join(" · ")}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Message */}
-      <blockquote className="text-sm text-foreground/90 border-l-2 border-accent/40 pl-3 italic">
-        {correction.message}
-      </blockquote>
-
-      {/* Apply form (inline intensity picker before applying) */}
-      {showApplyForm && (
-        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-3">
-          <p className="text-xs font-medium text-foreground">
-            Apply intensity to <em>{correction.categoryName}</em>:
-          </p>
-          <div className="flex gap-2">
-            {[0, 1, 2, 3, 4].map((level) => (
-              <button
-                key={level}
-                type="button"
-                onClick={() => setApplyIntensity(level)}
-                className={`flex-1 rounded-lg py-1.5 text-xs font-medium border-2 transition-all ${
-                  applyIntensity === level
-                    ? "border-accent bg-accent/15 text-accent"
-                    : "border-border bg-surface-alt text-muted hover:border-accent/30"
-                }`}
-              >
-                {level}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={submitApply}
-              className="flex-1 rounded-full bg-accent py-2 text-xs font-semibold text-black"
-            >
-              ✓ Apply & Accept
-            </button>
-            <button
-              onClick={() => setShowApplyForm(false)}
-              className="px-3 rounded-lg border border-border text-xs text-muted hover:text-foreground"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
 
       {/* Actions */}
-      {!showApplyForm && (
-        <div className="flex flex-wrap gap-2 pt-1">
-          {(isNew || isTriaged) && (
-            <button
-              onClick={handleApply}
-              className="rounded-lg border border-accent/50 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition-colors"
-            >
-              {correction.categoryId ? "Accept & Apply" : "Accept"}
-            </button>
-          )}
-          {isNew && (
-            <button
-              onClick={() => handleAction("triage")}
-              className="rounded-lg border border-border bg-surface-alt px-3 py-1.5 text-xs font-medium text-muted hover:text-foreground transition-colors"
-            >
-              Triage (flag for later)
-            </button>
-          )}
-          {(isNew || isTriaged) && (
-            <button
-              onClick={() => handleAction("reject")}
-              className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors"
-            >
-              Reject
-            </button>
-          )}
-          {!isNew && (
-            <button
-              onClick={() => handleAction("delete")}
-              className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:text-destructive transition-colors ml-auto"
-            >
-              Delete
-            </button>
-          )}
-        </div>
-      )}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
+        {isOpen && (
+          <button
+            type="button"
+            onClick={saveAndVerify}
+            className="text-sm font-semibold text-neon-blue hover:underline"
+          >
+            {hasCategory ? "Save & Verify" : "Accept"}
+          </button>
+        )}
+        {correction.status === "new" && (
+          <button
+            type="button"
+            onClick={() => handleAction("triage")}
+            className="text-xs font-medium text-muted hover:text-foreground"
+          >
+            Triage (flag for later)
+          </button>
+        )}
+        {isOpen && (
+          <button
+            type="button"
+            onClick={() => handleAction("reject")}
+            className="text-xs font-medium text-destructive hover:underline"
+          >
+            Reject
+          </button>
+        )}
+        {!isOpen && (
+          <button
+            type="button"
+            onClick={() => handleAction("delete")}
+            className="text-xs font-medium text-muted hover:text-destructive ml-auto"
+          >
+            Delete
+          </button>
+        )}
+      </div>
     </div>
   );
 }

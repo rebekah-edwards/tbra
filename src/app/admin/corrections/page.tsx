@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser, isAdmin } from "@/lib/auth";
 import { db } from "@/db";
-import { reportCorrections, books, users, taxonomyCategories } from "@/db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { reportCorrections, books, users, taxonomyCategories, bookCategoryRatings } from "@/db/schema";
+import { and, eq, desc, sql } from "drizzle-orm";
 import { CorrectionsTriageDashboard } from "@/components/admin/corrections-triage";
 
 export const dynamic = "force-dynamic";
@@ -29,16 +29,29 @@ export default async function AdminCorrectionsPage({
       createdAt: reportCorrections.createdAt,
       bookId: reportCorrections.bookId,
       bookTitle: books.title,
+      bookSlug: books.slug,
       userId: reportCorrections.userId,
       userEmail: users.email,
       categoryId: reportCorrections.categoryId,
       categoryName: taxonomyCategories.name,
       categoryKey: taxonomyCategories.key,
+      // The rating entry this edit proposes to change (null if the book has
+      // no rating in that category yet).
+      currentIntensity: bookCategoryRatings.intensity,
+      currentNotes: bookCategoryRatings.notes,
+      currentEvidence: bookCategoryRatings.evidenceLevel,
     })
     .from(reportCorrections)
     .leftJoin(books, eq(reportCorrections.bookId, books.id))
     .leftJoin(users, eq(reportCorrections.userId, users.id))
     .leftJoin(taxonomyCategories, eq(reportCorrections.categoryId, taxonomyCategories.id))
+    .leftJoin(
+      bookCategoryRatings,
+      and(
+        eq(bookCategoryRatings.bookId, reportCorrections.bookId),
+        eq(bookCategoryRatings.categoryId, reportCorrections.categoryId),
+      ),
+    )
     .where(eq(reportCorrections.status, activeStatus))
     .orderBy(desc(reportCorrections.createdAt))
     .limit(100);
@@ -65,7 +78,8 @@ export default async function AdminCorrectionsPage({
           Proposed Edits
         </h1>
         <p className="text-sm text-muted mt-1">
-          Review user-submitted content rating corrections
+          Compare each reader&apos;s suggestion with the current entry, edit
+          the wording and strength, then Save &amp; Verify.
         </p>
       </div>
 
