@@ -41,11 +41,16 @@ export async function POST(req: Request) {
   return jsonOk({ id: result.id });
 }
 
-/** DELETE /api/v1/goals/custom?id=… — soft-removes the goal. */
+/** DELETE /api/v1/goals/custom?id=… or body { id } — soft-removes the goal.
+ *  (The iOS client sends the id in the body; it never puts ?k=v in a path.) */
 export async function DELETE(req: Request) {
   const user = await getApiUser(req);
   if (!user) return jsonError("Unauthorized.", 401);
-  const id = new URL(req.url).searchParams.get("id");
+  let id = new URL(req.url).searchParams.get("id");
+  if (!id) {
+    const body = await parseJsonBody(req);
+    id = typeof body?.id === "string" ? body.id : null;
+  }
   if (!id) return jsonError("Missing id.", 400);
   await removeCustomGoalFor(user.userId, id);
   return jsonOk({ ok: true });
