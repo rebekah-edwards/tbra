@@ -23,6 +23,16 @@ struct BuddyReadSummaryRow: Codable, Hashable, Identifiable {
     let createdAt: String
     let book: BookRef
     let memberCount: Int
+    /// Added to the API on 2026-11-19 — optional so an older server's
+    /// response still decodes (the row then just omits "Hosted by").
+    struct HostRef: Codable, Hashable {
+        let userId: String
+        let displayName: String?
+        let username: String?
+    }
+    let host: HostRef?
+    /// "active" | "invited" (2026-11-19; nil from an older server).
+    let myStatus: String?
 }
 
 struct BuddyReadMemberRow: Codable, Hashable {
@@ -124,6 +134,9 @@ struct BuddyReadsView: View {
                     .foregroundStyle(Theme.muted)
 
                 // Join by code
+                if DesignPreview.on {
+                    joinRowV2
+                } else {
                 HStack(spacing: 10) {
                     TextField("Invite code", text: $joinCode)
                         .textInputAutocapitalization(.characters)
@@ -145,11 +158,29 @@ struct BuddyReadsView: View {
                     }
                     .disabled(joinCode.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
+                }
                 if let err = model.joinError {
                     Text(err).font(Theme.body(13)).foregroundStyle(Theme.destructive)
                 }
 
-                if model.buddyReads.isEmpty && model.loaded {
+                if DesignPreview.on {
+                    if model.buddyReads.isEmpty && model.loaded {
+                        emptyV2
+                    } else {
+                        if !model.buddyReads.isEmpty {
+                            Text("YOUR BUDDY READS")
+                                .font(Theme.body(11, .bold)).tracking(0.8)
+                                .foregroundStyle(Theme.muted)
+                                .padding(.top, 4)
+                        }
+                        ForEach(model.buddyReads) { br in
+                            NavigationLink(value: BuddyReadRoute(slug: br.slug)) {
+                                BuddyReadListRowV2(br: br)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                } else if model.buddyReads.isEmpty && model.loaded {
                     VStack(spacing: 6) {
                         Text("No buddy reads yet")
                             .font(Theme.body(16, .medium))
@@ -202,6 +233,126 @@ struct BuddyReadsView: View {
             BuddyReadDetailView(slug: route.slug)
         }
     }
+
+    // ── Refreshed list pieces (2026-11) ──
+
+    private var joinCodeEmpty: Bool { joinCode.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    /// Glass code field + Join, the screen's one lime pill. Like
+    /// AccentButtonStyle, a disabled Join reads neutral, never dimmed lime.
+    private var joinRowV2: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "ticket")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Theme.neonBlue)
+                TextField("Invite code", text: $joinCode)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+            }
+            .brandedField()
+            Button {
+                Task {
+                    if let slug = await model.join(code: joinCode) {
+                        joinCode = ""
+                        navigateTo = BuddyReadRoute(slug: slug)
+                    }
+                }
+            } label: {
+                Text("Join")
+                    .font(Theme.body(15, .bold))
+                    .foregroundStyle(joinCodeEmpty ? Theme.muted : Theme.onAccent)
+                    .padding(.horizontal, 22)
+                    .frame(height: 50)
+                    .background(joinCodeEmpty ? Theme.surfaceAlt : Theme.accent, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(joinCodeEmpty)
+        }
+    }
+
+    private var emptyV2: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "person.2")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(Theme.neonBlue)
+                .frame(width: 56, height: 56)
+                .glassEffect(.regular, in: Circle())
+            Text("No buddy reads yet")
+                .font(Theme.heading(18, .bold))
+                .foregroundStyle(Theme.foreground)
+            Text("Start one from any book page — the Buddy Read option in the reading-state menu.")
+                .font(Theme.body(13))
+                .foregroundStyle(Theme.muted)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 28)
+        .frame(maxWidth: .infinity)
+        .background(Theme.surface.opacity(0.92))
+        .heroHairline()
+        .padding(.top, 8)
+    }
+}
+
+/// One buddy read in the list: tipped cover, status badge, name, the real
+/// host ("You" only when it is you) and the reader count.
+private struct BuddyReadListRowV2: View {
+    @Environment(AuthStore.self) private var auth
+    let br: BuddyReadSummaryRow
+
+    private var hostLabel: String? {
+        guard let host = br.host else { return nil }
+        if case .signedIn(let me) = auth.phase, me.id == host.userId { return "You" }
+        return host.displayName ?? host.username.map { "@\($0)" } ?? "Reader"
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            CoverThumb(url: br.book.coverImageUrl, width: 56, height: 84, radius: 7, title: br.book.title)
+                .shadow(color: .black.opacity(0.35), radius: 8, y: 5)
+                .rotationEffect(.degrees(-2))
+            VStack(alignment: .leading, spacing: 5) {
+                BuddyReadStatusBadge(status: br.status, invited: br.myStatus == "invited")
+                Text(br.name)
+                    .font(Theme.heading(17, .bold))
+                    .foregroundStyle(Theme.foreground)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                if let hostLabel {
+                    Text("Hosted by \(hostLabel)")
+                        .font(Theme.body(13))
+                        .foregroundStyle(Theme.muted)
+                        .lineLimit(1)
+                }
+                Label("\(br.memberCount) reader\(br.memberCount == 1 ? "" : "s")", systemImage: "person.2")
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.muted)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.muted)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .profileRowChrome()
+    }
+}
+
+/// Active (lime dot) / Completed (muted dot) / Invited (blue dot), as glass.
+struct BuddyReadStatusBadge: View {
+    let status: String
+    var invited = false
+    var body: some View {
+        if invited {
+            DotBadge(text: "Invited", dot: Theme.neonBlue)
+        } else if status == "active" {
+            DotBadge(text: "Active", dot: Theme.accent)
+        } else {
+            DotBadge(text: status.capitalized, dot: Theme.muted)
+        }
+    }
 }
 
 // ── Detail ──
@@ -250,9 +401,11 @@ final class BuddyReadDetailModel {
 
 struct BuddyReadDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthStore.self) private var auth
     @State private var model: BuddyReadDetailModel
     @State private var composer = ""
     @State private var showLeaveConfirm = false
+    @State private var codeCopied = false
 
     init(slug: String) {
         _model = State(initialValue: BuddyReadDetailModel(slug: slug))
@@ -261,6 +414,12 @@ struct BuddyReadDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
+                if DesignPreview.on {
+                    // The back chevron's row; the name lives in the hero card.
+                    Color.clear.frame(height: 40)
+                        .padding(.top, 14)
+                        .padding(.bottom, -8)
+                } else {
                 HStack(spacing: 12) {
                     Color.clear.frame(width: 40, height: 40)
                     Text(model.detail?.name ?? "Buddy Read")
@@ -270,8 +429,11 @@ struct BuddyReadDetailView: View {
                     Spacer()
                 }
                 .padding(.top, 14)
+                }
 
-                if let detail = model.detail {
+                if let detail = model.detail, DesignPreview.on {
+                    detailV2(detail)
+                } else if let detail = model.detail {
                     // Book header
                     NavigationLink(value: BookRoute(idOrSlug: detail.book.slug ?? detail.book.id)) {
                         HStack(spacing: 12) {
@@ -417,6 +579,249 @@ struct BuddyReadDetailView: View {
             Button("Leave", role: .destructive) {
                 Task { if await model.leave() { dismiss() } }
             }
+        }
+    }
+
+    // ── Refreshed detail (2026-11) ──
+    // Designed, not just matched: the book is the subject, so the hero sits on
+    // its own blurred cover art inside the wordmark hairline with the cover
+    // tipped, like Pick From Your Shelf. Readers are glass chips, messages are
+    // glass cards, and Send is the screen's one solid-lime control.
+
+    private var myId: String? {
+        if case .signedIn(let me) = auth.phase { return me.id }
+        return nil
+    }
+
+    @ViewBuilder
+    private func detailV2(_ detail: BuddyReadDetailRow) -> some View {
+        heroV2(detail)
+        inviteTileV2(detail)
+
+        SectionHeading("Readers")
+        FlowLayout(spacing: 8) {
+            ForEach(detail.members, id: \.userId) { member in
+                memberChipV2(member)
+            }
+        }
+
+        SectionHeading("Discussion")
+        if model.messages.isEmpty {
+            HStack(spacing: 8) {
+                Image(systemName: "bubble.left.and.bubble.right")
+                    .foregroundStyle(Theme.neonBlue)
+                Text("No messages yet — say hi!")
+                    .foregroundStyle(Theme.muted)
+            }
+            .font(Theme.body(14))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .profileRowChrome()
+        }
+        ForEach(model.messages) { msg in
+            messageV2(msg)
+        }
+
+        if model.membership?.status == "active" {
+            composerV2
+
+            if model.membership?.role != "host" {
+                Button { showLeaveConfirm = true } label: {
+                    ShelfPill(kind: .destructive) {
+                        Label("Leave this buddy read", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 6)
+            }
+        }
+    }
+
+    private func heroV2(_ detail: BuddyReadDetailRow) -> some View {
+        let route = BookRoute(idOrSlug: detail.book.slug ?? detail.book.id)
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 16) {
+                NavigationLink(value: route) {
+                    CoverThumb(url: detail.book.coverImageUrl, width: 86, height: 129, radius: 8, title: detail.book.title)
+                        .shadow(color: .black.opacity(0.45), radius: 12, y: 8)
+                        .rotationEffect(.degrees(-3))
+                }
+                .buttonStyle(.plain)
+                VStack(alignment: .leading, spacing: 7) {
+                    BuddyReadStatusBadge(status: detail.status)
+                    Text(detail.name)
+                        .font(Theme.heading(21, .bold))
+                        .foregroundStyle(Theme.foreground)
+                        .lineLimit(3)
+                        .multilineTextAlignment(.leading)
+                    NavigationLink(value: route) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(detail.book.title)
+                                .font(Theme.body(14, .semibold))
+                                .foregroundStyle(Theme.foreground.opacity(0.85))
+                                .lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                            if !detail.book.authors.isEmpty {
+                                Text(detail.book.authors.joined(separator: ", "))
+                                    .font(Theme.body(13))
+                                    .foregroundStyle(Theme.foreground.opacity(0.70))
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    Label("\(detail.members.count)/\(detail.maxMembers) readers", systemImage: "person.2")
+                        .font(Theme.body(12, .medium))
+                        .foregroundStyle(Theme.foreground.opacity(0.75))
+                }
+            }
+            // The cover and text sit as one group in the middle of the card.
+            .frame(maxWidth: .infinity, alignment: .center)
+
+            if let desc = detail.description, !desc.isEmpty {
+                Text(desc)
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.foreground.opacity(0.85))
+                    .lineLimit(4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .background(
+            ZStack {
+                Theme.surfaceAlt
+                if let cover = detail.book.coverImageUrl, let url = URL(string: cover) {
+                    CoverBlurImage(url: url)
+                    Theme.scrim
+                }
+            }
+        )
+        .heroHairline()
+    }
+
+    private func inviteTileV2(_ detail: BuddyReadDetailRow) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("INVITE CODE")
+                    .font(Theme.body(11, .bold)).tracking(0.8)
+                    .foregroundStyle(Theme.muted)
+                Text(detail.inviteCode)
+                    .font(.system(size: 18, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Theme.foreground)
+                    .textSelection(.enabled)
+            }
+            Spacer()
+            Button {
+                UIPasteboard.general.string = detail.inviteCode
+                codeCopied = true
+                Task {
+                    try? await Task.sleep(for: .seconds(1.5))
+                    codeCopied = false
+                }
+            } label: {
+                ShelfIconCircle(systemName: codeCopied ? "checkmark" : "doc.on.doc")
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(codeCopied ? "Copied" : "Copy invite code")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .profileRowChrome()
+    }
+
+    private func initialAvatar(_ name: String, url: String?, size: CGFloat) -> some View {
+        Group {
+            if let url, let u = URL(string: url) {
+                AsyncImage(url: u) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: { Theme.surfaceAlt }
+            } else {
+                ZStack {
+                    LinearGradient(colors: [Theme.accent.opacity(0.28), Theme.neonPurple.opacity(0.28)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                    Text(String(name.prefix(1)).uppercased())
+                        .font(Theme.body(size * 0.42, .bold))
+                        .foregroundStyle(Theme.foreground)
+                }
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+    }
+
+    private func memberChipV2(_ member: BuddyReadMemberRow) -> some View {
+        let name = member.displayName ?? member.username ?? "Reader"
+        return HStack(spacing: 7) {
+            initialAvatar(name, url: member.avatarUrl, size: 24)
+            Text(name)
+                .font(Theme.body(13, .medium))
+                .foregroundStyle(Theme.foreground)
+                .lineLimit(1)
+            if member.role == "host" {
+                HStack(spacing: 4) {
+                    Circle().fill(Theme.accent).frame(width: 5, height: 5)
+                    Text("HOST")
+                        .font(Theme.body(9, .bold)).tracking(0.6)
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+        }
+        .padding(.leading, 5).padding(.trailing, 12).padding(.vertical, 5)
+        .glassEffect(.regular, in: Capsule())
+    }
+
+    private func messageV2(_ msg: BuddyReadMessageRow) -> some View {
+        let name = msg.user.displayName ?? msg.user.username ?? "Reader"
+        let mine = msg.user.id == myId
+        return HStack(alignment: .top, spacing: 10) {
+            initialAvatar(name, url: msg.user.avatarUrl, size: 30)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(name)
+                        .font(Theme.body(13, .semibold))
+                        .foregroundStyle(Theme.foreground)
+                    Text(DateFmt.display(msg.createdAt, precision: nil))
+                        .font(Theme.body(11))
+                        .foregroundStyle(Theme.muted)
+                }
+                Text(msg.message)
+                    .font(Theme.body(15))
+                    .foregroundStyle(Theme.foreground.opacity(0.9))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .profileRowChrome()
+        // Your own messages carry the thin lime ring of an "on" glass control.
+        .overlay(RoundedRectangle(cornerRadius: 18)
+            .stroke(Theme.accent.opacity(mine ? 0.45 : 0), lineWidth: 1))
+    }
+
+    private var composerEmpty: Bool { composer.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    private var composerV2: some View {
+        HStack(alignment: .bottom, spacing: 10) {
+            TextField("Message the group…", text: $composer, axis: .vertical)
+                .lineLimit(1...4)
+                .brandedField()
+            Button {
+                let text = composer
+                composer = ""
+                Task { await model.post(text) }
+            } label: {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(composerEmpty ? Theme.muted : Theme.onAccent)
+                    .frame(width: 50, height: 50)
+                    .background(composerEmpty ? Theme.surfaceAlt : Theme.accent, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .disabled(composerEmpty)
+            .accessibilityLabel("Send message")
         }
     }
 }

@@ -102,6 +102,16 @@ struct PublicProfileView: View {
                     blockedGate
                 } else if model.isPrivate {
                     privateGate
+                } else if let user = model.user, DesignPreview.on {
+                    // Refreshed (2026-11): one hero card on the wordmark
+                    // hairline holds who they are, the follow action and the
+                    // three counts; sections below are neutral glass.
+                    topBarV2(user)
+                    heroV2(user)
+                    if !model.favorites.isEmpty { topShelf }
+                    if !model.publicShelves.isEmpty { shelvesSection }
+                    if !model.sharedNotes.isEmpty { notesSection }
+                    if !model.reviews.isEmpty { reviewsSection }
                 } else if let user = model.user {
                     header(user)
                     socialRow(user)
@@ -142,8 +152,7 @@ struct PublicProfileView: View {
                 .font(.system(size: 26))
                 .foregroundStyle(Theme.muted)
                 .frame(width: 64, height: 64)
-                .background(Theme.surface, in: Circle())
-                .overlay(Circle().stroke(Theme.border, lineWidth: 1))
+                .gateIconChrome()
             Text("You blocked @\(model.username)")
                 .font(Theme.heading(18, .bold))
                 .foregroundStyle(Theme.foreground)
@@ -157,11 +166,15 @@ struct PublicProfileView: View {
                     if (try? await SafetyAPI.unblock(model.username)) != nil { await model.load() }
                 }
             } label: {
-                Text(unblocking ? "Unblocking…" : "Unblock")
-                    .font(Theme.body(14, .semibold))
-                    .foregroundStyle(Theme.foreground)
-                    .padding(.horizontal, 22).padding(.vertical, 9)
-                    .overlay(Capsule().stroke(Theme.border, lineWidth: 1))
+                if DesignPreview.on {
+                    ShelfPill(kind: .neutral) { Text(unblocking ? "Unblocking…" : "Unblock") }
+                } else {
+                    Text(unblocking ? "Unblocking…" : "Unblock")
+                        .font(Theme.body(14, .semibold))
+                        .foregroundStyle(Theme.foreground)
+                        .padding(.horizontal, 22).padding(.vertical, 9)
+                        .overlay(Capsule().stroke(Theme.border, lineWidth: 1))
+                }
             }
             .disabled(unblocking)
             .padding(.top, 6)
@@ -176,8 +189,7 @@ struct PublicProfileView: View {
                 .font(.system(size: 26))
                 .foregroundStyle(Theme.muted)
                 .frame(width: 64, height: 64)
-                .background(Theme.surface, in: Circle())
-                .overlay(Circle().stroke(Theme.border, lineWidth: 1))
+                .gateIconChrome()
             Text("This profile is private")
                 .font(Theme.heading(18, .bold))
                 .foregroundStyle(Theme.foreground)
@@ -289,6 +301,218 @@ struct PublicProfileView: View {
                         .font(.system(size: 15))
                         .foregroundStyle(Theme.foreground.opacity(0.9))
                         .chromeCircle()
+                }
+            }
+        }
+    }
+
+    // ── Refreshed header (2026-11) ──
+    // Designed, not just matched: the reader is a hero card on the wordmark
+    // hairline — ringed avatar, name, glass tier badge, the follow action and
+    // their three counts as eyebrow tiles — centred as one group. Follow is the
+    // screen's one solid-lime pill; everything else is glass.
+
+    /// The back chevron's row: the share circle sits opposite it.
+    private func topBarV2(_ user: ProfileUser) -> some View {
+        HStack {
+            Spacer()
+            if let username = user.username,
+               let url = URL(string: "https://thebasedreader.app/u/\(username)") {
+                ShareLink(item: url) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Theme.foreground.opacity(0.9))
+                        .chromeCircle()
+                }
+            }
+        }
+        .frame(height: 40)
+        .padding(.bottom, -8)
+    }
+
+    private func heroV2(_ user: ProfileUser) -> some View {
+        let name = user.displayName ?? user.username ?? "Reader"
+        return VStack(spacing: 14) {
+            avatarV2(user, name: name)
+
+            VStack(spacing: 6) {
+                Text(name)
+                    .font(Theme.heading(23, .bold))
+                    .foregroundStyle(Theme.foreground)
+                    .multilineTextAlignment(.center)
+                HStack(spacing: 8) {
+                    if let username = user.username {
+                        Text("@\(username)")
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                    }
+                    accountBadgeV2(user.accountType)
+                }
+            }
+
+            if let bio = user.bio?.trimmingCharacters(in: .whitespacesAndNewlines), !bio.isEmpty {
+                Text(bio)
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.foreground.opacity(0.9))
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack(spacing: 6) {
+                NavigationLink(value: FollowListRoute(username: model.username, type: "followers")) {
+                    (Text("\(model.followerCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                     + Text(model.followerCount == 1 ? "follower" : "followers").foregroundColor(Theme.muted))
+                }
+                Text("·").foregroundStyle(Theme.muted)
+                NavigationLink(value: FollowListRoute(username: model.username, type: "following")) {
+                    (Text("\(model.followingCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                     + Text("following").foregroundColor(Theme.muted))
+                }
+            }
+            .font(Theme.body(13))
+
+            if !model.isOwner {
+                HStack(spacing: 10) {
+                    Button {
+                        Task { await model.toggleFollow() }
+                    } label: {
+                        if model.isFollowing {
+                            ShelfPill(kind: .active) {
+                                Label("Following", systemImage: "checkmark")
+                            }
+                        } else {
+                            ShelfPill(kind: .primary) {
+                                Label("Follow", systemImage: "person.badge.plus")
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    // Report / Block (App Review 1.2), in a glass circle.
+                    SafetyMenuButton(
+                        target: SafetyTarget(kind: .profile, username: model.username),
+                        onBlocked: { Task { await model.load() } })
+                        .frame(width: 38, height: 38)
+                        .background(
+                            Circle().fill(Theme.surface.opacity(0.6))
+                                .overlay(Circle().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
+                        )
+                }
+            }
+
+            socialRowV2(user)
+
+            if let stats = model.stats {
+                HStack(spacing: 10) {
+                    statTileV2("\(stats.completed)", "Read", Theme.neonPurple)
+                    statTileV2("\(stats.currentlyReading)", "Reading", Theme.neonBlue)
+                    statTileV2("\(stats.tbr)", "TBR", Theme.accent)
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 22)
+        .padding(.bottom, 18)
+        .frame(maxWidth: .infinity)
+        .background(
+            ZStack {
+                Theme.surface.opacity(0.92)
+                RadialGradient(colors: [Theme.neonPurple.opacity(0.16), .clear],
+                               center: .topLeading, startRadius: 0, endRadius: 220)
+                RadialGradient(colors: [Theme.accent.opacity(0.08), .clear],
+                               center: .bottomTrailing, startRadius: 0, endRadius: 200)
+            }
+        )
+        .heroHairline()
+    }
+
+    /// Avatar inside a 2pt ring in the wordmark's three colours. The
+    /// placeholder is a soft tint, not solid lime — Follow is the one lime.
+    private func avatarV2(_ user: ProfileUser, name: String) -> some View {
+        Group {
+            if let avatarUrl = user.avatarUrl, let url = URL(string: avatarUrl) {
+                AsyncImage(url: url) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: { Theme.surfaceAlt }
+            } else {
+                ZStack {
+                    LinearGradient(colors: [Theme.accent.opacity(0.28), Theme.neonPurple.opacity(0.28)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                    Text(String(name.prefix(1)).uppercased())
+                        .font(Theme.heading(32, .bold))
+                        .foregroundStyle(Theme.foreground)
+                }
+            }
+        }
+        .frame(width: 84, height: 84)
+        .clipShape(Circle())
+        .padding(3)
+        .overlay(
+            Circle().stroke(LinearGradient(colors: [Theme.accent, Theme.neonBlue, Theme.neonPurple],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            lineWidth: 2)
+        )
+        .shadow(color: Theme.neonPurple.opacity(0.25), radius: 14, y: 4)
+    }
+
+    /// Glass tier badge with a colour dot (purple for Based Reader / admin).
+    @ViewBuilder
+    private func accountBadgeV2(_ type: String?) -> some View {
+        if let type, type != "user" {
+            let display = type == "beta_tester" ? "premium" : type
+            let label: String = {
+                switch display {
+                case "super_admin": return "Super Admin"
+                case "admin": return "Admin"
+                case "premium": return "Based Reader"
+                case "reader": return "Reader"
+                default: return display.replacingOccurrences(of: "_", with: " ").capitalized
+                }
+            }()
+            let isPurple = ["super_admin", "admin", "premium"].contains(display)
+            DotBadge(text: label, dot: isPurple ? Theme.neonPurple : Theme.accent)
+        }
+    }
+
+    /// Eyebrow label over the count; the hue lives in the dot only.
+    private func statTileV2(_ value: String, _ label: String, _ tint: Color) -> some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 5) {
+                Circle().fill(tint).frame(width: 6, height: 6)
+                Text(label.uppercased())
+                    .font(Theme.body(10, .bold)).tracking(0.8)
+                    .foregroundStyle(Theme.muted)
+            }
+            Text(value)
+                .font(Theme.heading(24, .bold))
+                .foregroundStyle(Theme.foreground)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(Theme.foreground.opacity(0.04), in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.foreground.opacity(0.08), lineWidth: 1))
+    }
+
+    /// The same links as `socialRow`, each in a 40pt glass circle.
+    @ViewBuilder
+    private func socialRowV2(_ user: ProfileUser) -> some View {
+        let links = Self.socialLinks(user)
+        if !links.isEmpty {
+            HStack(spacing: 10) {
+                ForEach(links) { link in
+                    Link(destination: link.url) {
+                        Image(link.id)
+                            .renderingMode(link.template ? .template : .original)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 19, height: 19)
+                            .foregroundStyle(Theme.foreground)
+                            .frame(width: 40, height: 40)
+                            .glassEffect(.regular, in: Circle())
+                    }
+                    .accessibilityLabel("@\(link.handle) on \(link.label)")
                 }
             }
         }
@@ -432,9 +656,7 @@ struct PublicProfileView: View {
                     }
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Theme.surface.opacity(0.55))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                    .profileRowChrome()
                 }
                 .buttonStyle(.plain)
             }
@@ -522,12 +744,9 @@ struct PublicProfileView: View {
             // and no way to follow it (punch list #5.2).
             HStack(spacing: 10) {
                 NavigationLink(value: ShelfRoute(shelfId: shelf.id, ownerName: ownerLabel)) {
-                    Text("View shelf")
-                        .font(Theme.body(12, .semibold))
-                        .foregroundStyle(Theme.neonBlue)
-                        .padding(.horizontal, 14).padding(.vertical, 7)
-                        .overlay(Capsule().stroke(Theme.neonBlue.opacity(0.5), lineWidth: 1))
+                    ViewShelfLabel()
                 }
+                .buttonStyle(.plain)
                 ShelfFollowButton(shelfId: shelf.id)
                 Spacer()
             }
@@ -559,9 +778,7 @@ struct PublicProfileView: View {
                         .textInputAutocapitalization(.never)
                         .onChange(of: reviewSearch) { showAllReviews = true }
                 }
-                .padding(.horizontal, 12).padding(.vertical, 9)
-                .background(Theme.surface.opacity(0.7), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                .modifier(ReviewSearchChrome())
 
                 HStack(spacing: 8) {
                     reviewChip("all", "All")
@@ -589,13 +806,22 @@ struct PublicProfileView: View {
                 Button {
                     showAllReviews = true
                 } label: {
-                    Text("Show all \(filtered.count) reviews")
-                        .font(Theme.body(14, .semibold))
-                        .foregroundStyle(Theme.neonBlue)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(Theme.surface.opacity(0.55), in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                    if DesignPreview.on {
+                        Text("Show all \(filtered.count) reviews")
+                            .font(Theme.body(14, .semibold))
+                            .foregroundStyle(Theme.neonBlue)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .glassEffect(.regular, in: Capsule())
+                    } else {
+                        Text("Show all \(filtered.count) reviews")
+                            .font(Theme.body(14, .semibold))
+                            .foregroundStyle(Theme.neonBlue)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(Theme.surface.opacity(0.55), in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                    }
                 }
             }
         }
@@ -622,13 +848,21 @@ struct PublicProfileView: View {
             reviewFilter = (reviewFilter == key) ? "all" : key
             showAllReviews = reviewFilter != "all"
         } label: {
-            Text(label)
-                .font(Theme.body(13, .medium))
-                .foregroundStyle(reviewFilter == key ? Theme.accentText : Theme.muted)
-                .padding(.horizontal, 13).padding(.vertical, 6)
-                .background(reviewFilter == key ? Theme.accent.opacity(0.15) : Theme.surfaceAlt.opacity(0.5), in: Capsule())
-                .overlay(Capsule().stroke(reviewFilter == key ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1))
+            if DesignPreview.on {
+                // Glass chips; the selected one takes the thin lime ring.
+                ShelfPill(kind: reviewFilter == key ? .active : .neutral) {
+                    Text(label).font(Theme.body(13, .semibold))
+                }
+            } else {
+                Text(label)
+                    .font(Theme.body(13, .medium))
+                    .foregroundStyle(reviewFilter == key ? Theme.accentText : Theme.muted)
+                    .padding(.horizontal, 13).padding(.vertical, 6)
+                    .background(reviewFilter == key ? Theme.accent.opacity(0.15) : Theme.surfaceAlt.opacity(0.5), in: Capsule())
+                    .overlay(Capsule().stroke(reviewFilter == key ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1))
+            }
         }
+        .buttonStyle(.plain)
     }
 }
 
@@ -649,11 +883,15 @@ struct PublicReviewRow: View {
                             .foregroundStyle(Theme.foreground)
                             .multilineTextAlignment(.leading)
                         if review.didNotFinish {
-                            Text("DNF")
-                                .font(Theme.body(10, .semibold))
-                                .foregroundStyle(Theme.destructive)
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .overlay(Capsule().stroke(Theme.destructive.opacity(0.5), lineWidth: 1))
+                            if DesignPreview.on {
+                                DotBadge(text: "DNF", dot: Theme.destructive)
+                            } else {
+                                Text("DNF")
+                                    .font(Theme.body(10, .semibold))
+                                    .foregroundStyle(Theme.destructive)
+                                    .padding(.horizontal, 6).padding(.vertical, 2)
+                                    .overlay(Capsule().stroke(Theme.destructive.opacity(0.5), lineWidth: 1))
+                            }
                         }
                     }
                     if let rating = review.rating {
@@ -669,11 +907,123 @@ struct PublicReviewRow: View {
                 Spacer()
             }
             .padding(12)
-            .background(Theme.surface.opacity(0.55))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+            .profileRowChrome()
         }
     }
+}
+
+// ── Refresh pieces shared by the public profile and buddy reads (2026-11) ──
+
+/// The 1px wordmark-colour hairline the hero cards use (web .card-hairline).
+struct HeroHairline: ViewModifier {
+    var cornerRadius: CGFloat = 22
+    func body(content: Content) -> some View {
+        content
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(LinearGradient(
+                        colors: [Theme.accent.opacity(0.55), Theme.neonBlue.opacity(0.35),
+                                 Theme.neonPurple.opacity(0.45)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+            )
+    }
+}
+
+/// A list row's card: neutral glass at the refreshed 18pt radius, the old
+/// 12pt bordered surface in v1.
+struct ProfileRowChrome: ViewModifier {
+    func body(content: Content) -> some View {
+        if DesignPreview.on {
+            content
+                .background(Theme.surface.opacity(0.8))
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.foreground.opacity(0.10), lineWidth: 1))
+        } else {
+            content
+                .background(Theme.surface.opacity(0.55))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+        }
+    }
+}
+
+extension View {
+    func heroHairline(_ cornerRadius: CGFloat = 22) -> some View {
+        modifier(HeroHairline(cornerRadius: cornerRadius))
+    }
+    func profileRowChrome() -> some View { modifier(ProfileRowChrome()) }
+}
+
+/// A glass badge carrying its hue in a dot ("badges are glass with a colour dot").
+struct DotBadge: View {
+    let text: String
+    let dot: Color
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle().fill(dot).frame(width: 7, height: 7)
+            Text(text)
+                .font(Theme.body(11, .semibold))
+                .foregroundStyle(Theme.foreground)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 5)
+        .glassEffect(.regular, in: Capsule())
+    }
+}
+
+/// The review search field: a glass capsule like .brandedField() in the
+/// refreshed look, the bordered rounded rect in v1.
+private struct ReviewSearchChrome: ViewModifier {
+    func body(content: Content) -> some View {
+        if DesignPreview.on {
+            content
+                .padding(.horizontal, 16)
+                .frame(minHeight: 46)
+                .glassEffect(.regular, in: Capsule())
+        } else {
+            content
+                .padding(.horizontal, 12).padding(.vertical, 9)
+                .background(Theme.surface.opacity(0.7), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+        }
+    }
+}
+
+/// "View shelf" on a profile's shelf rail: a glass pill in link blue.
+private struct ViewShelfLabel: View {
+    var body: some View {
+        if DesignPreview.on {
+            ShelfPill(kind: .neutral) {
+                Text("View shelf")
+                    .font(Theme.body(13, .semibold))
+                    .foregroundStyle(Theme.neonBlue)
+            }
+        } else {
+            Text("View shelf")
+                .font(Theme.body(12, .semibold))
+                .foregroundStyle(Theme.neonBlue)
+                .padding(.horizontal, 14).padding(.vertical, 7)
+                .overlay(Capsule().stroke(Theme.neonBlue.opacity(0.5), lineWidth: 1))
+        }
+    }
+}
+
+/// The private / blocked screens' icon circle.
+private struct GateIconChrome: ViewModifier {
+    func body(content: Content) -> some View {
+        if DesignPreview.on {
+            content.glassEffect(.regular, in: Circle())
+        } else {
+            content
+                .background(Theme.surface, in: Circle())
+                .overlay(Circle().stroke(Theme.border, lineWidth: 1))
+        }
+    }
+}
+
+extension View {
+    fileprivate func gateIconChrome() -> some View { modifier(GateIconChrome()) }
 }
 
 // ── Follow / unfollow a shelf from a public profile (punch list #5.2) ──
@@ -702,14 +1052,25 @@ struct ShelfFollowButton: View {
                 if let res { following = res.following }
             }
         } label: {
-            Text(following ? "Following" : "Follow")
-                .font(Theme.body(12, .semibold))
-                .foregroundStyle(following ? Theme.muted : Theme.onAccent)
-                .padding(.horizontal, 14).padding(.vertical, 7)
-                .background(following ? AnyShapeStyle(Theme.surfaceAlt) : AnyShapeStyle(Theme.accent),
-                            in: Capsule())
-                .overlay(Capsule().stroke(following ? Theme.border : .clear, lineWidth: 1))
+            if DesignPreview.on {
+                // Glass, not lime: the reader's own Follow is the screen's
+                // one solid pill; following a shelf takes the thin ring.
+                ShelfPill(kind: following ? .active : .neutral) {
+                    Label(following ? "Following" : "Follow",
+                          systemImage: following ? "checkmark" : "plus")
+                        .font(Theme.body(13, .semibold))
+                }
+            } else {
+                Text(following ? "Following" : "Follow")
+                    .font(Theme.body(12, .semibold))
+                    .foregroundStyle(following ? Theme.muted : Theme.onAccent)
+                    .padding(.horizontal, 14).padding(.vertical, 7)
+                    .background(following ? AnyShapeStyle(Theme.surfaceAlt) : AnyShapeStyle(Theme.accent),
+                                in: Capsule())
+                    .overlay(Capsule().stroke(following ? Theme.border : .clear, lineWidth: 1))
+            }
         }
+        .buttonStyle(.plain)
         .opacity(busy || !loaded ? 0.6 : 1)
         .disabled(busy)
         .task {
@@ -747,12 +1108,9 @@ struct AllShelvesSheet: View {
                                           tint: shelf.tint)
                             HStack(spacing: 10) {
                                 NavigationLink(value: ShelfRoute(shelfId: shelf.id, ownerName: ownerLabel)) {
-                                    Text("View shelf")
-                                        .font(Theme.body(12, .semibold))
-                                        .foregroundStyle(Theme.neonBlue)
-                                        .padding(.horizontal, 14).padding(.vertical, 7)
-                                        .overlay(Capsule().stroke(Theme.neonBlue.opacity(0.5), lineWidth: 1))
+                                    ViewShelfLabel()
                                 }
+                                .buttonStyle(.plain)
                                 ShelfFollowButton(shelfId: shelf.id)
                                 Spacer()
                             }
