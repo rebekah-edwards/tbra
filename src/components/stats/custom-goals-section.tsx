@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { CustomGoalProgress, CustomGoalKind } from "@/lib/queries/custom-goals";
 import { setCustomGoal, removeCustomGoal, setAudioLength } from "@/lib/actions/custom-goals";
 import { NoCover } from "@/components/no-cover";
+import { MissingMetaWarning, type AdminMissing } from "@/components/stats/missing-meta-warning";
 
 // Premium custom goals on Stats (2026-11-19): pages read, hours listened,
 // days read, books in a genre — one glass card each, hue carried by the icon
@@ -58,18 +59,33 @@ function fmt(n: number, kind: CustomGoalKind): string {
 }
 
 export function CustomGoalsSection({
+  year,
   premium,
   goals,
   genres,
   editable,
+  adminMissing = null,
 }: {
+  year: number | "all";
   premium: boolean;
   goals: CustomGoalProgress[];
   genres: string[];
   /** Only the current year's goals can be added to. */
   editable: boolean;
+  /** Admins only: books this year missing pages / audio length. */
+  adminMissing?: AdminMissing | null;
 }) {
   const [adding, setAdding] = useState(false);
+  // Today's place in the year (0…1), the same tick the books-goal track has.
+  // Read after mount: the server's "today" (UTC) and the reader's can differ.
+  const [yearElapsed, setYearElapsed] = useState<number | null>(null);
+  useEffect(() => {
+    const now = new Date();
+    if (year !== now.getFullYear()) return setYearElapsed(null);
+    const start = new Date(year, 0, 1).getTime();
+    const end = new Date(year + 1, 0, 1).getTime();
+    setYearElapsed(Math.min(1, Math.max(0, (now.getTime() - start) / (end - start))));
+  }, [year]);
 
   if (!premium) {
     return (
@@ -129,7 +145,13 @@ export function CustomGoalsSection({
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
           {goals.map((g) => (
-            <GoalCard key={g.id} goal={g} editable={editable} />
+            <GoalCard key={g.id} goal={g} editable={editable} yearElapsed={yearElapsed}
+              adminFixHref={adminMissing ? `/admin/book-metadata?year=${adminMissing.year}&focus=audio` : undefined}
+              warning={
+                adminMissing && g.kind === "pages" && adminMissing.pages > 0 ? <MissingMetaWarning missing={adminMissing} kind="pages" />
+                : adminMissing && g.kind === "hours" && adminMissing.audio > 0 ? <MissingMetaWarning missing={adminMissing} kind="audio" />
+                : null
+              } />
           ))}
         </div>
       )}
@@ -137,7 +159,21 @@ export function CustomGoalsSection({
   );
 }
 
-function GoalCard({ goal, editable }: { goal: CustomGoalProgress; editable: boolean }) {
+function GoalCard({
+  goal,
+  editable,
+  yearElapsed,
+  warning,
+  adminFixHref,
+}: {
+  goal: CustomGoalProgress;
+  editable: boolean;
+  yearElapsed: number | null;
+  warning?: React.ReactNode;
+  /** Admins fix missing lengths in the CATALOG (everyone benefits), not just
+   *  for their own goal. */
+  adminFixHref?: string;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [fixing, setFixing] = useState(false);
@@ -155,7 +191,10 @@ function GoalCard({ goal, editable }: { goal: CustomGoalProgress; editable: bool
           <KindIcon kind={goal.kind} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="eyebrow truncate">{goal.kind === "genre" ? `${label} books` : label}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="eyebrow truncate">{goal.kind === "genre" ? `${label} books` : label}</p>
+            {warning}
+          </div>
           <p className="mt-0.5 flex items-baseline gap-1.5">
             <span className="font-heading text-[26px] font-extrabold leading-none tabular-nums">{fmt(goal.current, goal.kind)}</span>
             <span className="text-sm text-muted">of {fmt(goal.target, goal.kind)} {m.unit}</span>
@@ -229,17 +268,33 @@ function GoalCard({ goal, editable }: { goal: CustomGoalProgress; editable: bool
         </form>
       )}
 
-      <div className="mt-3 h-[7px] overflow-hidden rounded-full bg-foreground/10">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{
-            width: `${Math.max(goal.percentComplete > 0 ? 3 : 0, goal.percentComplete)}%`,
-            background: `linear-gradient(90deg, rgba(${m.rgb},0.75), rgb(${m.rgb}))`,
-          }}
-        />
+      {/* Progress against a tick for today's place in the year (same as the
+          books goal): fill past the tick is ahead of pace. */}
+      <div className="relative mt-3 h-3.5">
+        <div className="absolute inset-x-0 top-1/2 h-[7px] -translate-y-1/2 overflow-hidden rounded-full bg-foreground/10">
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{
+              width: `${Math.max(goal.percentComplete > 0 ? 3 : 0, goal.percentComplete)}%`,
+              background: `linear-gradient(90deg, rgba(${m.rgb},0.75), rgb(${m.rgb}))`,
+            }}
+          />
+        </div>
+        {yearElapsed !== null && (
+          <span
+            aria-hidden
+            className="absolute top-0 h-full w-[2px] rounded-full bg-foreground"
+            style={{ left: `calc(${Math.min(yearElapsed * 100, 100)}% - 1px)` }}
+          />
+        )}
       </div>
       <div className="mt-1.5 flex items-center justify-between text-[11px] font-medium text-muted">
         <span>{goal.percentComplete}% of goal</span>
+        {yearElapsed !== null && goal.percentComplete < 100 && (
+          <span>
+            {goal.percentComplete >= Math.round(yearElapsed * 100) ? "On pace" : "Behind pace"}
+          </span>
+        )}
         {goal.percentComplete >= 100 && (
           <span className="inline-flex items-center gap-1 text-foreground">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden="true">
@@ -252,7 +307,15 @@ function GoalCard({ goal, editable }: { goal: CustomGoalProgress; editable: bool
 
       {goal.kind === "hours" && missing.length > 0 && (
         <div className="mt-3 border-t border-foreground/10 pt-3">
-          {!fixing ? (
+          {adminFixHref ? (
+            <Link href={adminFixHref} className="flex w-full items-center justify-between gap-2 text-left text-xs">
+              <span className="inline-flex items-center gap-1.5 text-foreground">
+                <span className="h-[6px] w-[6px] rounded-full bg-neon-purple" aria-hidden="true" />
+                {missing.length} {missing.length === 1 ? "listen is" : "listens are"} missing a length
+              </span>
+              <span className="font-medium text-neon-blue">Fix in catalog</span>
+            </Link>
+          ) : !fixing ? (
             <button type="button" onClick={() => setFixing(true)} className="flex w-full cursor-pointer items-center justify-between gap-2 text-left text-xs">
               <span className="inline-flex items-center gap-1.5 text-foreground">
                 <span className="h-[6px] w-[6px] rounded-full bg-neon-purple" aria-hidden="true" />

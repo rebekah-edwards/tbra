@@ -8,6 +8,7 @@ import type { ReadingGoalProgress } from "@/lib/queries/reading-goals";
 import type { CustomGoalProgress } from "@/lib/queries/custom-goals";
 import { CustomGoalsSection } from "@/components/stats/custom-goals-section";
 import { GoalEditButton, ReadingGoalEditForm } from "@/components/stats/goal-edit-form";
+import { MissingMetaWarning, type AdminMissing } from "@/components/stats/missing-meta-warning";
 import type { ReadingStreak } from "@/lib/queries/reading-streak";
 import { ReadingStreakCard } from "@/components/home/reading-streak-card";
 
@@ -18,6 +19,7 @@ interface StatsClientProps {
   premium?: boolean;
   customGoals?: CustomGoalProgress[];
   libraryGenres?: string[];
+  adminMissing?: AdminMissing | null;
   streak: ReadingStreak;
   /** The reader hid the streak (Settings → Display). */
   hideStreak?: boolean;
@@ -58,6 +60,7 @@ export function StatsClient({
   premium = false,
   customGoals = [],
   libraryGenres = [],
+  adminMissing = null,
   streak,
   hideStreak = false,
   booksByMonth,
@@ -179,9 +182,11 @@ export function StatsClient({
 
       {/* Secondary stats row */}
       <div className="grid grid-cols-3 gap-2">
-        <MiniStat value={pageStats.totalPages >= 10000 ? `${(pageStats.totalPages / 1000).toFixed(1)}k` : pageStats.totalPages.toLocaleString()} label="Pages read" />
+        <MiniStat value={pageStats.totalPages >= 10000 ? `${(pageStats.totalPages / 1000).toFixed(1)}k` : pageStats.totalPages.toLocaleString()} label="Pages read"
+          warning={adminMissing && adminMissing.pages > 0 ? <MissingMetaWarning missing={adminMissing} kind="pages" /> : null} />
         <MiniStat value={readingPace ? `${readingPace.avgDays}d` : "—"} label="Avg pace" />
-        <MiniStat value={minutesListened > 0 ? formatMinutes(minutesListened) : "—"} label="Listened" />
+        <MiniStat value={minutesListened > 0 ? formatMinutes(minutesListened) : "—"} label="Listened"
+          warning={adminMissing && adminMissing.audio > 0 ? <MissingMetaWarning missing={adminMissing} kind="audio" /> : null} />
       </div>
 
       {/* ─── Row 1: Reading Goal + Streak, then Monthly Reading ───
@@ -307,6 +312,8 @@ export function StatsClient({
 
       {typeof year === "number" && (
         <CustomGoalsSection
+          year={year}
+          adminMissing={adminMissing}
           premium={premium}
           goals={customGoals}
           genres={libraryGenres}
@@ -521,9 +528,10 @@ function HeroCard({ icon, iconBg, value, label, href }: { icon: string; iconBg: 
   );
 }
 
-function MiniStat({ value, label }: { value: string; label: string }) {
+function MiniStat({ value, label, warning }: { value: string; label: string; warning?: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-border bg-surface-alt/50 p-2.5 text-center">
+    <div className="relative rounded-xl border border-border bg-surface-alt/50 p-2.5 text-center">
+      {warning && <div className="absolute right-1.5 top-1.5">{warning}</div>}
       <p className="text-sm font-bold font-heading">{value}</p>
       <p className="text-[9px] text-muted uppercase tracking-wider">{label}</p>
     </div>

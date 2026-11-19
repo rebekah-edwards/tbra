@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getCurrentUser, isPremium } from "@/lib/auth";
+import { getCurrentUser, isPremium, isAdmin } from "@/lib/auth";
+import { getMissingBookMetadata } from "@/lib/queries/missing-book-metadata";
 import { getCustomGoals, getLibraryGenres } from "@/lib/queries/custom-goals";
 
 export const metadata: Metadata = {
@@ -71,6 +72,17 @@ export default async function StatsPage({
 
   const display = await getDisplayPrefs(session.userId);
 
+  // Admins only: how many of this year's reads lack a page count / audio
+  // length — drives the warning icons that open /admin/book-metadata.
+  const adminMissing =
+    isAdmin(session) && selectedYear !== undefined
+      ? await getMissingBookMetadata(session.userId, selectedYear).then((m) => ({
+          year: selectedYear,
+          pages: m.pages.length,
+          audio: m.audio.length,
+        }))
+      : null;
+
   // Premium custom goals — per year, so not shown on All Time.
   const premium = isPremium(session);
   const [customGoals, libraryGenres] =
@@ -102,6 +114,7 @@ export default async function StatsPage({
       premium={premium}
       customGoals={customGoals}
       libraryGenres={libraryGenres}
+      adminMissing={adminMissing}
     />
   );
 }
