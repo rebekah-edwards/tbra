@@ -45,6 +45,12 @@ export const books = sqliteTable("books", {
   index("idx_books_slug").on(table.slug),
   // Sort by publication year (Browse "newest" sort)
   index("books_publication_year_idx").on(table.publicationYear),
+  // /admin/covers queue: partial covering index over public books with no
+  // cover. The page pins it with INDEXED BY — keep the WHERE in sync with
+  // PENDING_FROM in src/app/admin/covers/page.tsx.
+  index("idx_books_public_missing_cover")
+    .on(table.createdAt, table.id, table.visibility, table.coverImageUrl)
+    .where(sql`visibility = 'public' AND (cover_image_url IS NULL OR cover_image_url = '')`),
 ]);
 
 // ─── NYT bestseller cache ───
@@ -276,6 +282,9 @@ export const userBookState = sqliteTable("user_book_state", {
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   uniqueIndex("user_book_state_unique").on(table.userId, table.bookId),
+  // Per-book lookups ("how many readers have this book"); the unique index
+  // above leads with user_id so it can't serve them.
+  index("idx_user_book_state_book").on(table.bookId),
 ]);
 
 export const readingSessions = sqliteTable("reading_sessions", {

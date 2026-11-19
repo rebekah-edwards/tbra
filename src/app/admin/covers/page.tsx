@@ -41,7 +41,7 @@ async function loadAudiobookQueue(offset: number): Promise<BookRow[]> {
     users: number;
     author_names: string | null;
   }>(sql.raw(`
-    WITH demand AS (
+    WITH demand AS MATERIALIZED (
       SELECT book_id, count(DISTINCT user_id) AS users
       FROM user_book_state
       WHERE (
@@ -59,8 +59,8 @@ async function loadAudiobookQueue(offset: number): Promise<BookRow[]> {
         JOIN authors a ON a.id = ba.author_id
         WHERE ba.book_id = b.id
       ) as author_names
-    FROM books b
-    JOIN demand d ON d.book_id = b.id
+    FROM demand d
+    CROSS JOIN books b ON b.id = d.book_id
     WHERE (b.audiobook_cover_url IS NULL OR b.audiobook_cover_url = '')
       AND b.visibility != 'hidden'
     ORDER BY d.users DESC, b.created_at DESC
@@ -80,12 +80,28 @@ async function loadAudiobookQueue(offset: number): Promise<BookRow[]> {
   }));
 }
 
+/**
+ * The pending set: public books with no cover. On Turso these queries took
+ * 40s–4min+ and timed the page out (2026-11-19): "public AND no cover" walked
+ * all ~84k public rows (wide rows, slow from cold storage) and the per-book
+ * reader count scanned all of user_book_state (no book_id index). They now
+ * read two indexes added by scripts/add-cover-review-indexes.ts:
+ *   - idx_books_public_missing_cover: partial covering index over exactly this
+ *     set, pinned with INDEXED BY because the planner otherwise prefers
+ *     idx_books_visibility (keep this WHERE identical to the index's WHERE);
+ *   - idx_user_book_state_book: per-book reader counts by index.
+ * Rows are ranked from the index alone, and only the 50 rows on the page are
+ * then fetched from books.
+ */
+const PENDING_FROM = `
+  FROM books b INDEXED BY idx_books_public_missing_cover
+  WHERE b.visibility = 'public'
+    AND (b.cover_image_url IS NULL OR b.cover_image_url = '')
+`;
+const READERS = `(SELECT count(DISTINCT s.user_id) FROM user_book_state s WHERE s.book_id = b.id)`;
+
 async function loadBooks(tab: Tab, offset: number): Promise<BookRow[]> {
   if (tab === "audiobook") return loadAudiobookQueue(offset);
-  // Wrap in a CTE so `users` (a correlated-subquery column alias) can be
-  // filtered with WHERE in the outer query. Previously used HAVING without
-  // GROUP BY — local SQLite permits it, but Turso's libsql parser rejects
-  // it as a syntax error (digest 1944237793).
   const activityFilter =
     tab === "priority"
       ? "WHERE users > 0"
@@ -104,31 +120,28 @@ async function loadBooks(tab: Tab, offset: number): Promise<BookRow[]> {
     users: number;
     author_names: string | null;
   }>(sql.raw(`
-    WITH candidates AS (
-      SELECT
-        b.id,
-        b.title,
-        b.slug,
-        b.isbn_13,
-        b.cover_image_url,
-        b.cover_source,
-        b.created_at,
-        (SELECT count(DISTINCT user_id) FROM user_book_state WHERE book_id = b.id) as users,
-        (
-          SELECT group_concat(a.name, '|')
-          FROM book_authors ba
-          JOIN authors a ON a.id = ba.author_id
-          WHERE ba.book_id = b.id
-        ) as author_names
-      FROM books b
-      WHERE b.visibility = 'public'
-        AND (b.cover_image_url IS NULL OR b.cover_image_url = '')
+    WITH pending AS MATERIALIZED (
+      SELECT b.id, b.created_at, ${READERS} AS users
+      ${PENDING_FROM}
+    ),
+    ranked AS MATERIALIZED (
+      SELECT id, created_at, users FROM pending
+      ${activityFilter}
+      ORDER BY users DESC, created_at DESC
+      LIMIT ${PAGE_SIZE} OFFSET ${offset}
     )
-    SELECT id, title, slug, isbn_13, cover_image_url, cover_source, created_at, users, author_names
-    FROM candidates
-    ${activityFilter}
-    ORDER BY users DESC, created_at DESC
-    LIMIT ${PAGE_SIZE} OFFSET ${offset}
+    SELECT
+      r.id, bk.title, bk.slug, bk.isbn_13, bk.cover_image_url, bk.cover_source,
+      r.created_at, r.users,
+      (
+        SELECT group_concat(a.name, '|')
+        FROM book_authors ba
+        JOIN authors a ON a.id = ba.author_id
+        WHERE ba.book_id = r.id
+      ) as author_names
+    FROM ranked r
+    CROSS JOIN books bk ON bk.id = r.id
+    ORDER BY r.users DESC, r.created_at DESC
   `));
 
   // Attach the NYT bestseller cover (if any) for each book — a local cache read,
@@ -157,14 +170,17 @@ async function loadBooks(tab: Tab, offset: number): Promise<BookRow[]> {
 }
 
 async function loadCounts(): Promise<{ priority: number; all: number; abandon: number; audiobook: number }> {
+  // Audiobook demand is gathered from user_book_state first (small) and joined
+  // to books by primary key; the old EXISTS form probed every visible book.
   const rows = await db.all<{ tab: string; n: number }>(sql.raw(`
-    WITH pending AS (
-      SELECT
-        b.id,
-        (SELECT count(DISTINCT user_id) FROM user_book_state WHERE book_id = b.id) as users
-      FROM books b
-      WHERE b.visibility = 'public'
-        AND (b.cover_image_url IS NULL OR b.cover_image_url = '')
+    WITH pending AS MATERIALIZED (
+      SELECT ${READERS} AS users
+      ${PENDING_FROM}
+    ),
+    audio AS MATERIALIZED (
+      SELECT DISTINCT s.book_id FROM user_book_state s
+      WHERE (s.state IN ('currently_reading', 'paused') AND s.active_formats LIKE '%audiobook%')
+         OR s.owned_formats LIKE '%audiobook%'
     )
     SELECT 'priority' as tab, count(*) as n FROM pending WHERE users > 0
     UNION ALL
@@ -172,17 +188,11 @@ async function loadCounts(): Promise<{ priority: number; all: number; abandon: n
     UNION ALL
     SELECT 'abandon' as tab, count(*) as n FROM pending WHERE users = 0
     UNION ALL
-    SELECT 'audiobook' as tab, count(*) as n FROM books b
+    SELECT 'audiobook' as tab, count(*) as n
+    FROM audio d
+    CROSS JOIN books b ON b.id = d.book_id
     WHERE (b.audiobook_cover_url IS NULL OR b.audiobook_cover_url = '')
       AND b.visibility != 'hidden'
-      AND EXISTS (
-        SELECT 1 FROM user_book_state s
-        WHERE s.book_id = b.id
-          AND (
-            (s.state IN ('currently_reading', 'paused') AND s.active_formats LIKE '%audiobook%')
-            OR s.owned_formats LIKE '%audiobook%'
-          )
-      )
   `));
 
   const map: Record<string, number> = {};
