@@ -1,6 +1,7 @@
 import { db } from "@/db";
-import { readingGoals, readingSessions } from "@/db/schema";
-import { eq, and, like, sql, isNotNull } from "drizzle-orm";
+import { readingGoals } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+import { getYearReads } from "./year-reads";
 
 export interface ReadingGoalProgress {
   targetBooks: number;
@@ -18,22 +19,9 @@ export async function getReadingGoal(
 
   if (!goal) return null;
 
-  // Count unique completed books in this year (not sessions — re-imports can create duplicates)
-  // Only count books with real completion dates (exclude synthetic import dates)
-  const completedRows = await db
-    .select({ count: sql<number>`count(DISTINCT ${readingSessions.bookId})` })
-    .from(readingSessions)
-    .where(
-      and(
-        eq(readingSessions.userId, userId),
-        eq(readingSessions.state, "completed"),
-        like(readingSessions.completionDate, `${year}-%`),
-        isNotNull(readingSessions.completionPrecision)
-      )
-    )
-    .get();
-
-  const completedBooks = completedRows?.count ?? 0;
+  // Distinct READS finished this year, re-reads included; near-duplicate
+  // import sessions for one read collapse (see year-reads.ts).
+  const completedBooks = (await getYearReads(userId, year)).length;
   const percentComplete = goal.targetBooks > 0
     ? Math.min(100, Math.round((completedBooks / goal.targetBooks) * 100))
     : 0;

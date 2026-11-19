@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isPremium } from "@/lib/auth";
+import { getCustomGoals, getLibraryGenres } from "@/lib/queries/custom-goals";
 
 export const metadata: Metadata = {
   title: "Reading Stats | The Based Reader App",
@@ -70,6 +71,16 @@ export default async function StatsPage({
 
   const display = await getDisplayPrefs(session.userId);
 
+  // Premium custom goals — per year, so not shown on All Time.
+  const premium = isPremium(session);
+  const [customGoals, libraryGenres] =
+    premium && selectedYear !== undefined
+      ? await Promise.all([
+          getCustomGoals(session.userId, selectedYear),
+          selectedYear === currentYear ? getLibraryGenres(session.userId) : Promise.resolve([]),
+        ])
+      : [[], []];
+
   return (
     <StatsClient
       year={yearLabel}
@@ -88,6 +99,9 @@ export default async function StatsPage({
       pageStats={pageStats}
       minutesListened={minutesListened}
       fictionSplit={fictionSplit}
+      premium={premium}
+      customGoals={customGoals}
+      libraryGenres={libraryGenres}
     />
   );
 }

@@ -539,6 +539,37 @@ export const readingGoals = sqliteTable("reading_goals", {
   uniqueIndex("reading_goals_user_year_unique").on(table.userId, table.year),
 ]);
 
+// ─── Custom goals (premium, 2026-11-19) ───
+// Extra yearly goals beside the free books goal: pages read, hours listened,
+// days read, books in a genre. One row per (user, year, goal_key); removing a
+// goal sets active=0 with a fresh updated_at — the two-way sync never deletes,
+// so a hard delete would come back on the next tick.
+export const customGoals = sqliteTable("custom_goals", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  year: integer("year").notNull(),
+  kind: text("kind").notNull(), // 'pages' | 'hours' | 'days' | 'genre'
+  genreName: text("genre_name"), // kind='genre' only: rolled-up genre name
+  goalKey: text("goal_key").notNull(), // kind, or 'genre:<lowercased name>'
+  target: integer("target").notNull(), // in the kind's unit (pages, hours, days, books)
+  active: integer("active").notNull().default(1),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("custom_goals_user_year_key_unique").on(table.userId, table.year, table.goalKey),
+]);
+
+// A reader's own audiobook length for a book whose catalog length is unknown
+// (about 88% of books in 2026-11). Feeds the Hours listened goal.
+export const userAudioLengths = sqliteTable("user_audio_lengths", {
+  userId: text("user_id").notNull().references(() => users.id),
+  bookId: text("book_id").notNull().references(() => books.id),
+  minutes: integer("minutes").notNull(),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.bookId] }),
+]);
+
 // ─── Favorites ───
 
 export const userFavoriteBooks = sqliteTable("user_favorite_books", {

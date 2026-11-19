@@ -122,6 +122,8 @@ const TABLES: Array<[string, string[], boolean]> = [
   ['user_genre_preferences',   ['user_id', 'genre_name'], false],
   ['user_notification_preferences', ['user_id'],          true],
   ['reading_goals',            ['id'],                    true],
+  ['custom_goals',             ['id'],                    true],   // premium custom goals (2026-11-19)
+  ['user_audio_lengths',       ['user_id', 'book_id'],    true],
   ['reading_sessions',         ['id'],                    true],
   ['reading_notes',            ['id'],                    false],
   ['up_next',                  ['user_id', 'book_id'],    false],

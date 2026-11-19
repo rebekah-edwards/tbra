@@ -5,6 +5,8 @@ import Link from "next/link";
 import { GoalRingTick, PacePill, paceLine } from "@/components/home/reading-goal-card";
 import { useRouter } from "next/navigation";
 import type { ReadingGoalProgress } from "@/lib/queries/reading-goals";
+import type { CustomGoalProgress } from "@/lib/queries/custom-goals";
+import { CustomGoalsSection } from "@/components/stats/custom-goals-section";
 import type { ReadingStreak } from "@/lib/queries/reading-streak";
 import { ReadingStreakCard } from "@/components/home/reading-streak-card";
 
@@ -12,6 +14,9 @@ interface StatsClientProps {
   year: number | "all";
   currentYear: number;
   goal: ReadingGoalProgress | null;
+  premium?: boolean;
+  customGoals?: CustomGoalProgress[];
+  libraryGenres?: string[];
   streak: ReadingStreak;
   /** The reader hid the streak (Settings → Display). */
   hideStreak?: boolean;
@@ -49,6 +54,9 @@ export function StatsClient({
   year,
   currentYear,
   goal,
+  premium = false,
+  customGoals = [],
+  libraryGenres = [],
   streak,
   hideStreak = false,
   booksByMonth,
@@ -285,6 +293,15 @@ export function StatsClient({
           </section>
         )}
       </div>
+
+      {typeof year === "number" && (
+        <CustomGoalsSection
+          premium={premium}
+          goals={customGoals}
+          genres={libraryGenres}
+          editable={year === currentYear}
+        />
+      )}
 
       {/* ─── Row 2: Rating Distribution + Fiction vs NF ─── */}
       <div className="lg:grid lg:grid-cols-3 lg:gap-4 space-y-6 lg:space-y-0">

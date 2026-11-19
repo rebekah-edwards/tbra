@@ -138,7 +138,12 @@ async function getCachedReadingStreak(userId: string, year: number | undefined, 
   )();
 }
 
-async function getReadingStreakInner(userId: string, year?: number): Promise<CachedStreak> {
+/**
+ * Every local calendar day (YYYY-MM-DD, in the reader's timezone) with
+ * streak-counting activity, sorted. Shared by the streak and the premium
+ * "Days read" goal so the two can never disagree.
+ */
+export async function getActivityDays(userId: string): Promise<string[]> {
   const tzRow = (await db.all(sql`
     SELECT timezone FROM users WHERE id = ${userId}
   `)) as { timezone: string | null }[];
@@ -172,6 +177,16 @@ async function getReadingStreakInner(userId: string, year?: number): Promise<Cac
         .filter((d): d is string => Boolean(d))
     ),
   ].sort();
+
+  return allDays;
+}
+
+async function getReadingStreakInner(userId: string, year?: number): Promise<CachedStreak> {
+  const tzRow = (await db.all(sql`
+    SELECT timezone FROM users WHERE id = ${userId}
+  `)) as { timezone: string | null }[];
+  const fmt = dayFormatterFor(tzRow[0]?.timezone || FALLBACK_TIMEZONE);
+  const allDays = await getActivityDays(userId);
 
   if (allDays.length === 0) {
     return { currentStreak: 0, longestStreak: 0, unit: "days" };
