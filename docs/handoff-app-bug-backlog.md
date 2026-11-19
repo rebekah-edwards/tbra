@@ -890,3 +890,25 @@ reporter whether they see it on web too, and on which screens). If it reproduces
 next step is a plain `URLSession.shared.data(from:)` probe against a blob URL from inside the app
 versus the same request against `covers.openlibrary.org`, to find what is special about that host
 for this process.
+
+### 2026-11-19, later — CONFIRMED FIXED on device. Report `0e9e42a0` closed.
+
+Rebekah opened the app on her own iPhone after `f9e8eff` was installed: **profile pictures are
+showing again.** The report is resolved on local + Turso.
+
+So the paragraph above — "it did not fix the symptom" — describes the SIMULATOR only, and the
+simulator was the misleading part of this investigation, not the bug. Read it that way. The
+`CoverImageCache` migration is the fix; the blob-host stall that persisted in the simulator after
+the change is an artifact of that environment and did not need solving. Had the fix been judged on
+the simulator alone it would have been reverted as useless.
+
+**Lesson worth keeping: a remote-image failure in the iOS Simulator is not evidence about a real
+device.** Safari inside the simulator loaded the URL fine while the app could not, which looked
+like damning app-side proof and was not. Verify image-loading fixes on hardware before believing
+either a pass or a fail.
+
+**STILL OUTSTANDING — the tester who filed this does NOT have the fix yet.** `f9e8eff` is on
+`claude/native-ios-api-shelves-upnext` and on Rebekah's phone only. **Build 19 does not contain
+it**, and build 19 is both the current TestFlight build and the one in App Store review. Every
+TestFlight tester keeps seeing missing profile pictures until a build 20 ships, which also needs
+its `src/lib/whats-new.ts` entry deployed first.
