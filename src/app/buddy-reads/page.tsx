@@ -20,12 +20,15 @@ export default async function BuddyReadsPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 pb-32 pt-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="neon-heading text-2xl font-heading font-bold">
-          Buddy Reads
-        </h1>
+        <div>
+          <p className="eyebrow">Read together</p>
+          <h1 className="text-foreground text-2xl font-bold tracking-tight">
+            Buddy Reads
+          </h1>
+        </div>
         <Link
           href="/buddy-reads/new"
-          className="inline-flex items-center gap-1.5 rounded-full bg-[#a3e635] px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+          className="btn-lime px-4 py-2 text-sm"
         >
           <svg
             width="16"
@@ -45,23 +48,26 @@ export default async function BuddyReadsPage() {
       </div>
 
       {buddyReads.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-surface p-10 text-center">
+        <div className="card-hairline flex flex-col items-center justify-center p-10 text-center">
+          <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-foreground/12 bg-surface/70 backdrop-blur-md">
           <svg
-            width="48"
-            height="48"
+            width="28"
+            height="28"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="1.75"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="mb-4 text-muted"
+            className="text-neon-blue"
+            aria-hidden="true"
           >
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
             <circle cx="9" cy="7" r="4" />
             <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
+          </span>
           <p className="text-lg font-heading font-semibold text-foreground mb-1">
             Start reading with friends!
           </p>
@@ -70,7 +76,7 @@ export default async function BuddyReadsPage() {
           </p>
           <Link
             href="/buddy-reads/new"
-            className="inline-flex items-center gap-1.5 rounded-full bg-[#a3e635] px-5 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+            className="btn-lime px-5 py-2.5 text-sm"
           >
             Create Your First Buddy Read
           </Link>
@@ -78,7 +84,10 @@ export default async function BuddyReadsPage() {
       ) : (
         <div className="space-y-3">
           {buddyReads.map((br) => {
-            const host = br.memberCount > 0 ? "You" : "";
+            const host =
+              br.host.userId === session.userId
+                ? "you"
+                : br.host.displayName || (br.host.username ? `@${br.host.username}` : "");
             return (
               <BuddyReadCard
                 key={br.id}
@@ -90,6 +99,7 @@ export default async function BuddyReadsPage() {
                 memberCount={br.memberCount}
                 status={br.status as "active" | "completed"}
                 hostName={host}
+                invited={br.myStatus === "invited"}
                 myProgress={null}
               />
             );

@@ -20,7 +20,7 @@ import { ProfileShelvesSection } from "@/components/shelves/profile-shelves-sect
 import { getFollowedShelfIds } from "@/lib/mutations/shelves";
 import { PublicReviewHistory } from "@/components/profile/public-review-history";
 import { SocialIcons } from "@/components/profile/social-icons";
-import { AccountBadge } from "@/components/profile/account-badge";
+import { ProfileHero } from "@/components/profile/profile-hero";
 import { FollowButton } from "@/components/profile/follow-button";
 
 /**
@@ -134,13 +134,13 @@ export default async function PublicProfilePage({
   if (user.isPrivate && !isOwner) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface border border-border mb-4">
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-foreground/12 bg-surface/70 backdrop-blur-md">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-7 w-7 text-muted">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0110 0v4" />
           </svg>
         </div>
-        <h1 className="text-foreground text-lg font-bold mb-1">This profile is private</h1>
+        <h1 className="font-heading text-foreground text-lg font-bold mb-1">This profile is private</h1>
         <p className="text-sm text-muted">@{username} has chosen to keep their reading life private.</p>
       </div>
     );
@@ -153,7 +153,7 @@ export default async function PublicProfilePage({
   if (relation.viewerBlocked || relation.blockedViewer) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface border border-border mb-4">
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-foreground/12 bg-surface/70 backdrop-blur-md">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-7 w-7 text-muted">
             {relation.viewerBlocked ? (
               <>
@@ -170,13 +170,13 @@ export default async function PublicProfilePage({
         </div>
         {relation.viewerBlocked ? (
           <>
-            <h1 className="text-foreground text-lg font-bold mb-1">You blocked @{username}</h1>
+            <h1 className="font-heading text-foreground text-lg font-bold mb-1">You blocked @{username}</h1>
             <p className="text-sm text-muted mb-4">You won&rsquo;t see each other&rsquo;s reviews or profiles.</p>
             <UnblockButton targetUserId={user.id} />
           </>
         ) : (
           <>
-            <h1 className="text-foreground text-lg font-bold mb-1">This profile is private</h1>
+            <h1 className="font-heading text-foreground text-lg font-bold mb-1">This profile is private</h1>
             <p className="text-sm text-muted">@{username} has chosen to keep their reading life private.</p>
           </>
         )}
@@ -214,138 +214,62 @@ export default async function PublicProfilePage({
 
   const hasSocials = user.instagram || user.tiktok || user.threads || user.twitter;
 
+  const showLocation =
+    !!user.location &&
+    (user.locationVisibility === "public" || isOwner || (user.locationVisibility === "followers" && currentlyFollowing));
+
   return (
-    <div className="space-y-6 lg:max-w-[60%] lg:mx-auto">
-      {/* Profile header — desktop: 2 columns (info left, stats right) */}
-      <div className="lg:flex lg:items-start lg:gap-8">
-        {/* Left: avatar + info */}
-        <div className="flex gap-4 lg:flex-1">
-          {/* Avatar */}
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-3xl font-bold text-black overflow-hidden flex-shrink-0">
-            {user.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
-            ) : (
-              (user.displayName || user.email)[0].toUpperCase()
-            )}
-          </div>
-
-          {/* Info */}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start gap-2">
-              <h1 className="text-foreground text-xl font-bold tracking-tight line-clamp-2 leading-tight">
-                {user.displayName || user.username || user.email.split("@")[0]}
-              </h1>
-              <AccountBadge accountType={user.accountType} />
-            </div>
-            {user.username && (
-              <p className="text-xs text-muted mt-0.5">@{user.username}</p>
-            )}
-            {user.bio && (
-              <p className="text-sm text-foreground/90 mt-1 leading-relaxed whitespace-pre-line">{user.bio}</p>
-            )}
-            {/* Location — respect visibility setting */}
-            {user.location && (
-              user.locationVisibility === "public" || isOwner || (user.locationVisibility === "followers" && currentlyFollowing)
-            ) && (
-              <p className="text-xs text-muted mt-1 flex items-center gap-1">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                {user.location}
-              </p>
-            )}
-            <p className="text-xs text-muted mt-1.5">
-              Member since {memberSince}
-            </p>
-            {/* Follower/following counts + follow button */}
-            <div className="flex items-center gap-3 mt-1.5">
-              <p className="text-xs text-muted">
-                <Link href={`/u/${user.username}/followers`} className="hover:text-foreground transition-colors">
-                  {followerCount} {followerCount === 1 ? "follower" : "followers"}
-                </Link>
-                {" · "}
-                <Link href={`/u/${user.username}/following`} className="hover:text-foreground transition-colors">
-                  {followingCount} following
-                </Link>
-              </p>
-              {!isOwner && session && (
-                <div className="flex items-center gap-1">
-                  <FollowButton
-                    targetUserId={user.id}
-                    initialIsFollowing={currentlyFollowing}
-                  />
-                  <SafetyMenu
-                    kind="profile"
-                    targetUserId={user.id}
-                    username={user.username}
-                    pageUrl={`/u/${user.username}`}
-                  />
-                </div>
-              )}
-            </div>
-            {/* Social icons — inline on desktop */}
-            {hasSocials && (
-              <div className="hidden lg:block mt-2">
-                <SocialIcons
-                  instagram={user.instagram}
-                  tiktok={user.tiktok}
-                  threads={user.threads}
-                  twitter={user.twitter}
-                  className="!justify-start"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right: stats pills (desktop only) */}
-        <div className="hidden lg:block lg:flex-shrink-0 lg:w-[200px]">
-          <div className="rounded-[18px] border border-neon-purple/30 bg-surface/80 p-4 text-center mb-2">
-            <p className="text-3xl font-bold text-foreground">{stats.completed}</p>
-            <p className="text-xs text-muted">Read</p>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-[18px] border border-neon-blue/30 bg-surface/80 p-2.5 text-center">
-              <p className="text-xl font-bold text-foreground">{stats.currentlyReading}</p>
-              <p className="text-[10px] text-muted">Reading</p>
-            </div>
-            <div className="rounded-xl border border-accent/30 bg-accent/15 p-2.5 text-center">
-              <p className="text-xl font-bold text-foreground">{stats.tbr}</p>
-              <p className="text-[10px] text-muted">TBR</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Social icons — mobile only (centered full width) */}
-      {hasSocials && (
-        <div className="lg:hidden">
-          <SocialIcons
-            instagram={user.instagram}
-            tiktok={user.tiktok}
-            threads={user.threads}
-            twitter={user.twitter}
-          />
-        </div>
-      )}
-
-      {/* Stats row — mobile only */}
-      <div className="grid grid-cols-3 gap-3 lg:hidden">
-        <div className="rounded-[18px] border border-neon-purple/30 bg-surface/80 p-3 text-center">
-          <p className="text-2xl font-bold text-foreground">{stats.completed}</p>
-          <p className="text-xs text-muted">Read</p>
-        </div>
-        <div className="rounded-[18px] border border-neon-blue/30 bg-surface/80 p-3 text-center">
-          <p className="text-2xl font-bold text-foreground">{stats.currentlyReading}</p>
-          <p className="text-xs text-muted">Reading</p>
-        </div>
-        <div className="rounded-xl border border-accent/30 bg-accent/15 p-3 text-center">
-          <p className="text-2xl font-bold text-foreground">{stats.tbr}</p>
-          <p className="text-xs text-muted">TBR</p>
-        </div>
-      </div>
+    <div className="space-y-7 lg:max-w-[60%] lg:mx-auto">
+      <ProfileHero
+        name={user.displayName || user.username || user.email.split("@")[0]}
+        username={user.username}
+        avatarUrl={user.avatarUrl}
+        initial={(user.displayName || user.email)[0].toUpperCase()}
+        accountType={user.accountType}
+        bio={user.bio}
+        location={showLocation ? user.location : null}
+        memberSince={memberSince}
+        followerCount={followerCount}
+        followingCount={followingCount}
+        stats={stats}
+        corner={
+          !isOwner && session ? (
+            <SafetyMenu
+              kind="profile"
+              targetUserId={user.id}
+              username={user.username}
+              pageUrl={`/u/${user.username}`}
+            />
+          ) : undefined
+        }
+        actions={
+          !isOwner && session ? (
+            <FollowButton targetUserId={user.id} initialIsFollowing={currentlyFollowing} size="lg" />
+          ) : isOwner ? (
+            <Link href="/profile/edit" className="btn-glass px-5 py-2 text-sm">
+              Edit Profile
+            </Link>
+          ) : (
+            <Link
+              href={`/signup?redirect=${encodeURIComponent(`/u/${user.username}`)}`}
+              className="btn-lime px-6 py-2 text-sm"
+            >
+              Follow
+            </Link>
+          )
+        }
+        socials={
+          hasSocials ? (
+            <SocialIcons
+              instagram={user.instagram}
+              tiktok={user.tiktok}
+              threads={user.threads}
+              twitter={user.twitter}
+              className="lg:!justify-start"
+            />
+          ) : undefined
+        }
+      />
 
       {/* Favorites */}
       <FavoritesShelf favorites={favorites} userAvatarUrl={user.avatarUrl} />

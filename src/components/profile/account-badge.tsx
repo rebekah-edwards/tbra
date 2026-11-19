@@ -10,33 +10,17 @@ interface AccountBadgeProps {
   exact?: boolean;
 }
 
+// 2026-11 refresh: badges are neutral glass; the tier's hue is carried by a
+// dot (lime for Reader, purple for Based Reader and staff) or the star.
 const badgeConfig: Record<
   AccountType,
-  { label: string; className: string; icon?: "star" }
+  { label: string; dot: string; icon?: "star" }
 > = {
-  reader: {
-    label: "Reader",
-    className:
-      "reader-badge border-accent bg-accent/20",
-  },
-  premium: {
-    label: "Based Reader",
-    className: "border-neon-purple bg-neon-purple/20 text-neon-purple",
-    icon: "star",
-  },
-  beta_tester: {
-    label: "Beta Tester",
-    className: "reader-badge border-accent bg-accent/20",
-    icon: "star",
-  },
-  admin: {
-    label: "Admin",
-    className: "border-neon-purple bg-neon-purple/20 text-neon-purple",
-  },
-  super_admin: {
-    label: "Super Admin",
-    className: "border-neon-purple bg-neon-purple/20 text-neon-purple",
-  },
+  reader: { label: "Reader", dot: "bg-accent" },
+  premium: { label: "Based Reader", dot: "text-neon-purple", icon: "star" },
+  beta_tester: { label: "Beta Tester", dot: "text-accent", icon: "star" },
+  admin: { label: "Admin", dot: "bg-neon-purple" },
+  super_admin: { label: "Super Admin", dot: "bg-neon-purple" },
 };
 
 export function AccountBadge({ accountType, exact = false }: AccountBadgeProps) {
@@ -44,20 +28,21 @@ export function AccountBadge({ accountType, exact = false }: AccountBadgeProps) 
   const config = badgeConfig[effective as AccountType] ?? badgeConfig.reader;
 
   return (
-    <span
-      className={`inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap mt-0.5 ${config.className}`}
-    >
-      {config.icon === "star" && (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-foreground/12 bg-surface/70 px-2 py-0.5 text-[10px] font-semibold text-foreground backdrop-blur-md">
+      {config.icon === "star" ? (
         <svg
           width="10"
           height="10"
           viewBox="0 0 24 24"
           fill="currentColor"
           stroke="none"
-          className="shrink-0"
+          className={`shrink-0 ${config.dot}`}
+          aria-hidden="true"
         >
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
+      ) : (
+        <span className={`h-[6px] w-[6px] shrink-0 rounded-full ${config.dot}`} aria-hidden="true" />
       )}
       {config.label}
     </span>

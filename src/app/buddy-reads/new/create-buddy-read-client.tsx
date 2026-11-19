@@ -123,8 +123,8 @@ export function CreateBuddyReadClient({ prefillBook }: CreateBuddyReadClientProp
           Book
         </label>
         {selectedBook ? (
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3">
-            <div className="h-14 w-10 flex-shrink-0 overflow-hidden rounded">
+          <div className="flex items-center gap-3 rounded-[18px] border border-foreground/10 bg-surface/60 p-3 backdrop-blur-md">
+            <div className="h-14 w-10 flex-shrink-0 overflow-hidden rounded-md shadow-md ring-1 ring-white/10">
               {selectedBook.coverImageUrl ? (
                 <Image
                   src={selectedBook.coverImageUrl}
@@ -143,7 +143,7 @@ export function CreateBuddyReadClient({ prefillBook }: CreateBuddyReadClientProp
             <button
               type="button"
               onClick={clearBook}
-              className="text-muted hover:text-foreground transition-colors"
+              className="btn-glass h-8 w-8 flex-shrink-0 cursor-pointer text-muted hover:text-foreground"
               aria-label="Remove book"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -164,16 +164,16 @@ export function CreateBuddyReadClient({ prefillBook }: CreateBuddyReadClientProp
                 setTimeout(() => e.target.scrollIntoView({ block: "start", behavior: "smooth" }), 150);
               }}
               placeholder="Search for a book..."
-              className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-[#a3e635]/50"
+              className="field-glass w-full text-sm"
             />
             {showDropdown && searchResults.length > 0 && (
-              <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-surface shadow-xl">
+              <div className="absolute left-0 right-0 top-full z-20 mt-1.5 max-h-64 overflow-y-auto rounded-[18px] border border-foreground/10 bg-surface/95 p-1 shadow-xl backdrop-blur-xl">
                 {searchResults.map((book) => (
                   <button
                     key={book.id}
                     type="button"
                     onClick={() => selectBook(book)}
-                    className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-surface-alt transition-colors"
+                    className="flex w-full items-center gap-3 rounded-[14px] px-3 py-2 text-left hover:bg-surface-alt transition-colors"
                   >
                     <div className="h-10 w-7 flex-shrink-0 overflow-hidden rounded">
                       {book.coverImageUrl ? (
@@ -218,12 +218,12 @@ export function CreateBuddyReadClient({ prefillBook }: CreateBuddyReadClientProp
           placeholder="What's this buddy read about?"
           rows={3}
           maxLength={500}
-          className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-[#a3e635]/50 resize-none"
+          className="field-glass !h-auto w-full !rounded-[18px] py-3 text-sm resize-none"
         />
       </div>
 
       {/* Public toggle */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4 rounded-[18px] border border-foreground/10 bg-surface/60 px-4 py-3 backdrop-blur-md">
         <div>
           <p className="text-sm font-semibold text-foreground">Public</p>
           <p className="text-xs text-muted">Anyone can find and request to join</p>
@@ -234,7 +234,7 @@ export function CreateBuddyReadClient({ prefillBook }: CreateBuddyReadClientProp
           aria-checked={isPublic}
           onClick={() => setIsPublic(!isPublic)}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            isPublic ? "bg-[#a3e635]" : "bg-border"
+            isPublic ? "bg-accent" : "bg-foreground/15"
           }`}
         >
           <span
@@ -263,7 +263,7 @@ export function CreateBuddyReadClient({ prefillBook }: CreateBuddyReadClientProp
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="block w-full min-w-0 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#a3e635]/50"
+            className="field-glass block w-full min-w-0 !px-3.5 text-sm"
           />
         </div>
         <div className="min-w-0">
@@ -280,7 +280,7 @@ export function CreateBuddyReadClient({ prefillBook }: CreateBuddyReadClientProp
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="block w-full min-w-0 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#a3e635]/50"
+            className="field-glass block w-full min-w-0 !px-3.5 text-sm"
           />
         </div>
       </div>
@@ -292,7 +292,7 @@ export function CreateBuddyReadClient({ prefillBook }: CreateBuddyReadClientProp
       <button
         type="submit"
         disabled={isPending}
-        className="w-full rounded-full bg-[#a3e635] py-3 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+        className="btn-lime w-full cursor-pointer py-3 text-sm"
       >
         {isPending ? "Creating..." : "Create Buddy Read"}
       </button>

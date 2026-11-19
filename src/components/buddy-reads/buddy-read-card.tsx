@@ -13,90 +13,99 @@ interface BuddyReadCardProps {
   memberCount: number;
   status: "active" | "completed";
   hostName: string;
+  /** The viewer was invited but hasn't joined yet. */
+  invited?: boolean;
   myProgress: number | null;
 }
 
+// 2026-11 refresh: the card sits on its own blurred cover art like the Reading
+// Now and Up Next cards, with a tipped cover, the title in the heading face and
+// glass badges whose hue is a dot.
 export function BuddyReadCard({
   slug,
-  name,
   bookTitle,
   bookCoverUrl,
   memberCount,
   status,
   hostName,
+  invited = false,
   myProgress,
 }: BuddyReadCardProps) {
   return (
     <Link
       href={`/buddy-reads/${slug}`}
-      className="flex gap-3 rounded-xl border border-border bg-surface p-3 transition-colors hover:bg-surface-hover tap-scale"
+      className="group relative block overflow-hidden rounded-[18px] border border-foreground/10 bg-surface tap-scale transition-colors hover:border-foreground/25"
     >
-      {/* Book cover thumbnail */}
-      <div className="shrink-0 w-[60px] h-[90px]">
-        {bookCoverUrl ? (
+      {bookCoverUrl && (
+        <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
           <Image
             src={bookCoverUrl}
-            alt={`Cover of ${bookTitle}`}
-            width={60}
-            height={90}
-            className="w-full h-full rounded-lg object-cover"
+            alt=""
+            fill
+            sizes="(max-width: 672px) 100vw, 672px"
+            className="book-card-bg-img scale-150 object-cover"
           />
-        ) : (
-          <NoCover title={bookTitle} className="w-full h-full" size="sm" />
-        )}
-      </div>
+          <div className="absolute inset-0 currently-reading-overlay" />
+        </div>
+      )}
 
-      {/* Details */}
-      <div className="flex flex-col justify-center gap-1 min-w-0 flex-1">
-        <h3 className="font-heading text-sm font-semibold text-neon-blue leading-tight line-clamp-1">
-          {bookTitle}
-        </h3>
-        <p className="font-body text-[11px] text-muted">
-          Hosted by {hostName}
-        </p>
-
-        <div className="flex items-center gap-2 mt-0.5">
-          {/* Member count */}
-          <span className="font-body text-[11px] text-muted/60">
-            {memberCount} {memberCount === 1 ? "member" : "members"}
-          </span>
-
-          {/* Status badge */}
-          {status === "active" ? (
-            <span className="inline-flex items-center rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent">
-              Active
-            </span>
+      <div className="relative flex items-center gap-4 p-3.5 pl-4">
+        <div className="h-[96px] w-[64px] flex-shrink-0 -rotate-3 transition-transform duration-200 group-hover:rotate-0">
+          {bookCoverUrl ? (
+            <Image
+              src={bookCoverUrl}
+              alt={`Cover of ${bookTitle}`}
+              width={64}
+              height={96}
+              className="h-full w-full rounded-lg object-cover shadow-[0_8px_18px_rgba(0,0,0,0.45)] ring-1 ring-white/10"
+            />
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted/15 px-2 py-0.5 text-[10px] font-semibold text-muted/60">
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4.5 12.75l6 6 9-13.5"
-                />
-              </svg>
-              Completed
-            </span>
+            <NoCover title={bookTitle} className="h-full w-full shadow-lg" size="sm" />
           )}
         </div>
 
-        {/* Progress bar for active reads where user has progress */}
-        {status === "active" && myProgress !== null && (
-          <div className="mt-1 w-full">
-            <div className="h-1.5 w-full rounded-full bg-border">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-heading text-[17px] font-bold leading-tight book-header-text line-clamp-2">
+            {bookTitle}
+          </h3>
+          {hostName && (
+            <p className="mt-0.5 text-xs book-header-text-sub line-clamp-1">Hosted by {hostName}</p>
+          )}
+
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-surface/80 px-2.5 py-1 text-[11px] font-semibold text-foreground backdrop-blur-md">
+              <span
+                className={`h-[7px] w-[7px] rounded-full ${
+                  invited ? "bg-neon-purple" : status === "active" ? "bg-accent" : "bg-neon-blue"
+                }`}
+                aria-hidden="true"
+              />
+              {invited ? "Invited" : status === "active" ? "Active" : "Completed"}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-surface/80 px-2.5 py-1 text-[11px] font-semibold text-foreground backdrop-blur-md">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              {memberCount} {memberCount === 1 ? "reader" : "readers"}
+            </span>
+          </div>
+
+          {status === "active" && myProgress !== null && (
+            <div className="mt-2.5 h-1.5 w-full rounded-full bg-foreground/10">
               <div
                 className="h-full rounded-full bg-accent transition-all"
                 style={{ width: `${Math.min(100, Math.max(0, myProgress))}%` }}
               />
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 book-header-text-sub" aria-hidden="true">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
       </div>
     </Link>
   );

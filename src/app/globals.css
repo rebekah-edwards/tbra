@@ -304,6 +304,11 @@ h1, h2, h3, .font-heading {
   }
 }
 
+/* Profile social icons: both theme variants are in the markup; show one. */
+.social-icon-light { display: none; }
+[data-theme="light"] .social-icon-dark:has(+ .social-icon-light) { display: none; }
+[data-theme="light"] .social-icon-light { display: block; }
+
 /* Track Progress button (Reading Now cards): black text in dark mode, white in light. */
 [data-theme="light"] .track-progress-btn { color: #ffffff !important; }
 

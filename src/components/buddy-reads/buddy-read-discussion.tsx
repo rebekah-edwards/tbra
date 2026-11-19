@@ -78,12 +78,12 @@ export function BuddyReadDiscussion({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col rounded-[18px] border border-foreground/10 bg-surface/60 p-3 backdrop-blur-md">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 pb-3">
         {optimisticMessages.length === 0 && (
           <p className="font-body text-sm text-muted text-center py-8">
-            No messages yet. Start the conversation!
+            No messages yet. Say hi and start the conversation.
           </p>
         )}
 
@@ -106,8 +106,8 @@ export function BuddyReadDiscussion({
                     className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5"
                   />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-[9px] font-semibold text-accent">
+                  <div className="w-7 h-7 rounded-full border border-foreground/12 bg-surface/80 flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-[9px] font-bold text-foreground">
                       {getInitials(msg.displayName)}
                     </span>
                   </div>
@@ -115,10 +115,10 @@ export function BuddyReadDiscussion({
 
               {/* Message bubble */}
               <div
-                className={`max-w-[75%] rounded-2xl px-3 py-2 ${
+                className={`max-w-[75%] rounded-[18px] border px-3 py-2 text-foreground ${
                   isOwn
-                    ? "bg-accent/15 text-foreground"
-                    : "bg-surface-hover text-foreground"
+                    ? "rounded-br-md border-accent/40 bg-accent/10"
+                    : "rounded-bl-md border-foreground/10 bg-surface/90"
                 }`}
               >
                 {!isOwn && (
@@ -145,20 +145,20 @@ export function BuddyReadDiscussion({
       </div>
 
       {/* Input */}
-      <div className="sticky bottom-0 flex items-center gap-2 border-t border-border bg-background pt-3">
+      <div className="sticky bottom-0 flex items-center gap-2 border-t border-foreground/10 pt-3">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
-          className="flex-1 rounded-full border border-border bg-surface px-4 py-2 text-sm font-body text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-accent"
+          className="field-glass !h-11 min-w-0 flex-1 text-sm"
         />
         <button
           type="button"
           onClick={handleSend}
           disabled={isPending || !input.trim()}
-          className="shrink-0 rounded-full bg-accent p-2 text-black transition-opacity disabled:opacity-40"
+          className="btn-lime h-11 w-11 shrink-0 cursor-pointer disabled:!opacity-40"
           aria-label="Send message"
         >
           <svg

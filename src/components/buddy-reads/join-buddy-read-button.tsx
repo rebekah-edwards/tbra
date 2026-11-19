@@ -60,9 +60,7 @@ export function JoinBuddyReadButton({
           type="button"
           onClick={handleAccept}
           disabled={isPending}
-          className={`rounded-full bg-accent px-5 py-1.5 text-[11px] font-semibold text-black transition-all ${
-            isPending ? "opacity-60" : ""
-          }`}
+          className={`btn-lime cursor-pointer px-6 py-2.5 text-sm ${isPending ? "opacity-60" : ""}`}
         >
           Accept
         </button>
@@ -70,9 +68,7 @@ export function JoinBuddyReadButton({
           type="button"
           onClick={handleDecline}
           disabled={isPending}
-          className={`rounded-full border border-border px-5 py-1.5 text-[11px] font-semibold text-muted transition-all hover:bg-surface-hover ${
-            isPending ? "opacity-60" : ""
-          }`}
+          className={`btn-glass cursor-pointer px-6 py-2.5 text-sm ${isPending ? "opacity-60" : ""}`}
         >
           Decline
         </button>
@@ -87,12 +83,11 @@ export function JoinBuddyReadButton({
         type="button"
         onClick={handleLeave}
         disabled={isPending}
-        className={`flex items-center gap-1.5 rounded-full border border-accent px-5 py-1.5 text-[11px] font-semibold text-accent transition-all hover:bg-accent/10 ${
-          isPending ? "opacity-60" : ""
-        }`}
+        data-active="true"
+        className={`btn-glass cursor-pointer px-6 py-2.5 text-sm ${isPending ? "opacity-60" : ""}`}
       >
         <svg
-          className="w-3 h-3"
+          className="w-3.5 h-3.5 text-accent"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -115,11 +110,9 @@ export function JoinBuddyReadButton({
       type="button"
       onClick={handleJoin}
       disabled={isPending}
-      className={`rounded-full bg-accent px-5 py-1.5 text-[11px] font-semibold text-black transition-all ${
-        isPending ? "opacity-60" : ""
-      }`}
+      className={`btn-lime cursor-pointer px-7 py-2.5 text-sm ${isPending ? "opacity-60" : ""}`}
     >
-      Join
+      Join buddy read
     </button>
   );
 }

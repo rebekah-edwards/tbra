@@ -93,7 +93,7 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted"
+              className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 h-3.5 w-3.5 text-muted"
             >
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -106,7 +106,7 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
                 setShowAll(true);
               }}
               placeholder="Search reviews..."
-              className="w-full rounded-lg border border-border bg-surface pl-9 pr-4 py-2 text-xs placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              className="field-glass !h-10 w-full !pl-10 text-sm"
             />
           </div>
 
@@ -115,11 +115,8 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
             <button
               type="button"
               onClick={() => { setActiveFilter("all"); setShowAll(false); }}
-              className={`rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${
-                activeFilter === "all"
-                  ? "bg-accent/20 text-foreground"
-                  : "bg-surface border border-border text-muted hover:text-foreground"
-              }`}
+              data-active={activeFilter === "all" ? "true" : undefined}
+              className="btn-glass cursor-pointer px-3 py-1 text-[11px]"
             >
               All
             </button>
@@ -127,12 +124,11 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
               <button
                 type="button"
                 onClick={() => { setActiveFilter(activeFilter === "written" ? "all" : "written"); setShowAll(true); }}
-                className={`rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${
-                  activeFilter === "written"
-                    ? "bg-neon-blue/20"
-                    : "bg-surface border border-border text-muted hover:text-foreground"
-                }`}
+                data-active={activeFilter === "written" ? "true" : undefined}
+                style={{ "--ring": "var(--neon-blue)" } as React.CSSProperties}
+                className="btn-glass cursor-pointer px-3 py-1 text-[11px]"
               >
+                <span className="h-[6px] w-[6px] rounded-full bg-neon-blue" aria-hidden="true" />
                 Written reviews
               </button>
             )}
@@ -140,12 +136,11 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
               <button
                 type="button"
                 onClick={() => { setActiveFilter(activeFilter === "dnf" ? "all" : "dnf"); setShowAll(true); }}
-                className={`rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${
-                  activeFilter === "dnf"
-                    ? "bg-destructive/20 text-destructive"
-                    : "bg-surface border border-border text-muted hover:text-foreground"
-                }`}
+                data-active={activeFilter === "dnf" ? "true" : undefined}
+                style={{ "--ring": "var(--destructive)" } as React.CSSProperties}
+                className="btn-glass cursor-pointer px-3 py-1 text-[11px]"
               >
+                <span className="h-[6px] w-[6px] rounded-full bg-destructive" aria-hidden="true" />
                 DNF
               </button>
             )}
@@ -163,7 +158,7 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
             <Link
               key={review.reviewId}
               href={`/book/${review.bookSlug || review.bookId}/reviews#review-${review.reviewId}`}
-              className="flex gap-3 rounded-lg border border-border bg-surface p-3 hover:border-accent/30 hover:bg-surface-alt transition-all duration-200 group"
+              className="group flex gap-3 rounded-[18px] border border-foreground/10 bg-surface/60 p-3 backdrop-blur-md transition-colors hover:border-foreground/25"
             >
               <div className="relative flex-shrink-0">
                 {review.coverImageUrl ? (
@@ -172,7 +167,7 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
                     alt={`Cover of ${review.title}`}
                     width={40}
                     height={60}
-                    className="h-[60px] w-[40px] rounded object-cover group-hover:shadow-md transition-shadow"
+                    className="h-[60px] w-[40px] rounded-md object-cover shadow-md ring-1 ring-white/10"
                   />
                 ) : (
                   <NoCover title={review.title} className="h-[60px] w-[40px]" size="sm" />
@@ -182,7 +177,8 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-semibold leading-tight line-clamp-1">{review.title}</h4>
                   {review.didNotFinish && (
-                    <span className="inline-flex items-center rounded-full bg-destructive/15 px-1.5 py-0.5 text-[9px] font-bold text-destructive whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-foreground/12 bg-surface/70 px-1.5 py-0.5 text-[9px] font-bold text-foreground">
+                      <span className="h-[5px] w-[5px] rounded-full bg-destructive" aria-hidden="true" />
                       DNF{review.dnfPercentComplete ? ` at ${review.dnfPercentComplete}%` : ""}
                     </span>
                   )}

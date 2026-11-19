@@ -6,9 +6,11 @@ import { followUser, unfollowUser } from "@/lib/actions/follows";
 interface FollowButtonProps {
   targetUserId: string;
   initialIsFollowing: boolean;
+  /** "lg" is the profile hero; the default is the compact list-row size. */
+  size?: "sm" | "lg";
 }
 
-export function FollowButton({ targetUserId, initialIsFollowing }: FollowButtonProps) {
+export function FollowButton({ targetUserId, initialIsFollowing, size = "sm" }: FollowButtonProps) {
   const [isPending, startTransition] = useTransition();
   const [optimisticFollowing, setOptimisticFollowing] = useOptimistic(initialIsFollowing);
 
@@ -28,12 +30,16 @@ export function FollowButton({ targetUserId, initialIsFollowing }: FollowButtonP
       type="button"
       onClick={handleClick}
       disabled={isPending}
-      className={`rounded-full px-5 py-1.5 text-[11px] font-semibold transition-all ${
-        optimisticFollowing
-          ? "border border-accent/60 bg-surface/60 text-foreground backdrop-blur-md"
-          : "bg-accent text-black font-bold hover:brightness-110"
-      } ${isPending ? "opacity-60" : ""}`}
+      data-active={optimisticFollowing ? "true" : undefined}
+      className={`${
+        optimisticFollowing ? "btn-glass" : "btn-lime"
+      } ${size === "lg" ? "gap-1.5 px-6 py-2 text-sm" : "gap-1 px-5 py-1.5 text-[11px]"} cursor-pointer ${isPending ? "opacity-60" : ""}`}
     >
+      {optimisticFollowing && (
+        <svg width={size === "lg" ? 14 : 11} height={size === "lg" ? 14 : 11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden="true">
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      )}
       {optimisticFollowing ? "Following" : "Follow"}
     </button>
   );

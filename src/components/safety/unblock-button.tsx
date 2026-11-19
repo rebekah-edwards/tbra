@@ -23,7 +23,7 @@ export function UnblockButton({ targetUserId }: { targetUserId: string }) {
             else setError(result.error ?? "Couldn't unblock this reader.");
           });
         }}
-        className="rounded-full border border-border px-5 py-2 text-sm font-semibold text-foreground hover:bg-surface-alt disabled:opacity-50"
+        className="btn-glass px-5 py-2 text-sm disabled:opacity-50"
       >
         {isPending ? "Unblocking…" : "Unblock"}
       </button>

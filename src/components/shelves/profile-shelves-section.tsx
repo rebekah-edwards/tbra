@@ -32,12 +32,18 @@ function ProfileShelfFollowButton({
           else setFollowing(result.isFollowing);
         });
       }}
-      className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium transition-colors ${
-        following
-          ? "border border-border bg-surface-alt text-muted hover:text-foreground"
-          : "bg-accent text-black hover:opacity-90"
-      }`}
+      data-active={following ? "true" : undefined}
+      className="btn-glass cursor-pointer gap-1 px-2.5 py-0.5 text-[10px] disabled:opacity-60"
     >
+      {following ? (
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden="true">
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      ) : (
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true" className="text-neon-blue">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      )}
       {following ? "Following" : "Follow"}
     </button>
   );
@@ -91,7 +97,7 @@ function MiniShelfRow({
           />
           <Link
             href={`${linkBase}/${shelf.slug}`}
-            className="text-xs font-bold text-foreground hover:text-accent transition-colors"
+            className="text-xs font-bold text-foreground hover:text-neon-blue transition-colors"
           >
             {shelf.name}
           </Link>
@@ -109,12 +115,11 @@ function MiniShelfRow({
 
       {shelf.coverUrls.length > 0 ? (
         <div className="relative">
+          {/* Glass shelf; the reader's shelf colour is carried by the dot,
+              a thin ring and the ledge (2026-11 refresh). */}
           <div
-            className="relative rounded-lg border px-3 pt-3 pb-1.5"
-            style={{
-              background: `linear-gradient(to bottom, ${accentColor}08, ${accentColor}15)`,
-              borderColor: `${accentColor}20`,
-            }}
+            className="relative overflow-hidden rounded-[16px] border bg-surface/60 px-3 pt-3 pb-0 backdrop-blur-md"
+            style={{ borderColor: `${accentColor}38` }}
           >
             <div className="flex gap-2 items-end overflow-x-auto pb-2.5 -mx-0.5 px-0.5 pr-8 no-scrollbar mask-fade-right">
               {shelf.coverUrls.map((url, i) => {
@@ -139,19 +144,14 @@ function MiniShelfRow({
                 );
               })}
             </div>
-            {/* Shelf edge */}
-            <div
-              className="h-[5px] -mx-3 rounded-b-lg shadow-[inset_0_2px_3px_rgba(0,0,0,0.1)]"
-              style={{ background: `linear-gradient(to bottom, ${accentColor}30, ${accentColor}45)` }}
-            />
+            {/* Ledge */}
+            <div className="h-[3px] -mx-3" style={{ background: `${accentColor}b3` }} />
           </div>
-          {/* Shelf shadow */}
-          <div className="h-1.5 mx-1 bg-gradient-to-b from-black/8 to-transparent rounded-b-lg" />
         </div>
       ) : (
         <div
-          className="rounded-lg border border-dashed p-3 text-center"
-          style={{ borderColor: `${accentColor}25` }}
+          className="rounded-[16px] border border-dashed bg-surface/40 p-3 text-center"
+          style={{ borderColor: `${accentColor}40` }}
         >
           <p className="text-[10px] text-muted/50">Empty shelf</p>
         </div>
@@ -202,11 +202,11 @@ export function ProfileShelvesSection({
       </div>
 
       {shelves.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border p-6 text-center">
+        <div className="rounded-[18px] border border-dashed border-foreground/15 bg-surface/40 p-6 text-center">
           <p className="text-sm text-muted">No shelves yet</p>
           <Link
             href="/library/shelves"
-            className="mt-2 inline-block text-xs font-medium text-accent hover:text-accent"
+            className="mt-2 inline-block text-xs font-medium text-neon-blue hover:text-neon-blue/80"
           >
             Create your first shelf →
           </Link>

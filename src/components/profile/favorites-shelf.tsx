@@ -80,7 +80,7 @@ function BookCover({ book, userAvatarUrl }: { book: FavoriteBook; userAvatarUrl?
             // eslint-disable-next-line @next/next/no-img-element
             <img src={userAvatarUrl} alt="" className="w-3.5 h-3.5 rounded-full object-cover flex-shrink-0" />
           ) : (
-            <span className="w-3.5 h-3.5 rounded-full bg-accent/60 flex items-center justify-center text-[7px] text-black font-bold flex-shrink-0">★</span>
+            <span className="h-[7px] w-[7px] ml-1 rounded-full bg-accent flex-shrink-0" aria-hidden="true" />
           )}
           {book.userRating % 1 === 0 ? book.userRating.toFixed(0) : book.userRating.toFixed(2)} ★
         </span>
@@ -145,7 +145,7 @@ function SeriesStack({ books, userAvatarUrl }: { books: FavoriteBook[]; userAvat
         {/* Stack count badge — positioned relative to the top book */}
         {stackCount > 1 && (
           <div
-            className="absolute z-20 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-black shadow-md"
+            className="absolute z-20 flex h-5 min-w-5 items-center justify-center rounded-full border border-foreground/15 bg-surface/90 px-1 text-[10px] font-bold text-foreground shadow-md backdrop-blur-md"
             style={{
               top: BADGE_INSET - 6,
               right: -4,
@@ -158,7 +158,7 @@ function SeriesStack({ books, userAvatarUrl }: { books: FavoriteBook[]; userAvat
 
       {/* Hover tooltip showing series info */}
       <div className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
-        <span className="text-[9px] text-muted bg-surface/90 px-1.5 py-0.5 rounded shadow-sm">
+        <span className="text-[9px] text-muted bg-surface/90 px-1.5 py-0.5 rounded-full border border-foreground/10 shadow-sm">
           {stackCount} in series
         </span>
       </div>
@@ -178,8 +178,9 @@ export function FavoritesShelf({ favorites, userAvatarUrl }: FavoritesShelfProps
       </h2>
       {favorites.length > 0 ? (
         <div className="relative">
-          {/* Bookshelf container */}
-          <div className="relative rounded-xl bg-gradient-to-b from-amber-900/10 to-amber-800/20 border border-amber-800/20 px-4 pt-4 pb-2">
+          {/* Shelf: neutral glass with the wordmark hairline as the ledge
+              (2026-11 refresh — replaces the amber wood shelf). */}
+          <div className="relative overflow-hidden rounded-[18px] border border-foreground/10 bg-surface/60 px-4 pt-4 pb-0 backdrop-blur-md">
             {/* Books row */}
             <div className="flex gap-2.5 items-center overflow-x-auto pb-3 pt-2 -mx-1 px-1 pr-10 no-scrollbar mask-fade-right">
               {shelfItems.map((item) => {
@@ -204,14 +205,15 @@ export function FavoritesShelf({ favorites, userAvatarUrl }: FavoritesShelfProps
                 );
               })}
             </div>
-            {/* Shelf edge */}
-            <div className="h-[6px] -mx-4 rounded-b-xl bg-gradient-to-b from-amber-800/30 to-amber-900/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]" />
+            {/* Ledge */}
+            <div
+              className="h-[3px] -mx-4"
+              style={{ background: "linear-gradient(90deg, rgba(163,230,53,0.7), rgba(56,189,248,0.55), rgba(192,132,252,0.6))" }}
+            />
           </div>
-          {/* Shelf shadow */}
-          <div className="h-2 mx-2 bg-gradient-to-b from-black/10 to-transparent rounded-b-lg" />
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed border-border p-6 text-center">
+        <div className="rounded-[18px] border border-dashed border-foreground/15 bg-surface/40 p-6 text-center">
           <p className="text-sm text-muted">Pin your all-time favorites here</p>
           <p className="mt-1 text-xs text-muted/60">
             Tap Top Shelf on any book page to add it

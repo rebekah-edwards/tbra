@@ -34,7 +34,8 @@ export default async function NewBuddyReadPage({
 
   return (
     <div className="mx-auto max-w-xl px-4 pb-32 pt-6">
-      <h1 className="neon-heading text-2xl font-heading font-bold mb-6">
+      <p className="eyebrow">Read together</p>
+      <h1 className="text-foreground text-2xl font-bold tracking-tight mb-6">
         New Buddy Read
       </h1>
       <CreateBuddyReadClient prefillBook={prefillBook} />

@@ -18,7 +18,7 @@ export function SharedNotes({ notes }: { notes: SharedNote[] }) {
 
   return (
     <section id="notes" className="scroll-mt-24">
-      <h2 className="section-heading text-xl mb-4">Reading Notes</h2>
+      <h2 className="section-heading text-sm mb-3">Reading Notes</h2>
       <div className="space-y-2.5">
         {notes.map((note) => {
           const where = progress(note);
@@ -27,7 +27,7 @@ export function SharedNotes({ notes }: { notes: SharedNote[] }) {
             <Link
               key={note.id}
               href={`/book/${note.bookSlug || note.bookId}`}
-              className="flex gap-3 rounded-xl border border-border bg-surface p-3 transition-colors hover:border-foreground/25"
+              className="flex gap-3 rounded-[18px] border border-foreground/10 bg-surface/60 p-3 backdrop-blur-md transition-colors hover:border-foreground/25"
             >
               {note.bookCoverUrl ? (
                 <Image
@@ -36,14 +36,15 @@ export function SharedNotes({ notes }: { notes: SharedNote[] }) {
                   width={40}
                   height={60}
                   loading="lazy"
-                  className="h-[60px] w-10 flex-shrink-0 rounded object-cover shadow-md"
+                  className="h-[60px] w-10 flex-shrink-0 rounded-md object-cover shadow-md ring-1 ring-white/10"
                 />
               ) : (
                 <NoCover title={note.bookTitle} className="h-[60px] w-10 flex-shrink-0" size="sm" />
               )}
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-foreground line-clamp-1">{note.bookTitle}</p>
-                <p className="mt-0.5 text-[11px] text-muted" suppressHydrationWarning>
+                <p className="eyebrow mt-1 flex items-center gap-1.5 !text-[10px]" suppressHydrationWarning>
+                  <span className="h-[6px] w-[6px] rounded-full bg-neon-purple" aria-hidden="true" />
                   {where ? `${where} · ${when}` : when}
                 </p>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/80 line-clamp-4">

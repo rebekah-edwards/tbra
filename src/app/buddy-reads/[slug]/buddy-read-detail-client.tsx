@@ -71,17 +71,17 @@ export function BuddyReadDetailClient({
     }
   }
 
-  const statusBadge = detail.status === "completed" ? (
-    <span className="inline-flex items-center rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-accent">
-      Completed
-    </span>
-  ) : (
-    <span className="inline-flex items-center rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-accent">
-      Active
-    </span>
-  );
-
   const host = detail.members.find((m) => m.role === "host");
+  const bookHref = detail.book.slug ? `/book/${detail.book.slug}` : "#";
+  const readerCount = detail.members.filter((m) => m.status === "active").length;
+
+  const shareIcon = (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue" aria-hidden="true">
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+      <polyline points="16 6 12 2 8 6" />
+      <line x1="12" y1="2" x2="12" y2="15" />
+    </svg>
+  );
 
   return (
     <div className="mx-auto max-w-2xl px-4 pb-32 pt-6">
@@ -96,93 +96,110 @@ export function BuddyReadDetailClient({
         All Buddy Reads
       </Link>
 
-      {/* Header */}
-      <div className="flex gap-4 mb-6">
-        {/* Book cover */}
-        <Link
-          href={detail.book.slug ? `/book/${detail.book.slug}` : "#"}
-          className="flex-shrink-0"
-        >
-          <div className="h-28 w-20 overflow-hidden rounded-lg shadow-md">
-            {detail.book.coverImageUrl ? (
+      {/* Hero — designed, not just matched (2026-11 refresh): the buddy read
+          sits on its book's blurred cover art inside the wordmark hairline,
+          the cover tipped as if just pulled off the shelf, and the details
+          centred as one group. Same recipe as Pick From Your Shelf. */}
+      <div
+        className="mb-7 rounded-[22px] p-px"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(163,230,53,0.55), rgba(56,189,248,0.35), rgba(192,132,252,0.45))",
+        }}
+      >
+        <div className="relative overflow-hidden rounded-[21px] bg-surface">
+          {detail.book.coverImageUrl && (
+            <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
               <Image
                 src={detail.book.coverImageUrl}
-                alt={detail.book.title}
-                width={80}
-                height={112}
-                className="h-full w-full object-cover"
+                alt=""
+                fill
+                sizes="(max-width: 672px) 100vw, 672px"
+                className="book-card-bg-img scale-150 object-cover"
               />
-            ) : (
-              <NoCover title={detail.book.title} size="md" />
-            )}
-          </div>
-        </Link>
-
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-heading font-bold text-foreground mb-1 truncate">
-            {detail.book.title}
-          </h1>
-          <Link
-            href={detail.book.slug ? `/book/${detail.book.slug}` : "#"}
-            className="text-sm text-neon-blue hover:underline truncate block"
-          >
-            View book details
-          </Link>
-          {detail.book.authors.length > 0 && (
-            <p className="text-xs text-muted mt-0.5">
-              by {detail.book.authors.join(", ")}
-            </p>
+              <div className="absolute inset-0 currently-reading-overlay" />
+            </div>
           )}
-          <div className="flex items-center gap-2 mt-2">
-            {statusBadge}
-            {host && (
-              <span className="text-xs text-muted">
-                Hosted by{" "}
-                {host.displayName ?? host.username ?? "Reader"}
+
+          <div className="relative flex items-center justify-center gap-5 p-5 lg:p-6">
+            <Link href={bookHref} className="flex-shrink-0 -rotate-3 transition-transform duration-200 hover:rotate-0">
+              <div className="h-[138px] w-[92px] overflow-hidden rounded-lg shadow-[0_10px_24px_rgba(0,0,0,0.45)] ring-1 ring-white/10 lg:h-[156px] lg:w-[104px]">
+                {detail.book.coverImageUrl ? (
+                  <Image
+                    src={detail.book.coverImageUrl}
+                    alt={`Cover of ${detail.book.title}`}
+                    width={104}
+                    height={156}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <NoCover title={detail.book.title} className="h-full w-full" size="md" />
+                )}
+              </div>
+            </Link>
+
+            <div className="min-w-0">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-surface/80 px-2.5 py-1 text-[11px] font-semibold text-foreground backdrop-blur-md">
+                <span
+                  className={`h-[7px] w-[7px] rounded-full ${detail.status === "completed" ? "bg-neon-blue" : "bg-accent"}`}
+                  aria-hidden="true"
+                />
+                {detail.status === "completed" ? "Completed buddy read" : "Active buddy read"}
               </span>
-            )}
+              <Link href={bookHref} className="block">
+                <h1 className="mt-2 font-heading text-[21px] font-bold leading-tight book-header-text line-clamp-3">
+                  {detail.book.title}
+                </h1>
+              </Link>
+              {detail.book.authors.length > 0 && (
+                <p className="mt-0.5 text-sm book-header-text-sub line-clamp-1">
+                  {detail.book.authors.join(", ")}
+                </p>
+              )}
+              <p className="mt-1.5 text-xs book-header-text-sub">
+                {host && <>Hosted by {host.displayName ?? host.username ?? "Reader"} · </>}
+                {readerCount} {readerCount === 1 ? "reader" : "readers"}
+              </p>
+
+              {(membership || isHost) && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleShare}
+                    className="btn-glass cursor-pointer px-3.5 py-1.5 text-xs"
+                  >
+                    {shareIcon}
+                    {showShare ? "Link copied" : "Share invite"}
+                  </button>
+                  {isHost && detail.status === "active" && (
+                    <button
+                      onClick={handleComplete}
+                      disabled={isPending}
+                      className="btn-glass cursor-pointer px-3.5 py-1.5 text-xs disabled:opacity-50"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-purple" aria-hidden="true">
+                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                        <line x1="4" y1="22" x2="4" y2="15" />
+                      </svg>
+                      {isPending ? "Ending…" : "End buddy read"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {detail.description && (
-        <p className="text-sm text-muted mb-6">{detail.description}</p>
-      )}
-
-      {/* Host controls */}
-      {isHost && detail.status === "active" && (
-        <div className="flex items-center gap-3 mb-6">
-          <button
-            onClick={handleComplete}
-            disabled={isPending}
-            className="rounded-full bg-[#a3e635] px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            {isPending ? "Ending..." : "End Buddy Read"}
-          </button>
-          <button
-            onClick={handleShare}
-            className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-surface-alt"
-          >
-            {showShare ? "Link Copied!" : "Share Invite"}
-          </button>
-        </div>
-      )}
-
-      {/* Non-host share button */}
-      {!isHost && membership && (
-        <div className="mb-6">
-          <button
-            onClick={handleShare}
-            className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-surface-alt"
-          >
-            {showShare ? "Link Copied!" : "Share Invite Link"}
-          </button>
+        <div className="mb-7 rounded-[18px] border border-foreground/10 bg-surface/60 p-4 backdrop-blur-md">
+          <p className="eyebrow mb-1.5">About this buddy read</p>
+          <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-line">{detail.description}</p>
         </div>
       )}
 
       {/* Progress tracker */}
-      <section className="mb-8">
-        <h2 className="section-heading text-neon-blue text-lg font-heading font-semibold mb-3">
+      <section className="mb-7">
+        <h2 className="section-heading text-sm mb-3">
           Progress
         </h2>
         <BuddyReadProgressTracker
@@ -213,8 +230,8 @@ export function BuddyReadDetailClient({
 
       {/* Discussion */}
       {membership && (
-        <section className="mb-8">
-          <h2 className="section-heading text-neon-blue text-lg font-heading font-semibold mb-3">
+        <section className="mb-7">
+          <h2 className="section-heading text-sm mb-3">
             Discussion
           </h2>
           <BuddyReadDiscussion
@@ -227,8 +244,8 @@ export function BuddyReadDetailClient({
 
       {/* Host invite controls */}
       {isHost && (
-        <section className="mb-8">
-          <h2 className="section-heading text-neon-blue text-lg font-heading font-semibold mb-3">
+        <section className="mb-7">
+          <h2 className="section-heading text-sm mb-3">
             Invite Members
           </h2>
           <BuddyReadInvite

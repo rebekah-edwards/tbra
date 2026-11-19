@@ -28,7 +28,7 @@ export function ShareProfileButton({ username }: { username: string }) {
     <button
       type="button"
       onClick={handleShare}
-      className="flex-shrink-0 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted hover:text-foreground hover:border-accent/30 transition-colors"
+      className="btn-glass h-9 w-9 flex-shrink-0 text-muted hover:text-foreground"
       title={copied ? "Link copied!" : "Share profile"}
     >
       {copied ? (

@@ -48,7 +48,7 @@ export function BuddyReadProgressTracker({ members }: BuddyReadProgressTrackerPr
   const sorted = sortMembers(members);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3.5 rounded-[18px] border border-foreground/10 bg-surface/60 p-4 backdrop-blur-md">
       {sorted.map((member) => (
         <div key={member.userId} className="flex items-center gap-3">
           {/* Avatar */}
@@ -56,13 +56,13 @@ export function BuddyReadProgressTracker({ members }: BuddyReadProgressTrackerPr
             <Image
               src={member.avatarUrl}
               alt={member.displayName}
-              width={24}
-              height={24}
-              className="w-6 h-6 rounded-full object-cover shrink-0"
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-foreground/10"
             />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-              <span className="text-[9px] font-semibold text-accent">
+            <div className="w-8 h-8 rounded-full border border-foreground/12 bg-surface/80 flex items-center justify-center shrink-0">
+              <span className="text-[10px] font-bold text-foreground">
                 {getInitials(member.displayName)}
               </span>
             </div>
@@ -70,15 +70,15 @@ export function BuddyReadProgressTracker({ members }: BuddyReadProgressTrackerPr
 
           {/* Name + progress */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-body text-xs text-foreground truncate">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="font-body text-[13px] font-semibold text-foreground truncate">
                 {member.displayName}
               </span>
 
               {member.readingState === "finished" ? (
-                <span className="flex items-center gap-1 text-[10px] font-semibold text-accent shrink-0 ml-2">
+                <span className="ml-2 inline-flex shrink-0 items-center gap-1 rounded-full border border-foreground/10 bg-surface/80 px-2 py-0.5 text-[10px] font-semibold text-foreground">
                   <svg
-                    className="w-3 h-3"
+                    className="w-3 h-3 text-accent"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -93,18 +93,18 @@ export function BuddyReadProgressTracker({ members }: BuddyReadProgressTrackerPr
                   Done
                 </span>
               ) : member.readingState === "not_started" ? (
-                <span className="text-[10px] text-muted/60 shrink-0 ml-2">
+                <span className="text-[11px] text-muted shrink-0 ml-2">
                   Not started
                 </span>
               ) : (
-                <span className="text-[10px] text-muted shrink-0 ml-2">
+                <span className="text-[11px] font-semibold text-foreground tabular-nums shrink-0 ml-2">
                   {member.percentComplete}%
                 </span>
               )}
             </div>
 
             {/* Progress bar */}
-            <div className="h-2 w-full rounded-full bg-border">
+            <div className="h-1.5 w-full rounded-full bg-foreground/10">
               <div
                 className="h-full rounded-full bg-accent transition-all"
                 style={{

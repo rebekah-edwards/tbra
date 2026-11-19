@@ -50,21 +50,24 @@ export default async function BuddyReadDetailPage({ params }: Props) {
   if (!br.isPublic && !membership) {
     return (
       <div className="mx-auto max-w-xl px-4 pb-32 pt-6">
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-surface p-10 text-center">
+        <div className="card-hairline flex flex-col items-center justify-center p-10 text-center">
+          <span className="mb-3 flex h-16 w-16 items-center justify-center rounded-full border border-foreground/12 bg-surface/70 backdrop-blur-md">
           <svg
-            width="40"
-            height="40"
+            width="28"
+            height="28"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="mb-3 text-muted"
+            className="text-neon-purple"
+            aria-hidden="true"
           >
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
+          </span>
           <p className="text-lg font-heading font-semibold text-foreground mb-1">
             Private Buddy Read
           </p>

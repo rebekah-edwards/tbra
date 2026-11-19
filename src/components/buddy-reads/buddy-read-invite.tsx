@@ -101,16 +101,14 @@ export function BuddyReadInvite({
   const memberIds = new Set(members.map((m) => m.userId));
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 rounded-[18px] border border-foreground/10 bg-surface/60 p-4 backdrop-blur-md">
       {/* Copy invite link */}
       <div>
-        <h4 className="font-heading text-sm font-semibold text-foreground mb-2">
-          Share invite link
-        </h4>
+        <p className="eyebrow mb-2">Share invite link</p>
         <button
           type="button"
           onClick={handleCopy}
-          className="w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-body text-foreground transition-colors hover:bg-surface-hover"
+          className="btn-glass w-full cursor-pointer px-4 py-2.5 text-sm"
         >
           {copied ? (
             <>
@@ -127,12 +125,12 @@ export function BuddyReadInvite({
                   d="M4.5 12.75l6 6 9-13.5"
                 />
               </svg>
-              <span className="text-accent font-semibold">Copied!</span>
+              <span className="font-semibold">Copied</span>
             </>
           ) : (
             <>
               <svg
-                className="w-4 h-4 text-muted"
+                className="w-4 h-4 text-neon-blue"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -152,20 +150,18 @@ export function BuddyReadInvite({
 
       {/* Search and invite users */}
       <div>
-        <h4 className="font-heading text-sm font-semibold text-foreground mb-2">
-          Invite a user
-        </h4>
+        <p className="eyebrow mb-2">Invite a reader</p>
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name or username..."
-          className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-body text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-1 focus:ring-accent"
+          className="field-glass w-full text-sm"
         />
 
         {/* Search results */}
         {(results.length > 0 || searching) && (
-          <div className="mt-2 rounded-xl border border-border bg-surface overflow-hidden">
+          <div className="mt-2 overflow-hidden rounded-[18px] border border-foreground/10 bg-surface/90 backdrop-blur-md">
             {searching && results.length === 0 && (
               <p className="px-4 py-3 text-xs text-muted/60 font-body">
                 Searching...
@@ -179,7 +175,7 @@ export function BuddyReadInvite({
                 return (
                   <div
                     key={user.id}
-                    className="flex items-center gap-3 px-4 py-2.5 border-b border-border last:border-b-0"
+                    className="flex items-center gap-3 px-4 py-2.5 border-b border-foreground/10 last:border-b-0"
                   >
                     {user.avatarUrl ? (
                       <Image
@@ -190,8 +186,8 @@ export function BuddyReadInvite({
                         className="w-7 h-7 rounded-full object-cover shrink-0"
                       />
                     ) : (
-                      <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                        <span className="text-[9px] font-semibold text-accent">
+                      <div className="w-7 h-7 rounded-full border border-foreground/12 bg-surface/80 flex items-center justify-center shrink-0">
+                        <span className="text-[9px] font-bold text-foreground">
                           {getInitials(user.displayName)}
                         </span>
                       </div>
@@ -208,12 +204,12 @@ export function BuddyReadInvite({
                       type="button"
                       onClick={() => handleInvite(user.id)}
                       disabled={isPending || alreadyInvited}
-                      className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition-all ${
-                        alreadyInvited
-                          ? "bg-accent/15 text-accent"
-                          : "bg-accent text-black hover:bg-accent/90"
-                      } ${isPending ? "opacity-60" : ""}`}
+                      data-active={alreadyInvited ? "true" : undefined}
+                      className={`btn-glass shrink-0 cursor-pointer gap-1 px-3 py-1 text-[11px] ${isPending ? "opacity-60" : ""}`}
                     >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={alreadyInvited ? "text-accent" : "text-neon-blue"} aria-hidden="true">
+                        {alreadyInvited ? <path d="M5 12.5l4.5 4.5L19 7.5" /> : <path d="M12 5v14M5 12h14" />}
+                      </svg>
                       {alreadyInvited ? "Invited" : "Invite"}
                     </button>
                   </div>
@@ -226,24 +222,23 @@ export function BuddyReadInvite({
       {/* Pending invites */}
       {pendingInvites.length > 0 && (
         <div>
-          <h4 className="font-heading text-sm font-semibold text-foreground mb-2">
-            Pending invites
-          </h4>
+          <p className="eyebrow mb-2">Pending invites</p>
           <div className="flex flex-col gap-2">
             {pendingInvites.map((member) => (
               <div
                 key={member.userId}
-                className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5"
+                className="flex items-center gap-3 rounded-full border border-foreground/10 bg-surface/80 px-3 py-2"
               >
-                <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                  <span className="text-[9px] font-semibold text-accent">
+                <div className="w-6 h-6 rounded-full border border-foreground/12 bg-surface flex items-center justify-center shrink-0">
+                  <span className="text-[9px] font-bold text-foreground">
                     {getInitials(member.displayName)}
                   </span>
                 </div>
                 <span className="font-body text-sm text-foreground flex-1 truncate">
                   {member.displayName}
                 </span>
-                <span className="text-[10px] font-semibold text-muted/60 rounded-full bg-muted/15 px-2 py-0.5">
+                <span className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-surface px-2 py-0.5 text-[10px] font-semibold text-foreground">
+                  <span className="h-[6px] w-[6px] rounded-full bg-neon-purple" aria-hidden="true" />
                   Pending
                 </span>
               </div>

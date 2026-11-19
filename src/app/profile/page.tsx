@@ -15,7 +15,7 @@ import { FavoritesShelf } from "@/components/profile/favorites-shelf";
 import { ReviewHistory } from "@/components/profile/review-history";
 import { ReadingJournal } from "@/components/profile/reading-journal";
 import { ShareProfileButton } from "@/components/profile/share-profile-button";
-import { AccountBadge } from "@/components/profile/account-badge";
+import { ProfileHero } from "@/components/profile/profile-hero";
 import { getUserShelves } from "@/lib/queries/shelves";
 import { ProfileShelvesSection } from "@/components/shelves/profile-shelves-section";
 import { ensureReferralCode, getReferralCount } from "@/lib/referrals";
@@ -47,127 +47,46 @@ export default async function ProfilePage() {
 
 
   return (
-    <div className="space-y-6 lg:max-w-[60%] lg:mx-auto">
-      {/* Profile header — desktop: 2 columns (info left, stats right) */}
-      <div className="lg:flex lg:items-start lg:gap-8">
-        {/* Left: avatar + info */}
-        <div className="flex gap-4 lg:flex-1">
-          {/* Avatar */}
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-3xl font-bold text-black overflow-hidden flex-shrink-0">
-            {user.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
-            ) : (
-              (user.displayName || user.email)[0].toUpperCase()
-            )}
-          </div>
-
-          {/* Info */}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-2">
-                <h1 className="text-foreground text-xl font-bold tracking-tight line-clamp-2 leading-tight">
-                  {user.displayName || user.email.split("@")[0]}
-                </h1>
-                <AccountBadge accountType={user.accountType} />
-              </div>
-              {user.username && (
-                <ShareProfileButton username={user.username} />
-              )}
-            </div>
+    <div className="space-y-7 lg:max-w-[60%] lg:mx-auto">
+      <ProfileHero
+        name={user.displayName || user.email.split("@")[0]}
+        username={user.username}
+        avatarUrl={user.avatarUrl}
+        initial={(user.displayName || user.email)[0].toUpperCase()}
+        accountType={user.accountType}
+        bio={user.bio}
+        location={user.location}
+        memberSince={memberSince}
+        followerCount={followerCount}
+        followingCount={followingCount}
+        stats={stats}
+        statHrefs={{
+          completed: "/library?tab=activity&filter=completed",
+          currentlyReading: "/library?tab=activity&filter=currently_reading",
+          tbr: "/library?tab=tbr",
+        }}
+        corner={user.username ? <ShareProfileButton username={user.username} /> : undefined}
+        actions={
+          <>
+            <Link href="/profile/edit" className="btn-glass px-5 py-2 text-sm">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue" aria-hidden="true">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+              </svg>
+              Edit Profile
+            </Link>
             {user.username && (
-              <p className="text-xs text-muted mt-0.5">@{user.username}</p>
-            )}
-            {user.bio && (
-              <p className="text-sm text-foreground/90 mt-1 leading-relaxed whitespace-pre-line">{user.bio}</p>
-            )}
-            {user.location && (
-              <p className="text-xs text-muted mt-1 flex items-center gap-1">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" />
+              <Link href={`/u/${user.username}`} className="btn-glass px-5 py-2 text-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-purple" aria-hidden="true">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                  <circle cx="12" cy="12" r="3" />
                 </svg>
-                {user.location}
-              </p>
-            )}
-            <p className="text-xs text-muted mt-1.5">
-              Member since {memberSince}
-            </p>
-            <div className="flex items-center gap-3 mt-1 text-sm">
-              {user.username ? (
-                <>
-                  <Link href={`/u/${user.username}/followers`} className="text-foreground hover:text-neon-blue transition-colors">
-                    <strong>{followerCount}</strong> <span className="text-muted">followers</span>
-                  </Link>
-                  <span className="text-muted">·</span>
-                  <Link href={`/u/${user.username}/following`} className="text-foreground hover:text-neon-blue transition-colors">
-                    <strong>{followingCount}</strong> <span className="text-muted">following</span>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <span className="text-foreground"><strong>{followerCount}</strong> <span className="text-muted">followers</span></span>
-                  <span className="text-muted">·</span>
-                  <span className="text-foreground"><strong>{followingCount}</strong> <span className="text-muted">following</span></span>
-                </>
-              )}
-            </div>
-            <div className="flex items-center gap-3 mt-1.5">
-              <Link
-                href="/profile/edit"
-                className="text-sm text-neon-blue hover:text-neon-blue/80"
-              >
-                Edit Profile
+                Public view
               </Link>
-              {user.username && (
-                <>
-                  <span className="text-muted">·</span>
-                  <Link
-                    href={`/u/${user.username}`}
-                    className="text-sm text-neon-blue hover:text-neon-blue/80 transition-colors"
-                  >
-                    View public profile
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: stats pills (desktop only — mobile shows below) */}
-        <div className="hidden lg:block lg:flex-shrink-0 lg:w-[200px]">
-          <Link href="/library?tab=activity&filter=completed" className="block rounded-[18px] border border-neon-purple/30 bg-surface/80 p-4 text-center mb-2 hover:border-neon-purple/40 transition-colors">
-            <p className="text-3xl font-bold text-foreground">{stats.completed}</p>
-            <p className="text-xs text-muted">Read</p>
-          </Link>
-          <div className="grid grid-cols-2 gap-2">
-            <Link href="/library?tab=activity&filter=currently_reading" className="rounded-[18px] border border-neon-blue/30 bg-surface/80 p-2.5 text-center hover:border-neon-blue/40 transition-colors">
-              <p className="text-xl font-bold text-foreground">{stats.currentlyReading}</p>
-              <p className="text-[10px] text-muted">Reading</p>
-            </Link>
-            <Link href="/library?tab=tbr" className="rounded-xl border border-accent/30 bg-accent/15 p-2.5 text-center hover:border-accent/50 transition-colors">
-              <p className="text-xl font-bold text-foreground">{stats.tbr}</p>
-              <p className="text-[10px] text-muted">TBR</p>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats row — mobile only */}
-      <div className="grid grid-cols-3 gap-3 lg:hidden">
-        <Link href="/library?tab=activity&filter=completed" className="rounded-[18px] border border-neon-purple/30 bg-surface/80 p-3 text-center hover:border-neon-purple/40 transition-colors">
-          <p className="text-2xl font-bold text-foreground">{stats.completed}</p>
-          <p className="text-xs text-muted">Read</p>
-        </Link>
-        <Link href="/library?tab=activity&filter=currently_reading" className="rounded-[18px] border border-neon-blue/30 bg-surface/80 p-3 text-center hover:border-neon-blue/40 transition-colors">
-          <p className="text-2xl font-bold text-foreground">{stats.currentlyReading}</p>
-          <p className="text-xs text-muted">Reading</p>
-        </Link>
-        <Link href="/library?tab=tbr" className="rounded-xl border border-accent/30 bg-accent/15 p-3 text-center hover:border-accent/50 transition-colors">
-          <p className="text-2xl font-bold text-foreground">{stats.tbr}</p>
-          <p className="text-xs text-muted">TBR</p>
-        </Link>
-      </div>
+            )}
+          </>
+        }
+      />
 
       {/* Referral Card */}
       <ReferralCard code={referralCode} count={referralCount} />
@@ -193,9 +112,15 @@ export default async function ProfilePage() {
       {/* Import Library */}
       <Link
         href="/import"
-        className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 hover:border-accent/30 transition-colors"
+        className="flex items-center gap-3 rounded-[18px] border border-foreground/10 bg-surface/60 p-4 backdrop-blur-md transition-colors hover:border-foreground/25"
       >
-        <span className="text-lg">📥</span>
+        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-foreground/12 bg-surface/70">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+        </span>
         <div>
           <p className="text-sm font-medium">Import your library</p>
           <p className="text-xs text-muted">Bring books, ratings, and reading history from StoryGraph or Goodreads</p>

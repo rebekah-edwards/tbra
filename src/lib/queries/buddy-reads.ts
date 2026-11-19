@@ -22,6 +22,11 @@ export interface BuddyReadSummary {
     coverImageUrl: string | null;
   };
   memberCount: number;
+  /** The host (creator) — the list used to say "Hosted by You" on every
+   *  buddy read, including ones the viewer only joined. */
+  host: { userId: string; displayName: string | null; username: string | null };
+  /** The viewer's own membership: 'active' or 'invited'. */
+  myStatus: string;
 }
 
 export interface BuddyReadRow {
@@ -129,10 +134,15 @@ export async function getUserBuddyReads(userId: string): Promise<BuddyReadSummar
       b.slug as book_slug,
       b.cover_image_url as book_cover_image_url,
       (SELECT COUNT(*) FROM buddy_read_members brm2
-       WHERE brm2.buddy_read_id = br.id AND brm2.status IN ('active', 'invited')) as member_count
+       WHERE brm2.buddy_read_id = br.id AND brm2.status IN ('active', 'invited')) as member_count,
+      br.created_by,
+      hu.display_name as host_display_name,
+      hu.username as host_username,
+      brm.status as my_status
     FROM buddy_read_members brm
     JOIN buddy_reads br ON brm.buddy_read_id = br.id
     JOIN books b ON br.book_id = b.id
+    LEFT JOIN users hu ON hu.id = br.created_by
     WHERE brm.user_id = ${userId} AND brm.status IN ('active', 'invited')
     ORDER BY
       CASE WHEN br.status = 'active' THEN 0 ELSE 1 END ASC,
@@ -153,6 +163,10 @@ export async function getUserBuddyReads(userId: string): Promise<BuddyReadSummar
     book_slug: string | null;
     book_cover_image_url: string | null;
     member_count: number;
+    created_by: string;
+    host_display_name: string | null;
+    host_username: string | null;
+    my_status: string;
   }[];
 
   return rows.map((row) => ({
@@ -173,6 +187,12 @@ export async function getUserBuddyReads(userId: string): Promise<BuddyReadSummar
       coverImageUrl: row.book_cover_image_url,
     },
     memberCount: row.member_count,
+    host: {
+      userId: row.created_by,
+      displayName: row.host_display_name,
+      username: row.host_username,
+    },
+    myStatus: row.my_status,
   }));
 }
 
