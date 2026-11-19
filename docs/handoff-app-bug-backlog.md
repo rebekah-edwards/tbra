@@ -789,3 +789,57 @@ the profile"), `c435903f` and `4d6b2b31` (design refresh batches 3 and 4). `f61d
 rewired what the name/photo renders as.
 
 **Not fixable by the triage lane** — it needs a client build and a device/browser to reproduce.
+
+---
+
+## 2026-11-19 — profile pictures: ROOT CAUSE IDENTIFIED (avatars never got the cover fix)
+
+Continues the 2026-11-18 entry directly above. That entry ruled out the data and the storage. This
+run ruled out the **whole server side** and names the mechanism on the client.
+
+**Server side is healthy — verified against production, not assumed.** Signed in as the test
+account and called production with a real bearer token. Every endpoint that carries an avatar
+returns a correct, non-null, absolute `avatarUrl`:
+
+| endpoint | HTTP | `avatarUrl` present |
+|---|---|---|
+| `/api/v1/profile` | 200 | 1 (non-null) |
+| `/api/v1/users/rebekah_creates` | 200 | 1 (non-null) |
+| `/api/v1/users/search?q=re` | 200 | 20 fields, 8 non-null |
+| `/api/v1/friends-activity?limit=5` | 200 | 5 (all non-null) |
+
+The web app also renders avatars correctly on production (confirmed in-browser on `/`, `/profile`
+and `/u/clanker_test`), so the three design-refresh commits the previous entry flagged
+(`f61d8fbb`, `c435903f`, `4d6b2b31`) are **cleared**. The decode-failure theory is also cleared:
+`ActivityUser.avatarUrl` (`Models.swift:224`) is `String?`, not a non-optional, so a null cannot
+fail decoding. (`APIClient.swift:365`'s non-optional `String` is the *upload response*, a different
+type, and is not on this path.)
+
+**The mechanism.** Avatars are rendered with raw `AsyncImage` at every single site —
+`HomeSections.swift:667` (`FriendsAvatar`), `ProfileView.swift:205`, `PublicProfileView.swift:201`,
+`ReviewsListView.swift:169`, `FindReadersView.swift:110`, `ShelvesView.swift:927`,
+`TopBarMenus.swift:235`, `EditProfileView.swift:143`.
+
+Book covers used to do the same, and it produced *this exact symptom*. `CoverImageCache.swift`
+exists specifically because of tester report `2b67d3ea` (2026-07-20, "book covers don't load");
+its own doc comment lists the three reasons `AsyncImage` fails permanently: **it never retries**,
+**it is cancelled by fast scrolling**, and **it has no decoded-image cache**. Covers were moved onto
+`CoverImageCache` (in-memory decoded cache + request de-duplication + one retry). **Avatars were
+never moved.** They are still on the unfixed path.
+
+**Why it started "since the update".** Build 19 shipped the Friends Activity redesign
+(`53960ea`, `ba3a233`, `3ed504e`, `7491e43`, `2cea913`) plus `f61d8fb`'s "name/photo open the
+profile". The feed, the "See more" activity screen and the review cards now put **many more avatars
+on screen at once**, and `FriendsAvatar` falls back to a plain `Theme.accent` circle on failure —
+so a burst of concurrent `AsyncImage` requests that partially fails reads to the user as
+"no one's profile pictures are showing up", and nothing ever retries them.
+
+**The fix.** Route avatars through `CoverImageCache` (or a sibling `AvatarImageCache` with the same
+three properties) instead of `AsyncImage`, starting with `FriendsAvatar` in `HomeSections.swift`
+since that is the highest-density site. The failure placeholder should also be distinguishable from
+the real "this reader has no photo" initial-letter circle, which currently hides the failure.
+
+**Not done in this run on purpose.** It needs a client build, and build 19 is the TestFlight beta
+with an App Store submission mid-flight (draft `fe3c1ff8…` waiting on the subscription group), so
+an unrequested iOS change tonight could disturb that. Report `0e9e42a0-79d4-46a1-b54f-f6bce63ac082`
+is left `status='new'` in /admin/issues.
