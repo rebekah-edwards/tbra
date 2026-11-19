@@ -21,7 +21,7 @@ export function ReferralCard({ code, count }: ReferralCardProps) {
   }
 
   return (
-    <div className="rounded-xl border border-accent/20 bg-accent/5 p-4">
+    <div className="rounded-[18px] border border-foreground/10 bg-surface/60 p-4 backdrop-blur-md">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue">
@@ -37,12 +37,12 @@ export function ReferralCard({ code, count }: ReferralCardProps) {
         Share your link and we&apos;ll track who joins through you.
       </p>
       <div className="flex items-center gap-2">
-        <div className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-xs text-muted font-mono truncate select-all">
+        <div className="flex h-10 min-w-0 flex-1 items-center rounded-full border border-foreground/12 bg-surface/70 px-4 text-xs text-muted font-mono truncate select-all">
           {referralLink}
         </div>
         <button
           onClick={handleCopy}
-          className="shrink-0 rounded-full bg-accent px-3 py-2 text-xs font-semibold text-black transition-colors hover:bg-accent/90"
+          className="btn-lime h-10 shrink-0 cursor-pointer px-4 text-xs"
         >
           {copied ? "Copied!" : "Copy"}
         </button>

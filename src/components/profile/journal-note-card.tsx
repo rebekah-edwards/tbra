@@ -8,24 +8,6 @@ import { deleteReadingNote } from "@/lib/actions/reading-notes";
 import { NoCover } from "@/components/no-cover";
 import type { ReadingNoteWithBook } from "@/lib/queries/reading-notes";
 
-const MOOD_MAP: Record<string, string> = {
-  excited: "\u{1F525}",
-  tense: "\u{1F630}",
-  emotional: "\u{1F622}",
-  bored: "\u{1F634}",
-  relaxed: "\u{1F60C}",
-  curious: "\u{1F914}",
-  confused: "\u{1F635}",
-  nostalgic: "\u{1F979}",
-};
-
-const PACE_MAP: Record<string, string> = {
-  slow: "\u{1F422}",
-  steady: "\u{1F6B6}",
-  fast: "\u{1F3C3}",
-  flying: "\u{1F680}",
-};
-
 interface JournalNoteCardProps {
   note: ReadingNoteWithBook;
   showYear?: boolean;
@@ -48,7 +30,7 @@ export function JournalNoteCard({ note, showYear = true }: JournalNoteCardProps)
   if (deleted) return null;
 
   return (
-    <div className="flex gap-3 rounded-lg border border-border bg-surface p-3 hover:border-accent/30 transition-colors">
+    <div className="flex gap-3 rounded-[18px] border border-foreground/10 bg-surface/60 p-3 backdrop-blur-md transition-colors hover:border-foreground/25">
       <Link href={`/book/${note.bookSlug || note.bookId}`} className="flex-shrink-0">
         {note.bookCoverUrl ? (
           <Image
@@ -56,7 +38,7 @@ export function JournalNoteCard({ note, showYear = true }: JournalNoteCardProps)
             alt={`Cover of ${note.bookTitle}`}
             width={40}
             height={60}
-            className="h-[60px] w-[40px] rounded object-cover"
+            className="h-[60px] w-[40px] rounded-md object-cover shadow-md ring-1 ring-white/10"
           />
         ) : (
           <NoCover title={note.bookTitle} className="h-[60px] w-[40px]" size="sm" />
@@ -67,14 +49,18 @@ export function JournalNoteCard({ note, showYear = true }: JournalNoteCardProps)
           <h4 className="text-sm font-semibold leading-tight line-clamp-1 hover:text-neon-blue transition-colors">{note.bookTitle}</h4>
         </Link>
         <div className="flex items-center gap-2 mt-0.5">
+          {/* Mood and pace as glass chips with a dot, not emoji (2026-11
+              refresh — the Reading Now tracker dropped them the same way). */}
           {note.mood && (
-            <span className="text-xs" title={note.mood}>
-              {MOOD_MAP[note.mood] || note.mood}
+            <span className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-surface/80 px-2 py-0.5 text-[10px] font-semibold capitalize text-foreground">
+              <span className="h-[5px] w-[5px] rounded-full bg-neon-purple" aria-hidden="true" />
+              {note.mood}
             </span>
           )}
           {note.pace && (
-            <span className="text-xs" title={`Pace: ${note.pace}`}>
-              {PACE_MAP[note.pace] || note.pace}
+            <span className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-surface/80 px-2 py-0.5 text-[10px] font-semibold capitalize text-foreground">
+              <span className="h-[5px] w-[5px] rounded-full bg-neon-blue" aria-hidden="true" />
+              {note.pace}
             </span>
           )}
           {note.pageNumber != null && (

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { AccountBadge } from "@/components/profile/account-badge";
@@ -14,6 +15,7 @@ export interface ProfileHeroStats {
   completed: number;
   currentlyReading: number;
   tbr: number;
+  covers?: { completed: string[]; currentlyReading: string[]; tbr: string[] };
 }
 
 interface ProfileHeroProps {
@@ -38,36 +40,100 @@ interface ProfileHeroProps {
   socials?: ReactNode;
 }
 
+const TILE_HUES = {
+  purple: { rgb: "192,132,252", dot: "bg-neon-purple" },
+  blue: { rgb: "56,189,248", dot: "bg-neon-blue" },
+  lime: { rgb: "163,230,53", dot: "bg-accent" },
+} as const;
+
+/**
+ * One of the Read / Reading / TBR cards. Built like Pick From Your Shelf
+ * (Rebekah, 2026-11-19: "a little more like the pick from your shelf card"):
+ * the card sits on its pile's own blurred cover art, the newest covers fan out
+ * tipped as if just pulled off the shelf, and the 1px hairline carries the
+ * pile's colour instead of a coloured border.
+ */
 function StatTile({
   label,
   value,
-  dot,
+  hue,
+  covers,
   href,
 }: {
   label: string;
   value: number;
-  dot: string;
+  hue: keyof typeof TILE_HUES;
+  covers: string[];
   href?: string;
 }) {
-  const body = (
-    <>
-      <span className="eyebrow flex items-center justify-center gap-1.5">
-        <span className={`h-[7px] w-[7px] rounded-full ${dot}`} aria-hidden="true" />
-        {label}
-      </span>
-      <span className="mt-1 block font-heading text-2xl font-bold leading-none text-foreground tabular-nums">
-        {value.toLocaleString("en-US")}
-      </span>
-    </>
+  const { rgb, dot } = TILE_HUES[hue];
+  const fan = covers.slice(0, 3);
+  // Newest cover front and centre; the next two tipped out behind it.
+  const poses: { transform: string; z: number }[] =
+    fan.length === 1
+      ? [{ transform: "rotate(-4deg)", z: 3 }]
+      : fan.length === 2
+        ? [
+            { transform: "translateX(9px) rotate(5deg)", z: 3 },
+            { transform: "translateX(-11px) rotate(-8deg)", z: 2 },
+          ]
+        : [
+            { transform: "translateY(-3px) rotate(-2deg)", z: 3 },
+            { transform: "translateX(-19px) rotate(-11deg)", z: 2 },
+            { transform: "translateX(19px) rotate(9deg)", z: 1 },
+          ];
+
+  const inner = (
+    <div className="relative h-full overflow-hidden rounded-[17px] bg-surface">
+      {fan[0] && (
+        <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+          <Image src={fan[0]} alt="" fill sizes="160px" className="book-card-bg-img scale-150 object-cover" />
+          <div className="absolute inset-0 currently-reading-overlay" />
+        </div>
+      )}
+      <div className="relative flex flex-col items-center px-1.5 pb-3 pt-3.5">
+        <div className="relative flex h-[66px] w-full items-end justify-center" aria-hidden="true">
+          {fan.length > 0 ? (
+            fan.map((url, i) => (
+              <div
+                key={url}
+                className="absolute bottom-0 h-[58px] w-[39px] overflow-hidden rounded-[5px] shadow-[0_6px_14px_rgba(0,0,0,0.45)] ring-1 ring-white/10 transition-transform duration-200"
+                style={{ transform: poses[i].transform, zIndex: poses[i].z }}
+              >
+                <Image src={url} alt="" width={39} height={58} className="h-full w-full object-cover" />
+              </div>
+            ))
+          ) : (
+            <span className="mb-2 flex h-11 w-11 items-center justify-center rounded-full border border-foreground/12 bg-surface/70">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-muted">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+              </svg>
+            </span>
+          )}
+        </div>
+        <span className="mt-2.5 block font-heading text-[26px] font-bold leading-none book-header-text tabular-nums">
+          {value.toLocaleString("en-US")}
+        </span>
+        <span className="eyebrow mt-1.5 flex items-center justify-center gap-1.5 !text-[10px] book-header-text-sub">
+          <span className={`h-[6px] w-[6px] rounded-full ${dot}`} />
+          {label}
+        </span>
+      </div>
+    </div>
   );
-  const cls =
-    "block rounded-[18px] border border-foreground/10 bg-surface/60 px-2 py-3 text-center backdrop-blur-md";
+
+  const cls = "group block rounded-[18px] p-px";
+  const style = {
+    background: `linear-gradient(150deg, rgba(${rgb},0.75), rgba(${rgb},0.18) 55%, rgba(${rgb},0.45))`,
+  };
   return href ? (
-    <Link href={href} className={`${cls} transition-colors hover:border-foreground/25`}>
-      {body}
+    <Link href={href} className={`${cls} transition-transform active:scale-[0.97]`} style={style} aria-label={`${value} ${label}`}>
+      {inner}
     </Link>
   ) : (
-    <div className={cls}>{body}</div>
+    <div className={cls} style={style}>
+      {inner}
+    </div>
   );
 }
 
@@ -190,10 +256,10 @@ export function ProfileHero({
         </div>
       </div>
 
-      <div className="relative mt-5 grid grid-cols-3 gap-2.5">
-        <StatTile label="Read" value={stats.completed} dot="bg-neon-purple" href={statHrefs?.completed} />
-        <StatTile label="Reading" value={stats.currentlyReading} dot="bg-neon-blue" href={statHrefs?.currentlyReading} />
-        <StatTile label="TBR" value={stats.tbr} dot="bg-accent" href={statHrefs?.tbr} />
+      <div className="relative mt-5 grid grid-cols-3 gap-2.5 lg:gap-3.5">
+        <StatTile label="Read" value={stats.completed} hue="purple" covers={stats.covers?.completed ?? []} href={statHrefs?.completed} />
+        <StatTile label="Reading" value={stats.currentlyReading} hue="blue" covers={stats.covers?.currentlyReading ?? []} href={statHrefs?.currentlyReading} />
+        <StatTile label="TBR" value={stats.tbr} hue="lime" covers={stats.covers?.tbr ?? []} href={statHrefs?.tbr} />
       </div>
     </section>
   );

@@ -23,7 +23,7 @@ export function ReadingJournal({ notes }: ReadingJournalProps) {
         <h2 className="section-heading text-sm mb-3">
           Reading Journal
         </h2>
-        <div className="rounded-lg border border-dashed border-border p-6 text-center">
+        <div className="rounded-[18px] border border-dashed border-foreground/15 bg-surface/40 p-6 text-center">
           <p className="text-sm text-muted">No journal entries yet</p>
           <p className="mt-1 text-xs text-muted/60">
             Log your thoughts while reading from the home page
@@ -76,7 +76,7 @@ export function ReadingJournal({ notes }: ReadingJournalProps) {
                       alt={group.title}
                       width={24}
                       height={36}
-                      className="h-[36px] w-[24px] rounded object-cover"
+                      className="h-[36px] w-[24px] rounded-[4px] object-cover shadow-md ring-1 ring-white/10"
                     />
                   ) : (
                     <NoCover title={group.title} className="h-[36px] w-[24px]" size="sm" />
@@ -92,10 +92,10 @@ export function ReadingJournal({ notes }: ReadingJournalProps) {
               {group.notes.length > 1 ? (
                 <Link href={linkTarget} className="block relative group">
                   {peekCount >= 2 && (
-                    <div className="absolute bottom-[-12px] left-2 right-2 h-2 rounded-b-xl border border-t-0 border-border/30 bg-surface/50 z-0" />
+                    <div className="absolute bottom-[-12px] left-3 right-3 h-3 rounded-b-[16px] border border-t-0 border-foreground/8 bg-surface/40 z-0" />
                   )}
                   {peekCount >= 1 && (
-                    <div className="absolute bottom-[-6px] left-1 right-1 h-2 rounded-b-xl border border-t-0 border-border/40 bg-surface/70 z-10" />
+                    <div className="absolute bottom-[-6px] left-1.5 right-1.5 h-3 rounded-b-[17px] border border-t-0 border-foreground/10 bg-surface/60 z-10" />
                   )}
                   <div className="relative z-20">
                     <NotePreview note={topNote} />
@@ -137,10 +137,10 @@ export function ReadingJournal({ notes }: ReadingJournalProps) {
 function NotePreview({ note }: { note: ReadingNoteWithBook }) {
   const mood = note.mood ? MOOD_MAP[note.mood] : null;
   return (
-    <div className="rounded-xl border border-border/50 bg-surface p-3 space-y-1.5">
+    <div className="rounded-[18px] border border-foreground/10 bg-surface/80 p-3.5 space-y-1.5 backdrop-blur-md">
       <div className="flex items-center gap-2 text-[10px] text-muted">
         {note.percentComplete != null && (
-          <span className="rounded-full bg-surface-alt px-1.5 py-0.5">{note.percentComplete}%</span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-surface/80 px-2 py-0.5 font-semibold text-foreground"><span className="h-[5px] w-[5px] rounded-full bg-neon-blue" aria-hidden="true" />{note.percentComplete}%</span>
         )}
         {mood && <span>{mood}</span>}
         <span className="ml-auto">

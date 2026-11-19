@@ -60,6 +60,8 @@ export async function getUserByUsername(username: string): Promise<UserProfile |
 }
 
 export interface UserStats {
+  /** Up to 3 cover URLs per pile, most recently touched first. */
+  covers: { completed: string[]; currentlyReading: string[]; tbr: string[] };
   completed: number;
   currentlyReading: number;
   tbr: number;
@@ -88,5 +90,35 @@ export async function getUserStats(userId: string): Promise<UserStats> {
     if (parseFormats(row.ownedFormats).length > 0) owned++;
   }
 
-  return { completed, currentlyReading, tbr, owned };
+  const covers = await getStatCovers(userId);
+  return { completed, currentlyReading, tbr, owned, covers };
+}
+
+/** Up to three covers per pile, newest-touched first — the art the profile's
+ *  Read / Reading / TBR cards are built from (2026-11 refresh). One query:
+ *  a window over the reader's own rows, which the (user_id, book_id) unique
+ *  index already narrows. */
+async function getStatCovers(userId: string): Promise<UserStats["covers"]> {
+  const rows = (await db.all(sql`
+    SELECT state, cover FROM (
+      SELECT ubs.state AS state,
+             b.cover_image_url AS cover,
+             ROW_NUMBER() OVER (PARTITION BY ubs.state ORDER BY ubs.updated_at DESC) AS rn
+      FROM user_book_state ubs
+      JOIN books b ON b.id = ubs.book_id
+      WHERE ubs.user_id = ${userId}
+        AND ubs.state IN ('completed', 'currently_reading', 'tbr')
+        AND b.cover_image_url IS NOT NULL AND b.cover_image_url != ''
+        AND COALESCE(b.visibility, 'public') != 'hidden'
+    ) WHERE rn <= 3
+    ORDER BY state, rn
+  `)) as { state: string; cover: string }[];
+
+  const covers: UserStats["covers"] = { completed: [], currentlyReading: [], tbr: [] };
+  for (const r of rows) {
+    if (r.state === "completed") covers.completed.push(r.cover);
+    else if (r.state === "currently_reading") covers.currentlyReading.push(r.cover);
+    else if (r.state === "tbr") covers.tbr.push(r.cover);
+  }
+  return covers;
 }
