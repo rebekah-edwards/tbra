@@ -24,6 +24,7 @@ import { after } from "next/server";
 import { BookAboutDetails } from "@/components/book/book-about-details";
 import { BookSeries } from "@/components/book/book-series";
 import { ContentProfile } from "@/components/book/content-profile";
+import { isPlaceholderRating } from "@/lib/content-rating-placeholder";
 import { ContentWarningBanner } from "@/components/book/content-warning-banner";
 import { ReviewSummary } from "@/components/review/review-summary";
 import { BookReadingNotes } from "@/components/book/book-reading-notes";
@@ -525,12 +526,12 @@ export default async function BookPage({
         <div className="lg:min-h-0 lg:min-w-0">
           {hasReviews ? (
             <ReviewSummary data={reviewSummary} bookId={bookId} bookSlug={resolved.book.slug} />
-          ) : (
+          ) : user ? (
             <section className="mt-8 space-y-4 hidden lg:block">
               <h2 className="section-heading text-xl">What Readers Think</h2>
               <p className="text-sm text-muted/60">Finish reading to leave a review</p>
             </section>
-          )}
+          ) : null}
 
           {readingNotes.length > 0 && (
             <BookReadingNotes notes={readingNotes} bookSlug={resolved.book.slug} bookId={bookId} />
@@ -566,7 +567,12 @@ export default async function BookPage({
       })()}
 
       {/* Section 3: What's Inside — full width */}
-      <ContentProfile ratings={book.ratings} bookId={bookId} isLoggedIn={!!user} isAdmin={isAdmin(user)} />
+      <ContentProfile
+        ratings={isAdmin(user) ? book.ratings : book.ratings.filter((r: { intensity: number; notes: string | null }) => !isPlaceholderRating(r))}
+        bookId={bookId}
+        isLoggedIn={!!user}
+        isAdmin={isAdmin(user)}
+      />
 
       {user && (
         <div className="mt-10 flex items-center justify-center gap-8">
