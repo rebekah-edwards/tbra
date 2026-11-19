@@ -304,6 +304,11 @@ h1, h2, h3, .font-heading {
   }
 }
 
+/* Shelf plank (components/shelves/shelf-ledge.tsx): a soft shadow under it so
+   it reads as a shelf; lighter in light mode, where a dark shadow looked grey. */
+.shelf-ledge { box-shadow: 0 5px 9px rgba(0, 0, 0, 0.28); }
+[data-theme="light"] .shelf-ledge { box-shadow: 0 4px 7px rgba(0, 0, 0, 0.09); }
+
 /* Profile social icons: both theme variants are in the markup; show one. */
 .social-icon-light { display: none; }
 [data-theme="light"] .social-icon-dark:has(+ .social-icon-light) { display: none; }

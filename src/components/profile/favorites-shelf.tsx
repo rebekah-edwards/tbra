@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { FavoriteBook } from "@/lib/queries/favorites";
+import { ShelfLedge, WORDMARK_LEDGE } from "@/components/shelves/shelf-ledge";
 import { NoCover } from "@/components/no-cover";
 
 interface FavoritesShelfProps {
@@ -205,11 +206,7 @@ export function FavoritesShelf({ favorites, userAvatarUrl }: FavoritesShelfProps
                 );
               })}
             </div>
-            {/* Ledge */}
-            <div
-              className="h-[3px] -mx-4"
-              style={{ background: "linear-gradient(90deg, rgba(163,230,53,0.7), rgba(56,189,248,0.55), rgba(192,132,252,0.6))" }}
-            />
+            <ShelfLedge background={WORDMARK_LEDGE} />
           </div>
         </div>
       ) : (

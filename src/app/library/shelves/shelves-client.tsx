@@ -22,6 +22,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ShelfCard } from "@/components/shelves/shelf-card";
+import { ShelfLedge, WORDMARK_LEDGE } from "@/components/shelves/shelf-ledge";
 import { ShelfCoverMosaic } from "@/components/shelves/shelf-cover-mosaic";
 import { CreateShelfModal } from "@/components/shelves/create-shelf-modal";
 import { PremiumBadge } from "@/components/premium-gate";
@@ -120,7 +121,7 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
         {isPremium && activeTab === "mine" && (
           <button
             onClick={() => setCreateOpen(true)}
-            className="flex items-center gap-1.5 rounded-full bg-accent px-3 py-2 text-xs font-semibold text-black transition-all hover:brightness-110"
+            className="btn-lime cursor-pointer gap-1.5 px-3.5 py-2 text-xs"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -147,25 +148,19 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
         href="/library/shelves/top-shelf"
         className="block mb-4"
       >
-        {/* Rich wood browns (amber-700/800/900), matching the profile
-            bookcase — not the old orange #f59e0b. */}
-        <div
-          className="rounded-xl border transition-all hover:scale-[1.01] active:scale-[0.99]"
-          style={{
-            background: "linear-gradient(to bottom, #78350f1a, #92400e33)",
-            borderColor: "#92400e33",
-          }}
-        >
+        {/* 2026-11 refresh: Top Shelf is glass in the wordmark hairline with
+            the same gradient ledge as the profile's Top-Shelf Reads. */}
+        <div className="card-hairline overflow-hidden !rounded-[18px] transition-transform hover:scale-[1.01] active:scale-[0.99]">
           <div className="flex items-start gap-3 px-4 pt-4 pb-2.5">
             {topShelfCovers.length > 0 ? (
               <ShelfCoverMosaic
                 coverUrls={topShelfCovers}
-                color="#92400e"
+                color="#a3e635"
                 maxCovers={3}
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-lg" style={{ background: "#b453091a" }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="1.5">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border border-foreground/12 bg-surface/70">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" className="text-accent" aria-hidden="true">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
               </div>
@@ -175,7 +170,9 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
                 <h3 className="font-heading text-sm font-bold text-foreground truncate">
                   Top Shelf
                 </h3>
-                <span className="text-[10px] font-medium" style={{ color: "#b45309cc" }}>★</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="shrink-0 text-accent" aria-hidden="true">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
               </div>
               <p className="text-[11px] text-muted mt-0.5">
                 {favorites.length} {favorites.length === 1 ? "book" : "books"} · Your all-time favorites
@@ -185,13 +182,7 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
               <path d="M9 18l6-6-6-6" />
             </svg>
           </div>
-
-          {/* Shelf edge */}
-          <div
-            className="h-[5px] shadow-[inset_0_2px_3px_rgba(0,0,0,0.1)]"
-            style={{ background: "linear-gradient(to bottom, #92400e4d, #78350f66)" }}
-          />
-          <div className="h-1.5" />
+          <ShelfLedge background={WORDMARK_LEDGE} bleed="mx-0" />
         </div>
       </Link>
 
@@ -199,9 +190,9 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
       {isPremium ? (
         orderedShelves.length === 0 ? (
           /* Empty state */
-          <div className="rounded-xl border border-dashed border-border p-8 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
+          <div className="rounded-[18px] border border-dashed border-foreground/15 bg-surface/40 p-8 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-foreground/12 bg-surface/70">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue">
                 <path d="M4 4h2v16H4z" />
                 <path d="M8 4h2v16H8z" />
                 <path d="M13 4l2 16" />
@@ -214,7 +205,7 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
             </p>
             <button
               onClick={() => setCreateOpen(true)}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-black transition-all hover:brightness-110"
+              className="btn-lime mt-4 cursor-pointer gap-1.5 px-4 py-2 text-sm"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <line x1="12" y1="5" x2="12" y2="19" />
@@ -242,7 +233,7 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
         )
       ) : (
         /* Upgrade prompt for free users */
-        <div className="rounded-xl border border-dashed border-neon-purple/20 bg-neon-purple/5 p-6 text-center">
+        <div className="rounded-[18px] border border-dashed border-foreground/15 bg-surface/40 p-6 text-center">
           <p className="text-sm text-muted mb-2">
             Want to create custom shelves?
           </p>
@@ -268,11 +259,8 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
                 className="block"
               >
                 <div
-                  className="rounded-xl border transition-all hover:scale-[1.01] active:scale-[0.99]"
-                  style={{
-                    background: `linear-gradient(to bottom, ${shelf.color || "#d97706"}12, ${shelf.color || "#d97706"}22)`,
-                    borderColor: `${shelf.color || "#d97706"}30`,
-                  }}
+                  className="overflow-hidden rounded-[18px] border bg-surface/60 backdrop-blur-md transition-transform hover:scale-[1.01] active:scale-[0.99]"
+                  style={{ borderColor: `${shelf.color || "#d97706"}40` }}
                 >
                   <div className="flex items-start gap-3 px-4 pt-4 pb-2.5">
                     <ShelfCoverMosaic
@@ -281,9 +269,12 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
                       maxCovers={3}
                     />
                     <div className="flex-1 min-w-0 py-0.5">
-                      <h3 className="font-heading text-sm font-bold text-foreground truncate">
-                        {shelf.name}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: shelf.color || "#d97706" }} aria-hidden="true" />
+                        <h3 className="font-heading text-sm font-bold text-foreground truncate">
+                          {shelf.name}
+                        </h3>
+                      </div>
                       <p className="text-[11px] text-muted mt-0.5">
                         by {shelf.ownerDisplayName || `@${shelf.ownerUsername}`} · {shelf.bookCount} {shelf.bookCount === 1 ? "book" : "books"}
                       </p>
@@ -294,17 +285,13 @@ export function ShelvesClient({ shelves: initialShelves, followedShelves, isPrem
                       )}
                     </div>
                   </div>
-                  <div
-                    className="h-[5px] shadow-[inset_0_2px_3px_rgba(0,0,0,0.1)]"
-                    style={{ background: `linear-gradient(to bottom, ${shelf.color || "#d97706"}30, ${shelf.color || "#d97706"}45)` }}
-                  />
-                  <div className="h-1.5" />
+                  <ShelfLedge background={`${shelf.color || "#d97706"}cc`} bleed="mx-0" />
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-border p-8 text-center">
+          <div className="rounded-[18px] border border-dashed border-foreground/15 bg-surface/40 p-8 text-center">
             <p className="text-sm text-muted">You're not following any shelves yet.</p>
             <p className="text-xs text-muted/60 mt-1">Follow shelves from other users' profiles or from book pages.</p>
           </div>

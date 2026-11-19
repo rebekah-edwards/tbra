@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ShelfCoverMosaic } from "./shelf-cover-mosaic";
+import { ShelfLedge } from "./shelf-ledge";
 import type { ShelfSummary } from "@/lib/queries/shelves";
 
 interface ShelfCardProps {
@@ -16,19 +17,18 @@ export function ShelfCard({ shelf, linkBase = "/library/shelves", editHref }: Sh
   const accentColor = shelf.color || "#d97706";
 
   return (
+    // 2026-11 refresh: glass case; the shelf's colour is the dot, a thin
+    // ring and the raised ledge (matches the profile shelf rows).
     <div>
       <div
-        className="relative rounded-xl border transition-all hover:scale-[1.01] active:scale-[0.99]"
-        style={{
-          background: `linear-gradient(to bottom, ${accentColor}12, ${accentColor}22)`,
-          borderColor: `${accentColor}30`,
-        }}
+        className="relative overflow-hidden rounded-[18px] border bg-surface/60 backdrop-blur-md transition-transform hover:scale-[1.01] active:scale-[0.99]"
+        style={{ borderColor: `${accentColor}40` }}
       >
         <Link
           href={`${linkBase}/${shelf.slug}`}
           className="block"
         >
-          <div className="flex items-start gap-3 px-4 pt-4 pb-2.5">
+          <div className={`flex items-start gap-3 px-4 pt-4 pb-2.5 ${editHref ? "pr-12" : ""}`}>
             <ShelfCoverMosaic
               coverUrls={shelf.coverUrls}
               color={shelf.color}
@@ -36,17 +36,19 @@ export function ShelfCard({ shelf, linkBase = "/library/shelves", editHref }: Sh
             />
             <div className="flex-1 min-w-0 py-0.5">
               <div className="flex items-center gap-2">
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: accentColor }} aria-hidden="true" />
                 <h3 className="font-heading text-sm font-bold text-foreground truncate">
                   {shelf.name}
                 </h3>
+              </div>
+              <p className="mt-1 flex items-center gap-2 text-xs text-muted">
+                {shelf.bookCount} {shelf.bookCount === 1 ? "book" : "books"}
                 {shelf.isPublic && (
-                  <span className="text-[9px] text-muted/60 bg-white/5 rounded-full px-1.5 py-0.5 shrink-0">
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-foreground/10 bg-surface/80 px-1.5 py-0.5 text-[9px] font-semibold text-foreground">
+                    <span className="h-[5px] w-[5px] rounded-full bg-neon-blue" aria-hidden="true" />
                     Public
                   </span>
                 )}
-              </div>
-              <p className="text-xs text-muted mt-0.5">
-                {shelf.bookCount} {shelf.bookCount === 1 ? "book" : "books"}
               </p>
               {shelf.description && (
                 <p className="text-xs text-muted/60 mt-1.5 line-clamp-2 leading-relaxed">
@@ -56,19 +58,14 @@ export function ShelfCard({ shelf, linkBase = "/library/shelves", editHref }: Sh
             </div>
           </div>
 
-          {/* Shelf edge */}
-          <div
-            className="h-[5px] shadow-[inset_0_2px_3px_rgba(0,0,0,0.1)]"
-            style={{ background: `linear-gradient(to bottom, ${accentColor}30, ${accentColor}45)` }}
-          />
-          <div className="h-1.5" />
+          <ShelfLedge background={`${accentColor}cc`} bleed="mx-0" />
         </Link>
 
         {/* Edit button — overlaid top-right */}
         {editHref && (
           <Link
             href={editHref}
-            className="absolute top-3 right-3 p-1.5 rounded-lg bg-surface/80 border border-border/50 text-muted hover:text-foreground hover:bg-surface transition-colors backdrop-blur-sm z-10"
+            className="btn-glass absolute top-3 right-3 z-10 h-8 w-8 text-muted hover:text-foreground"
             title="Edit shelf"
             onClick={(e) => e.stopPropagation()}
           >
@@ -78,8 +75,6 @@ export function ShelfCard({ shelf, linkBase = "/library/shelves", editHref }: Sh
           </Link>
         )}
       </div>
-      {/* Shelf shadow */}
-      <div className="h-2 mx-2 bg-gradient-to-b from-black/10 to-transparent rounded-b-lg" />
     </div>
   );
 }

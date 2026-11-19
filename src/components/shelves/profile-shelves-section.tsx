@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { ShelfLedge } from "./shelf-ledge";
 import { NoCover } from "@/components/no-cover";
 import { PremiumGate } from "@/components/premium-gate";
 import type { ShelfSummary } from "@/lib/queries/shelves";
@@ -144,8 +145,7 @@ function MiniShelfRow({
                 );
               })}
             </div>
-            {/* Ledge */}
-            <div className="h-[3px] -mx-3" style={{ background: `${accentColor}b3` }} />
+            <ShelfLedge background={`${accentColor}cc`} bleed="-mx-3" />
           </div>
         </div>
       ) : (
