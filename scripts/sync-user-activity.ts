@@ -226,6 +226,7 @@ const TABLES: TableSpec[] = [
   // carries removals.
   { name: 'custom_goals',               pk: ['id'], hasUpdatedAt: true, naturalKey: ['user_id', 'year', 'goal_key'] },
   { name: 'user_audio_lengths',         pk: ['user_id', 'book_id'], hasUpdatedAt: true },
+  { name: 'user_page_counts',           pk: ['user_id', 'book_id'], hasUpdatedAt: true },  // 2026-11-19
   { name: 'reading_sessions',           pk: ['id'], hasUpdatedAt: true, naturalKey: ['user_id', 'book_id', 'read_number'] },
   { name: 'reading_notes',              pk: ['id'], hasUpdatedAt: false },
   { name: 'user_owned_editions',        pk: ['user_id', 'edition_id'], hasUpdatedAt: false },
