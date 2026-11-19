@@ -843,3 +843,50 @@ the real "this reader has no photo" initial-letter circle, which currently hides
 with an App Store submission mid-flight (draft `fe3c1ff8…` waiting on the subscription group), so
 an unrequested iOS change tonight could disturb that. Report `0e9e42a0-79d4-46a1-b54f-f6bce63ac082`
 is left `status='new'` in /admin/issues.
+
+### 2026-11-19 update — investigated in the simulator; narrowed, not solved
+
+Report `0e9e42a0` stays OPEN. The fix attempt is commit `f9e8eff` on
+`claude/native-ios-api-shelves-upnext`, installed to Rebekah's phone the same day.
+
+**Ruled out, with evidence — do not re-run these:**
+- *Data:* 59 of 139 prod users carry a non-empty `avatar_url`; all well-formed absolute Blob /
+  Google URLs; none in the relative `/uploads/...` shape from the August incident.
+- *Storage:* the blob objects serve `HTTP 200` with correct image content types
+  (169KB / 442×472 for the test account, 1.78MB / 1080×1080 for `rebekah_creates`).
+- *API:* `/api/v1/auth/login`, `/api/v1/auth/me` and `/api/v1/friends-activity` **all** return
+  `avatarUrl` on every row (checked live against prod with a bearer token).
+- *Web:* `thebasedreader.app/u/rebekah_creates` has the blob avatar URL in its server HTML.
+- *Network / ATS:* **Safari inside the same booted simulator loads the exact same blob URL
+  instantly.** The Debug build also carries `NSAllowsArbitraryLoads = true`. So neither the
+  network path nor ATS explains it; the failure is app-side.
+- *URLCache corruption:* deleting `Library/Caches/app.tbra.ios` and relaunching did not help.
+- *Dynamic Type:* reproduced at both `extra-small` and `medium` content sizes.
+
+**What is actually observed.** The bottom-nav avatar (`AppShell.profileIcon`) shows
+`placeholder: { Theme.surfaceAlt }` — the dark circle, which is why it reads as "no picture"
+rather than the green initial fallback (that would mean `avatarUrl` was nil; it is not). The
+unified log shows the request open a connection to the blob host and finish its handshake
+(`flow:finish_connect @0.137s`) — and then nothing at all: no bytes, no error, no completion,
+still nothing after 75 seconds. Book covers on the very same screen render normally, because they
+come from other hosts *and* already go through `CoverImageCache`.
+
+**What changed in `f9e8eff`.** All 13 avatar call sites moved from raw `AsyncImage` to
+`CachedCoverImage`: nav, friends feed, own profile, public profile, edit profile, reviews list,
+find readers, browse/follows, top-bar menu, admin users. That is the migration covers got in July
+for tester report 2b67d3ea; avatars were simply missed. It buys the retry, a 15s timeout and a
+decoded-image memory cache, and stops the repeated 1.8MB re-downloads.
+
+**It did not fix the symptom.** After the change the nav avatar is still the placeholder, and the
+log shows only ONE request — the retry never fired, i.e. the request is still pending rather than
+failing. So the stall is *below* this layer, inside `URLSession` talking to
+`*.public.blob.vercel-storage.com`.
+
+**Where the next person should start.** The question that matters is whether this reproduces on a
+real device or is simulator-only — the build is on Rebekah's phone now, so open the app and look
+at the bottom-right Profile icon and the friends feed. If it is fine on device, the simulator
+stall is an artifact and the real report needs a different line of enquiry (start by asking the
+reporter whether they see it on web too, and on which screens). If it reproduces on device, the
+next step is a plain `URLSession.shared.data(from:)` probe against a blob URL from inside the app
+versus the same request against `covers.openlibrary.org`, to find what is special about that host
+for this process.
