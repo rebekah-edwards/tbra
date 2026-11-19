@@ -108,9 +108,7 @@ struct FindReadersView: View {
                 HStack(spacing: 12) {
                     Group {
                         if let avatarUrl = person.avatarUrl, let url = URL(string: avatarUrl) {
-                            AsyncImage(url: url) { image in
-                                image.resizable().aspectRatio(contentMode: .fill)
-                            } placeholder: { Theme.surfaceAlt }
+                            CachedCoverImage(url: url) { Theme.surfaceAlt }
                         } else {
                             ZStack {
                                 Theme.neonPurple.opacity(0.3)

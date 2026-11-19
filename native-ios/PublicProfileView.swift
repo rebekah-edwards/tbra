@@ -199,9 +199,7 @@ struct PublicProfileView: View {
             Color.clear.frame(width: 40, height: 40)
             Group {
                 if let avatarUrl = user.avatarUrl, let url = URL(string: avatarUrl) {
-                    AsyncImage(url: url) { image in
-                        image.resizable().aspectRatio(contentMode: .fill)
-                    } placeholder: { Theme.accent }
+                    CachedCoverImage(url: url) { Theme.accent }
                 } else {
                     ZStack {
                         Theme.accent

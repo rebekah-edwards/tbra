@@ -206,9 +206,7 @@ struct ProfileView: View {
                let url = avatarUrl.hasPrefix("/")
                    ? URL(string: avatarUrl, relativeTo: APIClient.baseURL)
                    : URL(string: avatarUrl) {
-                AsyncImage(url: url) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
-                } placeholder: { Theme.accent }
+                CachedCoverImage(url: url) { Theme.accent }
             } else {
                 ZStack {
                     Theme.accent
@@ -503,9 +501,7 @@ struct ProfileView: View {
                let url = avatarUrl.hasPrefix("/")
                    ? URL(string: avatarUrl, relativeTo: APIClient.baseURL)
                    : URL(string: avatarUrl) {
-                AsyncImage(url: url) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
-                } placeholder: { Theme.surfaceAlt }
+                CachedCoverImage(url: url) { Theme.surfaceAlt }
             } else {
                 ZStack {
                     Theme.accent.opacity(0.6)
@@ -665,9 +661,7 @@ struct FavoriteShelfCover: View {
            let url = avatarUrl.hasPrefix("/")
                ? URL(string: avatarUrl, relativeTo: APIClient.baseURL)
                : URL(string: avatarUrl) {
-            AsyncImage(url: url) { image in
-                image.resizable().aspectRatio(contentMode: .fill)
-            } placeholder: { Theme.surfaceAlt }
+            CachedCoverImage(url: url) { Theme.surfaceAlt }
             .frame(width: 14, height: 14)
             .clipShape(Circle())
         } else {
@@ -1215,8 +1209,7 @@ struct ReferralsSheet: View {
                let url = raw.hasPrefix("/")
                    ? URL(string: raw, relativeTo: APIClient.baseURL)
                    : URL(string: raw) {
-                AsyncImage(url: url) { $0.resizable().aspectRatio(contentMode: .fill) }
-                    placeholder: { Theme.surfaceAlt }
+                CachedCoverImage(url: url) { Theme.surfaceAlt }
             } else {
                 ZStack {
                     Theme.accent

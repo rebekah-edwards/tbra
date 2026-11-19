@@ -1,7 +1,15 @@
 import SwiftUI
 import UIKit
 
-/// Cover loader that replaces `AsyncImage` in list rows.
+/// Cover loader that replaces `AsyncImage` in list rows — and, since
+/// 2026-11-19, every PROFILE PICTURE too (tester report 0e9e42a0, "since the
+/// update, no one's profile pictures are showing up"). Avatars were left on
+/// raw `AsyncImage` when covers moved off it, so they still had all three
+/// problems below. Reproduced in the simulator: the bottom-nav avatar request
+/// connected to the blob host and then sat there — no bytes, no error, no
+/// retry — leaving `placeholder:` on screen indefinitely, while the covers
+/// beside it (already on this loader) rendered. Anything showing a user's
+/// photo belongs here; do not reintroduce `AsyncImage` for an avatar.
 ///
 /// WHY NOT AsyncImage (tester report 2b67d3ea, 2026-07-20 — "book covers
 /// don't load on the library page"):
