@@ -296,9 +296,7 @@ struct AdminUsersSheet: View {
                let url = avatarUrl.hasPrefix("/")
                    ? URL(string: avatarUrl, relativeTo: APIClient.adminBaseURL)
                    : URL(string: avatarUrl) {
-                AsyncImage(url: url) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
-                } placeholder: { Theme.accent }
+                CachedCoverImage(url: url) { Theme.accent }
             } else {
                 ZStack {
                     Theme.accent

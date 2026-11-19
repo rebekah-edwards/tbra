@@ -232,9 +232,7 @@ struct HamburgerMenuSheet: View {
                     onProfile()
                 } label: {
                     HStack(spacing: 14) {
-                        AsyncImage(url: avatarURL) { image in
-                            image.resizable().aspectRatio(contentMode: .fill)
-                        } placeholder: {
+                        CachedCoverImage(url: avatarURL) {
                             ZStack {
                                 Theme.surfaceAlt
                                 Image(systemName: "person.fill").foregroundStyle(Theme.muted)

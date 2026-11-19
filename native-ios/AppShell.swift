@@ -795,9 +795,7 @@ struct BottomNav: View {
            let url = avatarUrl.hasPrefix("/")
                ? URL(string: avatarUrl, relativeTo: APIClient.baseURL)
                : URL(string: avatarUrl) {
-            AsyncImage(url: url) { image in
-                image.resizable().aspectRatio(contentMode: .fill)
-            } placeholder: { Theme.surfaceAlt }
+            CachedCoverImage(url: url) { Theme.surfaceAlt }
             .frame(width: 22, height: 22)
             .clipShape(Circle())
             .overlay(Circle().stroke(tab == .profile

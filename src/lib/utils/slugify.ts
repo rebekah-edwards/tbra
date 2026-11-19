@@ -20,13 +20,45 @@ function normalize(str: string): string {
     .replace(/\s/g, "-");
 }
 
+// Hebrew and Cyrillic → Latin, ONLY for names that normalize() would empty
+// out entirely. Before 2026-11-19 a Hebrew title produced "" and the book slug
+// became "-rainbow-rowell" (leading hyphen, no title part — 160+ of them,
+// numbered "-katia-benovich-22" because they all collided). Latin-script names
+// never reach this table, so their slugs are byte-for-byte unchanged.
+const TRANSLIT: Record<string, string> = {
+  // Hebrew (niqqud is stripped by NFD + the combining-mark range below)
+  א: "a", ב: "b", ג: "g", ד: "d", ה: "h", ו: "v", ז: "z", ח: "ch", ט: "t", י: "y",
+  כ: "k", ך: "k", ל: "l", מ: "m", ם: "m", נ: "n", ן: "n", ס: "s", ע: "a", פ: "p",
+  ף: "f", צ: "ts", ץ: "ts", ק: "k", ר: "r", ש: "sh", ת: "t",
+  // Cyrillic
+  а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "e", ж: "zh", з: "z", и: "i",
+  й: "y", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t",
+  у: "u", ф: "f", х: "kh", ц: "ts", ч: "ch", ш: "sh", щ: "shch", ъ: "", ы: "y",
+  ь: "", э: "e", ю: "yu", я: "ya", і: "i", ї: "yi", є: "ye", ґ: "g",
+};
+
+function transliterate(str: string): string {
+  return Array.from(str.toLowerCase().normalize("NFC"))
+    .map((ch) => TRANSLIT[ch] ?? ch)
+    .join("");
+}
+
+/** normalize(), falling back to a transliteration when nothing Latin survives. */
+function normalizeAny(str: string): string {
+  return normalize(str) || normalize(transliterate(str));
+}
+
 /**
  * Generate a slug for a book: `title-authorname`
  * e.g., "The Will of the Many" by James Islington → "the-will-of-the-many-james-islington"
+ *
+ * Never starts with "-": a title with no Latin or transliterable letters
+ * (Japanese, say) becomes "untitled-authorname". Such books fail the SEO
+ * core-set gate anyway; the slug just has to be a well-formed URL.
  */
 export function generateBookSlug(title: string, authorName: string): string {
-  const titleSlug = normalize(title);
-  const authorSlug = normalize(authorName);
+  const titleSlug = normalizeAny(title) || "untitled";
+  const authorSlug = normalizeAny(authorName);
   if (!authorSlug) return titleSlug;
   return `${titleSlug}-${authorSlug}`;
 }
@@ -49,7 +81,7 @@ export function generateSeriesSlug(seriesName: string, authorName?: string): str
  * e.g., "James Islington" → "james-islington"
  */
 export function generateAuthorSlug(authorName: string): string {
-  return normalize(authorName);
+  return normalizeAny(authorName);
 }
 
 /**
