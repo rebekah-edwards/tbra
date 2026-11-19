@@ -256,6 +256,7 @@ function CorrectionCard({
                     type="button"
                     onClick={() => setDraftIntensity(level)}
                     aria-pressed={selected}
+                    aria-label={`${level} — ${INTENSITY_LABELS[level]}${tags.length ? ` (${tags.join(", ")})` : ""}`}
                     className={`rounded-lg border-2 px-1 py-1.5 text-center transition-colors ${
                       selected
                         ? "border-accent bg-accent/15"
