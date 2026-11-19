@@ -63,17 +63,21 @@ const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/
 /** Fetch the page the way Google does and decide whether it is worth submitting. */
 async function liveCheck(url: string): Promise<string | null> {
   let res: Response;
+  let html = "";
   try {
     res = await fetch(url, {
       headers: { "user-agent": GOOGLEBOT_UA },
       redirect: "manual",
       signal: AbortSignal.timeout(20_000),
     });
+    // The body read is under the same 20s signal: a page that sends headers
+    // and then streams slowly must be a reject, not an uncaught crash that
+    // costs the whole day's run (2026-11-19).
+    if (res.status === 200) html = await res.text();
   } catch (err) {
     return `fetch failed: ${(err as Error).message}`;
   }
   if (res.status !== 200) return `HTTP ${res.status}`;
-  const html = await res.text();
   const head = html.split("</head>")[0] ?? "";
   if (/<meta[^>]+name="robots"[^>]*noindex/i.test(head)) return "noindex";
   const canonical = head.match(/rel="canonical" href="([^"]*)"/)?.[1];
