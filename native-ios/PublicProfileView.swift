@@ -95,6 +95,10 @@ struct PublicProfileView: View {
         _model = State(initialValue: PublicProfileModel(username: username))
     }
 
+    private var heroShown: Bool {
+        DesignPreview.on && model.user != nil && !model.isPrivate && !model.blockedByViewer
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -106,7 +110,6 @@ struct PublicProfileView: View {
                     // Refreshed (2026-11): one hero card on the wordmark
                     // hairline holds who they are, the follow action and the
                     // three counts; sections below are neutral glass.
-                    topBarV2(user)
                     heroV2(user)
                     if !model.favorites.isEmpty { topShelf }
                     if !model.publicShelves.isEmpty { shelvesSection }
@@ -138,7 +141,10 @@ struct PublicProfileView: View {
         }
         .background(AmbientBackground())
         .tracksScrollAtTop()
-        .floatingBack()
+        // The refreshed hero carries its own back + share inside the card
+        // (Rebekah 2026-11-19); the floating button stays for the loading,
+        // private and blocked states, which have no card.
+        .modifier(FloatingBackUnlessHero(heroShown: heroShown))
         .reportsPage("/u/\(model.username)")
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }
@@ -311,23 +317,6 @@ struct PublicProfileView: View {
     // screen's one solid-lime pill; everything else is glass.
 
     /// The back chevron's row: the share circle sits opposite it.
-    private func topBarV2(_ user: ProfileUser) -> some View {
-        HStack {
-            Spacer()
-            if let username = user.username,
-               let url = URL(string: "https://thebasedreader.app/u/\(username)") {
-                ShareLink(item: url) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 15))
-                        .foregroundStyle(Theme.foreground.opacity(0.9))
-                        .chromeCircle()
-                }
-            }
-        }
-        .frame(height: 40)
-        .padding(.bottom, -8)
-    }
-
     private func heroV2(_ user: ProfileUser) -> some View {
         let name = user.displayName ?? user.username ?? "Reader"
         return VStack(spacing: 14) {
@@ -425,6 +414,31 @@ struct PublicProfileView: View {
             }
         )
         .heroHairline()
+        .overlay(alignment: .top) {
+            HStack {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Theme.foreground.opacity(0.9))
+                        .frame(width: 36, height: 36)
+                        .glassEffect(.regular, in: Circle())
+                }
+                .accessibilityLabel("Back")
+                Spacer()
+                if let username = user.username,
+                   let url = URL(string: "https://thebasedreader.app/u/\(username)") {
+                    ShareLink(item: url) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Theme.foreground.opacity(0.9))
+                            .frame(width: 36, height: 36)
+                            .glassEffect(.regular, in: Circle())
+                    }
+                    .accessibilityLabel("Share profile")
+                }
+            }
+            .padding(12)
+        }
     }
 
     /// The same links as `socialRow`, each in a 40pt glass circle.
@@ -1211,5 +1225,15 @@ struct ProfileStatCard: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(value) \(label)")
+    }
+}
+
+
+/// `.floatingBack()` only when the screen has no refreshed hero to hold its
+/// own back button.
+private struct FloatingBackUnlessHero: ViewModifier {
+    let heroShown: Bool
+    func body(content: Content) -> some View {
+        if heroShown { content } else { content.floatingBack() }
     }
 }

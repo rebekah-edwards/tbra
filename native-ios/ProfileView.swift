@@ -709,6 +709,35 @@ enum ShelfWood {
     static let amber900 = Color(hex: "78350f")
 }
 
+/// The shelf plank under a row of covers (web: components/shelves/shelf-ledge.tsx).
+/// It floats NOTICEABLY above the bottom of its card with a soft shadow under
+/// it, so the card reads as a real bookshelf — Rebekah 2026-11-19: "the thick
+/// bottom line is supposed to be noticeably higher than the bottom of the
+/// card". Never put it flush against the card edge.
+struct ShelfLedge<Fill: ShapeStyle>: View {
+    let fill: Fill
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Rectangle()
+                .fill(fill)
+                .frame(height: 6)
+                .shadow(color: .black.opacity(colorScheme == .light ? 0.10 : 0.30), radius: 4, y: 4)
+            Color.clear.frame(height: 14)
+        }
+    }
+}
+
+extension ShelfLedge where Fill == LinearGradient {
+    /// The wordmark gradient Top Shelf uses.
+    static var wordmark: ShelfLedge<LinearGradient> {
+        ShelfLedge(fill: LinearGradient(
+            colors: [Theme.accent.opacity(0.85), Theme.neonBlue.opacity(0.7), Theme.neonPurple.opacity(0.75)],
+            startPoint: .leading, endPoint: .trailing))
+    }
+}
+
 /// The wooden Top-Shelf Reads bookcase (web: favorites-shelf.tsx).
 struct TopShelfCase: View {
     let favorites: [FavoriteBookRow]
@@ -737,10 +766,7 @@ struct TopShelfCase: View {
                 .padding(.bottom, 16)
             }
             .maskFadeRight()
-            LinearGradient(colors: [Theme.accent.opacity(0.7), Theme.neonBlue.opacity(0.55),
-                                    Theme.neonPurple.opacity(0.6)],
-                           startPoint: .leading, endPoint: .trailing)
-                .frame(height: 3)
+            ShelfLedge<LinearGradient>.wordmark
         }
         .background(Theme.surface.opacity(0.6))
         .clipShape(RoundedRectangle(cornerRadius: 18))
@@ -893,7 +919,7 @@ struct ShelfRailCase: View {
                     .padding(.bottom, 10)
                 }
                 .maskFadeRight()
-                tint.opacity(0.7).frame(height: 3)
+                ShelfLedge(fill: tint.opacity(0.8))
             }
             .background(Theme.surface.opacity(0.6))
             .clipShape(RoundedRectangle(cornerRadius: 16))

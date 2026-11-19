@@ -344,13 +344,17 @@ private struct ShelfCard: View {
                             .font(Theme.body(13))
                             .foregroundStyle(Theme.muted)
                         if shelf.isPublic {
-                            Text("Public")
-                                .font(Theme.body(11, .medium))
-                                .foregroundStyle(Theme.muted)
-                                .padding(.horizontal, 9)
-                                .padding(.vertical, 3)
-                                .background(Theme.surfaceAlt.opacity(0.8))
-                                .clipShape(Capsule())
+                            if DesignPreview.on {
+                                DotBadge(text: "Public", dot: Theme.neonBlue)
+                            } else {
+                                Text("Public")
+                                    .font(Theme.body(11, .medium))
+                                    .foregroundStyle(Theme.muted)
+                                    .padding(.horizontal, 9)
+                                    .padding(.vertical, 3)
+                                    .background(Theme.surfaceAlt.opacity(0.8))
+                                    .clipShape(Capsule())
+                            }
                         }
                     }
                 }
@@ -364,34 +368,22 @@ private struct ShelfCard: View {
             }
             .padding(14)
 
-            // The bookshelf plank — thin and FULL-BLEED, mirroring the
-            // profile shelf rails (web: h-[5px] gradient + h-1.5 gap).
-            Rectangle()
-                .fill(LinearGradient(
-                    colors: [tint.opacity(0.30), tint.opacity(0.45)],
-                    startPoint: .top, endPoint: .bottom))
-                .frame(height: 5)
-            Color.clear.frame(height: 6)
+            if DesignPreview.on {
+                // Refreshed (2026-11-19): raised plank, glass case, the
+                // shelf's colour as ring + plank (web shelf-card.tsx).
+                ShelfLedge(fill: tint.opacity(0.8))
+            } else {
+                // The bookshelf plank — thin and FULL-BLEED, mirroring the
+                // profile shelf rails (web: h-[5px] gradient + h-1.5 gap).
+                Rectangle()
+                    .fill(LinearGradient(
+                        colors: [tint.opacity(0.30), tint.opacity(0.45)],
+                        startPoint: .top, endPoint: .bottom))
+                    .frame(height: 5)
+                Color.clear.frame(height: 6)
+            }
         }
-        .background(
-            // Web card tint: linear-gradient(to bottom, color12, color22)
-            LinearGradient(colors: [tint.opacity(0.07), tint.opacity(0.13)],
-                           startPoint: .top, endPoint: .bottom)
-                .background(Theme.surface.opacity(0.9))
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(tint.opacity(0.19), lineWidth: 1)
-        )
-        // Web: under-card shadow strip (h-2 mx-2 black/10→transparent)
-        .background(alignment: .bottom) {
-            LinearGradient(colors: [.black.opacity(0.10), .clear],
-                           startPoint: .top, endPoint: .bottom)
-                .frame(height: 8)
-                .padding(.horizontal, 8)
-                .offset(y: 8)
-        }
+        .shelfListCardChrome(tint: tint)
     }
 }
 
@@ -441,23 +433,58 @@ private struct FollowedShelfCard: View {
             }
             .padding(14)
 
-            Rectangle()
-                .fill(LinearGradient(
-                    colors: [tint.opacity(0.30), tint.opacity(0.45)],
-                    startPoint: .top, endPoint: .bottom))
-                .frame(height: 5)
-            Color.clear.frame(height: 6)
+            if DesignPreview.on {
+                ShelfLedge(fill: tint.opacity(0.8))
+            } else {
+                Rectangle()
+                    .fill(LinearGradient(
+                        colors: [tint.opacity(0.30), tint.opacity(0.45)],
+                        startPoint: .top, endPoint: .bottom))
+                    .frame(height: 5)
+                Color.clear.frame(height: 6)
+            }
         }
-        .background(
-            LinearGradient(colors: [tint.opacity(0.07), tint.opacity(0.13)],
-                           startPoint: .top, endPoint: .bottom)
-                .background(Theme.surface.opacity(0.9))
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(tint.opacity(0.19), lineWidth: 1)
-        )
+        .shelfListCardChrome(tint: tint, underShadow: false)
+    }
+}
+
+/// The shelf list card's case: glass with the shelf colour as a thin ring in
+/// the refreshed look; the old tinted gradient + under-card strip in v1.
+private struct ShelfListCardChrome: ViewModifier {
+    let tint: Color
+    var underShadow = true
+
+    func body(content: Content) -> some View {
+        if DesignPreview.on {
+            content
+                .background(Theme.surface.opacity(0.6))
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(tint.opacity(0.28), lineWidth: 1))
+        } else {
+            content
+                .background(
+                    LinearGradient(colors: [tint.opacity(0.07), tint.opacity(0.13)],
+                                   startPoint: .top, endPoint: .bottom)
+                        .background(Theme.surface.opacity(0.9))
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(tint.opacity(0.19), lineWidth: 1))
+                .background(alignment: .bottom) {
+                    if underShadow {
+                        LinearGradient(colors: [.black.opacity(0.10), .clear],
+                                       startPoint: .top, endPoint: .bottom)
+                            .frame(height: 8)
+                            .padding(.horizontal, 8)
+                            .offset(y: 8)
+                    }
+                }
+        }
+    }
+}
+
+private extension View {
+    func shelfListCardChrome(tint: Color, underShadow: Bool = true) -> some View {
+        modifier(ShelfListCardChrome(tint: tint, underShadow: underShadow))
     }
 }
 
@@ -703,10 +730,10 @@ struct TopShelfListCard: View {
                     .compactMap(\.coverImageUrl).prefix(3)
                 if covers.isEmpty {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 8).fill(ShelfWood.amber700.opacity(0.12))
+                        RoundedRectangle(cornerRadius: 8).fill(DesignPreview.on ? Theme.surface.opacity(0.7) : ShelfWood.amber700.opacity(0.12))
                         Image(systemName: "star")
                             .font(.system(size: 22))
-                            .foregroundStyle(ShelfWood.amber700)
+                            .foregroundStyle(DesignPreview.on ? Theme.accentText : ShelfWood.amber700)
                     }
                     .frame(width: 56, height: 56)
                 } else {
@@ -723,9 +750,15 @@ struct TopShelfListCard: View {
                         Text("Top Shelf")
                             .font(Theme.body(16, .bold))
                             .foregroundStyle(Theme.foreground)
-                        Text("★")
-                            .font(Theme.body(11))
-                            .foregroundStyle(ShelfWood.amber700.opacity(0.8))
+                        if DesignPreview.on {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 10))
+                                .foregroundStyle(Theme.accentText)
+                        } else {
+                            Text("★")
+                                .font(Theme.body(11))
+                                .foregroundStyle(ShelfWood.amber700.opacity(0.8))
+                        }
                     }
                     Text("\(favorites.count) book\(favorites.count == 1 ? "" : "s") · Your all-time favorites")
                         .font(Theme.body(12))
@@ -742,6 +775,9 @@ struct TopShelfListCard: View {
             }
             .padding(14)
 
+            if DesignPreview.on {
+                ShelfLedge<LinearGradient>.wordmark
+            } else {
             // Shelf-edge plank — same wood gradient as the profile case.
             Rectangle()
                 .fill(LinearGradient(
@@ -751,20 +787,40 @@ struct TopShelfListCard: View {
                     startPoint: .top, endPoint: .bottom))
                 .frame(height: 5)
             Color.clear.frame(height: 6)
+            }
         }
         .background(
-            LinearGradient(
-                colors: isLight
-                    ? [ShelfWood.amber900.opacity(0.10), ShelfWood.amber800.opacity(0.20)]
-                    : [ShelfWood.amber900.opacity(0.20), ShelfWood.amber800.opacity(0.30)],
-                startPoint: .top, endPoint: .bottom)
-                .background(Theme.surface.opacity(0.9))
+            Group {
+                if DesignPreview.on {
+                    Theme.surface.opacity(0.6)
+                } else {
+                    LinearGradient(
+                        colors: isLight
+                            ? [ShelfWood.amber900.opacity(0.10), ShelfWood.amber800.opacity(0.20)]
+                            : [ShelfWood.amber900.opacity(0.20), ShelfWood.amber800.opacity(0.30)],
+                        startPoint: .top, endPoint: .bottom)
+                        .background(Theme.surface.opacity(0.9))
+                }
+            }
         )
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke((isLight ? ShelfWood.amber800 : ShelfWood.amber700).opacity(0.20), lineWidth: 1)
-        )
+        .modifier(TopShelfCardEdge(isLight: isLight))
+    }
+}
+
+/// Refreshed: the wordmark hairline (it is the hero shelf); v1: the wood rim.
+private struct TopShelfCardEdge: ViewModifier {
+    let isLight: Bool
+    func body(content: Content) -> some View {
+        if DesignPreview.on {
+            content.heroHairline(18)
+        } else {
+            content
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke((isLight ? ShelfWood.amber800 : ShelfWood.amber700).opacity(0.20), lineWidth: 1)
+                )
+        }
     }
 }
 
