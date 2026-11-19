@@ -258,6 +258,28 @@ struct StatsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
+            // Edit right here (Rebekah 2026-11-19: tapping the card opens the
+            // finished books, and there was no way to change the goal on
+            // Stats). A Button in the corner wins over the card's tap.
+            .overlay(alignment: .topTrailing) {
+                if model.year == String(currentYear) {
+                    Button { goalEditing = true } label: {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Theme.foreground.opacity(0.85))
+                            .frame(width: 34, height: 34)
+                            .glassEffect(.regular, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Edit reading goal")
+                    .padding(12)
+                }
+            }
+            .sheet(isPresented: $goalEditing) {
+                GoalEditSheet(year: currentYear, current: goal.targetBooks, onSaved: { await model.load() })
+                    .presentationDetents([.height(330)])
+                    .presentationBackground(Theme.surface)
+            }
             .contentShape(RoundedRectangle(cornerRadius: 16))
             .onTapGesture {
                 // Same destination as the Home tile and the web card.
@@ -788,6 +810,7 @@ struct CustomGoalsCard: View {
     @State private var adding = false
     @State private var lengthsFor: CustomGoal?
     @State private var removing: CustomGoal?
+    @State private var editingGoal: CustomGoal?
     @State private var upgradeOpen = false
 
     var body: some View {
@@ -803,6 +826,13 @@ struct CustomGoalsCard: View {
         .task(id: year) { await model.load(year: year) }
         .sheet(isPresented: $adding) {
             AddCustomGoalSheet(model: model, taken: model.goals) {
+                Task { await model.load(year: year) }
+            }
+            .presentationDetents([.medium, .large])
+            .presentationBackground(Theme.bg)
+        }
+        .sheet(item: $editingGoal) { goal in
+            AddCustomGoalSheet(model: model, taken: model.goals, editing: goal) {
                 Task { await model.load(year: year) }
             }
             .presentationDetents([.medium, .large])
@@ -939,6 +969,15 @@ struct CustomGoalsCard: View {
                 }
                 Spacer(minLength: 0)
                 if editable {
+                    Button { editingGoal = goal } label: {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Theme.muted)
+                            .frame(width: 32, height: 32)
+                            .glassEffect(.regular, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Edit \(title) goal")
                     Button { removing = goal } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 11, weight: .bold))
@@ -995,6 +1034,8 @@ struct CustomGoalsCard: View {
 private struct AddCustomGoalSheet: View {
     let model: CustomGoalsModel
     let taken: [CustomGoal]
+    /// Set when changing an existing goal's target (kind/genre fixed).
+    var editing: CustomGoal? = nil
     let onSaved: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var kind = ""
@@ -1004,10 +1045,12 @@ private struct AddCustomGoalSheet: View {
     @State private var error: String?
 
     private var kinds: [String] {
+        if let editing { return [editing.kind] }
         let takenKinds = Set(taken.filter { $0.kind != "genre" }.map(\.kind))
         return ["pages", "hours", "days", "genre"].filter { !takenKinds.contains($0) }
     }
     private var freeGenres: [String] {
+        if let editing { return [editing.genreName ?? ""] }
         let takenGenres = Set(taken.compactMap { $0.kind == "genre" ? $0.genreName?.lowercased() : nil })
         return model.genres.filter { !takenGenres.contains($0.lowercased()) }
     }
@@ -1015,7 +1058,9 @@ private struct AddCustomGoalSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("New goal for \(String(Calendar.current.component(.year, from: Date())))")
+                Text(editing == nil
+                     ? "New goal for \(String(Calendar.current.component(.year, from: Date())))"
+                     : "Edit \(CustomGoalKindMeta.label(editing!.kind).lowercased()) goal")
                     .font(Theme.heading(20, .bold))
                     .foregroundStyle(Theme.foreground)
                     .padding(.top, 22)
@@ -1102,6 +1147,7 @@ private struct AddCustomGoalSheet: View {
         .onAppear {
             if kind.isEmpty { kind = kinds.first ?? "genre" }
             if genre.isEmpty { genre = freeGenres.first ?? "" }
+            if let editing, target.isEmpty { target = String(editing.target) }
         }
     }
 
