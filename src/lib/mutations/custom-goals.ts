@@ -83,3 +83,21 @@ export async function setAudioLengthFor(userId: string, bookId: string, minutes:
   `);
   return { success: true };
 }
+
+/** A reader's own page count for a book whose catalog count is missing
+ *  (counts for their Pages goal; admins see it as a suggestion). */
+export async function setPageCountFor(userId: string, bookId: string, pages: number): Promise<Result> {
+  const p = Math.round(pages);
+  if (!Number.isFinite(p) || p < 1 || p > 20000) {
+    return { success: false, error: "Pages must be between 1 and 20,000." };
+  }
+  const exists = (await db.all(sql`SELECT 1 AS ok FROM books WHERE id = ${bookId}`)) as { ok: number }[];
+  if (exists.length === 0) return { success: false, error: "Book not found." };
+
+  await db.run(sql`
+    INSERT INTO user_page_counts (user_id, book_id, pages, updated_at)
+    VALUES (${userId}, ${bookId}, ${p}, ${new Date().toISOString()})
+    ON CONFLICT (user_id, book_id) DO UPDATE SET pages = excluded.pages, updated_at = excluded.updated_at
+  `);
+  return { success: true };
+}

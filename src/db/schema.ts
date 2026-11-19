@@ -570,6 +570,19 @@ export const userAudioLengths = sqliteTable("user_audio_lengths", {
   primaryKey({ columns: [table.userId, table.bookId] }),
 ]);
 
+// A reader's own page count for a book whose catalog page count is missing
+// (2026-11-19). Counts toward their Pages read goal only; admins see these as
+// suggested values in /admin/book-metadata and decide whether the catalog
+// takes them.
+export const userPageCounts = sqliteTable("user_page_counts", {
+  userId: text("user_id").notNull().references(() => users.id),
+  bookId: text("book_id").notNull().references(() => books.id),
+  pages: integer("pages").notNull(),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.bookId] }),
+]);
+
 // ─── Favorites ───
 
 export const userFavoriteBooks = sqliteTable("user_favorite_books", {

@@ -146,7 +146,7 @@ export function CustomGoalsSection({
         <div className="grid gap-3 lg:grid-cols-2">
           {goals.map((g) => (
             <GoalCard key={g.id} goal={g} editable={editable} yearElapsed={yearElapsed}
-              adminFixHref={adminMissing ? `/admin/book-metadata?year=${adminMissing.year}&focus=audio` : undefined}
+              adminFixHref={adminMissing && !adminMissing.personal ? `/admin/book-metadata?year=${adminMissing.year}&focus=audio` : undefined}
               warning={
                 adminMissing && g.kind === "pages" && adminMissing.pages > 0 ? <MissingMetaWarning missing={adminMissing} kind="pages" />
                 : adminMissing && g.kind === "hours" && adminMissing.audio > 0 ? <MissingMetaWarning missing={adminMissing} kind="audio" />

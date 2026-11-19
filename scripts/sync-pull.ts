@@ -124,6 +124,7 @@ const TABLES: Array<[string, string[], boolean]> = [
   ['reading_goals',            ['id'],                    true],
   ['custom_goals',             ['id'],                    true],   // premium custom goals (2026-11-19)
   ['user_audio_lengths',       ['user_id', 'book_id'],    true],
+  ['user_page_counts',         ['user_id', 'book_id'],    true],   // 2026-11-19
   ['reading_sessions',         ['id'],                    true],
   ['reading_notes',            ['id'],                    false],
   ['up_next',                  ['user_id', 'book_id'],    false],

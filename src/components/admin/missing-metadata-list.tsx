@@ -5,28 +5,43 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveBookLength } from "@/lib/actions/book-metadata";
+import { setAudioLength, setPageCount } from "@/lib/actions/custom-goals";
 import { NoCover } from "@/components/no-cover";
 import type { MissingBookMetadata, MissingMetaBook, MissingQueueBook } from "@/lib/queries/missing-book-metadata";
 
-// Inline fixer for the admin "missing pages & audio lengths" page: one row per
-// book, the number typed right in the row (no trip to the book page). Saves go
-// through saveBookLength, which writes the catalog row and bumps updated_at so
-// the fix rides the live↔local sync.
+// Inline fixer for missing pages & audio lengths: one row per book, the number
+// typed right in the row (no trip to the book page).
+//  • mode "catalog" (admins): saveBookLength writes the BOOK row (everyone's
+//    totals) and bumps updated_at so the fix rides the live↔local sync.
+//  • mode "personal" (Based Readers): the value counts for that reader's own
+//    goals only (user_page_counts / user_audio_lengths) and shows up in the
+//    admin queue as a suggestion.
 
-export function MissingMetadataList({ missing, focus }: { missing: MissingBookMetadata; focus: "pages" | "audio" }) {
+type Mode = "catalog" | "personal";
+
+export function MissingMetadataList({
+  missing,
+  focus,
+  mode = "catalog",
+}: {
+  missing: MissingBookMetadata;
+  focus: "pages" | "audio";
+  mode?: Mode;
+}) {
   const sections = focus === "audio" ? (["audio", "pages"] as const) : (["pages", "audio"] as const);
   return (
     <div className="space-y-7">
       {sections.map((kind) => (
-        <Section key={kind} kind={kind} books={missing[kind]} />
+        <Section key={kind} kind={kind} books={missing[kind]} mode={mode} />
       ))}
     </div>
   );
 }
 
-function Section({ kind, books }: { kind: "pages" | "audio"; books: MissingMetaBook[] }) {
+function Section({ kind, books, mode }: { kind: "pages" | "audio"; books: MissingMetaBook[]; mode: Mode }) {
   const [done, setDone] = useState<Set<string>>(new Set());
-  const left = books.filter((b) => !done.has(b.bookId)).length;
+  const own = (b: MissingMetaBook) => (kind === "pages" ? b.ownPages : b.ownMinutes);
+  const left = books.filter((b) => !done.has(b.bookId) && !(mode === "personal" && own(b))).length;
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
@@ -40,7 +55,8 @@ function Section({ kind, books }: { kind: "pages" | "audio"; books: MissingMetaB
       ) : (
         <div className="space-y-2.5">
           {books.map((b) => (
-            <Row key={b.bookId} kind={kind} book={b} saved={done.has(b.bookId)}
+            <Row key={b.bookId} kind={kind} book={b} mode={mode} saved={done.has(b.bookId)}
+              refreshOnSave={mode === "catalog"}
               onSaved={() => setDone((d) => new Set(d).add(b.bookId))} />
           ))}
         </div>
@@ -55,9 +71,16 @@ function Row({
   saved,
   onSaved,
   refreshOnSave = true,
+  mode = "catalog",
 }: {
   kind: "pages" | "audio";
-  book: Pick<MissingMetaBook, "bookId" | "title" | "slug" | "coverImageUrl" | "authors"> & { ownMinutes?: number | null; readers?: number };
+  book: Pick<MissingMetaBook, "bookId" | "title" | "slug" | "coverImageUrl" | "authors"> & {
+    ownMinutes?: number | null;
+    ownPages?: number | null;
+    readers?: number;
+    suggestion?: { value: number; count: number } | null;
+  };
+  mode?: Mode;
   saved: boolean;
   onSaved: () => void;
   /** The all-readers queue keeps the row (as "Saved") instead of reloading. */
@@ -65,9 +88,19 @@ function Row({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [pages, setPages] = useState("");
+  const [pages, setPages] = useState(book.ownPages ? String(book.ownPages) : "");
   const [h, setH] = useState(book.ownMinutes ? String(Math.floor(book.ownMinutes / 60)) : "");
   const [m, setM] = useState(book.ownMinutes ? String(book.ownMinutes % 60) : "");
+  const hasOwn = mode === "personal" && Boolean(kind === "pages" ? book.ownPages : book.ownMinutes);
+
+  function useSuggestion() {
+    if (!book.suggestion) return;
+    if (kind === "pages") setPages(String(book.suggestion.value));
+    else {
+      setH(String(Math.floor(book.suggestion.value / 60)));
+      setM(String(book.suggestion.value % 60));
+    }
+  }
   const [error, setError] = useState("");
 
   function save(e: React.FormEvent) {
@@ -83,7 +116,12 @@ function Row({
       return;
     }
     start(async () => {
-      const r = await saveBookLength(book.bookId, fields);
+      const r =
+        mode === "catalog"
+          ? await saveBookLength(book.bookId, fields)
+          : kind === "pages"
+            ? await setPageCount(book.bookId, value)
+            : await setAudioLength(book.bookId, value);
       if (!r.success) {
         setError(r.error ?? "Could not save.");
         return;
@@ -111,6 +149,18 @@ function Row({
             {book.readers} {book.readers === 1 ? "reader" : "readers"}
           </p>
         )}
+        {book.suggestion && !saved && (
+          <button type="button" onClick={useSuggestion}
+            className="mt-1 inline-flex cursor-pointer items-center gap-1 rounded-full border border-foreground/10 bg-surface/80 px-2 py-0.5 text-[11px] font-semibold text-foreground">
+            <span className="h-[5px] w-[5px] rounded-full bg-accent" aria-hidden="true" />
+            {book.suggestion.count} {book.suggestion.count === 1 ? "reader suggests" : "readers suggest"}{" "}
+            {kind === "pages"
+              ? `${book.suggestion.value.toLocaleString("en-US")} pages`
+              : `${Math.floor(book.suggestion.value / 60)}h ${book.suggestion.value % 60}m`}
+            <span className="text-neon-blue">· Use</span>
+          </button>
+        )}
+        {hasOwn && !saved && <p className="mt-0.5 text-[11px] text-muted">Your entry — counts for your goals</p>}
         {error && <p className="mt-0.5 text-xs text-destructive">{error}</p>}
       </div>
       {saved ? (

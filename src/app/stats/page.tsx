@@ -72,14 +72,18 @@ export default async function StatsPage({
 
   const display = await getDisplayPrefs(session.userId);
 
-  // Admins only: how many of this year's reads lack a page count / audio
-  // length — drives the warning icons that open /admin/book-metadata.
+  // How many of this year's reads lack a page count / audio length — drives
+  // the warning icons (admins → /admin/book-metadata).
+  // Based Readers see the same warning, counting only books they haven't
+  // entered a number for yet; theirs link to /stats/missing.
+  const admin = isAdmin(session);
   const adminMissing =
-    isAdmin(session) && selectedYear !== undefined
+    (admin || isPremium(session)) && selectedYear !== undefined
       ? await getMissingBookMetadata(session.userId, selectedYear).then((m) => ({
           year: selectedYear,
-          pages: m.pages.length,
-          audio: m.audio.length,
+          pages: admin ? m.pages.length : m.pages.filter((b) => !b.ownPages).length,
+          audio: admin ? m.audio.length : m.audio.filter((b) => !b.ownMinutes).length,
+          personal: !admin,
         }))
       : null;
 

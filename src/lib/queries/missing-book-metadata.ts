@@ -19,6 +19,8 @@ export interface MissingMetaBook {
   authors: string | null;
   /** The reader's own entry for this book's audio length, if any (a prefill). */
   ownMinutes: number | null;
+  /** The reader's own page count for this book, if any. */
+  ownPages: number | null;
 }
 
 export interface MissingBookMetadata {
@@ -55,21 +57,23 @@ export async function getMissingBookMetadata(userId: string, year: number): Prom
     SELECT b.id, b.title, b.slug, b.cover_image_url, b.pages, b.audio_length_minutes,
            (SELECT GROUP_CONCAT(a.name, ', ') FROM book_authors ba JOIN authors a ON a.id = ba.author_id
              WHERE ba.book_id = b.id) AS authors,
-           ual.minutes AS own_minutes
+           ual.minutes AS own_minutes, upc.pages AS own_pages
     FROM books b
     LEFT JOIN user_audio_lengths ual ON ual.book_id = b.id AND ual.user_id = ${userId}
+    LEFT JOIN user_page_counts upc ON upc.book_id = b.id AND upc.user_id = ${userId}
     WHERE b.id IN (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})
     ORDER BY b.title COLLATE NOCASE
   `)) as {
     id: string; title: string; slug: string | null; cover_image_url: string | null;
     pages: number | null; audio_length_minutes: number | null; authors: string | null; own_minutes: number | null;
+    own_pages: number | null;
   }[];
 
   const out: MissingBookMetadata = { pages: [], audio: [] };
   for (const r of rows) {
     const book: MissingMetaBook = {
       bookId: r.id, title: r.title, slug: r.slug, coverImageUrl: r.cover_image_url,
-      authors: r.authors, ownMinutes: r.own_minutes,
+      authors: r.authors, ownMinutes: r.own_minutes, ownPages: r.own_pages,
     };
     if (needPages.has(r.id) && !(r.pages && r.pages > 0)) out.pages.push(book);
     if (needAudio.has(r.id) && !(r.audio_length_minutes && r.audio_length_minutes > 0)) out.audio.push(book);
@@ -80,14 +84,18 @@ export async function getMissingBookMetadata(userId: string, year: number): Prom
 // ── All readers (admin queue, 2026-11-19) ──
 // Every book ANY reader has history with (finished, reading, paused or DNF)
 // whose catalog row lacks a page count (a non-audio-only read exists) or an
-// audio length (a read that included the audiobook exists). Most-read first so
-// the fixes that move the most readers' totals come first. Built for
+// audio length (a read that included the audiobook exists). Books with a
+// reader-suggested value first, then most-read, so the quickest and widest
+// fixes come first. Built for
 // Rebekah's assistant to work through on /admin/book-metadata?tab=all.
 
 export const MISSING_QUEUE_PAGE_SIZE = 50;
 
-export interface MissingQueueBook extends Omit<MissingMetaBook, "ownMinutes"> {
+export interface MissingQueueBook extends Omit<MissingMetaBook, "ownMinutes" | "ownPages"> {
   readers: number;
+  /** Most common value readers entered for themselves (pages, or minutes for
+   *  audio), and how many readers entered it. */
+  suggestion: { value: number; count: number } | null;
 }
 
 const HISTORY_STATES = sql`('completed', 'currently_reading', 'paused', 'dnf')`;
@@ -133,15 +141,46 @@ async function missingQueue(kind: "pages" | "audio"): Promise<MissingQueueBook[]
   `)) as { id: string; title: string; slug: string | null; cover_image_url: string | null; authors: string | null }[];
   const byId = new Map(meta.map((m) => [m.id, m]));
 
+  // Readers' own entries for these books — offered to the admin as a value
+  // to accept. The most common value wins; ties go to the larger count of
+  // readers, then the latest entry.
+  const suggestionRows = (await db.all(
+    kind === "pages"
+      ? sql`SELECT book_id, pages AS v, COUNT(*) AS n, MAX(updated_at) AS t FROM user_page_counts
+            WHERE book_id IN (${sql.join(rows.map((r) => sql`${r.id}`), sql`, `)}) GROUP BY book_id, pages`
+      : sql`SELECT book_id, minutes AS v, COUNT(*) AS n, MAX(updated_at) AS t FROM user_audio_lengths
+            WHERE book_id IN (${sql.join(rows.map((r) => sql`${r.id}`), sql`, `)}) GROUP BY book_id, minutes`,
+  )) as { book_id: string; v: number; n: number; t: string }[];
+  const suggestions = new Map<string, { value: number; count: number; t: string }>();
+  for (const s of suggestionRows) {
+    const cur = suggestions.get(s.book_id);
+    if (!cur || s.n > cur.count || (s.n === cur.count && s.t > cur.t)) {
+      suggestions.set(s.book_id, { value: s.v, count: s.n, t: s.t });
+    }
+  }
+
   return rows
     .map((r) => {
       const m = byId.get(r.id);
       return m
-        ? { bookId: r.id, title: m.title, slug: m.slug, coverImageUrl: m.cover_image_url, authors: m.authors, readers: r.readers }
+        ? {
+            bookId: r.id, title: m.title, slug: m.slug, coverImageUrl: m.cover_image_url, authors: m.authors,
+            readers: r.readers,
+            suggestion: suggestions.has(r.id)
+              ? { value: suggestions.get(r.id)!.value, count: suggestions.get(r.id)!.count }
+              : null,
+          }
         : null;
     })
     .filter((b): b is MissingQueueBook => b !== null)
-    .sort((a, b) => b.readers - a.readers || a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
+    // Books readers already suggested a value for come first — a one-tap
+    // accept for whoever works the queue — then most-read.
+    .sort(
+      (a, b) =>
+        Number(Boolean(b.suggestion)) - Number(Boolean(a.suggestion)) ||
+        b.readers - a.readers ||
+        a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
+    );
 }
 
 export async function getMissingMetadataQueue(

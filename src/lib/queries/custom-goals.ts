@@ -83,20 +83,22 @@ export async function getCustomGoals(userId: string, year: number): Promise<Cust
   if (bookIds.length > 0) {
     const rows = (await db.all(sql`
       SELECT b.id, b.title, b.slug, b.cover_image_url, b.pages, b.audio_length_minutes,
-             ual.minutes AS own_minutes
+             ual.minutes AS own_minutes, upc.pages AS own_pages
       FROM books b
       LEFT JOIN user_audio_lengths ual ON ual.book_id = b.id AND ual.user_id = ${userId}
+      LEFT JOIN user_page_counts upc ON upc.book_id = b.id AND upc.user_id = ${userId}
       WHERE b.id IN (${sql.join(bookIds.map((id) => sql`${id}`), sql`, `)})
     `)) as {
       id: string; title: string; slug: string | null; cover_image_url: string | null;
-      pages: number | null; audio_length_minutes: number | null; own_minutes: number | null;
+      pages: number | null; audio_length_minutes: number | null; own_minutes: number | null; own_pages: number | null;
     }[];
     for (const r of rows) {
       books.set(r.id, {
         title: r.title,
         slug: r.slug,
         cover: r.cover_image_url,
-        pages: r.pages,
+        // Catalog first; the reader's own entry fills a missing count.
+        pages: r.pages && r.pages > 0 ? r.pages : r.own_pages,
         // The reader's own entry wins over the catalog value.
         audio: r.own_minutes ?? r.audio_length_minutes,
       });
@@ -133,13 +135,15 @@ export async function getCustomGoals(userId: string, year: number): Promise<Cust
       ? (await getReadingNow(userId)).filter((b) => (b.progress ?? 0) > 0)
       : [];
   const ownMinutes = new Map<string, number>();
+  const ownPages = new Map<string, number>();
   if (inProgress.length > 0) {
-    const rows = (await db.all(sql`
-      SELECT book_id, minutes FROM user_audio_lengths
-      WHERE user_id = ${userId}
-        AND book_id IN (${sql.join(inProgress.map((b) => sql`${b.id}`), sql`, `)})
-    `)) as { book_id: string; minutes: number }[];
-    for (const r of rows) ownMinutes.set(r.book_id, r.minutes);
+    const ids = sql.join(inProgress.map((b) => sql`${b.id}`), sql`, `);
+    const [mins, pgs] = await Promise.all([
+      db.all(sql`SELECT book_id, minutes AS v FROM user_audio_lengths WHERE user_id = ${userId} AND book_id IN (${ids})`),
+      db.all(sql`SELECT book_id, pages AS v FROM user_page_counts WHERE user_id = ${userId} AND book_id IN (${ids})`),
+    ]) as [{ book_id: string; v: number }[], { book_id: string; v: number }[]];
+    for (const r of mins) ownMinutes.set(r.book_id, r.v);
+    for (const r of pgs) ownPages.set(r.book_id, r.v);
   }
 
   const days = kinds.has("days")
@@ -161,8 +165,9 @@ export async function getCustomGoals(userId: string, year: number): Promise<Cust
       if (isCurrentYear) {
         let partial = 0;
         for (const b of inProgress) {
-          if (isAudioOnly(JSON.stringify(b.activeFormats)) || !b.pages) continue;
-          partial += Math.round((b.pages * (b.progress ?? 0)) / 100);
+          const pages = b.pages && b.pages > 0 ? b.pages : ownPages.get(b.id);
+          if (isAudioOnly(JSON.stringify(b.activeFormats)) || !pages) continue;
+          partial += Math.round((pages * (b.progress ?? 0)) / 100);
         }
         current += partial;
         fromInProgress = partial;
