@@ -92,9 +92,12 @@ function StatTile({
         </div>
       )}
       <div className="relative flex flex-col items-center px-1.5 pb-3 pt-3.5">
-        <div className="relative flex h-[66px] w-full items-end justify-center" aria-hidden="true">
-          {fan.length > 0 ? (
-            fan.map((url, i) => (
+        {/* No covers in this pile: no placeholder art — the card collapses
+            to just the count and label (Rebekah 2026-11-19: the generic book
+            icons took up too much height). */}
+        {fan.length > 0 && (
+          <div className="relative mb-2.5 flex h-[66px] w-full items-end justify-center" aria-hidden="true">
+            {fan.map((url, i) => (
               <div
                 key={url}
                 className="absolute bottom-0 h-[58px] w-[39px] overflow-hidden rounded-[5px] shadow-[0_6px_14px_rgba(0,0,0,0.45)] ring-1 ring-white/10 transition-transform duration-200"
@@ -102,16 +105,10 @@ function StatTile({
               >
                 <Image src={url} alt="" width={39} height={58} className="h-full w-full object-cover" />
               </div>
-            ))
-          ) : (
-            <span className="mb-2 flex h-11 w-11 items-center justify-center rounded-full border border-foreground/12 bg-surface/70">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-muted">
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-              </svg>
-            </span>
-          )}
-        </div>
-        <span className="mt-2.5 block font-heading text-[26px] font-bold leading-none book-header-text tabular-nums">
+            ))}
+          </div>
+        )}
+        <span className="block font-heading text-[26px] font-bold leading-none book-header-text tabular-nums">
           {value.toLocaleString("en-US")}
         </span>
         <span className="eyebrow mt-1.5 flex items-center justify-center gap-1.5 !text-[10px] book-header-text-sub">
