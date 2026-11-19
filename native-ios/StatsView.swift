@@ -814,9 +814,13 @@ struct CustomGoalsCard: View {
     @State private var upgradeOpen = false
 
     var body: some View {
-        Group {
+        // VStack + a zero-height Color, NOT Group { EmptyView() }: a view with
+        // no content never "appears", so .task never ran and the section stayed
+        // invisible for everyone (Rebekah 2026-11-19: "I don't see anywhere
+        // for custom goal editing").
+        VStack(spacing: 0) {
             if !model.loaded {
-                EmptyView()
+                Color.clear.frame(height: 0)
             } else if !model.premium {
                 upsell
             } else if !model.goals.isEmpty || editable {
