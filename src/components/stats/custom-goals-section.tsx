@@ -141,6 +141,9 @@ function GoalCard({ goal, editable }: { goal: CustomGoalProgress; editable: bool
   const router = useRouter();
   const [pending, start] = useTransition();
   const [fixing, setFixing] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(goal.target));
+  const [editError, setEditError] = useState("");
   const m = KIND_META[goal.kind];
   const label = goal.kind === "genre" ? goal.genreName ?? "Genre" : m.label;
   const missing = goal.missingAudio ?? [];
@@ -158,6 +161,19 @@ function GoalCard({ goal, editable }: { goal: CustomGoalProgress; editable: bool
             <span className="text-sm text-muted">of {fmt(goal.target, goal.kind)} {m.unit}</span>
           </p>
         </div>
+        {editable && !editing && (
+          <button
+            type="button"
+            aria-label={`Edit ${label} goal`}
+            onClick={() => { setDraft(String(goal.target)); setEditError(""); setEditing(true); }}
+            className="btn-glass h-8 w-8 flex-shrink-0 cursor-pointer text-muted hover:text-foreground"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              <path d="m15 5 4 4" />
+            </svg>
+          </button>
+        )}
         {editable && (
           <button
             type="button"
@@ -178,6 +194,40 @@ function GoalCard({ goal, editable }: { goal: CustomGoalProgress; editable: bool
           </button>
         )}
       </div>
+
+      {editing && (
+        <form
+          className="mt-3 flex flex-wrap items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setEditError("");
+            start(async () => {
+              const r = await setCustomGoal({ kind: goal.kind, target: parseInt(draft, 10), genreName: goal.genreName });
+              if (!r.success) {
+                setEditError(r.error ?? "Could not save goal.");
+                return;
+              }
+              setEditing(false);
+              router.refresh();
+            });
+          }}
+        >
+          <input
+            inputMode="numeric"
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            aria-label={`New ${label} target`}
+            className="field-glass !h-9 w-28 text-center text-sm font-semibold"
+          />
+          <span className="text-xs text-muted">{m.unit}</span>
+          <span className="ml-auto flex gap-2">
+            <button type="button" onClick={() => setEditing(false)} className="btn-glass cursor-pointer px-3 py-1 text-xs">Cancel</button>
+            <button type="submit" disabled={pending || !draft} className="btn-lime cursor-pointer px-4 py-1 text-xs">Save</button>
+          </span>
+          {editError && <p className="w-full text-xs text-destructive">{editError}</p>}
+        </form>
+      )}
 
       <div className="mt-3 h-[7px] overflow-hidden rounded-full bg-foreground/10">
         <div

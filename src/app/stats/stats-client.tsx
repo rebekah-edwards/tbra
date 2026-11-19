@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import type { ReadingGoalProgress } from "@/lib/queries/reading-goals";
 import type { CustomGoalProgress } from "@/lib/queries/custom-goals";
 import { CustomGoalsSection } from "@/components/stats/custom-goals-section";
+import { GoalEditButton, ReadingGoalEditForm } from "@/components/stats/goal-edit-form";
 import type { ReadingStreak } from "@/lib/queries/reading-streak";
 import { ReadingStreakCard } from "@/components/home/reading-streak-card";
 
@@ -85,6 +86,9 @@ export function StatsClient({
   // the server's "today" (UTC) and the reader's can differ by a day, which
   // would mismatch the "N days left" text on hydration.
   const [yearProgress, setYearProgress] = useState<{ elapsed: number; daysLeft: number } | null>(null);
+  // Edit the books goal right on Stats (Rebekah 2026-11-19: the card had no
+  // way to change it). Only the current year's goal is editable.
+  const [goalEditing, setGoalEditing] = useState(false);
   useEffect(() => {
     const now = new Date();
     if (!(year === "all" || year === now.getFullYear())) return setYearProgress(null);
@@ -187,9 +191,15 @@ export function StatsClient({
       <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-6 lg:space-y-0">
         {goal && (
           <section className="rounded-2xl border border-border bg-surface p-5">
-            <h2 className="section-heading text-xs mb-4">Reading Goal</h2>
-            {/* Design refresh 2026-11: same lime→blue ring, big count and
-                pace pill as the Home goal tile. */}
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h2 className="section-heading text-xs">Reading Goal</h2>
+              {year === currentYear && !goalEditing && <GoalEditButton onClick={() => setGoalEditing(true)} />}
+            </div>
+            {goalEditing ? (
+              <ReadingGoalEditForm target={goal.targetBooks} year={currentYear} onDone={() => setGoalEditing(false)} />
+            ) : (
+            /* Design refresh 2026-11: same lime→blue ring, big count and
+               pace pill as the Home goal tile. */
             <div className="flex items-center gap-5">
               <div className="relative w-24 h-24 flex-shrink-0">
                 <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90 drop-shadow-[0_0_6px_rgba(163,230,53,0.45)]">
@@ -255,6 +265,7 @@ export function StatsClient({
                 </div>
               </div>
             </div>
+            )}
           </section>
         )}
         {(year === currentYear || isAllTime) && !hideStreak && (
