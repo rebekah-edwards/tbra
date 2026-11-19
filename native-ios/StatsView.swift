@@ -27,12 +27,20 @@ final class StatsModel {
 
 struct StatsView: View {
     @Environment(ChromeState.self) private var chrome: ChromeState?
+    @Environment(AuthStore.self) private var auth
     @State private var model = StatsModel()
+    /// Admins only: books in this year's reads missing pages / audio length.
+    @State private var adminMissing = AdminMissingModel()
+    @State private var adminFixFocus: AdminMissingFocus?
     @State private var goalEditing = false
     // Goal / streak the reader has hidden (MotivationPrefs) — hidden here too.
     @AppStorage(MotivationPrefs.hideGoalKey) private var hideGoal = false
     @AppStorage(MotivationPrefs.hideStreakKey) private var hideStreak = false
     private var currentYear: Int { Calendar.current.component(.year, from: Date()) }
+    private var isAdmin: Bool {
+        if case .signedIn(let u) = auth.phase { return ["admin", "super_admin"].contains(u.accountType) }
+        return false
+    }
     /// The goal belongs to the current year; "All Time" shows it too.
     private var isCurrentYear: Bool { model.year == "all" || model.year == String(currentYear) }
 
@@ -57,7 +65,9 @@ struct StatsView: View {
                     if !hideGoal { goalCard(data) }
                     if DesignPreview.on, isCurrentYear, !hideStreak { streakCard(data.streak) }
                     if model.year != "all" {
-                        CustomGoalsCard(year: model.year, editable: model.year == String(currentYear))
+                        CustomGoalsCard(year: model.year, editable: model.year == String(currentYear),
+                                        adminMissing: isAdmin ? adminMissing : nil,
+                                        onAdminFix: { adminFixFocus = $0 })
                     }
                     monthlyChart(data)
                     if data.ratingDistribution.contains(where: { $0.count > 0 }) {
@@ -80,8 +90,21 @@ struct StatsView: View {
         .background(AmbientBackground())
         .tracksScrollAtTop()
         .reportsPage("/stats")
-        .refreshable { await model.load() }
+        .refreshable {
+            await model.load()
+            if isAdmin, model.year != "all" { await adminMissing.load(year: model.year) }
+        }
         .task { await model.load() }
+        .task(id: model.year) {
+            if isAdmin, model.year != "all" { await adminMissing.load(year: model.year) } else { adminMissing.clear() }
+        }
+        .sheet(item: $adminFixFocus) { focus in
+            AdminMissingMetaSheet(model: adminMissing, focus: focus, year: model.year) {
+                Task { await model.load() }
+            }
+            .presentationDetents([.large])
+            .presentationBackground(Theme.bg)
+        }
         .alert("Error", isPresented: .constant(model.error != nil)) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
@@ -174,9 +197,11 @@ struct StatsView: View {
             miniStat(value: data.pageStats.totalPages >= 10000
                         ? String(format: "%.1fk", Double(data.pageStats.totalPages) / 1000)
                         : data.pageStats.totalPages.formatted(.number.grouping(.automatic)),
-                     label: "PAGES READ")
+                     label: "PAGES READ",
+                     warn: isAdmin && adminMissing.pages.count > 0 ? .pages : nil)
             miniStat(value: data.readingPace.map { "\($0.avgDays)d" } ?? "—", label: "AVG PACE")
-            miniStat(value: data.minutesListened > 0 ? formatMinutes(data.minutesListened) : "—", label: "LISTENED")
+            miniStat(value: data.minutesListened > 0 ? formatMinutes(data.minutesListened) : "—", label: "LISTENED",
+                     warn: isAdmin && adminMissing.audio.count > 0 ? .audio : nil)
         }
     }
 
@@ -187,7 +212,7 @@ struct StatsView: View {
         return m == 0 ? "\(h)h" : "\(h)h \(m)m"
     }
 
-    private func miniStat(value: String, label: String) -> some View {
+    private func miniStat(value: String, label: String, warn: AdminMissingFocus? = nil) -> some View {
         VStack(spacing: 4) {
             Text(value)
                 .font(Theme.body(17, .bold))
@@ -200,6 +225,13 @@ struct StatsView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 14)
         .background(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+        .overlay(alignment: .topTrailing) {
+            if let warn {
+                AdminMissingWarningButton(count: warn == .pages ? adminMissing.pages.count : adminMissing.audio.count,
+                                          focus: warn) { adminFixFocus = $0 }
+                    .padding(5)
+            }
+        }
     }
 
     @ViewBuilder private func goalCard(_ data: StatsData) -> some View {
@@ -806,6 +838,9 @@ enum CustomGoalKindMeta {
 struct CustomGoalsCard: View {
     let year: String
     let editable: Bool
+    /// Admins only (nil otherwise): counts drive the warning icons.
+    var adminMissing: AdminMissingModel? = nil
+    var onAdminFix: (AdminMissingFocus) -> Void = { _ in }
     @State private var model = CustomGoalsModel()
     @State private var adding = false
     @State private var lengthsFor: CustomGoal?
@@ -866,6 +901,16 @@ struct CustomGoalsCard: View {
             .environment(\.shellBarInsets, (top: 0, bottom: 0))
             .environment(\.showsShellChrome, false)
         }
+    }
+
+    /// Today's place in the goals' year (0…1); nil for past years.
+    private var yearElapsed: Double? {
+        let cal = Calendar.current
+        let now = Date()
+        guard String(cal.component(.year, from: now)) == year,
+              let start = cal.date(from: DateComponents(year: cal.component(.year, from: now), month: 1, day: 1)),
+              let end = cal.date(byAdding: .year, value: 1, to: start) else { return nil }
+        return min(1, max(0, now.timeIntervalSince(start) / end.timeIntervalSince(start)))
     }
 
     private var upsell: some View {
@@ -958,10 +1003,19 @@ struct CustomGoalsCard: View {
                     .frame(width: 36, height: 36)
                     .glassEffect(.regular, in: Circle())
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(title.uppercased())
-                        .font(Theme.body(11, .bold)).tracking(0.8)
-                        .foregroundStyle(Theme.muted)
-                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text(title.uppercased())
+                            .font(Theme.body(11, .bold)).tracking(0.8)
+                            .foregroundStyle(Theme.muted)
+                            .lineLimit(1)
+                        if let am = adminMissing {
+                            if goal.kind == "pages", am.pages.count > 0 {
+                                AdminMissingWarningButton(count: am.pages.count, focus: .pages, action: onAdminFix)
+                            } else if goal.kind == "hours", am.audio.count > 0 {
+                                AdminMissingWarningButton(count: am.audio.count, focus: .audio, action: onAdminFix)
+                            }
+                        }
+                    }
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
                         Text(CustomGoalKindMeta.format(goal.current, goal.kind))
                             .font(Theme.heading(26, .heavy))
@@ -993,18 +1047,31 @@ struct CustomGoalsCard: View {
                     .accessibilityLabel("Remove \(title) goal")
                 }
             }
+            // Progress against a tick for today's place in the year (same as
+            // the books goal track): fill past the tick is ahead of pace.
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Theme.foreground.opacity(0.10))
+                        .frame(height: 7)
                     Capsule()
                         .fill(LinearGradient(colors: [tint.opacity(0.75), tint], startPoint: .leading, endPoint: .trailing))
-                        .frame(width: geo.size.width * CGFloat(goal.percentComplete > 0 ? max(goal.percentComplete, 3) : 0) / 100)
+                        .frame(width: geo.size.width * CGFloat(goal.percentComplete > 0 ? max(goal.percentComplete, 3) : 0) / 100,
+                               height: 7)
+                    if let elapsed = yearElapsed {
+                        Capsule().fill(Theme.foreground)
+                            .frame(width: 2, height: 14)
+                            .offset(x: geo.size.width * CGFloat(elapsed) - 1)
+                    }
                 }
+                .frame(height: 14)
             }
-            .frame(height: 7)
+            .frame(height: 14)
             HStack {
                 Text("\(goal.percentComplete)% of goal")
                 Spacer()
+                if let elapsed = yearElapsed, goal.percentComplete < 100 {
+                    Text(goal.percentComplete >= Int((elapsed * 100).rounded()) ? "On pace" : "Behind pace")
+                }
                 if goal.percentComplete >= 100 {
                     Label("Goal reached", systemImage: "checkmark")
                         .foregroundStyle(Theme.foreground)
@@ -1015,13 +1082,17 @@ struct CustomGoalsCard: View {
 
             if goal.kind == "hours", !missing.isEmpty {
                 Divider().overlay(Theme.foreground.opacity(0.10))
-                Button { lengthsFor = goal } label: {
+                Button {
+                    // Admins fix the CATALOG (every reader benefits); others
+                    // enter a length for their own goal.
+                    if adminMissing != nil { onAdminFix(.audio) } else { lengthsFor = goal }
+                } label: {
                     HStack(spacing: 6) {
                         Circle().fill(Theme.neonPurple).frame(width: 6, height: 6)
                         Text("\(missing.count) \(missing.count == 1 ? "listen is" : "listens are") missing a length")
                             .foregroundStyle(Theme.foreground)
                         Spacer()
-                        Text("Add lengths").foregroundStyle(Theme.neonBlue)
+                        Text(adminMissing != nil ? "Fix in catalog" : "Add lengths").foregroundStyle(Theme.neonBlue)
                     }
                     .font(Theme.body(12, .medium))
                 }
@@ -1238,5 +1309,236 @@ private struct AudioLengthsSheet: View {
             .frame(width: 44, height: 38)
             .background(Theme.surface.opacity(0.7), in: Capsule())
             .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
+    }
+}
+
+
+// ── Admin: missing page counts / audio lengths (2026-11-19, web /admin/book-metadata) ──
+// Books in the admin's year of reads whose catalog row has no page count
+// (print/ebook reads) or no audio length (audiobook reads). Data + saves go to
+// PRODUCTION (adminBaseURL) so the catalog fix is permanent; a debug build also
+// mirrors the save to its own server so the phone's totals update at once.
+
+enum AdminMissingFocus: String, Identifiable {
+    case pages, audio
+    var id: String { rawValue }
+}
+
+struct AdminMissingBook: Codable, Hashable, Identifiable {
+    let bookId: String
+    let title: String
+    let slug: String?
+    let coverImageUrl: String?
+    let authors: String?
+    let ownMinutes: Int?
+    var id: String { bookId }
+}
+
+private struct AdminMissingResponse: Codable {
+    let pages: [AdminMissingBook]
+    let audio: [AdminMissingBook]
+}
+
+@MainActor
+@Observable
+final class AdminMissingModel {
+    var pages: [AdminMissingBook] = []
+    var audio: [AdminMissingBook] = []
+
+    func load(year: String) async {
+        do {
+            let res: AdminMissingResponse = try await APIClient.shared.adminGet(
+                "/api/v1/admin/missing-metadata", query: [URLQueryItem(name: "year", value: year)])
+            pages = res.pages
+            audio = res.audio
+        } catch {
+            // Non-admin or offline: no warnings.
+        }
+    }
+
+    func clear() { pages = []; audio = [] }
+
+    /// Writes books.pages / books.audio_length_minutes on production, then
+    /// best-effort on the app's own server (debug builds talk to the Mac).
+    func save(bookId: String, fields: [String: Any]) async -> String? {
+        do {
+            let _: OkResponse = try await APIClient.shared.adminRequest(
+                "/api/v1/admin/books/\(bookId)/fields", method: "POST", body: ["fields": fields])
+        } catch {
+            return (error as? APIError)?.errorDescription ?? "Couldn't save."
+        }
+        if APIClient.baseURL != APIClient.adminBaseURL {
+            let _: OkResponse? = try? await APIClient.shared.request(
+                "/api/v1/admin/books/\(bookId)/fields", method: "POST", body: ["fields": fields])
+        }
+        pages.removeAll { $0.bookId == bookId && fields["pages"] != nil }
+        audio.removeAll { $0.bookId == bookId && fields["audioLengthMinutes"] != nil }
+        return nil
+    }
+}
+
+struct AdminMissingWarningButton: View {
+    let count: Int
+    let focus: AdminMissingFocus
+    let action: (AdminMissingFocus) -> Void
+
+    var body: some View {
+        Button { action(focus) } label: {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(Color(hex: "f59e0b"))
+                .frame(width: 22, height: 22)
+                .background(Theme.surface.opacity(0.8), in: Circle())
+                .overlay(Circle().stroke(Color(hex: "f59e0b").opacity(0.45), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(count) \(count == 1 ? "book" : "books") missing \(focus == .pages ? "a page count" : "an audio length")")
+    }
+}
+
+struct AdminMissingMetaSheet: View {
+    let model: AdminMissingModel
+    let focus: AdminMissingFocus
+    let year: String
+    let onSaved: () -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("ADMIN · \(year)")
+                        .font(Theme.body(11, .bold)).tracking(0.9)
+                        .foregroundStyle(Theme.muted)
+                    Text("Missing pages & audio lengths")
+                        .font(Theme.heading(22, .bold))
+                        .foregroundStyle(Theme.foreground)
+                    Text("Books you finished in \(year) that can't count toward pages or listening time yet. Saving updates the book itself, for every reader.")
+                        .font(Theme.body(13))
+                        .foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, 22)
+
+                ForEach(focus == .audio ? [AdminMissingFocus.audio, .pages] : [.pages, .audio]) { kind in
+                    let books = kind == .pages ? model.pages : model.audio
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text(kind == .pages ? "No page count" : "No audio length")
+                                .font(Theme.heading(15, .semibold))
+                                .foregroundStyle(Theme.foreground)
+                            Spacer()
+                            Text("\(books.count) left")
+                                .font(Theme.body(12))
+                                .foregroundStyle(Theme.muted)
+                        }
+                        if books.isEmpty {
+                            Text(kind == .pages ? "Every print and ebook read has a page count." : "Every audiobook read has a length.")
+                                .font(Theme.body(13))
+                                .foregroundStyle(Theme.muted)
+                                .frame(maxWidth: .infinity)
+                                .padding(16)
+                                .overlay(RoundedRectangle(cornerRadius: 18)
+                                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [6, 5]))
+                                    .foregroundStyle(Theme.foreground.opacity(0.15)))
+                        } else {
+                            ForEach(books) { b in
+                                AdminMissingRow(model: model, book: b, kind: kind, onSaved: onSaved)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 30)
+        }
+    }
+}
+
+private struct AdminMissingRow: View {
+    let model: AdminMissingModel
+    let book: AdminMissingBook
+    let kind: AdminMissingFocus
+    let onSaved: () -> Void
+    @State private var pages = ""
+    @State private var hours = ""
+    @State private var minutes = ""
+    @State private var saving = false
+    @State private var error: String?
+
+    var body: some View {
+        HStack(spacing: 10) {
+            CoverThumb(url: book.coverImageUrl, width: 32, height: 48, radius: 4, title: book.title)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(book.title)
+                    .font(Theme.body(14, .semibold))
+                    .foregroundStyle(Theme.foreground)
+                    .lineLimit(2)
+                if let authors = book.authors {
+                    Text(authors).font(Theme.body(12)).foregroundStyle(Theme.muted).lineLimit(1)
+                }
+                if let error {
+                    Text(error).font(Theme.body(11)).foregroundStyle(Theme.destructive)
+                }
+            }
+            Spacer(minLength: 6)
+            if kind == .pages {
+                field("pages", $pages, width: 64, max: 5)
+            } else {
+                field("h", $hours, width: 42, max: 3)
+                field("m", $minutes, width: 42, max: 2)
+            }
+            Button {
+                Task { await save() }
+            } label: {
+                Text(saving ? "…" : "Save")
+                    .font(Theme.body(13, .bold))
+                    .foregroundStyle(Theme.onAccent)
+                    .padding(.horizontal, 12).frame(height: 36)
+                    .background(Theme.accent, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(saving)
+        }
+        .padding(12)
+        .background(Theme.surface.opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.foreground.opacity(0.10), lineWidth: 1))
+        .onAppear {
+            if kind == .audio, let own = book.ownMinutes, hours.isEmpty, minutes.isEmpty {
+                hours = String(own / 60); minutes = String(own % 60)
+            }
+        }
+    }
+
+    private func field(_ placeholder: String, _ text: Binding<String>, width: CGFloat, max: Int) -> some View {
+        TextField(placeholder, text: Binding(get: { text.wrappedValue },
+                                             set: { text.wrappedValue = String($0.filter(\.isNumber).prefix(max)) }))
+            .keyboardType(.numberPad)
+            .multilineTextAlignment(.center)
+            .font(Theme.body(14))
+            .frame(width: width, height: 36)
+            .background(Theme.surface.opacity(0.7), in: Capsule())
+            .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
+    }
+
+    private func save() async {
+        error = nil
+        let value: Int
+        let fields: [String: Any]
+        if kind == .pages {
+            value = Int(pages) ?? 0
+            guard value >= 1, value <= 20000 else { error = "Pages must be 1–20,000."; return }
+            fields = ["pages": value]
+        } else {
+            value = (Int(hours) ?? 0) * 60 + (Int(minutes) ?? 0)
+            guard value >= 1, value <= 200 * 60 else { error = "Length must be 1 minute to 200 hours."; return }
+            fields = ["audioLengthMinutes": value]
+        }
+        saving = true; defer { saving = false }
+        if let e = await model.save(bookId: book.bookId, fields: fields) {
+            error = e
+        } else {
+            onSaved()
+        }
     }
 }
