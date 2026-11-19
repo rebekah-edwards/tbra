@@ -88,6 +88,17 @@ const ADMIN_CARDS: AdminCard[] = [
     ),
   },
   {
+    href: "/admin/book-metadata?tab=all",
+    title: "Pages & Audio Lengths",
+    description: "Books readers have read that are missing a page count or audiobook length, most-read first.",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H2z" />
+        <path d="M22 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z" />
+      </svg>
+    ),
+  },
+  {
     href: "/admin/enrichment",
     title: "Enrichment",
     description: "Enrichment queue + status for unenriched books.",

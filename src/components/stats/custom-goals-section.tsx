@@ -199,6 +199,11 @@ function GoalCard({
             <span className="font-heading text-[26px] font-extrabold leading-none tabular-nums">{fmt(goal.current, goal.kind)}</span>
             <span className="text-sm text-muted">of {fmt(goal.target, goal.kind)} {m.unit}</span>
           </p>
+          {goal.fromInProgress ? (
+            <p className="mt-1 text-[11px] text-muted">
+              incl. {fmt(goal.fromInProgress, goal.kind)} from books in progress
+            </p>
+          ) : null}
         </div>
         {editable && !editing && (
           <button

@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { sql } from "drizzle-orm";
 import { getYearReads } from "./year-reads";
 import { getActivityDays } from "./reading-streak";
+import { getReadingNow } from "./reading-now";
 import { SPOILER_GENRE_NAMES_LOWER } from "@/lib/spoiler-genres";
 
 /**
@@ -38,6 +39,9 @@ export interface CustomGoalProgress {
   /** Pages, hours (one decimal), days or books — the kind's unit. */
   current: number;
   percentComplete: number;
+  /** Pages / hours goals, current year: the part of `current` that comes
+   *  from books still being read (their latest logged progress). */
+  fromInProgress?: number;
   /** Hours goal only: finished listens with no known length, newest first. */
   missingAudio?: MissingAudioLength[];
 }
@@ -119,6 +123,25 @@ export async function getCustomGoals(userId: string, year: number): Promise<Cust
     }
   }
 
+  // Books being read right now count their logged progress toward the
+  // current year's pages / hours goals (Rebekah 2026-11-19: "count
+  // progress"). Same progress Reading Now shows; once the book is finished,
+  // the full book counts instead (it leaves currently_reading).
+  const isCurrentYear = year === new Date().getFullYear();
+  const inProgress =
+    isCurrentYear && (kinds.has("pages") || kinds.has("hours"))
+      ? (await getReadingNow(userId)).filter((b) => (b.progress ?? 0) > 0)
+      : [];
+  const ownMinutes = new Map<string, number>();
+  if (inProgress.length > 0) {
+    const rows = (await db.all(sql`
+      SELECT book_id, minutes FROM user_audio_lengths
+      WHERE user_id = ${userId}
+        AND book_id IN (${sql.join(inProgress.map((b) => sql`${b.id}`), sql`, `)})
+    `)) as { book_id: string; minutes: number }[];
+    for (const r of rows) ownMinutes.set(r.book_id, r.minutes);
+  }
+
   const days = kinds.has("days")
     ? (await getActivityDays(userId)).filter((d) => d.startsWith(`${year}-`)).length
     : 0;
@@ -128,10 +151,21 @@ export async function getCustomGoals(userId: string, year: number): Promise<Cust
     let current = 0;
     let missingAudio: MissingAudioLength[] | undefined;
 
+    let fromInProgress: number | undefined;
+
     if (kind === "pages") {
       for (const r of reads) {
         if (isAudioOnly(r.activeFormats)) continue;
         current += books.get(r.bookId)?.pages ?? 0;
+      }
+      if (isCurrentYear) {
+        let partial = 0;
+        for (const b of inProgress) {
+          if (isAudioOnly(JSON.stringify(b.activeFormats)) || !b.pages) continue;
+          partial += Math.round((b.pages * (b.progress ?? 0)) / 100);
+        }
+        current += partial;
+        fromInProgress = partial;
       }
     } else if (kind === "hours") {
       let minutes = 0;
@@ -146,7 +180,18 @@ export async function getCustomGoals(userId: string, year: number): Promise<Cust
           missing.set(r.bookId, { bookId: r.bookId, title: b.title, slug: b.slug, coverImageUrl: b.cover });
         }
       }
+      let partialMinutes = 0;
+      for (const b of inProgress) {
+        if (!b.activeFormats.includes("audiobook")) continue;
+        const length = ownMinutes.get(b.id) ?? b.audioLengthMinutes;
+        if (length) partialMinutes += (length * (b.progress ?? 0)) / 100;
+        else if (!missing.has(b.id)) {
+          missing.set(b.id, { bookId: b.id, title: b.title, slug: b.slug, coverImageUrl: b.coverImageUrl });
+        }
+      }
+      minutes += partialMinutes;
       current = Math.round((minutes / 60) * 10) / 10;
+      if (isCurrentYear) fromInProgress = Math.round((partialMinutes / 60) * 10) / 10;
       missingAudio = [...missing.values()];
     } else if (kind === "days") {
       current = days;
@@ -162,6 +207,7 @@ export async function getCustomGoals(userId: string, year: number): Promise<Cust
       target: g.target,
       current,
       percentComplete: g.target > 0 ? Math.min(100, Math.round((current / g.target) * 100)) : 0,
+      ...(fromInProgress ? { fromInProgress } : {}),
       ...(missingAudio ? { missingAudio } : {}),
     };
   });

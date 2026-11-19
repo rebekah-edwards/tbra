@@ -4,14 +4,14 @@ import { useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { updateBookFields } from "@/lib/actions/books";
+import { saveBookLength } from "@/lib/actions/book-metadata";
 import { NoCover } from "@/components/no-cover";
-import type { MissingBookMetadata, MissingMetaBook } from "@/lib/queries/missing-book-metadata";
+import type { MissingBookMetadata, MissingMetaBook, MissingQueueBook } from "@/lib/queries/missing-book-metadata";
 
 // Inline fixer for the admin "missing pages & audio lengths" page: one row per
 // book, the number typed right in the row (no trip to the book page). Saves go
-// through updateBookFields, which writes the catalog row and bumps updated_at
-// so the fix rides the live↔local sync.
+// through saveBookLength, which writes the catalog row and bumps updated_at so
+// the fix rides the live↔local sync.
 
 export function MissingMetadataList({ missing, focus }: { missing: MissingBookMetadata; focus: "pages" | "audio" }) {
   const sections = focus === "audio" ? (["audio", "pages"] as const) : (["pages", "audio"] as const);
@@ -49,7 +49,20 @@ function Section({ kind, books }: { kind: "pages" | "audio"; books: MissingMetaB
   );
 }
 
-function Row({ kind, book, saved, onSaved }: { kind: "pages" | "audio"; book: MissingMetaBook; saved: boolean; onSaved: () => void }) {
+function Row({
+  kind,
+  book,
+  saved,
+  onSaved,
+  refreshOnSave = true,
+}: {
+  kind: "pages" | "audio";
+  book: Pick<MissingMetaBook, "bookId" | "title" | "slug" | "coverImageUrl" | "authors"> & { ownMinutes?: number | null; readers?: number };
+  saved: boolean;
+  onSaved: () => void;
+  /** The all-readers queue keeps the row (as "Saved") instead of reloading. */
+  refreshOnSave?: boolean;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [pages, setPages] = useState("");
@@ -70,13 +83,13 @@ function Row({ kind, book, saved, onSaved }: { kind: "pages" | "audio"; book: Mi
       return;
     }
     start(async () => {
-      const r = await updateBookFields(book.bookId, fields);
+      const r = await saveBookLength(book.bookId, fields);
       if (!r.success) {
         setError(r.error ?? "Could not save.");
         return;
       }
       onSaved();
-      router.refresh();
+      if (refreshOnSave) router.refresh();
     });
   }
 
@@ -92,6 +105,12 @@ function Row({ kind, book, saved, onSaved }: { kind: "pages" | "audio"; book: Mi
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{book.title}</p>
         {book.authors && <p className="truncate text-xs text-muted">{book.authors}</p>}
+        {book.readers !== undefined && (
+          <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
+            <span className="h-[5px] w-[5px] rounded-full bg-neon-blue" aria-hidden="true" />
+            {book.readers} {book.readers === 1 ? "reader" : "readers"}
+          </p>
+        )}
         {error && <p className="mt-0.5 text-xs text-destructive">{error}</p>}
       </div>
       {saved ? (
@@ -120,5 +139,26 @@ function Row({ kind, book, saved, onSaved }: { kind: "pages" | "audio"; book: Mi
         </div>
       )}
     </form>
+  );
+}
+
+
+/** All readers' queue: one kind at a time, rows stay in place as "Saved". */
+export function MissingQueueList({ kind, books }: { kind: "pages" | "audio"; books: MissingQueueBook[] }) {
+  const [done, setDone] = useState<Set<string>>(new Set());
+  if (books.length === 0) {
+    return (
+      <div className="rounded-[18px] border border-dashed border-foreground/15 bg-surface/40 p-5 text-center text-sm text-muted">
+        {kind === "pages" ? "No book anyone has read is missing a page count." : "No book anyone has listened to is missing a length."}
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2.5">
+      {books.map((b) => (
+        <Row key={b.bookId} kind={kind} book={b} saved={done.has(b.bookId)} refreshOnSave={false}
+          onSaved={() => setDone((d) => new Set(d).add(b.bookId))} />
+      ))}
+    </div>
   );
 }
