@@ -56,6 +56,9 @@ struct StatsView: View {
                     miniStats(data)
                     if !hideGoal { goalCard(data) }
                     if DesignPreview.on, isCurrentYear, !hideStreak { streakCard(data.streak) }
+                    if model.year != "all" {
+                        CustomGoalsCard(year: model.year, editable: model.year == String(currentYear))
+                    }
                     monthlyChart(data)
                     if data.ratingDistribution.contains(where: { $0.count > 0 }) {
                         ratingDistribution(data)
@@ -402,9 +405,15 @@ struct StatsView: View {
                             .font(Theme.body(15))
                             .foregroundStyle(Theme.muted)
                         if goal.percentComplete >= 100 {
-                            Text("🎉 Goal reached!")
-                                .font(Theme.body(12, .medium))
-                                .foregroundStyle(Theme.accent)
+                            if DesignPreview.on {
+                                Label("Goal reached", systemImage: "checkmark.seal")
+                                    .font(Theme.body(12, .medium))
+                                    .foregroundStyle(Theme.accentText)
+                            } else {
+                                Text("🎉 Goal reached!")
+                                    .font(Theme.body(12, .medium))
+                                    .foregroundStyle(Theme.accent)
+                            }
                         }
                     }
                 }
@@ -522,7 +531,17 @@ struct StatsView: View {
                 ForEach(Array(data.mostReadAuthors.enumerated()), id: \.element.author) { i, row in
                     HStack(spacing: 10) {
                         Group {
-                            if i == 0 { Text("👑").font(.system(size: 13)) }
+                            if i == 0 {
+                                if DesignPreview.on {
+                                    // Line crown, not emoji (web stats-client parity).
+                                    Image(systemName: "crown")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(Color(hex: "eab308"))
+                                        .accessibilityLabel("Most read")
+                                } else {
+                                    Text("👑").font(.system(size: 13))
+                                }
+                            }
                             else {
                                 Text("\(i + 1)")
                                     .font(Theme.body(11))
@@ -622,5 +641,552 @@ struct StatsView: View {
         .background(Theme.surface.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
+    }
+}
+
+// ── Premium custom goals (2026-11-19, web custom-goals-section.tsx) ──
+// Pages read, hours listened, days read, books in a genre — per year, beside
+// the free books goal. Data from GET /api/v1/goals/custom, which also says
+// whether the reader is premium (free readers get the upgrade card).
+
+struct CustomGoalMissingAudio: Codable, Hashable, Identifiable {
+    let bookId: String
+    let title: String
+    let slug: String?
+    let coverImageUrl: String?
+    var id: String { bookId }
+}
+
+struct CustomGoal: Codable, Hashable, Identifiable {
+    let id: String
+    let kind: String          // pages | hours | days | genre
+    let genreName: String?
+    let target: Int
+    let current: Double
+    let percentComplete: Int
+    let missingAudio: [CustomGoalMissingAudio]?
+}
+
+private struct CustomGoalsResponse: Codable {
+    let premium: Bool
+    let goals: [CustomGoal]
+    let genres: [String]
+}
+
+private struct CustomGoalSaveResponse: Codable { let id: String? }
+
+private struct CustomGoalBody: Encodable, Sendable {
+    let kind: String
+    let target: Int
+    let genreName: String?
+}
+
+private struct CustomGoalIdBody: Encodable, Sendable { let id: String }
+
+private struct AudioLengthBody: Encodable, Sendable {
+    let bookId: String
+    let minutes: Int
+}
+
+@MainActor
+@Observable
+final class CustomGoalsModel {
+    var premium = false
+    var goals: [CustomGoal] = []
+    var genres: [String] = []
+    var loaded = false
+    var error: String?
+
+    func load(year: String) async {
+        do {
+            let res: CustomGoalsResponse = try await APIClient.shared.get(
+                "/api/v1/goals/custom", query: [URLQueryItem(name: "year", value: year)])
+            premium = res.premium
+            goals = res.goals
+            genres = res.genres
+        } catch {
+            // A failed fetch leaves the section hidden rather than alerting
+            // over the rest of Stats.
+        }
+        loaded = true
+    }
+
+    func save(kind: String, target: Int, genre: String?) async -> String? {
+        do {
+            let _: CustomGoalSaveResponse = try await APIClient.shared.request(
+                "/api/v1/goals/custom", method: "POST",
+                json: CustomGoalBody(kind: kind, target: target, genreName: genre))
+            return nil
+        } catch {
+            return (error as? APIError)?.errorDescription ?? "Couldn't save the goal."
+        }
+    }
+
+    func remove(_ id: String) async {
+        // id in the body: the client never bakes "?k=v" into a path.
+        _ = try? await APIClient.shared.request("/api/v1/goals/custom", method: "DELETE",
+                                               json: CustomGoalIdBody(id: id)) as OkResponse
+    }
+
+    func setLength(bookId: String, minutes: Int) async -> String? {
+        do {
+            let _: OkResponse = try await APIClient.shared.request(
+                "/api/v1/goals/audio-length", method: "POST",
+                json: AudioLengthBody(bookId: bookId, minutes: minutes))
+            return nil
+        } catch {
+            return (error as? APIError)?.errorDescription ?? "Couldn't save the length."
+        }
+    }
+}
+
+enum CustomGoalKindMeta {
+    static func label(_ kind: String) -> String {
+        switch kind {
+        case "pages": return "Pages read"
+        case "hours": return "Hours listened"
+        case "days": return "Days read"
+        default: return "Books in a genre"
+        }
+    }
+    static func unit(_ kind: String) -> String {
+        switch kind {
+        case "pages": return "pages"
+        case "hours": return "hours"
+        case "days": return "days"
+        default: return "books"
+        }
+    }
+    static func symbol(_ kind: String) -> String {
+        switch kind {
+        case "pages": return "book.pages"
+        case "hours": return "headphones"
+        case "days": return "calendar"
+        default: return "tag"
+        }
+    }
+    static func tint(_ kind: String) -> Color {
+        switch kind {
+        case "pages": return Theme.neonBlue
+        case "hours": return Theme.neonPurple
+        case "days": return Theme.accent
+        default: return Color(hex: "f472b6")
+        }
+    }
+    static func format(_ value: Double, _ kind: String) -> String {
+        if kind == "hours", value.truncatingRemainder(dividingBy: 1) != 0 {
+            return String(format: "%.1f", value)
+        }
+        return Int(value).formatted()
+    }
+}
+
+struct CustomGoalsCard: View {
+    let year: String
+    let editable: Bool
+    @State private var model = CustomGoalsModel()
+    @State private var adding = false
+    @State private var lengthsFor: CustomGoal?
+    @State private var removing: CustomGoal?
+    @State private var upgradeOpen = false
+
+    var body: some View {
+        Group {
+            if !model.loaded {
+                EmptyView()
+            } else if !model.premium {
+                upsell
+            } else if !model.goals.isEmpty || editable {
+                section
+            }
+        }
+        .task(id: year) { await model.load(year: year) }
+        .sheet(isPresented: $adding) {
+            AddCustomGoalSheet(model: model, taken: model.goals) {
+                Task { await model.load(year: year) }
+            }
+            .presentationDetents([.medium, .large])
+            .presentationBackground(Theme.bg)
+        }
+        .sheet(item: $lengthsFor) { goal in
+            AudioLengthsSheet(model: model, items: goal.missingAudio ?? []) {
+                Task { await model.load(year: year) }
+            }
+            .presentationDetents([.medium, .large])
+            .presentationBackground(Theme.bg)
+        }
+        .confirmationDialog("Remove this goal?", isPresented: Binding(
+            get: { removing != nil }, set: { if !$0 { removing = nil } }), titleVisibility: .visible) {
+            Button("Remove goal", role: .destructive) {
+                if let g = removing {
+                    Task { await model.remove(g.id); await model.load(year: year) }
+                }
+                removing = nil
+            }
+        }
+        .fullScreenCover(isPresented: $upgradeOpen) {
+            NavigationStack {
+                BasedReaderScreen()
+                    .appDestinations()
+            }
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
+            .environment(\.showsShellChrome, false)
+        }
+    }
+
+    private var upsell: some View {
+        VStack(spacing: 10) {
+            Text("CUSTOM GOALS")
+                .font(Theme.body(11, .bold)).tracking(0.9)
+                .foregroundStyle(Theme.muted)
+            HStack(spacing: 8) {
+                ForEach(["pages", "hours", "days", "genre"], id: \.self) { k in
+                    Image(systemName: CustomGoalKindMeta.symbol(k))
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(CustomGoalKindMeta.tint(k))
+                        .frame(width: 36, height: 36)
+                        .glassEffect(.regular, in: Circle())
+                }
+            }
+            Text("Set goals for pages read, hours listened, days read or a favorite genre.")
+                .font(Theme.body(14))
+                .foregroundStyle(Theme.muted)
+                .multilineTextAlignment(.center)
+            Button { upgradeOpen = true } label: {
+                ShelfPill(kind: .neutral) {
+                    Label {
+                        Text("Upgrade to Based Reader")
+                    } icon: {
+                        Image(systemName: "star.fill").foregroundStyle(Theme.neonPurple)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(18)
+        .background(Theme.surface.opacity(0.4))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18)
+            .stroke(style: StrokeStyle(lineWidth: 1, dash: [6, 5]))
+            .foregroundStyle(Theme.foreground.opacity(0.15)))
+    }
+
+    private var section: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Custom Goals")
+                    .font(Theme.heading(14, .semibold))
+                    .foregroundStyle(Theme.foreground)
+                Spacer()
+                if editable {
+                    Button { adding = true } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(Theme.accentText)
+                            Text("Add goal")
+                                .font(Theme.body(13, .semibold))
+                                .foregroundStyle(Theme.foreground)
+                        }
+                        .padding(.horizontal, 13).padding(.vertical, 7)
+                        .glassEffect(.regular, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            if model.goals.isEmpty {
+                Text("Go beyond books: track pages, listening hours, reading days or a genre.")
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.muted)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(18)
+                    .overlay(RoundedRectangle(cornerRadius: 18)
+                        .stroke(style: StrokeStyle(lineWidth: 1, dash: [6, 5]))
+                        .foregroundStyle(Theme.foreground.opacity(0.15)))
+            } else {
+                ForEach(model.goals) { goal in goalCard(goal) }
+            }
+        }
+    }
+
+    private func goalCard(_ goal: CustomGoal) -> some View {
+        let tint = CustomGoalKindMeta.tint(goal.kind)
+        let unit = CustomGoalKindMeta.unit(goal.kind)
+        let title = goal.kind == "genre" ? "\(goal.genreName ?? "Genre") books" : CustomGoalKindMeta.label(goal.kind)
+        let missing = goal.missingAudio ?? []
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: CustomGoalKindMeta.symbol(goal.kind))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .frame(width: 36, height: 36)
+                    .glassEffect(.regular, in: Circle())
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title.uppercased())
+                        .font(Theme.body(11, .bold)).tracking(0.8)
+                        .foregroundStyle(Theme.muted)
+                        .lineLimit(1)
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        Text(CustomGoalKindMeta.format(goal.current, goal.kind))
+                            .font(Theme.heading(26, .heavy))
+                            .foregroundStyle(Theme.foreground)
+                        Text("of \(goal.target.formatted()) \(unit)")
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                    }
+                }
+                Spacer(minLength: 0)
+                if editable {
+                    Button { removing = goal } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Theme.muted)
+                            .frame(width: 32, height: 32)
+                            .glassEffect(.regular, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Remove \(title) goal")
+                }
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Theme.foreground.opacity(0.10))
+                    Capsule()
+                        .fill(LinearGradient(colors: [tint.opacity(0.75), tint], startPoint: .leading, endPoint: .trailing))
+                        .frame(width: geo.size.width * CGFloat(goal.percentComplete > 0 ? max(goal.percentComplete, 3) : 0) / 100)
+                }
+            }
+            .frame(height: 7)
+            HStack {
+                Text("\(goal.percentComplete)% of goal")
+                Spacer()
+                if goal.percentComplete >= 100 {
+                    Label("Goal reached", systemImage: "checkmark")
+                        .foregroundStyle(Theme.foreground)
+                }
+            }
+            .font(Theme.body(11, .medium))
+            .foregroundStyle(Theme.muted)
+
+            if goal.kind == "hours", !missing.isEmpty {
+                Divider().overlay(Theme.foreground.opacity(0.10))
+                Button { lengthsFor = goal } label: {
+                    HStack(spacing: 6) {
+                        Circle().fill(Theme.neonPurple).frame(width: 6, height: 6)
+                        Text("\(missing.count) \(missing.count == 1 ? "listen is" : "listens are") missing a length")
+                            .foregroundStyle(Theme.foreground)
+                        Spacer()
+                        Text("Add lengths").foregroundStyle(Theme.neonBlue)
+                    }
+                    .font(Theme.body(12, .medium))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(16)
+        .background(Theme.surface.opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.foreground.opacity(0.10), lineWidth: 1))
+    }
+}
+
+private struct AddCustomGoalSheet: View {
+    let model: CustomGoalsModel
+    let taken: [CustomGoal]
+    let onSaved: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var kind = ""
+    @State private var genre = ""
+    @State private var target = ""
+    @State private var saving = false
+    @State private var error: String?
+
+    private var kinds: [String] {
+        let takenKinds = Set(taken.filter { $0.kind != "genre" }.map(\.kind))
+        return ["pages", "hours", "days", "genre"].filter { !takenKinds.contains($0) }
+    }
+    private var freeGenres: [String] {
+        let takenGenres = Set(taken.compactMap { $0.kind == "genre" ? $0.genreName?.lowercased() : nil })
+        return model.genres.filter { !takenGenres.contains($0.lowercased()) }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("New goal for \(String(Calendar.current.component(.year, from: Date())))")
+                    .font(Theme.heading(20, .bold))
+                    .foregroundStyle(Theme.foreground)
+                    .padding(.top, 22)
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    ForEach(kinds, id: \.self) { k in
+                        Button { kind = k } label: {
+                            ShelfPill(kind: kind == k ? .active : .neutral) {
+                                Label {
+                                    Text(CustomGoalKindMeta.label(k))
+                                } icon: {
+                                    Image(systemName: CustomGoalKindMeta.symbol(k))
+                                        .foregroundStyle(CustomGoalKindMeta.tint(k))
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                if kind == "genre" {
+                    if freeGenres.isEmpty {
+                        Text("Add some books to your library first — genre goals use the genres you read.")
+                            .font(Theme.body(13))
+                            .foregroundStyle(Theme.muted)
+                    } else {
+                        Menu {
+                            ForEach(freeGenres, id: \.self) { g in Button(g) { genre = g } }
+                        } label: {
+                            HStack {
+                                Text(genre.isEmpty ? "Pick a genre" : genre)
+                                    .foregroundStyle(genre.isEmpty ? Theme.muted : Theme.foreground)
+                                Spacer()
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Theme.muted)
+                            }
+                            .font(Theme.body(15))
+                            .brandedField()
+                        }
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    TextField(placeholder, text: $target)
+                        .keyboardType(.numberPad)
+                        .font(Theme.body(15))
+                        .brandedField()
+                        .onChange(of: target) { _, v in
+                            let digits = String(v.filter(\.isNumber).prefix(6))
+                            if digits != v { target = digits }
+                        }
+                    Text("\(CustomGoalKindMeta.unit(kind)) this year")
+                        .font(Theme.body(14))
+                        .foregroundStyle(Theme.muted)
+                        .fixedSize()
+                }
+
+                if let error {
+                    Text(error).font(Theme.body(13)).foregroundStyle(Theme.destructive)
+                }
+
+                Button {
+                    Task {
+                        saving = true; defer { saving = false }
+                        let t = Int(target) ?? 0
+                        if let e = await model.save(kind: kind, target: t, genre: kind == "genre" ? genre : nil) {
+                            error = e
+                        } else {
+                            onSaved()
+                            dismiss()
+                        }
+                    }
+                } label: {
+                    Text(saving ? "Saving…" : "Save goal")
+                }
+                .buttonStyle(AccentButtonStyle())
+                .disabled(saving || target.isEmpty || (kind == "genre" && genre.isEmpty))
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 30)
+        }
+        .onAppear {
+            if kind.isEmpty { kind = kinds.first ?? "genre" }
+            if genre.isEmpty { genre = freeGenres.first ?? "" }
+        }
+    }
+
+    private var placeholder: String {
+        switch kind {
+        case "pages": return "e.g. 15000"
+        case "hours": return "e.g. 100"
+        case "days": return "e.g. 250"
+        default: return "e.g. 12"
+        }
+    }
+}
+
+private struct AudioLengthsSheet: View {
+    let model: CustomGoalsModel
+    let items: [CustomGoalMissingAudio]
+    let onSaved: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var hours: [String: String] = [:]
+    @State private var minutes: [String: String] = [:]
+    @State private var saving = false
+    @State private var error: String?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Audiobook lengths")
+                    .font(Theme.heading(20, .bold))
+                    .foregroundStyle(Theme.foreground)
+                    .padding(.top, 22)
+                Text("Enter each audiobook's length (from your audiobook app). You only need to do this once per book.")
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                ForEach(items) { b in
+                    HStack(spacing: 10) {
+                        CoverThumb(url: b.coverImageUrl, width: 30, height: 45, radius: 4, title: b.title)
+                        Text(b.title)
+                            .font(Theme.body(14, .medium))
+                            .foregroundStyle(Theme.foreground)
+                            .lineLimit(2)
+                        Spacer(minLength: 6)
+                        numberField("h", Binding(get: { hours[b.bookId] ?? "" }, set: { hours[b.bookId] = String($0.filter(\.isNumber).prefix(3)) }))
+                        numberField("m", Binding(get: { minutes[b.bookId] ?? "" }, set: { minutes[b.bookId] = String($0.filter(\.isNumber).prefix(2)) }))
+                    }
+                }
+
+                if let error {
+                    Text(error).font(Theme.body(13)).foregroundStyle(Theme.destructive)
+                }
+
+                Button {
+                    Task {
+                        saving = true; defer { saving = false }
+                        for b in items {
+                            let m = (Int(hours[b.bookId] ?? "") ?? 0) * 60 + (Int(minutes[b.bookId] ?? "") ?? 0)
+                            guard m > 0 else { continue }
+                            if let e = await model.setLength(bookId: b.bookId, minutes: m) {
+                                error = e
+                                return
+                            }
+                        }
+                        onSaved()
+                        dismiss()
+                    }
+                } label: {
+                    Text(saving ? "Saving…" : "Save lengths")
+                }
+                .buttonStyle(AccentButtonStyle())
+                .disabled(saving)
+                .padding(.top, 6)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 30)
+        }
+    }
+
+    private func numberField(_ placeholder: String, _ text: Binding<String>) -> some View {
+        TextField(placeholder, text: text)
+            .keyboardType(.numberPad)
+            .multilineTextAlignment(.center)
+            .font(Theme.body(14))
+            .frame(width: 44, height: 38)
+            .background(Theme.surface.opacity(0.7), in: Capsule())
+            .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
     }
 }

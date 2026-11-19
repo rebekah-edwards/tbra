@@ -130,6 +130,8 @@ const TABLES: Array<[string, string[], boolean]> = [
   ['user_genre_preferences',   ['user_id', 'genre_name'], false],
   ['user_notification_preferences', ['user_id'],          true],
   ['reading_goals',            ['id'],                    true],
+  ['custom_goals',             ['id'],                    true],   // premium custom goals (2026-11-19)
+  ['user_audio_lengths',       ['user_id', 'book_id'],    true],
   ['reading_sessions',         ['id'],                    true],
   ['reading_notes',            ['id'],                    false],
   // up_next is NOT in this list on purpose — it gets a dedicated whole-queue
@@ -164,6 +166,7 @@ const NATURAL_KEYS: Record<string, { key: string[]; childRefs?: Array<[string, s
     childRefs: [['user_book_dimension_ratings', 'review_id'], ['review_descriptor_tags', 'review_id'], ['review_helpful_votes', 'review_id']] },
   user_book_ratings: { key: ['user_id', 'book_id'] },
   reading_goals:     { key: ['user_id', 'year'] },
+  custom_goals:      { key: ['user_id', 'year', 'goal_key'] },
   tbr_notes:         { key: ['user_id', 'book_id'] },
   review_descriptor_tags: { key: ['review_id', 'dimension', 'tag'] },
   user_book_dimension_ratings: { key: ['review_id', 'dimension'] },
