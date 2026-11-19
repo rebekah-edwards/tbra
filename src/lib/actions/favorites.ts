@@ -41,6 +41,8 @@ export async function addFavorite(bookId: string): Promise<{ success: boolean; e
   });
 
   revalidatePath("/profile");
+  revalidatePath("/library/shelves");
+  revalidatePath("/library/shelves/top-shelf");
   revalidatePath(`/book/${bookId}`);
   return { success: true };
 }
@@ -67,6 +69,8 @@ export async function removeFavorite(bookId: string): Promise<{ success: boolean
   `);
 
   revalidatePath("/profile");
+  revalidatePath("/library/shelves");
+  revalidatePath("/library/shelves/top-shelf");
   revalidatePath(`/book/${bookId}`);
   return { success: true };
 }

@@ -23,12 +23,111 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { NoCover } from "@/components/no-cover";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import type { FavoriteBook } from "@/lib/queries/favorites";
-import { reorderFavorites, removeFavorite } from "@/lib/actions/favorites";
+import type { UserBookWithDetails } from "@/lib/queries/reading-state";
+import { reorderFavorites, removeFavorite, addFavorite } from "@/lib/actions/favorites";
+import { librarySearchText, librarySearchTokens, matchesLibrarySearch } from "@/lib/library-search";
 
 interface TopShelfClientProps {
   favorites: FavoriteBook[];
+  allBooks: UserBookWithDetails[];
   userAvatarUrl: string | null;
+}
+
+/** The star icon the book page's Shelves button and this page share. */
+function StarIcon({ size = 14, filled = false }: { size?: number; filled?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
+
+// ─── Add Books sheet (mirrors the custom-shelf AddBooksModal) ───
+
+function AddToTopShelfSheet({
+  open,
+  onClose,
+  allBooks,
+  favoriteIds,
+  onAdd,
+  onRemove,
+  error,
+}: {
+  open: boolean;
+  onClose: () => void;
+  allBooks: UserBookWithDetails[];
+  favoriteIds: Set<string>;
+  onAdd: (book: UserBookWithDetails) => void;
+  onRemove: (bookId: string) => void;
+  error: string | null;
+}) {
+  const [search, setSearch] = useState("");
+
+  // Same matcher as the library page search: title, author and series,
+  // case- and diacritic-insensitive.
+  const searchTokens = librarySearchTokens(search);
+  const filtered = searchTokens.length > 0
+    ? allBooks.filter((b) => matchesLibrarySearch(librarySearchText(b), searchTokens))
+    : allBooks.slice(0, 50);
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title="Add to Top Shelf">
+      <div className="p-4 pb-2">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search your library..."
+          className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2.5 text-sm text-foreground placeholder:text-muted/50 focus:outline-none focus:border-accent"
+          autoFocus
+        />
+        {error && <p className="mt-2 text-xs text-red-400" role="alert">{error}</p>}
+      </div>
+      <div className="px-4 pb-4 max-h-[50vh] overflow-y-auto">
+        {filtered.length === 0 ? (
+          <p className="text-sm text-muted text-center py-6">No books found</p>
+        ) : (
+          filtered.map((book) => {
+            const onTopShelf = favoriteIds.has(book.id);
+            return (
+              <button
+                key={book.id}
+                onClick={() => (onTopShelf ? onRemove(book.id) : onAdd(book))}
+                className="flex items-center gap-3 w-full py-2.5 px-1 text-left hover:bg-surface-alt/50 rounded-lg transition-colors"
+              >
+                {book.coverImageUrl ? (
+                  <Image
+                    src={book.coverImageUrl}
+                    alt=""
+                    width={32}
+                    height={48}
+                    className="h-[48px] w-[32px] rounded-sm object-cover shrink-0"
+                  />
+                ) : (
+                  <NoCover title={book.title} className="h-[48px] w-[32px] rounded-sm" size="sm" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground truncate">{book.title}</p>
+                  <p className="text-xs text-muted truncate">{book.authors.join(", ")}</p>
+                </div>
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                  onTopShelf ? "bg-amber-500 border-amber-500" : "border-border"
+                }`}>
+                  {onTopShelf && (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </div>
+              </button>
+            );
+          })
+        )}
+      </div>
+    </BottomSheet>
+  );
 }
 
 function SortableBook({
@@ -119,10 +218,13 @@ function SortableBook({
   );
 }
 
-export function TopShelfClient({ favorites: initialFavorites, userAvatarUrl }: TopShelfClientProps) {
+export function TopShelfClient({ favorites: initialFavorites, allBooks, userAvatarUrl }: TopShelfClientProps) {
   const router = useRouter();
   const [favorites, setFavorites] = useState(initialFavorites);
   const [isPending, startTransition] = useTransition();
+  const [addOpen, setAddOpen] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const favoriteIds = new Set(favorites.map((f) => f.id));
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -145,9 +247,35 @@ export function TopShelfClient({ favorites: initialFavorites, userAvatarUrl }: T
   }
 
   function handleRemove(bookId: string) {
+    setAddError(null);
     setFavorites((prev) => prev.filter((f) => f.id !== bookId));
     startTransition(async () => {
       await removeFavorite(bookId);
+    });
+  }
+
+  function handleAdd(book: UserBookWithDetails) {
+    setAddError(null);
+    // Optimistic: new favorites land at the end, matching addFavorite's
+    // position = count + 1.
+    const optimistic: FavoriteBook = {
+      id: book.id,
+      slug: book.slug,
+      title: book.title,
+      coverImageUrl: book.coverImageUrl,
+      authors: book.authors,
+      position: favorites.length + 1,
+      seriesId: null,
+      seriesPosition: null,
+      userRating: book.userRating,
+    };
+    setFavorites((prev) => (prev.some((f) => f.id === book.id) ? prev : [...prev, optimistic]));
+    startTransition(async () => {
+      const result = await addFavorite(book.id);
+      if (!result.success) {
+        setFavorites((prev) => prev.filter((f) => f.id !== book.id));
+        setAddError(result.error ?? "Couldn't add to Top Shelf.");
+      }
     });
   }
 
@@ -169,11 +297,36 @@ export function TopShelfClient({ favorites: initialFavorites, userAvatarUrl }: T
               Top Shelf
             </h1>
             <p className="text-xs text-muted">
-              {favorites.length} {favorites.length === 1 ? "book" : "books"} · Drag to reorder
+              {favorites.length} {favorites.length === 1 ? "book" : "books"}
+              {favorites.length > 1 && " · Drag to reorder"}
             </p>
           </div>
         </div>
       </div>
+
+      {/* Add Books — same action the custom shelves have */}
+      <div className="mb-3">
+        <button
+          onClick={() => { setAddError(null); setAddOpen(true); }}
+          className="flex items-center gap-1.5 rounded-lg bg-accent/10 border border-accent/20 px-3 py-2 text-xs font-medium text-accent transition-all hover:bg-accent/20"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Add Books
+        </button>
+      </div>
+
+      {/* How to add from a book page */}
+      <p className="mb-5 flex items-start gap-1.5 text-xs text-muted">
+        <span className="mt-px text-amber-500"><StarIcon size={12} /></span>
+        <span>
+          Your all-time favorites. You can also add a book from its page: tap{" "}
+          <span className="font-medium text-foreground">Shelves</span>, then check{" "}
+          <span className="font-medium text-foreground">Top Shelf</span>.
+        </span>
+      </p>
 
       {favorites.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-8 text-center">
@@ -184,7 +337,7 @@ export function TopShelfClient({ favorites: initialFavorites, userAvatarUrl }: T
           </div>
           <h3 className="font-heading text-base font-bold text-foreground">No favorites yet</h3>
           <p className="mt-1 text-sm text-muted">
-            Tap Top Shelf on any book page to add it here.
+            Use Add Books above to pick from your library.
           </p>
         </div>
       ) : (
@@ -212,6 +365,16 @@ export function TopShelfClient({ favorites: initialFavorites, userAvatarUrl }: T
       {isPending && (
         <p className="text-xs text-muted mt-3 text-center">Saving...</p>
       )}
+
+      <AddToTopShelfSheet
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        allBooks={allBooks}
+        favoriteIds={favoriteIds}
+        onAdd={handleAdd}
+        onRemove={handleRemove}
+        error={addError}
+      />
     </div>
   );
 }
