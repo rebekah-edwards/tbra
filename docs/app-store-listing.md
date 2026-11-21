@@ -53,13 +53,22 @@ BASED READER PREMIUM
 • Buddy reads with friends
 • Private notes on your TBR
 • Unlimited Find My Next Read
+• Custom goals for pages, hours listened, days read or a genre
 
 Home Screen widgets keep your current read and reading goal in view.
 
 Already tracking somewhere else? Bring your library over from the tbr*a website or another reading app in about a minute.
+
+Based Reader is an optional auto-renewing subscription, billed monthly or yearly to your Apple Account. It renews automatically unless you cancel at least 24 hours before the end of the current period. Manage or cancel it in your Apple Account settings.
+
+Terms of Use (EULA): https://thebasedreader.app/terms
+Privacy Policy: https://thebasedreader.app/privacy
 ```
 
-The closing line is Rebekah's wording (2026-11-16).
+The "Already tracking" line is Rebekah's wording (2026-11-16). The
+subscription paragraph and the two links were added on 2026-11-21 after the
+3.1.2 rejection (below). **Never remove the Terms of Use link from the
+description**: Apple rejects any version with subscriptions that lacks it.
 
 ## Decided (Rebekah, 2026-11-16)
 
@@ -98,6 +107,27 @@ group and both plans all WAITING_FOR_REVIEW). The build 18 submission was
 cancelled on 11-17 at about 01:20 ET, but the group and plans could not be
 added until 11-19: the App Store Connect website had signed out, then had an
 outage, so the app was out of the queue for about two and a half days.
+
+**Rejected 2026-11-20 04:03, guideline 3.1.2 (automated check):** the
+description had no functional link to the Terms of Use (EULA), which every app
+with auto-renewable subscriptions needs on its product page. The in-app plan
+screen already linked Terms and Privacy; only the metadata was missing it.
+
+**Fixed and resubmitted 2026-11-21 08:42 ET** with **build 20** (Rebekah asked
+for the newest TestFlight build to go with the fix): description gained the
+subscription paragraph, the Terms and Privacy links and the custom goals line;
+reviewer notes mention custom goals and the new links. Same review submission
+`fe3c1ff8-…`, now WAITING_FOR_REVIEW with all four items.
+
+### Resubmitting after a rejection
+
+The API cannot do the final step: `PATCH reviewSubmissions {submitted: true}`
+returns 409 "Version is not ready to be submitted yet" while the version is
+REJECTED. What worked: edit metadata and `PATCH` the build relationship via the
+API, then in the website open the version (Edit on the submission page), click
+**Update Review**, which puts the version back in the same submission as Ready
+for Review, then **Resubmit to App Review**. The subscription group and plans
+stayed in the submission, so nothing had to be re-added.
 
 ### Swapping the build on a version that is waiting for review
 
