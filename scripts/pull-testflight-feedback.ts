@@ -2,8 +2,9 @@
  * Bridge TestFlight beta feedback (App Store Connect) into reported_issues
  * on prod Turso, so the nightly triage sees it alongside in-app reports.
  *
- * - Pulls betaFeedbackScreenshotSubmissions via native-ios/asc-api.mjs's
- *   token logic (re-implemented here: ES256 JWT from the ASC .p8 key).
+ * - Pulls betaFeedbackScreenshotSubmissions AND betaFeedbackCrashSubmissions
+ *   (all pages) through native-ios/asc-api.mjs. Crash items are prefixed
+ *   "CRASH:" and their crash log is saved as data/testflight-feedback/<id>-crash.txt.
  * - Dedupe: each imported row's description starts with "[TestFlight tf:<id>]"
  *   — existing markers are skipped, so re-runs are idempotent.
  * - Screenshots: signed URLs expire ~1 week; they're saved to
@@ -34,12 +35,31 @@ const SHOT_DIR = path.join(__dirname, "..", "data", "testflight-feedback");
     queryTimeoutMs: 30_000,
   });
 
-  const raw = execFileSync("node", [
-    ASC_HELPER, "get",
-    `/v1/apps/${APP_ID}/betaFeedbackScreenshotSubmissions?limit=50`,
-  ], { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
-  const feedback = JSON.parse(raw).data as any[];
-  console.log(`TestFlight screenshot feedback items: ${feedback.length}`);
+  // stderr piped, not inherited: a crash item with no crash log is a normal
+  // 404 and should not print a stack trace into the nightly output.
+  const ascGet = (p: string) => JSON.parse(execFileSync("node", [ASC_HELPER, "get", p],
+    { encoding: "utf8", maxBuffer: 32 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] }));
+  // Follow links.next: the API pages, and a single fixed-limit call would
+  // silently drop everything past the first page.
+  const fetchAll = (first: string) => {
+    const out: any[] = [];
+    let next: string | null = first;
+    while (next) {
+      const page = ascGet(next);
+      out.push(...(page.data ?? []));
+      next = page.links?.next ? String(page.links.next).replace("https://api.appstoreconnect.apple.com", "") : null;
+    }
+    return out;
+  };
+
+  // Two kinds of tester feedback: from a screenshot, and from the "the app
+  // crashed, tell us what happened" prompt. The crash kind was not pulled until
+  // 2026-11-21, so two July crash comments never reached the queue.
+  const feedback = [
+    ...fetchAll(`/v1/apps/${APP_ID}/betaFeedbackScreenshotSubmissions?limit=200`).map((f) => ({ ...f, kind: "screenshot" })),
+    ...fetchAll(`/v1/apps/${APP_ID}/betaFeedbackCrashSubmissions?limit=200`).map((f) => ({ ...f, kind: "crash" })),
+  ];
+  console.log(`TestFlight feedback items: ${feedback.length} (${feedback.filter((f) => f.kind === "crash").length} crash)`);
 
   fs.mkdirSync(SHOT_DIR, { recursive: true });
   let imported = 0, skipped = 0;
@@ -65,10 +85,27 @@ const SHOT_DIR = path.join(__dirname, "..", "data", "testflight-feedback");
       }
     }
 
+    // Crash feedback: keep the crash log locally (the comment alone rarely
+    // says where it crashed). Best-effort, like the screenshots.
+    let crashLogFile: string | null = null;
+    if (item.kind === "crash") {
+      const dest = path.join(SHOT_DIR, `${item.id}-crash.txt`);
+      try {
+        if (!fs.existsSync(dest)) {
+          const log = ascGet(`/v1/betaFeedbackCrashSubmissions/${item.id}/crashLog`);
+          fs.writeFileSync(dest, String(log.data?.attributes?.logText ?? ""));
+        }
+        crashLogFile = `data/testflight-feedback/${item.id}-crash.txt`;
+      } catch { /* crash log backup is best-effort */ }
+    }
+
+    // (The feedback's build relationship is not readable via the API: 403
+    // "no allowed operations". The crash log's Version line carries it.)
     const parts = [
-      `${marker} ${a.comment ?? "(no comment)"}`,
+      `${marker} ${item.kind === "crash" ? "CRASH: " : ""}${a.comment ?? "(no comment)"}`,
       `— via TestFlight ${a.createdDate?.slice(0, 10)}, tester ${a.email ?? "unknown"}, ${a.deviceModel} iOS ${a.osVersion}`,
     ];
+    if (crashLogFile) parts.push(`Crash log: ${crashLogFile}`);
     if (shots.length) {
       parts.push(`Screenshots (URLs expire ~1wk; local backup data/testflight-feedback/${item.id}-*.jpg): ${shots.join(" ")}`);
     }
