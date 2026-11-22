@@ -912,3 +912,37 @@ either a pass or a fail.
 it**, and build 19 is both the current TestFlight build and the one in App Store review. Every
 TestFlight tester keeps seeing missing profile pictures until a build 20 ships, which also needs
 its `src/lib/whats-new.ts` entry deployed first.
+
+---
+
+## 2026-11-22 — two TestFlight reports against build 20, captured by nightly-report-triage
+
+### 1. CRASH: "Attempted to move my next read and app crashed" — `tf:AOPi2HcdCsi_GlgYrHVS2Hc` · STILL IN CODE
+
+- Build **1.0 (20)**, iPhone15,4, iOS 27.2 beta, 2026-11-21 16:37. Crash log: `data/testflight-feedback/AOPi2HcdCsi_GlgYrHVS2Hc-crash.txt`.
+- `EXC_CRASH (SIGABRT)`, which is an `AG::precondition_failure` inside `AG::Graph::resolve_offset`. The app frame is
+  `ReorderPressGesture.handleUIGestureRecognizerAction` → `context.converter.localLocation` at
+  **`native-ios/HomeView.swift:1391`**. The converter walks SwiftUI's attribute graph
+  (`GeometryProxy.convert(globalPoint:)` → `DynamicLayoutComputer.updateValue`) and hits an attribute that
+  no longer resolves, i.e. the view the recogniser is attached to was re-identified or removed (the Up Next
+  card had just moved) while UIKit was still delivering the press callback.
+- **Checked 2026-11-22: the line is unchanged on `claude/native-ios-api-shelves-upnext` HEAD.** The same
+  gesture is also used in `ShelvesView.swift:122/945` and `ShelfDetailView.swift:505/912`, so those paths share the risk.
+- Fix direction (not yet attempted): don't read geometry through `context.converter` on the action callback. For the
+  `space == nil` case use `recognizer.location(in: recognizer.view)` (pure UIKit, no attribute-graph read). For
+  named spaces, either cache the conversion at `.began` or skip the conversion once the state is `.ended`/`.cancelled`/`.failed`.
+  Make sure the reorder id stays stable across the move. Reproduce on device by long-press dragging an Up Next card on Home quickly.
+
+### 2. Profile still won't load in-app on build 20 — `tf:AE2rfxHJRFt1qMtmxZo27D0` + web report `2a6fb0e3` (holmeskay, `/profile`)
+
+- Build 20 **does** contain the "Try again" error state (`ProfileView.swift:89`, from `8c7b361b`). The
+  screenshots (`data/testflight-feedback/AE2rfxHJRFt1qMtmxZo27D0-{1,2}.jpg`) show it rendering, and Try again
+  then fails with **"Unexpected response from the server."** That string is `APIError.decoding`
+  (`Models.swift:676`). So this is **not** a network or timeout problem. `/api/v1/profile` returns something
+  this reader's client can't decode: most likely a non-optional Swift field that comes back null or with a
+  different type for this account's data. That fits the old finding that the server-side queries are fast and fine.
+- Same reporter pattern as #8 above, and it's still open after the empty-view fix shipped.
+- Next step: fetch `/api/v1/profile` for the affected account through an admin/debug path and decode it against
+  the `ProfileView` model in a unit test, or temporarily log the `DecodingError` path in `APIClient` so the next
+  TestFlight report names the field. Holmeskay's web report says the website works, which points at the
+  v1 JSON shape rather than the data.
