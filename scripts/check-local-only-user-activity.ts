@@ -40,8 +40,15 @@ const TABLES = ["user_book_state", "user_book_ratings", "user_book_reviews"];
   const users = local.prepare("SELECT id, email FROM users").all() as { id: string; email: string }[];
   const stranded: { email: string; id: string; gaps: string[]; total: number }[] = [];
 
+  // Accounts the person deleted on production leave their local mirror rows behind (sync never
+  // deletes). Those are NOT stranded — backfilling them would resurrect a deleted account. Added
+  // 2026-11-24 after brittnee (self-deleted on web 11-21) was flagged with a backfill command.
+  const deletedRows = await remote.execute("SELECT user_id FROM deleted_accounts");
+  const deletedIds = new Set(deletedRows.rows.map((r) => String((r as { user_id: unknown }).user_id)));
+
   for (const u of users) {
     if (APP_USERS.has(u.id)) continue;
+    if (deletedIds.has(u.id)) continue;
     const gaps: string[] = [];
     let total = 0;
     for (const t of TABLES) {
