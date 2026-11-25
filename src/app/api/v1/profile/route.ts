@@ -7,6 +7,7 @@ import { getRecentNotes } from "@/lib/queries/reading-notes";
 import { getFollowerCount, getFollowingCount } from "@/lib/queries/follows";
 import { getUserShelves } from "@/lib/queries/shelves";
 import { ensureReferralCode, getReferralCount } from "@/lib/referrals";
+import { getVerifiedAuthorsForUser } from "@/lib/authors/claims";
 
 /**
  * GET /api/v1/profile
@@ -31,7 +32,10 @@ export async function GET(req: Request) {
     getReferralCount(apiUser.userId),
   ]);
 
+  const verifiedAuthors = await getVerifiedAuthorsForUser(apiUser.userId);
+
   return jsonOk({
+    verifiedAuthors,
     user: {
       id: user.id,
       displayName: user.displayName,

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { submitCorrection } from "@/lib/actions/corrections";
 import { verifyContentRatings, adminUpdateRating } from "@/lib/actions/content-verify";
+import { authorSaveRating } from "@/lib/actions/author-claims";
 
 interface Rating {
   categoryKey: string;
@@ -19,6 +20,8 @@ interface ContentProfileProps {
   bookId?: string;
   isLoggedIn?: boolean;
   isAdmin?: boolean;
+  /** The viewer is this book's verified author: they can confirm or adjust ratings. */
+  isAuthor?: boolean;
 }
 
 import { CONTENT_CATEGORY_ORDER as CATEGORY_ORDER } from "@/lib/content-category-order";
@@ -247,11 +250,14 @@ function AdminEditModal({
   bookId,
   onClose,
   onSaved,
+  mode = "admin",
 }: {
   rating: Rating;
   bookId: string;
   onClose: () => void;
   onSaved: (intensity: number, notes: string | null) => void;
+  /** "author": the book's verified author — saves as Author-verified and notifies staff. */
+  mode?: "admin" | "author";
 }) {
   const [intensity, setIntensity] = useState(rating.intensity);
   const [notes, setNotes] = useState(rating.notes ?? "");
@@ -263,12 +269,14 @@ function AdminEditModal({
     setError(null);
     startTransition(async () => {
       try {
-        const result = await adminUpdateRating(
-          bookId,
-          rating.categoryKey,
-          intensity,
-          notes || null
-        );
+        const result = mode === "author"
+          ? await authorSaveRating(bookId, rating.categoryKey, intensity, notes || null)
+          : await adminUpdateRating(
+              bookId,
+              rating.categoryKey,
+              intensity,
+              notes || null
+            );
         if (result.success) {
           onSaved(intensity, notes || null);
           onClose();
@@ -287,7 +295,7 @@ function AdminEditModal({
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-surface border border-border p-6 pb-8 animate-in slide-in-from-bottom-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold">Edit: {displayName}</h3>
+          <h3 className="text-base font-bold">{mode === "author" ? `Your book: ${displayName}` : `Edit: ${displayName}`}</h3>
           <button onClick={onClose} className="text-muted hover:text-foreground p-1">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -324,19 +332,31 @@ function AdminEditModal({
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Content description for this category"
-          maxLength={500}
+          maxLength={mode === "author" ? 400 : 500}
           className="w-full rounded-2xl border border-foreground/12 bg-surface/70 px-4 py-3 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none transition-colors resize-none"
         />
         {error && (
           <p className="text-xs text-destructive mt-1">{error}</p>
         )}
 
+        {mode === "author" && (
+          <p className="mt-2 text-xs leading-relaxed text-muted">
+            Saving marks this rating Author-verified. If it&apos;s already right, just confirm it. Our team
+            is told about any change and may follow up.
+          </p>
+        )}
         <button
           onClick={handleSave}
           disabled={isPending}
           className="mt-4 w-full rounded-full bg-accent py-3 text-sm font-semibold text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isPending ? "Saving..." : "Save & Verify"}
+          {isPending
+            ? "Saving..."
+            : mode === "author"
+              ? intensity === rating.intensity && (notes || "") === (rating.notes ?? "")
+                ? "Confirm as-is"
+                : "Save changes"
+              : "Save & Verify"}
         </button>
       </div>
     </div>,
@@ -349,11 +369,13 @@ function RatingCard({
   bookId,
   isLoggedIn,
   isAdmin,
+  isAuthor,
 }: {
   rating: Rating;
   bookId?: string;
   isLoggedIn?: boolean;
   isAdmin?: boolean;
+  isAuthor?: boolean;
 }) {
   const [localRating, setLocalRating] = useState(rating);
   const badge = evidenceBadge[localRating.evidenceLevel] ?? evidenceBadge.ai_inferred;
@@ -376,7 +398,7 @@ function RatingCard({
             <button
               onClick={() => setShowModal(true)}
               className="text-muted/40 hover:text-destructive transition-colors"
-              title={isAdmin ? "Edit rating" : "Report incorrect rating"}
+              title={isAdmin ? "Edit rating" : isAuthor ? "Confirm or update this rating" : "Report incorrect rating"}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
@@ -400,17 +422,18 @@ function RatingCard({
       {localRating.notes && (
         <ExpandableNote text={localRating.notes} />
       )}
-      {showModal && bookId && isAdmin && (
+      {showModal && bookId && (isAdmin || isAuthor) && (
         <AdminEditModal
           rating={localRating}
           bookId={bookId}
+          mode={isAdmin ? "admin" : "author"}
           onClose={() => setShowModal(false)}
           onSaved={(intensity, notes) => {
-            setLocalRating({ ...localRating, intensity, notes, evidenceLevel: "human_verified" });
+            setLocalRating({ ...localRating, intensity, notes, evidenceLevel: isAdmin ? "human_verified" : "author_verified" });
           }}
         />
       )}
-      {showModal && bookId && !isAdmin && (
+      {showModal && bookId && !isAdmin && !isAuthor && (
         <CorrectionModal
           rating={localRating}
           bookId={bookId}
@@ -421,7 +444,7 @@ function RatingCard({
   );
 }
 
-export function ContentProfile({ ratings, bookId, isLoggedIn, isAdmin }: ContentProfileProps) {
+export function ContentProfile({ ratings, bookId, isLoggedIn, isAdmin, isAuthor }: ContentProfileProps) {
   const [revealed, setRevealed] = useState(false);
   const [verifyPending, startVerifyTransition] = useTransition();
   const [allVerified, setAllVerified] = useState(
@@ -505,7 +528,7 @@ export function ContentProfile({ ratings, bookId, isLoggedIn, isAdmin }: Content
           className={`grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 outline-none ${!revealed ? "blur-md select-none pointer-events-none" : ""}`}
         >
           {sortedRatings.map((rating) => (
-            <RatingCard key={rating.categoryKey} rating={rating} bookId={bookId} isLoggedIn={isLoggedIn} isAdmin={isAdmin} />
+            <RatingCard key={rating.categoryKey} rating={rating} bookId={bookId} isLoggedIn={isLoggedIn} isAdmin={isAdmin} isAuthor={isAuthor} />
           ))}
         </div>
       </div>

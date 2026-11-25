@@ -866,6 +866,54 @@ export const userNotifications = sqliteTable("user_notifications", {
   index("user_notifications_user_idx").on(table.userId),
 ]);
 
+// ─── Author accounts (2026-11-25) ───
+// A reader account linked to an `authors` row, approved by a person on the
+// team. Two ways in: the author asks from their author page ("Claim this
+// author page", method 'self') or staff link it from /admin/authors
+// (method 'staff'). Only 'approved' rows grant the badge and author tools.
+
+export const authorClaims = sqliteTable("author_claims", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  authorId: text("author_id").notNull().references(() => authors.id),
+  status: text("status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected' | 'revoked'
+  method: text("method").notNull().default("self"), // 'self' | 'staff'
+  contactEmail: text("contact_email"),
+  evidenceLinks: text("evidence_links"), // free text: website, socials, publisher page
+  message: text("message"),
+  reviewedBy: text("reviewed_by"),
+  reviewedAt: text("reviewed_at"),
+  reviewNote: text("review_note"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  index("author_claims_user_idx").on(table.userId),
+  index("author_claims_author_idx").on(table.authorId),
+  index("author_claims_status_idx").on(table.status),
+]);
+
+// Every change a verified author makes to their own book, with what it
+// replaced, so staff can review and revert it (/admin/authors).
+export const authorEdits = sqliteTable("author_edits", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  authorId: text("author_id").notNull(),
+  bookId: text("book_id").notNull().references(() => books.id),
+  kind: text("kind").notNull(), // 'description' | 'rating_confirm' | 'rating_edit'
+  categoryId: text("category_id"),
+  beforeText: text("before_text"),
+  afterText: text("after_text"),
+  beforeIntensity: integer("before_intensity"),
+  afterIntensity: integer("after_intensity"),
+  beforeEvidence: text("before_evidence"),
+  revertedAt: text("reverted_at"),
+  revertedBy: text("reverted_by"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  index("author_edits_created_idx").on(table.createdAt),
+  index("author_edits_book_idx").on(table.bookId),
+]);
+
 // ─── Buddy Reads ───
 
 export const buddyReads = sqliteTable("buddy_reads", {

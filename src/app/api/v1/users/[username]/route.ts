@@ -8,6 +8,7 @@ import { getPublicShelves } from "@/lib/queries/shelves";
 import { followUserFor, unfollowUserFor } from "@/lib/actions/follows";
 import { getBlockRelation } from "@/lib/queries/blocks";
 import { getSharedNotes } from "@/lib/queries/reading-notes";
+import { getVerifiedAuthorsForUser } from "@/lib/authors/claims";
 
 /**
  * GET /api/v1/users/[username] — the public profile payload, same
@@ -50,8 +51,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ username: strin
   // Shared reading notes are "visible to friends": the owner and followers.
   const sharedNotes = isOwner || currentlyFollowing ? await getSharedNotes(user.id, 10) : [];
 
+  const verifiedAuthors = await getVerifiedAuthorsForUser(user.id);
+
   return jsonOk({
     private: false,
+    // Author pages this account is the verified author of (badge).
+    verifiedAuthors,
     user: {
       id: user.id,
       username: user.username,

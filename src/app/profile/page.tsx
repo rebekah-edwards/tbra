@@ -20,6 +20,7 @@ import { getUserShelves } from "@/lib/queries/shelves";
 import { ProfileShelvesSection } from "@/components/shelves/profile-shelves-section";
 import { ensureReferralCode, getReferralCount } from "@/lib/referrals";
 import { ReferralCard } from "@/components/profile/referral-card";
+import { getVerifiedAuthorsForUser } from "@/lib/authors/claims";
 
 export default async function ProfilePage() {
   const session = await getCurrentUser();
@@ -39,6 +40,7 @@ export default async function ProfilePage() {
     ensureReferralCode(session.userId),
     getReferralCount(session.userId),
   ]);
+  const verifiedAuthors = await getVerifiedAuthorsForUser(session.userId);
 
   const memberSince = new Date(user.createdAt).toLocaleDateString("en-US", {
     month: "long",
@@ -49,6 +51,7 @@ export default async function ProfilePage() {
   return (
     <div className="space-y-7 lg:max-w-[60%] lg:mx-auto">
       <ProfileHero
+        verifiedAuthors={verifiedAuthors}
         name={user.displayName || user.email.split("@")[0]}
         username={user.username}
         avatarUrl={user.avatarUrl}

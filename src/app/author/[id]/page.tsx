@@ -10,6 +10,9 @@ import { NoCover } from "@/components/no-cover";
 import { BackButton } from "@/components/ui/back-button";
 import { AuthorFollowButton } from "@/components/author/author-follow-button";
 import { CoverArtHero, HERO_BACK_BUTTON_CLASS } from "@/components/ui/cover-art-hero";
+import { VerifiedAuthorBadge } from "@/components/author/verified-author-badge";
+import { ClaimAuthorButton } from "@/components/author/claim-author-button";
+import { getAuthorClaimant, getViewerClaim } from "@/lib/authors/claims";
 import { isAuthorIndexable, NOINDEX_FOLLOW } from "@/lib/seo/indexability";
 
 export async function generateMetadata({
@@ -64,6 +67,11 @@ export default async function AuthorPage({
     getCurrentUser(),
   ]);
 
+  const [claimant, viewerClaim] = await Promise.all([
+    getAuthorClaimant(author.id),
+    session ? getViewerClaim(session.userId, author.id) : Promise.resolve(null),
+  ]);
+
   const [following, followerCount] = session
     ? await Promise.all([
         isFollowingAuthor(session.userId, author.id),
@@ -114,8 +122,29 @@ export default async function AuthorPage({
             ? [{ label: followerCount === 1 ? "follower" : "followers", value: followerCount, hue: "purple" as const }]
             : []),
         ]}
+        subtitle={
+          claimant ? (
+            <span className="mt-1 inline-flex flex-wrap items-center justify-center gap-1.5 sm:justify-start">
+              <VerifiedAuthorBadge
+                href={claimant.username ? `/u/${claimant.username}` : null}
+                label={claimant.username ? `Verified author · @${claimant.username}` : "Verified author"}
+              />
+            </span>
+          ) : undefined
+        }
         actions={
-          session ? <AuthorFollowButton authorId={author.id} initialIsFollowing={following} /> : undefined
+          session ? (
+            <>
+              <AuthorFollowButton authorId={author.id} initialIsFollowing={following} />
+              {!claimant && (
+                <ClaimAuthorButton
+                  authorId={author.id}
+                  authorName={author.name}
+                  pending={viewerClaim?.status === "pending"}
+                />
+              )}
+            </>
+          ) : undefined
         }
       >
         {author.bio && (

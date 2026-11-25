@@ -256,3 +256,35 @@ export async function sendContentReportEmail(report: {
     console.error("[email] Failed to send content report email:", err);
   }
 }
+
+/**
+ * A short heads-up to the admin inbox (author claims, author edits). The
+ * matching in-app notification and admin page are the record; this email is
+ * what makes someone look.
+ */
+export async function sendAdminNoticeEmail(notice: {
+  subject: string;
+  body: string;
+  path?: string | null;
+}): Promise<void> {
+  const appUrl = process.env.APP_URL ?? "https://thebasedreader.app";
+  const esc = (v: string) =>
+    v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const link = notice.path ? `${appUrl}${notice.path.startsWith("/") ? "" : "/"}${notice.path}` : null;
+  try {
+    await resend.emails.send({
+      from: FROM_ADDRESS,
+      to: ADMIN_EMAIL,
+      subject: `[tbr*a] ${notice.subject}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+          <h1 style="font-size: 20px; font-weight: 700; color: #111; margin-bottom: 12px;">${esc(notice.subject)}</h1>
+          <p style="font-size: 15px; color: #444; line-height: 1.5; margin-bottom: 16px;">${esc(notice.body)}</p>
+          ${link ? `<a href="${esc(link)}" style="display: inline-block; background: #a3e635; color: #18181b; font-weight: 700; font-size: 14px; padding: 10px 24px; border-radius: 8px; text-decoration: none;">Review it</a>` : ""}
+        </div>
+      `,
+    });
+  } catch (err) {
+    console.error("[email] Failed to send admin notice email:", err);
+  }
+}

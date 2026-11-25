@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { AccountBadge } from "@/components/profile/account-badge";
+import { VerifiedAuthorBadge } from "@/components/author/verified-author-badge";
 
 // The top of a reader's profile, shared by /profile (the owner's own page) and
 // /u/[username] (everyone else's view) so the two never drift apart again.
@@ -38,6 +39,8 @@ interface ProfileHeroProps {
   /** The row of buttons under the counts (Follow, Edit Profile…). */
   actions?: ReactNode;
   socials?: ReactNode;
+  /** Author pages this account is the verified author of. */
+  verifiedAuthors?: { name: string; slug: string | null; authorId: string }[];
 }
 
 const TILE_HUES = {
@@ -150,6 +153,7 @@ export function ProfileHero({
   corner,
   actions,
   socials,
+  verifiedAuthors,
 }: ProfileHeroProps) {
   const counts = (
     <>
@@ -203,6 +207,17 @@ export function ProfileHero({
             </h1>
             <AccountBadge accountType={accountType} />
           </div>
+          {verifiedAuthors && verifiedAuthors.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5 lg:justify-start">
+              {verifiedAuthors.map((a) => (
+                <VerifiedAuthorBadge
+                  key={a.authorId}
+                  href={`/author/${a.slug ?? a.authorId}`}
+                  label={verifiedAuthors.length > 1 ? `Verified author · ${a.name}` : "Verified author"}
+                />
+              ))}
+            </div>
+          )}
           <p className="mt-1 text-xs text-muted">
             {username && <>@{username} · </>}Member since {memberSince}
           </p>

@@ -40,6 +40,8 @@ import { ReadingHistory } from "@/components/book/reading-history";
 import { getFollowedUsersWhoRead } from "@/lib/queries/follows";
 import { getLocalEditions } from "@/lib/queries/local-editions";
 import { scanTextForCanonicals } from "@/lib/content-warnings/vocabulary";
+import { AuthorToolsCard } from "@/components/author/author-tools-card";
+import { isVerifiedAuthorOfBook } from "@/lib/authors/claims";
 
 function buildBookJsonLd(
   book: {
@@ -195,6 +197,8 @@ export default async function BookPage({
   if (!book) {
     notFound();
   }
+  // The book's verified author gets author tools (see lib/authors/claims.ts).
+  const isBookAuthor = user ? await isVerifiedAuthorOfBook(user.userId, bookId) : false;
   // Run all independent queries in parallel for better performance
   // Run all independent queries in parallel — combined session data replaces 3 queries with 1
   const [
@@ -499,6 +503,8 @@ export default async function BookPage({
             seriesPosition={book.seriesPosition ?? null}
           />
 
+          {isBookAuthor && <AuthorToolsCard bookId={book.id} description={book.description ?? null} />}
+
           {user?.role === "admin" && (
             <AdminEditPanel
               bookId={book.id}
@@ -577,6 +583,7 @@ export default async function BookPage({
         bookId={bookId}
         isLoggedIn={!!user}
         isAdmin={isAdmin(user)}
+        isAuthor={isBookAuthor}
       />
 
       {user && (

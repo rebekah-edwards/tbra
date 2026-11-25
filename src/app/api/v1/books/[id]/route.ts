@@ -20,6 +20,7 @@ import { getFollowedUsersWhoRead } from "@/lib/queries/follows";
 import { isBookHidden } from "@/lib/actions/hidden-books";
 import { getUserOwnedEditions } from "@/lib/queries/editions";
 import { getEffectiveCoverUrl } from "@/lib/covers";
+import { isVerifiedAuthorOfBook } from "@/lib/authors/claims";
 
 /**
  * GET /api/v1/books/[id]  (id = uuid or slug)
@@ -168,6 +169,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     // the wizard on every re-completion.
     userRating: userReview?.overallRating ?? null,
     hasReview: userReview !== null,
+    // The viewer is this book's verified author → author tools on iOS.
+    isVerifiedAuthor: await isVerifiedAuthorOfBook(user.userId, bookId),
     // Readers' reviews, shown on the iOS book page like the web's
     // "What Readers Think" (top 5 by helpful votes, plain text).
     reviewSummary,

@@ -22,6 +22,7 @@ import { PublicReviewHistory } from "@/components/profile/public-review-history"
 import { SocialIcons } from "@/components/profile/social-icons";
 import { ProfileHero } from "@/components/profile/profile-hero";
 import { FollowButton } from "@/components/profile/follow-button";
+import { getVerifiedAuthorsForUser } from "@/lib/authors/claims";
 
 /**
  * Look up a handle — first in the current users table, then in
@@ -218,9 +219,12 @@ export default async function PublicProfilePage({
     !!user.location &&
     (user.locationVisibility === "public" || isOwner || (user.locationVisibility === "followers" && currentlyFollowing));
 
+  const verifiedAuthors = await getVerifiedAuthorsForUser(user.id);
+
   return (
     <div className="space-y-7 lg:max-w-[60%] lg:mx-auto">
       <ProfileHero
+        verifiedAuthors={verifiedAuthors}
         name={user.displayName || user.username || user.email.split("@")[0]}
         username={user.username}
         avatarUrl={user.avatarUrl}
