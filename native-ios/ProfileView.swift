@@ -36,6 +36,7 @@ struct ProfileView: View {
     @Binding var path: NavigationPath
     @Environment(AuthStore.self) private var auth
     @Environment(ChromeState.self) private var chrome: ChromeState?
+    @Environment(\.shellRailWidth) private var rail
     @State private var model = ProfileModel()
     @State private var editProfileOpen = false
     @State private var copiedReferral = false
@@ -201,31 +202,87 @@ struct ProfileView: View {
     private func heroV2(_ data: ProfileData) -> some View {
         let user = data.user
         let name = user.displayName ?? user.username ?? "Reader"
-        return VStack(spacing: 14) {
-            ProfileHeroAvatar(avatarUrl: user.avatarUrl, name: name)
-
-            VStack(spacing: 6) {
-                Text(name)
-                    .font(Theme.heading(23, .bold))
-                    .foregroundStyle(Theme.foreground)
-                    .multilineTextAlignment(.center)
-                HStack(spacing: 8) {
-                    if let username = user.username {
-                        Text("@\(username)")
-                            .font(Theme.body(14))
+        // iPhone Duo (side rail showing): a compact header — the screen is
+        // ~200pt shorter than an iPhone's, and the full card filled it
+        // (Rebekah, 2026-11-25). Avatar beside the name; the stat cards keep
+        // their cover fans (she wants that visual kept).
+        let compact = rail > 0
+        return VStack(spacing: compact ? 10 : 14) {
+            if compact {
+                HStack(alignment: .center, spacing: 14) {
+                    ProfileHeroAvatar(avatarUrl: user.avatarUrl, name: name, size: 60)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(name)
+                            .font(Theme.heading(19, .bold))
+                            .foregroundStyle(Theme.foreground)
+                            .multilineTextAlignment(.leading)
+                        VStack(alignment: .leading, spacing: 4) {
+                            if let username = user.username {
+                                Text("@\(username)")
+                                    .font(Theme.body(14))
+                                    .foregroundStyle(Theme.muted)
+                            }
+                            ProfileTierBadge(type: user.accountType)
+                        }
+                        ForEach(data.verifiedAuthors ?? [], id: \.authorId) { a in
+                            NavigationLink(value: AuthorRoute(idOrSlug: a.slug ?? a.authorId)) {
+                                VerifiedAuthorBadge(label: (data.verifiedAuthors?.count ?? 0) > 1 ? "Verified author · \(a.name)" : "Verified author")
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        Text("Member since \(memberSince(user.createdAt))")
+                            .font(Theme.body(12))
                             .foregroundStyle(Theme.muted)
+                    HStack(spacing: 6) {
+                        if let username = user.username {
+                            NavigationLink(value: FollowListRoute(username: username, type: "followers")) {
+                                (Text("\(data.followerCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                                 + Text(data.followerCount == 1 ? "follower" : "followers").foregroundColor(Theme.muted))
+                            }
+                            Text("·").foregroundStyle(Theme.muted)
+                            NavigationLink(value: FollowListRoute(username: username, type: "following")) {
+                                (Text("\(data.followingCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                                 + Text("following").foregroundColor(Theme.muted))
+                            }
+                        } else {
+                            (Text("\(data.followerCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                             + Text("followers").foregroundColor(Theme.muted))
+                            Text("·").foregroundStyle(Theme.muted)
+                            (Text("\(data.followingCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                             + Text("following").foregroundColor(Theme.muted))
+                        }
                     }
-                    ProfileTierBadge(type: user.accountType)
-                }
-                ForEach(data.verifiedAuthors ?? [], id: \.authorId) { a in
-                    NavigationLink(value: AuthorRoute(idOrSlug: a.slug ?? a.authorId)) {
-                        VerifiedAuthorBadge(label: (data.verifiedAuthors?.count ?? 0) > 1 ? "Verified author · \(a.name)" : "Verified author")
+                    .font(Theme.body(13))
                     }
-                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                Text("Member since \(memberSince(user.createdAt))")
-                    .font(Theme.body(12))
-                    .foregroundStyle(Theme.muted)
+                .padding(.horizontal, 0)
+            } else {
+                ProfileHeroAvatar(avatarUrl: user.avatarUrl, name: name)
+
+                VStack(spacing: 6) {
+                    Text(name)
+                        .font(Theme.heading(23, .bold))
+                        .foregroundStyle(Theme.foreground)
+                        .multilineTextAlignment(.center)
+                    HStack(spacing: 8) {
+                        if let username = user.username {
+                            Text("@\(username)")
+                                .font(Theme.body(14))
+                                .foregroundStyle(Theme.muted)
+                        }
+                        ProfileTierBadge(type: user.accountType)
+                    }
+                    ForEach(data.verifiedAuthors ?? [], id: \.authorId) { a in
+                        NavigationLink(value: AuthorRoute(idOrSlug: a.slug ?? a.authorId)) {
+                            VerifiedAuthorBadge(label: (data.verifiedAuthors?.count ?? 0) > 1 ? "Verified author · \(a.name)" : "Verified author")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    Text("Member since \(memberSince(user.createdAt))")
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
+                }
             }
 
             if let bio = user.bio?.trimmingCharacters(in: .whitespacesAndNewlines), !bio.isEmpty {
@@ -234,28 +291,31 @@ struct ProfileView: View {
                     .foregroundStyle(Theme.foreground.opacity(0.9))
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(compact ? 2 : nil)
             }
 
-            HStack(spacing: 6) {
-                if let username = user.username {
-                    NavigationLink(value: FollowListRoute(username: username, type: "followers")) {
+            if !compact {
+                HStack(spacing: 6) {
+                    if let username = user.username {
+                        NavigationLink(value: FollowListRoute(username: username, type: "followers")) {
+                            (Text("\(data.followerCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                             + Text(data.followerCount == 1 ? "follower" : "followers").foregroundColor(Theme.muted))
+                        }
+                        Text("·").foregroundStyle(Theme.muted)
+                        NavigationLink(value: FollowListRoute(username: username, type: "following")) {
+                            (Text("\(data.followingCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                             + Text("following").foregroundColor(Theme.muted))
+                        }
+                    } else {
                         (Text("\(data.followerCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
-                         + Text(data.followerCount == 1 ? "follower" : "followers").foregroundColor(Theme.muted))
-                    }
-                    Text("·").foregroundStyle(Theme.muted)
-                    NavigationLink(value: FollowListRoute(username: username, type: "following")) {
+                         + Text("followers").foregroundColor(Theme.muted))
+                        Text("·").foregroundStyle(Theme.muted)
                         (Text("\(data.followingCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
                          + Text("following").foregroundColor(Theme.muted))
                     }
-                } else {
-                    (Text("\(data.followerCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
-                     + Text("followers").foregroundColor(Theme.muted))
-                    Text("·").foregroundStyle(Theme.muted)
-                    (Text("\(data.followingCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
-                     + Text("following").foregroundColor(Theme.muted))
                 }
+                .font(Theme.body(13))
             }
-            .font(Theme.body(13))
 
             HStack(spacing: 10) {
                 Button { editProfileOpen = true } label: {

@@ -664,6 +664,7 @@ struct TopBarLogo: View {
     var visible: Bool
     var hitLayerOnly = false
     var onTap: @MainActor () -> Void
+    @Environment(\.shellRailWidth) private var rail
 
     var body: some View {
         // Wordmark: Space Grotesk, lime→blue→purple gradient (.logo-gradient),
@@ -682,7 +683,7 @@ struct TopBarLogo: View {
         .padding(.vertical, 11)
         .modifier(GlassPillIf(enabled: !hitLayerOnly))
         .padding(.leading, 16)
-        .padding(.top, 2)
+        .padding(.top, 2 + duoTopGap(rail))
         .opacity(hitLayerOnly ? 1 : (visible ? 1 : 0))
         .offset(y: (hitLayerOnly || visible) ? 0 : -6)
         .allowsHitTesting(hitLayerOnly && visible)
@@ -698,6 +699,7 @@ struct TopBarActions: View {
     var onSearch: @MainActor () -> Void = {}
     var onBell: @MainActor () -> Void = {}
     var onMenu: @MainActor () -> Void = {}
+    @Environment(\.shellRailWidth) private var rail
 
     var body: some View {
         HStack(spacing: 24) {
@@ -724,7 +726,7 @@ struct TopBarActions: View {
         .padding(.vertical, 11)
         .modifier(GlassPillIf(enabled: !hitLayerOnly))
         .padding(.trailing, 16)
-        .padding(.top, 2)
+        .padding(.top, 2 + duoTopGap(rail))
         .padding(.bottom, 8)
     }
 
@@ -912,6 +914,12 @@ struct SideRailSlot<Rail: View>: View {
             .ignoresSafeArea()
     }
 }
+
+/// Extra space above the logo + top-right pills on the iPhone Duo. Its
+/// status bar lives in the side column, so iOS reserves nothing at the top
+/// and the pills sat flush against the edge; on a regular iPhone they sit
+/// below the status bar. Shared by both chrome modes so the twins align.
+func duoTopGap(_ railWidth: CGFloat) -> CGFloat { railWidth > 0 ? 16 : 0 }
 
 /// A side column wide enough for the rail: the iPhone Duo keeps its status
 /// bar and camera in a column along the right edge (closed AND open). Regular

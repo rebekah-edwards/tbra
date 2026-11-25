@@ -87,6 +87,7 @@ final class PublicProfileModel {
 }
 
 struct PublicProfileView: View {
+    @Environment(\.shellRailWidth) private var rail
     @Environment(\.dismiss) private var dismiss
     @State private var model: PublicProfileModel
     @State private var reviewSearch = ""
@@ -323,27 +324,72 @@ struct PublicProfileView: View {
     /// The back chevron's row: the share circle sits opposite it.
     private func heroV2(_ user: ProfileUser) -> some View {
         let name = user.displayName ?? user.username ?? "Reader"
-        return VStack(spacing: 14) {
-            ProfileHeroAvatar(avatarUrl: user.avatarUrl, name: name)
-
-            VStack(spacing: 6) {
-                Text(name)
-                    .font(Theme.heading(23, .bold))
-                    .foregroundStyle(Theme.foreground)
-                    .multilineTextAlignment(.center)
-                HStack(spacing: 8) {
-                    if let username = user.username {
-                        Text("@\(username)")
-                            .font(Theme.body(14))
-                            .foregroundStyle(Theme.muted)
+        // iPhone Duo (side rail showing): a compact header — the screen is
+        // ~200pt shorter than an iPhone's, and the full card filled it
+        // (Rebekah, 2026-11-25). Avatar beside the name; the stat cards keep
+        // their cover fans (she wants that visual kept).
+        let compact = rail > 0
+        return VStack(spacing: compact ? 10 : 14) {
+            if compact {
+                HStack(alignment: .center, spacing: 14) {
+                    ProfileHeroAvatar(avatarUrl: user.avatarUrl, name: name, size: 60)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(name)
+                            .font(Theme.heading(19, .bold))
+                            .foregroundStyle(Theme.foreground)
+                            .multilineTextAlignment(.leading)
+                        VStack(alignment: .leading, spacing: 4) {
+                            if let username = user.username {
+                                Text("@\(username)")
+                                    .font(Theme.body(14))
+                                    .foregroundStyle(Theme.muted)
+                            }
+                            ProfileTierBadge(type: user.accountType)
+                        }
+                        ForEach(model.verifiedAuthors, id: \.authorId) { a in
+                            NavigationLink(value: AuthorRoute(idOrSlug: a.slug ?? a.authorId)) {
+                                VerifiedAuthorBadge(label: model.verifiedAuthors.count > 1 ? "Verified author · \(a.name)" : "Verified author")
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    HStack(spacing: 6) {
+                        NavigationLink(value: FollowListRoute(username: model.username, type: "followers")) {
+                            (Text("\(model.followerCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                             + Text(model.followerCount == 1 ? "follower" : "followers").foregroundColor(Theme.muted))
+                        }
+                        Text("·").foregroundStyle(Theme.muted)
+                        NavigationLink(value: FollowListRoute(username: model.username, type: "following")) {
+                            (Text("\(model.followingCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                             + Text("following").foregroundColor(Theme.muted))
+                        }
                     }
-                    ProfileTierBadge(type: user.accountType)
+                    .font(Theme.body(13))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                ForEach(model.verifiedAuthors, id: \.authorId) { a in
-                    NavigationLink(value: AuthorRoute(idOrSlug: a.slug ?? a.authorId)) {
-                        VerifiedAuthorBadge(label: model.verifiedAuthors.count > 1 ? "Verified author · \(a.name)" : "Verified author")
+                .padding(.horizontal, 34)
+            } else {
+                ProfileHeroAvatar(avatarUrl: user.avatarUrl, name: name)
+
+                VStack(spacing: 6) {
+                    Text(name)
+                        .font(Theme.heading(23, .bold))
+                        .foregroundStyle(Theme.foreground)
+                        .multilineTextAlignment(.center)
+                    HStack(spacing: 8) {
+                        if let username = user.username {
+                            Text("@\(username)")
+                                .font(Theme.body(14))
+                                .foregroundStyle(Theme.muted)
+                        }
+                        ProfileTierBadge(type: user.accountType)
                     }
-                    .buttonStyle(.plain)
+                    ForEach(model.verifiedAuthors, id: \.authorId) { a in
+                        NavigationLink(value: AuthorRoute(idOrSlug: a.slug ?? a.authorId)) {
+                            VerifiedAuthorBadge(label: model.verifiedAuthors.count > 1 ? "Verified author · \(a.name)" : "Verified author")
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
 
@@ -353,20 +399,23 @@ struct PublicProfileView: View {
                     .foregroundStyle(Theme.foreground.opacity(0.9))
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(compact ? 2 : nil)
             }
 
-            HStack(spacing: 6) {
-                NavigationLink(value: FollowListRoute(username: model.username, type: "followers")) {
-                    (Text("\(model.followerCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
-                     + Text(model.followerCount == 1 ? "follower" : "followers").foregroundColor(Theme.muted))
+            if !compact {
+                HStack(spacing: 6) {
+                    NavigationLink(value: FollowListRoute(username: model.username, type: "followers")) {
+                        (Text("\(model.followerCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                         + Text(model.followerCount == 1 ? "follower" : "followers").foregroundColor(Theme.muted))
+                    }
+                    Text("·").foregroundStyle(Theme.muted)
+                    NavigationLink(value: FollowListRoute(username: model.username, type: "following")) {
+                        (Text("\(model.followingCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
+                         + Text("following").foregroundColor(Theme.muted))
+                    }
                 }
-                Text("·").foregroundStyle(Theme.muted)
-                NavigationLink(value: FollowListRoute(username: model.username, type: "following")) {
-                    (Text("\(model.followingCount) ").fontWeight(.bold).foregroundColor(Theme.foreground)
-                     + Text("following").foregroundColor(Theme.muted))
-                }
+                .font(Theme.body(13))
             }
-            .font(Theme.body(13))
 
             if !model.isOwner {
                 HStack(spacing: 10) {
@@ -1100,6 +1149,7 @@ struct AllShelvesSheet: View {
 struct ProfileHeroAvatar: View {
     let avatarUrl: String?
     let name: String
+    var size: CGFloat = 84
 
     var body: some View {
         Group {
@@ -1113,12 +1163,12 @@ struct ProfileHeroAvatar: View {
                     LinearGradient(colors: [Theme.accent.opacity(0.28), Theme.neonPurple.opacity(0.28)],
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
                     Text(String(name.prefix(1)).uppercased())
-                        .font(Theme.heading(32, .bold))
+                        .font(Theme.heading(size * 0.38, .bold))
                         .foregroundStyle(Theme.foreground)
                 }
             }
         }
-        .frame(width: 84, height: 84)
+        .frame(width: size, height: size)
         .clipShape(Circle())
         .padding(3)
         .overlay(
