@@ -27,9 +27,10 @@ export type WhatsNewNote = {
 
 export const WHATS_NEW_NOTES: WhatsNewNote[] = [
   {
-    // Build 21 (TestFlight, 2026-11-25). DRAFT wording — waiting on
-    // Rebekah's OK before the build is released to the Friends group.
-    build: 21,
+    // Build 22 (TestFlight, 2026-11-25). Released at Rebekah's request
+    // ("upload to TestFlight all together"). Build 21 was uploaded but never
+    // released; 22 adds the search → series/author top-bar fix.
+    build: 22,
     title: "What's new",
     items: [
       {
