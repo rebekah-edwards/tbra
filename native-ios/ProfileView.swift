@@ -209,14 +209,14 @@ struct ProfileView: View {
         let compact = rail > 0
         return VStack(spacing: compact ? 10 : 14) {
             if compact {
-                HStack(alignment: .center, spacing: 14) {
-                    ProfileHeroAvatar(avatarUrl: user.avatarUrl, name: name, size: 60)
-                    VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .center, spacing: 20) {
+                    ProfileHeroAvatar(avatarUrl: user.avatarUrl, name: name, size: 74)
+                    VStack(alignment: .leading, spacing: 8) {
                         Text(name)
                             .font(Theme.heading(19, .bold))
                             .foregroundStyle(Theme.foreground)
                             .multilineTextAlignment(.leading)
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: 6) {
                             if let username = user.username {
                                 Text("@\(username)")
                                     .font(Theme.body(14))

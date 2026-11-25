@@ -432,11 +432,20 @@ struct BookDetailView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            seriesPiece(data)
+            // Narrower: inset from both edges so it spans the two pages
+            // without running edge to edge. Covers stay full size
+            // (Rebekah, 2026-11-25).
+            if let series = data.book.seriesInfo {
+                BookSeriesRail(series: series, currentBookId: data.book.id)
+                    .id("series")
+                    .padding(.horizontal, 64)
+            }
             insidePiece(data)
             footerPiece(data)
             similarPiece(data)
         }
+        // Air between the logo bar and the page (it read as cramped).
+        .padding(.top, 14)
         // One bleed behind BOTH pages, the full width of the screen.
         .background(alignment: .top) {
             CoverBleed(coverUrl: data.effectiveCoverUrl ?? data.book.coverImageUrl)

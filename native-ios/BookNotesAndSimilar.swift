@@ -233,6 +233,7 @@ struct SimilarBooksSection: View {
 struct BookSeriesRail: View {
     let series: BookSeriesInfo
     let currentBookId: String
+    var coverWidth: CGFloat = 120
     @State private var books: [SeriesBookRow] = []
     @State private var loaded = false
 
@@ -266,7 +267,7 @@ struct BookSeriesRail: View {
                                     let isCurrent = book.id == currentBookId
                                     NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
                                         VStack(alignment: .leading, spacing: 5) {
-                                            CoverThumb(url: book.coverImageUrl, width: 120, height: 180, radius: 8, title: book.title)
+                                            CoverThumb(url: book.coverImageUrl, width: coverWidth, height: coverWidth * 1.5, radius: 8, title: book.title)
                                                 .overlay {
                                                     if isCurrent {
                                                         RoundedRectangle(cornerRadius: 8)
@@ -286,7 +287,7 @@ struct BookSeriesRail: View {
                                                 .foregroundStyle(Theme.foreground.opacity(0.9))
                                                 .lineLimit(2)
                                                 .multilineTextAlignment(.leading)
-                                                .frame(width: 120, alignment: .leading)
+                                                .frame(width: coverWidth, alignment: .leading)
                                         }
                                     }
                                     .disabled(isCurrent)

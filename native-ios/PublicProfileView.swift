@@ -331,14 +331,14 @@ struct PublicProfileView: View {
         let compact = rail > 0
         return VStack(spacing: compact ? 10 : 14) {
             if compact {
-                HStack(alignment: .center, spacing: 14) {
-                    ProfileHeroAvatar(avatarUrl: user.avatarUrl, name: name, size: 60)
-                    VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .center, spacing: 20) {
+                    ProfileHeroAvatar(avatarUrl: user.avatarUrl, name: name, size: 74)
+                    VStack(alignment: .leading, spacing: 8) {
                         Text(name)
                             .font(Theme.heading(19, .bold))
                             .foregroundStyle(Theme.foreground)
                             .multilineTextAlignment(.leading)
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: 6) {
                             if let username = user.username {
                                 Text("@\(username)")
                                     .font(Theme.body(14))
@@ -367,7 +367,6 @@ struct PublicProfileView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.horizontal, 34)
             } else {
                 ProfileHeroAvatar(avatarUrl: user.avatarUrl, name: name)
 
@@ -475,14 +474,16 @@ struct PublicProfileView: View {
         .heroHairline()
         .overlay(alignment: .top) {
             HStack {
-                Button { dismiss() } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Theme.foreground.opacity(0.9))
-                        .frame(width: 36, height: 36)
-                        .glassEffect(.regular, in: Circle())
+                if rail == 0 {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Theme.foreground.opacity(0.9))
+                            .frame(width: 36, height: 36)
+                            .glassEffect(.regular, in: Circle())
+                    }
+                    .accessibilityLabel("Back")
                 }
-                .accessibilityLabel("Back")
                 Spacer()
                 if let username = user.username,
                    let url = URL(string: "https://thebasedreader.app/u/\(username)") {
@@ -1289,7 +1290,9 @@ struct ProfileStatCard: View {
 /// own back button.
 private struct FloatingBackUnlessHero: ViewModifier {
     let heroShown: Bool
+    @Environment(\.shellRailWidth) private var rail
     func body(content: Content) -> some View {
-        if heroShown { content } else { content.floatingBack() }
+        // On the Duo the back button lives in the side column, hero or not.
+        if heroShown && rail == 0 { content } else { content.floatingBack() }
     }
 }

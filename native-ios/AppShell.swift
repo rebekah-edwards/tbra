@@ -131,7 +131,10 @@ struct AppShell: View {
                 .allowsHitTesting(false)
         }
         .overlay(alignment: .topTrailing) {
+            // On the Duo these move to the side column; kept laid out
+            // (invisible) because the bar height is measured from it.
             TopBarActions(unreadCount: notifications.unreadCount)
+                .opacity(railWidth > 0 ? 0 : 1)
                 .allowsHitTesting(false)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { topBarHeight = $0 }
         }
@@ -145,9 +148,9 @@ struct AppShell: View {
         // iPhone Duo: the tabs move to the side column as a vertical rail.
         .overlay {
             if railWidth > 0 {
-                SideRailSlot(width: railWidth) {
-                    BottomNav(tab: chrome.tab, avatarUrl: currentAvatarUrl, vertical: true)
-                }
+                SideColumnStack(width: railWidth, utility: .visual, tabs: .visual,
+                                tab: chrome.tab, avatarUrl: currentAvatarUrl,
+                                unreadCount: notifications.unreadCount)
                 .allowsHitTesting(false)
             }
         }
@@ -615,6 +618,7 @@ struct PresentedChromeCover<Content: View>: View {
         }
         .overlay(alignment: .topTrailing) {
             TopBarActions(unreadCount: unreadCount)
+                .opacity(railWidth > 0 ? 0 : 1)
                 .allowsHitTesting(false)
         }
         .overlay(alignment: .bottom) {
@@ -625,9 +629,9 @@ struct PresentedChromeCover<Content: View>: View {
         }
         .overlay {
             if railWidth > 0 {
-                SideRailSlot(width: railWidth) {
-                    BottomNav(tab: coverChrome.tab, avatarUrl: avatarUrl, vertical: true)
-                }
+                SideColumnStack(width: railWidth, utility: .visual, tabs: .visual,
+                                tab: coverChrome.tab, avatarUrl: avatarUrl,
+                                unreadCount: unreadCount)
                 .allowsHitTesting(false)
             }
         }
@@ -897,6 +901,112 @@ struct BottomNav: View {
 // Do NOT reintroduce a pressed-scale ButtonStyle for card grids/rails.
 
 // ── Placeholder for tabs whose /api/v1 endpoints don't exist yet ──
+/// The iPhone Duo's right-hand column, top to bottom: back, search / bell /
+/// menu, then the tab rail — navigation where the right thumb rests
+/// (Rebekah, 2026-11-25). Bottom-aligned so it clears the clock + camera.
+///
+/// THREE copies render this same stack and each shows only its own part, so
+/// their geometry is identical by construction (the hit-layer rule):
+///  - shell (visual):       back reserved, utility + tabs drawn
+///  - PushedScreenChrome:   back reserved, utility + tabs as invisible hits
+///  - FloatingBackButton:   back live (drawn + tappable), the rest reserved
+/// The back slot is ALWAYS reserved, so tab roots (no back) don't shift.
+struct SideColumnStack: View {
+    enum Part { case visual, hit, reserve }
+    let width: CGFloat
+    var back: Part = .reserve
+    var utility: Part = .reserve
+    var tabs: Part = .reserve
+    var tab: AppTab = .home
+    var avatarUrl: String? = nil
+    var unreadCount = 0
+    var onBack: @MainActor () -> Void = {}
+    var onSearch: @MainActor () -> Void = {}
+    var onBell: @MainActor () -> Void = {}
+    var onMenu: @MainActor () -> Void = {}
+    var onSelect: @MainActor (AppTab) -> Void = { _ in }
+    var onReselect: @MainActor (AppTab) -> Void = { _ in }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            backSlot
+            utilityPill
+            tabRail
+        }
+        .frame(width: width)
+        .padding(.bottom, 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        .ignoresSafeArea()
+    }
+
+    @ViewBuilder private var backSlot: some View {
+        let chevron = Image(systemName: "chevron.left")
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(Theme.foreground.opacity(0.9))
+            .chromeCircle()
+        switch back {
+        case .visual, .hit:
+            Button(action: onBack) { chevron }
+                .accessibilityLabel("Back")
+        case .reserve:
+            chevron.hidden()
+        }
+    }
+
+    @ViewBuilder private var utilityPill: some View {
+        let pill = SideUtilityPill(hitLayerOnly: utility == .hit, unreadCount: unreadCount,
+                                   onSearch: onSearch, onBell: onBell, onMenu: onMenu)
+        if utility == .reserve { pill.hidden() } else { pill }
+    }
+
+    @ViewBuilder private var tabRail: some View {
+        let rail = BottomNav(hitLayerOnly: tabs == .hit, tab: tab, avatarUrl: avatarUrl,
+                             onSelect: onSelect, onReselect: onReselect, vertical: true)
+        if tabs == .reserve { rail.hidden() } else { rail }
+    }
+}
+
+/// Search / bell / menu as a vertical glass pill (the Duo's version of
+/// TopBarActions). Same two-mode rule: identical geometry, clear ink + no
+/// glass in hit mode.
+struct SideUtilityPill: View {
+    var hitLayerOnly = false
+    var unreadCount = 0
+    var onSearch: @MainActor () -> Void = {}
+    var onBell: @MainActor () -> Void = {}
+    var onMenu: @MainActor () -> Void = {}
+
+    var body: some View {
+        VStack(spacing: 6) {
+            icon("magnifyingglass", "Search", action: onSearch)
+            icon("bell", "Notifications", action: onBell)
+                .overlay(alignment: .topTrailing) {
+                    if !hitLayerOnly {
+                        Circle().fill(Theme.accent)
+                            .frame(width: 8, height: 8)
+                            .offset(x: -8, y: 8)
+                            .opacity(unreadCount > 0 ? 1 : 0)
+                    }
+                }
+            icon("line.3.horizontal", "Menu", action: onMenu)
+        }
+        .padding(.vertical, 6)
+        .frame(width: 66)
+        .modifier(GlassPillIf(enabled: !hitLayerOnly, backed: DesignPreview.on))
+    }
+
+    private func icon(_ name: String, _ label: String, action: @escaping @MainActor () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: name)
+                .font(.system(size: 18, weight: .regular))
+                .frame(width: 44, height: 40)
+                .foregroundStyle(hitLayerOnly ? hitLayerInk : AnyShapeStyle(Theme.foreground.opacity(0.85)))
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel(label)
+    }
+}
+
 /// Places the vertical tab rail in the screen's side column (iPhone Duo,
 /// 2026-11-25). The column is the window's trailing safe-area inset, where
 /// iOS keeps the clock and camera at the top; the rail is centred below them.

@@ -99,7 +99,7 @@ struct PushedScreenChrome: ViewModifier {
                 }
             }
             .overlay(alignment: .topTrailing) {
-                if showsChrome, let chrome {
+                if showsChrome, let chrome, rail == 0 {
                     TopBarActions(hitLayerOnly: true,
                                   onSearch: chrome.openSearch,
                                   onBell: chrome.openBell,
@@ -121,14 +121,13 @@ struct PushedScreenChrome: ViewModifier {
             // it resolves to the full window here exactly like the shell copy.
             .overlay {
                 if showsChrome, let chrome, rail > 0 {
-                    SideRailSlot(width: rail) {
-                        BottomNav(hitLayerOnly: true,
-                                  tab: chrome.tab,
-                                  avatarUrl: nil,
-                                  onSelect: chrome.selectTab,
-                                  onReselect: chrome.reselectTab,
-                                  vertical: true)
-                    }
+                    SideColumnStack(width: rail, utility: .hit, tabs: .hit,
+                                    tab: chrome.tab,
+                                    onSearch: chrome.openSearch,
+                                    onBell: chrome.openBell,
+                                    onMenu: chrome.openMenu,
+                                    onSelect: chrome.selectTab,
+                                    onReselect: chrome.reselectTab)
                 }
             }
             // Global report button — floating flag above the bottom bar on
@@ -170,7 +169,19 @@ struct FloatingBackButton: View {
         showsChrome && bars.top > 0 && chrome?.atTop == false
     }
 
+    @Environment(\.shellRailWidth) private var rail
+
     var body: some View {
+        if showsChrome && rail > 0 {
+            // iPhone Duo: back lives in the side column, above search/bell/
+            // menu and the tabs (see SideColumnStack).
+            SideColumnStack(width: rail, back: .visual, onBack: { dismiss() })
+        } else {
+            topLeftBack
+        }
+    }
+
+    private var topLeftBack: some View {
         Button { dismiss() } label: {
             if bare {
                 Image(systemName: "chevron.left")

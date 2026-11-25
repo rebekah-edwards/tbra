@@ -226,9 +226,40 @@ struct LibraryView: View {
     }
 
     var body: some View {
+        // Width read at layout time (see BookDetailView: @State fed from
+        // onGeometryChange was unreliable there).
+        GeometryReader { geo in
+            page(wide: geo.size.width >= 700)
+        }
+    }
+
+    private func page(wide: Bool) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                if DesignPreview.on {
+                if DesignPreview.on && wide {
+                    // iPhone Duo open: title + tabs + Shelves on one row,
+                    // search/filters/chips + sort on the next — the phone
+                    // stack spent four full-width rows on this.
+                    HStack(alignment: .center, spacing: 18) {
+                        Text("My Library")
+                            .font(Theme.heading(26, .bold))
+                            .foregroundStyle(Theme.foreground)
+                            .fixedSize()
+                        groupSegmentsV2
+                            .frame(maxWidth: 440)
+                        Spacer(minLength: 0)
+                        shelvesLink
+                    }
+                    HStack(alignment: .center, spacing: 12) {
+                        toolbarRowV2
+                        if !showAdvanced && filteredBooks.count > 1 && !searchActive {
+                            sortMenu(includeRating: false)
+                                .fixedSize()
+                        }
+                    }
+                    if filtersOpen && showAdvanced && !searchActive { filtersPanel }
+                    content
+                } else if DesignPreview.on {
                     headerV2
                     groupSegmentsV2
                     toolbarRowV2
@@ -367,7 +398,12 @@ struct LibraryView: View {
                 .font(Theme.heading(26, .bold))
                 .foregroundStyle(Theme.foreground)
             Spacer()
-            NavigationLink(value: ShelvesListRoute()) {
+            shelvesLink
+        }
+    }
+
+    private var shelvesLink: some View {
+        NavigationLink(value: ShelvesListRoute()) {
                 HStack(spacing: 6) {
                     Image(systemName: "books.vertical.fill")
                         .font(.system(size: 13))
@@ -379,7 +415,6 @@ struct LibraryView: View {
                 .foregroundStyle(Theme.foreground)
                 .padding(.horizontal, 14).padding(.vertical, 9)
                 .glassEffect(.regular, in: Capsule())
-            }
         }
     }
 
