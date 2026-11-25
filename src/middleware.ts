@@ -129,9 +129,16 @@ async function resolveEntity(kind: string, segment: string): Promise<EntityVerdi
  * before the table existed.
  */
 async function retiredAuthor(oldKey: string): Promise<EntityVerdict> {
+  // Also an exact author NAME: name-only lists (shelves, reviews, home cards,
+  // the iOS app) link to /author/<name>.
+  let name = oldKey;
+  try { name = decodeURIComponent(oldKey); } catch { /* keep raw */ }
   const rows = await tursoQuery(
-    `SELECT a.slug, a.id FROM author_redirects r JOIN authors a ON a.id = r.author_id WHERE r.old_key = ? LIMIT 1`,
-    [oldKey],
+    `SELECT a.slug, a.id FROM author_redirects r JOIN authors a ON a.id = r.author_id WHERE r.old_key = ?
+     UNION ALL
+     SELECT slug, id FROM (SELECT slug, id FROM authors WHERE name = ? LIMIT 1)
+     LIMIT 1`,
+    [oldKey, name],
   ).catch(() => null);
   const target = rows?.[0]?.[0] || rows?.[0]?.[1];
   return target ? { kind: "moved", to: `/author/${encodeURIComponent(target)}` } : { kind: "missing" };
