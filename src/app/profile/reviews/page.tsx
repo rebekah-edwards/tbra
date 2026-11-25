@@ -7,6 +7,7 @@ import { getUserReviewsWithBooks } from "@/lib/queries/user-reviews";
 import { stripHtml, formatRating } from "@/lib/text-utils";
 import { NoCover } from "@/components/no-cover";
 import { HERO_BACK_BUTTON_CLASS } from "@/components/ui/cover-art-hero";
+import { AuthorLinks } from "@/components/book/author-links";
 
 export default async function AllReviewsPage() {
   const session = await getCurrentUser();
@@ -74,7 +75,7 @@ export default async function AllReviewsPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <h2 className="font-heading text-[15px] font-bold leading-tight text-foreground line-clamp-1">{review.title}</h2>
-                <p className="text-xs text-muted line-clamp-1">{review.authors.join(", ")}</p>
+                <p className="text-xs text-muted line-clamp-1"><AuthorLinks authors={review.authors} nested /></p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   {review.rating != null && (
                     <span className="chip-glass">

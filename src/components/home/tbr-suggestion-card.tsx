@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { TbrSuggestion } from "@/lib/queries/tbr-suggestion";
 import { NoCover } from "@/components/no-cover";
+import { AuthorLinks } from "@/components/book/author-links";
 
 interface TbrSuggestionCardProps {
   initialBook: TbrSuggestion | null;
@@ -93,7 +94,7 @@ export function TbrSuggestionCard({ initialBook }: TbrSuggestionCardProps) {
             <Link href={href} className="block">
               <h3 className="mt-2 font-heading text-[19px] font-bold leading-tight book-header-text line-clamp-2">{book.title}</h3>
               {book.authors.length > 0 && (
-                <p className="mt-0.5 text-sm book-header-text-sub line-clamp-1">{book.authors.join(", ")}</p>
+                <p className="mt-0.5 text-sm book-header-text-sub line-clamp-1"><AuthorLinks authors={book.authors} nested /></p>
               )}
             </Link>
             <button

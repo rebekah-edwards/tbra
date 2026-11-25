@@ -38,6 +38,7 @@ import {
 import type { ShelfDetail, ShelfBook } from "@/lib/queries/shelves";
 import type { UserBookWithDetails } from "@/lib/queries/reading-state";
 import { librarySearchText, librarySearchTokens, matchesLibrarySearch } from "@/lib/library-search";
+import { AuthorLinks } from "@/components/book/author-links";
 
 // A handful of books needs no search box — it would only push the list down.
 const SHELF_SEARCH_MIN_BOOKS = 8;
@@ -163,7 +164,7 @@ function ShelfBookItem({
       <div className="flex-1 min-w-0">
         <Link href={`/book/${book.slug || book.bookId}`}>
           <h4 className="font-heading text-[15px] font-bold leading-tight text-foreground line-clamp-2">{book.title}</h4>
-          <p className="text-xs text-muted truncate">{book.authors.join(", ")}</p>
+          <p className="text-xs text-muted truncate"><AuthorLinks authors={book.authors} nested /></p>
         </Link>
         {editingNote ? (
           <div className="mt-1.5 flex items-center gap-1.5">
@@ -332,7 +333,7 @@ function AddBooksModal({
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground truncate">{book.title}</p>
-                  <p className="text-xs text-muted truncate">{book.authors.join(", ")}</p>
+                  <p className="text-xs text-muted truncate"><AuthorLinks authors={book.authors} nested /></p>
                 </div>
                 <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
                   bookOnShelf ? "bg-accent border-accent" : "border-border"

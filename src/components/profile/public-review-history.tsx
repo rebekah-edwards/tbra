@@ -7,6 +7,7 @@ import Image from "next/image";
 import { stripHtml } from "@/lib/text-utils";
 import type { UserReviewWithBook } from "@/lib/queries/user-reviews";
 import { NoCover } from "@/components/no-cover";
+import { AuthorLinks } from "@/components/book/author-links";
 
 interface PublicReviewHistoryProps {
   reviews: UserReviewWithBook[];
@@ -183,7 +184,7 @@ export function PublicReviewHistory({ reviews }: PublicReviewHistoryProps) {
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-muted line-clamp-1">{review.authors.join(", ")}</p>
+                <p className="text-xs text-muted line-clamp-1"><AuthorLinks authors={review.authors} nested /></p>
                 <div className="flex items-center gap-2 mt-1">
                   {review.rating && <StarRating rating={review.rating} />}
                   <span className="text-[10px] text-muted">

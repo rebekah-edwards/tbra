@@ -13,6 +13,7 @@ import { BackButton } from "@/components/ui/back-button";
 
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { toggleSeriesCoverStyle, setSeriesCover } from "@/lib/actions/series";
+import { AuthorLinks } from "@/components/book/author-links";
 
 interface SeriesBook {
   id: string;
@@ -99,7 +100,7 @@ export function SeriesBooksView({ seriesName, seriesId, books, isLoggedIn, isAdm
   const coreBooks = books.filter((b) => !b.isBoxSet && b.position != null && Number.isInteger(b.position));
   const heroPool = coreBooks.length > 0 ? coreBooks : books.filter((b) => !b.isBoxSet);
   const heroCovers = heroPool.map((b) => b.coverImageUrl).filter((u): u is string => !!u).slice(0, 3);
-  const heroAuthors = [...new Set(heroPool.flatMap((b) => b.authors.map((a) => a.name)))].slice(0, 2);
+  const heroAuthors = [...new Map(heroPool.flatMap((b) => b.authors).map((a) => [a.name, a])).values()].slice(0, 2);
   const readCount = coreBooks.filter((b) => bookStates[b.id] === "completed").length;
   const readingCount = heroPool.filter((b) => bookStates[b.id] === "currently_reading").length;
 
@@ -109,7 +110,7 @@ export function SeriesBooksView({ seriesName, seriesId, books, isLoggedIn, isAdm
         leading={<BackButton className={HERO_BACK_BUTTON_CLASS} />}
         eyebrow="Series"
         title={seriesName}
-        subtitle={heroAuthors.length > 0 ? <>by {heroAuthors.join(", ")}</> : undefined}
+        subtitle={heroAuthors.length > 0 ? <>by <AuthorLinks authors={heroAuthors} /></> : undefined}
         covers={heroCovers}
         stats={[
           { label: counts.core === 1 ? "book" : "books", value: counts.core || counts.all, hue: "lime" },

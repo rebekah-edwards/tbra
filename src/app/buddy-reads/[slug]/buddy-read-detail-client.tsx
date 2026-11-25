@@ -10,6 +10,7 @@ import { BuddyReadDiscussion } from "@/components/buddy-reads/buddy-read-discuss
 import { BuddyReadInvite } from "@/components/buddy-reads/buddy-read-invite";
 import { completeBuddyRead, cancelBuddyRead, reopenBuddyRead, leaveBuddyRead } from "@/lib/actions/buddy-reads";
 import type { BuddyReadDetail, BuddyReadMembership } from "@/lib/queries/buddy-reads";
+import { AuthorLinks } from "@/components/book/author-links";
 
 interface Message {
   id: string;
@@ -186,7 +187,7 @@ export function BuddyReadDetailClient({
               </Link>
               {detail.book.authors.length > 0 && (
                 <p className="mt-0.5 text-sm book-header-text-sub line-clamp-1">
-                  {detail.book.authors.join(", ")}
+                  <AuthorLinks authors={detail.book.authors} />
                 </p>
               )}
               <p className="mt-1.5 text-xs book-header-text-sub">

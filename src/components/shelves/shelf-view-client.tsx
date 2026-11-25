@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { NoCover } from "@/components/no-cover";
 import type { ShelfBook } from "@/lib/queries/shelves";
+import { AuthorLinks } from "@/components/book/author-links";
 
 type SortKey = "position" | "title" | "author" | "userRating" | "overallRating" | "pubYear" | "pages" | "dateAdded";
 
@@ -295,7 +296,7 @@ function BookOnShelf({ book, userAvatarUrl, maxWidth }: { book: ShelfBook; userA
         {book.title}
       </p>
       <p className="text-[10px] text-muted truncate">
-        {book.authors.join(", ")}
+        <AuthorLinks authors={book.authors} nested />
       </p>
     </Link>
   );

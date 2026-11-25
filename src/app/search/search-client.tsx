@@ -10,6 +10,7 @@ import { ReadingStateButton } from "@/components/reading-state-button";
 import { CompactOwnedButton } from "@/components/compact-owned-button";
 import { NoCover } from "@/components/no-cover";
 import { ReaderRow } from "@/components/ui/reader-row";
+import { AuthorLinks } from "@/components/book/author-links";
 
 interface SearchClientProps {
   isLoggedIn: boolean;
@@ -396,9 +397,9 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
                             <p className="text-xs text-muted">
                               {[
                                 book.position != null ? (Number.isInteger(book.position) ? `Book ${book.position}` : `Novella ${book.position}`) : null,
-                                book.authors.length > 0 ? book.authors.join(", ") : null,
+                                book.authors.length > 0 ? <AuthorLinks key="authors" authors={book.authors} /> : null,
                                 book.publicationYear,
-                              ].filter(Boolean).join(" · ")}
+                              ].filter(Boolean).flatMap((part, i) => (i > 0 ? [" · ", part] : [part]))}
                             </p>
                           </div>
                           <div className="mt-1.5 flex items-center gap-2">

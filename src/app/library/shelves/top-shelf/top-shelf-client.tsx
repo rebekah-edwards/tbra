@@ -30,6 +30,7 @@ import type { FavoriteBook } from "@/lib/queries/favorites";
 import type { UserBookWithDetails } from "@/lib/queries/reading-state";
 import { reorderFavorites, removeFavorite, addFavorite } from "@/lib/actions/favorites";
 import { librarySearchText, librarySearchTokens, matchesLibrarySearch } from "@/lib/library-search";
+import { AuthorLinks } from "@/components/book/author-links";
 
 interface TopShelfClientProps {
   favorites: FavoriteBook[];
@@ -112,7 +113,7 @@ function AddToTopShelfSheet({
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground truncate">{book.title}</p>
-                  <p className="text-xs text-muted truncate">{book.authors.join(", ")}</p>
+                  <p className="text-xs text-muted truncate"><AuthorLinks authors={book.authors} nested /></p>
                 </div>
                 <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
                   onTopShelf ? "bg-amber-500 border-amber-500" : "border-border"
@@ -205,7 +206,7 @@ function SortableBook({
         {book.title}
       </p>
       <p className="text-[10px] text-muted truncate">
-        {book.authors.join(", ")}
+        <AuthorLinks authors={book.authors} />
       </p>
 
       {/* Remove button — shown on hover/focus */}

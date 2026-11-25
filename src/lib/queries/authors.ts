@@ -33,6 +33,10 @@ export async function getAuthorWithBooks(authorId: string) {
  * Resolve an author by UUID or slug.
  * Wrapped in React cache() so generateMetadata + page component share the result.
  */
+function safeDecode(v: string) {
+  try { return decodeURIComponent(v); } catch { return v; }
+}
+
 export const resolveAuthor = cache(async function resolveAuthor(idOrSlug: string) {
   if (UUID_PATTERN.test(idOrSlug)) {
     const author = await db.query.authors.findFirst({ where: eq(authors.id, idOrSlug) });
@@ -44,7 +48,11 @@ export const resolveAuthor = cache(async function resolveAuthor(idOrSlug: string
   if (author) return { author, isIdLookup: false };
   // isIdLookup:true makes the page redirect to the author's current URL.
   const moved = await resolveRetiredAuthor(idOrSlug);
-  return moved ? { author: moved, isIdLookup: true } : null;
+  if (moved) return { author: moved, isIdLookup: true };
+  // Name fallback: lists that only carry author names (shelves, reviews,
+  // home cards) link to /author/<name>; redirect to the slug URL.
+  const byName = await db.query.authors.findFirst({ where: eq(authors.name, safeDecode(idOrSlug)) });
+  return byName ? { author: byName, isIdLookup: true } : null;
 });
 
 /**

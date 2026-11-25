@@ -11,6 +11,7 @@ import { ShareShelfButton } from "./share-button";
 import { FollowShelfButton } from "./follow-button";
 import { ShelfViewClient } from "@/components/shelves/shelf-view-client";
 import { BackButton } from "@/components/ui/back-button";
+import { AuthorLinks } from "@/components/book/author-links";
 
 interface Props {
   params: Promise<{ username: string; slug: string }>;
@@ -101,7 +102,7 @@ function BookshelfGrid({
                   {book.title}
                 </p>
                 <p className="text-[10px] text-muted truncate">
-                  {book.authors.join(", ")}
+                  <AuthorLinks authors={book.authors} nested />
                 </p>
               </Link>
             ))}

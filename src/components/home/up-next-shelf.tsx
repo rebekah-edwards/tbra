@@ -24,6 +24,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { reorderUpNext } from "@/lib/actions/up-next";
 import { formatRating } from "@/lib/text-utils";
 import { NoCover } from "@/components/no-cover";
+import { AuthorLinks } from "@/components/book/author-links";
 
 interface UpNextItem {
   bookId: string;
@@ -152,7 +153,7 @@ function SortableUpNextCard({
             {item.title}
           </h3>
           {item.authorName && (
-            <p className="hidden lg:block text-[11px] book-header-text-muted line-clamp-1 mt-0.5">{item.authorName}</p>
+            <p className="hidden lg:block text-[11px] book-header-text-muted line-clamp-1 mt-0.5">{item.authorName && <AuthorLinks authors={[item.authorName]} nested />}</p>
           )}
 
           {/* Meta row: pages · audiobook, rating */}

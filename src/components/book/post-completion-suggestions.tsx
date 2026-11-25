@@ -7,6 +7,7 @@ import { fetchPostCompletionSuggestions } from "@/lib/actions/recommendations";
 import { addToTbr } from "@/lib/actions/reading-state";
 import type { RecommendedBook } from "@/lib/queries/recommendations";
 import { NoCover } from "@/components/no-cover";
+import { AuthorLinks } from "@/components/book/author-links";
 
 interface PostCompletionSuggestionsProps {
   bookId: string;
@@ -166,7 +167,7 @@ function SuggestionCard({
         </Link>
         {book.authors.length > 0 && (
           <p className={`text-xs line-clamp-1 mt-0.5 ${featured ? "book-header-text-sub" : "text-muted"}`}>
-            {book.authors.join(", ")}
+            <AuthorLinks authors={book.authors} />
           </p>
         )}
         {book.reason && (

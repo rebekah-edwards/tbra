@@ -10,6 +10,7 @@ import { addReadingNote } from "@/lib/actions/reading-notes";
 import { NoCover } from "@/components/no-cover";
 import { CompletionDatePicker } from "@/components/book/completion-date-picker";
 import { ReviewWizard } from "@/components/review/review-wizard";
+import { AuthorLinks } from "@/components/book/author-links";
 
 interface CurrentlyReadingBook {
   id: string;
@@ -372,7 +373,7 @@ function ReadingBookCard({ book, onReviewOpen }: {
               <h3 className="text-[17px] font-bold book-header-text leading-snug line-clamp-2">{book.title}</h3>
             </Link>
             {book.authors.length > 0 && (
-              <p className="mt-0.5 text-[13px] lg:text-sm book-header-text-muted line-clamp-1">{book.authors.join(", ")}</p>
+              <p className="mt-0.5 text-[13px] lg:text-sm book-header-text-muted line-clamp-1"><AuthorLinks authors={book.authors} /></p>
             )}
             {/* Progress bar — lime fill on a translucent track, % alongside */}
             <div className="mt-2.5 flex items-center gap-2.5">
