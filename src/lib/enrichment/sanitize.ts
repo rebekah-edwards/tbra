@@ -2,6 +2,7 @@
  * Shared sanitization utilities for book data quality.
  * Used by both the healing pass (existing data) and the import pipeline (new data).
  */
+import { isEnglishDescription } from "../text/description-language";
 
 // ── Blurb Stripping ──
 
@@ -369,6 +370,16 @@ export function sanitizeDescription(raw: string): string | null {
   if (/\bcreate a free account to discover what your friends think\b/i.test(text)) return null;
   if (/\bwhat (?:do|did) your friends think of this book\b/i.test(text)) return null;
 
+  // ── Non-English text (added 2026-11-25) ──
+  // Every write path (OL, ISBNdb, Google Books, NYT, Brave, admin queue, heal)
+  // runs through here, and until now none of them checked the LANGUAGE of the
+  // text — only the title and the `language` field were checked, upstream. A
+  // book whose canonical ISBN is a translated edition (Skyward → a Turkish
+  // ISBN) gets that edition's blurb from every ISBN-keyed source, and 1,296
+  // public books were carrying one. Rejecting here makes the pipeline fall
+  // through to the next source (title+author lookups usually find English).
+  if (!isEnglishDescription(text)) return null;
+
   return text;
 }
 
@@ -543,11 +554,15 @@ const NON_ENGLISH_PATTERNS = [
   /[\u0900-\u097F]/, // Hindi/Devanagari
 ];
 
-/** Simple heuristic: check if text looks non-English based on character patterns. */
+/**
+ * Does this text look non-English? The character-pattern check alone missed
+ * almost all Latin-alphabet languages (it needs 3+ consecutive accented letters,
+ * which Turkish/Spanish/German prose rarely has), so it now also asks the
+ * function-word detector in src/lib/text/description-language.ts.
+ */
 export function looksNonEnglish(text: string): boolean {
-  // Check first 300 chars
   const sample = text.slice(0, 300);
-  return NON_ENGLISH_PATTERNS.some((p) => p.test(sample));
+  return NON_ENGLISH_PATTERNS.some((p) => p.test(sample)) || !isEnglishDescription(text);
 }
 
 // ── Summary Validation ──

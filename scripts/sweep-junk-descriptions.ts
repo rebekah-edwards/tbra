@@ -58,6 +58,7 @@ config({ path: ".env.local" });
 import Database from "better-sqlite3";
 import path from "path";
 import { sanitizeDescription } from "../src/lib/enrichment/sanitize";
+import { detectDescriptionLanguage } from "../src/lib/text/description-language";
 
 const DB_PATH = path.join(process.cwd(), "data", "tbra.db");
 const db = new Database(DB_PATH);
@@ -164,6 +165,13 @@ function classify(row: Row, sharedKeys: Set<string>): Verdict | null {
   // Rule 1 — affirmative scrape evidence. The only class we clear.
   const marker = junkMarker(desc);
   if (marker) return { rule: marker, action: "HARD" };
+
+  // Rule 1b — not English (added 2026-11-25). Affirmative evidence: a foreign
+  // blurb on an English book is never the right text, and blank reads better
+  // than Turkish. Must run before Rule 2, which would only soft-flag it now
+  // that sanitizeDescription() rejects non-English text too.
+  const lang = detectDescriptionLanguage(desc);
+  if (!lang.english) return { rule: `non-english:${lang.language}`, action: "HARD" };
 
   // Rule 2 — the pipeline's own gate says it wouldn't write this today, but we
   // have no positive proof it's junk. Flag for replacement, keep the text.

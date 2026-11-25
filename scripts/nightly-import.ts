@@ -33,6 +33,8 @@ import {
   isJunkTitle,
 } from "../src/lib/openlibrary";
 import { isLikelyNonEnglish } from "../src/lib/enrichment/enrichable";
+import { sanitizeDescription } from "../src/lib/enrichment/sanitize";
+import { isEnglishDescription } from "../src/lib/text/description-language";
 import { findCanonicalForEdition } from "../src/lib/enrichment/canonical-edition";
 import { enrichBook } from "../src/lib/enrichment/enrich-book";
 import { NYT_LISTS, NYT_DELAY_MS, fetchNytList, upsertNytEntries } from "../src/lib/enrichment/nyt";
@@ -583,7 +585,14 @@ async function importBook(query: string, seed?: ImportSeed): Promise<number> {
     const genreNames = normalizeGenres(work.subjects);
     const isFiction = detectIsFiction(genreNames);
 
-    const description = seed?.description ?? work.description ?? null;
+    // A foreign-language work description means OL resolved us to a translated
+    // work — skip it like a foreign title (added 2026-11-25). Seeds are trusted.
+    if (!seed && work.description && !isEnglishDescription(work.description)) {
+      console.log(`  Skipped (non-English description): ${result.title}`);
+      return 0;
+    }
+    const rawDescription = seed?.description ?? work.description ?? null;
+    const description = rawDescription ? sanitizeDescription(rawDescription) : null;
     const isbn13 = result.isbn?.find((i) => i.length === 13) ?? seed?.isbn13 ?? null;
     const isbn10 = result.isbn?.find((i) => i.length === 10) ?? seed?.isbn10 ?? null;
 

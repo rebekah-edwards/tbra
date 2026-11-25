@@ -79,6 +79,8 @@ import {
 } from "../src/lib/google-books";
 import { normalizePubDate } from "../src/lib/publication-date";
 import { classifyBook } from "../src/lib/enrichment/enrichable";
+import { sanitizeDescription } from "../src/lib/enrichment/sanitize";
+import { isEnglishDescription } from "../src/lib/text/description-language";
 import { validateBookTitle } from "../src/lib/book-validation";
 import { isBoxSetTitle } from "../src/lib/queries/books";
 import { assignBookSlug, findBookBySlugCollision } from "../src/lib/utils/slugify";
@@ -503,6 +505,13 @@ async function main() {
         // there's no shelving user to attach them to, so we simply skip.
         continue;
       }
+      // A foreign-language blurb means Google handed us a translated edition
+      // (English titles are often kept on translations). Skip it — the English
+      // edition is a separate volume. Added 2026-11-25.
+      if (info.description && !isEnglishDescription(info.description)) {
+        skippedJunk++;
+        continue;
+      }
 
       const coverUrl = getGoogleBooksCoverUrl(vol);
 
@@ -562,7 +571,7 @@ async function main() {
           .insert(books)
           .values({
             title: finalTitle,
-            description: info.description ?? null,
+            description: info.description ? sanitizeDescription(info.description) : null,
             publicationDate: storedDate, // recovered exact date, else month precision, else null
             // Leave year NULL so enrichment fills the ORIGINAL publication year
             // from OL/ISBNdb. The reprint guard below compares that against the

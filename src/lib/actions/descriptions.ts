@@ -5,6 +5,7 @@ import { books } from "@/db/schema";
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser, isAdmin } from "@/lib/auth";
+import { isEnglishDescription } from "@/lib/text/description-language";
 import { sanitizeDescription } from "@/lib/enrichment/sanitize";
 
 /** Generous ceiling — the longest description in the catalog is ~4k chars. */
@@ -75,7 +76,10 @@ export async function saveManualDescription(
       error:
         input.length < MIN_DESCRIPTION_CHARS
           ? `Too short — a description needs at least ${MIN_DESCRIPTION_CHARS} characters.`
-          : "Not saved — the description filter rejected this text. It turns away " +
+          : !isEnglishDescription(input)
+            ? "Not saved — this description isn't in English. Paste the English-language " +
+              "publisher description instead."
+            : "Not saved — the description filter rejected this text. It turns away " +
             "review-page scrapes (Goodreads or Amazon page text, reader reviews), " +
             "stacks of review quotes, author bios, tables of contents and seller " +
             "listings, and anything under 60 characters once those are removed. " +

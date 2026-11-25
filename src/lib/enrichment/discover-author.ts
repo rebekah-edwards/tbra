@@ -11,6 +11,8 @@ import {
   normalizeGenres, findEnglishCover, isJunkTitle, fetchEarliestPublishYear,
 } from "@/lib/openlibrary";
 import { isEnglishTitle } from "@/lib/queries/books";
+import { sanitizeDescription } from "./sanitize";
+import { isEnglishDescription } from "@/lib/text/description-language";
 import { findDuplicateBook } from "./dedup";
 
 // Trimmed 30 → 10 (2026-07-25): enrichment-time author discovery was the
@@ -191,7 +193,10 @@ export async function discoverAuthorBooks(
           const coverUrl = vol.imageLinks?.thumbnail?.replace("http://", "https://") ?? null;
           const year = vol.publishedDate ? parseInt(vol.publishedDate.slice(0, 4)) : null;
           const pages = vol.pageCount || null;
-          const description = typeof vol.description === 'string' ? vol.description.slice(0, 500) : null;
+          const rawDesc = typeof vol.description === 'string' ? vol.description : null;
+          // Translated edition (English title kept, foreign blurb) — skip it.
+          if (rawDesc && !isEnglishDescription(rawDesc)) continue;
+          const description = rawDesc ? sanitizeDescription(rawDesc.slice(0, 500)) : null;
 
           const bookId = crypto.randomUUID();
           await db.insert(books).values({
@@ -324,14 +329,17 @@ export async function discoverAuthorBooks(
       }
 
       // Extract description (fetchOpenLibraryWork returns description as string | null)
-      const description: string | null = workDetails?.description ?? null;
+      const rawDescription: string | null = workDetails?.description ?? null;
 
       // Gate 7: If description exists but isn't English, skip this work
       // This catches foreign-language editions that have English-looking titles
-      if (description && !isEnglishTitle(description.substring(0, 100))) {
+      // (Was isEnglishTitle() on the first 100 chars — a title heuristic that
+      // let most Latin-alphabet prose through. 2026-11-25.)
+      if (rawDescription && !isEnglishDescription(rawDescription)) {
         console.log(`[author-discovery] Skipping "${title}" — non-English description detected`);
         continue;
       }
+      const description = rawDescription ? sanitizeDescription(rawDescription) : null;
 
       // Extract genres
       const genreNames = workDetails?.subjects

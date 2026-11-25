@@ -12,6 +12,7 @@ import {
 } from "@/lib/openlibrary";
 import { findOrCreateAuthor } from "@/lib/authors/find-or-create";
 import { enrichBook } from "@/lib/enrichment/enrich-book";
+import { sanitizeDescription } from "@/lib/enrichment/sanitize";
 
 const OL_DELAY_MS = 500;
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -105,7 +106,7 @@ export async function POST() {
             // Update existing book record
             await db.update(books).set({
               title: bookTitle,
-              description: work.description,
+              description: work.description ? sanitizeDescription(work.description) : null,
               publicationYear: match.first_publish_year ?? edYear,
               isbn13: match.isbn?.find((i: string) => i.length === 13) ?? null,
               isbn10: match.isbn?.find((i: string) => i.length === 10) ?? null,
