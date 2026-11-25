@@ -277,7 +277,8 @@ struct SettingsView: View {
     var body: some View {
         ScrollViewReader { tourProxy in
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            // iPhone Duo open: settings groups flow into two columns.
+            DuoColumns(spacing: 16) {
                 HStack(spacing: 12) {
                     Color.clear.frame(width: 40, height: 40)
                     VStack(alignment: .leading, spacing: 2) {
@@ -291,21 +292,23 @@ struct SettingsView: View {
                     }
                 }
                 .padding(.top, 14)
+                .duoColumn(.full)
 
                 if model.loaded {
-                    profileSection.padding(16).glassCard()
+                    profileSection.padding(16).glassCard().duoColumn(.left)
                     // 1pt scroll marker for the tour (see BookDetailView note:
                     // tall sections scroll unpredictably with proportional
                     // anchors; a tiny target lands exactly where asked).
-                    Color.clear.frame(height: 1).id("tour-prefs-top")
-                    readingPreferencesCard
-                    displaySection.padding(16).glassCard()
+                    Color.clear.frame(height: 1).id("tour-prefs-top").duoColumn(.left)
+                    readingPreferencesCard.duoColumn(.left)
+                    displaySection.padding(16).glassCard().duoColumn(.right)
                     locationSection
                         .padding(16).glassCard()
                         .id("tour-privacy")
                         .coachAnchor("tour-privacy")
-                    notificationsSection
-                    exportSection
+                        .duoColumn(.right)
+                    notificationsSection.duoColumn(.right)
+                    exportSection.duoColumn(.right)
                     if !model.hiddenBooks.isEmpty { hiddenBooksSection.padding(16).glassCard() }
                     BlockedReadersSection(openSection: $openSection)
                     passwordSection.padding(16).glassCard()
@@ -316,6 +319,7 @@ struct SettingsView: View {
                     ProgressView().tint(Theme.accent)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 80)
+                        .duoColumn(.full)
                 }
             }
             .padding(.horizontal, 20)

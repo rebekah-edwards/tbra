@@ -98,6 +98,8 @@ struct DiscoverView: View {
     @Binding var path: NavigationPath
     @Environment(AuthStore.self) private var auth
     @State private var model = DiscoverModel()
+    @Environment(\.shellBarInsets) private var bars
+    @Environment(\.shellRailWidth) private var rail
 
     private let moodColumns = [
         GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12),
@@ -172,7 +174,9 @@ struct DiscoverView: View {
     private var discoverBody: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                // iPhone Duo open: moods on the left, the filters + Find
+                // on the right (level with the logo), results full width.
+                DuoColumns(spacing: 20, rightLift: duoRightColumnLift(barTop: bars.top, rail: rail)) {
                     HStack(spacing: 10) {
                         Text("Find Your Next Read")
                             .font(Theme.heading(26, .bold))
@@ -180,34 +184,39 @@ struct DiscoverView: View {
                         InfoBubble(text: "Select one or more moods to describe what you're looking for. We'll match books based on genre overlap, content tone, and your reading preferences. Length filters nudge results toward your preferred page count.")
                     }
                     .padding(.top, 20)
+                    .duoColumn(.left)
 
                     Text("Select moods, set your filters, and we'll find books to match.")
                         .font(Theme.body(17))
                         .foregroundStyle(Theme.muted)
+                        .duoColumn(.left)
 
-                    sectionLabel("What are you in the mood for?")
+                    sectionLabel("What are you in the mood for?").duoColumn(.left)
                     LazyVGrid(columns: moodColumns, spacing: 12) {
                         ForEach(ALL_MOODS) { mood in
                             moodCard(mood)
                         }
                     }
+                    .duoColumn(.left)
 
-                    sectionLabel("Fiction or non-fiction?")
+                    sectionLabel("Fiction or non-fiction?").duoColumn(.right)
                     HStack(spacing: 10) {
                         choicePill("Fiction", selected: model.fictionFilter == "fiction") { toggleChoice(\.fictionFilter, "fiction") }
                         choicePill("Non-fiction", selected: model.fictionFilter == "nonfiction") { toggleChoice(\.fictionFilter, "nonfiction") }
                         choicePill("Both", selected: model.fictionFilter == "both") { toggleChoice(\.fictionFilter, "both") }
                     }
                     .frame(maxWidth: .infinity)
+                    .duoColumn(.right)
 
-                    sectionLabel("How long?")
+                    sectionLabel("How long?").duoColumn(.right)
                     HStack(spacing: 10) {
                         lengthCard("Quick read", "Under 250 pages", key: "short")
                         lengthCard("Standard", "250–400 pages", key: "medium")
                         lengthCard("Epic", "400+ pages", key: "long")
                     }
+                    .duoColumn(.right)
 
-                    sectionLabel("Audience")
+                    sectionLabel("Audience").duoColumn(.right)
                     // MULTI-select + CENTERED (user request 2026-07-15).
                     // "Any" clears the others; picking a real one clears "Any".
                     VStack(spacing: 10) {
@@ -222,19 +231,22 @@ struct DiscoverView: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
+                    .duoColumn(.right)
 
-                    sectionLabel("Search in")
+                    sectionLabel("Search in").duoColumn(.right)
                     HStack(spacing: 10) {
                         searchInPill("All Books", key: nil)
                         searchInPill("My TBR", key: "tbr")
                         searchInPill("Books I Own", key: "owned")
                     }
+                    .duoColumn(.right)
 
                     VStack(spacing: 10) {
                         togglePill("Series starters only", icon: "book", isOn: Bindable(model).seriesStartersOnly)
                         togglePill("Ignore my preferences", icon: "nosign", isOn: Bindable(model).ignorePreferences)
                     }
                     .frame(maxWidth: .infinity)
+                    .duoColumn(.right)
 
                     Button {
                         Task {
@@ -252,6 +264,7 @@ struct DiscoverView: View {
                     }
                     .buttonStyle(AccentButtonStyle())
                     .disabled(model.quotaExhausted)
+                    .duoColumn(.right)
 
                     // Free-tier meter (web parity, 2026-07-15): 3/month.
                     if model.quotaExhausted {
@@ -277,11 +290,13 @@ struct DiscoverView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .overlay(RoundedRectangle(cornerRadius: 14)
                             .stroke(Theme.neonPurple.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [5])))
+                        .duoColumn(.right)
                     } else if let remaining = model.remaining {
                         Text("\(remaining) of 3 free searches left this month")
                             .font(Theme.body(12))
                             .foregroundStyle(Theme.muted)
                             .frame(maxWidth: .infinity)
+                            .duoColumn(.right)
                     }
 
                     if model.searched {
@@ -334,6 +349,7 @@ struct DiscoverView: View {
                                 }
                             }
                         }
+                        .duoColumn(.full)
                     }
                 }
                 .padding(.horizontal, 20)

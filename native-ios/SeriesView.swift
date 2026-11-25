@@ -403,6 +403,8 @@ final class SeriesModel {
 }
 
 struct SeriesView: View {
+    @Environment(\.shellBarInsets) private var bars
+    @Environment(\.shellRailWidth) private var rail
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthStore.self) private var auth
     @State private var model: SeriesModel
@@ -457,7 +459,9 @@ struct SeriesView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            // iPhone Duo open: hero (+ franchise grid) on the left, the book
+            // list on the right, level with the logo.
+            DuoColumns(spacing: 16, rightLift: duoRightColumnLift(barTop: bars.top, rail: rail)) {
                 // Design refresh (2026-11-25): cover-art hero (web
                 // components/ui/cover-art-hero.tsx twin).
                 CoverArtHero(
@@ -467,7 +471,10 @@ struct SeriesView: View {
                     covers: heroCovers,
                     stats: heroStats
                 ) { EmptyView() }
-                .padding(.top, 52)
+                // 52 clears the top-left back chevron; on the Duo the back
+                // button lives in the side column.
+                .padding(.top, rail > 0 ? 14 : 52)
+                .duoColumn(.left)
 
                 // A series can have sub-series AND its own books (Animorphs →
                 // Megamorphs). Show both — attaching a child series must never
@@ -480,12 +487,14 @@ struct SeriesView: View {
                         Text("Series in this franchise")
                             .font(Theme.body(17, .semibold))
                             .foregroundStyle(Theme.foreground)
+                            .duoColumn(.left)
                     }
                     Text("\(model.childSeries.count) series · \(model.childSeries.reduce(0) { $0 + $1.bookCount }) books")
                         .font(Theme.body(hasOwnBooks ? 13 : 15))
                         .foregroundStyle(Theme.muted)
                         .padding(.top, hasOwnBooks ? -10 : 0)
-                    franchiseGrid
+                        .duoColumn(.left)
+                    franchiseGrid.duoColumn(.left)
                 }
 
                 if !hasSubSeries || hasOwnBooks {
@@ -494,14 +503,16 @@ struct SeriesView: View {
                             .font(Theme.body(17, .semibold))
                             .foregroundStyle(Theme.foreground)
                             .padding(.top, 10)
+                            .duoColumn(.right)
                     }
 
-                    segmented
+                    segmented.duoColumn(.right)
 
                     if tab == .core {
                         Text("Main series novels")
                             .font(Theme.body(15))
                             .foregroundStyle(Theme.muted)
+                            .duoColumn(.right)
                     }
 
                     VStack(spacing: 14) {
@@ -510,10 +521,11 @@ struct SeriesView: View {
                                 .zIndex(expandedControlsId == book.id ? 30 : 0)
                         }
                     }
+                    .duoColumn(.right)
                 }
 
                 if isAdmin {
-                    FranchiseAdminControls(model: model)
+                    FranchiseAdminControls(model: model).duoColumn(.left)
                 }
             }
             .padding(.horizontal, 20)

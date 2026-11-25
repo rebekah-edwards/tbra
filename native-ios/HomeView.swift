@@ -87,6 +87,8 @@ struct HomeView: View {
     @State private var gridWidth: CGFloat = 0
     /// Width of the Home scroll view; drives the wide two-column layout.
     @State private var contentWidth: CGFloat = 0
+    @Environment(\.shellBarInsets) private var bars
+    @Environment(\.shellRailWidth) private var rail
     /// The order when the current drag began — only a changed order is saved.
     @State private var orderAtLift: [String] = []
 
@@ -312,6 +314,7 @@ struct HomeView: View {
                             upNextSection
                         }
                         .frame(maxWidth: .infinity, alignment: .topLeading)
+                        .padding(.top, -duoRightColumnLift(barTop: bars.top, rail: rail))
                     }
                     .zIndex(openStateDropdownBookId != nil ? 50 : 0)
                     deferredSections

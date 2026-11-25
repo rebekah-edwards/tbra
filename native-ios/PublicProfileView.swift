@@ -88,6 +88,7 @@ final class PublicProfileModel {
 
 struct PublicProfileView: View {
     @Environment(\.shellRailWidth) private var rail
+    @Environment(\.shellBarInsets) private var bars
     @Environment(\.dismiss) private var dismiss
     @State private var model: PublicProfileModel
     @State private var reviewSearch = ""
@@ -106,18 +107,20 @@ struct PublicProfileView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            // iPhone Duo open: the reader on the left, their books on the
+            // right (starting level with the logo).
+            DuoColumns(spacing: 22, rightLift: duoRightColumnLift(barTop: bars.top, rail: rail)) {
                 if model.blockedByViewer {
-                    blockedGate
+                    blockedGate.duoColumn(.full)
                 } else if model.isPrivate {
-                    privateGate
+                    privateGate.duoColumn(.full)
                 } else if let user = model.user, DesignPreview.on {
                     // Refreshed (2026-11): one hero card on the wordmark
                     // hairline holds who they are, the follow action and the
                     // three counts; sections below are neutral glass.
-                    heroV2(user)
-                    if !model.favorites.isEmpty { topShelf }
-                    if !model.publicShelves.isEmpty { shelvesSection }
+                    heroV2(user).duoColumn(.left)
+                    if !model.favorites.isEmpty { topShelf.duoColumn(.right) }
+                    if !model.publicShelves.isEmpty { shelvesSection.duoColumn(.right) }
                     if !model.sharedNotes.isEmpty { notesSection }
                     if !model.reviews.isEmpty { reviewsSection }
                 } else if let user = model.user {
@@ -134,10 +137,12 @@ struct PublicProfileView: View {
                         .foregroundStyle(Theme.muted)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 60)
+                        .duoColumn(.full)
                 } else {
                     ProgressView().tint(Theme.accent)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 80)
+                        .duoColumn(.full)
                 }
             }
             .padding(.horizontal, 20)

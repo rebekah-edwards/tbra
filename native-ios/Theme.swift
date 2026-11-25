@@ -783,3 +783,107 @@ enum AdaptiveGrid {
         [GridItem(.adaptive(minimum: 150, maximum: 260), spacing: spacing)]
     }
 }
+
+// ── iPhone Duo two-column flow (2026-11-25) ────────────────────────────
+/// Where a section goes in `DuoColumns` on a wide window. `.auto` = the
+/// shorter column (order preserved within each column); `.full` spans both.
+enum DuoColumn { case auto, left, right, full }
+
+private struct DuoColumnKey: LayoutValueKey {
+    static let defaultValue: DuoColumn = .auto
+}
+
+extension View {
+    func duoColumn(_ column: DuoColumn) -> some View {
+        layoutValue(key: DuoColumnKey.self, value: column)
+    }
+}
+
+/// A drop-in replacement for a page's `VStack(alignment: .leading, spacing:)`.
+/// Narrower than `minWide` (every iPhone, the Duo's closed screen, a
+/// half-screen split) it IS that VStack. On the Duo's open screen it flows
+/// the sections into two columns meeting near the fold. `rightLift` starts
+/// the right column higher (level with the logo) until the first `.full`
+/// section — see duoRightColumnLift().
+struct DuoColumns: Layout {
+    var spacing: CGFloat = 20
+    var gutter: CGFloat = 24
+    var minWide: CGFloat = 700
+    var rightLift: CGFloat = 0
+
+    private func plan(width: CGFloat, subviews: Subviews) -> (rects: [CGRect], height: CGFloat) {
+        var rects: [CGRect] = []
+        if width < minWide {
+            var y: CGFloat = 0
+            var placedAny = false
+            for s in subviews {
+                let h = s.sizeThatFits(ProposedViewSize(width: width, height: nil)).height
+                if h <= 0 { rects.append(CGRect(x: 0, y: y, width: width, height: 0)); continue }
+                if placedAny { y += spacing }
+                rects.append(CGRect(x: 0, y: y, width: width, height: h))
+                y += h
+                placedAny = true
+            }
+            return (rects, y)
+        }
+        let colW = (width - gutter) / 2
+        var yL: CGFloat = 0
+        var yR: CGFloat = -rightLift
+        var usedL = false, usedR = false
+        for s in subviews {
+            let kind = s[DuoColumnKey.self]
+            if kind == .full {
+                let h = s.sizeThatFits(ProposedViewSize(width: width, height: nil)).height
+                var top = max(yL, yR)
+                if (usedL || usedR) && h > 0 { top += spacing }
+                rects.append(CGRect(x: 0, y: top, width: width, height: h))
+                if h > 0 { yL = top + h; yR = top + h; usedL = true; usedR = true }
+                continue
+            }
+            let h = s.sizeThatFits(ProposedViewSize(width: colW, height: nil)).height
+            let left: Bool
+            switch kind {
+            case .left: left = true
+            case .right: left = false
+            default: left = yL <= yR
+            }
+            if h <= 0 {
+                rects.append(CGRect(x: left ? 0 : colW + gutter, y: left ? yL : yR, width: colW, height: 0))
+                continue
+            }
+            if left {
+                if usedL { yL += spacing }
+                rects.append(CGRect(x: 0, y: yL, width: colW, height: h))
+                yL += h; usedL = true
+            } else {
+                if usedR { yR += spacing }
+                rects.append(CGRect(x: colW + gutter, y: yR, width: colW, height: h))
+                yR += h; usedR = true
+            }
+        }
+        return (rects, max(yL, yR, 0))
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? 390
+        return CGSize(width: width, height: plan(width: width, subviews: subviews).height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let (rects, _) = plan(width: bounds.width, subviews: subviews)
+        for (s, r) in zip(subviews, rects) {
+            s.place(at: CGPoint(x: bounds.minX + r.minX, y: bounds.minY + r.minY),
+                    proposal: ProposedViewSize(width: r.width, height: r.height == 0 ? nil : r.height))
+        }
+    }
+}
+
+extension View {
+    /// List-style screens on the iPhone Duo's open screen: a comfortable
+    /// centred column instead of rows stretched across ~850pt. No effect on
+    /// phones (all narrower than the cap). Used where two columns would
+    /// break drag-to-reorder or split one continuous list.
+    func duoReadable(maxWidth: CGFloat = 720) -> some View {
+        frame(maxWidth: maxWidth).frame(maxWidth: .infinity)
+    }
+}

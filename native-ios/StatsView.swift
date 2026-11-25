@@ -26,6 +26,8 @@ final class StatsModel {
 }
 
 struct StatsView: View {
+    @Environment(\.shellBarInsets) private var bars
+    @Environment(\.shellRailWidth) private var rail
     @Environment(ChromeState.self) private var chrome: ChromeState?
     @Environment(AuthStore.self) private var auth
     @State private var model = StatsModel()
@@ -60,19 +62,23 @@ struct StatsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            // iPhone Duo open: headline numbers + goal on the left, the
+            // charts on the right (starting level with the logo).
+            DuoColumns(spacing: 16, rightLift: duoRightColumnLift(barTop: bars.top, rail: rail)) {
                 Text("Reading Stats")
                     .font(Theme.heading(26, .bold))
                     .foregroundStyle(Theme.foreground)
                     .padding(.top, 20)
+                    .duoColumn(.left)
 
                 yearPills
+                    .duoColumn(.left)
 
                 if let data = model.data {
-                    heroCards(data)
-                    miniStats(data)
-                    if !hideGoal { goalCard(data) }
-                    if DesignPreview.on, isCurrentYear, !hideStreak { streakCard(data.streak) }
+                    heroCards(data).duoColumn(.left)
+                    miniStats(data).duoColumn(.left)
+                    if !hideGoal { goalCard(data).duoColumn(.left) }
+                    if DesignPreview.on, isCurrentYear, !hideStreak { streakCard(data.streak).duoColumn(.left) }
                     if model.year != "all" {
                         CustomGoalsCard(year: model.year, editable: model.year == String(currentYear),
                                         refreshKey: goalsRefresh,
@@ -92,6 +98,7 @@ struct StatsView: View {
                     ProgressView().tint(Theme.accent)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 80)
+                        .duoColumn(.full)
                 }
             }
             .padding(.horizontal, 20)

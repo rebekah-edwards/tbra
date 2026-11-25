@@ -245,9 +245,12 @@ struct LibraryView: View {
                             .font(Theme.heading(26, .bold))
                             .foregroundStyle(Theme.foreground)
                             .fixedSize()
+                        // Equal spacers: tabs centred between the title and
+                        // Shelves (Rebekah, 2026-11-25).
+                        Spacer(minLength: 12)
                         groupSegmentsV2
                             .frame(maxWidth: 440)
-                        Spacer(minLength: 0)
+                        Spacer(minLength: 12)
                         shelvesLink
                     }
                     HStack(alignment: .center, spacing: 12) {

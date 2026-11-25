@@ -37,6 +37,7 @@ struct ProfileView: View {
     @Environment(AuthStore.self) private var auth
     @Environment(ChromeState.self) private var chrome: ChromeState?
     @Environment(\.shellRailWidth) private var rail
+    @Environment(\.shellBarInsets) private var bars
     @State private var model = ProfileModel()
     @State private var editProfileOpen = false
     @State private var copiedReferral = false
@@ -46,26 +47,29 @@ struct ProfileView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            // iPhone Duo open: who you are on the left, what you've read on
+            // the right (starting level with the logo).
+            DuoColumns(spacing: 24, rightLift: duoRightColumnLift(barTop: bars.top, rail: rail)) {
                 if let data = model.data {
                     if DesignPreview.on {
                         // Same hero as the public profile (2026-11-19).
-                        heroV2(data)
+                        heroV2(data).duoColumn(.left)
                     } else {
-                        header(data)
-                        statPills(data)
+                        header(data).duoColumn(.left)
+                        statPills(data).duoColumn(.left)
                     }
-                    referralCard(data)
-                    topShelf(data)
-                    shelvesSection(data)
+                    referralCard(data).duoColumn(.left)
+                    topShelf(data).duoColumn(.right)
+                    shelvesSection(data).duoColumn(.right)
                     reviewsSection(data)
                     journalSection(data)
-                    importCard
-                    signOutButton
+                    importCard.duoColumn(.left)
+                    signOutButton.duoColumn(.full)
                 } else if model.loading {
                     ProgressView().tint(Theme.accent)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 100)
+                        .duoColumn(.full)
                 } else {
                     // Load failed. Without this branch the view rendered an
                     // EMPTY scroll view forever: the alert fires once, the
@@ -94,6 +98,7 @@ struct ProfileView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.top, 80)
+                    .duoColumn(.full)
                 }
             }
             .padding(.horizontal, 20)

@@ -134,6 +134,8 @@ final class BuddyReadsModel {
 }
 
 struct BuddyReadsView: View {
+    @Environment(\.shellBarInsets) private var bars
+    @Environment(\.shellRailWidth) private var rail
     @Environment(\.dismiss) private var dismiss
     @State private var model = BuddyReadsModel()
     @State private var joinCode = ""
@@ -141,22 +143,26 @@ struct BuddyReadsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            // iPhone Duo open: header on the left, the buddy-read cards flow
+            // into both columns.
+            DuoColumns(spacing: 16) {
                 HStack(spacing: 12) {
-                    Color.clear.frame(width: 40, height: 40)
+                    if rail == 0 { Color.clear.frame(width: 40, height: 40) }
                     Text("Buddy Reads")
                         .font(Theme.heading(26, .bold))
                         .foregroundStyle(Theme.foreground)
                 }
                 .padding(.top, 14)
+                .duoColumn(.full)
 
                 Text("Read together — same book, shared discussion.")
                     .font(Theme.body(15))
                     .foregroundStyle(Theme.muted)
+                    .duoColumn(.full)
 
                 // Join by code
                 if DesignPreview.on {
-                    joinRowV2
+                    joinRowV2.duoColumn(.full)
                 } else {
                 HStack(spacing: 10) {
                     TextField("Invite code", text: $joinCode)
@@ -181,18 +187,19 @@ struct BuddyReadsView: View {
                 }
                 }
                 if let err = model.joinError {
-                    Text(err).font(Theme.body(13)).foregroundStyle(Theme.destructive)
+                    Text(err).font(Theme.body(13)).foregroundStyle(Theme.destructive).duoColumn(.full)
                 }
 
                 if DesignPreview.on {
                     if model.buddyReads.isEmpty && model.loaded {
-                        emptyV2
+                        emptyV2.duoColumn(.full)
                     } else {
                         if !model.buddyReads.isEmpty {
                             Text("YOUR BUDDY READS")
                                 .font(Theme.body(11, .bold)).tracking(0.8)
                                 .foregroundStyle(Theme.muted)
                                 .padding(.top, 4)
+                                .duoColumn(.full)
                         }
                         ForEach(model.buddyReads) { br in
                             NavigationLink(value: BuddyReadRoute(slug: br.slug)) {
@@ -438,6 +445,8 @@ final class BuddyReadDetailModel {
 }
 
 struct BuddyReadDetailView: View {
+    @Environment(\.shellBarInsets) private var bars
+    @Environment(\.shellRailWidth) private var rail
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthStore.self) private var auth
     @State private var model: BuddyReadDetailModel
@@ -454,12 +463,15 @@ struct BuddyReadDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            DuoColumns(spacing: 18, rightLift: duoRightColumnLift(barTop: bars.top, rail: rail)) {
                 if DesignPreview.on {
                     // The back chevron's row; the name lives in the hero card.
-                    Color.clear.frame(height: 40)
-                        .padding(.top, 14)
-                        .padding(.bottom, -8)
+                    // (None on the Duo: back lives in the side column.)
+                    if rail == 0 {
+                        Color.clear.frame(height: 40)
+                            .padding(.top, 14)
+                            .padding(.bottom, -8)
+                    }
                 } else {
                 HStack(spacing: 12) {
                     Color.clear.frame(width: 40, height: 40)
@@ -654,17 +666,20 @@ struct BuddyReadDetailView: View {
 
     @ViewBuilder
     private func detailV2(_ detail: BuddyReadDetailRow) -> some View {
-        heroV2(detail)
-        inviteTileV2(detail)
+        // iPhone Duo open (DuoColumns in body): the book, invite and readers
+        // on the left; the discussion on the right, level with the logo.
+        heroV2(detail).duoColumn(.left)
+        inviteTileV2(detail).duoColumn(.left)
 
-        SectionHeading("Readers")
+        SectionHeading("Readers").duoColumn(.left)
         FlowLayout(spacing: 8) {
             ForEach(detail.members, id: \.userId) { member in
                 memberChipV2(member)
             }
         }
+        .duoColumn(.left)
 
-        SectionHeading("Discussion")
+        SectionHeading("Discussion").duoColumn(.right)
         if model.messages.isEmpty {
             HStack(spacing: 8) {
                 Image(systemName: "bubble.left.and.bubble.right")
@@ -676,20 +691,22 @@ struct BuddyReadDetailView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 18)
             .profileRowChrome()
+            .duoColumn(.right)
         }
         ForEach(model.messages) { msg in
-            messageV2(msg)
+            messageV2(msg).duoColumn(.right)
         }
 
         if model.membership?.status == "active" {
             if detail.status == "active" {
-                composerV2
+                composerV2.duoColumn(.right)
             } else {
                 Text("This buddy read has ended, so the discussion is closed.")
                     .font(Theme.body(13))
                     .foregroundStyle(Theme.muted)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
+                    .duoColumn(.right)
             }
 
             if model.membership?.role != "host" {
@@ -701,6 +718,7 @@ struct BuddyReadDetailView: View {
                 .buttonStyle(.plain)
                 .frame(maxWidth: .infinity)
                 .padding(.top, 6)
+                .duoColumn(.left)
             }
         }
 
@@ -738,6 +756,7 @@ struct BuddyReadDetailView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 6)
+            .duoColumn(.left)
         }
     }
 

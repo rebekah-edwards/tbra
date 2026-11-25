@@ -139,6 +139,7 @@ struct ReviewsListView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
+            .duoReadable()
         }
         .background(AmbientBackground())
         .floatingBack()

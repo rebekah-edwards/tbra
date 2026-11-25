@@ -101,6 +101,8 @@ final class AuthorModel {
 }
 
 struct AuthorView: View {
+    @Environment(\.shellBarInsets) private var bars
+    @Environment(\.shellRailWidth) private var rail
     @Environment(\.dismiss) private var dismiss
     @State private var model: AuthorModel
     @State private var claimOpen = false
@@ -144,7 +146,9 @@ struct AuthorView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            // iPhone Duo open: hero on the left, the book rows flow into
+            // both columns (the right one level with the logo).
+            DuoColumns(spacing: 16, rightLift: duoRightColumnLift(barTop: bars.top, rail: rail)) {
                 // Design refresh (2026-11-25): cover-art hero like the
                 // profile / buddy-read pages, Follow as the one lime pill.
                 CoverArtHero(
@@ -200,7 +204,10 @@ struct AuthorView: View {
                             .padding(.top, 2)
                     }
                 }
-                .padding(.top, 52)
+                // 52 clears the top-left back chevron; on the Duo the back
+                // button lives in the side column.
+                .padding(.top, rail > 0 ? 14 : 52)
+                .duoColumn(.left)
 
                 ForEach(Array(grouped.enumerated()), id: \.offset) { _, group in
                     VStack(alignment: .leading, spacing: 12) {

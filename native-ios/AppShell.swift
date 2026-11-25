@@ -773,19 +773,21 @@ struct BottomNav: View {
     var avatarUrl: String?
     var onSelect: @MainActor (AppTab) -> Void = { _ in }
     var onReselect: @MainActor (AppTab) -> Void = { _ in }
-    /// Vertical rail for the iPhone Duo's side column: the bar turned on its
-    /// side (Profile at the top, Home in the middle, Discover at the bottom).
+    /// Vertical rail for the iPhone Duo's side column (Profile at the top,
+    /// Home anchoring the bottom).
     var vertical = false
 
     var body: some View {
         if vertical {
+            // Top → bottom: Profile, Discover, Library, Stats, Home — Home
+            // anchors the bottom, nearest the thumb (Rebekah, 2026-11-25).
             VStack(spacing: 4) {
                 navItem(.profile, label: "Profile") { profileIcon }
+                navItem(.discover, label: "Discover") { GemIcon().stroked() }
+                navItem(.library, label: "Library") { LibraryIcon().stroked(lineWidth: 1.8) }
                 navItem(.stats, label: "Stats") { StatsIcon().stroked() }
                 homeButton
-                    .padding(.vertical, 4)
-                navItem(.library, label: "Library") { LibraryIcon().stroked(lineWidth: 1.8) }
-                navItem(.discover, label: "Discover") { GemIcon().stroked() }
+                    .padding(.top, 4)
             }
             .padding(.horizontal, 4)
             .padding(.vertical, 10)
@@ -901,9 +903,10 @@ struct BottomNav: View {
 // Do NOT reintroduce a pressed-scale ButtonStyle for card grids/rails.
 
 // ── Placeholder for tabs whose /api/v1 endpoints don't exist yet ──
-/// The iPhone Duo's right-hand column, top to bottom: back, search / bell /
-/// menu, then the tab rail — navigation where the right thumb rests
-/// (Rebekah, 2026-11-25). Bottom-aligned so it clears the clock + camera.
+/// The iPhone Duo's right-hand column, top to bottom: search / bell / menu,
+/// the tab rail (Home anchoring its bottom), then back at the very bottom —
+/// navigation where the right thumb rests (Rebekah, 2026-11-25).
+/// Bottom-aligned so it clears the clock + camera.
 ///
 /// THREE copies render this same stack and each shows only its own part, so
 /// their geometry is identical by construction (the hit-layer rule):
@@ -928,10 +931,10 @@ struct SideColumnStack: View {
     var onReselect: @MainActor (AppTab) -> Void = { _ in }
 
     var body: some View {
-        VStack(spacing: 12) {
-            backSlot
+        VStack(spacing: 22) {
             utilityPill
             tabRail
+            backSlot
         }
         .frame(width: width)
         .padding(.bottom, 16)
@@ -1030,6 +1033,14 @@ struct SideRailSlot<Rail: View>: View {
 /// and the pills sat flush against the edge; on a regular iPhone they sit
 /// below the status bar. Shared by both chrome modes so the twins align.
 func duoTopGap(_ railWidth: CGFloat) -> CGFloat { railWidth > 0 ? 16 : 0 }
+
+/// Duo wide layouts: the top-right pill moved into the side column, so the
+/// RIGHT-hand column of a two-column page can start level with the logo
+/// pill instead of below the (now empty) bar strip (Rebekah, 2026-11-25).
+/// Apply as negative top padding on that column only.
+func duoRightColumnLift(barTop: CGFloat, rail: CGFloat) -> CGFloat {
+    rail > 0 ? max(0, barTop - (2 + duoTopGap(rail))) : 0
+}
 
 /// A side column wide enough for the rail: the iPhone Duo keeps its status
 /// bar and camera in a column along the right edge (closed AND open). Regular

@@ -111,6 +111,7 @@ struct BookDetailView: View {
     /// .sheet raised while a .fullScreenCover is up, and never retries it.
     @State private var suggestionsPending = false
     @Environment(\.shellRailWidth) private var railWidth
+    @Environment(\.shellBarInsets) private var bars
 
     init(idOrSlug: String, justCompleted: Bool = false) {
         _model = State(initialValue: BookDetailModel(idOrSlug: idOrSlug))
@@ -431,6 +432,9 @@ struct BookDetailView: View {
                     friendsPiece(data)
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
+                // Starts level with the logo (the page's 14pt top air
+                // included) — nothing sits in the top-right strip now.
+                .padding(.top, -(duoRightColumnLift(barTop: bars.top, rail: railWidth) + 14))
             }
             // Narrower: inset from both edges so it spans the two pages
             // without running edge to edge. Covers stay full size

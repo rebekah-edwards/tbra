@@ -144,6 +144,7 @@ struct ShelfDetailView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
+            .duoReadable()
         }
         .background(AmbientBackground())
         .tracksScrollAtTop()
@@ -622,6 +623,7 @@ struct ShelfEditorView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
+            .duoReadable()
         }
         .background(AmbientBackground())
         .tracksScrollAtTop()

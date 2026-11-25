@@ -178,6 +178,7 @@ struct LibraryShelvesView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)
+                .duoReadable()
             }
             .refreshable { await model.load() }
             .task { await model.load() }
@@ -938,6 +939,7 @@ struct TopShelfView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
+            .duoReadable()
         }
         .background(AmbientBackground())
         .tracksScrollAtTop()
