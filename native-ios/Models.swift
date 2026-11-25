@@ -380,6 +380,8 @@ struct ProfileData: Codable, Hashable {
     let shelves: [ShelfSummary]
     let referralCode: String
     let referralCount: Int
+    /// Author pages this account is the verified author of (2026-11-25).
+    let verifiedAuthors: [VerifiedAuthorRef]?
 }
 
 // ─── Stats (/api/v1/stats) ───
@@ -614,6 +616,8 @@ struct BookDetailData: Codable, Hashable {
     let hasReview: Bool?
     /// Readers' reviews for the "What Readers Think" section (web parity).
     let reviewSummary: BookReviewSummary?
+    /// The viewer is this book's verified author → author tools (2026-11-25).
+    let isVerifiedAuthor: Bool?
     let userShelves: [BookPageShelf]
     let bookShelfIds: [String]
     let tbrNote: String?

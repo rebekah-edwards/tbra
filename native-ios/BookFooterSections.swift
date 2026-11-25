@@ -348,3 +348,134 @@ struct WhatReadersThinkSection: View {
         .clipShape(Circle())
     }
 }
+
+// ── Author tools — web components/author/author-tools-card.tsx ──
+// Only for the book's verified author: replace the description (applies at
+// once; staff are notified and can revert). Ratings are confirmed/corrected
+// with the pencil in What's Inside.
+struct AuthorToolsCard: View {
+    let bookId: String
+    let description: String?
+    let onSaved: () -> Void
+    @State private var editing = false
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "pencil.line")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Theme.accentText)
+                .frame(width: 32, height: 32)
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay(Circle().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
+            VStack(alignment: .leading, spacing: 4) {
+                Text("AUTHOR TOOLS")
+                    .font(Theme.body(11, .semibold)).tracking(1.1)
+                    .foregroundStyle(Theme.muted)
+                Text("You're this book's verified author.")
+                    .font(Theme.body(14, .medium))
+                    .foregroundStyle(Theme.foreground)
+                Text("Update the description, and tap the pencil on any rating in What's Inside to confirm it or correct it.")
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button { editing = true } label: {
+                    Text("Edit description")
+                        .font(Theme.body(13, .semibold))
+                        .foregroundStyle(Theme.foreground)
+                        .padding(.horizontal, 14).padding(.vertical, 7)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .overlay(Capsule().stroke(Theme.foreground.opacity(0.14), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 6)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22)
+                .stroke(LinearGradient(colors: [Theme.accent.opacity(0.55), Color(hex: "38bdf8").opacity(0.35), Color(hex: "c084fc").opacity(0.45)],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+        )
+        .sheet(isPresented: $editing) {
+            AuthorDescriptionSheet(bookId: bookId, initial: description ?? "", onSaved: onSaved)
+                .presentationDetents([.large])
+                .presentationBackground(Theme.bg)
+        }
+    }
+}
+
+private struct AuthorDescriptionSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let bookId: String
+    let onSaved: () -> Void
+    @State private var text: String
+    @State private var saving = false
+    @State private var error: String?
+
+    init(bookId: String, initial: String, onSaved: @escaping () -> Void) {
+        self.bookId = bookId
+        self.onSaved = onSaved
+        _text = State(initialValue: initial)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Book description")
+                    .font(Theme.heading(18, .bold))
+                    .foregroundStyle(Theme.foreground)
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted)
+                }
+            }
+            .padding(.top, 18)
+            TextEditor(text: $text)
+                .scrollContentBackground(.hidden)
+                .font(Theme.body(14))
+                .foregroundStyle(Theme.foreground)
+                .padding(10)
+                .background(Theme.surfaceAlt.opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+                .onChange(of: text) { if text.count > 6000 { text = String(text.prefix(6000)) } }
+            Text("Blank lines start a new paragraph; **bold** and *italic* work. No spoilers past the setup, please. Our team is notified of every change.")
+                .font(Theme.body(12))
+                .foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+            if let error {
+                Text(error).font(Theme.body(12)).foregroundStyle(Theme.destructive)
+            }
+            Button { save() } label: {
+                Text(saving ? "Saving…" : "Save description")
+                    .font(Theme.body(15, .semibold))
+                    .foregroundStyle(Theme.onAccent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background(Theme.accent, in: Capsule())
+            }
+            .disabled(saving)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+        .background(Theme.bg)
+    }
+
+    private func save() {
+        saving = true; error = nil
+        Task {
+            defer { saving = false }
+            struct Ok: Codable { let ok: Bool }
+            do {
+                let _: Ok = try await APIClient.shared.request(
+                    "/api/v1/books/\(bookId)/author-edit", method: "POST", body: ["description": text])
+                onSaved()
+                dismiss()
+            } catch {
+                self.error = (error as? APIError)?.errorDescription ?? "Couldn't save the description."
+            }
+        }
+    }
+}

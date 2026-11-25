@@ -34,6 +34,12 @@ final class AuthorModel {
     var books: [AuthorBookRow] = []
     var error: String?
     var loading = false
+    /// The verified author's account, if this page has one (badge).
+    var verifiedAccount: VerifiedAccount?
+    /// The viewer's own claim on this page: pending / approved / rejected / revoked.
+    var viewerClaimStatus: String?
+
+    struct VerifiedAccount: Codable, Hashable { let username: String?; let displayName: String? }
 
     init(idOrSlug: String) { self.idOrSlug = idOrSlug }
 
@@ -44,6 +50,8 @@ final class AuthorModel {
         let isFollowing: Bool
         let followerCount: Int
         let books: [AuthorBookRow]
+        let verifiedAccount: VerifiedAccount?
+        let viewerClaimStatus: String?
     }
 
     func load() async {
@@ -56,8 +64,24 @@ final class AuthorModel {
             isFollowing = res.isFollowing
             followerCount = res.followerCount
             books = res.books
+            verifiedAccount = res.verifiedAccount
+            viewerClaimStatus = res.viewerClaimStatus
         } catch {
             self.error = (error as? APIError)?.errorDescription ?? "Couldn't load this author."
+        }
+    }
+
+    /// Ask to be this page's verified author (staff review it). Returns an error message or nil.
+    func submitClaim(links: String, email: String, message: String) async -> String? {
+        do {
+            struct Ok: Codable { let ok: Bool }
+            let _: Ok = try await APIClient.shared.request(
+                "/api/v1/authors/\(idOrSlug)", method: "POST",
+                body: ["claim": ["evidenceLinks": links, "contactEmail": email, "message": message]])
+            viewerClaimStatus = "pending"
+            return nil
+        } catch {
+            return (error as? APIError)?.errorDescription ?? "Couldn't send your claim."
         }
     }
 
@@ -79,6 +103,7 @@ final class AuthorModel {
 struct AuthorView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: AuthorModel
+    @State private var claimOpen = false
 
     init(idOrSlug: String) {
         _model = State(initialValue: AuthorModel(idOrSlug: idOrSlug))
@@ -128,8 +153,42 @@ struct AuthorView: View {
                     covers: heroCovers,
                     stats: heroStats
                 ) {
-                    FollowPill(isFollowing: model.isFollowing) {
-                        Task { await model.toggleFollow() }
+                    VStack(spacing: 10) {
+                        if let account = model.verifiedAccount {
+                            if let username = account.username {
+                                NavigationLink(value: UserRoute(username: username)) {
+                                    VerifiedAuthorBadge(label: "Verified author · @\(username)")
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                VerifiedAuthorBadge()
+                            }
+                        }
+                        FollowPill(isFollowing: model.isFollowing) {
+                            Task { await model.toggleFollow() }
+                        }
+                        if model.verifiedAccount == nil {
+                            if model.viewerClaimStatus == "pending" {
+                                HStack(spacing: 6) {
+                                    Circle().fill(Theme.neonBlue).frame(width: 6, height: 6)
+                                    Text("Claim waiting for review")
+                                        .font(Theme.body(12))
+                                        .foregroundStyle(Theme.muted)
+                                }
+                            } else if !model.name.isEmpty {
+                                Button { claimOpen = true } label: {
+                                    Label("Are you \(model.name)? Claim this page", systemImage: "person.crop.circle.badge.checkmark")
+                                        .font(Theme.body(12, .semibold))
+                                        .foregroundStyle(Theme.foreground)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.85)
+                                        .padding(.horizontal, 12).padding(.vertical, 7)
+                                        .background(.ultraThinMaterial, in: Capsule())
+                                        .overlay(Capsule().stroke(Theme.foreground.opacity(0.14), lineWidth: 1))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
                     }
                 } footer: {
                     if let bio = model.bio, !bio.isEmpty {
@@ -196,8 +255,90 @@ struct AuthorView: View {
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await model.load() }
         .task { await model.load() }
+        .sheet(isPresented: $claimOpen) {
+            AuthorClaimSheet(authorName: model.name) { links, email, message in
+                await model.submitClaim(links: links, email: email, message: message)
+            }
+            .presentationDetents([.large])
+            .presentationBackground(Theme.bg)
+        }
         .alert("Error", isPresented: .constant(model.error != nil)) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
+    }
+}
+
+
+// "Claim this author page" (web components/author/claim-author-button.tsx).
+// A person on the team reviews every claim in /admin/authors.
+private struct AuthorClaimSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let authorName: String
+    let submit: (String, String, String) async -> String?
+    @State private var links = ""
+    @State private var email = ""
+    @State private var message = ""
+    @State private var sending = false
+    @State private var error: String?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text("AUTHOR VERIFICATION")
+                        .font(Theme.body(11, .semibold)).tracking(1.1)
+                        .foregroundStyle(Theme.muted)
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.muted)
+                    }
+                }
+                .padding(.top, 18)
+                Text("Claim \(authorName)'s page")
+                    .font(Theme.heading(20, .bold))
+                    .foregroundStyle(Theme.foreground)
+                Text("Once someone on our team confirms it's you, your profile gets a Verified Author badge and you can update your books' descriptions and confirm their content ratings.")
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                field("Your website or social profiles", text: $links, axis: .vertical, prompt: "https://… we check these link back to you")
+                field("Contact email (ideally the one on your website)", text: $email, axis: .horizontal, prompt: "you@example.com")
+                field("Anything else we should know (optional)", text: $message, axis: .vertical, prompt: "")
+                if let error {
+                    Text(error).font(Theme.body(12)).foregroundStyle(Theme.destructive)
+                }
+                Button {
+                    sending = true
+                    Task {
+                        error = await submit(links, email, message)
+                        sending = false
+                        if error == nil { dismiss() }
+                    }
+                } label: {
+                    Text(sending ? "Sending…" : "Send for review")
+                }
+                .buttonStyle(AccentButtonStyle())
+                .disabled(sending)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 24)
+        }
+        .background(Theme.bg)
+    }
+
+    private func field(_ label: String, text: Binding<String>, axis: Axis, prompt: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(Theme.body(12, .semibold))
+                .foregroundStyle(Theme.foreground)
+            TextField(prompt, text: text, axis: axis)
+                .lineLimit(axis == .vertical ? 2...4 : 1...1)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled(axis == .horizontal)
+                .font(Theme.body(14))
+                .padding(12)
+                .background(Theme.surfaceAlt.opacity(0.5), in: RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+        }
     }
 }

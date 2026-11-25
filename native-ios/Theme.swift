@@ -525,3 +525,30 @@ struct FollowPill: View {
         .accessibilityAddTraits(isFollowing ? .isSelected : [])
     }
 }
+
+// ── Verified author badge (web components/author/verified-author-badge.tsx) ──
+struct VerifiedAuthorBadge: View {
+    var label = "Verified author"
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "checkmark.seal")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Theme.accentText)
+            Text(label)
+                .font(Theme.body(12, .semibold))
+                .foregroundStyle(Theme.foreground)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 5)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// /api/v1 verifiedAuthors entry.
+struct VerifiedAuthorRef: Codable, Hashable {
+    let authorId: String
+    let name: String
+    let slug: String?
+}

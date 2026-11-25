@@ -28,6 +28,8 @@ final class PublicProfileModel {
     var reviews: [UserReviewRow] = []
     /// Notes they marked shared — the server sends them to followers only.
     var sharedNotes: [SharedNote] = []
+    /// Author pages this reader is the verified author of (badge).
+    var verifiedAuthors: [VerifiedAuthorRef] = []
     var followerCount = 0
     var followingCount = 0
     var loaded = false
@@ -48,6 +50,7 @@ final class PublicProfileModel {
         let followingCount: Int?
         let publicShelves: [ShelfSummary]?
         let sharedNotes: [SharedNote]?
+        let verifiedAuthors: [VerifiedAuthorRef]?
     }
 
     func load() async {
@@ -63,6 +66,7 @@ final class PublicProfileModel {
         publicShelves = res.publicShelves ?? []
         reviews = res.reviews ?? []
         sharedNotes = res.sharedNotes ?? []
+        verifiedAuthors = res.verifiedAuthors ?? []
         followerCount = res.followerCount ?? 0
         followingCount = res.followingCount ?? 0
     }
@@ -334,6 +338,12 @@ struct PublicProfileView: View {
                             .foregroundStyle(Theme.muted)
                     }
                     ProfileTierBadge(type: user.accountType)
+                }
+                ForEach(model.verifiedAuthors, id: \.authorId) { a in
+                    NavigationLink(value: AuthorRoute(idOrSlug: a.slug ?? a.authorId)) {
+                        VerifiedAuthorBadge(label: model.verifiedAuthors.count > 1 ? "Verified author · \(a.name)" : "Verified author")
+                    }
+                    .buttonStyle(.plain)
                 }
             }
 

@@ -217,6 +217,12 @@ struct ProfileView: View {
                     }
                     ProfileTierBadge(type: user.accountType)
                 }
+                ForEach(data.verifiedAuthors ?? [], id: \.authorId) { a in
+                    NavigationLink(value: AuthorRoute(idOrSlug: a.slug ?? a.authorId)) {
+                        VerifiedAuthorBadge(label: (data.verifiedAuthors?.count ?? 0) > 1 ? "Verified author · \(a.name)" : "Verified author")
+                    }
+                    .buttonStyle(.plain)
+                }
                 Text("Member since \(memberSince(user.createdAt))")
                     .font(Theme.body(12))
                     .foregroundStyle(Theme.muted)

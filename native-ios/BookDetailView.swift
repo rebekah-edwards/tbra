@@ -217,6 +217,13 @@ struct BookDetailView: View {
                     // About / Details directly under the summary, like the
                     // web (user request 2026-07-15).
                     BookAboutDetailsSection(book: data.book)
+                    // The book's verified author: edit the description
+                    // (web components/author/author-tools-card.tsx).
+                    if data.isVerifiedAuthor == true {
+                        AuthorToolsCard(bookId: data.book.id, description: data.book.description) {
+                            Task { await model.load() }
+                        }
+                    }
                     // Readers' reviews (web "What Readers Think", same slot:
                     // right after About/Details).
                     if let reviews = data.reviewSummary, !reviews.topReviews.isEmpty {
@@ -274,6 +281,7 @@ struct BookDetailView: View {
                             ratings: data.book.ratings,
                             bookId: data.book.id,
                             isAdmin: isAdmin,
+                            isAuthor: data.isVerifiedAuthor == true,
                             onChanged: { Task { await model.load() } }
                         )
                         .id("whats-inside")
@@ -1760,6 +1768,8 @@ private struct WhatsInsideSection: View {
     let ratings: [ContentRating]
     var bookId: String = ""
     var isAdmin: Bool = false
+    /// The viewer is this book's verified author: pencil on each rating.
+    var isAuthor: Bool = false
     var onChanged: () -> Void = {}
     // Headless-verification hook: TBRA_DEBUG_REVEAL=1 skips the spoiler
     // blur so screenshots can read the grid (sim only).
@@ -1772,6 +1782,7 @@ private struct WhatsInsideSection: View {
     @State private var editing: ContentRating?
     @State private var verifyingAll = false
     @State private var verifiedOverride: Set<String> = []
+    @State private var authorOverride: Set<String> = []
 
     private let columns = [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
 
@@ -1804,6 +1815,7 @@ private struct WhatsInsideSection: View {
     private static let verifiedLevels: Set<String> = ["human_verified", "admin_verified", "author_verified"]
     private func isVerified(_ r: ContentRating) -> Bool {
         Self.verifiedLevels.contains(r.evidenceLevel ?? "") || verifiedOverride.contains(r.categoryId)
+            || authorOverride.contains(r.categoryId)
     }
     private var allVerified: Bool {
         !ratings.isEmpty && orderedRatings.allSatisfy(isVerified)
@@ -1871,8 +1883,10 @@ private struct WhatsInsideSection: View {
                 bookId: bookId,
                 rating: rating,
                 displayName: Self.shortNames[rating.categoryKey] ?? rating.categoryName,
+                asAuthor: !isAdmin && isAuthor,
                 onSaved: {
-                    verifiedOverride.insert(rating.categoryId)
+                    if !isAdmin && isAuthor { authorOverride.insert(rating.categoryId) }
+                    else { verifiedOverride.insert(rating.categoryId) }
                     onChanged()
                 }
             )
@@ -1924,7 +1938,9 @@ private struct WhatsInsideSection: View {
                     // Web evidenceBadge (2026-11-25, never "AI"): "Verified"
                     // (staff-checked), "Author-verified", else "Unverified".
                     if isVerified(rating) {
-                        Text(rating.evidenceLevel == "author_verified" && !verifiedOverride.contains(rating.categoryId) ? "Author-verified" : "Verified")
+                        Text(authorOverride.contains(rating.categoryId)
+                             || (rating.evidenceLevel == "author_verified" && !verifiedOverride.contains(rating.categoryId))
+                             ? "Author-verified" : "Verified")
                             .font(Theme.body(10, .medium))
                             .foregroundStyle(Theme.accentText)
                             .padding(.horizontal, 8).padding(.vertical, 3)
@@ -1936,7 +1952,7 @@ private struct WhatsInsideSection: View {
                             .padding(.horizontal, 8).padding(.vertical, 3)
                             .background(Theme.surfaceAlt.opacity(0.8), in: Capsule())
                     }
-                    if isAdmin && !bookId.isEmpty {
+                    if (isAdmin || isAuthor) && !bookId.isEmpty {
                         Button {
                             editing = rating
                         } label: {
@@ -2624,6 +2640,9 @@ struct AdminRatingEditorSheet: View {
     let rating: ContentRating
     let displayName: String
     let onSaved: () -> Void
+    /// The book's verified author (not staff): saves through
+    /// /api/v1/books/[id]/author-edit as "Author-verified"; staff are told.
+    var asAuthor = false
 
     @State private var intensity: Int
     @State private var notes: String
@@ -2632,10 +2651,11 @@ struct AdminRatingEditorSheet: View {
 
     private static let intensityLabels = ["None", "Mild", "Moderate", "Significant", "Extreme"]
 
-    init(bookId: String, rating: ContentRating, displayName: String, onSaved: @escaping () -> Void) {
+    init(bookId: String, rating: ContentRating, displayName: String, asAuthor: Bool = false, onSaved: @escaping () -> Void) {
         self.bookId = bookId
         self.rating = rating
         self.displayName = displayName
+        self.asAuthor = asAuthor
         self.onSaved = onSaved
         _intensity = State(initialValue: rating.intensity)
         _notes = State(initialValue: rating.notes ?? "")
@@ -2644,7 +2664,7 @@ struct AdminRatingEditorSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Edit \u{201C}\(displayName)\u{201D}")
+                Text(asAuthor ? "Your book: \(displayName)" : "Edit \u{201C}\(displayName)\u{201D}")
                     .font(Theme.heading(18, .bold))
                     .foregroundStyle(Theme.foreground)
                 Spacer()
@@ -2691,8 +2711,16 @@ struct AdminRatingEditorSheet: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
                     .onChange(of: notes) {
-                        if notes.count > 500 { notes = String(notes.prefix(500)) }
+                        let cap = asAuthor ? 400 : 500
+                        if notes.count > cap { notes = String(notes.prefix(cap)) }
                     }
+            }
+
+            if asAuthor {
+                Text("Saving marks this rating Author-verified. If it's already right, just confirm it. Our team is told about any change and may follow up.")
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             if let error {
@@ -2702,7 +2730,7 @@ struct AdminRatingEditorSheet: View {
             Button {
                 save()
             } label: {
-                Text(saving ? "Saving…" : "Save & Verify")
+                Text(saving ? "Saving…" : asAuthor ? (isUnchanged ? "Confirm as-is" : "Save changes") : "Save & Verify")
                     .font(Theme.body(15, .semibold))
                     .foregroundStyle(Theme.onAccent)
                     .frame(maxWidth: .infinity)
@@ -2716,6 +2744,11 @@ struct AdminRatingEditorSheet: View {
         .background(Theme.bg)
     }
 
+    private var isUnchanged: Bool {
+        intensity == rating.intensity
+            && notes.trimmingCharacters(in: .whitespacesAndNewlines) == (rating.notes ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private func save() {
         saving = true; error = nil
         Task {
@@ -2725,12 +2758,12 @@ struct AdminRatingEditorSheet: View {
             let trimmed = notes.trimmingCharacters(in: .whitespacesAndNewlines)
             body["notes"] = trimmed.isEmpty ? NSNull() : trimmed
             do {
-                let _: Ok = try await APIClient.shared.request(
-                    "/api/v1/admin/books/\(bookId)/content-verify", method: "POST", body: body)
+                let path = asAuthor ? "/api/v1/books/\(bookId)/author-edit" : "/api/v1/admin/books/\(bookId)/content-verify"
+                let _: Ok = try await APIClient.shared.request(path, method: "POST", body: body)
                 onSaved()
                 dismiss()
             } catch {
-                self.error = "Couldn't save."
+                self.error = (error as? APIError)?.errorDescription ?? "Couldn't save."
             }
         }
     }
