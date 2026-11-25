@@ -611,9 +611,13 @@ struct ShelfEditorView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                header
-                metaRow
-                actionBar
+                if DesignPreview.on {
+                    hero
+                } else {
+                    header
+                    metaRow
+                    actionBar
+                }
                 bookList
             }
             .padding(.horizontal, 20)
@@ -645,6 +649,97 @@ struct ShelfEditorView: View {
                 Task { await model.load() }
             }
         }
+    }
+
+    // Design refresh (2026-11-25; web shelf-detail-client.tsx twin): the shelf
+    // opens on a cover-art hero — eyebrow, name, description, glass stat
+    // chips — with Add Books as the one lime pill and glass icon actions.
+    private var heroCovers: [String] {
+        var list = model.books.compactMap(\.coverImageUrl)
+        if let c = model.shelf?.coverImageUrl, !c.isEmpty {
+            list.removeAll { $0 == c }
+            list.insert(c, at: 0)
+        }
+        return list
+    }
+
+    private var hero: some View {
+        let readCount = model.books.filter { $0.state == "completed" }.count
+        var stats = [HeroStat(label: model.books.count == 1 ? "book" : "books", value: "\(model.books.count)", hue: .lime)]
+        if readCount > 0 { stats.append(HeroStat(label: "read", value: "\(readCount)", hue: .purple)) }
+        return CoverArtHero(
+            eyebrow: model.shelf?.isPublic == true ? "Public shelf" : "Shelf",
+            title: model.shelf?.name ?? " ",
+            subtitle: model.shelf?.description,
+            covers: heroCovers,
+            stats: stats
+        ) {
+            if selectMode {
+                HStack(spacing: 8) {
+                    GlassChip(text: "\(selected.count) selected", dot: Theme.accent)
+                    Button { bulkRemove() } label: {
+                        ShelfPill(kind: .destructive) {
+                            HStack(spacing: 5) {
+                                Image(systemName: "trash").font(.system(size: 12, weight: .semibold))
+                                Text("Remove")
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(selected.isEmpty)
+                    .opacity(selected.isEmpty ? 0.4 : 1)
+                    Button { selectMode = false; selected = [] } label: {
+                        ShelfPill { Text("Done") }
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else {
+                HStack(spacing: 8) {
+                    Button { addOpen = true } label: {
+                        ShelfPill(kind: .primary) {
+                            HStack(spacing: 5) {
+                                Image(systemName: "plus").font(.system(size: 12, weight: .bold))
+                                Text("Add Books")
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    Button {
+                        if let shelf = model.shelf { editingSeed = ShelfEditSeed(detail: shelf) }
+                    } label: {
+                        heroIcon("pencil", tint: Theme.neonBlue)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Edit shelf details")
+                    if let shelf = model.shelf, shelf.isPublic, let username = shelf.ownerUsername,
+                       let url = URL(string: "https://thebasedreader.app/u/\(username)/shelves/\(shelf.slug)") {
+                        ShareLink(item: url) { heroIcon("square.and.arrow.up", tint: Theme.neonPurple) }
+                            .accessibilityLabel("Share shelf")
+                    }
+                    if !model.books.isEmpty {
+                        Button { selectMode = true } label: {
+                            heroIcon("checkmark.circle", tint: Theme.accentText)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Select books")
+                    }
+                    Button { confirmDelete = true } label: {
+                        heroIcon("trash", tint: Theme.destructive)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Delete shelf")
+                }
+            }
+        }
+        .padding(.top, 52)
+    }
+
+    private func heroIcon(_ systemName: String, tint: Color) -> some View {
+        Image(systemName: systemName)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: 38, height: 38)
+            .glassEffect(.regular, in: Circle())
     }
 
     private var header: some View {
@@ -838,26 +933,15 @@ struct ShelfEditorView: View {
 
     @ViewBuilder private var bookList: some View {
         if model.books.isEmpty {
-            VStack(spacing: 6) {
-                Text("No books on this shelf yet.")
-                    .font(Theme.body(14))
-                    .foregroundStyle(Theme.muted)
-                Text("Add some from any book page, or use Add Books above.")
-                    .font(Theme.body(12))
-                    .foregroundStyle(Theme.muted.opacity(0.6))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 40)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Theme.border, style: StrokeStyle(lineWidth: 1, dash: [5]))
-            )
+            GlassEmptyState(systemName: "books.vertical", tint: Theme.accentText,
+                            title: "No books on this shelf yet",
+                            message: "Add some from any book page, or with Add Books above.")
         } else {
             VStack(spacing: 0) {
                 ForEach(model.books) { book in
                     bookRow(book)
                     if book.id != model.books.last?.id {
-                        Divider().background(Theme.border.opacity(0.5))
+                        Divider().background(Theme.foreground.opacity(0.08))
                     }
                 }
             }
@@ -884,9 +968,7 @@ struct ShelfEditorView: View {
                 .padding(.horizontal, -8)
             }
             .padding(.horizontal, 12)
-            .background(Theme.surface.opacity(0.5))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+            .glassCard()
         }
     }
 

@@ -871,62 +871,51 @@ struct TopShelfView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 12) {
-                    Color.clear.frame(width: 40, height: 40)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Top Shelf")
-                            .font(Theme.heading(26, .bold))
-                            .foregroundStyle(Theme.foreground)
-                        Text("\(model.favorites.count) book\(model.favorites.count == 1 ? "" : "s")\(model.favorites.count > 1 ? " · Hold & drag to reorder" : "")")
-                            .font(Theme.body(12))
-                            .foregroundStyle(Theme.muted)
+                // Design refresh (2026-11-25): cover-art hero like the web
+                // Top Shelf page; Add Books is the screen's one lime pill.
+                CoverArtHero(
+                    eyebrow: "All-time favorites",
+                    title: "Top Shelf",
+                    covers: model.favorites.compactMap(\.coverImageUrl),
+                    stats: [HeroStat(label: model.favorites.count == 1 ? "book" : "books",
+                                     value: "\(model.favorites.count)", hue: .lime)]
+                ) {
+                    Button {
+                        addOpen = true
+                    } label: {
+                        addBooksLabel
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(.top, 14)
-
-                // Add Books — same action the custom shelves have.
-                Button {
-                    addOpen = true
-                } label: {
-                    addBooksLabel
-                }
-                .buttonStyle(.plain)
+                .padding(.top, 52)
 
                 // How to add from a book page (web: the same hint line).
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Image(systemName: "star")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Color(hex: "f59e0b"))
-                    (Text("Your all-time favorites. You can also add a book from its page: tap ")
+                    (Text(model.favorites.count > 1 ? "Hold & drag to reorder. " : "")
+                        + Text("You can also add a book from its page: tap ")
                         + Text("Shelves").foregroundColor(Theme.foreground).bold()
                         + Text(", then check ")
                         + Text("Top Shelf").foregroundColor(Theme.foreground).bold()
                         + Text("."))
                         .font(Theme.body(12))
                         .foregroundStyle(Theme.muted)
+                        .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 8)
 
                 if model.favorites.isEmpty {
-                    VStack(spacing: 10) {
-                        ZStack {
-                            Circle().fill(Color(hex: "f59e0b").opacity(0.1))
-                            Image(systemName: "star")
-                                .font(.system(size: 22))
-                                .foregroundStyle(Color(hex: "f59e0b"))
-                        }
-                        .frame(width: 48, height: 48)
-                        Text(model.loaded ? "No favorites yet" : "Loading…")
-                            .font(Theme.body(16, .bold))
-                            .foregroundStyle(Theme.foreground)
-                        if model.loaded {
-                            Text("Use Add Books above to pick from your library.")
-                                .font(Theme.body(13))
-                                .foregroundStyle(Theme.muted)
-                        }
+                    if model.loaded {
+                        GlassEmptyState(systemName: "star", tint: Color(hex: "f59e0b"),
+                                        title: "No favorites yet",
+                                        message: "Use Add Books above to pick from your library.")
+                    } else {
+                        ProgressView().tint(Theme.accent).frame(maxWidth: .infinity).padding(.vertical, 40)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 48)
                 } else {
                     LazyVGrid(columns: [
                         GridItem(.flexible(), spacing: 12),
@@ -1001,8 +990,11 @@ struct TopShelfView: View {
                         if let rating = fav.userRating, rating > 0 {
                             HStack(spacing: 3) {
                                 favAvatarBubble
-                                Text("\(ratingText(rating)) ★")
-                                    .font(Theme.body(9, .medium))
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 7))
+                                    .foregroundStyle(Color(hex: "fbbf24"))
+                                Text(ratingText(rating))
+                                    .font(Theme.body(9, .semibold))
                                     .foregroundStyle(.white)
                             }
                             .padding(.leading, 2)
@@ -1019,9 +1011,10 @@ struct TopShelfView: View {
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(width: 22, height: 22)
-                                .background(.black.opacity(0.6), in: Circle())
+                                .foregroundStyle(Theme.destructive)
+                                .frame(width: 24, height: 24)
+                                .background(.ultraThinMaterial, in: Circle())
+                                .overlay(Circle().stroke(Theme.foreground.opacity(0.14), lineWidth: 1))
                         }
                         .padding(4)
                         }
@@ -1045,7 +1038,7 @@ struct TopShelfView: View {
             Circle().fill(Theme.accent.opacity(0.6))
                 .frame(width: 14, height: 14)
                 .overlay(
-                    Text("★").font(.system(size: 7, weight: .bold)).foregroundStyle(.black)
+                    Image(systemName: "star.fill").font(.system(size: 6, weight: .bold)).foregroundStyle(.black)
                 )
         }
     }

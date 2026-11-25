@@ -297,7 +297,9 @@ struct BlockedReadersSection: View {
                 }
             } label: {
                 HStack {
-                    SectionHeading(blocked.isEmpty ? "Blocked Readers" : "Blocked Readers (\(blocked.count))")
+                    Text(blocked.isEmpty ? "Blocked Readers" : "Blocked Readers (\(blocked.count))")
+                        .font(Theme.heading(19, .bold))
+                        .foregroundStyle(Theme.foreground)
                     Spacer()
                     Image(systemName: "chevron.down")
                         .font(.system(size: 13, weight: .semibold))
@@ -338,6 +340,8 @@ struct BlockedReadersSection: View {
                 .padding(.top, 12)
             }
         }
+        .padding(16)
+        .glassCard()
         .task { blocked = await SafetyAPI.blockedReaders() }
     }
 

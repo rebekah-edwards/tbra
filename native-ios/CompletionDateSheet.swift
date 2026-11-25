@@ -51,12 +51,8 @@ struct CompletionDateSheet: View {
                     .foregroundStyle(Theme.muted)
             }
 
-            Picker("", selection: $precision) {
-                Text("Exact date").tag("exact")
-                Text("Month").tag("month")
-                Text("Year").tag("year")
-            }
-            .pickerStyle(.segmented)
+            GlassSegment(options: [("exact", "Full date"), ("month", "Month"), ("year", "Year")],
+                          selection: $precision)
 
             switch precision {
             case "exact":
@@ -160,15 +156,18 @@ struct PostCompletionSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("What to Read Next")
-                    .font(Theme.heading(18, .bold))
-                    .foregroundStyle(Theme.foreground)
+                VStack(alignment: .leading, spacing: 1) {
+                    Eyebrow("You finished it")
+                    Text("What to Read Next")
+                        .font(Theme.heading(18, .bold))
+                        .foregroundStyle(Theme.foreground)
+                }
                 Spacer()
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Theme.muted)
+                    GlassOrb(systemName: "xmark", tint: Theme.muted, size: 34)
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close")
             }
 
             if loading {
@@ -179,10 +178,10 @@ struct PostCompletionSheet: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         if let seriesNext {
-                            section("CONTINUE THE SERIES", [seriesNext])
+                            section("Continue the series", [seriesNext], featured: true)
                         }
                         if !similar.isEmpty {
-                            section("SIMILAR BOOKS", similar)
+                            section("Similar books", similar)
                         }
                         if seriesNext == nil && similar.isEmpty {
                             // Reached only if the server truly has nothing.
@@ -220,17 +219,16 @@ struct PostCompletionSheet: View {
         }
     }
 
-    private func section(_ label: String, _ books: [PostCompletionSuggestion]) -> some View {
+    private func section(_ label: String, _ books: [PostCompletionSuggestion], featured: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(label)
-                .font(Theme.body(11, .semibold))
-                .tracking(1.0)
-                .foregroundStyle(Theme.muted)
-            ForEach(books) { row($0) }
+            Eyebrow(label)
+            ForEach(books) { row($0, featured: featured) }
         }
     }
 
-    private func row(_ book: PostCompletionSuggestion) -> some View {
+    /// `featured` (the series pick) carries the sheet's one lime TBR pill;
+    /// the similar-book rows keep theirs in glass.
+    private func row(_ book: PostCompletionSuggestion, featured: Bool = false) -> some View {
         HStack(spacing: 12) {
             Button {
                 dismiss()
@@ -238,9 +236,11 @@ struct PostCompletionSheet: View {
             } label: {
                 HStack(spacing: 12) {
                     CoverThumb(url: book.coverImageUrl, width: 40, height: 60, radius: 5, title: book.title)
+                        .shadow(color: .black.opacity(0.3), radius: 6, y: 3)
+                        .rotationEffect(.degrees(featured ? -3 : 0))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(book.title)
-                            .font(Theme.body(14, .semibold))
+                            .font(Theme.heading(15, .bold))
                             .foregroundStyle(Theme.foreground)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
@@ -262,17 +262,25 @@ struct PostCompletionSheet: View {
                     }
                 }
             } label: {
-                Text(added.contains(book.id) ? "Added" : "+ TBR")
-                    .font(Theme.body(11, .semibold))
-                    .foregroundStyle(added.contains(book.id) ? Theme.muted : Theme.onAccent)
-                    .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(added.contains(book.id) ? Theme.surfaceAlt : Theme.accent, in: Capsule())
+                let isAdded = added.contains(book.id)
+                let lime = featured && !isAdded
+                HStack(spacing: 4) {
+                    Image(systemName: isAdded ? "checkmark" : "plus")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(lime ? Theme.onAccent : Theme.accentText)
+                    Text(isAdded ? "Added" : "TBR")
+                        .font(Theme.body(12, .semibold))
+                        .foregroundStyle(lime ? Theme.onAccent : Theme.foreground)
+                }
+                .padding(.horizontal, 12).frame(height: 30)
+                .background {
+                    if lime { Capsule().fill(Theme.accent) } else { Capsule().fill(.ultraThinMaterial) }
+                }
+                .overlay(Capsule().stroke(lime ? .clear : (isAdded ? Theme.accent.opacity(0.6) : Theme.foreground.opacity(0.14)), lineWidth: 1))
             }
             .disabled(added.contains(book.id))
         }
         .padding(10)
-        .background(Theme.surfaceAlt.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+        .glassCard(radius: 16)
     }
 }

@@ -11,9 +11,14 @@ struct FollowListRoute: Hashable { let username: String; let type: String }
 struct FollowListView: View {
     @Environment(\.dismiss) private var dismiss
     let username: String
-    let type: String   // followers | following
+    @State private var type: String   // followers | following
     @State private var users: [PersonRowLite] = []
     @State private var loaded = false
+
+    init(username: String, type: String) {
+        self.username = username
+        _type = State(initialValue: type)
+    }
 
     struct PersonRowLite: Codable, Hashable, Identifiable {
         var id: String { userId }
@@ -23,62 +28,45 @@ struct FollowListView: View {
         let avatarUrl: String?
     }
 
+    // 2026-11 refresh (web components/profile/follow-list.tsx): eyebrow +
+    // heading, a glass switch between the two lists (the screen's one lime),
+    // and glass reader rows with the avatar in the wordmark ring.
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 12) {
                     Color.clear.frame(width: 40, height: 40)
-                    Text(type == "following" ? "Following" : "Followers")
-                        .font(Theme.heading(24, .bold))
-                        .foregroundStyle(Theme.foreground)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Eyebrow("@\(username)")
+                        Text(type == "following" ? "Following" : "Followers")
+                            .font(Theme.heading(24, .bold))
+                            .foregroundStyle(Theme.foreground)
+                    }
                 }
                 .padding(.top, 14)
 
-                if users.isEmpty && loaded {
-                    Text(type == "following" ? "Not following anyone yet." : "No followers yet.")
-                        .font(Theme.body(15))
-                        .foregroundStyle(Theme.muted)
+                GlassSegment(options: [("followers", "Followers"), ("following", "Following")], selection: $type)
+
+                if loaded {
+                    Eyebrow(type == "following"
+                            ? "\(users.count) following"
+                            : "\(users.count) \(users.count == 1 ? "follower" : "followers")")
                         .frame(maxWidth: .infinity)
-                        .padding(.top, 40)
+                        .padding(.top, 4)
+                }
+
+                if users.isEmpty && loaded {
+                    GlassEmptyState(systemName: "person.2",
+                                    title: type == "following" ? "Not following anyone yet" : "No followers yet")
                 }
 
                 ForEach(users) { person in
                     NavigationLink(value: UserRoute(username: person.username ?? "")) {
-                        HStack(spacing: 12) {
-                            Group {
-                                if let avatarUrl = person.avatarUrl, let url = URL(string: avatarUrl) {
-                                    CachedCoverImage(url: url) { Theme.surfaceAlt }
-                                } else {
-                                    ZStack {
-                                        Theme.neonPurple.opacity(0.3)
-                                        Text(String((person.displayName ?? person.username ?? "?").prefix(1)).uppercased())
-                                            .font(Theme.body(15, .bold))
-                                            .foregroundStyle(Theme.foreground)
-                                    }
-                                }
-                            }
-                            .frame(width: 42, height: 42)
-                            .clipShape(Circle())
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(person.displayName ?? person.username ?? "Reader")
-                                    .font(Theme.body(15, .semibold))
-                                    .foregroundStyle(Theme.foreground)
-                                if let username = person.username {
-                                    Text("@\(username)")
-                                        .font(Theme.body(13))
-                                        .foregroundStyle(Theme.muted)
-                                }
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12))
-                                .foregroundStyle(Theme.muted)
-                        }
-                        .padding(12)
-                        .background(Theme.surface.opacity(0.55))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+                        ReaderRowCard(avatarUrl: person.avatarUrl,
+                                      name: person.displayName ?? person.username ?? "Reader",
+                                      username: person.username)
                     }
+                    .buttonStyle(.plain)
                     .disabled(person.username == nil)
                 }
             }
@@ -88,14 +76,17 @@ struct FollowListView: View {
         .background(AmbientBackground())
         .floatingBack()
         .toolbar(.hidden, for: .navigationBar)
-        .task {
+        .task(id: type) {
             struct Res: Codable { let ok: Bool; let users: [PersonRowLite] }
+            loaded = false
             if let res: Res = try? await APIClient.shared.get(
                 "/api/v1/users/\(username)/follows",
                 query: [URLQueryItem(name: "type", value: type)]) {
                 users = res.users
-                loaded = true
+            } else {
+                users = []
             }
+            loaded = true
         }
     }
 }

@@ -72,6 +72,8 @@ struct AppShell: View {
     @State private var shelvesDebugOpen = false
     @State private var debugShelfId: String?
     @State private var debugShelfEditorId: String?
+    /// TBRA_DEBUG_ROUTE=screen:topshelf | screen:findreaders | screen:follows:<username>
+    @State private var debugScreen: String?
     @State private var debugCoverPickerId: String?
     @State private var menuDebugOpen = false
     @State private var settingsDebugOpen = false
@@ -395,6 +397,26 @@ struct AppShell: View {
             .globalReportOverlay()
                 .readingStateErrorAlert()
         }
+        .fullScreenCover(isPresented: Binding(
+            get: { debugScreen != nil },
+            set: { if !$0 { debugScreen = nil } }
+        )) {
+            NavigationStack {
+                Group {
+                    switch debugScreen ?? "" {
+                    case "topshelf": TopShelfView()
+                    case "findreaders": FindReadersView()
+                    case let s where s.hasPrefix("follows:"):
+                        FollowListView(username: String(s.dropFirst("follows:".count)), type: "followers")
+                    default: EmptyView()
+                    }
+                }
+                .toolbar(.hidden, for: .navigationBar)
+                .appDestinations()
+            }
+            .environment(\.shellBarInsets, (top: 0, bottom: 0))
+            .environment(\.showsShellChrome, false)
+        }
         .sheet(isPresented: Binding(
             get: { debugCoverPickerId != nil },
             set: { if !$0 { debugCoverPickerId = nil } }
@@ -432,6 +454,8 @@ struct AppShell: View {
                 debugShelfId = String(route.dropFirst("shelf:".count))
             case let route? where route.hasPrefix("shelfeditor:"):
                 debugShelfEditorId = String(route.dropFirst("shelfeditor:".count))
+            case let route? where route.hasPrefix("screen:"):
+                debugScreen = String(route.dropFirst("screen:".count))
             case let route? where route.hasPrefix("coverpicker:"):
                 debugCoverPickerId = String(route.dropFirst("coverpicker:".count))
             default: break

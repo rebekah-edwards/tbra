@@ -552,3 +552,219 @@ struct VerifiedAuthorRef: Codable, Hashable {
     let name: String
     let slug: String?
 }
+
+// ── Glass kit (2026-11 refresh; web .card-glass / .row-glass / .chip-glass /
+// .orb-glass / .eyebrow and components/ui/reader-row.tsx). Neutral glass with
+// the hue carried by an icon or dot; one solid-lime action per screen.
+
+/// Small-caps label over a tile or card ("NOTE TO SELF").
+struct Eyebrow: View {
+    let text: String
+    var color: Color = Theme.muted
+    init(_ text: String, color: Color = Theme.muted) { self.text = text; self.color = color }
+    var body: some View {
+        Text(text.uppercased())
+            .font(Theme.body(11, .bold))
+            .tracking(1.0)
+            .foregroundStyle(color)
+    }
+}
+
+extension View {
+    /// Plain section card: neutral glass, thin foreground ring (no hairline —
+    /// that's for the one hero card on a screen).
+    func glassCard(radius: CGFloat = 20, ring: Color? = nil) -> some View {
+        background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .stroke(ring?.opacity(0.5) ?? Theme.foreground.opacity(0.10), lineWidth: 1))
+    }
+
+    /// The wordmark hairline card (lime → blue → purple), for a screen's hero.
+    func hairlineCard(radius: CGFloat = 22) -> some View {
+        background(Theme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .stroke(LinearGradient(colors: [Theme.accent.opacity(0.55), Color(hex: "38bdf8").opacity(0.35), Color(hex: "c084fc").opacity(0.45)],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1))
+    }
+}
+
+/// Glass badge with a colour dot.
+struct GlassChip: View {
+    let text: String
+    var dot: Color? = nil
+    var body: some View {
+        HStack(spacing: 6) {
+            if let dot { Circle().fill(dot).frame(width: 7, height: 7) }
+            Text(text).font(Theme.body(12, .semibold)).foregroundStyle(Theme.foreground).lineLimit(1)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 5)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
+    }
+}
+
+/// Round glass well holding a line icon in its hue.
+struct GlassOrb: View {
+    let systemName: String
+    var tint: Color = Theme.neonBlue
+    var size: CGFloat = 56
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: size * 0.4, weight: .regular))
+            .foregroundStyle(tint)
+            .frame(width: size, height: size)
+            .background(.ultraThinMaterial, in: Circle())
+            .overlay(Circle().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
+    }
+}
+
+/// Empty state: glass card, orb, heading-face title, muted line — centred.
+struct GlassEmptyState<Action: View>: View {
+    let systemName: String
+    var tint: Color = Theme.neonBlue
+    let title: String
+    var message: String? = nil
+    @ViewBuilder var action: Action
+    var body: some View {
+        VStack(spacing: 8) {
+            GlassOrb(systemName: systemName, tint: tint).padding(.bottom, 4)
+            Text(title).font(Theme.heading(17, .semibold)).foregroundStyle(Theme.foreground)
+                .multilineTextAlignment(.center)
+            if let message {
+                Text(message).font(Theme.body(14)).foregroundStyle(Theme.muted)
+                    .multilineTextAlignment(.center)
+            }
+            action.padding(.top, 6)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 24).padding(.vertical, 30)
+        .glassCard()
+    }
+}
+
+extension GlassEmptyState where Action == EmptyView {
+    init(systemName: String, tint: Color = Theme.neonBlue, title: String, message: String? = nil) {
+        self.systemName = systemName; self.tint = tint; self.title = title; self.message = message
+        self.action = EmptyView()
+    }
+}
+
+/// Avatar in the wordmark ring (web ReaderAvatar).
+struct RingedAvatar: View {
+    let avatarUrl: String?
+    let name: String
+    var size: CGFloat = 44
+    var body: some View {
+        Group {
+            if let avatarUrl,
+               let url = avatarUrl.hasPrefix("/") ? URL(string: avatarUrl, relativeTo: APIClient.baseURL) : URL(string: avatarUrl) {
+                CachedCoverImage(url: url) { Theme.surfaceAlt }
+            } else {
+                ZStack {
+                    Theme.accent
+                    Text(String(name.prefix(1)).uppercased())
+                        .font(Theme.heading(size * 0.4, .bold))
+                        .foregroundStyle(Theme.onAccent)
+                }
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .padding(2.5)
+        .overlay(Circle().stroke(LinearGradient(colors: [Theme.accent, Theme.neonBlue, Theme.neonPurple],
+                                                startPoint: .topLeading, endPoint: .bottomTrailing),
+                                 lineWidth: 1.5))
+    }
+}
+
+/// One reader in a list: ringed avatar, heading-face name, @handle, and a
+/// trailing control (or a chevron when the whole row is the link).
+struct ReaderRowCard<Trailing: View>: View {
+    let avatarUrl: String?
+    let name: String
+    let username: String?
+    var bio: String? = nil
+    var meta: String? = nil
+    @ViewBuilder var trailing: Trailing
+
+    var body: some View {
+        HStack(spacing: 12) {
+            RingedAvatar(avatarUrl: avatarUrl, name: name)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(name).font(Theme.heading(15, .bold)).foregroundStyle(Theme.foreground).lineLimit(1)
+                if let username { Text("@\(username)").font(Theme.body(12)).foregroundStyle(Theme.muted).lineLimit(1) }
+                if let bio, !bio.isEmpty {
+                    Text(bio).font(Theme.body(12)).foregroundStyle(Theme.muted.opacity(0.85)).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 0)
+            if let meta { Text(meta).font(Theme.body(11)).foregroundStyle(Theme.muted) }
+            trailing
+        }
+        .padding(12)
+        .glassCard(radius: 18)
+        .contentShape(RoundedRectangle(cornerRadius: 18))
+    }
+}
+
+extension ReaderRowCard where Trailing == AnyView {
+    /// Linked row: chevron trailing.
+    init(avatarUrl: String?, name: String, username: String?, bio: String? = nil, meta: String? = nil) {
+        self.avatarUrl = avatarUrl; self.name = name; self.username = username
+        self.bio = bio; self.meta = meta
+        self.trailing = AnyView(Image(systemName: "chevron.right")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(Theme.muted.opacity(0.7)))
+    }
+}
+
+/// Glass segmented switch with a lime active half (web .seg-glass).
+struct GlassSegment<T: Hashable>: View {
+    let options: [(T, String)]
+    @Binding var selection: T
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(options, id: \.0) { value, label in
+                let on = value == selection
+                Button { selection = value } label: {
+                    Text(label)
+                        .font(Theme.body(14, on ? .bold : .medium))
+                        .foregroundStyle(on ? Theme.onAccent : Theme.muted)
+                        .frame(maxWidth: .infinity).frame(height: 36)
+                        .background { if on { Capsule().fill(Theme.accent) } }
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .padding(4)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().stroke(Theme.foreground.opacity(0.10), lineWidth: 1))
+    }
+}
+
+/// Follow control for list rows: stays glass (lime "+" icon) so a column of
+/// rows doesn't become a column of lime pills; ringed with a check once on.
+struct QuietFollowPill: View {
+    let isFollowing: Bool
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: isFollowing ? "checkmark" : "plus")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Theme.accentText)
+                Text(isFollowing ? "Following" : "Follow")
+                    .font(Theme.body(13, .semibold))
+                    .foregroundStyle(Theme.foreground)
+            }
+            .padding(.horizontal, 14).frame(height: 32)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().stroke(isFollowing ? Theme.accent.opacity(0.6) : Theme.foreground.opacity(0.14), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isFollowing ? .isSelected : [])
+    }
+}

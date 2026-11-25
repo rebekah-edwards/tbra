@@ -277,10 +277,11 @@ struct SettingsView: View {
     var body: some View {
         ScrollViewReader { tourProxy in
         ScrollView {
-            VStack(alignment: .leading, spacing: 26) {
+            VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 12) {
                     Color.clear.frame(width: 40, height: 40)
                     VStack(alignment: .leading, spacing: 2) {
+                        Eyebrow("Your account")
                         Text("Settings")
                             .font(Theme.heading(26, .bold))
                             .foregroundStyle(Theme.foreground)
@@ -292,21 +293,22 @@ struct SettingsView: View {
                 .padding(.top, 14)
 
                 if model.loaded {
-                    profileSection
+                    profileSection.padding(16).glassCard()
                     // 1pt scroll marker for the tour (see BookDetailView note:
                     // tall sections scroll unpredictably with proportional
                     // anchors; a tiny target lands exactly where asked).
                     Color.clear.frame(height: 1).id("tour-prefs-top")
                     readingPreferencesCard
-                    displaySection
+                    displaySection.padding(16).glassCard()
                     locationSection
+                        .padding(16).glassCard()
                         .id("tour-privacy")
                         .coachAnchor("tour-privacy")
                     notificationsSection
                     exportSection
-                    if !model.hiddenBooks.isEmpty { hiddenBooksSection }
+                    if !model.hiddenBooks.isEmpty { hiddenBooksSection.padding(16).glassCard() }
                     BlockedReadersSection(openSection: $openSection)
-                    passwordSection
+                    passwordSection.padding(16).glassCard()
                     whatsNewRow
                     accountCard
                     dangerZone
@@ -467,7 +469,7 @@ struct SettingsView: View {
                     }
                     styleRow("Character types") {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Tap once for ♥ like, twice for ✕ dislike.")
+                            Text("Tap once to like, twice to dislike, again to clear.")
                                 .font(Theme.body(11)).foregroundStyle(Theme.muted)
                             FlowLayout(spacing: 8) {
                                 ForEach(SettingsCatalog.tropes, id: \.key) { trope in
@@ -491,15 +493,13 @@ struct SettingsView: View {
             .id("tour-comfort-zone")
             .coachAnchor("tour-comfort-zone")
         }
-        .background(Theme.surface.opacity(0.6))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
+        .glassCard()
     }
 
     private func accordion(_ key: String, title: String, isLast: Bool = false,
                            @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Divider().background(Theme.border.opacity(0.6))
+            Divider().background(Theme.foreground.opacity(0.08))
             Button {
                 withAnimation(.easeOut(duration: 0.2)) {
                     openSection = openSection == key ? nil : key
@@ -541,10 +541,10 @@ struct SettingsView: View {
                 if let icon { Text(icon).font(Theme.body(11)) }
                 Text(label).font(Theme.body(12, .medium))
             }
-            .foregroundStyle(active ? .black : Theme.foreground.opacity(0.8))
+            .foregroundStyle(active ? Theme.foreground : Theme.muted)
             .padding(.horizontal, 12).padding(.vertical, 7)
-            .background(active ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.surfaceAlt), in: Capsule())
-            .overlay(Capsule().stroke(active ? .clear : Theme.border, lineWidth: 1))
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().stroke(active ? Theme.accent.opacity(0.75) : Theme.foreground.opacity(0.10), lineWidth: active ? 1.5 : 1))
         }
     }
 
@@ -559,9 +559,7 @@ struct SettingsView: View {
 
     private func genreGroup(_ title: String, _ genres: [String]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title.uppercased())
-                .font(Theme.body(10, .semibold)).kerning(1.2)
-                .foregroundStyle(Theme.muted)
+            Eyebrow(title)
             FlowLayout(spacing: 8) {
                 ForEach(genres, id: \.self) { genre in
                     let pref = model.genrePrefs[genre]
@@ -569,18 +567,16 @@ struct SettingsView: View {
                         Task { await model.cycleGenre(genre) }
                     } label: {
                         HStack(spacing: 4) {
-                            if pref == "love" { Text("♥").font(Theme.body(11)) }
-                            if pref == "dislike" { Text("✕").font(Theme.body(11)) }
+                            if pref == "love" { Image(systemName: "heart.fill").font(.system(size: 9)).foregroundStyle(Theme.accentText) }
+                            if pref == "dislike" { Image(systemName: "xmark").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.destructive) }
                             Text(genre).font(Theme.body(12, .medium))
                         }
-                        .foregroundStyle(pref == "love" ? .black : pref == "dislike" ? Theme.destructive : Theme.foreground.opacity(0.8))
+                        .foregroundStyle(pref == nil ? Theme.muted : Theme.foreground)
                         .padding(.horizontal, 12).padding(.vertical, 7)
-                        .background(pref == "love" ? AnyShapeStyle(Theme.accent)
-                                    : pref == "dislike" ? AnyShapeStyle(Theme.destructive.opacity(0.12))
-                                    : AnyShapeStyle(Theme.surfaceAlt), in: Capsule())
+                        .background(.ultraThinMaterial, in: Capsule())
                         .overlay(Capsule().stroke(
-                            pref == "love" ? .clear : pref == "dislike" ? Theme.destructive.opacity(0.5) : Theme.border,
-                            lineWidth: 1))
+                            pref == "love" ? Theme.accent.opacity(0.75) : pref == "dislike" ? Theme.destructive.opacity(0.6) : Theme.foreground.opacity(0.10),
+                            lineWidth: pref == nil ? 1 : 1.5))
                     }
                 }
             }
@@ -659,17 +655,16 @@ struct SettingsView: View {
                 "dislikedTropes": model.style.dislikedTropes]) }
         } label: {
             HStack(spacing: 4) {
-                if liked { Text("♥").font(Theme.body(11)) }
-                if disliked { Text("✕").font(Theme.body(11)) }
+                if liked { Image(systemName: "heart.fill").font(.system(size: 9)).foregroundStyle(Theme.accentText) }
+                if disliked { Image(systemName: "xmark").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.destructive) }
                 Text(label).font(Theme.body(12, .medium))
             }
-            .foregroundStyle(liked ? .black : disliked ? Theme.destructive : Theme.foreground.opacity(0.8))
+            .foregroundStyle(liked || disliked ? Theme.foreground : Theme.muted)
             .padding(.horizontal, 12).padding(.vertical, 7)
-            .background(liked ? AnyShapeStyle(Theme.accent)
-                        : disliked ? AnyShapeStyle(Theme.destructive.opacity(0.12))
-                        : AnyShapeStyle(Theme.surfaceAlt), in: Capsule())
+            .background(.ultraThinMaterial, in: Capsule())
             .overlay(Capsule().stroke(
-                liked ? .clear : disliked ? Theme.destructive.opacity(0.5) : Theme.border, lineWidth: 1))
+                liked ? Theme.accent.opacity(0.75) : disliked ? Theme.destructive.opacity(0.6) : Theme.foreground.opacity(0.10),
+                lineWidth: liked || disliked ? 1.5 : 1))
         }
     }
 
@@ -695,8 +690,8 @@ struct SettingsView: View {
                             .foregroundStyle(active ? .black : Theme.muted)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 7)
-                            .background(active ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.surfaceAlt), in: Capsule())
-                            .overlay(Capsule().stroke(active ? .clear : Theme.border, lineWidth: 1))
+                            .background(active ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.ultraThinMaterial), in: Capsule())
+                            .overlay(Capsule().stroke(active ? .clear : Theme.foreground.opacity(0.10), lineWidth: 1))
                     }
                 }
             }
@@ -707,9 +702,7 @@ struct SettingsView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)
-        .background(Theme.surface.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+        .glassCard()
     }
 
     private var topicsToAvoid: some View {
@@ -725,11 +718,12 @@ struct SettingsView: View {
                     HStack(spacing: 5) {
                         Text(warning.replacingOccurrences(of: "_", with: " "))
                             .font(Theme.body(13, .medium))
-                        Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
+                        Image(systemName: "xmark").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.destructive)
                     }
                     .foregroundStyle(Theme.foreground)
                     .padding(.horizontal, 12).padding(.vertical, 7)
-                    .background(Theme.surfaceAlt.opacity(0.7), in: Capsule())
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.destructive.opacity(0.45), lineWidth: 1))
                     .onTapGesture {
                         Task { await model.saveWarnings(model.customWarnings.filter { $0 != warning }) }
                     }
@@ -741,8 +735,8 @@ struct SettingsView: View {
                     .textInputAutocapitalization(.never)
                     .font(Theme.body(14))
                     .padding(.horizontal, 14).padding(.vertical, 10)
-                    .background(Theme.surface.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
                 Button {
                     let trimmed = warningInput.trimmingCharacters(in: .whitespaces)
                     guard !trimmed.isEmpty else { return }
@@ -751,9 +745,10 @@ struct SettingsView: View {
                 } label: {
                     Text("Add")
                         .font(Theme.body(14, .semibold))
-                        .foregroundStyle(.black)
+                        .foregroundStyle(Theme.foreground)
                         .padding(.horizontal, 18).padding(.vertical, 10)
-                        .background(Theme.accent, in: Capsule())
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .overlay(Capsule().stroke(Theme.foreground.opacity(0.14), lineWidth: 1))
                 }
             }
         }
@@ -763,7 +758,7 @@ struct SettingsView: View {
     // ── 2. Display ──
     private var displaySection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionHeading("Display")
+            Text("Display").font(Theme.heading(19, .bold)).foregroundStyle(Theme.foreground)
             VStack(alignment: .leading, spacing: 6) {
                 Text("Theme").font(Theme.body(14, .semibold)).foregroundStyle(Theme.foreground)
                 Text("Choose your preferred color scheme").font(Theme.body(12)).foregroundStyle(Theme.muted)
@@ -834,7 +829,7 @@ struct SettingsView: View {
     // it must be prefilled from the live profile rather than reconstructed).
     private var profileSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeading("Profile")
+            Text("Profile").font(Theme.heading(19, .bold)).foregroundStyle(Theme.foreground)
             Text("Photo, display name, username, bio, social links, and profile privacy.")
                 .font(Theme.body(13))
                 .foregroundStyle(Theme.muted)
@@ -850,7 +845,7 @@ struct SettingsView: View {
                         .foregroundStyle(.black)
                 }
                 .padding(.horizontal, 18).padding(.vertical, 10)
-                .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12))
+                .background(Theme.accent, in: Capsule())
             }
             .disabled(editProfileLoading)
         }
@@ -868,12 +863,12 @@ struct SettingsView: View {
 
     private var locationSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeading("Location")
+            Text("Location").font(Theme.heading(19, .bold)).foregroundStyle(Theme.foreground)
             TextField("e.g., Nashville, TN or 'The Shire'", text: Bindable(model).location)
                 .font(Theme.body(14))
-                .padding(.horizontal, 14).padding(.vertical, 11)
-                .background(Theme.surface.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                .padding(.horizontal, 16).padding(.vertical, 12)
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
                 .onChange(of: model.location) {
                     if model.location.count > 100 { model.location = String(model.location.prefix(100)) }
                 }
@@ -891,11 +886,12 @@ struct SettingsView: View {
                     locationSaved = false
                 }
             } label: {
-                Text(locationSaved ? "Saved ✓" : "Save Location")
+                Text(locationSaved ? "Saved" : "Save Location")
                     .font(Theme.body(14, .semibold))
-                    .foregroundStyle(.black)
+                    .foregroundStyle(Theme.foreground)
                     .padding(.horizontal, 18).padding(.vertical, 10)
-                    .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12))
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.accent.opacity(0.6), lineWidth: 1))
             }
         }
     }
@@ -903,7 +899,7 @@ struct SettingsView: View {
     // ── 4. Notifications ──
     private var notificationsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeading("Notifications")
+            Text("Notifications").font(Theme.heading(19, .bold)).foregroundStyle(Theme.foreground)
             Text("Choose which emails you receive")
                 .font(Theme.body(13)).foregroundStyle(Theme.muted)
             notifToggle("New follower", subtitle: "Email when someone follows you",
@@ -914,9 +910,7 @@ struct SettingsView: View {
                         isOn: Bindable(model).notifPrefs.emailWeeklyDigest)
         }
         .padding(16)
-        .background(Theme.surface.opacity(0.6))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
+        .glassCard()
     }
 
     private func notifToggle(_ label: String, subtitle: String, isOn: Binding<Bool>) -> some View {
@@ -938,7 +932,7 @@ struct SettingsView: View {
     // ── 5. Export ──
     private var exportSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeading("Export Your Data")
+            Text("Export Your Data").font(Theme.heading(19, .bold)).foregroundStyle(Theme.foreground)
             Text("Download your reading data to keep a backup or move to another platform.")
                 .font(Theme.body(13)).foregroundStyle(Theme.muted)
             exportCard(
@@ -956,9 +950,7 @@ struct SettingsView: View {
             }
         }
         .padding(16)
-        .background(Theme.surface.opacity(0.6))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
+        .glassCard()
     }
 
     private func exportCard(title: String, blurb: String, tint: Color, format: String, enabled: Bool) -> some View {
@@ -970,7 +962,8 @@ struct SettingsView: View {
                     .font(.system(size: 15))
                     .foregroundStyle(tint)
                     .frame(width: 40, height: 40)
-                    .background(tint.opacity(0.13), in: RoundedRectangle(cornerRadius: 11))
+                    .background(.ultraThinMaterial, in: Circle())
+                    .overlay(Circle().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title).font(Theme.body(14, .semibold)).foregroundStyle(Theme.foreground)
                     Text(blurb).font(Theme.body(12)).foregroundStyle(Theme.muted)
@@ -980,7 +973,7 @@ struct SettingsView: View {
                 Spacer()
             }
             .padding(12)
-            .background(Theme.surfaceAlt.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+            .glassCard(radius: 18)
         }
         .disabled(!enabled || exporting != nil)
         .opacity(enabled ? 1 : 0.5)
@@ -1021,7 +1014,7 @@ struct SettingsView: View {
                 }
             } label: {
                 HStack {
-                    SectionHeading("Hidden Books (\(model.hiddenBooks.count))")
+                    Text("Hidden Books (\(model.hiddenBooks.count))").font(Theme.heading(19, .bold)).foregroundStyle(Theme.foreground)
                     Spacer()
                     Image(systemName: "chevron.down")
                         .font(.system(size: 13, weight: .semibold))
@@ -1057,7 +1050,7 @@ struct SettingsView: View {
     // ── 7. Change password ──
     private var passwordSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeading("Change Password")
+            Text("Change Password").font(Theme.heading(19, .bold)).foregroundStyle(Theme.foreground)
             passwordField("Current password", placeholder: "Your current password", text: $currentPassword)
             passwordField("New password", placeholder: "At least 8 characters", text: $newPassword)
             passwordField("Confirm new password", placeholder: "Repeat the new password", text: $confirmPassword)
@@ -1069,12 +1062,12 @@ struct SettingsView: View {
             Button {
                 changePassword()
             } label: {
-                // Black on lime — same rule as the web button.
                 Text(passwordBusy ? "Updating…" : "Update password")
                     .font(Theme.body(14, .semibold))
-                    .foregroundStyle(.black)
+                    .foregroundStyle(Theme.foreground)
                     .padding(.horizontal, 18).padding(.vertical, 10)
-                    .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12))
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.accent.opacity(0.6), lineWidth: 1))
             }
             .disabled(passwordBusy || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty)
         }
@@ -1086,9 +1079,9 @@ struct SettingsView: View {
             SecureField(placeholder, text: text)
                 .font(Theme.body(14))
                 .textContentType(.password)
-                .padding(.horizontal, 14).padding(.vertical, 11)
-                .background(Theme.surface.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                .padding(.horizontal, 16).padding(.vertical, 12)
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
         }
     }
 
@@ -1130,7 +1123,8 @@ struct SettingsView: View {
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(Theme.accentText)
                     .frame(width: 34, height: 34)
-                    .background(Theme.accent.opacity(0.12), in: Circle())
+                    .background(.ultraThinMaterial, in: Circle())
+                    .overlay(Circle().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("What\u{2019}s New")
                         .font(Theme.heading(17, .bold))
@@ -1152,9 +1146,7 @@ struct SettingsView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .background(Theme.surface.opacity(0.6))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
+            .glassCard()
             .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
@@ -1171,17 +1163,14 @@ struct SettingsView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Theme.surface.opacity(0.6))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.border, lineWidth: 1))
+        .glassCard()
     }
 
     private var dangerZone: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Danger Zone")
-                .font(Theme.heading(19, .bold))
-                .foregroundStyle(Theme.foreground)
-                .padding(.bottom, 12)
+            Eyebrow("Danger zone", color: Theme.destructive)
+                .padding(.leading, 4)
+                .padding(.bottom, 8)
             VStack(spacing: 0) {
                 ForEach(Array(DangerAction.all.enumerated()), id: \.element.key) { index, action in
                     if index > 0 { Divider().background(Theme.destructive.opacity(0.15)) }
@@ -1196,14 +1185,13 @@ struct SettingsView: View {
                             .font(Theme.body(13, .semibold))
                             .foregroundStyle(Theme.destructive)
                             .padding(.horizontal, 12).padding(.vertical, 7)
-                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.destructive.opacity(0.6), lineWidth: 1.5))
+                            .background(.ultraThinMaterial, in: Capsule())
+                            .overlay(Capsule().stroke(Theme.destructive.opacity(0.6), lineWidth: 1))
                     }
                     .padding(14)
                 }
             }
-            .background(Theme.destructive.opacity(0.03))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.destructive.opacity(0.3), lineWidth: 1))
+            .glassCard(ring: Theme.destructive)
         }
     }
 }
@@ -1264,9 +1252,9 @@ struct DangerConfirmSheet: View {
                 .font(Theme.body(15))
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
-                .padding(.horizontal, 14).padding(.vertical, 11)
-                .background(Theme.surface.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                .padding(.horizontal, 16).padding(.vertical, 12)
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
             if let error {
                 Text(error).font(Theme.body(13)).foregroundStyle(Theme.destructive)
             }

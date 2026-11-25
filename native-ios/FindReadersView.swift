@@ -62,9 +62,12 @@ struct FindReadersView: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 12) {
                     Color.clear.frame(width: 40, height: 40)
-                    Text("Find Readers")
-                        .font(Theme.heading(26, .bold))
-                        .foregroundStyle(Theme.foreground)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Eyebrow("Community")
+                        Text("Find Readers")
+                            .font(Theme.heading(26, .bold))
+                            .foregroundStyle(Theme.foreground)
+                    }
                 }
                 .padding(.top, 14)
 
@@ -85,6 +88,11 @@ struct FindReadersView: View {
                         .foregroundStyle(Theme.muted)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 24)
+                } else if model.query.trimmingCharacters(in: .whitespaces).count < 2 {
+                    GlassEmptyState(systemName: "person.2",
+                                    title: "Find your reading people",
+                                    message: "Type at least two letters of a name or @username. Follow readers to see what they're reading.")
+                        .padding(.top, 4)
                 } else {
                     VStack(spacing: 10) {
                         ForEach(model.results) { person in
@@ -103,31 +111,19 @@ struct FindReadersView: View {
     }
 
     private func personRow(_ person: PersonRow) -> some View {
-        HStack(spacing: 12) {
+        let name = person.displayName ?? person.username ?? "Unknown"
+        return HStack(spacing: 12) {
             NavigationLink(value: UserRoute(username: person.username ?? "")) {
                 HStack(spacing: 12) {
-                    Group {
-                        if let avatarUrl = person.avatarUrl, let url = URL(string: avatarUrl) {
-                            CachedCoverImage(url: url) { Theme.surfaceAlt }
-                        } else {
-                            ZStack {
-                                Theme.neonPurple.opacity(0.3)
-                                Text(String((person.displayName ?? person.username ?? "?").prefix(1)).uppercased())
-                                    .font(Theme.body(16, .bold))
-                                    .foregroundStyle(Theme.foreground)
-                            }
-                        }
-                    }
-                    .frame(width: 44, height: 44)
-                    .clipShape(Circle())
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(person.displayName ?? person.username ?? "Unknown")
-                            .font(Theme.body(15, .semibold))
+                    RingedAvatar(avatarUrl: person.avatarUrl, name: name)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(name)
+                            .font(Theme.heading(15, .bold))
                             .foregroundStyle(Theme.foreground)
+                            .lineLimit(1)
                         if let username = person.username {
                             Text("@\(username)")
-                                .font(Theme.body(13))
+                                .font(Theme.body(12))
                                 .foregroundStyle(Theme.muted)
                         }
                         if let bio = person.bio, !bio.isEmpty {
@@ -137,26 +133,18 @@ struct FindReadersView: View {
                                 .lineLimit(1)
                         }
                     }
+                    Spacer(minLength: 0)
                 }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .disabled(person.username == nil)
 
-            Spacer()
-
-            Button {
+            QuietFollowPill(isFollowing: person.isFollowing) {
                 Task { await model.toggleFollow(person) }
-            } label: {
-                Text(person.isFollowing ? "Following" : "Follow")
-                    .font(Theme.body(13, .semibold))
-                    .foregroundStyle(person.isFollowing ? Theme.accentText : .black)
-                    .padding(.horizontal, 14).padding(.vertical, 7)
-                    .background(person.isFollowing ? Theme.accent.opacity(0.12) : Theme.accent, in: Capsule())
-                    .overlay(Capsule().stroke(Theme.accent.opacity(person.isFollowing ? 0.5 : 1), lineWidth: 1))
             }
         }
         .padding(12)
-        .background(Theme.surface.opacity(0.55))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.border, lineWidth: 1))
+        .glassCard(radius: 18)
     }
 }
