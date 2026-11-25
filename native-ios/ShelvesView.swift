@@ -1143,7 +1143,7 @@ private struct AddToTopShelfSheet: View {
                                             .font(Theme.body(14))
                                             .foregroundStyle(Theme.foreground)
                                             .lineLimit(1)
-                                        Text(book.authors.joined(separator: ", "))
+                                        AuthorNameLinks(names: book.authors)
                                             .font(Theme.body(12))
                                             .foregroundStyle(Theme.muted)
                                             .lineLimit(1)

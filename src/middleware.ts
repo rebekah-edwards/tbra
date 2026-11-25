@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtVerify } from "jose";
+import { jwtVerify, SignJWT } from "jose";
 
 const COOKIE_NAME = "tbra-session";
+// Keep in sync with SESSION_DURATION in src/lib/auth.ts (can't import it here —
+// that module pulls in db/Drizzle, which the Edge runtime can't load).
+const SESSION_DURATION = 60 * 24 * 60 * 60; // 60 days in seconds
+// Re-issue the cookie when the token is older than this, so any visit from an
+// active user rolls their session forward instead of dying at a fixed expiry.
+const REFRESH_AFTER_SECONDS = 24 * 60 * 60; // 1 day
 
 /**
  * Lightweight middleware to redirect unverified users to the verify-email page.
@@ -25,6 +31,10 @@ const UNVERIFIED_ALLOWED = new Set([
   "/signup",
   "/api/auth",
   "/methodology",
+  // Someone who has just signed up must be able to read what they agreed to
+  // before verifying their email.
+  "/terms",
+  "/privacy",
 ]);
 
 // Prefixes that should always pass through (static assets, API routes, etc.)
@@ -35,8 +45,140 @@ const PASS_THROUGH_PREFIXES = [
   "/api/",
 ];
 
+// ─── Real HTTP status codes for book / series / author URLs ───
+// These pages stream (root loading.tsx puts everything under a Suspense
+// boundary), so by the time the page calls notFound() or redirect() the 200
+// status line has already gone out: a missing book answered "200 + noindex"
+// and a merged book's old URL answered 200 with a client-side redirect —
+// which Search Console files as soft 404s. Middleware runs before any byte is
+// sent, so the existence check lives here. Edge runtime can't load Drizzle;
+// this talks to Turso's HTTP API directly. Any failure or slow answer FAILS
+// OPEN: the request continues to the page exactly as before.
+const ENTITY_ROUTE = /^\/(book|series|author)\/([^/]+)\/?$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ENTITY_LOOKUP_TIMEOUT_MS = 1500;
+
+type EntityVerdict = { kind: "pass" } | { kind: "missing" } | { kind: "moved"; to: string };
+
+/** Run one statement against Turso over HTTP. Returns rows of nullable strings, or null if unavailable. */
+async function tursoQuery(sql: string, args: string[]): Promise<(string | null)[][] | null> {
+  const dbUrl = process.env.TURSO_DATABASE_URL;
+  const token = process.env.TURSO_AUTH_TOKEN;
+  if (!dbUrl || !token) return null; // local dev (SQLite) — nothing to ask
+  const res = await fetch(`${dbUrl.replace(/^libsql:\/\//, "https://")}/v2/pipeline`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      requests: [
+        { type: "execute", stmt: { sql, args: args.map((value) => ({ type: "text", value })) } },
+        { type: "close" },
+      ],
+    }),
+    signal: AbortSignal.timeout(ENTITY_LOOKUP_TIMEOUT_MS),
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const first = data?.results?.[0];
+  if (first?.type !== "ok") return null;
+  const rows = first.response?.result?.rows;
+  if (!Array.isArray(rows)) return null;
+  return rows.map((row: { type: string; value?: string }[]) =>
+    row.map((cell) => (cell.type === "null" || cell.value == null ? null : String(cell.value))),
+  );
+}
+
+async function resolveEntity(kind: string, segment: string): Promise<EntityVerdict> {
+  const table = kind === "book" ? "books" : kind === "series" ? "series" : "authors";
+
+  if (UUID_PATTERN.test(segment)) {
+    const rows = await tursoQuery(`SELECT slug FROM ${table} WHERE id = ? LIMIT 1`, [segment]);
+    if (!rows) return { kind: "pass" };
+    if (rows.length === 0) return kind === "author" ? retiredAuthor(segment) : retiredSeries(segment);
+    const slug = rows[0][0];
+    // Slug-less rows are legitimately served at their UUID URL.
+    return slug ? { kind: "moved", to: `/${kind}/${encodeURIComponent(slug)}` } : { kind: "pass" };
+  }
+
+  if (kind !== "book") {
+    const rows = await tursoQuery(`SELECT 1 FROM ${table} WHERE slug = ? LIMIT 1`, [segment]);
+    if (!rows) return { kind: "pass" };
+    if (rows.length > 0) return { kind: "pass" };
+    return kind === "author" ? retiredAuthor(segment) : retiredSeries(segment);
+  }
+
+  // Books: a live slug wins; otherwise a retired slug (merge/rename) 301s to
+  // the book it now belongs to — the same rule as resolveBook().
+  const rows = await tursoQuery(
+    `SELECT 'live' AS src, slug, id FROM books WHERE slug = ?
+     UNION ALL
+     SELECT 'old' AS src, b.slug, b.id FROM book_slug_history h JOIN books b ON b.id = h.book_id WHERE h.old_slug = ?`,
+    [segment, segment],
+  );
+  if (!rows) return { kind: "pass" };
+  if (rows.some((r) => r[0] === "live")) return { kind: "pass" };
+  const old = rows.find((r) => r[0] === "old");
+  if (!old) return { kind: "missing" };
+  const target = old[1] || old[2];
+  return target ? { kind: "moved", to: `/book/${encodeURIComponent(target)}` } : { kind: "missing" };
+}
+
+/**
+ * An author slug or id that no longer names a row: 301 to the author it was
+ * merged into or renamed to (`author_redirects`), otherwise a real 404. If the
+ * lookup itself fails the answer stays "missing" — exactly what this URL got
+ * before the table existed.
+ */
+async function retiredAuthor(oldKey: string): Promise<EntityVerdict> {
+  // Also an exact author NAME: name-only lists (shelves, reviews, home cards,
+  // the iOS app) link to /author/<name>.
+  let name = oldKey;
+  try { name = decodeURIComponent(oldKey); } catch { /* keep raw */ }
+  const rows = await tursoQuery(
+    `SELECT a.slug, a.id FROM author_redirects r JOIN authors a ON a.id = r.author_id WHERE r.old_key = ?
+     UNION ALL
+     SELECT slug, id FROM (SELECT slug, id FROM authors WHERE name = ? LIMIT 1)
+     LIMIT 1`,
+    [oldKey, name],
+  ).catch(() => null);
+  const target = rows?.[0]?.[0] || rows?.[0]?.[1];
+  return target ? { kind: "moved", to: `/author/${encodeURIComponent(target)}` } : { kind: "missing" };
+}
+
+/** Same as retiredAuthor, for series renamed or merged away (`series_redirects`). */
+async function retiredSeries(oldKey: string): Promise<EntityVerdict> {
+  const rows = await tursoQuery(
+    `SELECT s.slug, s.id FROM series_redirects r JOIN series s ON s.id = r.series_id WHERE r.old_key = ? LIMIT 1`,
+    [oldKey],
+  ).catch(() => null);
+  const target = rows?.[0]?.[0] || rows?.[0]?.[1];
+  return target ? { kind: "moved", to: `/series/${encodeURIComponent(target)}` } : { kind: "missing" };
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname, host, protocol } = request.nextUrl;
+
+  // Full-page loads of an entity URL only: client-side (RSC) navigations and
+  // prefetches keep the streamed not-found/redirect they have always had.
+  const entity = ENTITY_ROUTE.exec(pathname);
+  if (
+    entity &&
+    (request.method === "GET" || request.method === "HEAD") &&
+    !request.headers.has("rsc") &&
+    !request.headers.has("next-router-prefetch")
+  ) {
+    try {
+      const verdict = await resolveEntity(entity[1], decodeURIComponent(entity[2]));
+      if (verdict.kind === "moved") {
+        return NextResponse.redirect(new URL(verdict.to, request.url), 301);
+      }
+      if (verdict.kind === "missing") {
+        // An unmatched path renders the app's normal not-found page.
+        return NextResponse.rewrite(new URL("/_not-found", request.url), { status: 404 });
+      }
+    } catch {
+      // Timeout / network / malformed segment — fall through to the page.
+    }
+  }
 
   // Redirect /defaultsite → /
   if (pathname === "/defaultsite") {
@@ -69,6 +211,31 @@ export async function middleware(request: NextRequest) {
     // so existing users aren't locked out)
     if (verified === false) {
       return NextResponse.redirect(new URL("/verify-email", request.url));
+    }
+
+    // Rolling session: once the token is a day old, mint a fresh one on the
+    // way through so active users never hit the fixed expiry.
+    const issuedAt = typeof payload.iat === "number" ? payload.iat : 0;
+    const ageSeconds = Math.floor(Date.now() / 1000) - issuedAt;
+    if (ageSeconds > REFRESH_AFTER_SECONDS && payload.userId) {
+      const freshToken = await new SignJWT({
+        userId: payload.userId,
+        email: payload.email,
+        verified: verified ?? true,
+      })
+        .setProtectedHeader({ alg: "HS256" })
+        .setIssuedAt()
+        .setExpirationTime(`${SESSION_DURATION}s`)
+        .sign(secret);
+      const response = NextResponse.next();
+      response.cookies.set(COOKIE_NAME, freshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: SESSION_DURATION,
+        path: "/",
+      });
+      return response;
     }
   } catch {
     // Invalid/expired token — let the page handle it

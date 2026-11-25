@@ -496,7 +496,7 @@ struct BuddyReadDetailView: View {
                                 Text(detail.book.title)
                                     .font(Theme.body(16, .semibold))
                                     .foregroundStyle(Theme.foreground)
-                                Text(detail.book.authors.joined(separator: ", "))
+                                AuthorNameLinks(names: detail.book.authors)
                                     .font(Theme.body(13))
                                     .foregroundStyle(Theme.muted)
                                 if let desc = detail.description, !desc.isEmpty {
@@ -786,7 +786,7 @@ struct BuddyReadDetailView: View {
                                 .lineLimit(2)
                                 .multilineTextAlignment(.leading)
                             if !detail.book.authors.isEmpty {
-                                Text(detail.book.authors.joined(separator: ", "))
+                                AuthorNameLinks(names: detail.book.authors)
                                     .font(Theme.body(13))
                                     .foregroundStyle(Theme.foreground.opacity(0.70))
                                     .lineLimit(1)

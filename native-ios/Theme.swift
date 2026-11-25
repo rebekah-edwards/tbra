@@ -949,6 +949,26 @@ extension View {
 /// author name appears, except on that author's own page (Rebekah,
 /// 2026-11-25). Must NOT sit inside another NavigationLink (nested links
 /// don't fire) — split the surrounding card's link around it instead.
+/// Name-only author lists (shelves, home cards, buddy reads): each name opens
+/// the author page — the API resolves a name to its author. Inherits the
+/// caller's font/color; inside a row-wide button the name takes its own tap.
+struct AuthorNameLinks: View {
+    let names: [String]
+    var limit = 2
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(names.prefix(limit).enumerated()), id: \.offset) { i, name in
+                if i > 0 { Text(", ") }
+                NavigationLink(value: AuthorRoute(idOrSlug: name)) {
+                    Text(name)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
 struct AuthorLinks: View {
     let authors: [BookAuthor]
     var font: Font = Theme.body(15)

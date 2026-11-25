@@ -120,7 +120,7 @@ struct TbrSuggestionCard: View {
                                     .foregroundStyle(Theme.foreground)
                                     .lineLimit(2)
                                 if !book.authors.isEmpty {
-                                    Text(book.authors.joined(separator: ", "))
+                                    AuthorNameLinks(names: book.authors)
                                         .font(Theme.body(14))
                                         .foregroundStyle(Theme.muted)
                                         .lineLimit(1)
@@ -207,7 +207,7 @@ struct TbrSuggestionCard: View {
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
                         if !book.authors.isEmpty {
-                            Text(book.authors.joined(separator: ", "))
+                            AuthorNameLinks(names: book.authors)
                                 .font(Theme.body(14))
                                 .foregroundStyle(Theme.foreground.opacity(0.70))
                                 .lineLimit(1)

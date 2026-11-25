@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { db } from "@/db";
-import { authors, bookAuthors, books, bookSeries, series } from "@/db/schema";
+import { authors, authorRedirects, bookAuthors, books, bookSeries, series } from "@/db/schema";
 import { eq, asc, and, ne } from "drizzle-orm";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -33,14 +33,44 @@ export async function getAuthorWithBooks(authorId: string) {
  * Resolve an author by UUID or slug.
  * Wrapped in React cache() so generateMetadata + page component share the result.
  */
+function safeDecode(v: string) {
+  try { return decodeURIComponent(v); } catch { return v; }
+}
+
 export const resolveAuthor = cache(async function resolveAuthor(idOrSlug: string) {
   if (UUID_PATTERN.test(idOrSlug)) {
     const author = await db.query.authors.findFirst({ where: eq(authors.id, idOrSlug) });
-    return author ? { author, isIdLookup: true } : null;
+    if (author) return { author, isIdLookup: true };
+    const moved = await resolveRetiredAuthor(idOrSlug);
+    return moved ? { author: moved, isIdLookup: true } : null;
   }
   const author = await db.query.authors.findFirst({ where: eq(authors.slug, idOrSlug) });
-  return author ? { author, isIdLookup: false } : null;
+  if (author) return { author, isIdLookup: false };
+  // isIdLookup:true makes the page redirect to the author's current URL.
+  const moved = await resolveRetiredAuthor(idOrSlug);
+  if (moved) return { author: moved, isIdLookup: true };
+  // Name fallback: lists that only carry author names (shelves, reviews,
+  // home cards) link to /author/<name>; redirect to the slug URL.
+  const byName = await db.query.authors.findFirst({ where: eq(authors.name, safeDecode(idOrSlug)) });
+  return byName ? { author: byName, isIdLookup: true } : null;
 });
+
+/**
+ * A slug or id that no longer names a row may be one we retired when merging
+ * duplicate author rows or renaming an inverted name ("Yarros, Rebecca").
+ * Never throws: if the table is missing the lookup simply finds nothing.
+ */
+async function resolveRetiredAuthor(oldKey: string) {
+  try {
+    const hit = await db.query.authorRedirects.findFirst({
+      where: eq(authorRedirects.oldKey, oldKey),
+    });
+    if (!hit) return null;
+    return (await db.query.authors.findFirst({ where: eq(authors.id, hit.authorId) })) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Get an author by slug with all their books (excluding box sets),
@@ -58,6 +88,13 @@ export async function getAuthorBySlug(slug: string) {
 /**
  * Get all books by an author, excluding box sets, sorted by publication year.
  * Includes series info for grouping.
+ *
+ * Filters to visibility='public' like every other browse surface (browse.ts).
+ * Without it the page listed `import_only` rows too — on /author/lisa-jewell that
+ * was 12 foreign-language translations of books already listed in English
+ * (Dentro de casa, Dins de casa, On se reverra ×2, Gwiazda jednego przeboju,
+ * Ruya Sokagi 31, Wo deine Träume wohnen …), which read as duplicates to users
+ * and were reported as such on 2026-10-16.
  */
 export async function getAuthorBooks(authorId: string) {
   const authorBookRows = await db
@@ -72,7 +109,13 @@ export async function getAuthorBooks(authorId: string) {
     })
     .from(bookAuthors)
     .innerJoin(books, eq(bookAuthors.bookId, books.id))
-    .where(and(eq(bookAuthors.authorId, authorId), ne(books.isBoxSet, true)))
+    .where(
+      and(
+        eq(bookAuthors.authorId, authorId),
+        ne(books.isBoxSet, true),
+        eq(books.visibility, "public"),
+      ),
+    )
     .orderBy(asc(books.publicationYear));
 
   // Enrich with series info
