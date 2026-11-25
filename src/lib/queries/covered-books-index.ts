@@ -18,12 +18,19 @@ import { sql, type SQL } from "drizzle-orm";
  */
 export const COVERED_BOOKS_INDEX = "idx_books_covered_lite";
 
-let indexMissing = false;
+// When the index was found missing (ms timestamp). Re-checked after 10
+// minutes, so creating the index later takes effect without a redeploy.
+let missingSince = 0;
+const RECHECK_MS = 10 * 60 * 1000;
+function isMissing(): boolean {
+  if (missingSince && Date.now() - missingSince > RECHECK_MS) missingSince = 0;
+  return missingSince > 0;
+}
 
 /** `books b INDEXED BY …` (or plain `books b` once the index is known missing). */
 export function booksFrom(alias = "b"): SQL {
   const table = alias === "books" ? "books" : `books ${alias}`;
-  return indexMissing ? sql.raw(table) : sql.raw(`${table} INDEXED BY ${COVERED_BOOKS_INDEX}`);
+  return isMissing() ? sql.raw(table) : sql.raw(`${table} INDEXED BY ${COVERED_BOOKS_INDEX}`);
 }
 
 export async function withCoveredIndex<T>(run: () => Promise<T>): Promise<T> {
@@ -36,8 +43,8 @@ export async function withCoveredIndex<T>(run: () => Promise<T>): Promise<T> {
     for (let e: unknown = err, i = 0; e && i < 5; e = (e as { cause?: unknown }).cause, i++) {
       text += " " + String((e as Error)?.message ?? e);
     }
-    if (!indexMissing && /no such index/i.test(text)) {
-      indexMissing = true;
+    if (!isMissing() && /no such index/i.test(text)) {
+      missingSince = Date.now();
       console.warn(`[db] ${COVERED_BOOKS_INDEX} missing — running without it`);
       return run();
     }
