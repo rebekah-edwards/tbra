@@ -140,14 +140,14 @@ export function ReadingPreferencesEditor({
   // No prefs yet — show setup prompt
   if (!initialPrefs) {
     return (
-      <div className="rounded-xl border border-border bg-surface p-5">
-        <h2 className="section-heading text-lg mb-1">Reading Preferences</h2>
+      <div className="card-hairline p-5 text-center">
+        <h2 className="font-heading text-lg font-bold text-foreground mb-1">Reading Preferences</h2>
         <p className="text-sm text-muted mb-3">
           Set up your taste profile to get better recommendations.
         </p>
         <Link
           href="/onboarding"
-          className="inline-block rounded-full bg-accent text-black px-4 py-2 text-sm font-semibold hover:brightness-110 transition-all"
+          className="btn-lime px-5 py-2.5 text-sm"
         >
           Set Up Preferences
         </Link>
@@ -282,11 +282,11 @@ export function ReadingPreferencesEditor({
   const restrictedCount = Object.values(contentPrefs).filter((v) => v < 4).length;
 
   return (
-    <div className="rounded-xl border border-border bg-surface overflow-hidden">
-      <div className="px-5 py-4 border-b border-border">
+    <div className="card-glass overflow-hidden">
+      <div className="px-5 py-4 border-b border-foreground/10">
         <div className="flex items-center justify-between">
-          <h2 className="section-heading text-lg">Reading Preferences</h2>
-          <span className="text-[11px] text-muted bg-surface-hover px-2 py-0.5 rounded-full">Auto-saved</span>
+          <h2 className="font-heading text-lg font-bold text-foreground">Reading Preferences</h2>
+          <span className="chip-glass"><span className="dot bg-accent" />Auto-saved</span>
         </div>
         <p className="text-xs text-muted mt-0.5">
           {lovedCount > 0 && `${lovedCount} loved genre${lovedCount !== 1 ? "s" : ""}`}
@@ -307,7 +307,7 @@ export function ReadingPreferencesEditor({
       >
         <div className="space-y-4">
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">Fiction</h4>
+            <h4 className="eyebrow mb-2">Fiction</h4>
             <div className="flex flex-wrap gap-1.5">
               {FICTION_LIST.map((genre) => (
                 <GenrePill
@@ -320,7 +320,7 @@ export function ReadingPreferencesEditor({
             </div>
           </div>
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">Nonfiction</h4>
+            <h4 className="eyebrow mb-2">Nonfiction</h4>
             <div className="flex flex-wrap gap-1.5">
               {NONFICTION_LIST.map((genre) => (
                 <GenrePill
@@ -344,7 +344,7 @@ export function ReadingPreferencesEditor({
         <div className="space-y-5">
           {/* Fiction preference */}
           <div>
-            <h4 className="text-xs font-semibold mb-2">I read mostly</h4>
+            <h4 className="eyebrow mb-2">I read mostly</h4>
             <div className="flex gap-2">
               {["fiction", "nonfiction", "both"].map((opt) => (
                 <button
@@ -354,10 +354,10 @@ export function ReadingPreferencesEditor({
                     setFictionPref(newVal);
                     handleStyleUpdate({ fictionPreference: newVal });
                   }}
-                  className={`flex-1 rounded-lg py-2 text-xs font-medium capitalize transition-all ${
+                  className={`flex-1 rounded-full py-2 text-xs font-medium capitalize transition-all ${
                     fictionPref === opt
-                      ? "bg-accent text-black"
-                      : "bg-surface-alt text-muted hover:text-foreground"
+                      ? "border border-accent/70 bg-surface/70 text-foreground"
+                      : "border border-foreground/10 bg-surface/70 text-muted hover:text-foreground"
                   }`}
                 >
                   {opt}
@@ -368,7 +368,7 @@ export function ReadingPreferencesEditor({
 
           {/* Pace */}
           <div>
-            <h4 className="text-xs font-semibold mb-2">Preferred pace</h4>
+            <h4 className="eyebrow mb-2">Preferred pace</h4>
             <p className="text-[10px] text-muted mb-1.5">Select one or more.</p>
             <div className="flex gap-2">
               {PACES.map((p) => (
@@ -399,10 +399,10 @@ export function ReadingPreferencesEditor({
                     setPaceSet(next);
                     handleStyleUpdate({ pacePreference: JSON.stringify([...next]) });
                   }}
-                  className={`flex-1 rounded-lg py-2 text-xs font-medium transition-all ${
+                  className={`flex-1 rounded-full py-2 text-xs font-medium transition-all ${
                     paceSet.has(p.key)
-                      ? "bg-neon-blue/20 border border-neon-blue/30"
-                      : "bg-surface-alt text-muted border border-transparent"
+                      ? "border border-neon-blue/60 bg-surface/70 text-foreground"
+                      : "border border-foreground/10 bg-surface/70 text-muted hover:text-foreground"
                   }`}
                 >
                   {p.label}
@@ -413,7 +413,7 @@ export function ReadingPreferencesEditor({
 
           {/* Length */}
           <div>
-            <h4 className="text-xs font-semibold mb-2">Preferred length</h4>
+            <h4 className="eyebrow mb-2">Preferred length</h4>
             <div className="flex gap-2">
               {LENGTHS.map((l) => (
                 <button
@@ -427,10 +427,10 @@ export function ReadingPreferencesEditor({
                       pageLengthMax: opt?.max ?? null,
                     });
                   }}
-                  className={`flex-1 rounded-lg py-2 text-xs font-medium transition-all ${
+                  className={`flex-1 rounded-full py-2 text-xs font-medium transition-all ${
                     lengthPref === l.key
-                      ? "bg-neon-blue/20 border border-neon-blue/30"
-                      : "bg-surface-alt text-muted border border-transparent"
+                      ? "border border-neon-blue/60 bg-surface/70 text-foreground"
+                      : "border border-foreground/10 bg-surface/70 text-muted hover:text-foreground"
                   }`}
                 >
                   {l.label}
@@ -441,7 +441,7 @@ export function ReadingPreferencesEditor({
 
           {/* Moods */}
           <div>
-            <h4 className="text-xs font-semibold mb-2">Preferred moods</h4>
+            <h4 className="eyebrow mb-2">Preferred moods</h4>
             <div className="flex flex-wrap gap-1.5">
               {MOODS.map((m) => {
                 const active = moodSet.has(m.key);
@@ -457,8 +457,8 @@ export function ReadingPreferencesEditor({
                     }}
                     className={`rounded-full px-3 py-1 text-xs font-medium transition-all border ${
                       active
-                        ? "bg-neon-purple/20 text-neon-purple border-neon-purple/30"
-                        : "bg-surface-alt text-muted border-transparent"
+                        ? "bg-surface/70 text-foreground border-neon-purple/60"
+                        : "bg-surface/70 text-muted border-foreground/10"
                     }`}
                   >
                     {m.label}
@@ -478,7 +478,7 @@ export function ReadingPreferencesEditor({
       >
         <div className="space-y-5">
           <div>
-            <h4 className="text-xs font-semibold mb-2">I care most about</h4>
+            <h4 className="eyebrow mb-2">I care most about</h4>
             <div className="flex flex-wrap gap-2">
               {STORY_FOCUS_OPTIONS.map((opt) => (
                 <button
@@ -488,10 +488,10 @@ export function ReadingPreferencesEditor({
                     setStoryFocusState(newVal);
                     handleStyleUpdate({ storyFocus: newVal });
                   }}
-                  className={`rounded-lg px-3 py-2 text-xs font-medium transition-all ${
+                  className={`rounded-full px-3.5 py-2 text-xs font-medium transition-all ${
                     storyFocus === opt.key
-                      ? "bg-neon-blue/20 border border-neon-blue/30"
-                      : "bg-surface-alt text-muted border border-transparent hover:text-foreground"
+                      ? "border border-neon-blue/60 bg-surface/70 text-foreground"
+                      : "border border-foreground/10 bg-surface/70 text-muted hover:text-foreground"
                   }`}
                 >
                   {opt.label}
@@ -501,7 +501,7 @@ export function ReadingPreferencesEditor({
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold mb-2">Character types</h4>
+            <h4 className="eyebrow mb-2">Character types</h4>
             <p className="text-[10px] text-muted mb-1.5">Tap to like, tap again to dislike, once more to clear.</p>
             <div className="flex flex-wrap gap-1.5">
               {CHARACTER_TROPES.map((t) => {
@@ -529,10 +529,10 @@ export function ReadingPreferencesEditor({
                     }}
                     className={`rounded-full px-3 py-1 text-xs font-medium transition-all border ${
                       state === "like"
-                        ? "bg-accent/20 text-accent border-accent/40"
+                        ? "bg-surface/70 text-foreground border-accent/70"
                         : state === "dislike"
-                          ? "bg-destructive/15 text-destructive border-destructive/30"
-                          : "bg-surface-alt text-muted border-transparent"
+                          ? "bg-surface/70 text-foreground border-destructive/60"
+                          : "bg-surface/70 text-muted border-foreground/10"
                     }`}
                   >
                     {state === "like" && "\u2665 "}
@@ -574,7 +574,7 @@ export function ReadingPreferencesEditor({
 
           {/* Custom warnings */}
           <div>
-            <h4 className="text-xs font-semibold mb-1">Custom topics to avoid</h4>
+            <h4 className="eyebrow mb-1">Custom topics to avoid</h4>
             <p className="text-[11px] text-muted mb-2 leading-relaxed">
               Type to see suggestions. Matched topics get compared against reviews
               so books that many readers flagged for the same topic get downranked
@@ -599,17 +599,17 @@ export function ReadingPreferencesEditor({
                     }
                   }}
                   placeholder="e.g. infidelity, animal death"
-                  className="flex-1 rounded-lg bg-surface-alt px-3 py-2 text-xs text-foreground placeholder:text-muted border border-transparent focus:border-accent/40 focus:outline-none transition-colors"
+                  className="field-glass !h-9 flex-1 text-[13px]"
                 />
                 <button
                   onClick={handleAddWarning}
-                  className="rounded-lg bg-surface-alt px-3 py-2 text-xs font-medium text-muted hover:text-foreground transition-colors"
+                  className="btn-glass px-4 py-2 text-xs"
                 >
                   Add
                 </button>
               </div>
               {warningSuggestions.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 z-20 rounded-lg border border-border bg-surface shadow-lg overflow-hidden">
+                <div className="absolute left-0 right-0 top-full mt-1 z-20 rounded-2xl border border-foreground/10 bg-surface shadow-lg overflow-hidden">
                   {warningSuggestions.map((s) => (
                     <button
                       key={s.id}
@@ -631,14 +631,18 @@ export function ReadingPreferencesEditor({
                 {customWarnings.map((w) => (
                   <span
                     key={w}
-                    className="inline-flex items-center gap-1 rounded-full bg-destructive/10 border border-destructive/20 px-2.5 py-0.5 text-[10px] font-medium text-destructive"
+                    className="chip-glass !text-[10px]"
                   >
                     {getWarningLabel(w)}
                     <button
                       onClick={() => handleRemoveWarning(w)}
-                      className="hover:text-destructive/70 transition-colors"
+                      aria-label={`Remove ${getWarningLabel(w)}`}
+                      className="text-destructive hover:text-destructive/70 transition-colors"
                     >
-                      ✕
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
                     </button>
                   </span>
                 ))}
@@ -668,7 +672,7 @@ function AccordionSection({
   anchorId?: string;
 }) {
   return (
-    <div className="border-b border-border last:border-b-0" data-coach-anchor={anchorId}>
+    <div className="border-b border-foreground/10 last:border-b-0" data-coach-anchor={anchorId}>
       <button
         onClick={onToggle}
         className="flex w-full items-center justify-between px-5 py-3.5 text-sm font-medium text-foreground hover:bg-surface-alt/50 transition-colors"
@@ -702,18 +706,27 @@ function GenrePill({
 }) {
   const stateClass =
     state === "love"
-      ? "bg-accent/20 text-accent border-accent/40"
+      ? "bg-surface/70 text-foreground border-accent/70"
       : state === "dislike"
-        ? "bg-destructive/15 text-destructive border-destructive/30"
-        : "bg-surface-alt text-muted border-transparent hover:text-foreground";
+        ? "bg-surface/70 text-foreground border-destructive/60"
+        : "bg-surface/70 text-muted border-foreground/10 hover:text-foreground";
 
   return (
     <button
       onClick={() => onToggle(genre)}
-      className={`rounded-full px-3 py-1 text-[11px] font-medium transition-all border ${stateClass}`}
+      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium transition-all border ${stateClass}`}
     >
-      {state === "love" && "♥ "}
-      {state === "dislike" && "✕ "}
+      {state === "love" && (
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden="true">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
+      )}
+      {state === "dislike" && (
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="text-destructive" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      )}
       {genre}
     </button>
   );

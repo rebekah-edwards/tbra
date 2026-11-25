@@ -44,7 +44,7 @@ export function GoalStreakSettings({ hideGoal, hideStreak }: { hideGoal: boolean
 
   return (
     <div>
-      <p className="text-sm text-foreground mb-1.5">Goal &amp; Streak</p>
+      <p className="eyebrow mb-0.5">Goal &amp; Streak</p>
       <p className="text-xs text-muted mb-2">
         Not everyone reads better with a target. Hide either one &mdash; it keeps counting, so you can bring it back any time.
       </p>

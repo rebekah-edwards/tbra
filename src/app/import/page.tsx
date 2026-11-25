@@ -12,12 +12,10 @@ export default async function ImportPage() {
   if (!user) redirect("/login");
 
   return (
-    <div className="space-y-6 lg:w-[60%] lg:mx-auto">
+    <div className="space-y-6 pb-24 lg:w-[60%] lg:mx-auto">
       <div>
-        <h1
-          className="text-foreground text-2xl font-bold tracking-tight"
-         
-        >
+        <p className="eyebrow">Bring your books</p>
+        <h1 className="font-heading text-foreground text-2xl font-bold tracking-tight">
           Import Library
         </h1>
         <p className="text-sm text-muted mt-1">

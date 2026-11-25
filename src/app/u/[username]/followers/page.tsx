@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { getUserByUsername } from "@/lib/queries/profile";
 import { getFollowers, isFollowing } from "@/lib/queries/follows";
 import { getCurrentUser } from "@/lib/auth";
-import { BackButton } from "@/components/ui/back-button";
-import { FollowButton } from "@/components/profile/follow-button";
+import { FollowList } from "@/components/profile/follow-list";
 
 export async function generateMetadata({
   params,
@@ -50,63 +48,13 @@ export default async function FollowersPage({
   const displayName = user.displayName || user.username || "User";
 
   return (
-    <div className="min-h-screen">
-      <div className="px-4 py-4 border-b border-border/50">
-        <div className="flex items-center gap-2 mb-2">
-          <BackButton />
-          <Link
-            href={`/u/${user.username}`}
-            className="text-xs text-neon-blue hover:text-neon-blue/80 transition-colors"
-          >
-            View Profile
-          </Link>
-        </div>
-        <h1 className="text-foreground text-lg font-bold">
-          {displayName}&apos;s Followers
-        </h1>
-        <p className="text-xs text-muted">{followers.length} {followers.length === 1 ? "follower" : "followers"}</p>
-      </div>
-
-      <div className="px-4 py-4 space-y-2">
-        {followers.length === 0 && (
-          <p className="text-sm text-muted text-center py-8">No followers yet</p>
-        )}
-        {followers.map((f) => {
-          const isOwn = session?.userId === f.userId;
-          return (
-            <div key={f.userId} className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3">
-              <Link href={f.username ? `/u/${f.username}` : "#"} className="flex-shrink-0">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold overflow-hidden text-black"
-                  style={{ backgroundColor: f.avatarUrl ? undefined : "#a3e635" }}
-                >
-                  {f.avatarUrl ? (
-                    <img src={f.avatarUrl} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    (f.displayName?.[0] ?? "?").toUpperCase()
-                  )}
-                </div>
-              </Link>
-              <div className="flex-1 min-w-0">
-                <Link href={f.username ? `/u/${f.username}` : "#"}>
-                  <p className="text-sm font-medium text-foreground truncate hover:text-neon-blue transition-colors">
-                    {f.displayName ?? f.username ?? "Unknown"}
-                  </p>
-                </Link>
-                {f.username && (
-                  <p className="text-xs text-muted truncate">@{f.username}</p>
-                )}
-              </div>
-              {session && !isOwn && (
-                <FollowButton
-                  targetUserId={f.userId}
-                  initialIsFollowing={followingMap.get(f.userId) ?? false}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <FollowList
+      mode="followers"
+      username={user.username}
+      displayName={displayName}
+      people={followers}
+      followingMap={followingMap}
+      viewerId={session?.userId ?? null}
+    />
   );
 }

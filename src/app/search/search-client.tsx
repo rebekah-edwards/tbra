@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { ReadingStateButton } from "@/components/reading-state-button";
 import { CompactOwnedButton } from "@/components/compact-owned-button";
 import { NoCover } from "@/components/no-cover";
+import { ReaderRow } from "@/components/ui/reader-row";
 
 interface SearchClientProps {
   isLoggedIn: boolean;
@@ -243,7 +244,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         alt={`Cover of ${result.title}`}
         width={60}
         height={90}
-        className="h-[90px] w-[60px] rounded object-cover hover:opacity-80 transition-opacity"
+        className="h-[90px] w-[60px] rounded-md object-cover shadow-[0_6px_14px_rgba(0,0,0,0.35)] ring-1 ring-white/10 hover:opacity-80 transition-opacity"
       />
     ) : (
       <NoCover title={result.title} className="h-[90px] w-[60px]" size="sm" />
@@ -255,7 +256,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
     ].filter(Boolean).join(" · ");
 
     return (
-      <div key={result.key} className="flex gap-4 rounded-lg border border-border bg-surface p-4">
+      <div key={result.key} className="row-glass flex gap-4 p-3.5">
         <div className="flex-shrink-0">
           {bookHref ? (
             <Link href={bookHref}>{coverElement}</Link>
@@ -269,13 +270,13 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           <div>
             {bookHref ? (
               <Link href={bookHref}>
-                <h3 className="font-medium leading-tight hover:text-neon-blue transition-colors">
+                <h3 className="font-heading text-[16px] font-bold leading-tight text-foreground hover:text-neon-blue transition-colors">
                   {result.englishTitle ?? result.title}
                 </h3>
               </Link>
             ) : (
               <button onClick={() => handleNavigateToBook(result)} disabled={navigating === result.key} className="text-left cursor-pointer disabled:opacity-50">
-                <h3 className="font-medium leading-tight hover:text-neon-blue transition-colors">
+                <h3 className="font-heading text-[16px] font-bold leading-tight text-foreground hover:text-neon-blue transition-colors">
                   {result.englishTitle ?? result.title}
                 </h3>
               </button>
@@ -331,7 +332,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search by title, author, or series..."
-        className="field-glass w-full text-sm"
+        className="field-glass w-full text-base"
       />
 
       {loading && (
@@ -339,8 +340,8 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
       )}
 
       {!loading && searched && results.length === 0 && seriesMatches.length === 0 && authorMatches.length === 0 && (
-        <div className="mt-8 text-center">
-          <p className="text-sm text-muted">No results found.</p>
+        <div className="card-glass mt-6 px-6 py-8 text-center">
+          <p className="font-heading text-base font-semibold text-foreground">No results found</p>
           <Link
             href="/search/add"
             className="mt-2 inline-block text-sm text-neon-blue hover:text-neon-blue/80"
@@ -358,16 +359,18 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
               <div key={s.id}>
                 <Link
                   href={`/search?series=${encodeURIComponent(s.id)}`}
-                  className="flex items-center gap-3 rounded-lg border border-accent/30 bg-accent/5 p-3 hover:bg-accent/10 transition-colors"
+                  className="row-glass flex items-center gap-3 p-3"
+                  style={{ borderColor: "color-mix(in srgb, var(--accent) 40%, transparent)" }}
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/15 text-accent">
+                  <span className="orb-glass h-10 w-10 text-accent">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
                       <path d="M8 7h6" />
                     </svg>
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold leading-tight">{s.name}</p>
+                    <p className="eyebrow">Series</p>
+                    <p className="font-heading text-[15px] font-bold leading-tight text-foreground">{s.name}</p>
                     <p className="text-xs text-muted">{s.bookCount} book{s.bookCount !== 1 ? "s" : ""} in series</p>
                   </div>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted flex-shrink-0">
@@ -377,10 +380,10 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
                 {s.books.length > 0 && (
                   <div className="mt-2 space-y-2 pl-2">
                     {s.books.map((book) => (
-                      <div key={book.id} className="flex gap-3 rounded-lg border border-border bg-surface p-3">
+                      <div key={book.id} className="row-glass flex gap-3 p-3">
                         <Link href={`/book/${book.slug || book.id}`} className="flex-shrink-0">
                           {book.coverImageUrl ? (
-                            <Image src={book.coverImageUrl} alt={`Cover of ${book.title}`} width={48} height={72} className="h-[72px] w-[48px] rounded object-cover hover:opacity-80 transition-opacity" />
+                            <Image src={book.coverImageUrl} alt={`Cover of ${book.title}`} width={48} height={72} className="h-[72px] w-[48px] rounded-md object-cover shadow-[0_6px_14px_rgba(0,0,0,0.35)] ring-1 ring-white/10 hover:opacity-80 transition-opacity" />
                           ) : (
                             <NoCover title={book.title} className="h-[72px] w-[48px]" size="sm" />
                           )}
@@ -388,7 +391,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
                         <div className="flex flex-1 flex-col justify-between min-w-0">
                           <div>
                             <Link href={`/book/${book.slug || book.id}`}>
-                              <h3 className="text-sm font-medium leading-tight hover:text-neon-blue transition-colors truncate">{book.title}</h3>
+                              <h3 className="font-heading text-[15px] font-bold leading-tight text-foreground hover:text-neon-blue transition-colors line-clamp-2">{book.title}</h3>
                             </Link>
                             <p className="text-xs text-muted">
                               {[
@@ -407,7 +410,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
                     ))}
                     {s.bookCount > s.books.length && (
                       <Link href={`/search?series=${encodeURIComponent(s.id)}`} className="block text-center text-xs font-medium text-neon-blue py-1.5 hover:text-neon-blue/80 transition-colors">
-                        View all {s.bookCount} books in series →
+                        View all {s.bookCount} books in series
                       </Link>
                     )}
                   </div>
@@ -420,22 +423,23 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         if (section === "authors" && authorMatches.length > 0) return (
           <div key="authors" className="mt-6 space-y-3">
             {authorMatches.map((a) => (
-              <Link key={a.id} href={`/author/${a.id}`} className="flex items-center gap-3 rounded-lg border border-neon-blue/30 bg-neon-blue/5 p-3 hover:bg-neon-blue/10 transition-colors">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-neon-blue/15 text-neon-blue">
+              <Link key={a.id} href={`/author/${a.id}`} className="row-glass flex items-center gap-3 p-3" style={{ borderColor: "color-mix(in srgb, #38bdf8 40%, transparent)" }}>
+                <span className="orb-glass h-10 w-10 text-neon-blue">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                   </svg>
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold leading-tight">{a.name}</p>
+                  <p className="eyebrow">Author</p>
+                  <p className="font-heading text-[15px] font-bold leading-tight text-foreground">{a.name}</p>
                   <p className="text-xs text-muted">{a.bookCount} book{a.bookCount !== 1 ? "s" : ""} in library</p>
                 </div>
                 {a.sampleBooks.length > 0 && (
                   <div className="flex -space-x-2">
                     {a.sampleBooks.slice(0, 3).map((book) =>
                       book.coverImageUrl ? (
-                        <Image key={book.id} src={book.coverImageUrl} alt={book.title} width={28} height={42} className="h-[42px] w-[28px] rounded object-cover border-2 border-surface" />
+                        <Image key={book.id} src={book.coverImageUrl} alt={book.title} width={28} height={42} className="h-[42px] w-[28px] rounded-[4px] object-cover ring-2 ring-surface" />
                       ) : (
                         <NoCover key={book.id} title={book.title} className="h-[42px] w-[28px] border-2 border-surface" size="sm" />
                       )
@@ -451,35 +455,16 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
         );
 
         if (section === "people" && peopleResults.length > 0) return (
-          <div key="people" className="mt-6 space-y-3">
+          <div key="people" className="mt-6 space-y-2">
+            <p className="eyebrow">Readers</p>
             {peopleResults.map((person) => (
-              <Link
+              <ReaderRow
                 key={person.id}
-                href={person.username ? `/u/${person.username}` : "#"}
-                className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3 hover:bg-surface-alt transition-colors"
-              >
-                <div
-                  className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold overflow-hidden text-black"
-                  style={{ backgroundColor: person.avatarUrl ? undefined : "#a3e635" }}
-                >
-                  {person.avatarUrl ? (
-                    <img src={person.avatarUrl} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    (person.displayName?.[0] ?? "?").toUpperCase()
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold leading-tight truncate">
-                    {person.displayName ?? person.username ?? "Unknown"}
-                  </p>
-                  {person.username && (
-                    <p className="text-xs text-muted truncate">@{person.username}</p>
-                  )}
-                </div>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted flex-shrink-0">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </Link>
+                href={person.username ? `/u/${person.username}` : null}
+                avatarUrl={person.avatarUrl}
+                name={person.displayName ?? person.username ?? "Unknown"}
+                username={person.username}
+              />
             ))}
           </div>
         );
@@ -495,7 +480,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           <>
           {localResults.length > 0 && (
             <div className="mt-6">
-              <p className="text-xs font-medium text-muted uppercase tracking-wider mb-3">In tbr*a library</p>
+              <p className="eyebrow mb-2.5">In the tbr*a library</p>
               <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4">
                 {localResults.map((result) => renderBookCard(result))}
               </div>
@@ -504,7 +489,7 @@ export default function SearchClient({ isLoggedIn, initialQuery }: SearchClientP
           {olResults.length > 0 && (
             <div className="mt-6">
               {localResults.length > 0 && (
-                <p className="text-xs font-medium text-muted uppercase tracking-wider mb-3">More results</p>
+                <p className="eyebrow mb-2.5">More results</p>
               )}
               <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4">
                 {olResults.map((result) => renderBookCard(result))}

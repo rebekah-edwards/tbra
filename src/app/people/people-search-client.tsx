@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { ReaderRow } from "@/components/ui/reader-row";
 
 interface Person {
   id: string;
@@ -71,7 +71,7 @@ export function PeopleSearchClient() {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+          className="absolute left-4 top-1/2 z-10 -translate-y-1/2 text-muted pointer-events-none"
         >
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -82,71 +82,46 @@ export function PeopleSearchClient() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name or @username"
           autoFocus
-          className="w-full rounded-full border border-border bg-surface py-3 pl-11 pr-4 text-sm placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className="field-glass w-full pl-11 pr-4 text-base"
         />
       </div>
 
       <div className="mt-4 space-y-2">
         {loading && query.trim().length >= 2 && (
-          <p className="text-sm text-muted px-1">Searching…</p>
+          <p className="text-sm text-muted text-center py-2">Searching…</p>
         )}
         {!loading && searched && results.length === 0 && query.trim().length >= 2 && (
-          <p className="text-sm text-muted px-1">
+          <p className="text-sm text-muted text-center py-2">
             No readers found for &ldquo;{query.trim()}&rdquo;.
           </p>
+        )}
+        {query.trim().length < 2 && (
+          <div className="card-glass mt-2 flex flex-col items-center px-6 py-9 text-center">
+            <span className="orb-glass mb-3 h-14 w-14">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </span>
+            <p className="font-heading text-base font-semibold text-foreground">Find your reading people</p>
+            <p className="mt-1 max-w-xs text-sm text-muted">
+              Type at least two letters of a name or @username. Follow readers to see what they&apos;re reading.
+            </p>
+          </div>
         )}
         {!loading && results.length > 0 && (
           <ul className="space-y-2">
             {results.map((person) => (
               <li key={person.id}>
-                <Link
-                  href={person.username ? `/u/${person.username}` : "#"}
-                  className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3 hover:bg-surface-alt transition-colors"
-                >
-                  <div
-                    className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold overflow-hidden text-black"
-                    style={{
-                      backgroundColor: person.avatarUrl ? undefined : "#a3e635",
-                    }}
-                  >
-                    {person.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={person.avatarUrl}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      (person.displayName?.[0] ?? person.username?.[0] ?? "?").toUpperCase()
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold leading-tight truncate">
-                      {person.displayName ?? person.username ?? "Unknown"}
-                    </p>
-                    {person.username && (
-                      <p className="text-xs text-muted truncate">@{person.username}</p>
-                    )}
-                    {person.bio && (
-                      <p className="mt-0.5 text-xs text-muted/80 line-clamp-1">
-                        {person.bio}
-                      </p>
-                    )}
-                  </div>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="text-muted/60 flex-shrink-0"
-                  >
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </Link>
+                <ReaderRow
+                  href={person.username ? `/u/${person.username}` : null}
+                  avatarUrl={person.avatarUrl}
+                  name={person.displayName ?? person.username ?? "Unknown"}
+                  username={person.username}
+                  bio={person.bio}
+                />
               </li>
             ))}
           </ul>

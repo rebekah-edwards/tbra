@@ -32,8 +32,8 @@ export function PremiumGate({
   if (fallback) return <>{fallback}</>;
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-6 text-center">
-      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-neon-purple/15">
+    <div className="card-hairline p-6 text-center">
+      <div className="orb-glass mx-auto mb-3 h-14 w-14">
         <svg
           width="24"
           height="24"
@@ -73,14 +73,14 @@ export function PremiumGate({
  */
 export function PremiumBadge() {
   return (
-    <span className="inline-flex items-center gap-0.5 rounded-full border border-neon-purple/30 bg-neon-purple/10 px-1.5 py-0.5 text-[9px] font-bold text-neon-purple uppercase tracking-wider">
+    <span className="inline-flex items-center gap-1 rounded-full border border-foreground/12 bg-surface/70 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-foreground backdrop-blur-md">
       <svg
         width="8"
         height="8"
         viewBox="0 0 24 24"
         fill="currentColor"
         stroke="none"
-        className="shrink-0"
+        className="shrink-0 text-neon-purple"
       >
         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
       </svg>

@@ -302,6 +302,60 @@ h1, h2, h3, .font-heading {
     color: #18181b;
     font-weight: 700;
   }
+
+  /* Plain section card (settings groups, forms, empty states): neutral glass,
+     no hairline — the hairline is for the one hero card on a screen. */
+  .card-glass {
+    border-radius: 20px;
+    border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+
+  /* A tappable list row (readers, search results, reviews). */
+  .row-glass {
+    border-radius: 18px;
+    border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+  a.row-glass:hover, button.row-glass:hover {
+    border-color: color-mix(in srgb, var(--foreground) 24%, transparent);
+  }
+  a.row-glass:active, button.row-glass:active { transform: scale(0.99); }
+
+  /* Glass badge; put a .dot (bg-* colour) first for its hue. */
+  .chip-glass {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    padding: 0.2rem 0.625rem;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  .chip-glass > .dot { width: 7px; height: 7px; border-radius: 9999px; flex-shrink: 0; }
+
+  /* Round glass well for a line icon; the icon carries the hue. */
+  .orb-glass {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
 }
 
 /* Shelf plank (components/shelves/shelf-ledge.tsx): a soft shadow under it so

@@ -44,31 +44,31 @@ export function LocationSettings({ userId }: LocationSettingsProps) {
   }
 
   if (!loaded) {
-    return <div className="h-24 animate-pulse rounded-lg bg-surface-alt" />;
+    return <div className="h-24 animate-pulse rounded-2xl bg-surface-alt" />;
   }
 
   return (
     <div className="space-y-3">
       <div>
-        <label className="text-sm text-foreground block mb-1.5">Location</label>
+        <label className="eyebrow mb-1.5 block pl-4">Location</label>
         <input
           type="text"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           placeholder="e.g., Nashville, TN or 'The Shire'"
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted outline-none focus:border-accent/50 transition-colors"
+          className="field-glass w-full text-base"
           maxLength={100}
         />
       </div>
 
       <div>
-        <p className="text-sm text-foreground mb-1.5">Who can see your location?</p>
-        <div className="flex items-center gap-1 rounded-lg border border-border bg-surface-alt p-1">
+        <p className="eyebrow mb-1.5 pl-4">Who can see it?</p>
+        <div className="flex items-center gap-1 rounded-full border border-foreground/10 bg-surface/70 p-1 backdrop-blur-md">
           <button
             onClick={() => setVisibility("public")}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
+            className={`flex-1 rounded-full px-3 py-1.5 text-sm font-medium transition-all ${
               visibility === "public"
-                ? "bg-surface text-foreground shadow-sm"
+                ? "bg-accent text-black font-bold"
                 : "text-muted hover:text-foreground"
             }`}
           >
@@ -76,9 +76,9 @@ export function LocationSettings({ userId }: LocationSettingsProps) {
           </button>
           <button
             onClick={() => setVisibility("followers")}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
+            className={`flex-1 rounded-full px-3 py-1.5 text-sm font-medium transition-all ${
               visibility === "followers"
-                ? "bg-surface text-foreground shadow-sm"
+                ? "bg-accent text-black font-bold"
                 : "text-muted hover:text-foreground"
             }`}
           >
@@ -90,7 +90,8 @@ export function LocationSettings({ userId }: LocationSettingsProps) {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+        data-active="true"
+        className="btn-glass px-5 py-2 text-sm disabled:opacity-50"
       >
         {saving ? "Saving..." : "Save Location"}
       </button>

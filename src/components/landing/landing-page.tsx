@@ -127,7 +127,7 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
           {/* Conscientious Reader */}
           <div className="landing-glass-card rounded-2xl p-6 lg:p-8">
             <div className="flex items-center gap-3 mb-4">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent text-lg">
+              <span className="orb-glass h-10 w-10 text-accent">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>
               </span>
               <h3 className="font-heading text-lg font-bold text-foreground">{c("avatar_readers_title", "For Readers")}</h3>
@@ -140,7 +140,7 @@ export function LandingPage({ featuredBook, coverBooks, bookCount, copy = {} }: 
           {/* Conscientious Parent */}
           <div className="landing-glass-card rounded-2xl p-6 lg:p-8">
             <div className="flex items-center gap-3 mb-4">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-neon-purple/15 text-neon-purple text-lg">
+              <span className="orb-glass h-10 w-10 text-neon-purple">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
               </span>
               <h3 className="font-heading text-lg font-bold text-foreground">{c("avatar_parents_title", "For Parents")}</h3>

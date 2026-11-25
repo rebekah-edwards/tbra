@@ -45,9 +45,9 @@ export function NotificationPreferences({ initialPrefs }: Props) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
+    <div className="card-glass p-5">
       <h2
-        className="section-heading text-lg mb-1"
+        className="font-heading text-lg font-bold text-foreground mb-1"
       >
         Notifications
       </h2>

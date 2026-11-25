@@ -25,9 +25,9 @@ export function ExportSection({ isPremium }: ExportSectionProps) {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface overflow-hidden">
-      <div className="px-5 py-4 border-b border-border">
-        <h2 className="section-heading text-lg">Export Your Data</h2>
+    <div className="card-glass overflow-hidden">
+      <div className="px-5 py-4 border-b border-foreground/10">
+        <h2 className="font-heading text-lg font-bold text-foreground">Export Your Data</h2>
         <p className="text-xs text-muted mt-0.5">
           Download your reading data to keep a backup or move to another platform.
         </p>
@@ -38,9 +38,9 @@ export function ExportSection({ isPremium }: ExportSectionProps) {
         <button
           onClick={() => handleDownload("csv")}
           disabled={downloading === "csv"}
-          className="flex items-start gap-3 rounded-lg border border-border bg-surface-alt p-4 text-left hover:bg-surface-hover transition-colors disabled:opacity-50"
+          className="row-glass flex items-start gap-3 p-4 text-left disabled:opacity-50"
         >
-          <div className="flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/15 text-accent">
+          <div className="orb-glass h-10 w-10 text-accent">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
@@ -61,13 +61,13 @@ export function ExportSection({ isPremium }: ExportSectionProps) {
         <button
           onClick={() => handleDownload("json")}
           disabled={downloading === "json" || !isPremium}
-          className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-colors disabled:opacity-50 ${
+          className={`row-glass flex items-start gap-3 p-4 text-left disabled:opacity-50 ${
             isPremium
-              ? "border-border bg-surface-alt hover:bg-surface-hover"
-              : "border-border/50 bg-surface-alt/50 cursor-not-allowed"
+              ? ""
+              : "cursor-not-allowed"
           }`}
         >
-          <div className="flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-lg bg-neon-purple/15 text-neon-purple">
+          <div className="orb-glass h-10 w-10 text-neon-purple">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />

@@ -23,6 +23,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { NoCover } from "@/components/no-cover";
+import { CoverArtHero, HERO_BACK_BUTTON_CLASS } from "@/components/ui/cover-art-hero";
+import { BackButton } from "@/components/ui/back-button";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import type { FavoriteBook } from "@/lib/queries/favorites";
 import type { UserBookWithDetails } from "@/lib/queries/reading-state";
@@ -80,7 +82,7 @@ function AddToTopShelfSheet({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search your library..."
-          className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2.5 text-sm text-foreground placeholder:text-muted/50 focus:outline-none focus:border-accent"
+          className="field-glass w-full text-base"
           autoFocus
         />
         {error && <p className="mt-2 text-xs text-red-400" role="alert">{error}</p>}
@@ -176,21 +178,22 @@ function SortableBook({
                 alt={`Cover of ${book.title}`}
                 width={120}
                 height={180}
-                className="aspect-[2/3] w-full rounded-lg object-cover shadow-sm"
+                className="aspect-[2/3] w-full rounded-lg object-cover shadow-[0_8px_18px_rgba(0,0,0,0.4)] ring-1 ring-white/10"
               />
             ) : (
               <NoCover title={book.title} className="aspect-[2/3] w-full" size="md" />
             )}
             {/* Rating badge with avatar */}
             {book.userRating != null && book.userRating > 0 && (
-              <span className="absolute bottom-1 right-1 flex items-center gap-1 rounded-full bg-black/75 pl-0.5 pr-1.5 py-0.5 text-[9px] font-medium text-white backdrop-blur-sm">
+              <span className="absolute bottom-1 right-1 flex items-center gap-1 rounded-full border border-white/15 bg-black/60 pl-0.5 pr-1.5 py-0.5 text-[9px] font-semibold text-white backdrop-blur-md">
                 {userAvatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={userAvatarUrl} alt="" className="w-3.5 h-3.5 rounded-full object-cover flex-shrink-0" />
                 ) : (
-                  <span className="w-3.5 h-3.5 rounded-full bg-accent/60 flex items-center justify-center text-[7px] text-black font-bold flex-shrink-0">★</span>
+                  <span className="w-3.5 h-3.5 rounded-full bg-accent flex items-center justify-center text-black flex-shrink-0"><StarIcon size={8} filled /></span>
                 )}
-                {book.userRating % 1 === 0 ? book.userRating.toFixed(0) : book.userRating.toFixed(2)} ★
+                <span className="text-[#fbbf24]"><StarIcon size={8} filled /></span>
+                {book.userRating % 1 === 0 ? book.userRating.toFixed(0) : book.userRating.toFixed(2)}
               </span>
             )}
           </div>
@@ -198,7 +201,7 @@ function SortableBook({
       </div>
 
       {/* Title + author */}
-      <p className="mt-1.5 text-[11px] font-medium text-foreground line-clamp-2 leading-tight">
+      <p className="mt-2 font-heading text-[12px] font-bold text-foreground line-clamp-2 leading-tight">
         {book.title}
       </p>
       <p className="text-[10px] text-muted truncate">
@@ -209,17 +212,20 @@ function SortableBook({
       <button
         onClick={() => onRemove(book.id)}
         disabled={isRemoving}
-        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-md z-10"
+        className="orb-glass absolute -top-2 -right-2 z-10 h-6 w-6 opacity-100 shadow-md transition-opacity md:opacity-0 md:group-hover:opacity-100"
         title="Remove from Top Shelf"
+        aria-label={`Remove ${book.title} from Top Shelf`}
       >
-        ×
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" className="text-red-400" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
       </button>
     </div>
   );
 }
 
 export function TopShelfClient({ favorites: initialFavorites, allBooks, userAvatarUrl }: TopShelfClientProps) {
-  const router = useRouter();
   const [favorites, setFavorites] = useState(initialFavorites);
   const [isPending, startTransition] = useTransition();
   const [addOpen, setAddOpen] = useState(false);
@@ -281,56 +287,39 @@ export function TopShelfClient({ favorites: initialFavorites, allBooks, userAvat
 
   return (
     <div className="lg:max-w-[60%] lg:mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-alt transition-colors text-muted hover:text-foreground"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 18l-6-6 6-6" />
+      {/* Header — cover-art hero (design refresh 2026-11) */}
+      <CoverArtHero
+        leading={<BackButton className={HERO_BACK_BUTTON_CLASS} />}
+        eyebrow="All-time favorites"
+        title="Top Shelf"
+        covers={favorites.map((f) => f.coverImageUrl).filter((u): u is string => !!u)}
+        stats={[
+          { label: favorites.length === 1 ? "book" : "books", value: favorites.length, hue: "lime" },
+        ]}
+        actions={
+          <button onClick={() => { setAddError(null); setAddOpen(true); }} className="btn-lime px-4 py-1.5 text-xs">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
+            Add Books
           </button>
-          <div>
-            <h1 className="text-foreground text-2xl font-bold tracking-tight">
-              Top Shelf
-            </h1>
-            <p className="text-xs text-muted">
-              {favorites.length} {favorites.length === 1 ? "book" : "books"}
-              {favorites.length > 1 && " · Drag to reorder"}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Add Books — same action the custom shelves have */}
-      <div className="mb-3">
-        <button
-          onClick={() => { setAddError(null); setAddOpen(true); }}
-          className="flex items-center gap-1.5 rounded-lg bg-accent/10 border border-accent/20 px-3 py-2 text-xs font-medium text-accent transition-all hover:bg-accent/20"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Add Books
-        </button>
-      </div>
+        }
+      />
 
       {/* How to add from a book page */}
-      <p className="mb-5 flex items-start gap-1.5 text-xs text-muted">
+      <p className="mx-auto mb-5 mt-3.5 flex max-w-md items-start justify-center gap-1.5 text-center text-xs text-muted">
         <span className="mt-px text-amber-500"><StarIcon size={12} /></span>
         <span>
-          Your all-time favorites. You can also add a book from its page: tap{" "}
+          {favorites.length > 1 && <>Drag to reorder. </>}You can also add a book from its page: tap{" "}
           <span className="font-medium text-foreground">Shelves</span>, then check{" "}
           <span className="font-medium text-foreground">Top Shelf</span>.
         </span>
       </p>
 
       {favorites.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
+        <div className="card-glass flex flex-col items-center px-6 py-9 text-center">
+          <div className="orb-glass mb-3 h-14 w-14">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-500">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>

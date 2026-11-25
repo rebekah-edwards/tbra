@@ -114,10 +114,10 @@ export function AccountSettings({ userEmail }: AccountSettingsProps) {
       {/* Flash message */}
       {flash && (
         <div
-          className={`p-3 rounded-lg text-sm font-medium ${
+          className={`p-3 rounded-2xl text-sm font-medium text-center ${
             flash.type === "success"
-              ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
-              : "bg-destructive/10 border border-destructive/30 text-destructive"
+              ? "bg-surface/70 border border-emerald-500/40 text-emerald-400"
+              : "bg-surface/70 border border-destructive/40 text-destructive"
           }`}
         >
           {flash.message}
@@ -125,20 +125,24 @@ export function AccountSettings({ userEmail }: AccountSettingsProps) {
       )}
 
       {/* Account info */}
-      <div className="border border-border bg-surface p-4 space-y-1">
-        <h2 className="section-heading text-lg">
-          Account
-        </h2>
-        <p className="text-sm text-foreground">{userEmail}</p>
+      <div className="card-glass flex items-center gap-3 p-4">
+        <span className="orb-glass h-10 w-10 text-neon-blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="m22 7-10 6L2 7" />
+          </svg>
+        </span>
+        <div className="min-w-0">
+          <p className="eyebrow">Account</p>
+          <p className="truncate text-sm text-foreground">{userEmail}</p>
+        </div>
       </div>
 
       {/* Danger zone */}
       <div className="space-y-3">
-        <h2 className="section-heading text-destructive text-lg">
-          Danger Zone
-        </h2>
+        <p className="eyebrow pl-1 !text-destructive">Danger zone</p>
 
-        <div className="border border-destructive/30 rounded-xl divide-y divide-destructive/20 overflow-hidden">
+        <div className="card-glass divide-y divide-destructive/20 overflow-hidden" style={{ borderColor: "color-mix(in srgb, var(--destructive, #ef4444) 35%, transparent)" }}>
           {DANGER_ACTIONS.map((action) => (
             <div
               key={action.key}
@@ -158,7 +162,9 @@ export function AccountSettings({ userEmail }: AccountSettingsProps) {
                   setActiveAction(action);
                   setConfirmInput("");
                 }}
-                className="shrink-0 text-xs font-medium px-3 py-1.5 border border-destructive text-destructive rounded-md hover:bg-destructive hover:text-white transition-colors"
+                className="btn-glass shrink-0 px-3.5 py-1.5 text-xs !text-destructive"
+                style={{ ["--ring" as string]: "#ef4444" }}
+                data-active="true"
               >
                 {action.buttonLabel}
               </button>
@@ -176,7 +182,7 @@ export function AccountSettings({ userEmail }: AccountSettingsProps) {
         {activeAction && (
           <div className="p-5 space-y-4">
             {/* Warning */}
-            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+            <div className="rounded-2xl border border-destructive/40 bg-surface/70 p-3 text-center">
               <p className="text-sm text-foreground font-medium">
                 This action is permanent and cannot be undone.
               </p>
@@ -187,7 +193,7 @@ export function AccountSettings({ userEmail }: AccountSettingsProps) {
 
             {/* Confirmation input */}
             <div className="space-y-2">
-              <label className="text-xs text-muted">
+              <label className="block pl-4 text-xs text-muted">
                 Type{" "}
                 <span className="font-mono font-semibold text-foreground">
                   {activeAction.confirmPhrase}
@@ -200,7 +206,7 @@ export function AccountSettings({ userEmail }: AccountSettingsProps) {
                 onChange={(e) => setConfirmInput(e.target.value)}
                 placeholder={activeAction.confirmPhrase}
                 disabled={loading}
-                className="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-destructive"
+                className="field-glass w-full text-base focus:!border-destructive"
                 autoFocus
               />
             </div>
@@ -210,14 +216,14 @@ export function AccountSettings({ userEmail }: AccountSettingsProps) {
               <button
                 onClick={handleClose}
                 disabled={loading}
-                className="flex-1 text-sm font-medium px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-surface-alt transition-colors disabled:opacity-50"
+                className="btn-glass flex-1 px-4 py-2.5 text-sm disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirm}
                 disabled={!phraseMatches || loading}
-                className="flex-1 text-sm font-medium px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">

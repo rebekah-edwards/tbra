@@ -8,18 +8,18 @@ export function ChangePassword() {
   const [state, action, pending] = useActionState(changePassword, {});
 
   return (
-    <div>
-      <h2 className="section-heading text-lg mb-3">Change Password</h2>
+    <div className="card-glass p-5">
+      <h2 className="font-heading text-lg font-bold text-foreground mb-3">Change Password</h2>
 
-      <form action={action} className="space-y-3 max-w-md">
+      <form action={action} className="space-y-3">
         {state.error && (
-          <div className="rounded-lg border border-intensity-4/30 bg-intensity-4/10 px-4 py-3 text-sm text-intensity-4">
+          <div className="rounded-2xl border border-intensity-4/40 bg-surface/70 px-4 py-3 text-sm text-intensity-4">
             {state.error}
           </div>
         )}
 
         {state.success && (
-          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+          <div className="rounded-2xl border border-emerald-500/40 bg-surface/70 px-4 py-3 text-sm text-emerald-400">
             Password updated successfully.
           </div>
         )}
@@ -27,7 +27,7 @@ export function ChangePassword() {
         <div>
           <label
             htmlFor="currentPassword"
-            className="block text-sm font-medium mb-1"
+            className="eyebrow mb-1.5 block pl-4"
           >
             Current password
           </label>
@@ -43,7 +43,7 @@ export function ChangePassword() {
         <div>
           <label
             htmlFor="newPassword"
-            className="block text-sm font-medium mb-1"
+            className="eyebrow mb-1.5 block pl-4"
           >
             New password
           </label>
@@ -60,7 +60,7 @@ export function ChangePassword() {
         <div>
           <label
             htmlFor="confirmNewPassword"
-            className="block text-sm font-medium mb-1"
+            className="eyebrow mb-1.5 block pl-4"
           >
             Confirm new password
           </label>
@@ -77,7 +77,8 @@ export function ChangePassword() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-[#18181b] transition-colors hover:brightness-110 disabled:opacity-50"
+          data-active="true"
+          className="btn-glass px-5 py-2.5 text-sm disabled:opacity-50"
         >
           {pending ? "Updating..." : "Update password"}
         </button>

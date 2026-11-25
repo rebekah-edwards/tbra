@@ -13,8 +13,8 @@ export function ImportOptionsUI({ options, onChange }: ImportOptionsUIProps) {
   }
 
   return (
-    <div className="border border-border/50 bg-surface-alt/50 p-3 space-y-2.5">
-      <p className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+    <div className="rounded-2xl border border-foreground/10 bg-surface/50 p-3.5 space-y-2.5">
+      <p className="eyebrow">
         Import settings
       </p>
 
@@ -37,8 +37,8 @@ export function ImportOptionsUI({ options, onChange }: ImportOptionsUIProps) {
       </label>
 
       {/* Divider */}
-      <div className="border-t border-border/30 pt-2">
-        <p className="text-[10px] font-semibold text-muted/80 uppercase tracking-wider mb-2">
+      <div className="border-t border-foreground/10 pt-2">
+        <p className="eyebrow !text-[10px] mb-2">
           For existing books
         </p>
       </div>

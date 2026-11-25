@@ -100,7 +100,7 @@ function ScrollWheel({
     <div className="relative" style={{ height: containerHeight }}>
       {/* Selection highlight */}
       <div
-        className="pointer-events-none absolute left-0 right-0 rounded-lg bg-accent/15 border-y border-accent/20"
+        className="pointer-events-none absolute left-0 right-0 rounded-full border border-accent/50 bg-surface-alt/70"
         style={{ top: itemHeight * 2, height: itemHeight }}
       />
       {/* Fade top */}
@@ -238,18 +238,19 @@ export function CompletionDatePicker({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-sm mb-16 sm:mb-0 rounded-t-2xl sm:rounded-2xl bg-surface border border-border shadow-2xl overflow-hidden">
+      <div className="w-full max-w-sm mb-16 sm:mb-0 rounded-t-[28px] sm:rounded-[28px] bg-surface border border-foreground/10 shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-start justify-between px-5 pt-5 pb-2">
+        <div className="flex items-start justify-between px-5 pt-5 pb-3">
           <div>
-            <h2 className="text-lg font-bold text-foreground">{label}</h2>
+            <h2 className="font-heading text-lg font-bold text-foreground">{label}</h2>
             <p className="text-xs text-muted mt-0.5">
               All selections are optional
             </p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-1.5 text-muted hover:text-foreground hover:bg-surface-alt transition-colors"
+            aria-label="Close"
+            className="orb-glass h-9 w-9 text-muted hover:text-foreground"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -259,21 +260,18 @@ export function CompletionDatePicker({
         </div>
 
         {/* Precision tabs */}
-        <div className="flex gap-2 px-5 pb-4">
+        <div className="seg-glass mx-5 mb-4">
           {(["exact", "month", "year"] as const).map((p) => (
             <button
               key={p}
               onClick={() => setPrecision(p)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                precision === p
-                  ? "bg-foreground text-background"
-                  : "bg-surface-alt text-muted hover:text-foreground border border-border/50"
-              }`}
+              data-active={precision === p ? "true" : undefined}
+              className="!px-1.5 !text-xs whitespace-nowrap"
             >
               {p === "exact"
-                ? "Month / Day / Year"
+                ? "Full date"
                 : p === "month"
-                  ? "Month / Year"
+                  ? "Month"
                   : "Year"}
             </button>
           ))}
@@ -321,7 +319,7 @@ export function CompletionDatePicker({
                 value={startedAt}
                 max={periodEnd}
                 onChange={(e) => setStartedAt(e.target.value)}
-                className="rounded-lg border border-border bg-surface-alt px-2.5 py-1.5 text-sm text-foreground"
+                className="field-glass !h-10 !px-3.5 text-sm"
               />
             </label>
             {startAfterFinish && (
@@ -337,11 +335,7 @@ export function CompletionDatePicker({
           <button
             onClick={handleConfirm}
             disabled={isFuture || startAfterFinish}
-            className={`w-full rounded-xl py-3 text-sm font-semibold transition-colors ${
-              isFuture || startAfterFinish
-                ? "bg-foreground/30 text-background/50 cursor-not-allowed"
-                : "bg-foreground text-background hover:bg-foreground/90"
-            }`}
+            className="btn-lime w-full py-3 text-sm"
           >
             {isFuture
               ? "Date can't be in the future"
@@ -351,7 +345,7 @@ export function CompletionDatePicker({
           </button>
           <button
             onClick={handleSkip}
-            className="w-full rounded-xl bg-surface-alt border border-border/50 text-muted py-3 text-sm font-medium hover:text-foreground transition-colors"
+            className="btn-glass w-full py-3 text-sm !text-muted hover:!text-foreground"
           >
             I don&apos;t remember
           </button>

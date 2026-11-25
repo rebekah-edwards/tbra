@@ -23,6 +23,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { NoCover } from "@/components/no-cover";
+import { CoverArtHero, HERO_BACK_BUTTON_CLASS } from "@/components/ui/cover-art-hero";
+import { BackButton } from "@/components/ui/back-button";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { CreateShelfModal } from "@/components/shelves/create-shelf-modal";
 import {
@@ -45,6 +47,16 @@ interface ShelfDetailClientProps {
   allBooks: UserBookWithDetails[];
   isPremium: boolean;
   username?: string;
+}
+
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400" aria-hidden="true">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+    </svg>
+  );
 }
 
 // ─── Book item within shelf ───
@@ -124,8 +136,8 @@ function ShelfBookItem({
       {selectMode && (
         <button
           onClick={() => onToggleSelect?.(book.bookId)}
-          className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-            selected ? "bg-accent border-accent" : "border-border"
+          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+            selected ? "bg-accent border-accent" : "border-foreground/25"
           }`}
         >
           {selected && (
@@ -142,7 +154,7 @@ function ShelfBookItem({
             alt={`Cover of ${book.title}`}
             width={48}
             height={72}
-            className="h-[72px] w-[48px] rounded-sm object-cover shadow-sm"
+            className="h-[72px] w-[48px] rounded-md object-cover shadow-[0_6px_14px_rgba(0,0,0,0.35)] ring-1 ring-white/10"
           />
         ) : (
           <NoCover title={book.title} className="h-[72px] w-[48px] rounded-sm" size="sm" />
@@ -150,7 +162,7 @@ function ShelfBookItem({
       </Link>
       <div className="flex-1 min-w-0">
         <Link href={`/book/${book.slug || book.bookId}`}>
-          <h4 className="text-sm font-medium text-foreground truncate">{book.title}</h4>
+          <h4 className="font-heading text-[15px] font-bold leading-tight text-foreground line-clamp-2">{book.title}</h4>
           <p className="text-xs text-muted truncate">{book.authors.join(", ")}</p>
         </Link>
         {editingNote ? (
@@ -160,11 +172,11 @@ function ShelfBookItem({
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
               placeholder="Add a note..."
-              className="flex-1 rounded border border-border bg-surface-alt px-2 py-1 text-[11px] text-foreground placeholder:text-muted/50 focus:outline-none focus:border-accent"
+              className="field-glass !h-8 flex-1 !px-3 text-[13px]"
               autoFocus
               onKeyDown={(e) => { if (e.key === "Enter") saveNote(); if (e.key === "Escape") setEditingNote(false); }}
             />
-            <button onClick={saveNote} disabled={notePending} className="text-[10px] font-medium text-accent">
+            <button onClick={saveNote} disabled={notePending} className="btn-glass px-3 py-1 text-[11px]">
               {notePending ? "..." : "Save"}
             </button>
           </div>
@@ -178,9 +190,10 @@ function ShelfBookItem({
         ) : (
           <button
             onClick={() => setEditingNote(true)}
-            className="text-[10px] text-muted/40 mt-1 hover:text-muted transition-colors"
+            className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted/70 hover:text-muted transition-colors"
           >
-            + Add note
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            Add note
           </button>
         )}
       </div>
@@ -200,7 +213,9 @@ function ShelfBookItem({
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => { onRemove(book.bookId); setShowConfirm(false); }}
-              className="px-2 py-1 rounded text-[11px] font-medium bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors"
+              className="btn-glass px-3 py-1 text-[11px] !text-red-400"
+              style={{ ["--ring" as string]: "#f87171" }}
+              data-active="true"
             >
               Remove
             </button>
@@ -287,7 +302,7 @@ function AddBooksModal({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search your library..."
-          className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2.5 text-sm text-foreground placeholder:text-muted/50 focus:outline-none focus:border-accent"
+          className="field-glass w-full text-base"
           autoFocus
         />
       </div>
@@ -352,7 +367,11 @@ export function ShelfDetailClient({ shelf: initialShelf, allBooks, isPremium, us
   const shelf = { ...initialShelf, books };
 
   const shelfBookIds = new Set(books.map((b) => b.bookId));
-  const accentColor = shelf.color || "#d97706";
+  const heroCovers = useMemo(() => {
+    const list = books.map((b) => b.coverImageUrl).filter((u): u is string => !!u);
+    return shelf.coverImageUrl ? [shelf.coverImageUrl, ...list.filter((u) => u !== shelf.coverImageUrl)] : list;
+  }, [books, shelf.coverImageUrl]);
+  const readCount = books.filter((b) => b.state === "completed").length;
 
   // Search within this shelf — in-memory, same matcher as the library page.
   // Shelf rows carry no series data, so series names are borrowed from the
@@ -436,144 +455,121 @@ export function ShelfDetailClient({ shelf: initialShelf, allBooks, isPremium, us
 
   return (
     <div className="lg:max-w-[60%] lg:mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-2">
-        <button
-          onClick={() => router.back()}
-          className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-alt transition-colors text-muted hover:text-foreground"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-foreground text-xl font-bold tracking-tight truncate">
-            {shelf.name}
-          </h1>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            onClick={() => setEditOpen(true)}
-            className="p-2 rounded-lg hover:bg-surface-alt transition-colors text-muted hover:text-foreground"
-            title="Edit shelf"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-            </svg>
-          </button>
-          {shelf.isPublic && (
-            <button
-              onClick={() => {
-                const base = window.location.origin;
-                const url = username ? `${base}/u/${username}/shelves/${shelf.slug}` : window.location.href;
-                navigator.clipboard.writeText(url).then(() => {
-                  setShareCopied(true);
-                  setTimeout(() => setShareCopied(false), 2000);
-                });
-              }}
-              className="p-2 rounded-lg hover:bg-surface-alt transition-colors text-muted hover:text-foreground"
-              title="Copy share link"
-            >
-              {shareCopied ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent">
-                  <polyline points="20 6 9 17 4 12" />
+      {/* Header — cover-art hero (design refresh 2026-11) */}
+      <CoverArtHero
+        leading={<BackButton className={HERO_BACK_BUTTON_CLASS} />}
+        eyebrow={shelf.isPublic ? "Public shelf" : "Shelf"}
+        title={shelf.name}
+        subtitle={shelf.description ? <span className="line-clamp-3">{shelf.description}</span> : undefined}
+        covers={heroCovers}
+        stats={[
+          { label: books.length === 1 ? "book" : "books", value: books.length, hue: "lime" },
+          ...(readCount > 0 ? [{ label: "read", value: readCount, hue: "purple" as const }] : []),
+        ]}
+        actions={
+          selectMode ? (
+            <>
+              <span className="chip-glass">
+                <span className="dot bg-accent" />
+                {selectedBooks.size} selected
+              </span>
+              <button
+                onClick={handleBulkRemove}
+                disabled={selectedBooks.size === 0 || pending}
+                className="btn-glass px-3.5 py-1.5 text-xs disabled:opacity-40"
+                style={{ ["--ring" as string]: "#f87171" }}
+                data-active={selectedBooks.size > 0 ? "true" : undefined}
+              >
+                <TrashIcon />
+                Remove
+              </button>
+              <button
+                onClick={() => { setSelectMode(false); setSelectedBooks(new Set()); }}
+                className="btn-glass px-3.5 py-1.5 text-xs"
+              >
+                Done
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setAddOpen(true)} className="btn-lime px-4 py-1.5 text-xs">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                  <polyline points="16 6 12 2 8 6" />
-                  <line x1="12" y1="2" x2="12" y2="15" />
+                Add Books
+              </button>
+              <button onClick={() => setEditOpen(true)} className="btn-glass h-8 w-8" title="Edit shelf" aria-label="Edit shelf">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue" aria-hidden="true">
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
                 </svg>
+              </button>
+              {shelf.isPublic && (
+                <button
+                  onClick={() => {
+                    const base = window.location.origin;
+                    const url = username ? `${base}/u/${username}/shelves/${shelf.slug}` : window.location.href;
+                    navigator.clipboard.writeText(url).then(() => {
+                      setShareCopied(true);
+                      setTimeout(() => setShareCopied(false), 2000);
+                    });
+                  }}
+                  className="btn-glass h-8 w-8"
+                  data-active={shareCopied ? "true" : undefined}
+                  title="Copy share link"
+                  aria-label={shareCopied ? "Link copied" : "Copy share link"}
+                >
+                  {shareCopied ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" className="text-accent" aria-hidden="true">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#c084fc]" aria-hidden="true">
+                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                      <polyline points="16 6 12 2 8 6" />
+                      <line x1="12" y1="2" x2="12" y2="15" />
+                    </svg>
+                  )}
+                </button>
               )}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Description & meta */}
-      <div className="mb-4 flex items-center gap-2">
-        <span
-          className="w-3 h-3 rounded-full shrink-0"
-          style={{ background: accentColor }}
-        />
-        <span className="text-xs text-muted">
-          {shelf.books.length} {shelf.books.length === 1 ? "book" : "books"}
-        </span>
-        {shelf.isPublic && (
-          <span className="text-[10px] text-muted/60 bg-surface-alt rounded-full px-1.5 py-0.5">
-            Public
-          </span>
-        )}
-      </div>
-      {shelf.description && (
-        <p className="text-sm text-muted mb-4">{shelf.description}</p>
-      )}
-
-      {/* Action bar */}
-      {selectMode ? (
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xs text-muted flex-1">
-            {selectedBooks.size} selected
-          </span>
-          <button
-            onClick={handleBulkRemove}
-            disabled={selectedBooks.size === 0 || pending}
-            className="flex items-center gap-1.5 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs font-medium text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-40"
-          >
-            Remove Selected
-          </button>
-          <button
-            onClick={() => { setSelectMode(false); setSelectedBooks(new Set()); }}
-            className="px-3 py-2 rounded-lg text-xs font-medium text-muted hover:text-foreground transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2 mb-4">
-          <button
-            onClick={() => setAddOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-accent/10 border border-accent/20 px-3 py-2 text-xs font-medium text-accent transition-all hover:bg-accent/20"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Add Books
-          </button>
-          {shelf.books.length > 0 && (
-            <button
-              onClick={() => setSelectMode(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-surface-alt border border-border px-3 py-2 text-xs font-medium text-muted hover:text-foreground transition-all"
-            >
-              Select
-            </button>
-          )}
-          <button
-            onClick={() => setDeleteConfirm(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs font-medium text-red-400 transition-all hover:bg-red-500/20"
-          >
-            Delete Shelf
-          </button>
-        </div>
-      )}
+              {shelf.books.length > 0 && (
+                <button onClick={() => setSelectMode(true)} className="btn-glass h-8 w-8" title="Select books" aria-label="Select books">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden="true">
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  </svg>
+                </button>
+              )}
+              <button
+                onClick={() => setDeleteConfirm(true)}
+                className="btn-glass h-8 w-8"
+                title="Delete shelf"
+                aria-label="Delete shelf"
+              >
+                <TrashIcon />
+              </button>
+            </>
+          )
+        }
+      />
+      <div className="mb-4" />
 
       {/* Delete confirm */}
       {deleteConfirm && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 mb-4">
-          <p className="text-sm text-foreground font-medium">Delete &quot;{shelf.name}&quot;?</p>
-          <p className="text-xs text-muted mt-1">This will remove the shelf and all book assignments. Your books are not affected.</p>
-          <div className="flex items-center gap-2 mt-3">
+        <div className="card-glass mb-4 p-4 text-center" style={{ borderColor: "rgba(248,113,113,0.45)" }}>
+          <p className="text-sm text-foreground font-semibold">Delete &quot;{shelf.name}&quot;?</p>
+          <p className="text-xs text-muted mt-1">This removes the shelf and its book assignments. Your books are not affected.</p>
+          <div className="flex items-center justify-center gap-2 mt-3">
             <button
               onClick={handleDelete}
               disabled={pending}
-              className="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+              className="inline-flex items-center rounded-full bg-red-500 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-600 disabled:opacity-50"
             >
               {pending ? "Deleting..." : "Yes, Delete"}
             </button>
             <button
               onClick={() => setDeleteConfirm(false)}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-foreground transition-colors"
+              className="btn-glass px-4 py-1.5 text-xs"
             >
               Cancel
             </button>
@@ -594,7 +590,7 @@ export function ShelfDetailClient({ shelf: initialShelf, allBooks, isPremium, us
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
+              className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-muted"
               aria-hidden="true"
             >
               <circle cx="11" cy="11" r="8" />
@@ -618,7 +614,7 @@ export function ShelfDetailClient({ shelf: initialShelf, allBooks, isPremium, us
               autoCorrect="off"
               autoCapitalize="none"
               spellCheck={false}
-              className="w-full rounded-xl border border-border bg-surface-alt py-2.5 pl-10 pr-11 text-base text-foreground placeholder:text-muted/60 focus:outline-none focus:border-accent"
+              className="field-glass w-full pl-10 pr-11 text-base"
             />
             {query && (
               <button
@@ -644,14 +640,19 @@ export function ShelfDetailClient({ shelf: initialShelf, allBooks, isPremium, us
 
       {/* Book list */}
       {shelf.books.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center">
-          <p className="text-sm text-muted">No books on this shelf yet.</p>
-          <p className="mt-1 text-xs text-muted/60">
-            Add some from any book page, or use the Add Books button above.
+        <div className="card-glass flex flex-col items-center px-6 py-9 text-center">
+          <span className="orb-glass mb-3 h-14 w-14">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden="true">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+            </svg>
+          </span>
+          <p className="font-heading text-base font-semibold text-foreground">No books on this shelf yet</p>
+          <p className="mt-1 text-sm text-muted">
+            Add some from any book page, or with Add Books above.
           </p>
         </div>
       ) : visibleBooks.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface p-6 text-center" role="status">
+        <div className="card-glass p-6 text-center" role="status">
           <p className="text-sm text-muted break-words">
             No books on this shelf match{" "}
             <span className="text-foreground">&ldquo;{deferredQuery.trim()}&rdquo;</span>.
@@ -670,7 +671,7 @@ export function ShelfDetailClient({ shelf: initialShelf, allBooks, isPremium, us
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={visibleBooks.map((b) => b.bookId)} strategy={verticalListSortingStrategy}>
-            <div className="rounded-xl border border-border bg-surface/50 px-3">
+            <div className="card-glass px-3">
               {visibleBooks.map((book) => (
                 <ShelfBookItem
                   key={book.bookId}

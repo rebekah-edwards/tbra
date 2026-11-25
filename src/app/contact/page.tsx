@@ -17,11 +17,9 @@ export default async function ContactPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1
-          className="text-foreground text-2xl font-bold tracking-tight"
-         
-        >
+      <div className="text-center">
+        <p className="eyebrow">Say hello</p>
+        <h1 className="font-heading text-foreground text-2xl font-bold tracking-tight">
           Contact Us
         </h1>
         <p className="text-sm text-muted mt-1">

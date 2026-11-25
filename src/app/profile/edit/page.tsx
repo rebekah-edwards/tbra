@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateProfile, deleteAvatar } from "@/lib/actions/profile";
+import { ReaderAvatar } from "@/components/ui/reader-row";
+import { HERO_BACK_BUTTON_CLASS } from "@/components/ui/cover-art-hero";
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -108,31 +110,37 @@ export default function EditProfilePage() {
     }
   }
 
-  const inputClass =
-    "w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent";
+  const inputClass = "field-glass w-full text-base";
+  const labelClass = "eyebrow mb-1.5 block pl-4";
 
   if (loading) {
     return <p className="text-sm text-muted">Loading...</p>;
   }
 
   return (
-    <div className="max-w-md">
-      <h1 className="text-foreground text-2xl font-bold tracking-tight mb-6">Edit Profile</h1>
+    <div className="mx-auto max-w-md pb-24">
+      <div className="mb-5 flex items-center gap-3">
+        <button type="button" onClick={() => router.push("/profile")} aria-label="Back to profile" className={HERO_BACK_BUTTON_CLASS}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+        <div>
+          <p className="eyebrow">Profile</p>
+          <h1 className="font-heading text-foreground text-[22px] font-bold leading-tight tracking-tight">Edit Profile</h1>
+        </div>
+      </div>
 
       {/* Avatar Section */}
-      <div className="mb-8">
-        <label className="block text-sm font-medium mb-3">Photo</label>
-        <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-2xl font-bold text-black overflow-hidden flex-shrink-0">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
-            ) : (
-              "?"
-            )}
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className={`cursor-pointer text-sm text-neon-blue hover:text-neon-blue/80 ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
-              {uploading ? "Uploading..." : "Upload photo"}
+      <div className="card-hairline mb-5 flex flex-col items-center p-5 text-center">
+        <ReaderAvatar avatarUrl={avatarUrl} name={displayName || username || "?"} size={84} />
+        <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
+            <label className={`btn-glass cursor-pointer px-4 py-1.5 text-xs ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue" aria-hidden="true">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+              {uploading ? "Uploading..." : avatarUrl ? "Change photo" : "Upload photo"}
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/gif,image/webp"
@@ -141,18 +149,22 @@ export default function EditProfilePage() {
                 disabled={uploading}
               />
             </label>
-            <span className="text-[11px] text-muted">JPG, PNG, GIF, or WebP. 5 MB max.</span>
             {avatarUrl && (
               <button
+                type="button"
                 onClick={handleDeleteAvatar}
                 disabled={uploading}
-                className="text-sm text-muted hover:text-foreground text-left disabled:opacity-50 mt-1"
+                className="btn-glass px-4 py-1.5 text-xs disabled:opacity-50"
               >
-                Remove photo
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400" aria-hidden="true">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                </svg>
+                Remove
               </button>
             )}
-          </div>
         </div>
+        <span className="mt-2 text-[11px] text-muted">JPG, PNG, GIF, or WebP. 5 MB max.</span>
         {uploadError && (
           <p className="mt-2 text-xs text-destructive">{uploadError}</p>
         )}
@@ -160,8 +172,10 @@ export default function EditProfilePage() {
 
       {/* Profile Details */}
       <form onSubmit={handleSave}>
-        <div className="mb-6">
-          <label htmlFor="displayName" className="block text-sm font-medium mb-1">
+        <p className="eyebrow mb-2 pl-1">About you</p>
+        <div className="card-glass mb-5 space-y-4 p-4">
+        <div>
+          <label htmlFor="displayName" className={labelClass}>
             Display name
           </label>
           <input
@@ -174,8 +188,8 @@ export default function EditProfilePage() {
           />
         </div>
 
-        <div className="mb-6">
-          <label htmlFor="username" className="block text-sm font-medium mb-1">
+        <div>
+          <label htmlFor="username" className={labelClass}>
             Username
           </label>
           <div className="flex items-center">
@@ -190,11 +204,11 @@ export default function EditProfilePage() {
               className={`flex-1 ${inputClass}`}
             />
           </div>
-          <p className="mt-1 text-[11px] text-muted">Used for your public profile link: /u/{username || "username"}</p>
+          <p className="mt-1 pl-4 text-[11px] text-muted">Used for your public profile link: /u/{username || "username"}</p>
         </div>
 
-        <div className="mb-6">
-          <label htmlFor="bio" className="block text-sm font-medium mb-1">
+        <div>
+          <label htmlFor="bio" className={labelClass}>
             Bio
           </label>
           <textarea
@@ -204,18 +218,19 @@ export default function EditProfilePage() {
             placeholder="Tell other readers about yourself..."
             maxLength={200}
             rows={3}
-            className={`${inputClass} resize-none`}
+            className={`${inputClass} h-auto resize-none !rounded-[20px] py-3`}
           />
-          <p className="mt-1 text-[11px] text-muted text-right">{bio.length}/200</p>
+          <p className="mt-1 pr-2 text-[11px] text-muted text-right">{bio.length}/200</p>
+        </div>
         </div>
 
         {/* Social Handles */}
-        <div className="mb-8">
-          <h3 className="text-sm font-medium mb-3">Social links</h3>
-          <p className="text-[11px] text-muted mb-3">Shown on your public profile so readers can find you.</p>
+        <p className="eyebrow mb-2 pl-1">Social links</p>
+        <div className="card-glass mb-5 p-4">
+          <p className="text-[11px] text-muted mb-3 text-center">Shown on your public profile so readers can find you.</p>
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <span className="w-20 text-xs text-muted">Instagram</span>
+              <span className="w-[72px] flex-shrink-0 text-xs font-medium text-muted">Instagram</span>
               <div className="flex items-center flex-1">
                 <span className="text-sm text-muted mr-1">@</span>
                 <input
@@ -229,7 +244,7 @@ export default function EditProfilePage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-20 text-xs text-muted">TikTok</span>
+              <span className="w-[72px] flex-shrink-0 text-xs font-medium text-muted">TikTok</span>
               <div className="flex items-center flex-1">
                 <span className="text-sm text-muted mr-1">@</span>
                 <input
@@ -243,7 +258,7 @@ export default function EditProfilePage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-20 text-xs text-muted">Threads</span>
+              <span className="w-[72px] flex-shrink-0 text-xs font-medium text-muted">Threads</span>
               <div className="flex items-center flex-1">
                 <span className="text-sm text-muted mr-1">@</span>
                 <input
@@ -257,7 +272,7 @@ export default function EditProfilePage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-20 text-xs text-muted">X</span>
+              <span className="w-[72px] flex-shrink-0 text-xs font-medium text-muted">X</span>
               <div className="flex items-center flex-1">
                 <span className="text-sm text-muted mr-1">@</span>
                 <input
@@ -274,8 +289,9 @@ export default function EditProfilePage() {
         </div>
 
         {/* Privacy Toggle */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between rounded-lg border border-border bg-surface p-4">
+        <p className="eyebrow mb-2 pl-1">Privacy</p>
+        <div className="mb-6">
+          <div className="card-glass flex items-center justify-between gap-3 p-4">
             <div>
               <p className="text-sm font-medium">Private profile</p>
               <p className="text-[11px] text-muted mt-0.5">When enabled, your profile can&apos;t be viewed publicly</p>
@@ -285,7 +301,7 @@ export default function EditProfilePage() {
               role="switch"
               aria-checked={isPrivate}
               onClick={() => setIsPrivate(!isPrivate)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
                 isPrivate ? "bg-accent" : "bg-border"
               }`}
             >
@@ -302,18 +318,18 @@ export default function EditProfilePage() {
           <p className="mb-4 text-xs text-destructive">{saveError}</p>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex justify-center gap-3">
           <button
             type="submit"
             disabled={saving}
-            className="rounded-full bg-accent px-6 py-2 text-sm font-medium text-black hover:brightness-110 transition-colors disabled:opacity-50"
+            className="btn-lime px-7 py-2.5 text-sm"
           >
             {saving ? "Saving..." : "Save"}
           </button>
           <button
             type="button"
             onClick={() => router.push("/profile")}
-            className="rounded-full border border-border px-6 py-2 text-sm font-medium text-muted hover:text-foreground transition-colors"
+            className="btn-glass px-6 py-2.5 text-sm"
           >
             Cancel
           </button>

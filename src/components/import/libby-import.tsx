@@ -230,8 +230,8 @@ export function LibbyImport() {
   return (
     <div className="space-y-6">
       {/* Instructions */}
-      <div className="border border-border bg-surface rounded-xl p-4 space-y-3">
-        <h3 className="text-sm font-semibold">How to export from Libby</h3>
+      <div className="card-glass p-5 space-y-3">
+        <h3 className="font-heading text-base font-bold text-foreground">How to export from Libby</h3>
         <ol className="text-xs text-muted space-y-1.5 list-decimal list-inside">
           <li>Open the <strong>Libby</strong> app</li>
           <li>Tap your <strong>Shelf</strong> &rarr; <strong>Timeline</strong> &rarr; <strong>Actions</strong></li>
@@ -239,8 +239,12 @@ export function LibbyImport() {
           <li>Select <strong>All Loans</strong> and download the CSV</li>
           <li>Upload the downloaded CSV below</li>
         </ol>
-        <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 p-3">
-          <span className="text-amber-500 text-sm mt-0.5">⚠️</span>
+        <div className="flex items-start gap-2 rounded-2xl border border-amber-500/40 bg-surface/60 p-3">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0 text-amber-500" aria-hidden="true">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
           <p className="text-xs text-amber-500 font-medium leading-relaxed">
             <strong>Safari users:</strong> The Libby export may open as a new tab instead of downloading. If this happens, please use <strong>Chrome</strong> or another browser to export and save the CSV file.
           </p>
@@ -251,8 +255,8 @@ export function LibbyImport() {
       {state === "idle" && (
         <>
           {/* Default status toggle */}
-          <div className="border border-border/50 bg-surface-alt/50 p-3 space-y-2.5">
-            <p className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+          <div className="rounded-2xl border border-foreground/10 bg-surface/50 p-3.5 space-y-2.5">
+            <p className="eyebrow">
               Reading status
             </p>
             <div className="grid grid-cols-3 gap-1.5">
@@ -264,10 +268,10 @@ export function LibbyImport() {
                 <button
                   key={opt.key}
                   onClick={() => setDefaultStatus(opt.key)}
-                  className={`px-2 py-2 text-[11px] font-medium transition-colors ${
+                  className={`rounded-full px-2 py-2 text-[11px] font-medium leading-tight transition-colors ${
                     defaultStatus === opt.key
-                      ? "bg-accent text-black"
-                      : "bg-surface text-muted hover:text-foreground border border-border/50"
+                      ? "bg-accent font-bold text-black"
+                      : "border border-foreground/10 bg-surface/70 text-muted hover:text-foreground"
                   }`}
                 >
                   {opt.label}
@@ -284,8 +288,8 @@ export function LibbyImport() {
           </div>
 
           {/* Re-import checkbox */}
-          <div className="border border-border/50 bg-surface-alt/50 p-3 space-y-2.5">
-            <p className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+          <div className="rounded-2xl border border-foreground/10 bg-surface/50 p-3.5 space-y-2.5">
+            <p className="eyebrow">
               Import settings
             </p>
             <label className="flex items-start gap-2.5 cursor-pointer group">
@@ -313,10 +317,10 @@ export function LibbyImport() {
             }}
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
-            className={`border-2 border-dashed p-8 text-center transition-colors cursor-pointer ${
+            className={`rounded-[22px] border-2 border-dashed p-8 text-center transition-colors cursor-pointer ${
               dragOver
-                ? "border-accent bg-accent/5"
-                : "border-border hover:border-accent/40"
+                ? "border-accent bg-surface/70"
+                : "border-foreground/15 bg-surface/40 hover:border-accent/50"
             }`}
             onClick={() => fileRef.current?.click()}
           >
@@ -328,7 +332,7 @@ export function LibbyImport() {
               className="hidden"
             />
             {/* Headphones icon */}
-            <svg className="mx-auto mb-3 text-muted" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="mx-auto mb-3 text-neon-blue" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
               <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
             </svg>
@@ -342,8 +346,8 @@ export function LibbyImport() {
           </p>
 
           {/* What gets imported */}
-          <div className="border border-border/50 bg-surface-alt/50 p-3 space-y-1">
-            <p className="text-[11px] font-semibold text-muted uppercase tracking-wider">What we import</p>
+          <div className="rounded-2xl border border-foreground/10 bg-surface/50 p-3.5 space-y-1">
+            <p className="eyebrow">What we import</p>
             <ul className="text-xs text-muted space-y-0.5 list-disc pl-4">
               <li><strong>Audiobooks</strong> &mdash; all borrowed titles from your Libby history</li>
               <li><strong>Borrow dates</strong> &mdash; used as reading completion dates</li>
@@ -376,7 +380,7 @@ export function LibbyImport() {
 
       {/* Cancelled */}
       {state === "cancelled" && (
-        <div className="border border-border bg-surface p-5 space-y-3">
+        <div className="card-glass p-5 space-y-3">
           <p className="text-sm font-medium">
             Import cancelled after {progress.current} of {progress.total} books.
           </p>
@@ -394,30 +398,30 @@ export function LibbyImport() {
 
       {/* Results */}
       {state === "done" && result && !showCompletionModal && (
-        <div className="border border-border bg-surface p-5 space-y-4">
+        <div className="card-glass p-5 space-y-4">
           <div className="flex items-center gap-2">
-            <span className="text-xl text-purple-500">&#10003;</span>
-            <h3 className="text-sm font-bold text-purple-500">Import Complete</h3>
+            <span className="orb-glass h-9 w-9 text-accent"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span>
+            <h3 className="font-heading text-lg font-bold text-foreground">Import Complete</h3>
           </div>
 
           <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="bg-surface-alt p-3">
-              <p className="text-lg font-bold font-heading text-purple-500">
+            <div className="rounded-2xl border border-foreground/10 bg-surface/60 p-3">
+              <p className="text-lg font-bold font-heading text-accent">
                 {result.imported}
               </p>
-              <p className="text-[10px] text-muted uppercase tracking-wider">New Books</p>
+              <p className="eyebrow !text-[10px]">New Books</p>
             </div>
-            <div className="bg-surface-alt p-3">
+            <div className="rounded-2xl border border-foreground/10 bg-surface/60 p-3">
               <p className="text-lg font-bold font-heading text-foreground">
                 {result.existing}
               </p>
-              <p className="text-[10px] text-muted uppercase tracking-wider">Updated</p>
+              <p className="eyebrow !text-[10px]">Updated</p>
             </div>
-            <div className="bg-surface-alt p-3">
+            <div className="rounded-2xl border border-foreground/10 bg-surface/60 p-3">
               <p className="text-lg font-bold font-heading text-foreground">
                 {result.errors.length}
               </p>
-              <p className="text-[10px] text-muted uppercase tracking-wider">Errors</p>
+              <p className="eyebrow !text-[10px]">Errors</p>
             </div>
           </div>
 
@@ -442,7 +446,7 @@ export function LibbyImport() {
           )}
 
           {enrichmentStarted && (
-            <p className="text-xs text-muted bg-surface-alt/50 px-3 py-2">
+            <p className="rounded-2xl bg-surface-alt/50 px-3 py-2 text-xs text-muted">
               Book details are being enriched in the background. You&apos;ll be notified when it&apos;s done.
             </p>
           )}
@@ -458,7 +462,7 @@ export function LibbyImport() {
 
       {/* Error */}
       {state === "error" && (
-        <div className="border border-destructive/30 bg-destructive/5 p-5 space-y-3">
+        <div className="card-glass p-5 space-y-3 !border-destructive/40">
           <p className="text-sm font-medium text-destructive">{errorMessage}</p>
           <button
             onClick={resetToIdle}

@@ -264,8 +264,8 @@ export function GoodreadsImport() {
   return (
     <div className="space-y-6">
       {/* Instructions */}
-      <div className="border border-border bg-surface p-4 space-y-2">
-        <h3 className="text-sm font-semibold">How to export from Goodreads</h3>
+      <div className="card-glass p-5 space-y-2">
+        <h3 className="font-heading text-base font-bold text-foreground">How to export from Goodreads</h3>
         <ol className="text-xs text-muted space-y-1.5 list-decimal list-inside">
           <li>Go to <strong>Goodreads</strong> &rarr; My Books</li>
           <li>Click <strong>Import and export</strong> (left sidebar)</li>
@@ -286,10 +286,10 @@ export function GoodreadsImport() {
             }}
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
-            className={`border-2 border-dashed p-8 text-center transition-colors cursor-pointer ${
+            className={`rounded-[22px] border-2 border-dashed p-8 text-center transition-colors cursor-pointer ${
               dragOver
-                ? "border-accent bg-accent/5"
-                : "border-border hover:border-accent/40"
+                ? "border-accent bg-surface/70"
+                : "border-foreground/15 bg-surface/40 hover:border-accent/50"
             }`}
             onClick={() => fileRef.current?.click()}
           >
@@ -300,7 +300,7 @@ export function GoodreadsImport() {
               onChange={handleFileChange}
               className="hidden"
             />
-            <svg className="mx-auto mb-3 text-muted" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="mx-auto mb-3 text-neon-blue" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="17 8 12 3 7 8" />
               <line x1="12" y1="3" x2="12" y2="15" />
@@ -315,8 +315,8 @@ export function GoodreadsImport() {
           </p>
 
           {/* What gets imported */}
-          <div className="border border-border/50 bg-surface-alt/50 p-3 space-y-1">
-            <p className="text-[11px] font-semibold text-muted uppercase tracking-wider">What we import</p>
+          <div className="rounded-2xl border border-foreground/10 bg-surface/50 p-3.5 space-y-1">
+            <p className="eyebrow">What we import</p>
             <ul className="text-xs text-muted space-y-0.5 list-disc pl-4">
               <li><strong>Books &amp; covers</strong> &mdash; matched via ISBN and Open Library</li>
               <li><strong>Ratings &amp; reviews</strong> &mdash; including review dates</li>
@@ -360,7 +360,7 @@ export function GoodreadsImport() {
 
       {/* Cancelled */}
       {state === "cancelled" && (
-        <div className="border border-border bg-surface p-5 space-y-3">
+        <div className="card-glass p-5 space-y-3">
           <p className="text-sm font-medium">
             Import cancelled after {progress.current} of {progress.total} books.
           </p>
@@ -378,30 +378,30 @@ export function GoodreadsImport() {
 
       {/* Results */}
       {state === "done" && result && !showCompletionModal && (
-        <div className="border border-border bg-surface p-5 space-y-4">
+        <div className="card-glass p-5 space-y-4">
           <div className="flex items-center gap-2">
-            <span className="text-xl text-purple-500">&#10003;</span>
-            <h3 className="text-sm font-bold text-purple-500">Import Complete</h3>
+            <span className="orb-glass h-9 w-9 text-accent"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span>
+            <h3 className="font-heading text-lg font-bold text-foreground">Import Complete</h3>
           </div>
 
           <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="bg-surface-alt p-3">
-              <p className="text-lg font-bold font-heading text-purple-500">
+            <div className="rounded-2xl border border-foreground/10 bg-surface/60 p-3">
+              <p className="text-lg font-bold font-heading text-accent">
                 {result.imported}
               </p>
-              <p className="text-[10px] text-muted uppercase tracking-wider">New Books</p>
+              <p className="eyebrow !text-[10px]">New Books</p>
             </div>
-            <div className="bg-surface-alt p-3">
+            <div className="rounded-2xl border border-foreground/10 bg-surface/60 p-3">
               <p className="text-lg font-bold font-heading text-foreground">
                 {result.existing}
               </p>
-              <p className="text-[10px] text-muted uppercase tracking-wider">Updated</p>
+              <p className="eyebrow !text-[10px]">Updated</p>
             </div>
-            <div className="bg-surface-alt p-3">
+            <div className="rounded-2xl border border-foreground/10 bg-surface/60 p-3">
               <p className="text-lg font-bold font-heading text-foreground">
                 {result.errors.length}
               </p>
-              <p className="text-[10px] text-muted uppercase tracking-wider">Errors</p>
+              <p className="eyebrow !text-[10px]">Errors</p>
             </div>
           </div>
 
@@ -426,7 +426,7 @@ export function GoodreadsImport() {
           )}
 
           {enrichmentStarted && (
-            <p className="text-xs text-muted bg-surface-alt/50 px-3 py-2">
+            <p className="rounded-2xl bg-surface-alt/50 px-3 py-2 text-xs text-muted">
               Book details are being enriched in the background. You&apos;ll be notified when it&apos;s done.
             </p>
           )}
@@ -442,7 +442,7 @@ export function GoodreadsImport() {
 
       {/* Error */}
       {state === "error" && (
-        <div className="border border-destructive/30 bg-destructive/5 p-5 space-y-3">
+        <div className="card-glass p-5 space-y-3 !border-destructive/40">
           <p className="text-sm font-medium text-destructive">{errorMessage}</p>
           <button
             onClick={resetToIdle}

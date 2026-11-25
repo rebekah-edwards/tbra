@@ -42,10 +42,10 @@ export function HiddenBooksManager({ initialBooks }: HiddenBooksManagerProps) {
       {books.map((book) => (
         <div
           key={book.bookId}
-          className="flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2"
+          className="row-glass flex items-center gap-3 px-3 py-2"
         >
           {/* Cover */}
-          <div className="h-12 w-8 flex-shrink-0 overflow-hidden rounded bg-surface-alt">
+          <div className="h-12 w-8 flex-shrink-0 overflow-hidden rounded-[4px] bg-surface-alt ring-1 ring-white/10">
             {book.coverImageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -76,7 +76,7 @@ export function HiddenBooksManager({ initialBooks }: HiddenBooksManagerProps) {
           <button
             onClick={() => handleUnhide(book.bookId)}
             disabled={isPending && removingId === book.bookId}
-            className="flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-muted hover:text-foreground hover:bg-surface-alt transition-colors disabled:opacity-50"
+            className="btn-glass flex-shrink-0 px-3.5 py-1.5 text-xs disabled:opacity-50"
           >
             {isPending && removingId === book.bookId ? "..." : "Unhide"}
           </button>

@@ -29,7 +29,7 @@ export function BlockedReaders({ initial }: { initial: BlockedUser[] }) {
   return (
     <div className="space-y-2">
       {blocked.map((u) => (
-        <div key={u.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
+        <div key={u.id} className="row-glass flex items-center justify-between gap-3 px-3 py-2.5">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-foreground">{u.displayName || (u.username ? `@${u.username}` : "Reader")}</p>
             {u.username && u.displayName && <p className="truncate text-xs text-muted">@{u.username}</p>}
@@ -38,7 +38,7 @@ export function BlockedReaders({ initial }: { initial: BlockedUser[] }) {
             type="button"
             onClick={() => unblock(u.id)}
             disabled={busyId === u.id}
-            className="flex-shrink-0 rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-foreground hover:bg-surface-alt disabled:opacity-50"
+            className="btn-glass flex-shrink-0 px-3.5 py-1.5 text-sm disabled:opacity-50"
           >
             {busyId === u.id ? "Unblocking…" : "Unblock"}
           </button>

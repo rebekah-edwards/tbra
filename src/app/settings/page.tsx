@@ -52,9 +52,10 @@ export default async function SettingsPage() {
     .sort(byContentCategoryOrder);
 
   return (
-    <div className="space-y-6 lg:w-[60%] lg:mx-auto">
+    <div className="space-y-4 pb-24 lg:w-[60%] lg:mx-auto">
       <div>
-        <h1 className="text-foreground text-2xl font-bold tracking-tight">Settings</h1>
+        <p className="eyebrow">Your account</p>
+        <h1 className="font-heading text-foreground text-2xl font-bold tracking-tight">Settings</h1>
         <p className="text-sm text-muted mt-1">
           Manage your account and data
         </p>
@@ -63,16 +64,16 @@ export default async function SettingsPage() {
       <ReadingPreferencesEditor initialPrefs={prefs} activeCategories={activeCategories} />
 
       {/* Display */}
-      <div>
-        <h2 className="section-heading text-lg mb-3">Display</h2>
+      <div className="card-glass p-5">
+        <h2 className="font-heading text-lg font-bold text-foreground mb-3">Display</h2>
         <div className="space-y-5">
           <div>
-            <p className="text-sm text-foreground mb-1.5">Theme</p>
+            <p className="eyebrow mb-0.5">Theme</p>
             <p className="text-xs text-muted mb-2">Choose your preferred color scheme</p>
             <ThemeSelector />
           </div>
           <div>
-            <p className="text-sm text-foreground mb-1.5">Text Size</p>
+            <p className="eyebrow mb-0.5">Text Size</p>
             <p className="text-xs text-muted mb-2">Adjust the base font size across the app</p>
             <TextSizeSelector />
           </div>
@@ -81,8 +82,8 @@ export default async function SettingsPage() {
       </div>
 
       {/* Location */}
-      <div data-coach-anchor="tour-privacy">
-        <h2 className="section-heading text-lg mb-3">Location</h2>
+      <div data-coach-anchor="tour-privacy" className="card-glass p-5">
+        <h2 className="font-heading text-lg font-bold text-foreground mb-3">Location</h2>
         <LocationSettings userId={user.userId} />
       </div>
 
@@ -92,9 +93,9 @@ export default async function SettingsPage() {
 
       {/* Hidden Books — collapsed by default so the list doesn't force the
           user to scroll past it. Uses native <details> for zero-JS toggle. */}
-      <details className="group">
+      <details className="group card-glass p-5">
         <summary className="flex items-center justify-between cursor-pointer list-none">
-          <h2 className="section-heading text-lg">Hidden Books {hiddenBooks.length > 0 && (<span className="text-xs font-normal text-muted ml-2">({hiddenBooks.length})</span>)}</h2>
+          <h2 className="font-heading text-lg font-bold text-foreground">Hidden Books {hiddenBooks.length > 0 && (<span className="text-xs font-normal text-muted ml-2">({hiddenBooks.length})</span>)}</h2>
           <svg className="w-4 h-4 text-muted transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 9 12 15 18 9" />
           </svg>
@@ -106,9 +107,9 @@ export default async function SettingsPage() {
       </details>
 
       {/* Blocked readers — collapsed like Hidden Books. */}
-      <details className="group">
+      <details className="group card-glass p-5">
         <summary className="flex items-center justify-between cursor-pointer list-none">
-          <h2 className="section-heading text-lg">Blocked Readers {blockedReaders.length > 0 && (<span className="text-xs font-normal text-muted ml-2">({blockedReaders.length})</span>)}</h2>
+          <h2 className="font-heading text-lg font-bold text-foreground">Blocked Readers {blockedReaders.length > 0 && (<span className="text-xs font-normal text-muted ml-2">({blockedReaders.length})</span>)}</h2>
           <svg className="w-4 h-4 text-muted transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 9 12 15 18 9" />
           </svg>
