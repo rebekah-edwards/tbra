@@ -27,6 +27,45 @@ export type WhatsNewNote = {
 
 export const WHATS_NEW_NOTES: WhatsNewNote[] = [
   {
+    // Build 21 (TestFlight, 2026-11-25). DRAFT wording — waiting on
+    // Rebekah's OK before the build is released to the Friends group.
+    build: 21,
+    title: "What's new",
+    items: [
+      {
+        icon: "text.bubble",
+        heading: "Reviews on book pages",
+        body: "Read other readers' reviews right on the book page. Books you've reviewed now say \u201CEdit your review.\u201D",
+      },
+      {
+        icon: "square.and.arrow.up",
+        heading: "Share your review",
+        body: "After you post a review, share it as a story-ready image or save it to your photos.",
+      },
+      {
+        icon: "person.2",
+        heading: "Buddy Reads",
+        body: "Hosts can mark a buddy read finished, reopen it, or cancel it. When someone starts, finishes or pauses the book, the chat says so, and you can share your reading updates there too.",
+      },
+      {
+        icon: "checkmark.seal",
+        heading: "Verified authors",
+        body: "Authors can claim their author page. Once we confirm it's them, they get a Verified Author badge and can confirm their books' content ratings.",
+      },
+      {
+        icon: "shield.lefthalf.filled",
+        heading: "Content ratings",
+        body: "Ratings now say Unverified, Verified or Author-verified, and the content-flag box has a new look.",
+      },
+      {
+        icon: "paintbrush",
+        heading: "Author & series pages",
+        body: "A new look, built from the books' covers.",
+      },
+    ],
+    footer: "Tell us what you think with the flag button.",
+  },
+  {
     // Build 20 (TestFlight, 2026-11-19). Wording approved by Rebekah.
     build: 20,
     title: "What's new",
