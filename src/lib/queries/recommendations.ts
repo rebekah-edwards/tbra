@@ -26,6 +26,7 @@ import { isSpoilerGenre } from "@/lib/spoiler-genres";
 import { eq, sql, and, isNotNull, inArray } from "drizzle-orm";
 import { isEnglishTitle, looksLikeMidSeriesTitle } from "@/lib/queries/books";
 import { batchFetchBookAuthors } from "@/lib/queries/batch-helpers";
+import { booksFrom, withCoveredIndex } from "@/lib/queries/covered-books-index";
 
 // ─── Anthology / collection title patterns ───
 
@@ -771,21 +772,20 @@ async function fetchCandidateBooks(
   let candidateBookIds: string[];
 
   if (preferredGenreIds.length > 0) {
-    // Get books in preferred genres first (more likely to be relevant)
-    const genreMatchRows = await db
-      .select({ bookId: bookGenres.bookId })
-      .from(bookGenres)
-      .innerJoin(books, eq(bookGenres.bookId, books.id))
-      .where(
-        sql`${bookGenres.genreId} IN (${sql.join(
-          preferredGenreIds.slice(0, 30).map((id) => sql`${id}`),
-          sql`, `
-        )}) AND ${qualityFilter}`
-      )
-      .groupBy(bookGenres.bookId)
-      .orderBy(sql`COUNT(*) DESC`)
-      .limit(limit * 3)
-      .all();
+    // Get books in preferred genres first (more likely to be relevant).
+    // Read through the narrow covered index (covered-books-index.ts): a big
+    // genre like Fantasy joins tens of thousands of books, and visiting each
+    // wide `books` row on Turso pushed uncached book pages past 300s.
+    const genreList = sql.join(preferredGenreIds.slice(0, 30).map((id) => sql`${id}`), sql`, `);
+    const genreMatchRows = (await withCoveredIndex(() => db.all(sql`
+      SELECT bg.book_id AS bookId
+      FROM book_genres bg
+      JOIN ${booksFrom("books")} ON bg.book_id = books.id
+      WHERE bg.genre_id IN (${genreList}) AND ${qualityFilter}
+      GROUP BY bg.book_id
+      ORDER BY COUNT(*) DESC
+      LIMIT ${limit * 3}
+    `))) as { bookId: string }[];
 
     candidateBookIds = genreMatchRows
       .map((r) => r.bookId)
@@ -793,13 +793,12 @@ async function fetchCandidateBooks(
 
     // Fill with random books if we didn't get enough
     if (candidateBookIds.length < limit) {
-      const randomFill = await db
-        .select({ id: books.id })
-        .from(books)
-        .where(sql`${qualityFilter}`)
-        .orderBy(sql`RANDOM()`)
-        .limit(limit)
-        .all();
+      const randomFill = (await withCoveredIndex(() => db.all(sql`
+        SELECT books.id AS id FROM ${booksFrom("books")}
+        WHERE ${qualityFilter}
+        ORDER BY RANDOM()
+        LIMIT ${limit}
+      `))) as { id: string }[];
 
       const randomIds = randomFill
         .map((r) => r.id)
@@ -809,13 +808,12 @@ async function fetchCandidateBooks(
     }
   } else {
     // Cold start: random books with covers and English
-    const randomRows = await db
-      .select({ id: books.id })
-      .from(books)
-      .where(sql`${qualityFilter}`)
-      .orderBy(sql`RANDOM()`)
-      .limit(limit)
-      .all();
+    const randomRows = (await withCoveredIndex(() => db.all(sql`
+      SELECT books.id AS id FROM ${booksFrom("books")}
+      WHERE ${qualityFilter}
+      ORDER BY RANDOM()
+      LIMIT ${limit}
+    `))) as { id: string }[];
 
     candidateBookIds = randomRows
       .map((r) => r.id)
@@ -2062,7 +2060,9 @@ export const getSimilarBooks = async (
   const cached = unstable_cache(
     async () => getSimilarBooksInner(bookId, userId, limit),
     ["similar-books", bookId, userId ?? "anon"],
-    { revalidate: 300 }
+    // Similar books barely change; recomputing every 5 minutes made every
+    // crawler visit to a book page redo the heaviest query on it.
+    { revalidate: 6 * 60 * 60 }
   );
   return cached();
 };

@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { sql, type SQL } from "drizzle-orm";
+import { booksFrom, withCoveredIndex } from "@/lib/queries/covered-books-index";
 
 export interface BrowseBook {
   id: string;
@@ -126,9 +127,10 @@ export async function getBrowseBooks(
       orderByFragment = sql`rating_count DESC, avg_rating DESC`;
   }
 
-  const countResult = (await db.all(
-    sql`SELECT COUNT(*) as total FROM books b WHERE ${whereClause}`,
-  )) as { total: number }[];
+  // Ranked from the narrow covered index — see covered-books-index.ts.
+  const countResult = (await withCoveredIndex(() => db.all(
+    sql`SELECT COUNT(*) as total FROM ${booksFrom()} WHERE ${whereClause}`,
+  ))) as { total: number }[];
   const total = countResult[0]?.total ?? 0;
 
   // Determine whether we need rating data in the ORDER BY.
@@ -143,13 +145,13 @@ export async function getBrowseBooks(
     avg_rating: number; rating_count: number;
   };
 
-  const rows: Row[] = needsRatingsForSort
+  const rows: Row[] = await withCoveredIndex(async () => needsRatingsForSort
     ? (await db.all(sql`
         SELECT
           b.id, b.slug, b.title, b.cover_image_url, b.publication_year, b.pages, b.is_fiction,
           COALESCE(r.avg_rating, 0) AS avg_rating,
           COALESCE(r.rating_count, 0) AS rating_count
-        FROM books b
+        FROM ${booksFrom()}
         LEFT JOIN (
           SELECT book_id, AVG(rating) AS avg_rating, COUNT(*) AS rating_count
           FROM user_book_ratings
@@ -163,11 +165,11 @@ export async function getBrowseBooks(
         SELECT
           b.id, b.slug, b.title, b.cover_image_url, b.publication_year, b.pages, b.is_fiction,
           0 AS avg_rating, 0 AS rating_count
-        FROM books b
+        FROM ${booksFrom()}
         WHERE ${whereClause}
         ORDER BY ${orderByFragment}
         LIMIT ${limit} OFFSET ${offset}
-      `)) as Row[];
+      `)) as Row[]);
 
   if (rows.length === 0) {
     return { books: [], total, hasMore: false };
