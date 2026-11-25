@@ -2,6 +2,7 @@
 
 import { useReducer, useCallback, useTransition, useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
+import { ReviewShareSheet } from "./review-share-sheet";
 import { StepOverallRating } from "./steps/step-overall-rating";
 import { StepMood } from "./steps/step-mood";
 import { StepDimensions } from "./steps/step-dimensions";
@@ -223,6 +224,9 @@ export function ReviewWizard({ bookId, bookPages, isFiction, open, onClose, isEx
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  // After a save, offer the shareable review card (like Fable) — skipped for
+  // anonymous reviews and ones with nothing to show (no stars, no text).
+  const [shareOpen, setShareOpen] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const initialStateRef = useRef<ReviewState>(
     makeInitialState(existingReview, { initialDnf, initialDnfPercent }),
@@ -290,7 +294,10 @@ export function ReviewWizard({ bookId, bookPages, isFiction, open, onClose, isEx
         proposedCorrections,
         userAddedWarnings,
       });
-      onClose();
+      const shareable =
+        !state.isAnonymous && ((state.overallRating ?? 0) > 0 || (state.reviewText ?? "").replace(/<[^>]*>/g, "").trim().length > 0);
+      if (shareable) setShareOpen(true);
+      else onClose();
     });
   }, [bookId, state, onClose, arcData]);
 
@@ -316,6 +323,18 @@ export function ReviewWizard({ bookId, bookPages, isFiction, open, onClose, isEx
   const isScrollStep = step === 2 || step === 3 || step === 4;
 
   if (!visible) return null;
+
+  if (shareOpen) {
+    return (
+      <ReviewShareSheet
+        bookId={bookId}
+        onClose={() => {
+          setShareOpen(false);
+          onClose();
+        }}
+      />
+    );
+  }
 
   return createPortal(
     <div

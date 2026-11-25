@@ -96,3 +96,26 @@ export async function getYearReads(userId: string, year: number): Promise<YearRe
     })),
   );
 }
+
+/**
+ * All-time distinct reads (the "All Time" Stats view), same rule as
+ * getYearReads: re-reads count, import duplicates of one read don't.
+ */
+export async function getAllTimeReads(userId: string): Promise<YearRead[]> {
+  const rows = (await db.all(sql`
+    SELECT book_id, completion_date, completion_precision, active_formats
+    FROM reading_sessions
+    WHERE user_id = ${userId}
+      AND state = 'completed'
+      AND completion_date IS NOT NULL
+      AND completion_precision IS NOT NULL
+  `)) as Row[];
+  return distinctReads(
+    rows.map((r) => ({
+      bookId: r.book_id,
+      completionDate: r.completion_date,
+      completionPrecision: r.completion_precision,
+      activeFormats: r.active_formats,
+    })),
+  );
+}

@@ -478,6 +478,12 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
     // ordinary metadata like publisher — safe to push. (Demotion of non-English
     // books stays a separate, manual step: scripts/hide-non-english.ts.)
     'language',
+    // `audio_length_minutes` was missing until 2026-11-25: audio lengths
+    // entered or found locally (the phone's Debug build, the goals fixer,
+    // the audiobook lookup) never reached Turso — 10,976 local books had one
+    // — so live goals flagged books whose length the app plainly showed.
+    // Pushed fill-or-update only: a NULL local value never wipes live's.
+    'audio_length_minutes',
     'description_stale', 'updated_at',
   ];
 
@@ -535,9 +541,23 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
       if (c === 'updated_at') {
         return `${c} = CASE WHEN ${KEEP_LIVE_DESC} THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now') ELSE ? END`;
       }
+      if (c === 'audio_length_minutes') {
+        // Fill a blank live value only; a length someone set on live wins.
+        return `${c} = CASE WHEN COALESCE(${c}, 0) <= 0 THEN NULLIF(?, 0) ELSE ${c} END`;
+      }
       return `${c} = ?`;
     }).join(', ');
     const sql = `UPDATE books SET ${setClause} WHERE id = ?`;
+    // Local audio lengths include junk (round 1500/3000/4500-minute values,
+    // lengths impossible for the page count) — only plausible ones go live.
+    const ROUND_JUNK = new Set([180, 300, 360, 600, 1440, 1500, 3000, 4500]);
+    const plausibleAudio = (b: any): number | null => {
+      const a = Number(b.audio_length_minutes) || 0;
+      const p = Number(b.pages) || 0;
+      if (a <= 0) return null;
+      if (p > 0) return a / p >= 0.8 && a / p <= 4 ? a : null;
+      return ROUND_JUNK.has(a) ? null : a;
+    };
     let updated = 0;
     let errors = 0;
     for (let i = 0; i < toUpdate.length; i += BATCH_SIZE) {
@@ -546,7 +566,7 @@ function rowsAsArrays(table: string, cols: string[], where = '', params: any[] =
         const result = await remote.batch(
           chunk.map((b: any) => ({
             sql,
-            args: [...UPDATE_FIELDS.map((c) => b[c]), b.id],
+            args: [...UPDATE_FIELDS.map((c) => (c === 'audio_length_minutes' ? plausibleAudio(b) : b[c])), b.id],
           })),
           'write'
         );

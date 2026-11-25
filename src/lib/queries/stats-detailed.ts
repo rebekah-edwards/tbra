@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { readingSessions, books, bookGenres, genres, bookAuthors, authors, userBookRatings } from "@/db/schema";
 import { eq, and, like, sql, isNotNull } from "drizzle-orm";
 import { SPOILER_GENRE_NAMES_LOWER } from "@/lib/spoiler-genres";
+import { getYearReads, getAllTimeReads } from "@/lib/queries/year-reads";
 
 /**
  * Year filter helper: when year is set, filters by year AND excludes synthetic dates.
@@ -253,7 +254,12 @@ export async function getPageStats(
     JOIN books b ON ds.book_id = b.id
   `) as { total_pages: number; book_count: number }[];
 
-  return { totalPages: rows[0]?.total_pages ?? 0, bookCount: rows[0]?.book_count ?? 0 };
+  // The Books count follows the reading-goal rule (year-reads.ts): re-reads
+  // count, near-duplicate import sessions don't, and only dated finishes do.
+  // It used COUNT(*) over one-row-per-book sessions, so re-reads vanished and
+  // the tile disagreed with the goal card (Rebekah, 2026-11-25).
+  const reads = year ? await getYearReads(userId, year) : await getAllTimeReads(userId);
+  return { totalPages: rows[0]?.total_pages ?? 0, bookCount: reads.length };
 }
 
 /** Pages read grouped by month. Excludes audio-only sessions from page total. */
