@@ -768,3 +768,18 @@ struct QuietFollowPill: View {
         .accessibilityAddTraits(isFollowing ? .isSelected : [])
     }
 }
+
+
+/// Cover grids that grow with the window (iPhone Duo, 2026-11-25). The
+/// minimum keeps exactly 3 columns on every iPhone in portrait AND on the
+/// Duo's closed screen (narrowest content ≈ 326pt), and opens out to ~7 on
+/// the Duo's inner screen instead of stretching 3 covers across it.
+enum AdaptiveGrid {
+    static func covers(spacing: CGFloat) -> [GridItem] {
+        [GridItem(.adaptive(minimum: 96, maximum: 170), spacing: spacing)]
+    }
+    /// Two-up cards on a phone, 3–4 on a wide window.
+    static func cards(spacing: CGFloat) -> [GridItem] {
+        [GridItem(.adaptive(minimum: 150, maximum: 260), spacing: spacing)]
+    }
+}

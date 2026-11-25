@@ -166,9 +166,7 @@ struct BrowseView: View {
         "Epic Fantasy", "Romantasy", "Grimdark", "LitRPG", "Dystopian", "Adventure",
         "Crime", "Biography", "Self-Help", "Humor", "Coming of Age", "Anthology"]
     @State private var filtersOpen = false
-    private let columns = [
-        GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14),
-    ]
+    private let columns = AdaptiveGrid.covers(spacing: 14)
 
     var body: some View {
         ScrollView {

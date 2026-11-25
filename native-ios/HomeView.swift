@@ -85,6 +85,8 @@ struct HomeView: View {
     @State private var wiggleMode = false
     @State private var lifted: UpNextLift?
     @State private var gridWidth: CGFloat = 0
+    /// Width of the Home scroll view; drives the wide two-column layout.
+    @State private var contentWidth: CGFloat = 0
     /// The order when the current drag began — only a changed order is saved.
     @State private var orderAtLift: [String] = []
 
@@ -248,9 +250,10 @@ struct HomeView: View {
                     // taps follow the fresh layout — that stale routing was
                     // the "glitchy reorder" all along. Rebuilding once when
                     // the deferred sections arrive re-syncs the touch layer.
-                    .id("home-\(homeModel.home?.readingNow.isEmpty != false)-\(homeModel.home == nil)-\(homeModel.discover == nil)")
+                    .id("home-\(homeModel.home?.readingNow.isEmpty != false)-\(homeModel.home == nil)-\(homeModel.discover == nil)-\(isWide)")
             }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
         .background(AmbientBackground())
         .simultaneousGesture(
             SpatialTapGesture(coordinateSpace: .global).onEnded { v in
@@ -286,157 +289,206 @@ struct HomeView: View {
         return home.readingNow.isEmpty && model.items.isEmpty && !model.loading
     }
 
+    /// Wide window (the iPhone Duo's open inner screen, ~850pt of content):
+    /// Home becomes two columns that meet near the fold. Phone widths —
+    /// including the Duo's closed screen and a half-screen split — keep the
+    /// single column. Measured, not device-sniffed, so it follows the window.
+    private var isWide: Bool { contentWidth >= 700 }
+
     private var homeSections: some View {
-            VStack(alignment: .leading, spacing: 28) {
-                if DesignPreview.on && isBlankSlate {
-                    HomeStarterCard(
-                        onSearch: { openSearch() },
-                        onDiscover: { chrome?.tab = .discover })
-                }
-                // ── Reading Now ──
-                if let home = homeModel.home, !home.readingNow.isEmpty {
-                    VStack(alignment: .leading, spacing: 14) {
-                        SectionHeading("Reading Now")
-                        VStack(spacing: 12) {
-                            ForEach(home.readingNow) { book in
-                                ReadingNowCard(
-                                    book: book,
-                                    openDropdownBookId: $openStateDropdownBookId,
-                                    onOpen: { path.append(BookRoute(idOrSlug: book.slug ?? book.id)) },
-                                    onCompleted: {
-                                        path.append(BookRoute(idOrSlug: book.slug ?? book.id,
-                                                              justCompleted: true))
-                                    }
-                                ) {
-                                    await homeModel.load()
-                                    await model.load()
-                                }
-                                .background(HitFrameReporter(label: "readingnow \(book.title.prefix(14))"))
-                                .zIndex(openStateDropdownBookId == book.id ? 50 : 0)
-                            }
+        Group {
+            if isWide {
+                VStack(alignment: .leading, spacing: 28) {
+                    starterSection
+                    HStack(alignment: .top, spacing: 24) {
+                        VStack(alignment: .leading, spacing: 28) {
+                            readingNowSection
+                            pickSection
                         }
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                        .zIndex(openStateDropdownBookId != nil ? 50 : 0)
+                        VStack(alignment: .leading, spacing: 28) {
+                            motivationSection
+                            upNextSection
+                        }
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
                     }
                     .zIndex(openStateDropdownBookId != nil ? 50 : 0)
+                    deferredSections
                 }
-
-                // ── Goal + streak (mobile order: between Reading Now and Up Next) ──
-                // Either tile can be hidden (long-press it, or Settings →
-                // Display). One hidden: the other takes the full width. Both
-                // hidden: the row is gone and Up Next moves up.
-                if let home = homeModel.home, !(hideGoal && hideStreak) {
-                    HStack(alignment: .top, spacing: 12) {
-                        if !hideGoal {
-                            ReadingGoalCardView(goal: home.goal, year: home.year,
-                                                autoEdit: chrome?.pendingOpenGoalEditor == true,
-                                                onAutoEditConsumed: { chrome?.pendingOpenGoalEditor = false },
-                                                onOpenYear: {
-                                                    // Same destination as the web card: this
-                                                    // year's finished books in the library.
-                                                    chrome?.pendingLibrarySelection = LibrarySelection(
-                                                        group: "activity", filter: "completed", year: home.year)
-                                                    chrome?.selectTab(.library)
-                                                },
-                                                onHide: { withAnimation { MotivationPrefs.setHideGoal(true) } }) {
-                                await homeModel.load()
-                            }
-                            .contextMenu {
-                                Button { withAnimation { MotivationPrefs.setHideGoal(true) } } label: {
-                                    Label("Hide reading goal", systemImage: "eye.slash")
-                                }
-                            }
-                        }
-                        if !hideStreak {
-                            ReadingStreakCardView(streak: home.streak)
-                                .contextMenu {
-                                    Button { withAnimation { MotivationPrefs.setHideStreak(true) } } label: {
-                                        Label("Hide streak", systemImage: "eye.slash")
-                                    }
-                                }
-                        }
-                    }
-                    // v2 tiles stretch to the taller of the two, so the pair
-                    // always shares one height (v1 sized each to its content).
-                    .fixedSize(horizontal: false, vertical: DesignPreview.on)
-                }
-
-                // ── Up Next ──
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack {
-                        SectionHeading("Up Next")
-                            .background(HitFrameReporter(label: "upnext-heading"))
-                        Spacer()
-                        if wiggleMode {
-                            Button {
-                                finishWiggle()
-                            } label: {
-                                Text("Done")
-                                    .font(Theme.body(13, .semibold))
-                                    .foregroundStyle(.black)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 6)
-                                    .background(Theme.accent, in: Capsule())
-                            }
-                        }
-                    }
-
-                    upNextGrid
-
-                    if model.items.isEmpty && !model.loading {
-                        Text(DesignPreview.on ? "Books you plan to read next line up here."
-                                              : "Nothing queued yet")
-                            .font(Theme.body(14))
-                            .foregroundStyle(Theme.muted)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 40)
-                    } else if model.items.count > 1 {
-                        Text(wiggleMode ? "Drag a book to move it" : "Hold & drag to reorder")
-                            .font(Theme.body(14))
-                            .foregroundStyle(Theme.muted)
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 2)
-                    }
-                }
-
-                // ── Pick From Your Shelf ──
-                if let home = homeModel.home {
-                    VStack(alignment: .leading, spacing: 14) {
-                        SectionHeading("Pick From Your Shelf")
-                        TbrSuggestionCard(book: home.tbrSuggestion)
-                    }
-                }
-
-                // ── Deferred sections (web renders these via Suspense) ──
-                if let discover = homeModel.discover {
-                    // Friends Activity sits directly under Pick From Your Shelf.
-                    if discover.friendsActivity.contains(where: \.isFeedVisible) {
-                        VStack(alignment: .leading, spacing: 14) {
-                            SectionHeading("Friends Activity")
-                            FriendsActivityRow(
-                                activity: discover.friendsActivity,
-                                onOpen: { openActivity($0) },
-                                onSeeMore: { path.append(FriendsFeedRoute()) },
-                                onProfile: { openProfile($0) })
-                        }
-                    }
-
-                    ForEach(discover.becauseYouLiked, id: \.seed.id) { section in
-                        BecauseYouLikedSection(section: section)
-                    }
-
-                    if !discover.discover.isEmpty {
-                        VStack(alignment: .leading, spacing: 14) {
-                            HStack(spacing: 8) {
-                                SectionHeading("Discover Something New")
-                                InfoBubble(text: "Personalized picks based on your reading history — genres you love, fiction vs. nonfiction balance, and content comfort level. Only shows books not already on your shelves. Refreshes each visit.")
-                            }
-                            HorizontalBookRow(books: discover.discover)
-                        }
-                    }
+            } else {
+                VStack(alignment: .leading, spacing: 28) {
+                    starterSection
+                    readingNowSection
+                    motivationSection
+                    upNextSection
+                    pickSection
+                    deferredSections
                 }
             }
+        }
             .padding(.horizontal, 20)
             .padding(.top, 6)
             .padding(.bottom, 40)
+    }
+
+    @ViewBuilder private var starterSection: some View {
+        if DesignPreview.on && isBlankSlate {
+            HomeStarterCard(
+                onSearch: { openSearch() },
+                onDiscover: { chrome?.tab = .discover })
+        }
+    }
+
+    @ViewBuilder private var readingNowSection: some View {
+        // ── Reading Now ──
+        if let home = homeModel.home, !home.readingNow.isEmpty {
+            VStack(alignment: .leading, spacing: 14) {
+                SectionHeading("Reading Now")
+                VStack(spacing: 12) {
+                    ForEach(home.readingNow) { book in
+                        ReadingNowCard(
+                            book: book,
+                            openDropdownBookId: $openStateDropdownBookId,
+                            onOpen: { path.append(BookRoute(idOrSlug: book.slug ?? book.id)) },
+                            onCompleted: {
+                                path.append(BookRoute(idOrSlug: book.slug ?? book.id,
+                                                      justCompleted: true))
+                            }
+                        ) {
+                            await homeModel.load()
+                            await model.load()
+                        }
+                        .background(HitFrameReporter(label: "readingnow \(book.title.prefix(14))"))
+                        .zIndex(openStateDropdownBookId == book.id ? 50 : 0)
+                    }
+                }
+            }
+            .zIndex(openStateDropdownBookId != nil ? 50 : 0)
+        }
+    }
+
+    @ViewBuilder private var motivationSection: some View {
+        // ── Goal + streak (mobile order: between Reading Now and Up Next) ──
+        // Either tile can be hidden (long-press it, or Settings →
+        // Display). One hidden: the other takes the full width. Both
+        // hidden: the row is gone and Up Next moves up.
+        if let home = homeModel.home, !(hideGoal && hideStreak) {
+            HStack(alignment: .top, spacing: 12) {
+                if !hideGoal {
+                    ReadingGoalCardView(goal: home.goal, year: home.year,
+                                        autoEdit: chrome?.pendingOpenGoalEditor == true,
+                                        onAutoEditConsumed: { chrome?.pendingOpenGoalEditor = false },
+                                        onOpenYear: {
+                                            // Same destination as the web card: this
+                                            // year's finished books in the library.
+                                            chrome?.pendingLibrarySelection = LibrarySelection(
+                                                group: "activity", filter: "completed", year: home.year)
+                                            chrome?.selectTab(.library)
+                                        },
+                                        onHide: { withAnimation { MotivationPrefs.setHideGoal(true) } }) {
+                        await homeModel.load()
+                    }
+                    .contextMenu {
+                        Button { withAnimation { MotivationPrefs.setHideGoal(true) } } label: {
+                            Label("Hide reading goal", systemImage: "eye.slash")
+                        }
+                    }
+                }
+                if !hideStreak {
+                    ReadingStreakCardView(streak: home.streak)
+                        .contextMenu {
+                            Button { withAnimation { MotivationPrefs.setHideStreak(true) } } label: {
+                                Label("Hide streak", systemImage: "eye.slash")
+                            }
+                        }
+                }
+            }
+            // v2 tiles stretch to the taller of the two, so the pair
+            // always shares one height (v1 sized each to its content).
+            .fixedSize(horizontal: false, vertical: DesignPreview.on)
+        }
+    }
+
+    @ViewBuilder private var upNextSection: some View {
+        // ── Up Next ──
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                SectionHeading("Up Next")
+                    .background(HitFrameReporter(label: "upnext-heading"))
+                Spacer()
+                if wiggleMode {
+                    Button {
+                        finishWiggle()
+                    } label: {
+                        Text("Done")
+                            .font(Theme.body(13, .semibold))
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 6)
+                            .background(Theme.accent, in: Capsule())
+                    }
+                }
+            }
+
+            upNextGrid
+
+            if model.items.isEmpty && !model.loading {
+                Text(DesignPreview.on ? "Books you plan to read next line up here."
+                                      : "Nothing queued yet")
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.muted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 40)
+            } else if model.items.count > 1 {
+                Text(wiggleMode ? "Drag a book to move it" : "Hold & drag to reorder")
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.muted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 2)
+            }
+        }
+    }
+
+    @ViewBuilder private var pickSection: some View {
+        // ── Pick From Your Shelf ──
+        if let home = homeModel.home {
+            VStack(alignment: .leading, spacing: 14) {
+                SectionHeading("Pick From Your Shelf")
+                TbrSuggestionCard(book: home.tbrSuggestion)
+            }
+        }
+    }
+
+    @ViewBuilder private var deferredSections: some View {
+        // ── Deferred sections (web renders these via Suspense) ──
+        if let discover = homeModel.discover {
+            // Friends Activity sits directly under Pick From Your Shelf.
+            if discover.friendsActivity.contains(where: \.isFeedVisible) {
+                VStack(alignment: .leading, spacing: 14) {
+                    SectionHeading("Friends Activity")
+                    FriendsActivityRow(
+                        activity: discover.friendsActivity,
+                        onOpen: { openActivity($0) },
+                        onSeeMore: { path.append(FriendsFeedRoute()) },
+                        onProfile: { openProfile($0) })
+                }
+            }
+
+            ForEach(discover.becauseYouLiked, id: \.seed.id) { section in
+                BecauseYouLikedSection(section: section)
+            }
+
+            if !discover.discover.isEmpty {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 8) {
+                        SectionHeading("Discover Something New")
+                        InfoBubble(text: "Personalized picks based on your reading history — genres you love, fiction vs. nonfiction balance, and content comfort level. Only shows books not already on your shelves. Refreshes each visit.")
+                    }
+                    HorizontalBookRow(books: discover.discover)
+                }
+            }
+        }
     }
 }
 

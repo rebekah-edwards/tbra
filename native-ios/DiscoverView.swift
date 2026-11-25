@@ -103,9 +103,7 @@ struct DiscoverView: View {
         GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12),
     ]
     // 2-up result cards, matching the web's mobile grid.
-    private let resultColumns = [
-        GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12),
-    ]
+    private let resultColumns = AdaptiveGrid.cards(spacing: 12)
 
     /// Find My Next Read is a Based Reader (premium) feature — mirrors
     /// hasPremiumAccess() on the server (which also 403s the API route).

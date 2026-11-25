@@ -222,7 +222,7 @@ struct LibraryView: View {
     }
 
     private var columns: [GridItem] {
-        [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)]
+        AdaptiveGrid.covers(spacing: 16)
     }
 
     var body: some View {

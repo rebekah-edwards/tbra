@@ -171,136 +171,180 @@ struct BookDetailView: View {
         return false
     }
 
+    // Wide window (the iPhone Duo's open inner screen, >= 700pt): two
+    // columns. Measured from the page's own width (see body), so a
+    // half-screen split view or the closed Duo keeps the phone layout.
+
+    /// Cover, actions, rating, private note, comfort flags, summary.
+    @ViewBuilder
+    private func leftColumn(_ data: BookDetailData, scrollProxy: ScrollViewProxy) -> some View {
+            if showEnrichQueued {
+                // zIndex keeps the chip above the ambient/hero blur;
+                // the extra top padding shifts the whole page down so
+                // the shell logo + top-right actions stay visible and
+                // the back chevron only just overlaps the chip's top
+                // (chevron spans 0…40pt; chip top lands at 36pt).
+                EnrichmentQueuedBanner()
+                    .zIndex(5)
+                    .padding(.top, 36)
+            }
+            BookHero(data: data, onCoverChanged: { await model.load() })
+            BookActionCluster(model: model, data: data)
+            BookStarsRow(data: data,
+                         onReviewSaved: { Task { await model.load() } },
+                         autoOpen: $autoOpenReview,
+                         onWizardClosed: reviewWizardClosed)
+            // The reader's private note, on the page it is about
+            // (Rebekah, 2026-11-16: it only showed on the TBR list in
+            // My Library). Shown whenever one exists; tap to edit.
+            if let note = data.tbrNote, !note.isEmpty {
+                NoteToSelfCard(note: note) { noteEditorOpen = true }
+            }
+            // Comfort-zone flags — web places the banner between the
+            // action area and the summary on mobile.
+            ContentFlagsBanner(
+                conflicts: data.contentConflicts ?? [],
+                reviewerWarnings: data.reviewerWarnings ?? [],
+                noteWarnings: data.noteWarnings ?? [],
+                onSeeDetails: {
+                    // Next runloop: let the button's own layout pass
+                    // finish before measuring the scroll target.
+                    DispatchQueue.main.async {
+                        withAnimation { scrollProxy.scrollTo("whats-inside", anchor: .top) }
+                    }
+                }
+            )
+            if let summary = data.book.summary, !summary.isEmpty {
+                SummaryQuoteCard(summary: summary)
+            }
+            // Pre-release notice — same position as the web's banner
+            // (after the mobile summary block).
+            PreReleaseBanner(publicationDate: data.book.publicationDate,
+                             publicationYear: data.book.publicationYear)
+    }
+
+    /// About/Details, author tools, reviews, notes, friends, history, series,
+    /// What's Inside, footer, similar books.
+    @ViewBuilder
+    private func rightColumn(_ data: BookDetailData) -> some View {
+            // About / Details directly under the summary, like the
+            // web (user request 2026-07-15).
+            BookAboutDetailsSection(book: data.book)
+            // The book's verified author: edit the description
+            // (web components/author/author-tools-card.tsx).
+            if data.isVerifiedAuthor == true {
+                AuthorToolsCard(bookId: data.book.id, description: data.book.description) {
+                    Task { await model.load() }
+                }
+            }
+            // Readers' reviews (web "What Readers Think", same slot:
+            // right after About/Details).
+            if let reviews = data.reviewSummary, !reviews.topReviews.isEmpty {
+                WhatReadersThinkSection(
+                    summary: reviews,
+                    bookIdOrSlug: data.slug ?? data.book.id,
+                    bookTitle: data.book.title
+                )
+                .id("reviews")
+            }
+            // Just below the summary block (user request 2026-07-14 —
+            // was buried at the bottom of the page).
+            if isAdmin {
+                AdminEditSection(
+                    bookId: data.book.id,
+                    genres: data.book.genres,
+                    onChanged: { Task { await model.load() } }
+                )
+            }
+            if !data.readingNotes.isEmpty {
+                BookNotesSection(
+                    bookId: data.book.id,
+                    notes: data.readingNotes,
+                    onChanged: { Task { await model.load() } }
+                )
+                .id("notes")
+            }
+            if !data.friendsWhoRead.isEmpty {
+                FriendsWhoReadSection(
+                    friends: data.friendsWhoRead,
+                    bookIdOrSlug: data.slug ?? data.book.id,
+                    bookTitle: data.book.title
+                )
+                .id("friends")
+            }
+            if !data.sessions.isEmpty {
+                ReadingHistorySection(
+                    bookId: data.book.id,
+                    sessions: data.sessions,
+                    onChanged: { Task { await model.load() } }
+                )
+                .id("reading-history")
+            }
+            if let series = data.book.seriesInfo {
+                BookSeriesRail(series: series, currentBookId: data.book.id)
+                    .id("series")
+            }
+            if !data.book.ratings.isEmpty {
+                // 1pt scroll marker: scrolling a tiny target to a
+                // fixed viewport point is deterministic; scrolling the
+                // tall section itself lands mid-section (proportional
+                // anchors) and cuts the heading off above the ring.
+                Color.clear.frame(height: 1).id("whats-inside-top")
+                WhatsInsideSection(
+                    ratings: data.book.ratings,
+                    bookId: data.book.id,
+                    isAdmin: isAdmin,
+                    isAuthor: data.isVerifiedAuthor == true,
+                    onChanged: { Task { await model.load() } }
+                )
+                .id("whats-inside")
+                .coachAnchor("whats-inside")
+            }
+            BookFooterActions(
+                bookId: data.book.id,
+                bookTitle: data.book.title,
+                isHidden: data.isHidden,
+                onChanged: { Task { await model.load() } }
+            )
+            .id("tour-report")
+            SimilarBooksSection(bookId: data.book.id)
+                .id("similar")
+    }
+
     var body: some View {
+        // Width read at layout time (not stored in @State: a measured width
+        // set from onGeometryChange was read back as 0 when the loaded page
+        // drew, so the Duo never got its two columns).
+        GeometryReader { geo in
+            page(wide: geo.size.width >= 700)
+        }
+    }
+
+    private func page(wide: Bool) -> some View {
         ScrollViewReader { scrollProxy in
         ScrollView {
             if let data = model.data {
-                VStack(alignment: .leading, spacing: 20) {
-                    if showEnrichQueued {
-                        // zIndex keeps the chip above the ambient/hero blur;
-                        // the extra top padding shifts the whole page down so
-                        // the shell logo + top-right actions stay visible and
-                        // the back chevron only just overlaps the chip's top
-                        // (chevron spans 0…40pt; chip top lands at 36pt).
-                        EnrichmentQueuedBanner()
-                            .zIndex(5)
-                            .padding(.top, 36)
-                    }
-                    BookHero(data: data, onCoverChanged: { await model.load() })
-                    BookActionCluster(model: model, data: data)
-                    BookStarsRow(data: data,
-                                 onReviewSaved: { Task { await model.load() } },
-                                 autoOpen: $autoOpenReview,
-                                 onWizardClosed: reviewWizardClosed)
-                    // The reader's private note, on the page it is about
-                    // (Rebekah, 2026-11-16: it only showed on the TBR list in
-                    // My Library). Shown whenever one exists; tap to edit.
-                    if let note = data.tbrNote, !note.isEmpty {
-                        NoteToSelfCard(note: note) { noteEditorOpen = true }
-                    }
-                    // Comfort-zone flags — web places the banner between the
-                    // action area and the summary on mobile.
-                    ContentFlagsBanner(
-                        conflicts: data.contentConflicts ?? [],
-                        reviewerWarnings: data.reviewerWarnings ?? [],
-                        noteWarnings: data.noteWarnings ?? [],
-                        onSeeDetails: {
-                            // Next runloop: let the button's own layout pass
-                            // finish before measuring the scroll target.
-                            DispatchQueue.main.async {
-                                withAnimation { scrollProxy.scrollTo("whats-inside", anchor: .top) }
+                Group {
+                    if wide {
+                        // iPhone Duo open: cover + actions on the left page,
+                        // the reading material on the right, meeting near the
+                        // fold. One ScrollView on purpose (iOS 27 hit-testing).
+                        HStack(alignment: .top, spacing: 24) {
+                            VStack(alignment: .leading, spacing: 20) {
+                                leftColumn(data, scrollProxy: scrollProxy)
                             }
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                            VStack(alignment: .leading, spacing: 20) {
+                                rightColumn(data)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
                         }
-                    )
-                    if let summary = data.book.summary, !summary.isEmpty {
-                        SummaryQuoteCard(summary: summary)
-                    }
-                    // Pre-release notice — same position as the web's banner
-                    // (after the mobile summary block).
-                    PreReleaseBanner(publicationDate: data.book.publicationDate,
-                                     publicationYear: data.book.publicationYear)
-                    // About / Details directly under the summary, like the
-                    // web (user request 2026-07-15).
-                    BookAboutDetailsSection(book: data.book)
-                    // The book's verified author: edit the description
-                    // (web components/author/author-tools-card.tsx).
-                    if data.isVerifiedAuthor == true {
-                        AuthorToolsCard(bookId: data.book.id, description: data.book.description) {
-                            Task { await model.load() }
+                    } else {
+                        VStack(alignment: .leading, spacing: 20) {
+                            leftColumn(data, scrollProxy: scrollProxy)
+                            rightColumn(data)
                         }
                     }
-                    // Readers' reviews (web "What Readers Think", same slot:
-                    // right after About/Details).
-                    if let reviews = data.reviewSummary, !reviews.topReviews.isEmpty {
-                        WhatReadersThinkSection(
-                            summary: reviews,
-                            bookIdOrSlug: data.slug ?? data.book.id,
-                            bookTitle: data.book.title
-                        )
-                        .id("reviews")
-                    }
-                    // Just below the summary block (user request 2026-07-14 —
-                    // was buried at the bottom of the page).
-                    if isAdmin {
-                        AdminEditSection(
-                            bookId: data.book.id,
-                            genres: data.book.genres,
-                            onChanged: { Task { await model.load() } }
-                        )
-                    }
-                    if !data.readingNotes.isEmpty {
-                        BookNotesSection(
-                            bookId: data.book.id,
-                            notes: data.readingNotes,
-                            onChanged: { Task { await model.load() } }
-                        )
-                        .id("notes")
-                    }
-                    if !data.friendsWhoRead.isEmpty {
-                        FriendsWhoReadSection(
-                            friends: data.friendsWhoRead,
-                            bookIdOrSlug: data.slug ?? data.book.id,
-                            bookTitle: data.book.title
-                        )
-                        .id("friends")
-                    }
-                    if !data.sessions.isEmpty {
-                        ReadingHistorySection(
-                            bookId: data.book.id,
-                            sessions: data.sessions,
-                            onChanged: { Task { await model.load() } }
-                        )
-                        .id("reading-history")
-                    }
-                    if let series = data.book.seriesInfo {
-                        BookSeriesRail(series: series, currentBookId: data.book.id)
-                            .id("series")
-                    }
-                    if !data.book.ratings.isEmpty {
-                        // 1pt scroll marker: scrolling a tiny target to a
-                        // fixed viewport point is deterministic; scrolling the
-                        // tall section itself lands mid-section (proportional
-                        // anchors) and cuts the heading off above the ring.
-                        Color.clear.frame(height: 1).id("whats-inside-top")
-                        WhatsInsideSection(
-                            ratings: data.book.ratings,
-                            bookId: data.book.id,
-                            isAdmin: isAdmin,
-                            isAuthor: data.isVerifiedAuthor == true,
-                            onChanged: { Task { await model.load() } }
-                        )
-                        .id("whats-inside")
-                        .coachAnchor("whats-inside")
-                    }
-                    BookFooterActions(
-                        bookId: data.book.id,
-                        bookTitle: data.book.title,
-                        isHidden: data.isHidden,
-                        onChanged: { Task { await model.load() } }
-                    )
-                    .id("tour-report")
-                    SimilarBooksSection(bookId: data.book.id)
-                        .id("similar")
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)

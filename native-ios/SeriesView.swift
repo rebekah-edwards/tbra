@@ -17,6 +17,11 @@ private struct ShellBarInsetsKey: EnvironmentKey {
 }
 /// False inside full-screen covers: they replace the whole screen, so the
 /// per-screen chrome hit layers (and bar spacers) must not render there.
+/// Width of the side column the tab rail lives in (iPhone Duo, 2026-11-25),
+/// or 0 when the tabs are the usual bottom bar. See SideRailSlot.
+private struct ShellRailWidthKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 0
+}
 private struct ShowsShellChromeKey: EnvironmentKey {
     static let defaultValue = true
 }
@@ -24,6 +29,10 @@ extension EnvironmentValues {
     var shellBarInsets: (top: CGFloat, bottom: CGFloat) {
         get { self[ShellBarInsetsKey.self] }
         set { self[ShellBarInsetsKey.self] = newValue }
+    }
+    var shellRailWidth: CGFloat {
+        get { self[ShellRailWidthKey.self] }
+        set { self[ShellRailWidthKey.self] = newValue }
     }
     var showsShellChrome: Bool {
         get { self[ShowsShellChromeKey.self] }
@@ -45,6 +54,7 @@ extension EnvironmentValues {
 ///    bars do.
 struct PushedScreenChrome: ViewModifier {
     @Environment(\.shellBarInsets) private var bars
+    @Environment(\.shellRailWidth) private var rail
     @Environment(\.showsShellChrome) private var showsChrome
     @Environment(ChromeState.self) private var chrome: ChromeState?
 
@@ -98,13 +108,27 @@ struct PushedScreenChrome: ViewModifier {
                 }
             }
             .overlay(alignment: .bottom) {
-                if showsChrome, let chrome {
+                if showsChrome, let chrome, rail == 0 {
                     BottomNav(hitLayerOnly: true,
                               tab: chrome.tab,
                               avatarUrl: nil,
                               onSelect: chrome.selectTab,
                               onReselect: chrome.reselectTab)
                         .padding(.bottom, -bars.bottom)
+                }
+            }
+            // iPhone Duo rail twin. SideRailSlot ignores every safe area, so
+            // it resolves to the full window here exactly like the shell copy.
+            .overlay {
+                if showsChrome, let chrome, rail > 0 {
+                    SideRailSlot(width: rail) {
+                        BottomNav(hitLayerOnly: true,
+                                  tab: chrome.tab,
+                                  avatarUrl: nil,
+                                  onSelect: chrome.selectTab,
+                                  onReselect: chrome.reselectTab,
+                                  vertical: true)
+                    }
                 }
             }
             // Global report button — floating flag above the bottom bar on

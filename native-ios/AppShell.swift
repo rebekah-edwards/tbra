@@ -41,6 +41,8 @@ struct AppShell: View {
     // Measured bar heights, forwarded to pushed screens (see shellBarInsets).
     @State private var topBarHeight: CGFloat = 0
     @State private var bottomNavHeight: CGFloat = 0
+    /// Side-column width when the tabs show as a rail (iPhone Duo), else 0.
+    @State private var railWidth: CGFloat = 0
     // Chrome hub: current tab, scroll-at-top, and the actions the
     // per-screen hit layers invoke (see PushedScreenChrome).
     @State private var chrome = ChromeState()
@@ -54,7 +56,8 @@ struct AppShell: View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         PresentedChromeCover(
-            barInsets: (top: topBarHeight, bottom: bottomNavHeight),
+            barInsets: (top: topBarHeight, bottom: railWidth > 0 ? 0 : bottomNavHeight),
+            railWidth: railWidth,
             unreadCount: notifications.unreadCount,
             avatarUrl: currentAvatarUrl,
             onGoHome: { dismiss(); chrome.goHome() },
@@ -133,11 +136,33 @@ struct AppShell: View {
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { topBarHeight = $0 }
         }
         .overlay(alignment: .bottom) {
-            BottomNav(tab: chrome.tab, avatarUrl: currentAvatarUrl)
-                .allowsHitTesting(false)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bottomNavHeight = $0 }
+            if railWidth == 0 {
+                BottomNav(tab: chrome.tab, avatarUrl: currentAvatarUrl)
+                    .allowsHitTesting(false)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bottomNavHeight = $0 }
+            }
         }
-        .environment(\.shellBarInsets, (top: topBarHeight, bottom: bottomNavHeight))
+        // iPhone Duo: the tabs move to the side column as a vertical rail.
+        .overlay {
+            if railWidth > 0 {
+                SideRailSlot(width: railWidth) {
+                    BottomNav(tab: chrome.tab, avatarUrl: currentAvatarUrl, vertical: true)
+                }
+                .allowsHitTesting(false)
+            }
+        }
+        .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.trailing } action: { inset in
+            let w = shellRailWidth(forTrailingInset: inset)
+            if w != railWidth {
+                railWidth = w
+                if w > 0 { bottomNavHeight = 0 }
+            }
+            #if DEBUG
+            print("[duo] trailing safe-area inset \(inset) → rail \(w)")
+            #endif
+        }
+        .environment(\.shellBarInsets, (top: topBarHeight, bottom: railWidth > 0 ? 0 : bottomNavHeight))
+        .environment(\.shellRailWidth, railWidth)
         .environment(chrome)
         .environment(\.openSearch, { searchOpen = true })
         .task { await notifications.load() }
@@ -560,6 +585,7 @@ extension View {
 /// shell's (see "chrome bars exist in TWO modes" below).
 struct PresentedChromeCover<Content: View>: View {
     let barInsets: (top: CGFloat, bottom: CGFloat)
+    var railWidth: CGFloat = 0
     let unreadCount: Int
     let avatarUrl: String?
     let onGoHome: @MainActor () -> Void
@@ -592,10 +618,21 @@ struct PresentedChromeCover<Content: View>: View {
                 .allowsHitTesting(false)
         }
         .overlay(alignment: .bottom) {
-            BottomNav(tab: coverChrome.tab, avatarUrl: avatarUrl)
+            if railWidth == 0 {
+                BottomNav(tab: coverChrome.tab, avatarUrl: avatarUrl)
+                    .allowsHitTesting(false)
+            }
+        }
+        .overlay {
+            if railWidth > 0 {
+                SideRailSlot(width: railWidth) {
+                    BottomNav(tab: coverChrome.tab, avatarUrl: avatarUrl, vertical: true)
+                }
                 .allowsHitTesting(false)
+            }
         }
         .environment(\.shellBarInsets, barInsets)
+        .environment(\.shellRailWidth, railWidth)
         .environment(\.showsShellChrome, true)
         .environment(coverChrome)
         // The shell's alert can't show over a cover, so each cover adds one.
@@ -730,21 +767,39 @@ struct BottomNav: View {
     var avatarUrl: String?
     var onSelect: @MainActor (AppTab) -> Void = { _ in }
     var onReselect: @MainActor (AppTab) -> Void = { _ in }
+    /// Vertical rail for the iPhone Duo's side column: the bar turned on its
+    /// side (Profile at the top, Home in the middle, Discover at the bottom).
+    var vertical = false
 
     var body: some View {
-        HStack(spacing: 0) {
-            navItem(.discover, label: "Discover") { GemIcon().stroked() }
-            navItem(.library, label: "My Library") { LibraryIcon().stroked(lineWidth: 1.8) }
-            homeButton
-            navItem(.stats, label: "Stats") { StatsIcon().stroked() }
-            navItem(.profile, label: "Profile") { profileIcon }
+        if vertical {
+            VStack(spacing: 4) {
+                navItem(.profile, label: "Profile") { profileIcon }
+                navItem(.stats, label: "Stats") { StatsIcon().stroked() }
+                homeButton
+                    .padding(.vertical, 4)
+                navItem(.library, label: "Library") { LibraryIcon().stroked(lineWidth: 1.8) }
+                navItem(.discover, label: "Discover") { GemIcon().stroked() }
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 10)
+            .frame(width: 66)
+            .modifier(GlassPillIf(enabled: !hitLayerOnly, backed: DesignPreview.on))
+        } else {
+            HStack(spacing: 0) {
+                navItem(.discover, label: "Discover") { GemIcon().stroked() }
+                navItem(.library, label: "My Library") { LibraryIcon().stroked(lineWidth: 1.8) }
+                homeButton
+                navItem(.stats, label: "Stats") { StatsIcon().stroked() }
+                navItem(.profile, label: "Profile") { profileIcon }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .modifier(GlassPillIf(enabled: !hitLayerOnly, backed: DesignPreview.on))
+            .padding(.horizontal, 16)
+            .padding(.top, 6)
+            .padding(.bottom, 2)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .modifier(GlassPillIf(enabled: !hitLayerOnly, backed: DesignPreview.on))
-        .padding(.horizontal, 16)
-        .padding(.top, 6)
-        .padding(.bottom, 2)
     }
 
     private func navItem<Icon: View>(_ target: AppTab, label: String, @ViewBuilder icon: () -> Icon) -> some View {
@@ -757,6 +812,8 @@ struct BottomNav: View {
                     .frame(width: 22, height: 22)
                 Text(label)
                     .font(Theme.body(10, .semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
             // Inactive items use strong foreground (not muted): the glass
             // pill floats over book covers and grey was illegible in light
@@ -838,6 +895,31 @@ struct BottomNav: View {
 // Do NOT reintroduce a pressed-scale ButtonStyle for card grids/rails.
 
 // ── Placeholder for tabs whose /api/v1 endpoints don't exist yet ──
+/// Places the vertical tab rail in the screen's side column (iPhone Duo,
+/// 2026-11-25). The column is the window's trailing safe-area inset, where
+/// iOS keeps the clock and camera at the top; the rail is centred below them.
+/// Used by BOTH chrome modes (shell visuals and the per-screen hit layer):
+/// it ignores every safe area so both copies resolve to the full window and
+/// land on identical pixels, whatever insets their parents add.
+struct SideRailSlot<Rail: View>: View {
+    let width: CGFloat
+    @ViewBuilder var rail: Rail
+
+    var body: some View {
+        rail
+            .frame(width: width)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+            .ignoresSafeArea()
+    }
+}
+
+/// A side column wide enough for the rail: the iPhone Duo keeps its status
+/// bar and camera in a column along the right edge (closed AND open). Regular
+/// iPhones in portrait have no trailing inset, so they keep the bottom bar.
+@MainActor func shellRailWidth(forTrailingInset inset: CGFloat) -> CGFloat {
+    inset >= 60 ? inset : 0
+}
+
 struct PlaceholderScreen: View {
     let title: String
     var body: some View {
