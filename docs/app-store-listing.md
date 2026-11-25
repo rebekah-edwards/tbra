@@ -82,6 +82,10 @@ description**: Apple rejects any version with subscriptions that lacks it.
 
 - Age rating questionnaire answered (social media = No, Rebekah's call).
   Apple computed **12+** (Brazil 14).
+- 2026-11-25: Apple's two new age-rating questions answered at Rebekah's
+  request: Shared Location = No, Dating and Relationships = No (that question
+  means dating features or a romantic AI companion, not book content). The
+  rating stayed 13+ (12+ Vietnam/Korea, 14 Brazil); submission still in queue.
 - Screenshots: six 6.9-inch (1320x2868, dark) in
   `docs/app-store-assets/screenshots-6.9/`, uploaded in the order book,
   What's Inside, home, library, Discover, stats. Shot from the simulator with
