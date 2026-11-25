@@ -103,41 +103,45 @@ struct AuthorView: View {
         return out
     }
 
+    private var heroCovers: [String] {
+        Array(grouped.flatMap { $0.books }.compactMap { $0.coverImageUrl }.prefix(3))
+    }
+
+    private var heroStats: [HeroStat] {
+        var out = [HeroStat(label: model.books.count == 1 ? "book" : "books", value: "\(model.books.count)", hue: .lime)]
+        let seriesCount = grouped.filter { $0.series != nil }.count
+        if seriesCount > 0 { out.append(HeroStat(label: "series", value: "\(seriesCount)", hue: .blue)) }
+        if model.followerCount > 0 {
+            out.append(HeroStat(label: model.followerCount == 1 ? "follower" : "followers", value: "\(model.followerCount)", hue: .purple))
+        }
+        return out
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 12) {
-                    Color.clear.frame(width: 40, height: 40)
-                    Text(model.name)
-                        .font(Theme.heading(24, .bold))
-                        .foregroundStyle(Theme.foreground)
-                        .lineLimit(2)
-                    Spacer()
-                    Button {
+                // Design refresh (2026-11-25): cover-art hero like the
+                // profile / buddy-read pages, Follow as the one lime pill.
+                CoverArtHero(
+                    eyebrow: "Author",
+                    title: model.name,
+                    covers: heroCovers,
+                    stats: heroStats
+                ) {
+                    FollowPill(isFollowing: model.isFollowing) {
                         Task { await model.toggleFollow() }
-                    } label: {
-                        Text(model.isFollowing ? "Following" : "Follow")
-                            .font(Theme.body(14, .semibold))
-                            .foregroundStyle(model.isFollowing ? Theme.accentText : .black)
-                            .padding(.horizontal, 16).padding(.vertical, 8)
-                            .background(model.isFollowing ? Theme.accent.opacity(0.15) : Theme.accent, in: Capsule())
-                            .overlay(Capsule().stroke(Theme.accent.opacity(model.isFollowing ? 0.5 : 1), lineWidth: 1))
+                    }
+                } footer: {
+                    if let bio = model.bio, !bio.isEmpty {
+                        Text(bio)
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.foreground.opacity(0.85))
+                            .lineSpacing(3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 2)
                     }
                 }
-                .padding(.top, 14)
-
-                if model.followerCount > 0 {
-                    Text("\(model.followerCount) follower\(model.followerCount == 1 ? "" : "s")")
-                        .font(Theme.body(13))
-                        .foregroundStyle(Theme.muted)
-                }
-
-                if let bio = model.bio, !bio.isEmpty {
-                    Text(bio)
-                        .font(Theme.body(15))
-                        .foregroundStyle(Theme.foreground.opacity(0.85))
-                        .lineSpacing(3)
-                }
+                .padding(.top, 52)
 
                 ForEach(Array(grouped.enumerated()), id: \.offset) { _, group in
                     VStack(alignment: .leading, spacing: 12) {
@@ -153,7 +157,7 @@ struct AuthorView: View {
                                 }
                             }
                         } else {
-                            Text("Standalone")
+                            Text(grouped.count > 1 ? "Standalone" : "Books")
                                 .font(Theme.heading(18, .semibold))
                                 .foregroundStyle(Theme.foreground)
                         }

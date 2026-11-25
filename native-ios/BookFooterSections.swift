@@ -248,3 +248,103 @@ private struct ReportIssueSheet: View {
         .background(Theme.surface)
     }
 }
+
+// ── What Readers Think — web review-summary.tsx ──
+// Readers' reviews ON the book page (Rebekah, 2026-11-25: they weren't
+// visible on iOS at all, only behind the "N reviews" link). Top five by
+// helpful votes, each tapping through to that review in the full list.
+struct WhatReadersThinkSection: View {
+    let summary: BookReviewSummary
+    let bookIdOrSlug: String
+    let bookTitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeading("What Readers Think")
+            VStack(spacing: 10) {
+                ForEach(summary.topReviews) { review in
+                    NavigationLink(value: ReviewsRoute(
+                        bookIdOrSlug: bookIdOrSlug,
+                        bookTitle: bookTitle,
+                        scrollToReviewId: review.id)) {
+                        card(review)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            NavigationLink(value: ReviewsRoute(bookIdOrSlug: bookIdOrSlug, bookTitle: bookTitle)) {
+                HStack(spacing: 4) {
+                    Text(summary.totalReviewCount > 1
+                         ? "View all \(summary.totalReviewCount) reviews"
+                         : "View review")
+                    Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                }
+                .font(Theme.body(14, .semibold))
+                .foregroundStyle(Theme.neonBlue)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func name(_ r: CompactReview) -> String {
+        if r.isAnonymous { return "Anonymous" }
+        if let d = r.displayName, !d.isEmpty { return d }
+        if let u = r.username, !u.isEmpty { return "@\(u)" }
+        return "tbr*a reader"
+    }
+
+    private func card(_ r: CompactReview) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                avatar(r)
+                Text(name(r))
+                    .font(Theme.body(14, .semibold))
+                    .italic(r.isAnonymous)
+                    .foregroundStyle(r.isAnonymous ? Theme.muted : Theme.foreground)
+                    .lineLimit(1)
+                Spacer(minLength: 6)
+                if let rating = r.overallRating {
+                    HStack(spacing: 5) {
+                        StarRow(rating: rating, size: 11)
+                        Text(friendsRatingText(rating))
+                            .font(Theme.body(12, .semibold))
+                            .foregroundStyle(Theme.foreground)
+                    }
+                }
+            }
+            Text(r.reviewTextPlain)
+                .font(Theme.body(14))
+                .foregroundStyle(Theme.foreground.opacity(0.8))
+                .lineSpacing(2)
+                .lineLimit(6)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(14)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.foreground.opacity(0.1), lineWidth: 1))
+        .contentShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    @ViewBuilder private func avatar(_ r: CompactReview) -> some View {
+        Group {
+            if !r.isAnonymous, let avatarUrl = r.avatarUrl,
+               let url = avatarUrl.hasPrefix("/")
+                   ? URL(string: avatarUrl, relativeTo: APIClient.baseURL)
+                   : URL(string: avatarUrl) {
+                CachedCoverImage(url: url) { Theme.accent }
+            } else {
+                ZStack {
+                    r.isAnonymous ? Theme.surfaceAlt : Theme.accent
+                    Text(r.isAnonymous ? "?" : String(name(r).replacingOccurrences(of: "@", with: "").prefix(1)).uppercased())
+                        .font(Theme.body(12, .bold))
+                        .foregroundStyle(r.isAnonymous ? Theme.muted : Color.black)
+                }
+            }
+        }
+        .frame(width: 28, height: 28)
+        .clipShape(Circle())
+    }
+}

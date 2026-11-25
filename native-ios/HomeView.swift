@@ -832,9 +832,19 @@ private struct TrackProgressSheet: View {
     /// Off by default: a note is private unless the reader shares it.
     /// Progress is not covered — friends see page/percent either way.
     @State private var shareNote = false
+    /// On by default when the book is in an active buddy read (web
+    /// currently-reading-section.tsx parity): updates are what the buddy
+    /// readers are there for. Set in init from the book.
+    @State private var shareToBuddyRead: Bool
     @State private var busy = false
     @State private var saved = false
     @State private var errorText: String?
+
+    init(book: ReadingNowBook, onSaved: @escaping () async -> Void) {
+        self.book = book
+        self.onSaved = onSaved
+        _shareToBuddyRead = State(initialValue: book.buddyReadId != nil)
+    }
 
     enum PageMode: String, CaseIterable { case page = "Page", percent = "%" }
 
@@ -977,6 +987,23 @@ private struct TrackProgressSheet: View {
                     }
                     .tint(Theme.accent)
 
+                    if book.buddyReadId != nil {
+                        Toggle(isOn: $shareToBuddyRead) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Share with your buddy read")
+                                    .font(Theme.body(14, .medium))
+                                    .foregroundStyle(Theme.foreground)
+                                Text(shareToBuddyRead
+                                     ? "Your buddy readers will see this update in the discussion."
+                                     : "This update stays out of the buddy read discussion.")
+                                    .font(Theme.body(11))
+                                    .foregroundStyle(Theme.muted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .tint(Theme.accent)
+                    }
+
                     if let errorText {
                         Text(errorText).font(Theme.body(12)).foregroundStyle(Theme.destructive)
                     }
@@ -1023,6 +1050,7 @@ private struct TrackProgressSheet: View {
                 pageNumber: pageMode == .page ? value : nil,
                 percentComplete: pageMode == .percent ? value : nil,
                 mood: mood, pace: pace,
+                buddyReadId: shareToBuddyRead ? book.buddyReadId : nil,
                 isPrivate: !shareNote
             )
             saved = true

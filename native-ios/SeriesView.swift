@@ -391,17 +391,48 @@ struct SeriesView: View {
         return false
     }
 
+    private var heroPool: [SeriesBookRow] {
+        let core = model.books.filter { !$0.isBoxSet && ($0.position.map { $0 == $0.rounded() } ?? false) }
+        return core.isEmpty ? model.books.filter { !$0.isBoxSet } : core
+    }
+    private var heroCovers: [String] {
+        let fromBooks = heroPool.compactMap { $0.coverImageUrl }
+        return Array((fromBooks.isEmpty ? model.childSeries.compactMap { $0.coverImageUrl } : fromBooks).prefix(3))
+    }
+    private var heroAuthors: String? {
+        var seen: [String] = []
+        for b in heroPool { for a in b.authors where !seen.contains(a.name) { seen.append(a.name) } }
+        return seen.isEmpty ? nil : "by " + seen.prefix(2).joined(separator: ", ")
+    }
+    private var heroStats: [HeroStat] {
+        if model.books.isEmpty && !model.childSeries.isEmpty {
+            return [
+                HeroStat(label: "series", value: "\(model.childSeries.count)", hue: .blue),
+                HeroStat(label: "books", value: "\(model.childSeries.reduce(0) { $0 + $1.bookCount })", hue: .lime),
+            ]
+        }
+        let total = heroPool.count
+        var out = [HeroStat(label: total == 1 ? "book" : "books", value: "\(total)", hue: .lime)]
+        let read = heroPool.filter { $0.currentState == "completed" }.count
+        if read > 0 { out.append(HeroStat(label: "read", value: "\(read)/\(total)", hue: .purple)) }
+        let reading = heroPool.filter { $0.currentState == "currently_reading" }.count
+        if reading > 0 { out.append(HeroStat(label: "reading", value: "\(reading)", hue: .blue)) }
+        return out
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 12) {
-                    Color.clear.frame(width: 40, height: 40)
-                    Text(model.name)
-                        .font(Theme.heading(26, .bold))
-                        .foregroundStyle(Theme.foreground)
-                    Spacer()
-                }
-                .padding(.top, 14)
+                // Design refresh (2026-11-25): cover-art hero (web
+                // components/ui/cover-art-hero.tsx twin).
+                CoverArtHero(
+                    eyebrow: model.books.isEmpty && !model.childSeries.isEmpty ? "Franchise" : "Series",
+                    title: model.name,
+                    subtitle: heroAuthors,
+                    covers: heroCovers,
+                    stats: heroStats
+                ) { EmptyView() }
+                .padding(.top, 52)
 
                 // A series can have sub-series AND its own books (Animorphs →
                 // Megamorphs). Show both — attaching a child series must never

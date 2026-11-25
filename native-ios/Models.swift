@@ -608,6 +608,12 @@ struct BookDetailData: Codable, Hashable {
     let isFavorited: Bool
     let aggregate: BookAggregate?
     let userRating: Double?
+    /// The viewer has a review row for this book (a DNF review can carry no
+    /// stars, so userRating alone can't tell). Added 2026-11-25; optional so
+    /// older payloads decode.
+    let hasReview: Bool?
+    /// Readers' reviews for the "What Readers Think" section (web parity).
+    let reviewSummary: BookReviewSummary?
     let userShelves: [BookPageShelf]
     let bookShelfIds: [String]
     let tbrNote: String?
@@ -616,6 +622,24 @@ struct BookDetailData: Codable, Hashable {
     let contentConflicts: [ContentConflict]?
     let reviewerWarnings: [ReviewerWarning]?
     let noteWarnings: [NoteWarning]?
+}
+
+/// /api/v1/books/[id] reviewSummary — getBookReviewSummaryData() on the web.
+struct BookReviewSummary: Codable, Hashable {
+    let topReviews: [CompactReview]
+    let totalReviewCount: Int
+    let summaryText: String?
+}
+
+struct CompactReview: Codable, Hashable, Identifiable {
+    let id: String
+    let displayName: String?
+    let username: String?
+    let avatarUrl: String?
+    let isAnonymous: Bool
+    let overallRating: Double?
+    let reviewTextPlain: String
+    let helpfulCount: Int
 }
 
 /// Book intensity exceeds the user's max tolerance for a category.

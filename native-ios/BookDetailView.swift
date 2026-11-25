@@ -120,7 +120,7 @@ struct BookDetailView: View {
     /// review — re-reads and already-reviewed books just get the suggestions.
     private func runCompletionFlow() {
         guard let data = model.data else { return }
-        if data.userRating == nil {
+        if data.userRating == nil && data.hasReview != true {
             autoOpenReview = true
             suggestionsPending = true      // raised when the wizard closes
             return
@@ -217,6 +217,16 @@ struct BookDetailView: View {
                     // About / Details directly under the summary, like the
                     // web (user request 2026-07-15).
                     BookAboutDetailsSection(book: data.book)
+                    // Readers' reviews (web "What Readers Think", same slot:
+                    // right after About/Details).
+                    if let reviews = data.reviewSummary, !reviews.topReviews.isEmpty {
+                        WhatReadersThinkSection(
+                            summary: reviews,
+                            bookIdOrSlug: data.slug ?? data.book.id,
+                            bookTitle: data.book.title
+                        )
+                        .id("reviews")
+                    }
                     // Just below the summary block (user request 2026-07-14 —
                     // was buried at the bottom of the page).
                     if isAdmin {
@@ -1558,13 +1568,17 @@ private struct BookStarsRow: View {
             }
             .frame(maxWidth: .infinity)
 
-            if data.hasCompleted || data.userState?.state == "completed" || data.userState?.state == "dnf" || data.userRating != nil {
+            // "Edit your review" whenever a review exists (hasReview); the
+            // server's userRating was always null before 2026-11-25, so this
+            // button said "Rate & review" on books already reviewed.
+            let hasReview = data.hasReview == true || data.userRating != nil
+            if data.hasCompleted || data.userState?.state == "completed" || data.userState?.state == "dnf" || hasReview {
                 Button {
                     wizardOpen = true
                 } label: {
                     // Same 14pt rounding as every other book-page button
                     // (user request 2026-07-14 — was the lone capsule).
-                    Label(data.userRating != nil ? "Edit your review" : "Rate & review",
+                    Label(hasReview ? "Edit your review" : "Rate & review",
                           systemImage: "square.and.pencil")
                         .font(Theme.body(15, .semibold))
                         .foregroundStyle(DesignPreview.on ? Theme.foreground : Theme.accentText)
@@ -1787,8 +1801,9 @@ private struct WhatsInsideSection: View {
         }
     }
 
+    private static let verifiedLevels: Set<String> = ["human_verified", "admin_verified", "author_verified"]
     private func isVerified(_ r: ContentRating) -> Bool {
-        r.evidenceLevel == "human_verified" || verifiedOverride.contains(r.categoryId)
+        Self.verifiedLevels.contains(r.evidenceLevel ?? "") || verifiedOverride.contains(r.categoryId)
     }
     private var allVerified: Bool {
         !ratings.isEmpty && orderedRatings.allSatisfy(isVerified)
@@ -1906,16 +1921,16 @@ private struct WhatsInsideSection: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 4)
                 HStack(spacing: 4) {
-                    // Web evidenceBadge: "Verified" for human_verified, "AI"
-                    // otherwise — both visible to all users.
+                    // Web evidenceBadge (2026-11-25, never "AI"): "Verified"
+                    // (staff-checked), "Author-verified", else "Unverified".
                     if isVerified(rating) {
-                        Text("Verified")
+                        Text(rating.evidenceLevel == "author_verified" && !verifiedOverride.contains(rating.categoryId) ? "Author-verified" : "Verified")
                             .font(Theme.body(10, .medium))
                             .foregroundStyle(Theme.accentText)
                             .padding(.horizontal, 8).padding(.vertical, 3)
                             .background(Theme.accent.opacity(0.12), in: Capsule())
                     } else {
-                        Text("AI")
+                        Text("Unverified")
                             .font(Theme.body(10, .medium))
                             .foregroundStyle(Theme.muted)
                             .padding(.horizontal, 8).padding(.vertical, 3)
@@ -2937,8 +2952,11 @@ struct ContentFlagsBanner: View {
     let onSeeDetails: () -> Void
     @State private var expanded = false
 
-    private static let intensityLabels = ["none", "mild", "moderate", "significant", "extreme"]
-    private let yellow = Color(hex: "eab308")
+    private static let intensityLabels = ["None", "Mild", "Moderate", "Significant", "Extreme"]
+    // Design refresh (2026-11-25, web content-warning-banner.tsx twin):
+    // neutral glass card; the amber hue lives in the icon, a thin ring and a
+    // dot per row — no more yellow-tinted box.
+    private let amber = Color(hex: "f59e0b")
 
     private var totalFlags: Int { conflicts.count + reviewerWarnings.count + noteWarnings.count }
 
@@ -2948,20 +2966,28 @@ struct ContentFlagsBanner: View {
                 Button {
                     withAnimation(.easeOut(duration: 0.2)) { expanded.toggle() }
                 } label: {
-                    HStack(spacing: 10) {
+                    HStack(spacing: 12) {
                         Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(yellow)
-                        Text("\(totalFlags) content \(totalFlags == 1 ? "flag" : "flags") for your settings")
-                            .font(Theme.body(14, .medium))
-                            .foregroundStyle(Theme.foreground.opacity(0.9))
-                        Spacer()
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(amber)
+                            .frame(width: 32, height: 32)
+                            .background(.ultraThinMaterial, in: Circle())
+                            .overlay(Circle().stroke(amber.opacity(0.35), lineWidth: 1))
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("\(totalFlags) content \(totalFlags == 1 ? "flag" : "flags") for your settings")
+                                .font(Theme.body(14, .semibold))
+                                .foregroundStyle(Theme.foreground)
+                            Text("Outside your comfort zone")
+                                .font(Theme.body(12))
+                                .foregroundStyle(Theme.muted)
+                        }
+                        Spacer(minLength: 4)
                         Image(systemName: "chevron.down")
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(yellow.opacity(0.6))
+                            .foregroundStyle(Theme.muted)
                             .rotationEffect(.degrees(expanded ? 180 : 0))
                     }
-                    .padding(.horizontal, 16).padding(.vertical, 12)
+                    .padding(.horizontal, 14).padding(.vertical, 12)
                     // Pin the toggle's tap region to its own padded bounds —
                     // it was intermittently claiming taps aimed at the review
                     // button rendered above (user report 2026-07-22).
@@ -2974,7 +3000,7 @@ struct ContentFlagsBanner: View {
                         ForEach(conflicts, id: \.categoryName) { c in
                             flagRow(
                                 title: c.categoryName,
-                                detail: "\(Self.intensityLabels[safe: c.bookIntensity] ?? "present") · max \(Self.intensityLabels[safe: c.userMax] ?? "limited")"
+                                detail: "\(Self.intensityLabels[safe: c.bookIntensity] ?? "Present") · your max is \((Self.intensityLabels[safe: c.userMax] ?? "limited").lowercased())"
                             )
                         }
                         ForEach(reviewerWarnings, id: \.label) { w in
@@ -2986,7 +3012,7 @@ struct ContentFlagsBanner: View {
                         ForEach(noteWarnings, id: \.label) { w in
                             flagRow(
                                 title: w.label,
-                                detail: "noted in \(w.categories.joined(separator: ", ")) · you asked to avoid"
+                                detail: "Noted in \(w.categories.joined(separator: ", ")) · you asked to avoid"
                             )
                         }
                         Button {
@@ -2996,32 +3022,35 @@ struct ContentFlagsBanner: View {
                             onSeeDetails()
                         } label: {
                             Text("See all content details ↓")
-                                .font(Theme.body(12, .medium))
+                                .font(Theme.body(12, .semibold))
                                 .foregroundStyle(Theme.neonBlue)
                         }
-                        .padding(.top, 6)
+                        .padding(.top, 4).padding(.leading, 4)
                     }
-                    .padding(.horizontal, 16).padding(.bottom, 12)
+                    .padding(.horizontal, 14).padding(.bottom, 14)
                 }
             }
-            .background(yellow.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(yellow.opacity(0.3), lineWidth: 1))
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22))
+            .overlay(RoundedRectangle(cornerRadius: 22).stroke(amber.opacity(0.4), lineWidth: 1))
         }
     }
 
     private func flagRow(title: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(Theme.body(12, .medium))
-                .foregroundStyle(Theme.foreground)
-            Text(detail)
-                .font(Theme.body(11))
-                .foregroundStyle(Theme.foreground.opacity(0.7))
+        HStack(alignment: .top, spacing: 10) {
+            Circle().fill(amber).frame(width: 6, height: 6).padding(.top, 5)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(Theme.body(12, .semibold))
+                    .foregroundStyle(Theme.foreground)
+                Text(detail)
+                    .font(Theme.body(11))
+                    .foregroundStyle(Theme.muted)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(yellow.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(Theme.surface.opacity(0.5), in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.foreground.opacity(0.1), lineWidth: 1))
     }
 }
 

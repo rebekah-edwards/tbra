@@ -75,8 +75,29 @@ struct BuddyReadMessageRow: Codable, Hashable, Identifiable {
     }
     let id: String
     let message: String
+    /// 'message' | 'progress' | 'status' (2026-11-25). Optional: older
+    /// servers didn't send it.
+    let kind: String?
     let createdAt: String
     let user: UserRef
+
+    /// Reading updates are "Reading update (p. 120, 45%): note"; rows from
+    /// before `kind` carried a "📖 " prefix instead.
+    var progressParts: (progress: String?, note: String)? {
+        let legacy = message.hasPrefix("📖")
+        guard kind == "progress" || (legacy && message.contains("Reading update")) else { return nil }
+        var text = message
+        if legacy { text = String(text.drop(while: { $0 == "📖" || $0 == " " })) }
+        guard text.hasPrefix("Reading update") else { return (nil, text) }
+        var rest = String(text.dropFirst("Reading update".count)).trimmingCharacters(in: .whitespaces)
+        var progress: String?
+        if rest.hasPrefix("("), let close = rest.firstIndex(of: ")") {
+            progress = String(rest[rest.index(after: rest.startIndex)..<close])
+            rest = String(rest[rest.index(after: close)...])
+        }
+        if rest.hasPrefix(":") { rest.removeFirst() }
+        return (progress, rest.trimmingCharacters(in: .whitespaces))
+    }
 }
 
 // ── List ──
@@ -349,6 +370,10 @@ struct BuddyReadStatusBadge: View {
             DotBadge(text: "Invited", dot: Theme.neonBlue)
         } else if status == "active" {
             DotBadge(text: "Active", dot: Theme.accent)
+        } else if status == "completed" {
+            DotBadge(text: "Finished", dot: Theme.neonBlue)
+        } else if status == "archived" {
+            DotBadge(text: "Cancelled", dot: Theme.muted)
         } else {
             DotBadge(text: status.capitalized, dot: Theme.muted)
         }
@@ -391,6 +416,19 @@ final class BuddyReadDetailModel {
         await load()
     }
 
+    /// Host only: "completed" (finished), "active" (reopen), "archived" (cancel).
+    func setStatus(_ status: String) async -> String? {
+        struct Body: Codable, Sendable { let status: String }
+        struct Ok: Codable { let ok: Bool }
+        do {
+            let _: Ok = try await APIClient.shared.request("/api/v1/buddy-reads/\(slug)", method: "POST", json: Body(status: status))
+            await load()
+            return nil
+        } catch {
+            return (error as? APIError)?.errorDescription ?? "Couldn't update the buddy read."
+        }
+    }
+
     func leave() async -> Bool {
         struct Body: Codable, Sendable { let leave: Bool }
         struct Ok: Codable { let ok: Bool }
@@ -405,6 +443,9 @@ struct BuddyReadDetailView: View {
     @State private var model: BuddyReadDetailModel
     @State private var composer = ""
     @State private var showLeaveConfirm = false
+    @State private var showFinishConfirm = false
+    @State private var showCancelConfirm = false
+    @State private var statusError: String?
     @State private var codeCopied = false
 
     init(slug: String) {
@@ -580,6 +621,24 @@ struct BuddyReadDetailView: View {
                 Task { if await model.leave() { dismiss() } }
             }
         }
+        .confirmationDialog("Mark this buddy read as finished?", isPresented: $showFinishConfirm, titleVisibility: .visible) {
+            Button("Mark as finished") {
+                Task { statusError = await model.setStatus("completed") }
+            }
+        } message: {
+            Text("It ends for everyone and the discussion closes. Nobody's own reading progress changes.")
+        }
+        .confirmationDialog("Cancel this buddy read?", isPresented: $showCancelConfirm, titleVisibility: .visible) {
+            Button("Cancel buddy read", role: .destructive) {
+                Task {
+                    statusError = await model.setStatus("archived")
+                    if statusError == nil { dismiss() }
+                }
+            }
+            Button("Keep it", role: .cancel) {}
+        } message: {
+            Text("It disappears from everyone's buddy reads. This can't be undone.")
+        }
     }
 
     // ── Refreshed detail (2026-11) ──
@@ -623,7 +682,15 @@ struct BuddyReadDetailView: View {
         }
 
         if model.membership?.status == "active" {
-            composerV2
+            if detail.status == "active" {
+                composerV2
+            } else {
+                Text("This buddy read has ended, so the discussion is closed.")
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.muted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+            }
 
             if model.membership?.role != "host" {
                 Button { showLeaveConfirm = true } label: {
@@ -635,6 +702,42 @@ struct BuddyReadDetailView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 6)
             }
+        }
+
+        // Host controls (web buddy-read-detail-client.tsx parity).
+        if model.membership?.role == "host" && detail.status != "archived" {
+            VStack(spacing: 10) {
+                if let statusError {
+                    Text(statusError).font(Theme.body(12)).foregroundStyle(Theme.destructive)
+                }
+                HStack(spacing: 10) {
+                    if detail.status == "active" {
+                        Button { showFinishConfirm = true } label: {
+                            ShelfPill(kind: .neutral) {
+                                Label("Mark as finished", systemImage: "checkmark")
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    } else if detail.status == "completed" {
+                        Button {
+                            Task { statusError = await model.setStatus("active") }
+                        } label: {
+                            ShelfPill(kind: .neutral) {
+                                Label("Reopen", systemImage: "arrow.counterclockwise")
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    Button { showCancelConfirm = true } label: {
+                        ShelfPill(kind: .destructive) {
+                            Label("Cancel buddy read", systemImage: "xmark.circle")
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 6)
         }
     }
 
@@ -770,9 +873,34 @@ struct BuddyReadDetailView: View {
         .glassEffect(.regular, in: Capsule())
     }
 
+    @ViewBuilder
     private func messageV2(_ msg: BuddyReadMessageRow) -> some View {
+        if msg.kind == "status" {
+            // Automatic event ("Rebekah finished the book"): a centred glass
+            // one-liner, not a chat card.
+            HStack(spacing: 6) {
+                Circle().fill(Theme.neonBlue).frame(width: 6, height: 6)
+                Text(msg.message)
+                    .font(Theme.body(12, .semibold))
+                    .foregroundStyle(Theme.foreground)
+                    .lineLimit(2)
+                Text("· " + friendsTimeAgo(msg.createdAt))
+                    .font(Theme.body(11))
+                    .foregroundStyle(Theme.muted)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().stroke(Theme.foreground.opacity(0.1), lineWidth: 1))
+            .frame(maxWidth: .infinity)
+        } else {
+            chatMessageV2(msg)
+        }
+    }
+
+    private func chatMessageV2(_ msg: BuddyReadMessageRow) -> some View {
         let name = msg.user.displayName ?? msg.user.username ?? "Reader"
         let mine = msg.user.id == myId
+        let progress = msg.progressParts
         return HStack(alignment: .top, spacing: 10) {
             initialAvatar(name, url: msg.user.avatarUrl, size: 30)
             VStack(alignment: .leading, spacing: 4) {
@@ -784,10 +912,34 @@ struct BuddyReadDetailView: View {
                         .font(Theme.body(11))
                         .foregroundStyle(Theme.muted)
                 }
-                Text(msg.message)
-                    .font(Theme.body(15))
-                    .foregroundStyle(Theme.foreground.opacity(0.9))
-                    .fixedSize(horizontal: false, vertical: true)
+                if let progress {
+                    HStack(spacing: 6) {
+                        Image(systemName: "book")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Theme.neonBlue)
+                        Text("Reading update")
+                            .font(Theme.body(12, .semibold))
+                            .foregroundStyle(Theme.foreground)
+                        if let p = progress.progress, !p.isEmpty {
+                            Text(p)
+                                .font(Theme.body(11, .medium))
+                                .foregroundStyle(Theme.muted)
+                                .padding(.horizontal, 7).padding(.vertical, 2)
+                                .overlay(Capsule().stroke(Theme.foreground.opacity(0.14), lineWidth: 1))
+                        }
+                    }
+                    if !progress.note.isEmpty {
+                        Text(progress.note)
+                            .font(Theme.body(15))
+                            .foregroundStyle(Theme.foreground.opacity(0.9))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                } else {
+                    Text(msg.message)
+                        .font(Theme.body(15))
+                        .foregroundStyle(Theme.foreground.opacity(0.9))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             Spacer(minLength: 0)
         }

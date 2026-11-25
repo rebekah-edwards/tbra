@@ -368,3 +368,160 @@ struct CoverBlurImage: View {
             }
     }
 }
+
+// ── Cover-art hero (web components/ui/cover-art-hero.tsx) ──
+// Author + series page header on the 2026-11 design: the card sits on its own
+// blurred cover art inside the wordmark hairline, with a fan of tipped
+// covers, an eyebrow, the heading-face title, glass stat chips with a dot and
+// the page's actions — content centred as one group.
+struct HeroStat: Hashable {
+    enum Hue { case lime, blue, purple }
+    let label: String
+    let value: String
+    let hue: Hue
+
+    var color: Color {
+        switch hue {
+        case .lime: return Theme.accent
+        case .blue: return Theme.neonBlue
+        case .purple: return Color(hex: "c084fc")
+        }
+    }
+}
+
+struct CoverArtHero<Actions: View, Footer: View>: View {
+    let eyebrow: String
+    let title: String
+    var subtitle: String? = nil
+    let covers: [String]
+    var stats: [HeroStat] = []
+    @ViewBuilder var actions: Actions
+    @ViewBuilder var footer: Footer
+
+    private func url(_ s: String) -> URL? {
+        s.hasPrefix("/") ? URL(string: s, relativeTo: APIClient.baseURL) : URL(string: s)
+    }
+
+    var body: some View {
+        let fan = Array(covers.prefix(3))
+        VStack(spacing: 14) {
+            if !fan.isEmpty {
+                ZStack {
+                    ForEach(Array(fan.enumerated().reversed()), id: \.offset) { i, cover in
+                        CachedCoverImage(url: url(cover)) { Theme.surfaceAlt }
+                            .frame(width: 78, height: 117)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(.white.opacity(0.1), lineWidth: 1))
+                            .shadow(color: .black.opacity(0.35), radius: 10, y: 6)
+                            .scaleEffect(i == 0 ? 1 : 0.9)
+                            .rotationEffect(.degrees(i == 0 ? 0 : (i == 1 ? -9 : 9)))
+                            .offset(x: i == 0 ? 0 : (i == 1 ? -30 : 30))
+                    }
+                }
+                .frame(height: 124)
+                .accessibilityHidden(true)
+            }
+
+            VStack(spacing: 4) {
+                Text(eyebrow.uppercased())
+                    .font(Theme.body(11, .semibold))
+                    .tracking(1.2)
+                    .foregroundStyle(Theme.muted)
+                Text(title)
+                    .font(Theme.heading(24, .bold))
+                    .foregroundStyle(Theme.foreground)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(Theme.body(13))
+                        .foregroundStyle(Theme.muted)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                }
+            }
+
+            if !stats.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(stats, id: \.self) { stat in
+                        HStack(spacing: 5) {
+                            Circle().fill(stat.color).frame(width: 6, height: 6)
+                            Text(stat.value).font(Theme.body(12, .semibold)).foregroundStyle(Theme.foreground)
+                            Text(stat.label).font(Theme.body(12)).foregroundStyle(Theme.muted)
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
+                    }
+                }
+            }
+
+            actions
+            footer
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 18).padding(.vertical, 20)
+        .background {
+            ZStack {
+                Theme.surface
+                if let first = fan.first {
+                    CachedCoverImage(url: url(first)) { Color.clear }
+                        .scaleEffect(1.3)
+                        .blur(radius: 28)
+                        .opacity(0.4)
+                    LinearGradient(colors: [Theme.surface.opacity(0.35), Theme.surface.opacity(0.75), Theme.surface],
+                                   startPoint: .top, endPoint: .bottom)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 22))
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 22)
+                .stroke(LinearGradient(colors: [Theme.accent.opacity(0.55), Color(hex: "38bdf8").opacity(0.35), Color(hex: "c084fc").opacity(0.45)],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+        )
+    }
+}
+
+extension CoverArtHero where Footer == EmptyView {
+    init(eyebrow: String, title: String, subtitle: String? = nil, covers: [String],
+         stats: [HeroStat] = [], @ViewBuilder actions: () -> Actions) {
+        self.eyebrow = eyebrow; self.title = title; self.subtitle = subtitle
+        self.covers = covers; self.stats = stats
+        self.actions = actions(); self.footer = EmptyView()
+    }
+}
+
+/// Follow / Following pill (web FollowButton): solid lime to follow, neutral
+/// glass with a lime check once following.
+struct FollowPill: View {
+    let isFollowing: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                if isFollowing {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(Theme.accentText)
+                }
+                Text(isFollowing ? "Following" : "Follow")
+            }
+            .font(Theme.body(14, .semibold))
+            .foregroundStyle(isFollowing ? Theme.foreground : Color.black)
+            .padding(.horizontal, 22).padding(.vertical, 9)
+            .background {
+                if isFollowing {
+                    Capsule().fill(.ultraThinMaterial)
+                } else {
+                    Capsule().fill(Theme.accent)
+                }
+            }
+            .overlay(Capsule().stroke(isFollowing ? Theme.accent.opacity(0.6) : .clear, lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isFollowing ? .isSelected : [])
+    }
+}
