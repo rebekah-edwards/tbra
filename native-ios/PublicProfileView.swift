@@ -87,6 +87,7 @@ final class PublicProfileModel {
 }
 
 struct PublicProfileView: View {
+    @Environment(\.shellWide) private var wide
     @Environment(\.shellRailWidth) private var rail
     @Environment(\.shellBarInsets) private var bars
     @Environment(\.dismiss) private var dismiss
@@ -122,7 +123,13 @@ struct PublicProfileView: View {
                     if !model.favorites.isEmpty { topShelf.duoColumn(.right) }
                     if !model.publicShelves.isEmpty { shelvesSection.duoColumn(.right) }
                     if !model.sharedNotes.isEmpty { notesSection }
-                    if !model.reviews.isEmpty { reviewsSection }
+                    // Duo open: reviews (with their search) span both pages,
+                    // inset like the book page's series row (Rebekah, 2026-11-25).
+                    if !model.reviews.isEmpty {
+                        reviewsSection
+                            .padding(.horizontal, wide ? 64 : 0)
+                            .duoColumn(.full)
+                    }
                 } else if let user = model.user {
                     header(user)
                     socialRow(user)

@@ -393,8 +393,14 @@ struct CoverArtHero<Actions: View, Footer: View>: View {
     let eyebrow: String
     let title: String
     var subtitle: String? = nil
+    /// Linked author names ("by A, B") — every author name is a link except
+    /// on that author's own page (Rebekah, 2026-11-25). Wins over `subtitle`.
+    var subtitleAuthors: [BookAuthor] = []
     let covers: [String]
     var stats: [HeroStat] = []
+    /// Wide window (Duo open): fan on the left, text left-aligned beside it,
+    /// spanning the full width instead of a narrow centred stack.
+    var horizontal = false
     @ViewBuilder var actions: Actions
     @ViewBuilder var footer: Footer
 
@@ -402,78 +408,126 @@ struct CoverArtHero<Actions: View, Footer: View>: View {
         s.hasPrefix("/") ? URL(string: s, relativeTo: APIClient.baseURL) : URL(string: s)
     }
 
+    private var fan: [String] { Array(covers.prefix(3)) }
+
+    @ViewBuilder private var fanView: some View {
+        if !fan.isEmpty {
+            ZStack {
+                ForEach(Array(fan.enumerated().reversed()), id: \.offset) { i, cover in
+                    CachedCoverImage(url: url(cover)) { Theme.surfaceAlt }
+                        .frame(width: 78, height: 117)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(.white.opacity(0.1), lineWidth: 1))
+                        .shadow(color: .black.opacity(0.35), radius: 10, y: 6)
+                        .scaleEffect(i == 0 ? 1 : 0.9)
+                        .rotationEffect(.degrees(i == 0 ? 0 : (i == 1 ? -9 : 9)))
+                        .offset(x: i == 0 ? 0 : (i == 1 ? -30 : 30))
+                }
+            }
+            .frame(width: horizontal ? 160 : nil, height: 124)
+            .accessibilityHidden(true)
+        }
+    }
+
+    @ViewBuilder private var subtitleView: some View {
+        if !subtitleAuthors.isEmpty {
+            HStack(spacing: 0) {
+                Text("by ").foregroundStyle(Theme.muted)
+                ForEach(Array(subtitleAuthors.prefix(2).enumerated()), id: \.offset) { i, a in
+                    if i > 0 { Text(", ").foregroundStyle(Theme.muted) }
+                    NavigationLink(value: AuthorRoute(idOrSlug: a.slug ?? a.id)) {
+                        Text(a.name).foregroundStyle(Theme.neonBlue)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .font(Theme.body(13))
+            .lineLimit(1)
+        } else if let subtitle, !subtitle.isEmpty {
+            Text(subtitle)
+                .font(Theme.body(13))
+                .foregroundStyle(Theme.muted)
+                .multilineTextAlignment(horizontal ? .leading : .center)
+                .lineLimit(2)
+        }
+    }
+
+    @ViewBuilder private var statsRow: some View {
+        if !stats.isEmpty {
+            HStack(spacing: 6) {
+                ForEach(stats, id: \.self) { stat in
+                    HStack(spacing: 5) {
+                        Circle().fill(stat.color).frame(width: 6, height: 6)
+                        Text(stat.value).font(Theme.body(12, .semibold)).foregroundStyle(Theme.foreground)
+                        Text(stat.label).font(Theme.body(12)).foregroundStyle(Theme.muted)
+                    }
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
+                }
+            }
+        }
+    }
+
+    private var titleBlock: some View {
+        VStack(alignment: horizontal ? .leading : .center, spacing: 4) {
+            Text(eyebrow.uppercased())
+                .font(Theme.body(11, .semibold))
+                .tracking(1.2)
+                .foregroundStyle(Theme.muted)
+            Text(title)
+                .font(Theme.heading(horizontal ? 28 : 24, .bold))
+                .foregroundStyle(Theme.foreground)
+                .multilineTextAlignment(horizontal ? .leading : .center)
+                .lineLimit(3)
+            subtitleView
+        }
+    }
+
     var body: some View {
-        let fan = Array(covers.prefix(3))
-        VStack(spacing: 14) {
-            if !fan.isEmpty {
-                ZStack {
-                    ForEach(Array(fan.enumerated().reversed()), id: \.offset) { i, cover in
-                        CachedCoverImage(url: url(cover)) { Theme.surfaceAlt }
-                            .frame(width: 78, height: 117)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(.white.opacity(0.1), lineWidth: 1))
-                            .shadow(color: .black.opacity(0.35), radius: 10, y: 6)
-                            .scaleEffect(i == 0 ? 1 : 0.9)
-                            .rotationEffect(.degrees(i == 0 ? 0 : (i == 1 ? -9 : 9)))
-                            .offset(x: i == 0 ? 0 : (i == 1 ? -30 : 30))
+        Group {
+            if horizontal {
+                HStack(alignment: .center, spacing: 28) {
+                    fanView
+                    VStack(alignment: .leading, spacing: 12) {
+                        titleBlock
+                        statsRow
+                        actions
+                        footer
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(height: 124)
-                .accessibilityHidden(true)
-            }
-
-            VStack(spacing: 4) {
-                Text(eyebrow.uppercased())
-                    .font(Theme.body(11, .semibold))
-                    .tracking(1.2)
-                    .foregroundStyle(Theme.muted)
-                Text(title)
-                    .font(Theme.heading(24, .bold))
-                    .foregroundStyle(Theme.foreground)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(3)
-                if let subtitle, !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(Theme.body(13))
-                        .foregroundStyle(Theme.muted)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
+                .padding(.horizontal, 10)
+            } else {
+                VStack(spacing: 14) {
+                    fanView
+                    titleBlock
+                    statsRow
+                    actions
+                    footer
                 }
             }
-
-            if !stats.isEmpty {
-                HStack(spacing: 6) {
-                    ForEach(stats, id: \.self) { stat in
-                        HStack(spacing: 5) {
-                            Circle().fill(stat.color).frame(width: 6, height: 6)
-                            Text(stat.value).font(Theme.body(12, .semibold)).foregroundStyle(Theme.foreground)
-                            Text(stat.label).font(Theme.body(12)).foregroundStyle(Theme.muted)
-                        }
-                        .padding(.horizontal, 10).padding(.vertical, 5)
-                        .background(.ultraThinMaterial, in: Capsule())
-                        .overlay(Capsule().stroke(Theme.foreground.opacity(0.12), lineWidth: 1))
-                    }
-                }
-            }
-
-            actions
-            footer
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 18).padding(.vertical, 20)
         .background {
-            ZStack {
-                Theme.surface
-                if let first = fan.first {
-                    CachedCoverImage(url: url(first)) { Color.clear }
-                        .scaleEffect(1.3)
-                        .blur(radius: 28)
-                        .opacity(0.4)
-                    LinearGradient(colors: [Theme.surface.opacity(0.35), Theme.surface.opacity(0.75), Theme.surface],
-                                   startPoint: .top, endPoint: .bottom)
+            // The blurred cover is an OVERLAY on a shape sized to the card:
+            // as a ZStack sibling it took the image's own (taller) size and
+            // spilled a faded panel past the card's edges — the "faded card
+            // area" on series/author pages (Rebekah, 2026-11-25).
+            RoundedRectangle(cornerRadius: 22)
+                .fill(Theme.surface)
+                .overlay {
+                    if let first = fan.first {
+                        CachedCoverImage(url: url(first)) { Color.clear }
+                            .scaleEffect(1.3)
+                            .blur(radius: 28)
+                            .opacity(0.4)
+                        LinearGradient(colors: [Theme.surface.opacity(0.35), Theme.surface.opacity(0.75), Theme.surface],
+                                       startPoint: .top, endPoint: .bottom)
+                    }
                 }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 22))
+                .clipShape(RoundedRectangle(cornerRadius: 22))
         }
         .overlay(
             RoundedRectangle(cornerRadius: 22)
@@ -484,10 +538,13 @@ struct CoverArtHero<Actions: View, Footer: View>: View {
 }
 
 extension CoverArtHero where Footer == EmptyView {
-    init(eyebrow: String, title: String, subtitle: String? = nil, covers: [String],
-         stats: [HeroStat] = [], @ViewBuilder actions: () -> Actions) {
+    init(eyebrow: String, title: String, subtitle: String? = nil,
+         subtitleAuthors: [BookAuthor] = [], covers: [String],
+         stats: [HeroStat] = [], horizontal: Bool = false,
+         @ViewBuilder actions: () -> Actions) {
         self.eyebrow = eyebrow; self.title = title; self.subtitle = subtitle
-        self.covers = covers; self.stats = stats
+        self.subtitleAuthors = subtitleAuthors
+        self.covers = covers; self.stats = stats; self.horizontal = horizontal
         self.actions = actions(); self.footer = EmptyView()
     }
 }
@@ -885,5 +942,29 @@ extension View {
     /// break drag-to-reorder or split one continuous list.
     func duoReadable(maxWidth: CGFloat = 720) -> some View {
         frame(maxWidth: maxWidth).frame(maxWidth: .infinity)
+    }
+}
+
+/// Author names as links to their author pages ("A, B"). Use wherever an
+/// author name appears, except on that author's own page (Rebekah,
+/// 2026-11-25). Must NOT sit inside another NavigationLink (nested links
+/// don't fire) — split the surrounding card's link around it instead.
+struct AuthorLinks: View {
+    let authors: [BookAuthor]
+    var font: Font = Theme.body(15)
+    var limit = 3
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(authors.prefix(limit).enumerated()), id: \.offset) { i, a in
+                if i > 0 { Text(", ").foregroundStyle(Theme.muted) }
+                NavigationLink(value: AuthorRoute(idOrSlug: a.slug ?? a.id)) {
+                    Text(a.name).foregroundStyle(Theme.neonBlue)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .font(font)
+        .lineLimit(1)
     }
 }

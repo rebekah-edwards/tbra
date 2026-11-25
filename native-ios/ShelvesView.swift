@@ -42,6 +42,7 @@ final class ShelvesModel {
 }
 
 struct LibraryShelvesView: View {
+    @Environment(\.shellRailWidth) private var rail
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthStore.self) private var auth
     @State private var model = ShelvesModel()
@@ -219,7 +220,7 @@ struct LibraryShelvesView: View {
     private var header: some View {
         HStack(spacing: 12) {
             // Placeholder — real back button is the .floatingBack overlay.
-            Color.clear.frame(width: 40, height: 40)
+            if rail == 0 { Color.clear.frame(width: 40, height: 40) }  // back gutter (Duo: side column)
             Text("Shelves")
                 .font(Theme.heading(26, .bold))
                 .foregroundStyle(Theme.foreground)
@@ -310,6 +311,7 @@ private struct NewShelfPillStyle: ViewModifier {
 // shelf-color glow (border tint + full-bleed bottom plank, like the
 // profile shelf rails / web card).
 private struct ShelfCard: View {
+    @Environment(\.shellWide) private var wide
     let shelf: ShelfSummary
 
     private var tint: Color {
@@ -323,9 +325,10 @@ private struct ShelfCard: View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
                 // Narrow cropped slices, like the web mosaic.
-                HStack(spacing: 0) {
-                    ForEach(Array(shelf.coverUrls.prefix(3).enumerated()), id: \.offset) { _, url in
-                        CoverThumb(url: url, width: 28, height: 72, radius: 0)
+                // Wide (Duo open): a fuller run of covers, like Top Shelf.
+                HStack(spacing: wide ? 6 : 0) {
+                    ForEach(Array(shelf.coverUrls.prefix(wide ? 8 : 3).enumerated()), id: \.offset) { _, url in
+                        CoverThumb(url: url, width: wide ? 48 : 28, height: 72, radius: wide ? 4 : 0)
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -391,6 +394,7 @@ private struct ShelfCard: View {
 // A shelf you follow — web Following tab card: mosaic, name, owner + count,
 // description, thin plank.
 private struct FollowedShelfCard: View {
+    @Environment(\.shellWide) private var wide
     let shelf: FollowedShelf
 
     private var tint: Color {
@@ -403,9 +407,10 @@ private struct FollowedShelfCard: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
-                HStack(spacing: 0) {
-                    ForEach(Array(shelf.coverUrls.prefix(3).enumerated()), id: \.offset) { _, url in
-                        CoverThumb(url: url, width: 28, height: 72, radius: 0)
+                // Wide (Duo open): a fuller run of covers, like Top Shelf.
+                HStack(spacing: wide ? 6 : 0) {
+                    ForEach(Array(shelf.coverUrls.prefix(wide ? 8 : 3).enumerated()), id: \.offset) { _, url in
+                        CoverThumb(url: url, width: wide ? 48 : 28, height: 72, radius: wide ? 4 : 0)
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -718,6 +723,7 @@ struct TopShelfRoute: Hashable {}
 /// count line, chevron, amber plank. Fixed amber — Top Shelf can't be
 /// recolored or reordered.
 struct TopShelfListCard: View {
+    @Environment(\.shellWide) private var wide
     let favorites: [FavoriteBookRow]
     @Environment(\.colorScheme) private var colorScheme
 
@@ -727,8 +733,10 @@ struct TopShelfListCard: View {
         let isLight = colorScheme == .light
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
+                // Wide (Duo open): a fuller run of covers so the card uses
+                // its width instead of a 3-spine stub (Rebekah, 2026-11-25).
                 let covers = favorites.sorted { $0.position < $1.position }
-                    .compactMap(\.coverImageUrl).prefix(3)
+                    .compactMap(\.coverImageUrl).prefix(wide ? 8 : 3)
                 if covers.isEmpty {
                     ZStack {
                         RoundedRectangle(cornerRadius: 8).fill(DesignPreview.on ? Theme.surface.opacity(0.7) : ShelfWood.amber700.opacity(0.12))
@@ -738,9 +746,9 @@ struct TopShelfListCard: View {
                     }
                     .frame(width: 56, height: 56)
                 } else {
-                    HStack(spacing: 0) {
+                    HStack(spacing: wide ? 6 : 0) {
                         ForEach(Array(covers.enumerated()), id: \.offset) { _, url in
-                            CoverThumb(url: url, width: 28, height: 72, radius: 0)
+                            CoverThumb(url: url, width: wide ? 48 : 28, height: 72, radius: wide ? 4 : 0)
                         }
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 8))

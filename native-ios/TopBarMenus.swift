@@ -136,11 +136,34 @@ struct NotificationsSheet: View {
 
 // ── Hamburger menu ──
 
+/// Screens the menu opens. On the iPhone Duo the shell presents them in its
+/// chromed cover (side column + back) instead of the menu's own bare covers.
+enum MenuScreen: String, Identifiable {
+    case settings, findReaders, buddyReads, browse
+    var id: String { rawValue }
+}
+
 struct HamburgerMenuSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthStore.self) private var auth
     @AppStorage("themeOverride") private var themeOverride = "dark"
     let onProfile: () -> Void
+    /// Set by the shell in rail mode: hand the screen to the shell and close.
+    var onOpenScreen: ((MenuScreen) -> Void)? = nil
+
+    private func open(_ screen: MenuScreen) {
+        if let onOpenScreen {
+            onOpenScreen(screen)
+            dismiss()
+            return
+        }
+        switch screen {
+        case .settings: settingsOpen = true
+        case .findReaders: findReadersOpen = true
+        case .buddyReads: buddyReadsOpen = true
+        case .browse: browseOpen = true
+        }
+    }
 
     @State private var settingsOpen = false
     @State private var findReadersOpen = false
@@ -295,13 +318,13 @@ struct HamburgerMenuSheet: View {
 
                 // Places
                 menuCard {
-                    cardRow("gearshape", "Settings", Theme.muted) { settingsOpen = true }
+                    cardRow("gearshape", "Settings", Theme.muted) { open(.settings) }
                     cardDivider
-                    cardRow("person.2", "Find Readers", Theme.neonBlue) { findReadersOpen = true }
+                    cardRow("person.2", "Find Readers", Theme.neonBlue) { open(.findReaders) }
                     cardDivider
-                    cardRow("book.pages", "Buddy Reads", Theme.neonPurple) { buddyReadsOpen = true }
+                    cardRow("book.pages", "Buddy Reads", Theme.neonPurple) { open(.buddyReads) }
                     cardDivider
-                    cardRow("books.vertical", "Browse All Books", Theme.accentDark) { browseOpen = true }
+                    cardRow("books.vertical", "Browse All Books", Theme.accentDark) { open(.browse) }
                     ForEach(items, id: \.path) { item in
                         cardDivider
                         cardRow(item.icon, item.label, Color(hex: "fb923c"), external: true) {

@@ -103,6 +103,7 @@ final class AuthorModel {
 struct AuthorView: View {
     @Environment(\.shellBarInsets) private var bars
     @Environment(\.shellRailWidth) private var rail
+    @Environment(\.shellWide) private var wide
     @Environment(\.dismiss) private var dismiss
     @State private var model: AuthorModel
     @State private var claimOpen = false
@@ -135,7 +136,9 @@ struct AuthorView: View {
     }
 
     private var heroStats: [HeroStat] {
-        var out = [HeroStat(label: model.books.count == 1 ? "book" : "books", value: "\(model.books.count)", hue: .lime)]
+        // "on tbr*a": counts are what's in our catalogue, not the author's
+        // complete bibliography (Rebekah, 2026-11-25).
+        var out = [HeroStat(label: model.books.count == 1 ? "book on tbr*a" : "books on tbr*a", value: "\(model.books.count)", hue: .lime)]
         let seriesCount = grouped.filter { $0.series != nil }.count
         if seriesCount > 0 { out.append(HeroStat(label: "series", value: "\(seriesCount)", hue: .blue)) }
         if model.followerCount > 0 {
@@ -146,18 +149,20 @@ struct AuthorView: View {
 
     var body: some View {
         ScrollView {
-            // iPhone Duo open: hero on the left, the book rows flow into
-            // both columns (the right one level with the logo).
-            DuoColumns(spacing: 16, rightLift: duoRightColumnLift(barTop: bars.top, rail: rail)) {
+            // iPhone Duo open: a wide hero across the top, then the series
+            // rows flow into two columns beneath it (Rebekah, 2026-11-25).
+            DuoColumns(spacing: 16) {
                 // Design refresh (2026-11-25): cover-art hero like the
                 // profile / buddy-read pages, Follow as the one lime pill.
                 CoverArtHero(
                     eyebrow: "Author",
                     title: model.name,
                     covers: heroCovers,
-                    stats: heroStats
+                    stats: heroStats,
+                    horizontal: wide
                 ) {
-                    VStack(spacing: 10) {
+                    // Wide hero: actions sit left under the name.
+                    VStack(alignment: wide ? .leading : .center, spacing: 10) {
                         if let account = model.verifiedAccount {
                             if let username = account.username {
                                 NavigationLink(value: UserRoute(username: username)) {
@@ -207,7 +212,7 @@ struct AuthorView: View {
                 // 52 clears the top-left back chevron; on the Duo the back
                 // button lives in the side column.
                 .padding(.top, rail > 0 ? 14 : 52)
-                .duoColumn(.left)
+                .duoColumn(.full)
 
                 ForEach(Array(grouped.enumerated()), id: \.offset) { _, group in
                     VStack(alignment: .leading, spacing: 12) {
@@ -250,6 +255,15 @@ struct AuthorView: View {
                             }
                             .padding(.trailing, 32)
                         }
+                        // Fade the right edge so a row that runs off-screen
+                        // reads as scrollable (book page series rail parity).
+                        .mask(
+                            LinearGradient(stops: [
+                                .init(color: .black, location: 0),
+                                .init(color: .black, location: 0.85),
+                                .init(color: .clear, location: 1),
+                            ], startPoint: .leading, endPoint: .trailing)
+                        )
                     }
                 }
             }

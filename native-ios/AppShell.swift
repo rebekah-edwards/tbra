@@ -20,6 +20,10 @@ struct AppShell: View {
     @State private var presentedAuthorId: String?
     @State private var bellOpen = false
     @State private var menuOpen = false
+    /// Duo: a menu destination waiting for the menu sheet to finish closing,
+    /// then shown in the chromed cover (side column + back).
+    @State private var pendingMenuScreen: MenuScreen?
+    @State private var menuScreen: MenuScreen?
     /// Home tour's "Go to Settings" CTA opens Settings directly (same
     /// presentation the hamburger menu uses).
     @State private var tourSettingsOpen = false
@@ -43,6 +47,8 @@ struct AppShell: View {
     @State private var bottomNavHeight: CGFloat = 0
     /// Side-column width when the tabs show as a rail (iPhone Duo), else 0.
     @State private var railWidth: CGFloat = 0
+    /// Window width >= 800pt (the Duo's open screen).
+    @State private var wideWindow = false
     // Chrome hub: current tab, scroll-at-top, and the actions the
     // per-screen hit layers invoke (see PushedScreenChrome).
     @State private var chrome = ChromeState()
@@ -58,6 +64,7 @@ struct AppShell: View {
         PresentedChromeCover(
             barInsets: (top: topBarHeight, bottom: railWidth > 0 ? 0 : bottomNavHeight),
             railWidth: railWidth,
+            wide: wideWindow,
             unreadCount: notifications.unreadCount,
             avatarUrl: currentAvatarUrl,
             onGoHome: { dismiss(); chrome.goHome() },
@@ -166,6 +173,8 @@ struct AppShell: View {
         }
         .environment(\.shellBarInsets, (top: topBarHeight, bottom: railWidth > 0 ? 0 : bottomNavHeight))
         .environment(\.shellRailWidth, railWidth)
+        .environment(\.shellWide, wideWindow)
+        .onGeometryChange(for: Bool.self) { $0.size.width >= 800 } action: { wideWindow = $0 }
         .environment(chrome)
         .environment(\.openSearch, { searchOpen = true })
         .task { await notifications.load() }
@@ -192,8 +201,16 @@ struct AppShell: View {
                 .presentationDetents([.medium, .large])
                 .presentationBackground(Theme.bg)
         }
-        .sheet(isPresented: $menuOpen) {
-            HamburgerMenuSheet(onProfile: { chrome.tab = .profile })
+        .sheet(isPresented: $menuOpen, onDismiss: {
+            if let next = pendingMenuScreen {
+                pendingMenuScreen = nil
+                menuScreen = next
+            }
+        }) {
+            HamburgerMenuSheet(
+                onProfile: { chrome.tab = .profile },
+                onOpenScreen: railWidth > 0 ? { pendingMenuScreen = $0 } : nil
+            )
                 .presentationDetents([.large])
                 .presentationBackground(Theme.bg)
         }
@@ -209,6 +226,16 @@ struct AppShell: View {
                     onFullSearch: { q in fullSearchQuery = q; fullSearchOpen = true }
                 )
                 .zIndex(60)
+            }
+        }
+        .fullScreenCover(item: $menuScreen) { screen in
+            chromedCover(dismiss: { menuScreen = nil }) {
+                switch screen {
+                case .settings: SettingsView()
+                case .findReaders: FindReadersView()
+                case .buddyReads: BuddyReadsView()
+                case .browse: BrowseView()
+                }
             }
         }
         .fullScreenCover(isPresented: $fullSearchOpen) {
@@ -589,6 +616,7 @@ extension View {
 struct PresentedChromeCover<Content: View>: View {
     let barInsets: (top: CGFloat, bottom: CGFloat)
     var railWidth: CGFloat = 0
+    var wide = false
     let unreadCount: Int
     let avatarUrl: String?
     let onGoHome: @MainActor () -> Void
@@ -637,6 +665,7 @@ struct PresentedChromeCover<Content: View>: View {
         }
         .environment(\.shellBarInsets, barInsets)
         .environment(\.shellRailWidth, railWidth)
+        .environment(\.shellWide, wide)
         .environment(\.showsShellChrome, true)
         .environment(coverChrome)
         // The shell's alert can't show over a cover, so each cover adds one.

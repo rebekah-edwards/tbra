@@ -463,7 +463,8 @@ struct BuddyReadDetailView: View {
 
     var body: some View {
         ScrollView {
-            DuoColumns(spacing: 18, rightLift: duoRightColumnLift(barTop: bars.top, rail: rail)) {
+            // Right column starts just under the clock line, like the book page.
+            DuoColumns(spacing: 18, rightLift: max(0, duoRightColumnLift(barTop: bars.top, rail: rail) - 26)) {
                 if DesignPreview.on {
                     // The back chevron's row; the name lives in the hero card.
                     // (None on the Duo: back lives in the side column.)

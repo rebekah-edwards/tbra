@@ -100,6 +100,7 @@ struct DiscoverView: View {
     @State private var model = DiscoverModel()
     @Environment(\.shellBarInsets) private var bars
     @Environment(\.shellRailWidth) private var rail
+    @Environment(\.shellWide) private var wide
 
     private let moodColumns = [
         GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12),
@@ -334,7 +335,10 @@ struct DiscoverView: View {
                                 }
                                 .id("results")
 
-                                LazyVGrid(columns: resultColumns, alignment: .leading, spacing: 12) {
+                                // Duo open: 6 across so all 12 results fit
+                                // on screen (Rebekah, 2026-11-25).
+                                LazyVGrid(columns: wide ? Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: 6) : resultColumns,
+                                          alignment: .leading, spacing: 12) {
                                     ForEach(model.results) { book in
                                         // Button + path.append, not
                                         // NavigationLink(value:) — value links
@@ -401,7 +405,8 @@ struct DiscoverView: View {
                 Text(reason)
                     .font(Theme.body(10, .medium))
                     .foregroundStyle(Theme.foreground.opacity(0.85))
-                    .lineLimit(3)
+                    // Same size on the Duo's 6-across grid; just more lines.
+                    .lineLimit(wide ? 7 : 3)
                     .multilineTextAlignment(.leading)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 5)

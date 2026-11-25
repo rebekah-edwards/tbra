@@ -22,6 +22,12 @@ private struct ShellBarInsetsKey: EnvironmentKey {
 private struct ShellRailWidthKey: EnvironmentKey {
     static let defaultValue: CGFloat = 0
 }
+/// True on a wide window (the iPhone Duo's open screen, >= 800pt). Set by
+/// the shell; lets a screen pick a wide variant of a section without
+/// measuring itself.
+private struct ShellWideKey: EnvironmentKey {
+    static let defaultValue = false
+}
 private struct ShowsShellChromeKey: EnvironmentKey {
     static let defaultValue = true
 }
@@ -29,6 +35,10 @@ extension EnvironmentValues {
     var shellBarInsets: (top: CGFloat, bottom: CGFloat) {
         get { self[ShellBarInsetsKey.self] }
         set { self[ShellBarInsetsKey.self] = newValue }
+    }
+    var shellWide: Bool {
+        get { self[ShellWideKey.self] }
+        set { self[ShellWideKey.self] = newValue }
     }
     var shellRailWidth: CGFloat {
         get { self[ShellRailWidthKey.self] }
@@ -403,6 +413,7 @@ final class SeriesModel {
 }
 
 struct SeriesView: View {
+    @Environment(\.shellWide) private var wide
     @Environment(\.shellBarInsets) private var bars
     @Environment(\.shellRailWidth) private var rail
     @Environment(\.dismiss) private var dismiss
@@ -436,6 +447,12 @@ struct SeriesView: View {
         let fromBooks = heroPool.compactMap { $0.coverImageUrl }
         return Array((fromBooks.isEmpty ? model.childSeries.compactMap { $0.coverImageUrl } : fromBooks).prefix(3))
     }
+    /// Distinct authors across the series, for the hero's linked "by …".
+    private var heroAuthorList: [BookAuthor] {
+        var seen: [BookAuthor] = []
+        for b in heroPool { for a in b.authors where !seen.contains(where: { $0.id == a.id }) { seen.append(a) } }
+        return seen
+    }
     private var heroAuthors: String? {
         var seen: [String] = []
         for b in heroPool { for a in b.authors where !seen.contains(a.name) { seen.append(a.name) } }
@@ -445,11 +462,13 @@ struct SeriesView: View {
         if model.books.isEmpty && !model.childSeries.isEmpty {
             return [
                 HeroStat(label: "series", value: "\(model.childSeries.count)", hue: .blue),
-                HeroStat(label: "books", value: "\(model.childSeries.reduce(0) { $0 + $1.bookCount })", hue: .lime),
+                HeroStat(label: "books on tbr*a", value: "\(model.childSeries.reduce(0) { $0 + $1.bookCount })", hue: .lime),
             ]
         }
         let total = heroPool.count
-        var out = [HeroStat(label: total == 1 ? "book" : "books", value: "\(total)", hue: .lime)]
+        // "on tbr*a": the count is what's in our catalogue, not the series'
+        // complete bibliography (Rebekah, 2026-11-25).
+        var out = [HeroStat(label: total == 1 ? "book on tbr*a" : "books on tbr*a", value: "\(total)", hue: .lime)]
         let read = heroPool.filter { $0.currentState == "completed" }.count
         if read > 0 { out.append(HeroStat(label: "read", value: "\(read)/\(total)", hue: .purple)) }
         let reading = heroPool.filter { $0.currentState == "currently_reading" }.count
@@ -459,22 +478,23 @@ struct SeriesView: View {
 
     var body: some View {
         ScrollView {
-            // iPhone Duo open: hero (+ franchise grid) on the left, the book
-            // list on the right, level with the logo.
-            DuoColumns(spacing: 16, rightLift: duoRightColumnLift(barTop: bars.top, rail: rail)) {
+            // iPhone Duo open: a wide hero across the top, then the books as
+            // side-by-side cards across the full width (Rebekah, 2026-11-25).
+            DuoColumns(spacing: 16) {
                 // Design refresh (2026-11-25): cover-art hero (web
                 // components/ui/cover-art-hero.tsx twin).
                 CoverArtHero(
                     eyebrow: model.books.isEmpty && !model.childSeries.isEmpty ? "Franchise" : "Series",
                     title: model.name,
-                    subtitle: heroAuthors,
+                    subtitleAuthors: heroAuthorList,
                     covers: heroCovers,
-                    stats: heroStats
+                    stats: heroStats,
+                    horizontal: wide
                 ) { EmptyView() }
                 // 52 clears the top-left back chevron; on the Duo the back
                 // button lives in the side column.
                 .padding(.top, rail > 0 ? 14 : 52)
-                .duoColumn(.left)
+                .duoColumn(.full)
 
                 // A series can have sub-series AND its own books (Animorphs →
                 // Megamorphs). Show both — attaching a child series must never
@@ -487,14 +507,14 @@ struct SeriesView: View {
                         Text("Series in this franchise")
                             .font(Theme.body(17, .semibold))
                             .foregroundStyle(Theme.foreground)
-                            .duoColumn(.left)
+                            .duoColumn(.full)
                     }
                     Text("\(model.childSeries.count) series · \(model.childSeries.reduce(0) { $0 + $1.bookCount }) books")
                         .font(Theme.body(hasOwnBooks ? 13 : 15))
                         .foregroundStyle(Theme.muted)
                         .padding(.top, hasOwnBooks ? -10 : 0)
-                        .duoColumn(.left)
-                    franchiseGrid.duoColumn(.left)
+                        .duoColumn(.full)
+                    franchiseGrid.duoColumn(.full)
                 }
 
                 if !hasSubSeries || hasOwnBooks {
@@ -503,29 +523,28 @@ struct SeriesView: View {
                             .font(Theme.body(17, .semibold))
                             .foregroundStyle(Theme.foreground)
                             .padding(.top, 10)
-                            .duoColumn(.right)
+                            .duoColumn(.full)
                     }
 
-                    segmented.duoColumn(.right)
+                    segmented.duoColumn(.full)
 
                     if tab == .core {
                         Text("Main series novels")
                             .font(Theme.body(15))
                             .foregroundStyle(Theme.muted)
-                            .duoColumn(.right)
+                            .duoColumn(.full)
                     }
 
-                    VStack(spacing: 14) {
-                        ForEach(filtered) { book in
-                            seriesCard(book)
-                                .zIndex(expandedControlsId == book.id ? 30 : 0)
-                        }
+                    // Each card is its own section: one column on a phone,
+                    // side-by-side pairs on the Duo's open screen.
+                    ForEach(filtered) { book in
+                        seriesCard(book)
+                            .zIndex(expandedControlsId == book.id ? 30 : 0)
                     }
-                    .duoColumn(.right)
                 }
 
                 if isAdmin {
-                    FranchiseAdminControls(model: model).duoColumn(.left)
+                    FranchiseAdminControls(model: model).duoColumn(.full)
                 }
             }
             .padding(.horizontal, 20)
@@ -616,35 +635,42 @@ struct SeriesView: View {
 
     private func seriesCard(_ book: SeriesBookRow) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
-                HStack(alignment: .top, spacing: 14) {
+            // Book link split around the author line so the author name is
+            // its own link (nested NavigationLinks don't fire).
+            HStack(alignment: .top, spacing: 14) {
+                NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
                     CoverThumb(url: book.coverImageUrl, width: 74, height: 111, radius: 8, title: book.title)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(book.title)
-                            .font(Theme.body(18, .bold))
-                            .foregroundStyle(Theme.foreground)
-                            .multilineTextAlignment(.leading)
-                        HStack(spacing: 4) {
-                            if let pos = book.position {
-                                Text(pos.truncatingRemainder(dividingBy: 1) == 0
-                                     ? "Book \(Int(pos))" : "Book \(String(format: "%.1f", pos))")
-                            }
-                            if let year = book.publicationYear {
-                                if book.position != nil { Text("·") }
-                                Text(String(year))
-                            }
-                        }
-                        .font(Theme.body(14))
-                        .foregroundStyle(Theme.muted)
-                        Text(book.authors.map(\.name).joined(separator: ", "))
-                            .font(Theme.body(15))
-                            .foregroundStyle(Theme.muted)
-                            .lineLimit(1)
-                    }
-                    Spacer(minLength: 0)
                 }
-                .padding(14)
+                .buttonStyle(.plain)
+                VStack(alignment: .leading, spacing: 4) {
+                    NavigationLink(value: BookRoute(idOrSlug: book.slug ?? book.id)) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(book.title)
+                                .font(Theme.body(18, .bold))
+                                .foregroundStyle(Theme.foreground)
+                                .multilineTextAlignment(.leading)
+                            HStack(spacing: 4) {
+                                if let pos = book.position {
+                                    Text(pos.truncatingRemainder(dividingBy: 1) == 0
+                                         ? "Book \(Int(pos))" : "Book \(String(format: "%.1f", pos))")
+                                }
+                                if let year = book.publicationYear {
+                                    if book.position != nil { Text("·") }
+                                    Text(String(year))
+                                }
+                            }
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.muted)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    AuthorLinks(authors: book.authors)
+                }
+                Spacer(minLength: 0)
             }
+            .padding(14)
 
             HStack(spacing: 10) {
                 CompactStatePill(bookId: book.id, state: book.currentState,

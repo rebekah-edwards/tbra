@@ -91,6 +91,8 @@ struct ShelfIconCircle: View {
 }
 
 struct ShelfDetailView: View {
+    @Environment(\.shellWide) private var wide
+    @Environment(\.shellRailWidth) private var rail
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthStore.self) private var auth
     let route: ShelfRoute
@@ -144,7 +146,6 @@ struct ShelfDetailView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
-            .duoReadable()
         }
         .background(AmbientBackground())
         .tracksScrollAtTop()
@@ -204,8 +205,9 @@ struct ShelfDetailView: View {
 
     private var header: some View {
         HStack(alignment: .top, spacing: 12) {
-            // Placeholder — real back button is the .floatingBack overlay.
-            Color.clear.frame(width: 40, height: 40)
+            // Placeholder — real back button is the .floatingBack overlay
+            // (on the Duo it lives in the side column: no gutter).
+            if rail == 0 { Color.clear.frame(width: 40, height: 40) }
             VStack(alignment: .leading, spacing: 2) {
                 Text(model.shelf?.name ?? " ")
                     .font(Theme.heading(26, .bold))
@@ -471,8 +473,12 @@ struct ShelfDetailView: View {
                         .strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 1, dash: [5]))
                 )
         } else {
-            let rows: [[ShelfBook]] = stride(from: 0, to: books.count, by: 3).map {
-                Array(books[$0..<min($0 + 3, books.count)])
+            // 5 across on the Duo's open screen — 3 made each book huge
+            // there (Rebekah, 2026-11-25). Reorder follows cell frames, so
+            // the column count is free to change.
+            let perRow = wide ? 5 : 3
+            let rows: [[ShelfBook]] = stride(from: 0, to: books.count, by: perRow).map {
+                Array(books[$0..<min($0 + perRow, books.count)])
             }
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
@@ -480,8 +486,8 @@ struct ShelfDetailView: View {
                         ForEach(row) { book in
                             bookCell(book)
                         }
-                        // Keep 3-column widths on partial rows.
-                        ForEach(0..<(3 - row.count), id: \.self) { _ in
+                        // Keep full-row column widths on partial rows.
+                        ForEach(0..<(perRow - row.count), id: \.self) { _ in
                             Color.clear.frame(maxWidth: .infinity)
                         }
                     }

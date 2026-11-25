@@ -432,9 +432,9 @@ struct BookDetailView: View {
                     friendsPiece(data)
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
-                // Starts level with the logo (the page's 14pt top air
-                // included) — nothing sits in the top-right strip now.
-                .padding(.top, -(duoRightColumnLift(barTop: bars.top, rail: railWidth) + 14))
+                // Not quite level with the logo: just under the clock row
+                // (Rebekah, 2026-11-25) — ~40pt lower than the full lift.
+                .padding(.top, -max(0, duoRightColumnLift(barTop: bars.top, rail: railWidth) + 14 - 40))
             }
             // Narrower: inset from both edges so it spans the two pages
             // without running edge to edge. Covers stay full size
