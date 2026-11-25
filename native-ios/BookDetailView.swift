@@ -120,12 +120,17 @@ struct BookDetailView: View {
     /// review — re-reads and already-reviewed books just get the suggestions.
     private func runCompletionFlow() {
         guard let data = model.data else { return }
+        // A DNF gets the review wizard (to say why) but never "read next"
+        // suggestions — recommending the sequel or look-alikes of a book the
+        // reader just abandoned is the wrong nudge (Rebekah, 2026-11-25). The
+        // web already showed them for Finished only.
+        let didNotFinish = data.userState?.state == "dnf"
         if data.userRating == nil && data.hasReview != true {
             autoOpenReview = true
-            suggestionsPending = true      // raised when the wizard closes
+            suggestionsPending = !didNotFinish   // raised when the wizard closes
             return
         }
-        showSuggestionsSoon(data.book.id)
+        if !didNotFinish { showSuggestionsSoon(data.book.id) }
     }
 
     /// The review wizard closed (saved or cancelled) — now the sheet can show.

@@ -295,6 +295,8 @@ struct ReviewWizardView: View {
     @State private var model: ReviewWizardModel
     @State private var showDeleteConfirm = false
     @State private var showImport = false
+    /// After a save: the shareable review card (web review-share-sheet.tsx).
+    @State private var showShare = false
     /// Live handle on the review text view, published by the editor so the
     /// toolbar can drive formatting commands.
     @State private var editorCommands: RichTextCommands?
@@ -317,6 +319,15 @@ struct ReviewWizardView: View {
     private let stepTitles = ["Overall", "Mood", "Details", "Review", "Content"]
 
     var body: some View {
+        wizardBody
+            .sheet(isPresented: $showShare, onDismiss: { onSaved(); dismiss() }) {
+                ReviewShareSheet(bookId: model.bookId)
+                    .presentationDetents([.large])
+                    .presentationBackground(Theme.bg)
+            }
+    }
+
+    private var wizardBody: some View {
         VStack(spacing: 0) {
             header
             progressDots
@@ -414,7 +425,19 @@ struct ReviewWizardView: View {
                 if model.step < 4 {
                     withAnimation { model.step += 1 }
                 } else {
-                    Task { if await model.save() { onSaved(); dismiss() } }
+                    Task {
+                        if await model.save() {
+                            // Offer the share card unless the review is
+                            // anonymous or has nothing to show.
+                            let text = model.reviewText.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+                                .trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !model.isAnonymous && ((model.overallRating ?? 0) > 0 || !text.isEmpty) {
+                                showShare = true
+                            } else {
+                                onSaved(); dismiss()
+                            }
+                        }
+                    }
                 }
             } label: {
                 HStack {
@@ -871,6 +894,75 @@ struct ReviewWizardView: View {
         case 3: return .orange
         case 4: return Theme.destructive
         default: return Theme.muted
+        }
+    }
+}
+
+
+// ── Share your review (web components/review/review-share-sheet.tsx) ──
+// The reader's own review as a 1080×1920 story card (/api/share/review),
+// offered right after they post it — share to stories, messages, or save.
+struct ReviewShareSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let bookId: String
+    @State private var image: UIImage?
+    @State private var failed = false
+
+    var body: some View {
+        VStack(spacing: 16) {
+            VStack(spacing: 4) {
+                Text("REVIEW POSTED")
+                    .font(Theme.body(11, .semibold)).tracking(1.1)
+                    .foregroundStyle(Theme.muted)
+                Text("Share your review")
+                    .font(Theme.heading(20, .bold))
+                    .foregroundStyle(Theme.foreground)
+            }
+            .padding(.top, 22)
+
+            Group {
+                if let image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(9 / 16, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                        .shadow(color: .black.opacity(0.35), radius: 16, y: 8)
+                } else if failed {
+                    Text("Couldn't make the image right now.")
+                        .font(Theme.body(14))
+                        .foregroundStyle(Theme.muted)
+                        .frame(maxHeight: .infinity)
+                } else {
+                    ProgressView().tint(Theme.accent).frame(maxHeight: .infinity)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.horizontal, 36)
+
+            HStack(spacing: 10) {
+                if let image {
+                    ShareLink(item: Image(uiImage: image), preview: SharePreview("My tbr*a review", image: Image(uiImage: image))) {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                    }
+                    .buttonStyle(AccentButtonStyle())
+                }
+                Button("Done") { dismiss() }
+                    .font(Theme.body(15, .semibold))
+                    .foregroundStyle(Theme.foreground)
+                    .padding(.horizontal, 22).padding(.vertical, 12)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.foreground.opacity(0.14), lineWidth: 1))
+            }
+            .padding(.bottom, 20)
+            .padding(.horizontal, 20)
+        }
+        .task {
+            do {
+                let data = try await APIClient.shared.rawGet("/api/share/review", query: [URLQueryItem(name: "book", value: bookId)])
+                if let ui = UIImage(data: data) { image = ui } else { failed = true }
+            } catch {
+                failed = true
+            }
         }
     }
 }

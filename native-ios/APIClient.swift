@@ -519,6 +519,28 @@ actor APIClient {
         _ = try await send("/api/v1/reading-state", method: "POST", body: body) as OkResponse
     }
 
+    /// Authenticated GET that returns raw bytes (images such as the review
+    /// share card). Same bearer + one refresh-and-retry as JSON requests.
+    func rawGet(_ path: String, query: [URLQueryItem] = [], isRetry: Bool = false) async throws -> Data {
+        var url = Self.baseURL.appending(path: path)
+        if !query.isEmpty { url.append(queryItems: query) }
+        var req = URLRequest(url: url)
+        if let token = Keychain.accessToken {
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let (data, response): (Data, URLResponse)
+        do { (data, response) = try await session.data(for: req) } catch { throw APIError.transport(error) }
+        guard let http = response as? HTTPURLResponse else { throw APIError.decoding }
+        if http.statusCode == 401 && !isRetry {
+            try await refreshAccessToken()
+            return try await rawGet(path, query: query, isRetry: true)
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            throw APIError.server(status: http.statusCode, message: "Request failed.")
+        }
+        return data
+    }
+
     // MARK: Core request + refresh
 
     private func send<T: Decodable>(
