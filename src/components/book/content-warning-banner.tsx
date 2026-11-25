@@ -77,29 +77,48 @@ export function ContentWarningBanner({
   const totalFlags = conflicts.length + customWarningMatches.length + uniqueNoteMatches.length;
   if (totalFlags === 0) return null;
 
+  // Design refresh (2026-11-25): neutral glass card with the amber hue
+  // carried by the icon, a thin amber ring and a dot on each row — the old
+  // yellow-tinted box and tinted rows were the pre-refresh look.
+  const rowClass =
+    "flex items-start gap-2.5 rounded-2xl border border-foreground/10 bg-surface/60 px-3 py-2.5 backdrop-blur-md";
+  const dot = <span className="mt-[5px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#f59e0b]" aria-hidden="true" />;
+
   return (
-    <div className="mt-4 rounded-xl border border-yellow-500/30 bg-yellow-500/5 overflow-hidden">
+    <div
+      className="mt-4 overflow-hidden rounded-[22px] border bg-surface/70 backdrop-blur-md"
+      style={{ borderColor: "color-mix(in srgb, #f59e0b 40%, transparent)" }}
+    >
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2.5 px-4 py-3 text-left"
+        aria-expanded={expanded}
+        className="flex w-full items-center gap-3 px-3.5 py-3 text-left"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="text-yellow-500 flex-shrink-0"
+        <span
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border bg-surface/70"
+          style={{ borderColor: "color-mix(in srgb, #f59e0b 35%, transparent)" }}
         >
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-          <line x1="12" x2="12" y1="9" y2="13" />
-          <line x1="12" x2="12.01" y1="17" y2="17" />
-        </svg>
-        <span className="text-sm font-medium content-flag-text">
-          {totalFlags} content {totalFlags === 1 ? "flag" : "flags"} for your settings
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#f59e0b"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <line x1="12" x2="12" y1="9" y2="13" />
+            <line x1="12" x2="12.01" y1="17" y2="17" />
+          </svg>
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-foreground">
+            {totalFlags} content {totalFlags === 1 ? "flag" : "flags"} for your settings
+          </span>
+          <span className="block text-xs text-muted">Outside your comfort zone</span>
         </span>
         <svg
           width="14"
@@ -108,50 +127,47 @@ export function ContentWarningBanner({
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
-          className={`ml-auto text-yellow-500/60 transition-transform ${expanded ? "rotate-180" : ""}`}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`flex-shrink-0 text-muted transition-transform ${expanded ? "rotate-180" : ""}`}
+          aria-hidden="true"
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
 
       {expanded && (
-        <div className="px-4 pb-3 space-y-1.5">
+        <div className="space-y-1.5 px-3.5 pb-3.5">
           {conflicts.map((c) => (
-            <div
-              key={c.categoryName}
-              className="flex flex-col gap-0.5 text-xs rounded-lg bg-yellow-500/5 px-3 py-2"
-            >
-              <span className="font-medium text-foreground leading-snug break-words">
-                {c.categoryName}
-              </span>
-              <span className="content-flag-text text-[11px] leading-snug break-words">
-                {INTENSITY_LABELS[c.bookIntensity] ?? "present"} · max {TOLERANCE_LABELS[c.userMax] ?? "limited"}
+            <div key={c.categoryName} className={rowClass}>
+              {dot}
+              <span className="min-w-0 text-xs">
+                <span className="block font-semibold leading-snug text-foreground break-words">{c.categoryName}</span>
+                <span className="block text-[11px] leading-snug text-muted break-words">
+                  {INTENSITY_LABELS[c.bookIntensity] ?? "Present"} · your max is {TOLERANCE_LABELS[c.userMax] ?? "limited"}
+                </span>
               </span>
             </div>
           ))}
           {customWarningMatches.map((m) => (
-            <div
-              key={m.canonicalId}
-              className="flex flex-col gap-0.5 text-xs rounded-lg bg-yellow-500/5 px-3 py-2"
-            >
-              <span className="font-medium text-foreground leading-snug break-words">
-                {getWarningLabel(m.canonicalId)}
-              </span>
-              <span className="content-flag-text text-[11px] leading-snug break-words">
-                {m.count} {m.count === 1 ? "reviewer" : "reviewers"} flagged &middot; you asked to avoid
+            <div key={m.canonicalId} className={rowClass}>
+              {dot}
+              <span className="min-w-0 text-xs">
+                <span className="block font-semibold leading-snug text-foreground break-words">{getWarningLabel(m.canonicalId)}</span>
+                <span className="block text-[11px] leading-snug text-muted break-words">
+                  {m.count} {m.count === 1 ? "reviewer" : "reviewers"} flagged &middot; you asked to avoid
+                </span>
               </span>
             </div>
           ))}
           {uniqueNoteMatches.map((m) => (
-            <div
-              key={m.canonicalId}
-              className="flex flex-col gap-0.5 text-xs rounded-lg bg-yellow-500/5 px-3 py-2"
-            >
-              <span className="font-medium text-foreground leading-snug break-words">
-                {getWarningLabel(m.canonicalId)}
-              </span>
-              <span className="content-flag-text text-[11px] leading-snug break-words">
-                noted in {m.categoryNames.join(", ")} &middot; you asked to avoid
+            <div key={m.canonicalId} className={rowClass}>
+              {dot}
+              <span className="min-w-0 text-xs">
+                <span className="block font-semibold leading-snug text-foreground break-words">{getWarningLabel(m.canonicalId)}</span>
+                <span className="block text-[11px] leading-snug text-muted break-words">
+                  Noted in {m.categoryNames.join(", ")} &middot; you asked to avoid
+                </span>
               </span>
             </div>
           ))}
@@ -166,7 +182,7 @@ export function ContentWarningBanner({
                 }
               });
             }}
-            className="mt-2 text-xs text-neon-blue hover:text-neon-blue/80 transition-colors"
+            className="mt-1 px-1 text-xs font-semibold read-more-link"
           >
             See all content details &darr;
           </button>

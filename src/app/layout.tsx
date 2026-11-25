@@ -9,6 +9,7 @@ import { getCurrentUser, isAdmin, isSuperAdmin } from "@/lib/auth";
 import { TimezoneReporter } from "@/components/timezone-reporter";
 import { SearchBar } from "@/components/nav/search-bar";
 import { BottomTabs } from "@/components/nav/bottom-tabs";
+import { GetAppBanner } from "@/components/nav/get-app-banner";
 import { BackButton } from "@/components/nav/back-button";
 import { HamburgerMenu } from "@/components/nav/hamburger-menu";
 import { OnboardingGate } from "@/components/onboarding/welcome-carousel";
@@ -277,7 +278,9 @@ export default async function RootLayout({
                 breathing room. Was pb-24 previously which was too tight on
                 devices with the home bar; user reported content running up
                 against the nav on multiple pages. */}
-            <main className="relative z-0 mx-auto max-w-3xl lg:max-w-[1194px] px-6 pt-8 pb-32 lg:pb-8">{children}</main>
+            {/* Logged-out visitors have no tab bar (it only links to signed-in
+                pages); their bottom edge holds the slimmer Get-the-app banner. */}
+            <main className={`relative z-0 mx-auto max-w-3xl lg:max-w-[1194px] px-6 pt-8 ${session ? "pb-32" : "pb-28"} lg:pb-8`}>{children}</main>
           </PullToRefresh>
           {/* Desktop footer: the pages a visitor looks for at the bottom of a
               site. On phones these live in the menu, and the bottom tabs own
@@ -301,7 +304,10 @@ export default async function RootLayout({
               from the layout shell so it hydrates with the nav — page bodies
               stream/hydrate lazily and tours mounted there may never wake. */}
           {session && <CoachMarksTours />}
-          {isVerified && <BottomTabs isLoggedIn={!!session} avatarUrl={avatarUrl} />}
+          {/* The bottom tab bar is for signed-in readers only (her call,
+              2026-11-25); logged-out phone visitors get the app banner. */}
+          {session && isVerified && <BottomTabs isLoggedIn avatarUrl={avatarUrl} />}
+          {!session && <GetAppBanner />}
         </ThemeProvider>
       </body>
     </html>

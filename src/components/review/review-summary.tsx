@@ -72,8 +72,8 @@ export function ReviewSummary({
                   </div>
                 )}
               </div>
-              {/* Truncated plain text */}
-              <p className="text-xs text-foreground/70 leading-relaxed line-clamp-2">
+              {/* Plain text, clamped on screen but complete in the HTML */}
+              <p className="text-[13px] text-foreground/75 leading-relaxed line-clamp-6">
                 {review.reviewTextPlain}
               </p>
             </Link>

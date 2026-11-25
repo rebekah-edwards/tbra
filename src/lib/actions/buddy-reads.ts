@@ -5,6 +5,7 @@ import { buddyReads, buddyReadMembers, buddyReadMessages, userNotifications, use
 import { eq, and, sql } from "drizzle-orm";
 import { getCurrentUser, isPremium } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { setBuddyReadStatusFor } from "@/lib/mutations/buddy-reads";
 
 const INVITE_CODE_CHARSET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const INVITE_CODE_LENGTH = 8;
@@ -444,58 +445,33 @@ export async function leaveBuddyReadFor(
   return { success: true };
 }
 
-// ─── Complete buddy read (host only) ───
+// ─── Finish / cancel / reopen (host only) ───
 
+/** Web action: the host marks the buddy read finished. */
 export async function completeBuddyRead(
   buddyReadId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
+  return setBuddyReadStatusFor(user.userId, buddyReadId, "completed");
+}
 
-  // Verify host
-  const membership = await db
-    .select({ role: buddyReadMembers.role })
-    .from(buddyReadMembers)
-    .where(and(eq(buddyReadMembers.buddyReadId, buddyReadId), eq(buddyReadMembers.userId, user.userId)))
-    .get();
+/** Web action: the host cancels it (soft — status 'archived', hidden from every list). */
+export async function cancelBuddyRead(
+  buddyReadId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: "Not logged in" };
+  return setBuddyReadStatusFor(user.userId, buddyReadId, "archived");
+}
 
-  if (!membership || membership.role !== "host") {
-    return { success: false, error: "Only the host can complete a buddy read" };
-  }
-
-  await db.update(buddyReads)
-    .set({ status: "completed", updatedAt: new Date().toISOString() })
-    .where(eq(buddyReads.id, buddyReadId));
-
-  const buddyRead = await db
-    .select({ slug: buddyReads.slug, name: buddyReads.name })
-    .from(buddyReads)
-    .where(eq(buddyReads.id, buddyReadId))
-    .get();
-
-  // Notify all active members
-  try {
-    const activeMembers = await db.all(sql`
-      SELECT user_id FROM buddy_read_members
-      WHERE buddy_read_id = ${buddyReadId} AND status = 'active' AND user_id != ${user.userId}
-    `) as { user_id: string }[];
-
-    for (const member of activeMembers) {
-      await db.insert(userNotifications).values({
-        userId: member.user_id,
-        type: "buddy_read_completed",
-        title: "Buddy read completed",
-        message: `"${buddyRead?.name}" has been marked as completed`,
-        linkUrl: buddyRead?.slug ? `/buddy-reads/${buddyRead.slug}` : undefined,
-      });
-    }
-  } catch (err) {
-    console.error("[buddy-reads] Failed to create completion notifications:", err);
-  }
-
-  revalidatePath("/buddy-reads");
-  if (buddyRead) revalidatePath(`/buddy-reads/${buddyRead.slug}`);
-  return { success: true };
+/** Web action: the host reopens a finished buddy read. */
+export async function reopenBuddyRead(
+  buddyReadId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: "Not logged in" };
+  return setBuddyReadStatusFor(user.userId, buddyReadId, "active");
 }
 
 // ─── Post message ───
@@ -524,6 +500,10 @@ export async function postBuddyReadMessageFor(
 
   if (!membership || membership.status !== "active") {
     return { success: false, error: "Not an active member of this buddy read" };
+  }
+  const br = await db.select({ status: buddyReads.status }).from(buddyReads).where(eq(buddyReads.id, buddyReadId)).get();
+  if (br?.status !== "active") {
+    return { success: false, error: "This buddy read has ended" };
   }
 
   const trimmed = message.trim();

@@ -38,9 +38,12 @@ export function FranchiseSeriesGrid({
       <div className={`flex items-center justify-between ${embedded ? "mb-3" : "mb-6"}`}>
         <div>
           {embedded ? (
-            <h2 className="text-foreground text-base font-semibold">Series in this franchise</h2>
+            <p className="eyebrow">Series in this franchise</p>
           ) : (
-            <h1 className="neon-heading text-2xl font-bold">{franchiseName}</h1>
+            <>
+              <p className="eyebrow">Franchise</p>
+              <h1 className="mt-1 font-heading text-[24px] font-bold leading-tight tracking-tight text-foreground">{franchiseName}</h1>
+            </>
           )}
           <p className={`text-muted mt-1 ${embedded ? "text-xs" : "text-sm"}`}>
             {childSeries.length} series ·{" "}
@@ -60,7 +63,7 @@ export function FranchiseSeriesGrid({
           <Link
             key={child.id}
             href={`/series/${child.slug || child.id}`}
-            className="group rounded-xl border border-border bg-surface overflow-hidden hover:border-accent/40 transition-colors"
+            className="group overflow-hidden rounded-[18px] border border-foreground/10 bg-surface/80 backdrop-blur-md transition-colors hover:border-foreground/25"
           >
             {/* Cover */}
             <div className="aspect-[2/3] relative bg-surface-alt overflow-hidden">
@@ -79,7 +82,7 @@ export function FranchiseSeriesGrid({
 
             {/* Info */}
             <div className="p-3">
-              <h3 className="text-sm font-semibold leading-tight line-clamp-2 group-hover:text-accent transition-colors">
+              <h3 className="text-sm font-semibold leading-tight line-clamp-2 group-hover:text-neon-blue transition-colors">
                 {child.name}
               </h3>
               <p className="text-xs text-muted mt-1">

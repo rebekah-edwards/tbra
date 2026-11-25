@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { NoCover } from "@/components/no-cover";
 import { BackButton } from "@/components/ui/back-button";
 import { AuthorFollowButton } from "@/components/author/author-follow-button";
+import { CoverArtHero, HERO_BACK_BUTTON_CLASS } from "@/components/ui/cover-art-hero";
 import { isAuthorIndexable, NOINDEX_FOLLOW } from "@/lib/seo/indexability";
 
 export async function generateMetadata({
@@ -86,23 +87,41 @@ export default async function AuthorPage({
     }
   }
 
+  // Hero art: the author's books with real covers, most-read first is not
+  // known here, so take them in the page's order (series first, then
+  // standalones) and skip covers that are missing.
+  const heroCovers = [
+    ...[...seriesMap.values()].flatMap((s) => s.books),
+    ...standaloneBooks,
+  ]
+    .map((b) => b.coverImageUrl)
+    .filter((u): u is string => !!u)
+    .slice(0, 3);
+
   return (
     <div>
-      <div className="flex items-center gap-3 mb-2">
-        <BackButton />
-        <h1 className="text-foreground text-2xl font-bold tracking-tight">{author.name}</h1>
-        {session && (
-          <AuthorFollowButton authorId={author.id} initialIsFollowing={following} />
+      <CoverArtHero
+        leading={<BackButton className={HERO_BACK_BUTTON_CLASS} />}
+        eyebrow="Author"
+        title={author.name}
+        covers={heroCovers}
+        stats={[
+          { label: authorBooksList.length === 1 ? "book" : "books", value: authorBooksList.length, hue: "lime" },
+          ...(seriesMap.size > 0
+            ? [{ label: seriesMap.size === 1 ? "series" : "series", value: seriesMap.size, hue: "blue" as const }]
+            : []),
+          ...(followerCount > 0
+            ? [{ label: followerCount === 1 ? "follower" : "followers", value: followerCount, hue: "purple" as const }]
+            : []),
+        ]}
+        actions={
+          session ? <AuthorFollowButton authorId={author.id} initialIsFollowing={following} /> : undefined
+        }
+      >
+        {author.bio && (
+          <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/85">{author.bio}</p>
         )}
-      </div>
-      {followerCount > 0 && (
-        <p className="text-xs text-muted mt-1 ml-10">
-          {followerCount} {followerCount === 1 ? "follower" : "followers"}
-        </p>
-      )}
-      {author.bio && (
-        <p className="mt-2 text-sm leading-relaxed text-muted">{author.bio}</p>
-      )}
+      </CoverArtHero>
 
       {/* Series sections */}
       {[...seriesMap.entries()].map(([seriesId, { name, slug, books: seriesBooks }]) => (
@@ -207,7 +226,7 @@ export default async function AuthorPage({
       )}
 
       {authorBooksList.length === 0 && (
-        <div className="mt-8 rounded-lg border border-border bg-surface p-6 text-center">
+        <div className="mt-8 rounded-[22px] border border-foreground/10 bg-surface/70 p-6 text-center backdrop-blur-md">
           <p className="text-sm text-muted">No books in library yet.</p>
         </div>
       )}

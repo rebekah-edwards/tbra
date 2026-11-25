@@ -372,6 +372,8 @@ export async function deleteReviewFor(userId: string, bookId: string) {
   revalidatePath(`/book/${bookId}`);
 }
 
+const VERIFIED_EVIDENCE = new Set(["human_verified", "admin_verified", "author_verified"]);
+
 async function aggregateContentWarnings(bookId: string, _cwTags: string[]) {
   // Count how many reviewers have flagged each CW tag for this book
   const allReviewsForBook = await db
@@ -416,9 +418,19 @@ async function aggregateContentWarnings(bookId: string, _cwTags: string[]) {
     // Derive intensity: 2 flags = 1, 4+ = 2, 8+ = 3, 15+ = 4
     const intensity = flagCount >= 15 ? 4 : flagCount >= 8 ? 3 : flagCount >= 4 ? 2 : 1;
 
-    // Only update if not already human_verified by an admin
+    // Reviewer flags may RAISE a category's strength, never rewrite it. They
+    // used to replace the rating's note with "Flagged by N reviewers" and mark
+    // it human_verified — the book page then showed a bare count where the
+    // description had been, and labelled an unchecked guess "Verified". Now
+    // the existing note and evidence level are kept; a staff check
+    // (human_verified) is never touched at all.
     const existing = await db
-      .select({ id: bookCategoryRatings.id, evidenceLevel: bookCategoryRatings.evidenceLevel })
+      .select({
+        id: bookCategoryRatings.id,
+        evidenceLevel: bookCategoryRatings.evidenceLevel,
+        intensity: bookCategoryRatings.intensity,
+        notes: bookCategoryRatings.notes,
+      })
       .from(bookCategoryRatings)
       .where(
         and(
@@ -428,22 +440,30 @@ async function aggregateContentWarnings(bookId: string, _cwTags: string[]) {
       )
       .get();
 
-    if (existing && existing.evidenceLevel === "human_verified") continue;
-
-    const notes = `Flagged by ${flagCount} reviewer${flagCount === 1 ? "" : "s"}`;
+    if (existing && VERIFIED_EVIDENCE.has(existing.evidenceLevel)) continue;
 
     if (existing) {
+      if (intensity <= existing.intensity) continue;
       await db
         .update(bookCategoryRatings)
-        .set({ intensity, notes, evidenceLevel: "human_verified", updatedAt: new Date().toISOString() })
+        .set({
+          intensity,
+          // Only fill a missing note (or a "None found" placeholder that the
+          // raised strength now contradicts); a real description stays.
+          notes: existing.notes && existing.notes.trim() &&
+            !(existing.intensity === 0 && /^no\b/i.test(existing.notes.trim()))
+            ? existing.notes
+            : `Flagged by ${flagCount} reviewers`,
+          updatedAt: new Date().toISOString(),
+        })
         .where(eq(bookCategoryRatings.id, existing.id));
     } else {
       await db.insert(bookCategoryRatings).values({
         bookId,
         categoryId: category.id,
         intensity,
-        notes,
-        evidenceLevel: "human_verified",
+        notes: `Flagged by ${flagCount} reviewers`,
+        evidenceLevel: "ai_inferred",
       });
     }
   }

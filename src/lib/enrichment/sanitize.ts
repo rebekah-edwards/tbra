@@ -80,10 +80,62 @@ export function stripBlurbs(text: string): { stripped: string; removed: number }
 
   // Clean up: collapse runs of whitespace, strip orphan punctuation that
   // sometimes precedes a removed blurb (", —", "; —", etc.)
-  result = result.replace(/\s{2,}/g, " ").trim();
+  // Collapse runs of spaces only. This used to be /\s{2,}/ → " ", which also
+  // turned every paragraph break ("\n\n", "\r\n") into a space: from May
+  // 2026 on, no description that went through the sanitizer kept a single
+  // paragraph (fixed 2026-11-25).
+  result = result
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/ ?\n ?/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
   result = result.replace(/^[,;:.\s]+/, "").trim();
 
   return { stripped: result, removed };
+}
+
+// ── HTML → markdown-lite ──
+
+/**
+ * Turn a source's HTML description into the plain text + light markdown the
+ * book page renders (paragraphs as blank lines, <br> as a newline, bold as
+ * **x**, italics as *x*). Both description renderers (web book-about-details /
+ * book-description, iOS markdownLiteToHTML) understand exactly this.
+ *
+ * Before 2026-11-25 every cleaner simply deleted tags, so ISBNdb's
+ * "<p>…</p> <p>…</p>" and Google Books' "<br><br><b>…</b>" landed as one
+ * run-on paragraph: only ~10% of descriptions on prod had a single line break,
+ * and the ones that did came from OpenLibrary's plain-text field.
+ */
+export function htmlToMarkdownLite(input: string): string {
+  if (!/<[a-z!/][^>]*>/i.test(input)) return input;
+  let t = input.replace(/\r\n?/g, "\n");
+  // Whitespace between tags carries no meaning in HTML.
+  t = t.replace(/>\s+</g, "><");
+  t = t
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|blockquote|ul|ol)>/gi, "\n\n")
+    .replace(/<(p|div|h[1-6]|blockquote|ul|ol)(\s[^>]*)?>/gi, "\n\n")
+    .replace(/<li(\s[^>]*)?>/gi, "\n• ")
+    .replace(/<\/li>/gi, "");
+  // Bold / italics, with the spaces moved outside the markers so "<b> x </b>"
+  // doesn't become "** x **" (which no markdown renderer treats as bold).
+  const wrap = (marker: string) => (_m: string, _tag: string, inner: string) => {
+    const lead = inner.match(/^\s*/)![0];
+    const trail = inner.match(/\s*$/)![0];
+    const core = inner.trim();
+    return core ? `${lead}${marker}${core}${marker}${trail}` : inner;
+  };
+  t = t.replace(/<(b|strong)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi, wrap("**"));
+  t = t.replace(/<(i|em|cite)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi, wrap("*"));
+  // Anything else (spans, anchors, fonts…) keeps its text only.
+  t = t.replace(/<[^>]+>/g, "");
+  // Numeric entities (&#8217; &#x2019;) — the named ones are decoded by callers.
+  t = t.replace(/&#(\d+);/g, (_m, d: string) => String.fromCodePoint(Number(d)));
+  t = t.replace(/&#x([0-9a-f]+);/gi, (_m, h: string) => String.fromCodePoint(parseInt(h, 16)));
+  // Empty markers left by "<b></b>" and stray spacing around line breaks.
+  t = t.replace(/\*\*\s*\*\*/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n[ \t]+/g, "\n");
+  return t.replace(/\n{3,}/g, "\n\n").trim();
 }
 
 // ── Description Sanitization ──
@@ -96,8 +148,9 @@ export function stripBlurbs(text: string): { stripped: string; removed: number }
 export function sanitizeDescription(raw: string): string | null {
   let text = raw;
 
-  // Strip HTML tags (e.g., <b>bold</b> → bold, <a href="...">link</a> → link)
-  text = text.replace(/<[^>]+>/g, "");
+  // HTML → paragraphs/line breaks/bold/italics as markdown-lite; every other
+  // tag is dropped (<a href="...">link</a> → link).
+  text = htmlToMarkdownLite(text);
 
   // Strip markdown links: [text](url) → text
   text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
@@ -119,10 +172,13 @@ export function sanitizeDescription(raw: string): string | null {
   text = text.replace(/^Product Description\s*[:.]?\s*/i, "");
 
   // Strip leading wiki nav: "Preceded by X", "BOOK TWO of Y"
-  const lines = text.split(/\n+/);
+  // Split on single newlines so the join below keeps paragraph breaks (it
+  // used to split on /\n+/, which turned every "\n\n" into "\n").
+  const lines = text.split("\n");
   while (lines.length > 0) {
     const line = lines[0].trim();
     if (
+      line === "" ||
       /^(?:Preceeded|Preceded) by\s/i.test(line) ||
       /^Sequel to\s/i.test(line) ||
       /^Prequel to\s/i.test(line) ||
@@ -155,7 +211,12 @@ export function sanitizeDescription(raw: string): string | null {
   }
 
   // Collapse whitespace
-  text = text.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+  text = text
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/ ?\n ?/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 
   // ── Strip blurb-attribution patterns ("quote"—Source) ──
   // Removes review-quote walls while keeping any surrounding prose. If a

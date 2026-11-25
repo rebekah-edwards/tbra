@@ -8,7 +8,7 @@ import { NoCover } from "@/components/no-cover";
 import { BuddyReadProgressTracker } from "@/components/buddy-reads/buddy-read-progress-tracker";
 import { BuddyReadDiscussion } from "@/components/buddy-reads/buddy-read-discussion";
 import { BuddyReadInvite } from "@/components/buddy-reads/buddy-read-invite";
-import { completeBuddyRead } from "@/lib/actions/buddy-reads";
+import { completeBuddyRead, cancelBuddyRead, reopenBuddyRead, leaveBuddyRead } from "@/lib/actions/buddy-reads";
 import type { BuddyReadDetail, BuddyReadMembership } from "@/lib/queries/buddy-reads";
 
 interface Message {
@@ -18,6 +18,7 @@ interface Message {
   username: string;
   avatarUrl: string | null;
   message: string;
+  kind?: string;
   createdAt: string;
 }
 
@@ -45,12 +46,38 @@ export function BuddyReadDetailClient({
       ? `${window.location.origin}/buddy-reads/join/${detail.inviteCode}`
       : "";
 
-  function handleComplete() {
-    if (!window.confirm("This will end the buddy read for all members. It does not change anyone's personal reading progress. Continue?")) return;
+  const [error, setError] = useState<string | null>(null);
+
+  function runLifecycle(action: (id: string) => Promise<{ success: boolean; error?: string }>, after?: () => void) {
+    setError(null);
     startTransition(async () => {
-      await completeBuddyRead(detail.id);
-      router.refresh();
+      const res = await action(detail.id);
+      if (!res.success) {
+        setError(res.error ?? "Something went wrong");
+        return;
+      }
+      if (after) after();
+      else router.refresh();
     });
+  }
+
+  function handleComplete() {
+    if (!window.confirm("Mark this buddy read as finished for everyone? The discussion stays readable. It doesn't change anyone's own reading progress.")) return;
+    runLifecycle(completeBuddyRead);
+  }
+
+  function handleLeave() {
+    if (!window.confirm("Leave this buddy read? You can rejoin later with the invite link.")) return;
+    runLifecycle(leaveBuddyRead, () => router.push("/buddy-reads"));
+  }
+
+  function handleReopen() {
+    runLifecycle(reopenBuddyRead);
+  }
+
+  function handleCancel() {
+    if (!window.confirm("Cancel this buddy read? It disappears from everyone's buddy reads. This can't be undone.")) return;
+    runLifecycle(cancelBuddyRead, () => router.push("/buddy-reads"));
   }
 
   async function handleShare() {
@@ -141,10 +168,16 @@ export function BuddyReadDetailClient({
             <div className="min-w-0">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-surface/80 px-2.5 py-1 text-[11px] font-semibold text-foreground backdrop-blur-md">
                 <span
-                  className={`h-[7px] w-[7px] rounded-full ${detail.status === "completed" ? "bg-neon-blue" : "bg-accent"}`}
+                  className={`h-[7px] w-[7px] rounded-full ${
+                    detail.status === "completed" ? "bg-neon-blue" : detail.status === "archived" ? "bg-muted" : "bg-accent"
+                  }`}
                   aria-hidden="true"
                 />
-                {detail.status === "completed" ? "Completed buddy read" : "Active buddy read"}
+                {detail.status === "completed"
+                  ? "Finished buddy read"
+                  : detail.status === "archived"
+                    ? "Cancelled buddy read"
+                    : "Active buddy read"}
               </span>
               <Link href={bookHref} className="block">
                 <h1 className="mt-2 font-heading text-[21px] font-bold leading-tight book-header-text line-clamp-3">
@@ -163,6 +196,7 @@ export function BuddyReadDetailClient({
 
               {(membership || isHost) && (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {detail.status === "active" && (
                   <button
                     onClick={handleShare}
                     className="btn-glass cursor-pointer px-3.5 py-1.5 text-xs"
@@ -170,17 +204,58 @@ export function BuddyReadDetailClient({
                     {shareIcon}
                     {showShare ? "Link copied" : "Share invite"}
                   </button>
+                  )}
                   {isHost && detail.status === "active" && (
                     <button
                       onClick={handleComplete}
                       disabled={isPending}
                       className="btn-glass cursor-pointer px-3.5 py-1.5 text-xs disabled:opacity-50"
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-purple" aria-hidden="true">
-                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                        <line x1="4" y1="22" x2="4" y2="15" />
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden="true">
+                        <path d="M5 12.5l4.5 4.5L19 7.5" />
                       </svg>
-                      {isPending ? "Ending…" : "End buddy read"}
+                      {isPending ? "Saving…" : "Mark as finished"}
+                    </button>
+                  )}
+                  {isHost && detail.status === "completed" && (
+                    <button
+                      onClick={handleReopen}
+                      disabled={isPending}
+                      className="btn-glass cursor-pointer px-3.5 py-1.5 text-xs disabled:opacity-50"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue" aria-hidden="true">
+                        <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                        <path d="M3 3v5h5" />
+                      </svg>
+                      Reopen
+                    </button>
+                  )}
+                  {!isHost && membership?.status === "active" && (
+                    <button
+                      onClick={handleLeave}
+                      disabled={isPending}
+                      className="btn-glass cursor-pointer px-3.5 py-1.5 text-xs disabled:opacity-50"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted" aria-hidden="true">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                      </svg>
+                      Leave
+                    </button>
+                  )}
+                  {isHost && detail.status !== "archived" && (
+                    <button
+                      onClick={handleCancel}
+                      disabled={isPending}
+                      style={{ ["--ring" as string]: "#f87171" }}
+                      className="btn-glass cursor-pointer px-3.5 py-1.5 text-xs disabled:opacity-50"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M15 9l-6 6M9 9l6 6" />
+                      </svg>
+                      Cancel buddy read
                     </button>
                   )}
                 </div>
@@ -189,6 +264,10 @@ export function BuddyReadDetailClient({
           </div>
         </div>
       </div>
+
+      {error && (
+        <p className="mb-4 rounded-2xl border border-red-400/30 bg-surface/70 px-4 py-2.5 text-sm text-foreground">{error}</p>
+      )}
 
       {detail.description && (
         <div className="mb-7 rounded-[18px] border border-foreground/10 bg-surface/60 p-4 backdrop-blur-md">
@@ -238,12 +317,13 @@ export function BuddyReadDetailClient({
             buddyReadId={detail.id}
             messages={messages}
             currentUserId={currentUserId}
+            readOnly={detail.status !== "active"}
           />
         </section>
       )}
 
       {/* Host invite controls */}
-      {isHost && (
+      {isHost && detail.status === "active" && (
         <section className="mb-7">
           <h2 className="section-heading text-sm mb-3">
             Invite Members

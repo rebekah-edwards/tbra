@@ -86,6 +86,8 @@ export interface BuddyReadDetail {
 export interface BuddyReadMessage {
   id: string;
   message: string;
+  /** 'message' | 'progress' | 'status' (see schema). */
+  kind: string;
   createdAt: string;
   user: {
     id: string;
@@ -144,6 +146,7 @@ export async function getUserBuddyReads(userId: string): Promise<BuddyReadSummar
     JOIN books b ON br.book_id = b.id
     LEFT JOIN users hu ON hu.id = br.created_by
     WHERE brm.user_id = ${userId} AND brm.status IN ('active', 'invited')
+      AND br.status != 'archived'
     ORDER BY
       CASE WHEN br.status = 'active' THEN 0 ELSE 1 END ASC,
       br.created_at DESC
@@ -357,6 +360,7 @@ export async function getBuddyReadMessages(
     SELECT
       brm.id,
       brm.message,
+      COALESCE(brm.kind, 'message') AS kind,
       brm.created_at,
       brm.user_id,
       u.display_name,
@@ -365,16 +369,20 @@ export async function getBuddyReadMessages(
     FROM buddy_read_messages brm
     JOIN users u ON brm.user_id = u.id
     WHERE brm.buddy_read_id = ${buddyReadId}
-    ORDER BY brm.created_at ASC
+    -- Newest N (then flipped to chronological below). This was ASC + LIMIT,
+    -- i.e. the OLDEST 50: once a discussion passed 50 entries, new messages
+    -- and events never appeared.
+    ORDER BY brm.created_at DESC, brm.rowid DESC
     LIMIT ${limit} OFFSET ${offset}
   `) as {
-    id: string; message: string; created_at: string; user_id: string;
+    id: string; message: string; kind: string; created_at: string; user_id: string;
     display_name: string | null; username: string | null; avatar_url: string | null;
-  }[]).filter((row) => !hidden.has(row.user_id));
+  }[]).filter((row) => !hidden.has(row.user_id)).reverse();
 
   return rows.map((row) => ({
     id: row.id,
     message: row.message,
+    kind: row.kind,
     createdAt: row.created_at,
     user: {
       id: row.user_id,

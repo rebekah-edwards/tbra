@@ -1,3 +1,4 @@
+import { htmlToMarkdownLite } from "./sanitize";
 /**
  * ISBNdb API integration — Premium plan (15K calls/day, 3/sec)
  * Primary metadata source after OpenLibrary.
@@ -203,9 +204,10 @@ export function getISBNdbCoverUrl(book: ISBNdbBook): string | null {
 export function getISBNdbDescription(book: ISBNdbBook): string | null {
   if (!book.synopsis) return null;
 
-  let clean = book.synopsis
-    // Strip HTML tags
-    .replace(/<[^>]+>/g, " ")
+  // Keep the synopsis' paragraphs and bold/italics (htmlToMarkdownLite);
+  // this used to replace every tag with a space and then collapse all
+  // whitespace, which flattened every ISBNdb description into one paragraph.
+  let clean = htmlToMarkdownLite(book.synopsis)
     // Decode HTML entities
     .replace(/&#x27;/g, "'")
     .replace(/&#39;/g, "'")
@@ -228,8 +230,10 @@ export function getISBNdbDescription(book: ISBNdbBook): string | null {
     // Remove "Learn more" / "Read more" links
     .replace(/\|\s*Learn more/gi, "")
     .replace(/Read more\s*$/gi, "")
-    // Collapse whitespace
-    .replace(/\s+/g, " ")
+    // Collapse spaces, keep paragraph breaks
+    .replace(/[ \t]+/g, " ")
+    .replace(/ ?\n ?/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 
   // Strip "Product Description " prefix if present

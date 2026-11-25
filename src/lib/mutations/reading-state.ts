@@ -17,6 +17,7 @@ import {
 } from "@/lib/mutations/reading-session";
 import { getActiveSession, getNextReadNumber } from "@/lib/queries/reading-session";
 import { removeFromUpNextFor } from "@/lib/mutations/up-next";
+import { postReadingStateToBuddyReads } from "@/lib/mutations/buddy-reads";
 
 /**
  * User-scoped reading-state mutations, extracted VERBATIM from the cookie-authed
@@ -95,6 +96,9 @@ export async function setBookStateFor(userId: string, bookId: string, state: str
   }
   // Note: "completed" and "dnf" are handled by setBookStateWithCompletionFor
   // (called with date info). "tbr" doesn't need a session.
+
+  // Buddy-read discussion event ("Rebekah started reading").
+  await postReadingStateToBuddyReads(userId, bookId, state, existing?.state ?? null);
 }
 
 /** Clear the reading state (keeps the row if owned formats exist). */
@@ -308,6 +312,9 @@ export async function setBookStateWithCompletionFor(
       state,
     });
   }
+
+  // Buddy-read discussion event ("Rebekah finished the book").
+  await postReadingStateToBuddyReads(userId, bookId, state, existing?.state ?? null);
 
   // 2. Update or create the reading session
   const activeSession = await getActiveSession(userId, bookId);

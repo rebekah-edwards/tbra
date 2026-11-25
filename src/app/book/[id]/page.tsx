@@ -114,8 +114,7 @@ export async function generateMetadata({
     ? `https://thebasedreader.app/book/${slug}`
     : `https://thebasedreader.app/book/${resolved.book.id}`;
 
-  // Build author string for description (NOT used in title — per SEO plan, title is
-  // "What's Inside {book} | tbr*a" regardless of author count)
+  // Author string for the description and title.
   const authorNames = book.authors.filter(a => a.role === "author").map(a => a.name);
   let authorStr = "";
   if (authorNames.length === 1) {
@@ -126,7 +125,13 @@ export async function generateMetadata({
     authorStr = ` by ${authorNames[0]} et al.`;
   }
 
-  const titleStr = `What's Inside ${book.title} | tbr*a`;
+  // Title template (changed 2026-11-25, Rebekah's call after the indexing
+  // audit): "What's Inside {book}" matched nothing anyone searches. Readers
+  // search "{book} content warnings" / "{book} by {author}", so the title says
+  // that. The brand suffix rides along only when it still fits Google's ~60
+  // characters, so the words that match a search are never the ones cut.
+  const titleBase = `${book.title}${authorNames[0] ? ` by ${authorNames[0]}` : ""}: Content Warnings & Reviews`;
+  const titleStr = titleBase.length + " | tbr*a".length <= 60 ? `${titleBase} | tbr*a` : titleBase;
   const descriptionRaw = book.summary || book.description || "";
   const description = descriptionRaw
     ? descriptionRaw.slice(0, 155).replace(/\s+\S*$/, "…")

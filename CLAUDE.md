@@ -41,7 +41,7 @@ npm run deploy:code   # Deploy code only
 - Fonts: Plus Jakarta Sans (body), Outfit (headings), Space Grotesk (logo only) via CSS vars `font-body`, `font-heading`, `font-logo` (next/font in layout.tsx; h1/h2/h3 get the heading font automatically via globals.css)
 - Pill/badge styles: translucent backgrounds, never solid fills
 - `.env.local` must be loaded explicitly for standalone scripts (outside Next.js)
-- **SEO book page title must always be `What's Inside {book} | tbr*a`** — do not change the format. This is the documented SEO plan.
+- **SEO book page title is `{Title} by {Author}: Content Warnings & Reviews | tbr*a`** (changed 2026-11-25 at Rebekah's request; the old `What's Inside {book}` matched no real search). The ` | tbr*a` suffix is dropped when the title would pass 60 characters. Lives in `generateMetadata` in `src/app/book/[id]/page.tsx`.
 - **Brand name inconsistency is intentional:** short UI pages (buddy reads, author, user profile, book) use `tbr*a`. Conversion/landing pages (library, stats, discover, methodology, auth) use `The Based Reader App` for Google discoverability. Do NOT unify without explicit instruction.
 
 ## Scheduled Tasks

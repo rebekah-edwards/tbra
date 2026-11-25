@@ -137,11 +137,14 @@ export async function getBookReviewSummaryData(
       avatarUrl: r.isAnonymous ? null : r.avatarUrl,
       isAnonymous: r.isAnonymous,
       overallRating: r.overallRating,
-      reviewTextPlain: truncate(stripHtml(r.reviewText!), 150),
+      // Long enough to be real, crawlable text on the book page (her ask,
+      // 2026-11-25: the most unique content on-page). The card clamps it
+      // visually; the words stay in the HTML.
+      reviewTextPlain: truncate(stripHtml(r.reviewText!), 700),
       helpfulCount: helpfulMap.get(r.id) ?? 0,
     }))
     .sort((a, b) => b.helpfulCount - a.helpfulCount)
-    .slice(0, 3);
+    .slice(0, 5);
 
   // 4. Build context-aware summary text
   const summaryText = buildSummaryText(tagsByDimension, allReviews);

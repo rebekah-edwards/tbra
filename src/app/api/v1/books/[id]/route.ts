@@ -14,6 +14,7 @@ import { getWarningLabel } from "@/lib/content-warnings/vocabulary";
 import { getUserShelves, getBookShelves } from "@/lib/queries/shelves";
 import { getTbrNote } from "@/lib/queries/tbr-notes";
 import { getUserReview } from "@/lib/queries/review";
+import { getBookReviewSummaryData } from "@/lib/queries/review-summary";
 import { getBookReadingNotes } from "@/lib/queries/reading-notes";
 import { getFollowedUsersWhoRead } from "@/lib/queries/follows";
 import { isBookHidden } from "@/lib/actions/hidden-books";
@@ -54,6 +55,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     friendsWhoRead,
     hidden,
     ownedEditions,
+    reviewSummary,
   ] = await Promise.all([
     getUserBookState(user.userId, bookId),
     getBookSessionData(user.userId, bookId),
@@ -70,6 +72,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     getFollowedUsersWhoRead(user.userId, bookId),
     isBookHidden(user.userId, bookId),
     getUserOwnedEditions(user.userId, bookId),
+    getBookReviewSummaryData(bookId, user.userId),
   ]);
   const warningMatches = await getBookContentWarningMatchesForUser(user.userId, bookId);
 
@@ -160,7 +163,14 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     upNextCount,
     isFavorited: isFavoritedResult !== null,
     aggregate, // { average, count } | null
-    userRating: userReview?.rating ?? null,
+    // Was `userReview?.rating`, a field UserReview never had — always null,
+    // so iOS showed "Rate & review" on books already reviewed and re-opened
+    // the wizard on every re-completion.
+    userRating: userReview?.overallRating ?? null,
+    hasReview: userReview !== null,
+    // Readers' reviews, shown on the iOS book page like the web's
+    // "What Readers Think" (top 5 by helpful votes, plain text).
+    reviewSummary,
     userShelves,
     bookShelfIds: bookShelfMemberships.map((s) => s.shelfId),
     tbrNote: tbrNote ?? null, // getTbrNote returns string | null directly

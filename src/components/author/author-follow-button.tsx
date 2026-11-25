@@ -23,17 +23,22 @@ export function AuthorFollowButton({ authorId, initialIsFollowing }: AuthorFollo
     });
   }
 
+  // Same control as the profile Follow button (design refresh): solid lime
+  // pill to follow, neutral glass with a lime check once following.
   return (
     <button
       type="button"
       onClick={handleClick}
       disabled={isPending}
-      className={`rounded-full px-5 py-1.5 text-[11px] font-semibold transition-all ${
-        optimisticFollowing
-          ? "border border-accent/60 bg-surface/60 text-foreground backdrop-blur-md"
-          : "bg-accent text-black font-bold hover:brightness-110"
-      } ${isPending ? "opacity-60" : ""}`}
+      data-active={optimisticFollowing ? "true" : undefined}
+      aria-pressed={optimisticFollowing}
+      className={`${optimisticFollowing ? "btn-glass" : "btn-lime"} gap-1.5 px-6 py-2 text-sm cursor-pointer ${isPending ? "opacity-60" : ""}`}
     >
+      {optimisticFollowing && (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden="true">
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      )}
       {optimisticFollowing ? "Following" : "Follow"}
     </button>
   );

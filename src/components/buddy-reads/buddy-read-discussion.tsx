@@ -12,6 +12,8 @@ interface Message {
   username: string;
   avatarUrl: string | null;
   message: string;
+  /** 'message' | 'progress' | 'status' */
+  kind?: string;
   createdAt: string;
 }
 
@@ -19,6 +21,21 @@ interface BuddyReadDiscussionProps {
   buddyReadId: string;
   messages: Message[];
   currentUserId: string;
+  /** Finished or cancelled buddy reads keep their history but take no new posts. */
+  readOnly?: boolean;
+}
+
+/**
+ * Reading updates are stored as "Reading update (p. 120, 45%): note". Older
+ * rows (before the `kind` column) carried a "📖 " prefix and kind 'message'.
+ */
+function parseProgress(msg: Message): { progress: string | null; note: string } | null {
+  const text = msg.message.replace(/^📖\s*/, "");
+  const isProgress = msg.kind === "progress" || /^📖\s*Reading update/.test(msg.message);
+  if (!isProgress) return null;
+  const m = text.match(/^Reading update(?:\s*\(([^)]*)\))?:?\s*([\s\S]*)$/);
+  if (!m) return { progress: null, note: text };
+  return { progress: m[1] ?? null, note: m[2] ?? "" };
 }
 
 function getInitials(name: string): string {
@@ -34,6 +51,7 @@ export function BuddyReadDiscussion({
   buddyReadId,
   messages,
   currentUserId,
+  readOnly = false,
 }: BuddyReadDiscussionProps) {
   const [input, setInput] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -44,9 +62,14 @@ export function BuddyReadDiscussion({
     (state: Message[], newMessage: Message) => [...state, newMessage],
   );
 
-  // Scroll to bottom when messages change
+  // Scroll to the newest message when one is added — not on first render,
+  // which used to yank the whole page down to the discussion on open.
+  const seenCount = useRef(optimisticMessages.length);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (optimisticMessages.length > seenCount.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    seenCount.current = optimisticMessages.length;
   }, [optimisticMessages.length]);
 
   function handleSend() {
@@ -63,6 +86,7 @@ export function BuddyReadDiscussion({
         username: "",
         avatarUrl: null,
         message: text,
+        kind: "message",
         createdAt: new Date().toISOString(),
       });
 
@@ -89,6 +113,24 @@ export function BuddyReadDiscussion({
 
         {optimisticMessages.map((msg) => {
           const isOwn = msg.userId === currentUserId;
+
+          // Automatic event: a centred one-liner, not a chat bubble.
+          if (msg.kind === "status") {
+            return (
+              <div key={msg.id} className="flex justify-center">
+                <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-foreground/10 bg-surface/70 px-3 py-1 text-[11px] text-muted backdrop-blur-md">
+                  <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-neon-blue" aria-hidden="true" />
+                  <span className="truncate">
+                    <span className="font-semibold text-foreground">{msg.message}</span>
+                    {" · "}
+                    {timeAgo(msg.createdAt)}
+                  </span>
+                </span>
+              </div>
+            );
+          }
+
+          const progress = parseProgress(msg);
 
           return (
             <div
@@ -126,9 +168,29 @@ export function BuddyReadDiscussion({
                     {msg.displayName}
                   </p>
                 )}
-                <p className="font-body text-sm leading-relaxed break-words">
-                  {msg.message}
-                </p>
+                {progress ? (
+                  <>
+                    <p className="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-foreground">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neon-blue" aria-hidden="true">
+                        <path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z" />
+                        <path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z" />
+                      </svg>
+                      Reading update
+                      {progress.progress && (
+                        <span className="rounded-full border border-foreground/12 bg-surface/70 px-1.5 py-px text-[10px] font-medium text-muted">
+                          {progress.progress}
+                        </span>
+                      )}
+                    </p>
+                    {progress.note && (
+                      <p className="mt-1 font-body text-sm leading-relaxed break-words whitespace-pre-line">{progress.note}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="font-body text-sm leading-relaxed break-words whitespace-pre-line">
+                    {msg.message}
+                  </p>
+                )}
                 <p
                   className={`font-body text-[10px] mt-1 ${
                     isOwn ? "text-foreground/50 text-right" : "text-muted/60"
@@ -145,6 +207,11 @@ export function BuddyReadDiscussion({
       </div>
 
       {/* Input */}
+      {readOnly ? (
+        <p className="border-t border-foreground/10 pt-3 text-center text-xs text-muted">
+          This buddy read has ended, so the discussion is closed.
+        </p>
+      ) : (
       <div className="sticky bottom-0 flex items-center gap-2 border-t border-foreground/10 pt-3">
         <input
           type="text"
@@ -176,6 +243,7 @@ export function BuddyReadDiscussion({
           </svg>
         </button>
       </div>
+      )}
     </div>
   );
 }

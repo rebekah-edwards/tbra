@@ -875,7 +875,7 @@ export const buddyReads = sqliteTable("buddy_reads", {
   name: text("name").notNull(),
   slug: text("slug").notNull(),
   description: text("description"),
-  status: text("status").notNull().default("active"), // 'active' | 'completed' | 'archived'
+  status: text("status").notNull().default("active"), // 'active' | 'completed' | 'archived' (= cancelled by the host; hidden from lists)
   isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
   inviteCode: text("invite_code").notNull(),
   maxMembers: integer("max_members").notNull().default(20),
@@ -910,6 +910,10 @@ export const buddyReadMessages = sqliteTable("buddy_read_messages", {
   buddyReadId: text("buddy_read_id").notNull().references(() => buddyReads.id, { onDelete: "cascade" }),
   userId: text("user_id").notNull().references(() => users.id),
   message: text("message").notNull(),
+  // 'message' = typed by a member; 'progress' = a reading update they chose
+  // to share; 'status' = an automatic event (started / finished / DNF /
+  // paused the book, buddy read finished). Events render as compact rows.
+  kind: text("kind").notNull().default("message"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   index("buddy_read_messages_read_idx").on(table.buddyReadId),

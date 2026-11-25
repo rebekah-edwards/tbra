@@ -87,16 +87,19 @@ export async function addReadingNoteFor(
         .get();
       if (membership?.status === "active") {
         const parts: string[] = [];
-        if (pageNumber) parts.push(`p.${pageNumber}`);
+        if (pageNumber) parts.push(`p. ${pageNumber}`);
         if (percentComplete !== null) parts.push(`${percentComplete}%`);
         const progressInfo = parts.length > 0 ? ` (${parts.join(", ")})` : "";
+        // kind 'progress' renders as a reading-update card in the discussion
+        // (web + iOS). No emoji: line icons only, per the design rules.
         const message = noteText
-          ? `📖 Reading update${progressInfo}: ${noteText}`
-          : `📖 Reading update${progressInfo}`;
+          ? `Reading update${progressInfo}: ${noteText}`
+          : `Reading update${progressInfo}`;
         await db.insert(buddyReadMessages).values({
           buddyReadId,
           userId,
           message: message.slice(0, 2000),
+          kind: "progress",
         });
       }
     } catch {

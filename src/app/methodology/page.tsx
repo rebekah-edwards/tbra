@@ -100,9 +100,13 @@ export default function MethodologyPage() {
           </p>
           <p>
             <strong className="text-foreground">Transparent sourcing.</strong>{" "}
-            Every content claim carries an evidence level so you know how
-            confident we are. AI-assisted first passes are refined by human
-            editors who&apos;ve actually read the book.
+            Every content rating carries a label so you know how confident we
+            are. <strong className="text-foreground">Unverified</strong> means
+            it&apos;s an AI-assisted first pass no person has checked yet.{" "}
+            <strong className="text-foreground">Verified</strong> means one of
+            our editors has checked it.{" "}
+            <strong className="text-foreground">Author-verified</strong> means
+            the book&apos;s author confirmed it.
           </p>
         </div>
       </section>

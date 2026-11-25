@@ -45,9 +45,11 @@ const NOTE_MIN = 70;
 const NOTE_MAX = 190;
 
 const EVIDENCE_LABELS: Record<string, string> = {
-  ai_inferred: "AI-inferred",
-  cited: "Cited",
+  ai_inferred: "Unverified",
+  cited: "Unverified",
   human_verified: "Verified",
+  admin_verified: "Verified",
+  author_verified: "Author-verified",
 };
 
 function IntensityBadge({ intensity }: { intensity: number | null }) {

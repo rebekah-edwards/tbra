@@ -46,20 +46,19 @@ const intensityColors = [
   "bg-intensity-4",
 ];
 
+// Three public labels, never "AI": a rating nobody has checked yet is
+// "Unverified"; one a staff member checked is "Verified"; one the book's own
+// author confirmed is "Author-verified".
+const VERIFIED_BADGE = { label: "Verified", className: "verified-badge" };
 const evidenceBadge: Record<string, { label: string; className: string }> = {
-  ai_inferred: {
-    label: "AI",
-    className: "bg-surface-alt text-muted",
-  },
-  cited: {
-    label: "AI",
-    className: "bg-surface-alt text-muted",
-  },
-  human_verified: {
-    label: "Verified",
-    className: "verified-badge",
-  },
+  ai_inferred: { label: "Unverified", className: "bg-surface-alt text-muted" },
+  cited: { label: "Unverified", className: "bg-surface-alt text-muted" },
+  human_verified: VERIFIED_BADGE,
+  admin_verified: VERIFIED_BADGE,
+  author_verified: { label: "Author-verified", className: "verified-badge" },
 };
+
+const VERIFIED_LEVELS = new Set(["human_verified", "admin_verified", "author_verified"]);
 
 function ExpandableNote({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false);
@@ -357,7 +356,7 @@ function RatingCard({
   isAdmin?: boolean;
 }) {
   const [localRating, setLocalRating] = useState(rating);
-  const badge = evidenceBadge[localRating.evidenceLevel];
+  const badge = evidenceBadge[localRating.evidenceLevel] ?? evidenceBadge.ai_inferred;
   const displayName = SHORT_NAMES[localRating.categoryKey] ?? localRating.categoryName;
   const [showModal, setShowModal] = useState(false);
 
@@ -426,7 +425,7 @@ export function ContentProfile({ ratings, bookId, isLoggedIn, isAdmin }: Content
   const [revealed, setRevealed] = useState(false);
   const [verifyPending, startVerifyTransition] = useTransition();
   const [allVerified, setAllVerified] = useState(
-    ratings.length > 0 && ratings.every((r) => r.evidenceLevel === "human_verified")
+    ratings.length > 0 && ratings.every((r) => VERIFIED_LEVELS.has(r.evidenceLevel))
   );
 
   if (ratings.length === 0) {

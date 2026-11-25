@@ -8,6 +8,8 @@ import { StarRow } from "@/components/review/rounded-star";
 import { useState, useMemo } from "react";
 import { NoCover } from "@/components/no-cover";
 import { FranchiseAdminControls } from "@/components/series/franchise-admin-controls";
+import { CoverArtHero, HERO_BACK_BUTTON_CLASS } from "@/components/ui/cover-art-hero";
+import { BackButton } from "@/components/ui/back-button";
 
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { toggleSeriesCoverStyle, setSeriesCover } from "@/lib/actions/series";
@@ -92,54 +94,67 @@ export function SeriesBooksView({ seriesName, seriesId, books, isLoggedIn, isAdm
     sets: books.filter((b) => b.isBoxSet).length,
   }), [books]);
 
+  // Hero: covers of the first core books, the series' authors, and the
+  // reader's progress through the main entries.
+  const coreBooks = books.filter((b) => !b.isBoxSet && b.position != null && Number.isInteger(b.position));
+  const heroPool = coreBooks.length > 0 ? coreBooks : books.filter((b) => !b.isBoxSet);
+  const heroCovers = heroPool.map((b) => b.coverImageUrl).filter((u): u is string => !!u).slice(0, 3);
+  const heroAuthors = [...new Set(heroPool.flatMap((b) => b.authors.map((a) => a.name)))].slice(0, 2);
+  const readCount = coreBooks.filter((b) => bookStates[b.id] === "completed").length;
+  const readingCount = heroPool.filter((b) => bookStates[b.id] === "currently_reading").length;
+
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-foreground text-2xl font-bold tracking-tight">{seriesName}</h1>
-        {seriesId && (
-          <div className="flex items-center gap-2">
-            {isAdmin && (
-              <button
-                onClick={async () => {
-                  setIsTogglingCover(true);
-                  const result = await toggleSeriesCoverStyle(seriesId);
-                  if (result.success) setCoverStyle(result.coverStyle);
-                  setIsTogglingCover(false);
-                }}
-                disabled={isTogglingCover}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                  coverStyle === "format"
-                    ? "bg-neon-blue/20 text-neon-blue border border-neon-blue/40"
-                    : "bg-surface-alt text-muted border border-border hover:text-foreground"
-                } ${isTogglingCover ? "opacity-50" : ""}`}
-                title={coverStyle === "format" ? "Covers: showing user format editions" : "Covers: showing default editions"}
-              >
-                {coverStyle === "format" ? "Covers: Format" : "Covers: Default"}
-              </button>
-            )}
-
-          </div>
-        )}
-      </div>
+      <CoverArtHero
+        leading={<BackButton className={HERO_BACK_BUTTON_CLASS} />}
+        eyebrow="Series"
+        title={seriesName}
+        subtitle={heroAuthors.length > 0 ? <>by {heroAuthors.join(", ")}</> : undefined}
+        covers={heroCovers}
+        stats={[
+          { label: counts.core === 1 ? "book" : "books", value: counts.core || counts.all, hue: "lime" },
+          ...(isLoggedIn && readCount > 0
+            ? [{ label: "read", value: `${readCount}/${counts.core || counts.all}`, hue: "purple" as const }]
+            : []),
+          ...(isLoggedIn && readingCount > 0
+            ? [{ label: "reading", value: readingCount, hue: "blue" as const }]
+            : []),
+        ]}
+        actions={
+          seriesId && isAdmin ? (
+            <button
+              onClick={async () => {
+                setIsTogglingCover(true);
+                const result = await toggleSeriesCoverStyle(seriesId);
+                if (result.success) setCoverStyle(result.coverStyle);
+                setIsTogglingCover(false);
+              }}
+              disabled={isTogglingCover}
+              data-active={coverStyle === "format" ? "true" : undefined}
+              style={{ ["--ring" as string]: "#38bdf8" }}
+              className={`btn-glass px-3.5 py-1.5 text-xs ${isTogglingCover ? "opacity-50" : ""}`}
+              title={coverStyle === "format" ? "Covers: showing user format editions" : "Covers: showing default editions"}
+            >
+              {coverStyle === "format" ? "Covers: Format" : "Covers: Default"}
+            </button>
+          ) : undefined
+        }
+      />
 
       {subSeries && (
         <>
           <div className="mt-5">{subSeries}</div>
-          <h2 className="mt-8 text-foreground text-base font-semibold">Books in {seriesName}</h2>
+          <p className="eyebrow mt-8">Books in {seriesName}</p>
         </>
       )}
 
       {/* Segmented control */}
-      <div className={`${subSeries ? "mt-3" : "mt-4"} flex gap-1 rounded-full border border-foreground/10 bg-surface/70 p-1 backdrop-blur-md`}>
+      <div className={`${subSeries ? "mt-3" : "mt-5"} seg-glass`}>
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 rounded-full px-3 py-2 text-sm transition-all ${
-              activeTab === tab.key
-                ? "bg-accent text-black font-bold"
-                : "font-medium text-muted hover:text-foreground"
-            }`}
+            data-active={activeTab === tab.key ? "true" : undefined}
           >
             {tab.label}
             {counts[tab.key] > 0 && (

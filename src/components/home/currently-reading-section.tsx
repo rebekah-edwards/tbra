@@ -59,7 +59,9 @@ function TrackSheet({
   const [mood, setMood] = useState<string | null>(null);
   const [pace, setPace] = useState<string | null>(null);
   const [showExtras, setShowExtras] = useState(false);
-  const [shareToBuddyRead, setShareToBuddyRead] = useState(false);
+  // On by default when the book is in an active buddy read: an update is
+  // what the buddy readers are there for. One tap turns it off.
+  const [shareToBuddyRead, setShareToBuddyRead] = useState(!!buddyReadId);
   // Notes are private unless the reader turns this on. Progress is not
   // covered by it — friends see page/percent either way.
   const [shareNote, setShareNote] = useState(false);
@@ -208,7 +210,9 @@ function TrackSheet({
           <div className="relative w-8 h-4 rounded-full bg-border peer-checked:bg-accent transition-colors">
             <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${shareToBuddyRead ? "translate-x-4" : ""}`} />
           </div>
-          <span className="text-xs text-muted">Share to buddy read</span>
+          <span className="text-xs text-muted">
+            {shareToBuddyRead ? "Your buddy readers will see this update" : "Share with your buddy read"}
+          </span>
         </label>
       )}
 
