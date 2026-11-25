@@ -1,4 +1,9 @@
-@import "tailwindcss";
+/* Scan only src/ for class names (2026-11-25). Tailwind's default scans the
+   whole repo minus .gitignore, which took in the tracked iOS build output
+   (native-ios/DerivedData-sim26) and stray agent worktrees: 18k files, 174k
+   candidates, and a dev CSS worker that ballooned to 27 GB on every cold
+   start. public/*.html use inline styles, so nothing outside src/ needs it. */
+@import "tailwindcss" source("../");
 
 :root,
 [data-theme="dark"] {
