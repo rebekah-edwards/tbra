@@ -30,7 +30,13 @@ export async function withCoveredIndex<T>(run: () => Promise<T>): Promise<T> {
   try {
     return await run();
   } catch (err) {
-    if (!indexMissing && /no such index/i.test(String((err as Error)?.message ?? err))) {
+    // Drizzle wraps driver errors ("Failed query: …") and keeps the SQLite
+    // message on .cause — check the whole chain.
+    let text = "";
+    for (let e: unknown = err, i = 0; e && i < 5; e = (e as { cause?: unknown }).cause, i++) {
+      text += " " + String((e as Error)?.message ?? e);
+    }
+    if (!indexMissing && /no such index/i.test(text)) {
       indexMissing = true;
       console.warn(`[db] ${COVERED_BOOKS_INDEX} missing — running without it`);
       return run();
