@@ -46,6 +46,25 @@ struct AppShell: View {
     @State private var chrome = ChromeState()
 
     private var tab: AppTab { chrome.tab }
+
+    /// A full-screen cover WITH the shell's top bar + bottom nav. Every
+    /// chrome action dismisses the cover first, then drives the shell.
+    private func chromedCover<Content: View>(
+        dismiss: @escaping @MainActor () -> Void,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        PresentedChromeCover(
+            barInsets: (top: topBarHeight, bottom: bottomNavHeight),
+            unreadCount: notifications.unreadCount,
+            avatarUrl: currentAvatarUrl,
+            onGoHome: { dismiss(); chrome.goHome() },
+            onSearch: { dismiss(); searchOpen = true },
+            onBell: { dismiss(); bellOpen = true },
+            onMenu: { dismiss(); menuOpen = true },
+            onSelectTab: { dismiss(); chrome.selectTab($0) },
+            content: content()
+        )
+    }
     #if DEBUG && targetEnvironment(simulator)
     @State private var debugBookSlug: String?
     @State private var debugSeriesSlug: String?
@@ -178,29 +197,19 @@ struct AppShell: View {
             get: { presentedSeriesId != nil },
             set: { if !$0 { presentedSeriesId = nil } }
         )) {
-            NavigationStack {
+            // Chromed like book covers (2026-11-25): a bare cover had no top bar, and every book opened from it inherited that (search → series → book showed no search/bell/menu).
+            chromedCover(dismiss: { presentedSeriesId = nil }) {
                 SeriesView(slug: presentedSeriesId ?? "")
-                    .toolbar(.hidden, for: .navigationBar)
-                    .appDestinations()
             }
-            .environment(\.shellBarInsets, (top: 0, bottom: 0))
-            .environment(\.showsShellChrome, false)
-            .globalReportOverlay()
-                .readingStateErrorAlert()
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedAuthorId != nil },
             set: { if !$0 { presentedAuthorId = nil } }
         )) {
-            NavigationStack {
+            // Chromed like book covers (2026-11-25): a bare cover had no top bar, and every book opened from it inherited that (search → series → book showed no search/bell/menu).
+            chromedCover(dismiss: { presentedAuthorId = nil }) {
                 AuthorView(idOrSlug: presentedAuthorId ?? "")
-                    .toolbar(.hidden, for: .navigationBar)
-                    .appDestinations()
             }
-            .environment(\.shellBarInsets, (top: 0, bottom: 0))
-            .environment(\.showsShellChrome, false)
-            .globalReportOverlay()
-                .readingStateErrorAlert()
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedBookSlug != nil },
@@ -211,31 +220,18 @@ struct AppShell: View {
             // nav as main-stack book pages — the bare cover ("logo and top
             // menu just missing") read as broken. Actions dismiss the cover
             // first, then drive the shell.
-            PresentedBookCover(
-                idOrSlug: presentedBookSlug ?? "",
-                barInsets: (top: topBarHeight, bottom: bottomNavHeight),
-                unreadCount: notifications.unreadCount,
-                avatarUrl: currentAvatarUrl,
-                onGoHome: { presentedBookSlug = nil; chrome.goHome() },
-                onSearch: { presentedBookSlug = nil; searchOpen = true },
-                onBell: { presentedBookSlug = nil; bellOpen = true },
-                onMenu: { presentedBookSlug = nil; menuOpen = true },
-                onSelectTab: { presentedBookSlug = nil; chrome.selectTab($0) }
-            )
+            chromedCover(dismiss: { presentedBookSlug = nil }) {
+                BookDetailView(idOrSlug: presentedBookSlug ?? "")
+            }
         }
         .fullScreenCover(isPresented: Binding(
             get: { presentedProfileUsername != nil },
             set: { if !$0 { presentedProfileUsername = nil } }
         )) {
-            NavigationStack {
+            // Chromed like book covers (2026-11-25): a bare cover had no top bar, and every book opened from it inherited that (search → series → book showed no search/bell/menu).
+            chromedCover(dismiss: { presentedProfileUsername = nil }) {
                 PublicProfileView(username: presentedProfileUsername ?? "")
-                    .toolbar(.hidden, for: .navigationBar)
-                    .appDestinations()
             }
-            .environment(\.shellBarInsets, (top: 0, bottom: 0))
-            .environment(\.showsShellChrome, false)
-            .globalReportOverlay()
-                .readingStateErrorAlert()
         }
         // Universal links (https://thebasedreader.app/…) land here in the
         // SwiftUI lifecycle. AASA on the site covers /book/* and /u/*; any
@@ -538,8 +534,7 @@ extension View {
 /// dismiss-then-act closures instead of the (covered, unreachable) shell
 /// sheets. Visible bar copies render here, display-only, exactly like the
 /// shell's (see "chrome bars exist in TWO modes" below).
-struct PresentedBookCover: View {
-    let idOrSlug: String
+struct PresentedChromeCover<Content: View>: View {
     let barInsets: (top: CGFloat, bottom: CGFloat)
     let unreadCount: Int
     let avatarUrl: String?
@@ -548,12 +543,13 @@ struct PresentedBookCover: View {
     let onBell: @MainActor () -> Void
     let onMenu: @MainActor () -> Void
     let onSelectTab: @MainActor (AppTab) -> Void
+    let content: Content
 
     @State private var coverChrome = ChromeState()
 
     var body: some View {
         NavigationStack {
-            BookDetailView(idOrSlug: idOrSlug)
+            content
                 // Root of the cover's stack, so appDestinations doesn't wrap
                 // it — apply PushedScreenChrome directly: it reserves the bar
                 // insets (back chevron + banner land BELOW the logo bar, not
@@ -578,6 +574,8 @@ struct PresentedBookCover: View {
         .environment(\.shellBarInsets, barInsets)
         .environment(\.showsShellChrome, true)
         .environment(coverChrome)
+        // The shell's alert can't show over a cover, so each cover adds one.
+        .readingStateErrorAlert()
         .onAppear {
             coverChrome.goHome = onGoHome
             coverChrome.openSearch = onSearch
