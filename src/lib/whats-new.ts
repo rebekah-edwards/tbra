@@ -27,6 +27,29 @@ export type WhatsNewNote = {
 
 export const WHATS_NEW_NOTES: WhatsNewNote[] = [
   {
+    // Build 23 (TestFlight, 2026-11-25). Wording approved by Rebekah.
+    build: 23,
+    title: "What's new",
+    items: [
+      {
+        icon: "paintbrush",
+        heading: "A fresh look",
+        body: "Settings, Edit Profile, Find Readers, your follow lists, the shelf editor, Top Shelf and What to Read Next all have the new design.",
+      },
+      {
+        icon: "person.text.rectangle",
+        heading: "Tap an author",
+        body: "Author names on series pages, shelves, Home and buddy reads now open the author's page.",
+      },
+      {
+        icon: "rectangle.split.2x1",
+        heading: "Made for iPhone Duo",
+        body: "Open it up and tbr*a spreads across both screens, with navigation down the right side.",
+      },
+    ],
+    footer: "Tell us what you think with the flag button.",
+  },
+  {
     // Build 22 (TestFlight, 2026-11-25). Released at Rebekah's request
     // ("upload to TestFlight all together"). Build 21 was uploaded but never
     // released; 22 adds the search → series/author top-bar fix.
