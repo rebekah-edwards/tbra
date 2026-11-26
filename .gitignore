@@ -68,4 +68,6 @@ native-ios/*.xcworkspace/
 native-ios/DerivedData/
 # The simulator build dir is the same regenerable Xcode output (~490MB).
 native-ios/DerivedData-sim/
+native-ios/DerivedData-sim*/
 native-ios/build/
+android-twa/
