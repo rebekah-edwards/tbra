@@ -10,8 +10,8 @@
 # INSTALLS need proximity.)
 set -euo pipefail
 
-export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
-DEVICE_UDID="B5CBECD2-3AAF-522B-AF96-F969AC2609DD"   # Rebekah's iPhone (17 Pro, iOS 27 beta)
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer   # Xcode 27.2 (released) since 2026-11-25
+DEVICE_UDID="B5CBECD2-3AAF-522B-AF96-F969AC2609DD"   # Rebekah's iPhone (17 Pro, iOS 27.2)
 DIR="$(cd "$(dirname "$0")" && pwd)"
 APP="$DIR/DerivedData/Build/Products/Debug-iphoneos/Tbra.app"
 
@@ -19,22 +19,22 @@ cd "$DIR"
 
 # Preflight (2026-11-16): say WHY the phone can't be reached instead of dying
 # on xcodebuild's "Unable to find a destination". Two causes seen so far:
-#  1. Xcode-beta's bundled device-support packages (MobileDevice.pkg /
+#  1. Xcode's bundled device-support packages (MobileDevice.pkg /
 #     CoreTypes.pkg) are missing or stale — a macOS update replaces them. Only
 #     the Xcode GUI can reinstall them (needs an admin click); the phone stays
 #     "unavailable" until then.
 #  2. After (1), or after the phone updates iOS, the wireless link needs ONE
 #     cable connection to re-establish; it then works over Wi-Fi again.
 if ! xcodebuild -checkFirstLaunchStatus >/dev/null 2>&1; then
-  echo "✗ Xcode-beta's device-support components need installing."
-  echo "  Fix: open /Applications/Xcode-beta.app once and accept 'Install' on the components prompt, then re-run."
+  echo "✗ Xcode's device-support components need installing."
+  echo "  Fix: open /Applications/Xcode.app once and accept 'Install' on the components prompt, then re-run."
   exit 1
 fi
 if xcrun devicectl list devices 2>/dev/null | grep "$DEVICE_UDID" | grep -q "unavailable"; then
   echo "✗ The Mac can't see Rebekah's iPhone (CoreDevice state: unavailable)."
   echo "  It must be unlocked and on the home Wi-Fi. If it already is, the wireless link has dropped:"
   echo "  plug it into the Mac by cable once (unlocked) — wireless installs work again afterwards."
-  echo "  If a cable doesn't fix it, open Xcode-beta once and install any components it offers."
+  echo "  If a cable doesn't fix it, open Xcode once and install any components it offers."
   exit 1
 fi
 
