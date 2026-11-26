@@ -946,3 +946,21 @@ its `src/lib/whats-new.ts` entry deployed first.
   the `ProfileView` model in a unit test, or temporarily log the `DecodingError` path in `APIClient` so the next
   TestFlight report names the field. Holmeskay's web report says the website works, which points at the
   v1 JSON shape rather than the data.
+
+---
+
+## 2026-11-26 — captured by nightly-report-triage
+
+### 1. "Adding multiple books… keeps glitching out and saying 'try again later'" — report `648bb7c1` (haylahb, web `/`, 2026-11-25 22:43 UTC) · OPEN
+
+- The reporter is still adding books successfully between failures: on prod, `user_book_state` shows 8 of her rows
+  updated in the 22:00 UTC hour on 11-25 and 10 in the 04:00 UTC hour on 11-26. So this is intermittent, not a hard block.
+- The only "try again later" strings on an add path are in `formatImportError()` (`src/lib/import/import-options.ts:92-96`):
+  `fetch failed`/`ECONNREFUSED` → "Could not connect to the book metadata service", `timeout`/`ETIMEDOUT` → "lookup
+  timed out". Those are CSV-import errors. If she meant single adds from search, the wording comes from somewhere else, so
+  first ask her which flow (search → shelve, or a Goodreads/StoryGraph import).
+- Timing: this came in about 14h after the 11-23 → 11-25 Turso write hangs cleared (memory
+  `project_content_ratings_push_stall`), so it isn't obviously the same incident. Check Vercel function logs for
+  `/api/import/goodreads` and the `setBookStateWithImport` / ISBNdb import action around 2026-11-25 22:30–22:50 UTC.
+- Same reporter filed three catalog reports that night (Last Seen, Country People, The Stranger). Country People and
+  The Stranger were fixed by triage on 11-26.
