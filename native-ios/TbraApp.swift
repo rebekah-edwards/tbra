@@ -38,7 +38,14 @@ struct TbraApp: App {
                 UpdateGate {
                     RootView()
                 }
-                .tint(Theme.accent)
+                // System-drawn chrome (alert / confirmation-dialog buttons,
+                // default Buttons, text cursors) takes this tint. Lime on the
+                // light-mode dialog was unreadable ("Mark as finished",
+                // every alert's OK — Rebekah, 2026-11-27), so it's lime in
+                // dark and near-black in light, like the web's text-accent.
+                // Switches keep the lime fill in both modes (below).
+                .tint(Theme.accentText)
+                .toggleStyle(SwitchToggleStyle(tint: Theme.accent))
             }
             // No .preferredColorScheme here: @AppStorage in an App struct
             // doesn't re-evaluate the Scene, so this level pinned the LAUNCH
