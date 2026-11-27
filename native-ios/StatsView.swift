@@ -35,6 +35,7 @@ struct StatsView: View {
     @State private var adminMissing = AdminMissingModel()
     @State private var adminFixFocus: AdminMissingFocus?
     @State private var goalsRefresh = 0
+    @State private var yearEdges = YearScrollEdges()
     @State private var goalEditing = false
     // Goal / streak the reader has hidden (MotivationPrefs) — hidden here too.
     @AppStorage(MotivationPrefs.hideGoalKey) private var hideGoal = false
@@ -153,6 +154,26 @@ struct StatsView: View {
                 }
             }
         }
+        // Edges fade while there is more to scroll that way (Rebekah, 2026-11-27).
+        .onScrollGeometryChange(for: YearScrollEdges.self) { g in
+            YearScrollEdges(
+                more: g.contentOffset.x + g.containerSize.width < g.contentSize.width - 1,
+                less: g.contentOffset.x > 1)
+        } action: { _, edges in
+            yearEdges = edges
+        }
+        .mask(
+            HStack(spacing: 0) {
+                LinearGradient(colors: [yearEdges.less ? .clear : .black, .black],
+                               startPoint: .leading, endPoint: .trailing)
+                    .frame(width: 56)
+                Color.black
+                LinearGradient(colors: [.black, yearEdges.more ? .clear : .black],
+                               startPoint: .leading, endPoint: .trailing)
+                    .frame(width: 56)
+            }
+        )
+        .animation(.easeOut(duration: 0.15), value: yearEdges)
     }
 
     // ── Hero cards: 📚 books · 🔥 streak · ⭐ avg rating ──
@@ -1613,4 +1634,11 @@ private struct AdminMissingRow: View {
             onSaved()
         }
     }
+}
+
+/// Whether the Stats year pills can scroll further right (`more`) or left
+/// (`less`); each side fades only while there is something past it.
+struct YearScrollEdges: Equatable {
+    var more = true
+    var less = false
 }
