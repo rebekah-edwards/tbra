@@ -8,6 +8,8 @@
  * appears as a grey secondary pill instead.
  */
 
+import { isSpoilerGenre } from "@/lib/spoiler-genres";
+
 // ─── Fiction categories ───
 
 export const FICTION_GENRES = new Set([
@@ -268,19 +270,33 @@ export const GENRE_TO_TOP_LEVEL: Record<string, string> = {
  * 1. primaryGenre — the curated top-level genre for the green pill
  * 2. ageCategory — children's age category for a second pill (if applicable)
  * 3. displayGenres — remaining genres for grey secondary pills
+ * 4. spoilerGenres — spoiler-sensitive tags (see lib/spoiler-genres.ts). These
+ *    are pulled out FIRST and never appear in any of the three fields above;
+ *    only the book page's tap-to-reveal pill and the v1 `spoilerGenres` field
+ *    may use them.
  *
  * Priority for primary genre:
  * 1. Direct whitelist match (genre name IS in TOP_LEVEL_WHITELIST)
  * 2. Mapped match (genre maps to a whitelist entry via GENRE_TO_TOP_LEVEL)
  */
 export function classifyGenres(
-  genreRows: { genreId: string; name: string; parentGenreId: string | null }[],
+  allGenreRows: { genreId: string; name: string; parentGenreId: string | null }[],
   isFiction: boolean | null = null,
 ): {
   primaryGenre: string | null;
   ageCategory: string | null;
   displayGenres: string[];
+  spoilerGenres: string[];
 } {
+  // Spoiler-sensitive tags never take part in classification.
+  const spoilerGenres = [
+    ...new Set(allGenreRows.filter((g) => isSpoilerGenre(g.name)).map((g) => g.name)),
+  ];
+  const genreRows =
+    spoilerGenres.length > 0
+      ? allGenreRows.filter((g) => !isSpoilerGenre(g.name))
+      : allGenreRows;
+
   // Filter the whitelist by fiction/nonfiction when known
   const allowedSet =
     isFiction === true
@@ -307,38 +323,12 @@ export function classifyGenres(
     }
   }
 
-  // Pass 2: Find primary genre
-  // Resolve each genre to its curated display name (direct or mapped).
-  // Among resolved genres, prefer direct whitelist matches over mapped ones,
-  // and within each tier, earlier insertion order wins.
-  // Exception: LitRPG beats Sci-Fi and Fantasy when both are present.
-  let primaryGenre: string | null = null;
-  let fallbackPrimary: string | null = null;
-
-  for (const g of genreRows) {
-    if (CHILDRENS_AGE_CATEGORIES.has(g.name)) continue;
-    const mapped = GENRE_TO_TOP_LEVEL[g.name];
-
-    if (allowedSet.has(g.name)) {
-      // Direct match — take the first one
-      if (!primaryGenre) {
-        primaryGenre = g.name;
-      }
-      // LitRPG always wins over Sci-Fi and Fantasy (it's more specific)
-      if (g.name === "LitRPG" && (primaryGenre === "Sci-Fi" || primaryGenre === "Fantasy")) {
-        primaryGenre = "LitRPG";
-      }
-    } else if (mapped && allowedSet.has(mapped) && !CHILDRENS_AGE_CATEGORIES.has(mapped)) {
-      // Mapped match — lower priority, only used if no direct match found
-      if (!fallbackPrimary) {
-        fallbackPrimary = mapped;
-      }
-    }
-  }
-
-  if (!primaryGenre) {
-    primaryGenre = fallbackPrimary;
-  }
+  // Pass 2: Find primary genre — deterministic, never row order.
+  // Row order is book_genres index order, i.e. sorted by random genre UUIDs,
+  // so "first match wins" let any newly linked genre flip the pill and undid
+  // hand fixes (Dungeon Crawler Carl → Humor, Project Hail Mary → Adventure;
+  // reports 31d2ed31 + 47452999, 2026-11-26). See pickPrimaryGenre().
+  let primaryGenre = pickPrimaryGenre(genreRows, allowedSet);
 
   // Normalize display name (e.g. "Dystopia" → "Dystopian")
   if (primaryGenre && DISPLAY_NAME[primaryGenre]) {
@@ -382,5 +372,69 @@ export function classifyGenres(
     primaryGenre,
     ageCategory,
     displayGenres: secondaryGenres.slice(0, 5),
+    spoilerGenres,
   };
+}
+
+// ─── Primary-genre choice ───
+
+/**
+ * "Flavour" genres: real, but they describe HOW a story reads rather than
+ * WHAT it is, so they only take the green pill when nothing more specific is
+ * linked (a sci-fi survival story is Sci-Fi, not Adventure; a funny LitRPG is
+ * LitRPG, not Humor).
+ */
+export const MODIFIER_GENRES = new Set([
+  "Adventure",
+  "Action/Adventure",
+  "Humor",
+  "Satire",
+  "Drama",
+  "Classics",
+  "Short Stories",
+  "Anthology",
+  "Nonfiction",
+]);
+
+
+/**
+ * The green-pill genre for a book:
+ *  1. LitRPG whenever any linked genre is or maps to LitRPG (Rebekah: "all
+ *     LitRPG show it as the top level genre"). No later genre can undo it.
+ *  2. Otherwise the best tier — a real genre linked directly, then one
+ *     reached through GENRE_TO_TOP_LEVEL, then a flavour genre (MODIFIER_GENRES)
+ *     directly, then mapped — so Adventure/Humor never beat Sci-Fi/Fantasy/etc.
+ *  3. Within a tier the first row wins, as it always has, so books that
+ *     involve neither rule keep the pill they show today.
+ */
+export function pickPrimaryGenre(
+  genreRows: { name: string }[],
+  allowedSet: Set<string>,
+): string | null {
+  let best: string | null = null;
+  let bestTier = Infinity;
+  for (const g of genreRows) {
+    if (CHILDRENS_AGE_CATEGORIES.has(g.name)) continue;
+    let top: string | null = null;
+    let direct = false;
+    if (allowedSet.has(g.name)) {
+      top = g.name;
+      direct = true;
+    } else {
+      const mapped = GENRE_TO_TOP_LEVEL[g.name];
+      if (mapped && allowedSet.has(mapped) && !CHILDRENS_AGE_CATEGORIES.has(mapped)) top = mapped;
+    }
+    if (!top) continue;
+    const key = DISPLAY_NAME[top] ?? top;
+    if (key === "LitRPG") return "LitRPG";
+    const tier = (MODIFIER_GENRES.has(key) ? 2 : 0) + (direct ? 0 : 1);
+    // Strictly better tier only: within a tier the first row still wins,
+    // exactly as before, so books not involving LitRPG or a flavour genre
+    // keep the pill they show today.
+    if (tier < bestTier) {
+      best = top;
+      bestTier = tier;
+    }
+  }
+  return best;
 }
