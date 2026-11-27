@@ -43,6 +43,27 @@ struct ShelfSummary: Codable, Identifiable, Hashable {
     let createdAt: String
 }
 
+extension ShelfSummary {
+    /// Tolerates a null inside coverSlugs (a slug-less book): one null there
+    /// used to fail the WHOLE profile decode, so the Profile tab never loaded
+    /// for holmeskay (2026-11-27). Missing slugs become "" (cover not tappable).
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        slug = try c.decode(String.self, forKey: .slug)
+        description = try c.decodeIfPresent(String.self, forKey: .description)
+        color = try c.decodeIfPresent(String.self, forKey: .color)
+        coverImageUrl = try c.decodeIfPresent(String.self, forKey: .coverImageUrl)
+        isPublic = try c.decode(Bool.self, forKey: .isPublic)
+        position = try c.decode(Int.self, forKey: .position)
+        bookCount = try c.decode(Int.self, forKey: .bookCount)
+        coverUrls = (try c.decodeIfPresent([String?].self, forKey: .coverUrls) ?? []).compactMap { $0 }
+        coverSlugs = (try c.decodeIfPresent([String?].self, forKey: .coverSlugs) ?? []).map { $0 ?? "" }
+        createdAt = try c.decode(String.self, forKey: .createdAt)
+    }
+}
+
 /// A shelf the user follows (web: FollowedShelf in queries/shelves.ts).
 struct FollowedShelf: Codable, Identifiable, Hashable {
     let id: String
