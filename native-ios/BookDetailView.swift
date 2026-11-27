@@ -773,15 +773,15 @@ private struct BookHero: View {
             // No back-button row: the floating back chevron (screen-level
             // overlay, see BookDetailView.body) straddles the card's top
             // edge instead — mobile-site style — so the card sits high.
-            // The 20pt top padding leaves room for the half-overlapping
-            // genre/age pills (-12) and the chevron's lower third.
+            // The top padding leaves room for the genre/age pills, which sit
+            // three quarters above the card, and the chevron's lower third.
             heroCard
                 // 20pt = room for the phone's back chevron straddling the
                 // card top. The Duo's back lives in the side column, so the
                 // card only clears its genre pill (Rebekah, 2026-11-27) —
                 // a little more when closed, where search/bell/menu sit
                 // in the top bar above the pills.
-                .padding(.top, railWidth > 0 ? (shellWide ? 2 : 12) : 20)
+                .padding(.top, railWidth > 0 ? (shellWide ? 8 : 20) : 22)
                 .padding(.bottom, 20)
         }
         // Page-level hero bleed (.book-hero-img): the big soft color wash
@@ -944,7 +944,9 @@ private struct BookHero: View {
                 }
             }
             .padding(.trailing, 16)
-            .offset(y: -12)
+            // A quarter on the card, three quarters above it (Rebekah,
+            // 2026-11-27): the pill's 75% line sits on the card's top edge.
+            .alignmentGuide(.top) { d in d.height * 0.75 }
         }
         // Share: half-overlapping bottom-left (bottom-0 left-4 + ty-1/2)
         .overlay(alignment: .bottomLeading) {
