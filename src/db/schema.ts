@@ -45,6 +45,12 @@ export const books = sqliteTable("books", {
   index("idx_books_slug").on(table.slug),
   // Sort by publication year (Browse "newest" sort)
   index("books_publication_year_idx").on(table.publicationYear),
+  // /admin/covers queue: partial covering index over public books with no
+  // cover. The page pins it with INDEXED BY — keep the WHERE in sync with
+  // PENDING_FROM in src/app/admin/covers/page.tsx.
+  index("idx_books_public_missing_cover")
+    .on(table.createdAt, table.id, table.visibility, table.coverImageUrl)
+    .where(sql`visibility = 'public' AND (cover_image_url IS NULL OR cover_image_url = '')`),
 ]);
 
 // ─── NYT bestseller cache ───
@@ -279,6 +285,9 @@ export const userBookState = sqliteTable("user_book_state", {
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   uniqueIndex("user_book_state_unique").on(table.userId, table.bookId),
+  // Per-book lookups ("how many readers have this book"); the unique index
+  // above leads with user_id so it can't serve them.
+  index("idx_user_book_state_book").on(table.bookId),
 ]);
 
 export const readingSessions = sqliteTable("reading_sessions", {
@@ -371,6 +380,44 @@ export const bookSlugHistory = sqliteTable("book_slug_history", {
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   index("book_slug_history_book").on(table.bookId),
+]);
+
+/**
+ * Where a retired author identifier now lives.
+ *
+ * An author row disappears when two rows for the same person are merged
+ * ("Yarros, Rebecca" into "Rebecca Yarros"), and its slug changes when it is
+ * renamed. `old_key` is whatever used to address the row — its old slug, or
+ * the UUID of a merged-away row — so links, bookmarks and the iOS app's cached
+ * author ids keep resolving. Maps to the CURRENT author id (not a slug), so a
+ * second rename still resolves in one hop. Written by
+ * scripts/sweep-inverted-authors.ts on local + Turso; not part of sync.
+ */
+export const authorRedirects = sqliteTable("author_redirects", {
+  oldKey: text("old_key").primaryKey(),
+  authorId: text("author_id").notNull().references(() => authors.id),
+  /** 'merge' | 'rename' */
+  reason: text("reason"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  index("author_redirects_author").on(table.authorId),
+]);
+
+/**
+ * Where a retired series identifier now lives — same idea as authorRedirects.
+ * `old_key` is an old series slug (or a merged-away series UUID); maps to the
+ * CURRENT series id. Read by resolveSeries() and src/middleware.ts (301).
+ * Created 2026-11-19 (scripts/create-series-redirects-table.ts); first written
+ * by scripts/fix-malformed-slugs.ts. Not part of sync — write local + Turso.
+ */
+export const seriesRedirects = sqliteTable("series_redirects", {
+  oldKey: text("old_key").primaryKey(),
+  seriesId: text("series_id").notNull().references(() => series.id),
+  /** 'merge' | 'rename' | 'malformed-slug' */
+  reason: text("reason"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  index("series_redirects_series").on(table.seriesId),
 ]);
 
 /** An edition row whose open_library_key is a real OL key, not a synthetic one. */
@@ -504,6 +551,50 @@ export const readingGoals = sqliteTable("reading_goals", {
   uniqueIndex("reading_goals_user_year_unique").on(table.userId, table.year),
 ]);
 
+// ─── Custom goals (premium, 2026-11-19) ───
+// Extra yearly goals beside the free books goal: pages read, hours listened,
+// days read, books in a genre. One row per (user, year, goal_key); removing a
+// goal sets active=0 with a fresh updated_at — the two-way sync never deletes,
+// so a hard delete would come back on the next tick.
+export const customGoals = sqliteTable("custom_goals", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  year: integer("year").notNull(),
+  kind: text("kind").notNull(), // 'pages' | 'hours' | 'days' | 'genre'
+  genreName: text("genre_name"), // kind='genre' only: rolled-up genre name
+  goalKey: text("goal_key").notNull(), // kind, or 'genre:<lowercased name>'
+  target: integer("target").notNull(), // in the kind's unit (pages, hours, days, books)
+  active: integer("active").notNull().default(1),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("custom_goals_user_year_key_unique").on(table.userId, table.year, table.goalKey),
+]);
+
+// A reader's own audiobook length for a book whose catalog length is unknown
+// (about 88% of books in 2026-11). Feeds the Hours listened goal.
+export const userAudioLengths = sqliteTable("user_audio_lengths", {
+  userId: text("user_id").notNull().references(() => users.id),
+  bookId: text("book_id").notNull().references(() => books.id),
+  minutes: integer("minutes").notNull(),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.bookId] }),
+]);
+
+// A reader's own page count for a book whose catalog page count is missing
+// (2026-11-19). Counts toward their Pages read goal only; admins see these as
+// suggested values in /admin/book-metadata and decide whether the catalog
+// takes them.
+export const userPageCounts = sqliteTable("user_page_counts", {
+  userId: text("user_id").notNull().references(() => users.id),
+  bookId: text("book_id").notNull().references(() => books.id),
+  pages: integer("pages").notNull(),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.bookId] }),
+]);
+
 // ─── Favorites ───
 
 export const userFavoriteBooks = sqliteTable("user_favorite_books", {
@@ -590,6 +681,11 @@ export const userReadingPreferences = sqliteTable("user_reading_preferences", {
   dislikedTropes: text("disliked_tropes"), // JSON array: ["chosen-one",...] (disliked character tropes)
   customContentWarnings: text("custom_content_warnings"), // JSON array of user-typed warnings: ["infidelity","animal death",...]
   textSize: text("text_size"), // 'small' | 'medium' | 'large' | null (null = medium)
+  // Reader chose to hide the reading goal / streak (2026-11). Hidden means
+  // hidden everywhere — Home, Stats, the widget — but both keep counting, so
+  // turning one back on shows the real number.
+  hideGoal: integer("hide_goal", { mode: "boolean" }).notNull().default(false),
+  hideStreak: integer("hide_streak", { mode: "boolean" }).notNull().default(false),
   onboardingCompleted: integer("onboarding_completed").notNull().default(0),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
@@ -656,6 +752,20 @@ export const userFollows = sqliteTable("user_follows", {
   uniqueIndex("user_follows_unique").on(table.followerId, table.followedId),
   index("user_follows_follower_idx").on(table.followerId),
   index("user_follows_followed_idx").on(table.followedId),
+]);
+
+// ─── User blocks ───
+// App Review guideline 1.2: readers must be able to block an abusive user.
+// One row hides each side from the other (see src/lib/queries/blocks.ts).
+// Created by scripts/create-user-blocks-table.ts.
+
+export const userBlocks = sqliteTable("user_blocks", {
+  blockerId: text("blocker_id").notNull().references(() => users.id),
+  blockedId: text("blocked_id").notNull().references(() => users.id),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("user_blocks_unique").on(table.blockerId, table.blockedId),
+  index("user_blocks_blocked_idx").on(table.blockedId),
 ]);
 
 // ─── Author follows ───
@@ -759,6 +869,54 @@ export const userNotifications = sqliteTable("user_notifications", {
   index("user_notifications_user_idx").on(table.userId),
 ]);
 
+// ─── Author accounts (2026-11-25) ───
+// A reader account linked to an `authors` row, approved by a person on the
+// team. Two ways in: the author asks from their author page ("Claim this
+// author page", method 'self') or staff link it from /admin/authors
+// (method 'staff'). Only 'approved' rows grant the badge and author tools.
+
+export const authorClaims = sqliteTable("author_claims", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  authorId: text("author_id").notNull().references(() => authors.id),
+  status: text("status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected' | 'revoked'
+  method: text("method").notNull().default("self"), // 'self' | 'staff'
+  contactEmail: text("contact_email"),
+  evidenceLinks: text("evidence_links"), // free text: website, socials, publisher page
+  message: text("message"),
+  reviewedBy: text("reviewed_by"),
+  reviewedAt: text("reviewed_at"),
+  reviewNote: text("review_note"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  index("author_claims_user_idx").on(table.userId),
+  index("author_claims_author_idx").on(table.authorId),
+  index("author_claims_status_idx").on(table.status),
+]);
+
+// Every change a verified author makes to their own book, with what it
+// replaced, so staff can review and revert it (/admin/authors).
+export const authorEdits = sqliteTable("author_edits", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  authorId: text("author_id").notNull(),
+  bookId: text("book_id").notNull().references(() => books.id),
+  kind: text("kind").notNull(), // 'description' | 'rating_confirm' | 'rating_edit'
+  categoryId: text("category_id"),
+  beforeText: text("before_text"),
+  afterText: text("after_text"),
+  beforeIntensity: integer("before_intensity"),
+  afterIntensity: integer("after_intensity"),
+  beforeEvidence: text("before_evidence"),
+  revertedAt: text("reverted_at"),
+  revertedBy: text("reverted_by"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+}, (table) => [
+  index("author_edits_created_idx").on(table.createdAt),
+  index("author_edits_book_idx").on(table.bookId),
+]);
+
 // ─── Buddy Reads ───
 
 export const buddyReads = sqliteTable("buddy_reads", {
@@ -768,7 +926,7 @@ export const buddyReads = sqliteTable("buddy_reads", {
   name: text("name").notNull(),
   slug: text("slug").notNull(),
   description: text("description"),
-  status: text("status").notNull().default("active"), // 'active' | 'completed' | 'archived'
+  status: text("status").notNull().default("active"), // 'active' | 'completed' | 'archived' (= cancelled by the host; hidden from lists)
   isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
   inviteCode: text("invite_code").notNull(),
   maxMembers: integer("max_members").notNull().default(20),
@@ -803,6 +961,10 @@ export const buddyReadMessages = sqliteTable("buddy_read_messages", {
   buddyReadId: text("buddy_read_id").notNull().references(() => buddyReads.id, { onDelete: "cascade" }),
   userId: text("user_id").notNull().references(() => users.id),
   message: text("message").notNull(),
+  // 'message' = typed by a member; 'progress' = a reading update they chose
+  // to share; 'status' = an automatic event (started / finished / DNF /
+  // paused the book, buddy read finished). Events render as compact rows.
+  kind: text("kind").notNull().default("message"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   index("buddy_read_messages_read_idx").on(table.buddyReadId),
@@ -844,4 +1006,14 @@ export const deletedAccounts = sqliteTable("deleted_accounts", {
   accountCreatedAt: text("account_created_at"),
   deletedAt: text("deleted_at").notNull(),
   rowsDeleted: integer("rows_deleted"),
+});
+
+// ─── SEO core set ───
+// Books whose pages we ask Google to index. Materialised nightly by
+// recomputeCoreSet() (src/lib/seo/core-set.ts); pages and sitemaps only read
+// it. Not synced: sync-pull/push do not know this table, by design — it is
+// derived data and lives on Turso (a local copy only matters for dev).
+export const seoIndexBooks = sqliteTable("seo_index_books", {
+  bookId: text("book_id").primaryKey(),
+  addedAt: text("added_at").notNull().default(sql`(datetime('now'))`),
 });
