@@ -99,7 +99,7 @@ export async function getUserShelves(userId: string): Promise<ShelfSummary[]> {
   // Batch fetch covers for all shelves in one query
   const shelfIds = rows.map((r) => r.id);
   const allCovers = await db.all(sql`
-    SELECT sb.shelf_id, b.cover_image_url, b.slug,
+    SELECT sb.shelf_id, b.cover_image_url, COALESCE(b.slug, b.id) AS slug,
       ROW_NUMBER() OVER (PARTITION BY sb.shelf_id ORDER BY sb.position ASC) as rn
     FROM shelf_books sb
     JOIN books b ON sb.book_id = b.id
@@ -107,7 +107,9 @@ export async function getUserShelves(userId: string): Promise<ShelfSummary[]> {
       AND b.cover_image_url IS NOT NULL
   `) as { shelf_id: string; cover_image_url: string; slug: string; rn: number }[];
 
-  // Group covers and slugs by shelf, limit to 12
+  // Group covers and slugs by shelf, limit to 12. A slug-less book falls
+  // back to its id (middleware 301s it to the slug): a null here made the
+  // iOS app fail to decode the WHOLE profile (holmeskay, 2026-11-27).
   const coversByShelf = new Map<string, string[]>();
   const slugsByShelf = new Map<string, string[]>();
   for (const c of allCovers) {
