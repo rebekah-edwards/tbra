@@ -75,8 +75,9 @@ export async function setBookStateFor(userId: string, bookId: string, state: str
     });
   }
 
-  // Remove from Up Next when starting to read
-  if (state === "currently_reading") {
+  // Up Next holds only books still to read: starting, pausing, finishing
+  // or DNF-ing a book takes it off the queue.
+  if (state !== "tbr") {
     await removeFromUpNextFor(userId, bookId);
   }
 

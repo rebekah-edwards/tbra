@@ -10,6 +10,7 @@ import {
   batchFetchBookStates,
   batchFetchTopLevelGenres,
 } from "@/lib/queries/batch-helpers";
+import { pruneUpNext } from "@/lib/mutations/up-next";
 
 export interface UpNextItem {
   id: string;
@@ -26,6 +27,8 @@ export interface UpNextItem {
 }
 
 export async function getUserUpNext(userId: string): Promise<UpNextItem[]> {
+  // Self-heal: finished / started books never show in (or fill up) Up Next.
+  await pruneUpNext(userId);
   const rows = await db
     .select({
       id: upNext.id,
