@@ -141,7 +141,7 @@ struct AppShell: View {
             // On the Duo these move to the side column; kept laid out
             // (invisible) because the bar height is measured from it.
             TopBarActions(unreadCount: notifications.unreadCount)
-                .opacity(railWidth > 0 ? 0 : 1)
+                .opacity(duoUtilityInRail(rail: railWidth, wide: wideWindow) ? 0 : 1)
                 .allowsHitTesting(false)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { topBarHeight = $0 }
         }
@@ -646,7 +646,7 @@ struct PresentedChromeCover<Content: View>: View {
         }
         .overlay(alignment: .topTrailing) {
             TopBarActions(unreadCount: unreadCount)
-                .opacity(railWidth > 0 ? 0 : 1)
+                .opacity(duoUtilityInRail(rail: railWidth, wide: wide) ? 0 : 1)
                 .allowsHitTesting(false)
         }
         .overlay(alignment: .bottom) {
@@ -958,14 +958,20 @@ struct SideColumnStack: View {
     var onMenu: @MainActor () -> Void = {}
     var onSelect: @MainActor (AppTab) -> Void = { _ in }
     var onReselect: @MainActor (AppTab) -> Void = { _ in }
+    @Environment(\.shellWide) private var wide
 
     var body: some View {
         VStack(spacing: 22) {
-            utilityPill
+            // Closed (narrow) screen: search / bell / menu stay in the top
+            // bar — up here they ran into the clock and Wi-Fi (2026-11-27).
+            if duoUtilityInRail(rail: width, wide: wide) { utilityPill }
             tabRail
             backSlot
         }
-        .frame(width: width)
+        // Centred on iOS's clock / Wi-Fi column, which sits 6pt left of the
+        // inset's middle (measured on the Duo, open and closed).
+        .frame(width: width - 2 * duoColumnNudge)
+        .padding(.trailing, 2 * duoColumnNudge)
         .padding(.bottom, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         .ignoresSafeArea()
@@ -1062,6 +1068,16 @@ struct SideRailSlot<Rail: View>: View {
 /// and the pills sat flush against the edge; on a regular iPhone they sit
 /// below the status bar. Shared by both chrome modes so the twins align.
 func duoTopGap(_ railWidth: CGFloat) -> CGFloat { railWidth > 0 ? 16 : 0 }
+
+/// iOS draws the Duo's clock and Wi-Fi 6pt left of the side column's middle;
+/// the rail shifts by this much so the three line up on one axis.
+let duoColumnNudge: CGFloat = 6
+
+/// Search / bell / menu live in the side column only on the OPEN Duo. On the
+/// closed (narrow) screen the column's top holds the clock and Wi-Fi, so the
+/// pill stays in the top bar like on a regular iPhone (Rebekah, 2026-11-27).
+/// Every chrome copy (visual + hit twins) must use this same test.
+func duoUtilityInRail(rail: CGFloat, wide: Bool) -> Bool { rail > 0 && wide }
 
 /// Duo wide layouts: the top-right pill moved into the side column, so the
 /// RIGHT-hand column of a two-column page can start level with the logo

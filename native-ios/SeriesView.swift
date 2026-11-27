@@ -65,6 +65,7 @@ extension EnvironmentValues {
 struct PushedScreenChrome: ViewModifier {
     @Environment(\.shellBarInsets) private var bars
     @Environment(\.shellRailWidth) private var rail
+    @Environment(\.shellWide) private var wideChrome
     @Environment(\.showsShellChrome) private var showsChrome
     @Environment(ChromeState.self) private var chrome: ChromeState?
 
@@ -109,7 +110,7 @@ struct PushedScreenChrome: ViewModifier {
                 }
             }
             .overlay(alignment: .topTrailing) {
-                if showsChrome, let chrome, rail == 0 {
+                if showsChrome, let chrome, !duoUtilityInRail(rail: rail, wide: wideChrome) {
                     TopBarActions(hitLayerOnly: true,
                                   onSearch: chrome.openSearch,
                                   onBell: chrome.openBell,
