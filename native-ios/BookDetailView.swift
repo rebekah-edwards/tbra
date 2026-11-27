@@ -752,6 +752,7 @@ private struct BookHero: View {
     /// behind both columns instead.
     var showsBleed = true
     @Environment(\.shellRailWidth) private var railWidth
+    @Environment(\.shellWide) private var shellWide
     @Environment(\.colorScheme) private var colorScheme
     @Environment(AuthStore.self) private var auth
     @State private var coverEditorOpen = false
@@ -775,7 +776,12 @@ private struct BookHero: View {
             // The 20pt top padding leaves room for the half-overlapping
             // genre/age pills (-12) and the chevron's lower third.
             heroCard
-                .padding(.top, 20)
+                // 20pt = room for the phone's back chevron straddling the
+                // card top. The Duo's back lives in the side column, so the
+                // card only clears its genre pill (Rebekah, 2026-11-27) —
+                // a little more when closed, where search/bell/menu sit
+                // in the top bar above the pills.
+                .padding(.top, railWidth > 0 ? (shellWide ? 2 : 12) : 20)
                 .padding(.bottom, 20)
         }
         // Page-level hero bleed (.book-hero-img): the big soft color wash
