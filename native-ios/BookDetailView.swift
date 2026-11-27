@@ -751,6 +751,7 @@ private struct BookHero: View {
     /// False on the wide (iPhone Duo) layout: the page draws one CoverBleed
     /// behind both columns instead.
     var showsBleed = true
+    @Environment(\.shellRailWidth) private var railWidth
     @Environment(\.colorScheme) private var colorScheme
     @Environment(AuthStore.self) private var auth
     @State private var coverEditorOpen = false
@@ -779,7 +780,11 @@ private struct BookHero: View {
         }
         // Page-level hero bleed (.book-hero-img): the big soft color wash
         // behind everything is what gives the page its vibrance.
-        .background(alignment: .top) { if showsBleed { heroBleed } }
+        .background(alignment: .top) {
+            // Closed Duo: run under the side column so the wash reaches the
+            // screen edge instead of stopping in a line (Rebekah, 2026-11-27).
+            if showsBleed { heroBleed.padding(.trailing, -railWidth) }
+        }
     }
 
     private var heroCard: some View {
