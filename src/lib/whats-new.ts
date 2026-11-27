@@ -27,6 +27,46 @@ export type WhatsNewNote = {
 
 export const WHATS_NEW_NOTES: WhatsNewNote[] = [
   {
+    // Build 24 = App Store 1.1 (2026-11-27). Same app as TestFlight 23, but
+    // App Store readers come from 1.0 (build 20) and never saw 22's note, so
+    // this one carries 22 + 23. Wording approved by Rebekah.
+    build: 24,
+    title: "What's new in 1.1",
+    items: [
+      {
+        icon: "paintbrush",
+        heading: "A fresh look",
+        body: "Settings, Find Readers, Top Shelf, What to Read Next, and author and series pages have a new look.",
+      },
+      {
+        icon: "text.bubble",
+        heading: "Reviews on book pages",
+        body: "Read other readers' reviews right on the book page, and share your own as a story-ready image.",
+      },
+      {
+        icon: "person.2",
+        heading: "Buddy Reads",
+        body: "Hosts can mark a buddy read finished, reopen it or cancel it, and the chat shows when someone starts, finishes or pauses the book.",
+      },
+      {
+        icon: "person.text.rectangle",
+        heading: "Tap an author",
+        body: "Tap an author's name almost anywhere to open their page.",
+      },
+      {
+        icon: "checkmark.seal",
+        heading: "Verified authors",
+        body: "Authors can claim their page, and content ratings now say Unverified, Verified or Author-verified.",
+      },
+      {
+        icon: "rectangle.split.2x1",
+        heading: "Made for iPhone Duo",
+        body: "Open it up and tbr*a spreads across both screens.",
+      },
+    ],
+    footer: "Tell us what you think with the flag button.",
+  },
+  {
     // Build 23 (TestFlight, 2026-11-25). Wording approved by Rebekah.
     build: 23,
     title: "What's new",
