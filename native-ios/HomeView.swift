@@ -1469,10 +1469,35 @@ struct ReorderPressGesture: UIGestureRecognizerRepresentable {
         recognizer.minimumPressDuration = minimumDuration
     }
 
+    final class Coordinator {
+        /// The touch in the reporting space, and in the window, at .began.
+        var origin: (named: CGPoint, window: CGPoint)?
+    }
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
+
+    // CRASH FIX (TestFlight tf:AOPi2HcdCsi, build 20): reading the touch via
+    // context.converter walks SwiftUI's attribute graph, and once the card
+    // under the finger has moved (re-identified / removed) mid-press that walk
+    // hits a dead attribute → AG precondition_failure → SIGABRT
+    // (converter.localLocation at the old HomeView.swift:1391). So the
+    // converter is read ONCE, at .began, before anything has moved; every
+    // later callback adds UIKit's window-space finger delta to that point.
     func handleUIGestureRecognizerAction(_ recognizer: UILongPressGestureRecognizer, context: Context) {
-        let point = space.map { context.converter.location(in: .named($0)) }
-            ?? context.converter.localLocation
-        onChange(recognizer.state, point)
+        let state = recognizer.state
+        let window = recognizer.location(in: nil)
+        if state == .began || context.coordinator.origin == nil {
+            let start = space.map { context.converter.location(in: .named($0)) }
+                ?? context.converter.localLocation
+            context.coordinator.origin = (start, window)
+        }
+        let o = context.coordinator.origin!
+        let point = CGPoint(x: o.named.x + window.x - o.window.x,
+                            y: o.named.y + window.y - o.window.y)
+        if state == .ended || state == .cancelled || state == .failed {
+            context.coordinator.origin = nil
+        }
+        onChange(state, point)
     }
 }
 
