@@ -10,7 +10,7 @@
  */
 import { db } from "@/db";
 import { upNext } from "@/db/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, sql } from "drizzle-orm";
 
 export const MAX_UP_NEXT = 6;
 
@@ -28,12 +28,42 @@ export async function touchUpNext(userId: string): Promise<void> {
 }
 
 /**
+ * Up Next is a queue of books still TO READ. Drop any book the user has since
+ * started, paused, finished or DNF'd — whatever path changed the state (the
+ * old cleanup only ran on "Reading Now", so a book marked finished straight
+ * from TBR stayed queued forever: cdodge2009's Otherwood, 2026-11-27).
+ * Returns how many rows were removed; renumbers + touches when any were.
+ */
+export async function pruneUpNext(userId: string): Promise<number> {
+  const stale = await db
+    .select({ id: upNext.id })
+    .from(upNext)
+    .where(
+      and(
+        eq(upNext.userId, userId),
+        sql`EXISTS (SELECT 1 FROM user_book_state s WHERE s.user_id = ${upNext.userId}
+              AND s.book_id = ${upNext.bookId} AND s.state IS NOT NULL AND s.state <> 'tbr')`,
+      ),
+    );
+  if (stale.length === 0) return 0;
+  for (const r of stale) await db.delete(upNext).where(eq(upNext.id, r.id));
+  await renumberUpNext(userId);
+  await touchUpNext(userId);
+  return stale.length;
+}
+
+/**
  * Normalize a user's up_next rows so positions are strictly 1..N with no gaps,
  * preserving current visual order. Uses the two-phase "negative positions
  * first" trick to avoid tripping the UNIQUE(user_id, position) constraint
  * mid-update. Called at the start of every mutation.
  */
 export async function compactUpNext(userId: string): Promise<{ id: string; position: number }[]> {
+  await pruneUpNext(userId);
+  return renumberUpNext(userId);
+}
+
+async function renumberUpNext(userId: string): Promise<{ id: string; position: number }[]> {
   const rows = await db
     .select({ id: upNext.id, position: upNext.position })
     .from(upNext)
